@@ -1,28 +1,71 @@
 <template>
-  <div class="workbench-view-host" data-testid="workbench-view-host">
-    <div v-if="viewType === 'todo'" class="workbench-view-host__surface" data-testid="workbench-view-todo">
-      <DesktopTodoDock :enable-workbench-preview="true" :view-config="entry.config" />
+  <div
+    class="workbench-view-host"
+    data-testid="workbench-view-host"
+  >
+    <div
+      v-if="viewType === 'todo'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-todo"
+    >
+      <DesktopTodoDock
+        :enable-workbench-preview="true"
+        :view-config="entry.config"
+      />
     </div>
-    <div v-else-if="viewType === 'habit'" class="workbench-view-host__surface" data-testid="workbench-view-habit">
+    <div
+      v-else-if="viewType === 'habit'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-habit"
+    >
       <WorkbenchHabitView :view-config="entry.config" />
     </div>
-    <div v-else-if="viewType === 'quadrant'" class="workbench-view-host__surface" data-testid="workbench-view-quadrant">
-      <QuadrantTab :embedded="true" :view-config="entry.config" />
+    <div
+      v-else-if="viewType === 'quadrant'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-quadrant"
+    >
+      <QuadrantTab
+        :embedded="true"
+        :view-config="entry.config"
+      />
     </div>
-    <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
-      <PomodoroStatsTab :embedded="true" :view-config="entry.config" />
+    <div
+      v-else-if="viewType === 'pomodoroStats'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-pomodoro-stats"
+    >
+      <PomodoroStatsTab
+        :embedded="true"
+        :view-config="entry.config"
+      />
     </div>
-    <div v-else-if="viewType === 'focusWorkbench'" class="workbench-view-host__surface" data-testid="workbench-view-focus-workbench">
-      <FocusWorkbenchTab :embedded="true" :view-config="entry.config" />
+    <div
+      v-else-if="viewType === 'focusWorkbench'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-focus-workbench"
+    >
+      <FocusWorkbenchTab
+        :embedded="true"
+        :view-config="entry.config"
+      />
     </div>
-    <div v-else-if="viewType === 'project'" class="workbench-view-host__surface" data-testid="workbench-view-project">
+    <div
+      v-else-if="viewType === 'project'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-project"
+    >
       <ProjectTab
         :embedded="true"
         :view-config="entry.config"
         :on-update-config="handleProjectViewConfigUpdate"
       />
     </div>
-    <div v-else-if="viewType === 'aiChat'" class="workbench-view-host__surface" data-testid="workbench-view-ai-chat">
+    <div
+      v-else-if="viewType === 'aiChat'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-ai-chat"
+    >
       <AiChatView :view-config="entry.config" />
     </div>
     <div
@@ -36,29 +79,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
-import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue';
-import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
-import QuadrantTab from '@/tabs/QuadrantTab.vue';
-import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue';
-import ProjectTab from '@/tabs/ProjectTab.vue';
-import AiChatView from '@/components/workbench/view/AiChatView.vue';
-import { t } from '@/i18n';
-import { useWorkbenchStore } from '@/stores';
-import type { WorkbenchEntry } from '@/types/workbench';
+import type { WorkbenchEntry } from '@/types/workbench'
+import { computed } from 'vue'
+import AiChatView from '@/components/workbench/view/AiChatView.vue'
+import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue'
+import { t } from '@/i18n'
+import { useWorkbenchStore } from '@/stores'
+import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue'
+import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue'
+import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue'
+import ProjectTab from '@/tabs/ProjectTab.vue'
+import QuadrantTab from '@/tabs/QuadrantTab.vue'
 
 const props = defineProps<{
-  entry: WorkbenchEntry;
-}>();
+  entry: WorkbenchEntry
+}>()
 
-const workbenchStore = useWorkbenchStore();
+const workbenchStore = useWorkbenchStore()
 
 async function handleProjectViewConfigUpdate(config: Record<string, unknown>) {
-  await workbenchStore.updateViewConfig(props.entry.id, config);
+  await workbenchStore.updateViewConfig(props.entry.id, config)
 }
 
-const viewType = computed(() => props.entry.viewType);
+const viewType = computed(() => props.entry.viewType)
 </script>
 
 <style lang="scss" scoped>

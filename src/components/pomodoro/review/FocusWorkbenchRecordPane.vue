@@ -1,17 +1,35 @@
 <template>
   <div class="focus-workbench-record-pane">
-    <div v-if="title" class="focus-workbench-record-pane__header">{{ title }}</div>
+    <div
+      v-if="title"
+      class="focus-workbench-record-pane__header"
+    >
+      {{ title }}
+    </div>
     <div
       class="focus-workbench-record-pane__content"
       :class="{ 'focus-workbench-record-pane__content--empty': recordsByDate.length === 0 }"
     >
-      <div v-if="recordsByDate.length === 0" class="focus-workbench-record-pane__empty">
-        <div class="focus-workbench-record-pane__empty-title">{{ emptyTitle }}</div>
-        <div class="focus-workbench-record-pane__empty-desc">{{ emptyDesc }}</div>
+      <div
+        v-if="recordsByDate.length === 0"
+        class="focus-workbench-record-pane__empty"
+      >
+        <div class="focus-workbench-record-pane__empty-title">
+          {{ emptyTitle }}
+        </div>
+        <div class="focus-workbench-record-pane__empty-desc">
+          {{ emptyDesc }}
+        </div>
       </div>
       <div v-else>
-        <div v-for="group in recordsByDate" :key="group.date" class="focus-workbench-record-pane__group">
-          <div class="focus-workbench-record-pane__date">{{ formatDate(group.date) }}</div>
+        <div
+          v-for="group in recordsByDate"
+          :key="group.date"
+          class="focus-workbench-record-pane__group"
+        >
+          <div class="focus-workbench-record-pane__date">
+            {{ formatDate(group.date) }}
+          </div>
           <div class="focus-workbench-record-pane__items">
             <button
               v-for="record in group.records"
@@ -21,14 +39,28 @@
               @click="handleRecordClick(record, $event)"
             >
               <div class="focus-workbench-record-pane__icon">
-                <TomatoIcon :width="16" :height="16" />
+                <TomatoIcon
+                  :width="16"
+                  :height="16"
+                />
               </div>
               <div class="focus-workbench-record-pane__info">
-                <div class="focus-workbench-record-pane__time">{{ formatTimeRange(record) }}</div>
-                <div class="focus-workbench-record-pane__source">{{ record.itemContent || itemContent }}</div>
-                <div v-if="record.description" class="focus-workbench-record-pane__desc">{{ record.description }}</div>
+                <div class="focus-workbench-record-pane__time">
+                  {{ formatTimeRange(record) }}
+                </div>
+                <div class="focus-workbench-record-pane__source">
+                  {{ record.itemContent || itemContent }}
+                </div>
+                <div
+                  v-if="record.description"
+                  class="focus-workbench-record-pane__desc"
+                >
+                  {{ record.description }}
+                </div>
               </div>
-              <div class="focus-workbench-record-pane__duration">{{ getMinutes(record) }}m</div>
+              <div class="focus-workbench-record-pane__duration">
+                {{ getMinutes(record) }}m
+              </div>
             </button>
           </div>
         </div>
@@ -38,93 +70,104 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
-import { useApp, usePlugin } from '@/main';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import TomatoIcon from '@/components/icons/TomatoIcon.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import type { PomodoroRecord } from '@/types/models';
+import type { PomodoroRecord } from '@/types/models'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+} from 'vue'
+import TomatoIcon from '@/components/icons/TomatoIcon.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import dayjs from '@/utils/dayjs'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 
 const props = defineProps<{
-  records: PomodoroRecord[];
-  itemContent?: string;
-  title: string;
-  emptyTitle: string;
-  emptyDesc: string;
-}>();
+  records: PomodoroRecord[]
+  itemContent?: string
+  title: string
+  emptyTitle: string
+  emptyDesc: string
+}>()
 
-const app = useApp();
-const plugin = usePlugin() as any;
+const app = useApp()
+const plugin = usePlugin() as any
 
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
 const recordsByDate = computed(() => {
-  const byDate = new Map<string, PomodoroRecord[]>();
+  const byDate = new Map<string, PomodoroRecord[]>()
   const sorted = [...props.records].sort((a, b) => {
-    const dateCompare = b.date.localeCompare(a.date);
-    if (dateCompare !== 0) return dateCompare;
-    return b.startTime.localeCompare(a.startTime);
-  });
+    const dateCompare = b.date.localeCompare(a.date)
+    if (dateCompare !== 0) return dateCompare
+    return b.startTime.localeCompare(a.startTime)
+  })
   for (const record of sorted) {
-    const list = byDate.get(record.date) ?? [];
-    list.push(record);
-    byDate.set(record.date, list);
+    const list = byDate.get(record.date) ?? []
+    list.push(record)
+    byDate.set(record.date, list)
   }
-  return [...byDate.entries()].map(([date, records]) => ({ date, records }));
-});
+  return Array.from(byDate.entries(), ([date, records]) => ({
+    date,
+    records,
+  }))
+})
 
 function formatDate(dateStr: string): string {
-  const d = dayjs(dateStr);
-  const today = dayjs();
-  if (d.isSame(today, 'day')) return t('pomodoroStats').today;
-  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M月D日';
-  return d.format(fmt);
+  const d = dayjs(dateStr)
+  const today = dayjs()
+  if (d.isSame(today, 'day')) return t('pomodoroStats').today
+  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M月D日'
+  return d.format(fmt)
 }
 
 function formatTimeRange(record: PomodoroRecord): string {
-  const startTime = record.startTime.substring(0, 5);
+  const startTime = record.startTime.substring(0, 5)
   if (record.endTime) {
-    const endTime = record.endTime.substring(0, 5);
-    return `${startTime} - ${endTime}`;
+    const endTime = record.endTime.substring(0, 5)
+    return `${startTime} - ${endTime}`
   }
-  return startTime;
+  return startTime
 }
 
 function getMinutes(record: PomodoroRecord) {
-  return record.actualDurationMinutes ?? record.durationMinutes;
+  return record.actualDurationMinutes ?? record.durationMinutes
 }
 
 function handleRecordClick(record: PomodoroRecord, event: MouseEvent) {
-  if (!record.blockId) return;
-  const el = event.currentTarget as HTMLElement | null;
-  if (!el) return;
+  if (!record.blockId) return
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
 
   preview.showNow({
     blockId: record.blockId,
     itemId: record.blockId,
     anchorEl: el,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  if (!preview.isOpen.value) return;
-  if (nativePreview.containsTarget(event.target)) return;
-  preview.forceClose();
+  if (!preview.isOpen.value) return
+  if (nativePreview.containsTarget(event.target)) return
+  preview.forceClose()
 }
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -134,20 +177,20 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: () => {},
-    });
+    })
   },
   { flush: 'post' },
-);
+)
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 </script>
 
 <style scoped>

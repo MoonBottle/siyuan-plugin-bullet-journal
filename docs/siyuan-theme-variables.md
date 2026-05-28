@@ -5,58 +5,65 @@
 ## 基础颜色变量
 
 ### 主题色
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-theme-primary` | 主题主色（强调色） |
-| `--b3-theme-primary-light` | 主题主色浅色版 |
-| `--b3-theme-primary-lighter` | 主题主色更浅色版 |
+
+| 变量名                       | 说明               |
+| ---------------------------- | ------------------ |
+| `--b3-theme-primary`         | 主题主色（强调色） |
+| `--b3-theme-primary-light`   | 主题主色浅色版     |
+| `--b3-theme-primary-lighter` | 主题主色更浅色版   |
 
 ### 背景色
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-theme-background` | 背景色（最深） |
-| `--b3-theme-surface` | 表面色（中等） |
-| `--b3-theme-surface-light` | 表面浅色 |
+
+| 变量名                       | 说明                   |
+| ---------------------------- | ---------------------- |
+| `--b3-theme-background`      | 背景色（最深）         |
+| `--b3-theme-surface`         | 表面色（中等）         |
+| `--b3-theme-surface-light`   | 表面浅色               |
 | `--b3-theme-surface-lighter` | 表面更浅色（边框常用） |
 
 ### 文字色
-| 变量名 | 说明 |
-|--------|------|
+
+| 变量名                     | 说明           |
+| -------------------------- | -------------- |
 | `--b3-theme-on-background` | 背景上的文字色 |
-| `--b3-theme-on-surface` | 表面上的文字色 |
-| `--b3-theme-on-primary` | 主色上的文字色 |
+| `--b3-theme-on-surface`    | 表面上的文字色 |
+| `--b3-theme-on-primary`    | 主色上的文字色 |
 
 ## 语义化颜色变量
 
 ### 错误/警告/成功
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-theme-error` | 错误色 |
+
+| 变量名               | 说明   |
+| -------------------- | ------ |
+| `--b3-theme-error`   | 错误色 |
 | `--b3-theme-warning` | 警告色 |
 | `--b3-theme-success` | 成功色 |
-| `--b3-theme-info` | 信息色 |
+| `--b3-theme-info`    | 信息色 |
 
 ### 文字颜色
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-theme-on-error` | 错误色上的文字 |
+
+| 变量名                  | 说明           |
+| ----------------------- | -------------- |
+| `--b3-theme-on-error`   | 错误色上的文字 |
 | `--b3-theme-on-warning` | 警告色上的文字 |
 | `--b3-theme-on-success` | 成功色上的文字 |
-| `--b3-theme-on-info` | 信息色上的文字 |
+| `--b3-theme-on-info`    | 信息色上的文字 |
 
 ## 布局变量
 
 ### 圆角
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-border-radius` | 默认圆角大小 |
-| `--b3-border-radius-s` | 小圆角 |
-| `--b3-border-radius-l` | 大圆角 |
+
+| 变量名                 | 说明         |
+| ---------------------- | ------------ |
+| `--b3-border-radius`   | 默认圆角大小 |
+| `--b3-border-radius-s` | 小圆角       |
+| `--b3-border-radius-l` | 大圆角       |
 
 ### 间距
-| 变量名 | 说明 |
-|--------|------|
-| `--b3-margin` | 默认外边距 |
+
+| 变量名         | 说明       |
+| -------------- | ---------- |
+| `--b3-margin`  | 默认外边距 |
 | `--b3-padding` | 默认内边距 |
 
 ## 使用示例
@@ -68,16 +75,16 @@
 .my-component {
   // 背景使用思源表面色
   background: var(--b3-theme-surface);
-  
+
   // 文字使用思源背景上的文字色
   color: var(--b3-theme-on-background);
-  
+
   // 边框使用思源表面更浅色
   border: 1px solid var(--b3-theme-surface-lighter);
-  
+
   // 圆角使用思源默认圆角
   border-radius: var(--b3-border-radius);
-  
+
   // 卡片使用思源背景色（与表面色形成层次）
   .card {
     background: var(--b3-theme-background);

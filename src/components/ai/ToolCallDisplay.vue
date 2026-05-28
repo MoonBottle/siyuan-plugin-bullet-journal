@@ -1,7 +1,10 @@
 <template>
   <div class="tool-call-display">
     <!-- 头部：折叠/展开图标 + 工具图标 + 工具名称 -->
-    <div class="tool-call-display__header" @click="toggleCollapse">
+    <div
+      class="tool-call-display__header"
+      @click="toggleCollapse"
+    >
       <span class="tool-call-display__arrow">
         <svg v-if="isCollapsed">
           <use xlink:href="#iconDown"></use>
@@ -17,10 +20,18 @@
     </div>
 
     <!-- 展开后的内容 -->
-    <div v-if="!isCollapsed" class="tool-call-display__body">
+    <div
+      v-if="!isCollapsed"
+      class="tool-call-display__body"
+    >
       <!-- 参数区域 -->
-      <div v-if="formattedParams" class="tool-call-display__section">
-        <div class="tool-call-display__section-title">参数</div>
+      <div
+        v-if="formattedParams"
+        class="tool-call-display__section"
+      >
+        <div class="tool-call-display__section-title">
+          参数
+        </div>
         <div class="tool-call-display__section-content">
           <pre><code>{{ formattedParams }}</code></pre>
         </div>
@@ -45,44 +56,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
+import {
+  computed,
+  ref,
+} from 'vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 
 const props = defineProps<{
   /** 工具名称 */
-  toolName: string;
+  toolName: string
   /** 工具参数（JSON 字符串或对象） */
-  params?: string | object;
+  params?: string | object
   /** 工具响应结果（JSON 字符串或对象） */
-  result: string | object;
+  result: string | object
   /** 默认是否折叠，默认为 true */
-  defaultCollapsed?: boolean;
-}>();
+  defaultCollapsed?: boolean
+}>()
 
-const isCollapsed = ref(props.defaultCollapsed ?? true);
+const isCollapsed = ref(props.defaultCollapsed ?? true)
 
 function toggleCollapse() {
-  isCollapsed.value = !isCollapsed.value;
+  isCollapsed.value = !isCollapsed.value
 }
 
 function formatJSON(data: string | object | undefined): string {
-  if (!data) return '';
+  if (!data) return ''
   try {
-    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-    return JSON.stringify(parsed, null, 2);
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data
+    return JSON.stringify(parsed, null, 2)
   } catch {
-    return String(data);
+    return String(data)
   }
 }
 
-const formattedParams = computed(() => formatJSON(props.params));
-const formattedResult = computed(() => formatJSON(props.result));
+const formattedParams = computed(() => formatJSON(props.params))
+const formattedResult = computed(() => formatJSON(props.result))
 
 async function copyResult() {
   try {
-    await navigator.clipboard.writeText(formattedResult.value);
+    await navigator.clipboard.writeText(formattedResult.value)
   } catch (err) {
-    console.error('复制失败:', err);
+    console.error('复制失败:', err)
   }
 }
 </script>

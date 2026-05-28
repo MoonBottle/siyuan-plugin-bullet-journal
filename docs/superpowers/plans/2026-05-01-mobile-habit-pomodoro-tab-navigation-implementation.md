@@ -54,6 +54,7 @@
 ## Task 1: 搭好移动端 shell、底栏和待办专属 FAB
 
 **Files:**
+
 - Create: `src/mobile/MobileMainShell.vue`
 - Create: `src/mobile/components/navigation/MobileBottomTabBar.vue`
 - Create: `src/mobile/components/navigation/MobileCreateFab.vue`
@@ -67,9 +68,9 @@
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import MobileMainShell from '@/mobile/MobileMainShell.vue';
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, h, nextTick } from 'vue'
+import MobileMainShell from '@/mobile/MobileMainShell.vue'
 
 vi.mock('@/mobile/panels/MobileTodoPanel.vue', () => ({
   default: defineComponent({
@@ -80,72 +81,72 @@ vi.mock('@/mobile/panels/MobileTodoPanel.vue', () => ({
       return () => h('div', { 'data-testid': 'mobile-todo-panel' }, [
         h('button', {
           'data-testid': 'todo-open-pomodoro',
-          onClick: () => emit('open-pomodoro', { blockId: 'item-1' }),
+          'onClick': () => emit('open-pomodoro', { blockId: 'item-1' }),
         }),
         h('span', String(props.active)),
-      ]);
+      ])
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobilePomodoroPanel.vue', () => ({
   default: defineComponent({
     name: 'MobilePomodoroPanelStub',
     props: ['payload'],
     setup(props) {
-      return () => h('div', { 'data-testid': 'mobile-pomodoro-panel' }, JSON.stringify(props.payload || null));
+      return () => h('div', { 'data-testid': 'mobile-pomodoro-panel' }, JSON.stringify(props.payload || null))
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileHabitPanel.vue', () => ({
   default: defineComponent({ name: 'MobileHabitPanelStub', setup: () => () => h('div', { 'data-testid': 'mobile-habit-panel' }) }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileMorePanel.vue', () => ({
   default: defineComponent({ name: 'MobileMorePanelStub', setup: () => () => h('div', { 'data-testid': 'mobile-more-panel' }) }),
-}));
+}))
 
 function mountShell() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobileMainShell);
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobileMainShell)
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 describe('MobileMainShell', () => {
   it('defaults to todo tab and only shows FAB on todo', async () => {
-    const mounted = mountShell();
-    await nextTick();
+    const mounted = mountShell()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid=\"mobile-todo-panel\"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid=\"mobile-create-fab\"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid=\"mobile-todo-panel\"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid=\"mobile-create-fab\"]')).not.toBeNull()
 
     mounted.container.querySelector('[data-testid=\"mobile-tab-habit\"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid=\"mobile-habit-panel\"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid=\"mobile-create-fab\"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid=\"mobile-habit-panel\"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid=\"mobile-create-fab\"]')).toBeNull()
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('switches to pomodoro tab and forwards payload when todo requests pomodoro', async () => {
-    const mounted = mountShell();
-    await nextTick();
+    const mounted = mountShell()
+    await nextTick()
 
     mounted.container.querySelector('[data-testid=\"todo-open-pomodoro\"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
     expect(mounted.container.querySelector('[data-testid=\"mobile-pomodoro-panel\"]')?.textContent)
-      .toContain('item-1');
+      .toContain('item-1')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -163,6 +164,31 @@ Expected: FAIL，原因应为 `MobileMainShell.vue` / 新底栏 / FAB 组件尚�
 创建 `src/mobile/MobileMainShell.vue`：
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import MobileBottomTabBar from './components/navigation/MobileBottomTabBar.vue'
+import MobileCreateFab from './components/navigation/MobileCreateFab.vue'
+import MobileHabitPanel from './panels/MobileHabitPanel.vue'
+import MobileMorePanel from './panels/MobileMorePanel.vue'
+import MobilePomodoroPanel from './panels/MobilePomodoroPanel.vue'
+import MobileTodoPanel from './panels/MobileTodoPanel.vue'
+
+export type MobileMainTab = 'todo' | 'pomodoro' | 'habit' | 'more'
+export interface PomodoroTabPayload { blockId?: string }
+
+const activeTab = ref<MobileMainTab>('todo')
+const pomodoroPayload = ref<PomodoroTabPayload | null>(null)
+
+function handleOpenPomodoro(payload?: PomodoroTabPayload) {
+  pomodoroPayload.value = payload ?? null
+  activeTab.value = 'pomodoro'
+}
+
+function handleCreate() {
+  window.dispatchEvent(new CustomEvent('task-assistant:mobile-create'))
+}
+</script>
+
 <template>
   <div class="mobile-main-shell">
     <div class="mobile-main-shell__content">
@@ -192,51 +218,34 @@ Expected: FAIL，原因应为 `MobileMainShell.vue` / 新底栏 / FAB 组件尚�
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-import MobileTodoPanel from './panels/MobileTodoPanel.vue';
-import MobilePomodoroPanel from './panels/MobilePomodoroPanel.vue';
-import MobileHabitPanel from './panels/MobileHabitPanel.vue';
-import MobileMorePanel from './panels/MobileMorePanel.vue';
-import MobileBottomTabBar from './components/navigation/MobileBottomTabBar.vue';
-import MobileCreateFab from './components/navigation/MobileCreateFab.vue';
-
-export type MobileMainTab = 'todo' | 'pomodoro' | 'habit' | 'more';
-export interface PomodoroTabPayload { blockId?: string }
-
-const activeTab = ref<MobileMainTab>('todo');
-const pomodoroPayload = ref<PomodoroTabPayload | null>(null);
-
-function handleOpenPomodoro(payload?: PomodoroTabPayload) {
-  pomodoroPayload.value = payload ?? null;
-  activeTab.value = 'pomodoro';
-}
-
-function handleCreate() {
-  window.dispatchEvent(new CustomEvent('task-assistant:mobile-create'));
-}
-</script>
 ```
 
 创建 `src/mobile/components/navigation/MobileBottomTabBar.vue`：
 
 ```vue
+<script setup lang="ts">
+import type { MobileMainTab } from '../../MobileMainShell.vue'
+
+defineProps<{ activeTab: MobileMainTab }>()
+const emit = defineEmits<{ 'change-tab': [tab: MobileMainTab] }>()
+</script>
+
 <template>
   <div class="mobile-bottom-tab-bar">
-    <button data-testid="mobile-tab-todo" @click="emit('change-tab', 'todo')">待办</button>
-    <button data-testid="mobile-tab-pomodoro" @click="emit('change-tab', 'pomodoro')">番茄钟</button>
-    <button data-testid="mobile-tab-habit" @click="emit('change-tab', 'habit')">习惯打卡</button>
-    <button data-testid="mobile-tab-more" @click="emit('change-tab', 'more')">更多</button>
+    <button data-testid="mobile-tab-todo" @click="emit('change-tab', 'todo')">
+      待办
+    </button>
+    <button data-testid="mobile-tab-pomodoro" @click="emit('change-tab', 'pomodoro')">
+      番茄钟
+    </button>
+    <button data-testid="mobile-tab-habit" @click="emit('change-tab', 'habit')">
+      习惯打卡
+    </button>
+    <button data-testid="mobile-tab-more" @click="emit('change-tab', 'more')">
+      更多
+    </button>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { MobileMainTab } from '../../MobileMainShell.vue';
-
-defineProps<{ activeTab: MobileMainTab }>();
-const emit = defineEmits<{ 'change-tab': [tab: MobileMainTab] }>();
-</script>
 ```
 
 创建 `src/mobile/components/navigation/MobileCreateFab.vue`：
@@ -244,7 +253,7 @@ const emit = defineEmits<{ 'change-tab': [tab: MobileMainTab] }>();
 ```vue
 <template>
   <button class="mobile-create-fab" data-testid="mobile-create-fab">
-    <svg><use xlink:href="#iconAdd"></use></svg>
+    <svg><use xlink:href="#iconAdd" /></svg>
   </button>
 </template>
 ```
@@ -253,14 +262,18 @@ const emit = defineEmits<{ 'change-tab': [tab: MobileMainTab] }>();
 
 ```vue
 <!-- src/mobile/panels/MobileMorePanel.vue -->
-<template><div class="mobile-more-panel">More</div></template>
+<template>
+  <div class="mobile-more-panel">
+    More
+  </div>
+</template>
 ```
 
 并更新 `src/mobile/index.ts`：
 
 ```ts
-export { default as MobileMainShell } from './MobileMainShell.vue';
-export { default as MobileTodoDock } from './MobileTodoDock.vue';
+export { default as MobileMainShell } from './MobileMainShell.vue'
+export { default as MobileTodoDock } from './MobileTodoDock.vue'
 ```
 
 - [ ] **Step 4: 跑测试，确认壳层转绿**
@@ -283,6 +296,7 @@ git commit -m "feat(mobile): add main shell with bottom tabs"
 ## Task 2: 把 MobileTodoDock 收敛成待办 panel
 
 **Files:**
+
 - Create: `src/mobile/panels/MobileTodoPanel.vue`
 - Modify: `src/mobile/MobileTodoDock.vue`
 - Test: `test/mobile/MobileTodoPanel.test.ts`
@@ -349,6 +363,14 @@ Expected: FAIL，原因应为 `MobileTodoPanel.vue` 尚不存在。
 创建 `src/mobile/panels/MobileTodoPanel.vue`，将当前 `src/mobile/MobileTodoDock.vue` 中待办分支内容迁入，并把对旧底栏/习惯分支的依赖删掉：
 
 ```vue
+<script setup lang="ts">
+// 从旧 MobileTodoDock 迁入现有待办逻辑
+const emit = defineEmits<{
+  'open-pomodoro': [{ blockId?: string }]
+  'create': []
+}>()
+</script>
+
 <template>
   <div class="mobile-todo-panel">
     <MobileFilterBar
@@ -378,27 +400,20 @@ Expected: FAIL，原因应为 `MobileTodoPanel.vue` 尚不存在。
     />
   </div>
 </template>
-
-<script setup lang="ts">
-// 从旧 MobileTodoDock 迁入现有待办逻辑
-const emit = defineEmits<{
-  'open-pomodoro': [{ blockId?: string }];
-  create: [];
-}>();
-</script>
 ```
 
 将 `src/mobile/MobileTodoDock.vue` 收敛为兼容包装层：
 
 ```vue
+<script setup lang="ts">
+import MobileTodoPanel from './panels/MobileTodoPanel.vue'
+
+defineEmits<{ 'open-pomodoro': [{ blockId?: string }], 'create': [] }>()
+</script>
+
 <template>
   <MobileTodoPanel active @open-pomodoro="$emit('open-pomodoro', $event)" @create="$emit('create')" />
 </template>
-
-<script setup lang="ts">
-import MobileTodoPanel from './panels/MobileTodoPanel.vue';
-defineEmits<{ 'open-pomodoro': [{ blockId?: string }]; create: [] }>();
-</script>
 ```
 
 要求这一阶段删除旧逻辑：
@@ -428,6 +443,7 @@ git commit -m "refactor(mobile): extract todo panel from dock"
 ## Task 3: 把 MobileHabitDock 收敛成习惯 panel
 
 **Files:**
+
 - Create: `src/mobile/panels/MobileHabitPanel.vue`
 - Modify: `src/mobile/MobileHabitDock.vue`
 - Test: `test/mobile/MobileHabitPanel.test.ts`
@@ -439,36 +455,36 @@ git commit -m "refactor(mobile): extract todo panel from dock"
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import { createPinia, setActivePinia } from 'pinia';
-import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue';
+import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue'
 
-vi.mock('@/components/habit/HabitWeekBar.vue', () => ({ default: { template: '<div data-testid=\"habit-week-bar\" />' } }));
-vi.mock('@/components/habit/HabitListItem.vue', () => ({ default: { template: '<div data-testid=\"habit-list-item\" />' } }));
+vi.mock('@/components/habit/HabitWeekBar.vue', () => ({ default: { template: '<div data-testid=\"habit-week-bar\" />' } }))
+vi.mock('@/components/habit/HabitListItem.vue', () => ({ default: { template: '<div data-testid=\"habit-list-item\" />' } }))
 
 function mountPanel() {
-  const pinia = createPinia();
-  setActivePinia(pinia);
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobileHabitPanel);
-  app.use(pinia);
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobileHabitPanel)
+  app.use(pinia)
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 describe('MobileHabitPanel', () => {
   it('renders habit content without owning a mobile root shell', async () => {
-    const mounted = mountPanel();
-    await nextTick();
+    const mounted = mountPanel()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid=\"habit-week-bar\"]')).not.toBeNull();
-    expect(mounted.container.querySelector('.mobile-bottom-tab-bar')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid=\"habit-week-bar\"]')).not.toBeNull()
+    expect(mounted.container.querySelector('.mobile-bottom-tab-bar')).toBeNull()
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -493,9 +509,13 @@ Expected: FAIL，原因应为 `MobileHabitPanel.vue` 尚不存在。
         <span class="mobile-habit-header__title">{{ t('habit').title }}</span>
       </div>
       <HabitWeekBar v-model="state.selectedDate" :current-date="currentDate" :habits="habits" />
-      <div class="mobile-habit-list" v-if="habits.length > 0">...</div>
+      <div v-if="habits.length > 0" class="mobile-habit-list">
+        ...
+      </div>
     </template>
-    <template v-else>...</template>
+    <template v-else>
+      ...
+    </template>
   </div>
 </template>
 ```
@@ -503,13 +523,13 @@ Expected: FAIL，原因应为 `MobileHabitPanel.vue` 尚不存在。
 将 `src/mobile/MobileHabitDock.vue` 改成兼容包装层：
 
 ```vue
+<script setup lang="ts">
+import MobileHabitPanel from './panels/MobileHabitPanel.vue'
+</script>
+
 <template>
   <MobileHabitPanel />
 </template>
-
-<script setup lang="ts">
-import MobileHabitPanel from './panels/MobileHabitPanel.vue';
-</script>
 ```
 
 - [ ] **Step 4: 跑测试，确认 habit panel 转绿**
@@ -532,6 +552,7 @@ git commit -m "refactor(mobile): extract habit panel from dock"
 ## Task 4: 把番茄钟主入口改为 tab panel
 
 **Files:**
+
 - Create: `src/mobile/panels/MobilePomodoroPanel.vue`
 - Modify: `src/mobile/drawers/pomodoro/MobilePomodoroDrawer.vue`
 - Test: `test/mobile/MobilePomodoroPanel.test.ts`
@@ -543,30 +564,30 @@ git commit -m "refactor(mobile): extract habit panel from dock"
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import MobilePomodoroPanel from '@/mobile/panels/MobilePomodoroPanel.vue';
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import MobilePomodoroPanel from '@/mobile/panels/MobilePomodoroPanel.vue'
 
-vi.mock('@/mobile/drawers/pomodoro/sub/ItemSelectorSheet.vue', () => ({ default: { template: '<div data-testid=\"pomodoro-item-selector\" />' } }));
+vi.mock('@/mobile/drawers/pomodoro/sub/ItemSelectorSheet.vue', () => ({ default: { template: '<div data-testid=\"pomodoro-item-selector\" />' } }))
 
 function mountPanel(payload = { blockId: 'item-9' }) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobilePomodoroPanel, { payload });
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobilePomodoroPanel, { payload })
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 describe('MobilePomodoroPanel', () => {
   it('accepts preselected block id from shell payload', async () => {
-    const mounted = mountPanel();
-    await nextTick();
+    const mounted = mountPanel()
+    await nextTick()
 
-    expect(mounted.container.textContent).toContain('item-9');
+    expect(mounted.container.textContent).toContain('item-9')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -584,28 +605,32 @@ Expected: FAIL，原因应为 `MobilePomodoroPanel.vue` 尚不存在。
 创建 `src/mobile/panels/MobilePomodoroPanel.vue`：
 
 ```vue
+<script setup lang="ts">
+import { t } from '@/i18n'
+import { usePomodoroStore } from '@/stores/pomodoroStore'
+import MobileActiveTimer from '../drawers/pomodoro/sub/MobileActiveTimer.vue'
+import MobileBreakTimer from '../drawers/pomodoro/sub/MobileBreakTimer.vue'
+import MobileRestDialog from '../drawers/pomodoro/sub/MobileRestDialog.vue'
+
+defineProps<{ payload?: { blockId?: string } | null }>()
+const pomodoroStore = usePomodoroStore()
+</script>
+
 <template>
   <div class="mobile-pomodoro-panel">
-    <div class="mobile-pomodoro-panel__header">{{ t('pomodoro').dockTitle }}</div>
+    <div class="mobile-pomodoro-panel__header">
+      {{ t('pomodoro').dockTitle }}
+    </div>
     <div class="mobile-pomodoro-panel__body">
       <MobileActiveTimer v-if="pomodoroStore.isFocusing" />
       <MobileBreakTimer v-else-if="pomodoroStore.isBreakActive" />
       <MobileRestDialog v-else />
     </div>
-    <div class="mobile-pomodoro-panel__payload" style="display:none">{{ payload?.blockId || '' }}</div>
+    <div class="mobile-pomodoro-panel__payload" style="display:none">
+      {{ payload?.blockId || '' }}
+    </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { usePomodoroStore } from '@/stores/pomodoroStore';
-import { t } from '@/i18n';
-import MobileActiveTimer from '../drawers/pomodoro/sub/MobileActiveTimer.vue';
-import MobileBreakTimer from '../drawers/pomodoro/sub/MobileBreakTimer.vue';
-import MobileRestDialog from '../drawers/pomodoro/sub/MobileRestDialog.vue';
-
-defineProps<{ payload?: { blockId?: string } | null }>();
-const pomodoroStore = usePomodoroStore();
-</script>
 ```
 
 在 `src/mobile/drawers/pomodoro/MobilePomodoroDrawer.vue` 中，只保留 drawer 容器职责，不再默认承担移动端唯一主入口语义。不要把 panel 再包回 drawer。
@@ -630,6 +655,7 @@ git commit -m "feat(mobile): add pomodoro tab panel"
 ## Task 5: 接入双端入口并补兼容 / 回归测试
 
 **Files:**
+
 - Modify: `src/tabs/TodoDock.vue`
 - Modify: `src/tabs/HabitDock.vue`
 - Modify: `src/index.ts`
@@ -642,45 +668,45 @@ git commit -m "feat(mobile): add pomodoro tab panel"
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import TodoDock from '@/tabs/TodoDock.vue';
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, h, nextTick } from 'vue'
+import TodoDock from '@/tabs/TodoDock.vue'
 
 vi.mock('@/mobile/MobileMainShell.vue', () => ({
   default: defineComponent({
     name: 'MobileMainShellStub',
     setup() {
-      return () => h('div', { 'data-testid': 'mobile-main-shell-stub' });
+      return () => h('div', { 'data-testid': 'mobile-main-shell-stub' })
     },
   }),
-}));
+}))
 
 vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   default: defineComponent({
     name: 'DesktopTodoDockStub',
     setup() {
-      return () => h('div', { 'data-testid': 'desktop-todo-dock-stub' });
+      return () => h('div', { 'data-testid': 'desktop-todo-dock-stub' })
     },
   }),
-}));
+}))
 
 vi.mock('@/utils/device', () => ({
   isMobileDevice: () => true,
-}));
+}))
 
 it('uses MobileMainShell on mobile without affecting desktop branch wiring', async () => {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(TodoDock);
-  app.mount(container);
-  await nextTick();
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(TodoDock)
+  app.mount(container)
+  await nextTick()
 
-  expect(container.querySelector('[data-testid=\"mobile-main-shell-stub\"]')).not.toBeNull();
-  expect(container.querySelector('[data-testid=\"desktop-todo-dock-stub\"]')).toBeNull();
+  expect(container.querySelector('[data-testid=\"mobile-main-shell-stub\"]')).not.toBeNull()
+  expect(container.querySelector('[data-testid=\"desktop-todo-dock-stub\"]')).toBeNull()
 
-  app.unmount();
-  container.remove();
-});
+  app.unmount()
+  container.remove()
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -698,18 +724,18 @@ Expected: FAIL，原因应为 `TodoDock.vue` 仍直接挂 `MobileTodoDock`。
 修改 `src/tabs/TodoDock.vue`：
 
 ```vue
+<script setup lang="ts">
+import MobileMainShell from '@/mobile/MobileMainShell.vue'
+import { isMobileDevice } from '@/utils/device'
+import DesktopTodoDock from './DesktopTodoDock.vue'
+
+const isMobile = isMobileDevice()
+</script>
+
 <template>
   <MobileMainShell v-if="isMobile" />
   <DesktopTodoDock v-else />
 </template>
-
-<script setup lang="ts">
-import DesktopTodoDock from './DesktopTodoDock.vue';
-import MobileMainShell from '@/mobile/MobileMainShell.vue';
-import { isMobileDevice } from '@/utils/device';
-
-const isMobile = isMobileDevice();
-</script>
 ```
 
 修改 `src/tabs/HabitDock.vue`：

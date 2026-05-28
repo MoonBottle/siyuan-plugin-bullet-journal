@@ -1,71 +1,79 @@
+import type {
+  Item,
+  ProjectDirectory,
+  ScanMode,
+} from '@/types/models'
+import type { PomodoroRecordCompact } from '@/utils/pomodoroUtils'
+import {
+
+  toPomodoroRecordCompact,
+} from '@/utils/pomodoroUtils'
+import { loadProjectsAndItems } from './dataLoader'
 /**
  * filter_items 工具完整实现（纯函数 + execute 编排）
  */
-import { SiYuanClient } from './siyuan-client';
-import { loadProjectsAndItems } from './dataLoader';
-import type { Item, ProjectDirectory, ScanMode } from '@/types/models';
-import { toPomodoroRecordCompact, type PomodoroRecordCompact } from '@/utils/pomodoroUtils';
+import { SiYuanClient } from './siyuan-client'
 
 export interface FilterItemsArgs {
-  projectId?: string;
-  projectIds?: string[];
-  groupId?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: 'pending' | 'completed' | 'abandoned';
+  projectId?: string
+  projectIds?: string[]
+  groupId?: string
+  startDate?: string
+  endDate?: string
+  status?: 'pending' | 'completed' | 'abandoned'
 }
 
 /**
  * 按项目、时间范围、分组、状态筛选事项
  */
 export function filterItems(items: Item[], args: FilterItemsArgs): Item[] {
-  let filtered = [...items];
-  const initialCount = filtered.length;
+  let filtered = [...items]
+  const initialCount = filtered.length
 
   if (args.projectId) {
-    filtered = filtered.filter(i => i.project?.id === args.projectId);
+    filtered = filtered.filter((i) => i.project?.id === args.projectId)
   } else if (args.projectIds?.length) {
-    const set = new Set(args.projectIds);
-    filtered = filtered.filter(i => i.project && set.has(i.project.id));
+    const set = new Set(args.projectIds)
+    filtered = filtered.filter((i) => i.project && set.has(i.project.id))
   } else if (args.groupId) {
-    filtered = filtered.filter(i => i.project?.groupId === args.groupId);
+    filtered = filtered.filter((i) => i.project?.groupId === args.groupId)
   }
-  const afterScopeCount = filtered.length;
+  const afterScopeCount = filtered.length
 
   if (args.startDate) {
-    filtered = filtered.filter(i => i.date >= args.startDate!);
+    filtered = filtered.filter((i) => i.date >= args.startDate!)
   }
   if (args.endDate) {
-    filtered = filtered.filter(i => i.date <= args.endDate!);
+    filtered = filtered.filter((i) => i.date <= args.endDate!)
   }
-  const afterDateCount = filtered.length;
+  const afterDateCount = filtered.length
   if (args.status) {
-    filtered = filtered.filter(i => i.status === args.status);
+    filtered = filtered.filter((i) => i.status === args.status)
   }
-  const afterStatusCount = filtered.length;
+  const afterStatusCount = filtered.length
 
   console.error('[Task Assistant MCP] filterItems counts:', {
     initialCount,
     afterScopeCount,
     afterDateCount,
     afterStatusCount,
-    args
-  });
+    args,
+  })
 
-  return filtered;
+  return filtered
 }
 
 export interface FilterItemOutput {
-  id: string;
-  content: string;
-  date: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  status: string;
-  projectName?: string;
-  taskName?: string;
-  links?: Array<{ name: string; url: string }>;
-  pomodoros?: PomodoroRecordCompact[];
+  id: string
+  content: string
+  date: string
+  startDateTime?: string
+  endDateTime?: string
+  status: string
+  projectName?: string
+  taskName?: string
+  links?: Array<{ name: string, url: string }>
+  pomodoros?: PomodoroRecordCompact[]
 }
 
 /**
@@ -76,11 +84,11 @@ export async function executeFilterItems(
   client: SiYuanClient,
   directories: ProjectDirectory[],
   args: FilterItemsArgs,
-  scanMode: ScanMode = 'full'
+  scanMode: ScanMode = 'full',
 ): Promise<{ items: FilterItemOutput[] }> {
-  const { items } = await loadProjectsAndItems(client, directories, scanMode);
-  const filtered = filterItems(items, args);
-  const output: FilterItemOutput[] = filtered.map(i => ({
+  const { items } = await loadProjectsAndItems(client, directories, scanMode)
+  const filtered = filterItems(items, args)
+  const output: FilterItemOutput[] = filtered.map((i) => ({
     id: i.id,
     content: i.content,
     date: i.date,
@@ -90,7 +98,7 @@ export async function executeFilterItems(
     projectName: i.project?.name,
     taskName: i.task?.name,
     links: i.links,
-    pomodoros: i.pomodoros?.map(toPomodoroRecordCompact) ?? []
-  }));
-  return { items: output };
+    pomodoros: i.pomodoros?.map(toPomodoroRecordCompact) ?? [],
+  }))
+  return { items: output }
 }

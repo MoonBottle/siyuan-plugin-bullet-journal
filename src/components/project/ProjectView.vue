@@ -1,14 +1,28 @@
 <template>
   <div class="project-view">
-    <div v-if="projects.length === 0" class="empty-state">
+    <div
+      v-if="projects.length === 0"
+      class="empty-state"
+    >
       <div class="empty-icon">
-        <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        <svg
+          viewBox="0 0 24 24"
+          width="64"
+          height="64"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
       </div>
       <h3>{{ t('project').noProjectsData }}</h3>
-      <p class="hint">{{ t('project').configureDirHint }}</p>
-      <p class="hint">{{ t('project').dirStructureHint }}</p>
+      <p class="hint">
+        {{ t('project').configureDirHint }}
+      </p>
+      <p class="hint">
+        {{ t('project').dirStructureHint }}
+      </p>
     </div>
 
     <div
@@ -24,7 +38,10 @@
         :selected-project-id="selectedProjectId"
         @select-project="selectProject"
       />
-      <ResizeHandle :is-active="activeHandleIndex === 0" @drag-start="(e: MouseEvent) => onMouseDown(e, 0)" />
+      <ResizeHandle
+        :is-active="activeHandleIndex === 0"
+        @drag-start="(e: MouseEvent) => onMouseDown(e, 0)"
+      />
       <ProjectTreePane
         v-model:search-query="treeSearchQuery"
         :project="selectedProject"
@@ -43,7 +60,10 @@
         @update:tag-query="treeTagQuery = $event"
         @update:selected-tags="treeSelectedTags = $event"
       />
-      <ResizeHandle :is-active="activeHandleIndex === 1" @drag-start="(e: MouseEvent) => onMouseDown(e, 1)" />
+      <ResizeHandle
+        :is-active="activeHandleIndex === 1"
+        @drag-start="(e: MouseEvent) => onMouseDown(e, 1)"
+      />
       <ProjectDetailPane
         :project="selectedProject"
         :task="detailTask"
@@ -54,38 +74,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue';
-import ProjectListPane from '@/components/project/ProjectListPane.vue';
-import ProjectTreePane from '@/components/project/ProjectTreePane.vue';
-import ResizeHandle from '@/components/project/ResizeHandle.vue';
-import { useResizableColumns } from '@/composables/useResizableColumns';
-import { t } from '@/i18n';
-import { buildProjectTaskTree, filterProjectTaskTree } from '@/utils/projectTaskTree';
-import type { Item, Project, Task } from '@/types/models';
+import type {
+  Item,
+  Project,
+  Task,
+} from '@/types/models'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue'
+import ProjectListPane from '@/components/project/ProjectListPane.vue'
+import ProjectTreePane from '@/components/project/ProjectTreePane.vue'
+import ResizeHandle from '@/components/project/ResizeHandle.vue'
+import { useResizableColumns } from '@/composables/useResizableColumns'
+import { t } from '@/i18n'
+import {
+  buildProjectTaskTree,
+  filterProjectTaskTree,
+} from '@/utils/projectTaskTree'
 
 const props = withDefaults(defineProps<{
-  projects: Project[];
-  embedded?: boolean;
-  columnRatios?: [number, number, number];
+  projects: Project[]
+  embedded?: boolean
+  columnRatios?: [number, number, number]
 }>(), {
   embedded: false,
-});
+})
 
 const emit = defineEmits<{
-  (e: 'update:columnRatios', ratios: [number, number, number]): void;
-}>();
+  (e: 'update:columnRatios', ratios: [number, number, number]): void
+}>()
 
-const selectedProjectId = ref('');
-const selectedTaskId = ref('');
-const selectedItemId = ref('');
-const projectSearchQuery = ref('');
-const treeSearchQuery = ref('');
-const treeTagQuery = ref('');
-const treeSelectedTags = ref<string[]>([]);
-const expandedTaskIds = ref<Set<string>>(new Set());
+const selectedProjectId = ref('')
+const selectedTaskId = ref('')
+const selectedItemId = ref('')
+const projectSearchQuery = ref('')
+const treeSearchQuery = ref('')
+const treeTagQuery = ref('')
+const treeSelectedTags = ref<string[]>([])
+const expandedTaskIds = ref<Set<string>>(new Set())
 
-const workbenchRef = ref<HTMLElement>();
+const workbenchRef = ref<HTMLElement>()
 
 const {
   gridTemplateColumns,
@@ -97,116 +128,119 @@ const {
   containerRef: workbenchRef,
   initialRatios: props.columnRatios,
   onChange: (ratios) => emit('update:columnRatios', ratios),
-});
+})
 
 watch(() => props.columnRatios, (newRatios) => {
-  if (newRatios) setRatios(newRatios);
-});
+  if (newRatios) setRatios(newRatios)
+})
 
 const filteredProjects = computed(() => {
-  const query = projectSearchQuery.value.trim().toLocaleLowerCase();
-  if (!query) return props.projects;
+  const query = projectSearchQuery.value.trim().toLocaleLowerCase()
+  if (!query) return props.projects
 
-  return props.projects.filter(project => [
+  return props.projects.filter((project) => [
     project.name,
     project.description,
     project.path,
-  ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
-});
+  ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query))
+})
 
-const selectedProject = computed(() => filteredProjects.value.find(project => project.id === selectedProjectId.value) || null);
-const taskTree = computed(() => buildProjectTaskTree(selectedProject.value));
-const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value));
-const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes);
+const selectedProject = computed(() => filteredProjects.value.find((project) => project.id === selectedProjectId.value) || null)
+const taskTree = computed(() => buildProjectTaskTree(selectedProject.value))
+const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value))
+const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes)
 const effectiveExpandedTaskIds = computed(() => {
-  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value;
-  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds]);
-});
+  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value
+  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds])
+})
 
-type TagOption = { name: string; count: number };
+interface TagOption { name: string, count: number }
 const projectTagOptions = computed<TagOption[]>(() => {
-  const tagCounts = new Map<string, number>();
+  const tagCounts = new Map<string, number>()
   for (const task of selectedProject.value?.tasks ?? []) {
     for (const item of task.items ?? []) {
-      if (!item.tags) continue;
+      if (!item.tags) continue
       for (const tag of item.tags) {
-        const normalized = tag.trim();
-        if (!normalized) continue;
-        tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1);
+        const normalized = tag.trim()
+        if (!normalized) continue
+        tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1)
       }
     }
   }
   return Array.from(tagCounts.entries())
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-});
-const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value));
-const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value));
-const detailTask = computed(() => selectedItem.value ? null : selectedTask.value);
+    .map(([name, count]) => ({
+      name,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+})
+const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value))
+const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value))
+const detailTask = computed(() => selectedItem.value ? null : selectedTask.value)
 
 watch(filteredProjects, (projects) => {
-  if (projects.some(project => project.id === selectedProjectId.value)) return;
-  selectedProjectId.value = projects[0]?.id || '';
-}, { immediate: true });
+  if (projects.some((project) => project.id === selectedProjectId.value)) return
+  selectedProjectId.value = projects[0]?.id || ''
+}, { immediate: true })
 
 watch(selectedProject, (project, previousProject) => {
-  if (project?.id === previousProject?.id) return;
-  selectedTaskId.value = '';
-  selectedItemId.value = '';
-  treeSearchQuery.value = '';
-  treeTagQuery.value = '';
-  treeSelectedTags.value = [];
-  expandedTaskIds.value = new Set(project?.tasks.map(task => task.id) ?? []);
-}, { immediate: true });
+  if (project?.id === previousProject?.id) return
+  selectedTaskId.value = ''
+  selectedItemId.value = ''
+  treeSearchQuery.value = ''
+  treeTagQuery.value = ''
+  treeSelectedTags.value = []
+  expandedTaskIds.value = new Set(project?.tasks.map((task) => task.id) ?? [])
+}, { immediate: true })
 
 function selectProject(projectId: string) {
-  selectedProjectId.value = projectId;
+  selectedProjectId.value = projectId
 }
 
 function toggleTask(taskId: string) {
-  const next = new Set(expandedTaskIds.value);
-  if (next.has(taskId)) next.delete(taskId);
-  else next.add(taskId);
-  expandedTaskIds.value = next;
+  const next = new Set(expandedTaskIds.value)
+  if (next.has(taskId)) next.delete(taskId)
+  else next.add(taskId)
+  expandedTaskIds.value = next
 }
 
 function selectTask(taskId: string) {
-  selectedTaskId.value = taskId;
-  selectedItemId.value = '';
+  selectedTaskId.value = taskId
+  selectedItemId.value = ''
 }
 
 function selectItem(itemId: string) {
-  const item = findItemById(selectedProject.value, itemId);
-  selectedItemId.value = itemId;
-  selectedTaskId.value = item?.task?.id || '';
+  const item = findItemById(selectedProject.value, itemId)
+  selectedItemId.value = itemId
+  selectedTaskId.value = item?.task?.id || ''
 }
 
 function findTaskById(project: Project | null, taskId: string): Task | null {
-  return project?.tasks.find(task => task.id === taskId) || null;
+  return project?.tasks.find((task) => task.id === taskId) || null
 }
 
 function findItemById(project: Project | null, itemId: string): Item | null {
   for (const task of project?.tasks ?? []) {
-    const item = task.items.find(row => row.id === itemId);
-    if (item) return item;
+    const item = task.items.find((row) => row.id === itemId)
+    if (item) return item
   }
-  return null;
+  return null
 }
 
 const allCollapsed = computed(() => {
-  if (!selectedProject.value) return true;
-  return selectedProject.value.tasks.every(task => !expandedTaskIds.value.has(task.id));
-});
+  if (!selectedProject.value) return true
+  return selectedProject.value.tasks.every((task) => !expandedTaskIds.value.has(task.id))
+})
 
 function toggleCollapseAll() {
-  if (!selectedProject.value) return;
-  const currentTaskIds = new Set(selectedProject.value.tasks.map(task => task.id));
+  if (!selectedProject.value) return
+  const currentTaskIds = new Set(selectedProject.value.tasks.map((task) => task.id))
   if (allCollapsed.value) {
-    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds]);
+    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds])
   } else {
-    const next = new Set(expandedTaskIds.value);
-    currentTaskIds.forEach(id => next.delete(id));
-    expandedTaskIds.value = next;
+    const next = new Set(expandedTaskIds.value)
+    currentTaskIds.forEach((id) => next.delete(id))
+    expandedTaskIds.value = next
   }
 }
 
@@ -214,7 +248,7 @@ defineExpose({
   allCollapsed,
   toggleCollapseAll,
   resetColumnRatios: reset,
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -266,5 +300,4 @@ defineExpose({
 .project-workbench--embedded {
   padding: 8px;
 }
-
 </style>

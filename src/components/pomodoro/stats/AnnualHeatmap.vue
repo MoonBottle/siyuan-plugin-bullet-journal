@@ -1,12 +1,22 @@
 <template>
-  <div ref="wrapperRef" class="annual-heatmap heatmap-card">
+  <div
+    ref="wrapperRef"
+    class="annual-heatmap heatmap-card"
+  >
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').annualHeatmap }}</span>
-      <span v-if="summaryText" class="chart-summary">{{ summaryText }}</span>
+      <span
+        v-if="summaryText"
+        class="chart-summary"
+      >{{ summaryText }}</span>
     </div>
     <div class="heatmap-body">
       <div class="heatmap-week-labels">
-        <span v-for="d in weekDayLabels" :key="d" class="week-label">{{ d }}</span>
+        <span
+          v-for="d in weekDayLabels"
+          :key="d"
+          class="week-label"
+        >{{ d }}</span>
       </div>
       <div class="heatmap-main">
         <div
@@ -27,7 +37,7 @@
             class="heatmap-grid"
             :style="{
               gridTemplateColumns: `repeat(${numCols}, ${CELL_SIZE}px)`,
-              gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`
+              gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
             }"
           >
             <div
@@ -56,148 +66,167 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
 
-const projectStore = useProjectStore();
-const wrapperRef = ref<HTMLElement | null>(null);
-const containerWidth = ref(800);
+const projectStore = useProjectStore()
+const wrapperRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(800)
 
-const GAP = 1;
-const WEEK_LABEL_WIDTH = 24;
-const CELL_SIZE = 12;
+const GAP = 1
+const WEEK_LABEL_WIDTH = 24
+const CELL_SIZE = 12
 
 // 按格子数算：根据容器宽度计算可容纳的列数，尽量撑满
 const numCols = computed(() => {
-  const w = containerWidth.value - WEEK_LABEL_WIDTH - 36;
-  const cellTotal = CELL_SIZE + GAP;
-  const cols = Math.floor(w / cellTotal);
-  return Math.max(52, Math.min(520, cols)); // 最少1年，最多10年
-});
+  const w = containerWidth.value - WEEK_LABEL_WIDTH - 36
+  const cellTotal = CELL_SIZE + GAP
+  const cols = Math.floor(w / cellTotal)
+  return Math.max(52, Math.min(520, cols)) // 最少1年，最多10年
+})
 
 const dateRange = computed(() => {
-  const end = dayjs();
-  const weekStart = end.startOf('isoWeek').subtract(numCols.value - 1, 'week');
+  const end = dayjs()
+  const weekStart = end.startOf('isoWeek').subtract(numCols.value - 1, 'week')
   return {
     startDate: weekStart.format('YYYY-MM-DD'),
-    endDate: end.format('YYYY-MM-DD')
-  };
-});
+    endDate: end.format('YYYY-MM-DD'),
+  }
+})
 
-const weekDayLabels = (t('pomodoroStats') as any).weekDayLabelsHeatmap ?? ['Mon', '', 'Wed', '', 'Fri', '', ''];
+const weekDayLabels = (t('pomodoroStats') as any).weekDayLabelsHeatmap ?? ['Mon', '', 'Wed', '', 'Fri', '', '']
 
 const monthLabels = computed(() => {
-  const { startDate } = dateRange.value;
-  const weekStart = dayjs(startDate).startOf('isoWeek');
-  const labels: { key: string; label: string; col: number }[] = [];
-  let lastMonth = -1;
+  const { startDate } = dateRange.value
+  const weekStart = dayjs(startDate).startOf('isoWeek')
+  const labels: { key: string, label: string, col: number }[] = []
+  let lastMonth = -1
 
   for (let c = 0; c < numCols.value; c++) {
-    const d = weekStart.add(c * 7, 'day');
-    const month = d.month();
+    const d = weekStart.add(c * 7, 'day')
+    const month = d.month()
     if (month !== lastMonth) {
-      lastMonth = month;
-      const monthNames = (t('pomodoroStats') as any).monthNamesShort ?? [];
+      lastMonth = month
+      const monthNames = (t('pomodoroStats') as any).monthNamesShort ?? []
       labels.push({
         key: `m-${c}-${month}`,
         label: monthNames[month] ?? `${month + 1}`,
-        col: c + 1
-      });
+        col: c + 1,
+      })
     }
   }
-  return labels;
-});
+  return labels
+})
 
 const focusByDay = computed(() => {
-  const { startDate, endDate } = dateRange.value;
-  return projectStore.getFocusMinutesByDateRange(startDate, endDate, '');
-});
+  const {
+    startDate,
+    endDate,
+  } = dateRange.value
+  return projectStore.getFocusMinutesByDateRange(startDate, endDate, '')
+})
 
 function getLevel(minutes: number): string {
-  if (minutes > 5 * 60) return 'level-4';
-  if (minutes > 3 * 60) return 'level-3';
-  if (minutes > 60) return 'level-2';
-  if (minutes > 0) return 'level-1';
-  return 'level-0';
+  if (minutes > 5 * 60) return 'level-4'
+  if (minutes > 3 * 60) return 'level-3'
+  if (minutes > 60) return 'level-2'
+  if (minutes > 0) return 'level-1'
+  return 'level-0'
 }
 
 const heatmapCells = computed(() => {
-  const { startDate, endDate } = dateRange.value;
-  const weekStart = dayjs(startDate).startOf('isoWeek');
-  const end = dayjs(endDate);
-  const cells: { key: string; date: string; minutes: number; level: string }[] = [];
+  const {
+    startDate,
+    endDate,
+  } = dateRange.value
+  const weekStart = dayjs(startDate).startOf('isoWeek')
+  const end = dayjs(endDate)
+  const cells: { key: string, date: string, minutes: number, level: string }[] = []
 
   // 按列优先生成数据，与 grid-auto-flow: column 对应
   for (let c = 0; c < numCols.value; c++) {
     for (let r = 0; r < 7; r++) {
-      const d = weekStart.add(c * 7 + r, 'day');
-      const dateStr = d.format('YYYY-MM-DD');
+      const d = weekStart.add(c * 7 + r, 'day')
+      const dateStr = d.format('YYYY-MM-DD')
       if (d.isAfter(end)) {
-        cells.push({ key: `e-${c}-${r}`, date: dateStr, minutes: 0, level: 'level-0' });
-        continue;
+        cells.push({
+          key: `e-${c}-${r}`,
+          date: dateStr,
+          minutes: 0,
+          level: 'level-0',
+        })
+        continue
       }
-      const mins = focusByDay.value.get(dateStr) ?? 0;
+      const mins = focusByDay.value.get(dateStr) ?? 0
       cells.push({
         key: `${dateStr}`,
         date: dateStr,
         minutes: mins,
-        level: getLevel(mins)
-      });
+        level: getLevel(mins),
+      })
     }
   }
-  return cells;
-});
+  return cells
+})
 
 const totalMinutes = computed(() => {
-  let sum = 0;
-  focusByDay.value.forEach((m) => (sum += m));
-  return sum;
-});
+  let sum = 0
+  focusByDay.value.forEach((m) => (sum += m))
+  return sum
+})
 
 const summaryText = computed(() => {
-  const m = totalMinutes.value;
-  const { startDate, endDate } = dateRange.value;
-  const start = dayjs(startDate);
-  const end = dayjs(endDate);
-  const daysDiff = end.diff(start, 'day');
-  const weeks = Math.round(daysDiff / 7);
+  const m = totalMinutes.value
+  const {
+    startDate,
+    endDate,
+  } = dateRange.value
+  const start = dayjs(startDate)
+  const end = dayjs(endDate)
+  const daysDiff = end.diff(start, 'day')
+  const weeks = Math.round(daysDiff / 7)
 
-  let label: string;
-  const ps = t('pomodoroStats') as any;
-  const focusLabel = ps.focusLabel ?? 'Focus';
+  let label: string
+  const ps = t('pomodoroStats') as any
+  const focusLabel = ps.focusLabel ?? 'Focus'
   if (weeks >= 52) {
-    const years = Math.round(weeks / 52);
-    label = (ps.pastYearsYears ?? 'Past {years} years').replace('{years}', String(years));
+    const years = Math.round(weeks / 52)
+    label = (ps.pastYearsYears ?? 'Past {years} years').replace('{years}', String(years))
   } else {
-    label = (ps.pastWeeksWeeks ?? 'Past {weeks} weeks').replace('{weeks}', String(weeks));
+    label = (ps.pastWeeksWeeks ?? 'Past {weeks} weeks').replace('{weeks}', String(weeks))
   }
 
-  if (m < 60) return `${label} ${focusLabel} ${m}m`;
-  const h = Math.floor(m / 60);
-  const mins = m % 60;
-  return mins === 0 ? `${label} ${focusLabel} ${h}h` : `${label} ${focusLabel} ${h}h ${mins}m`;
-});
+  if (m < 60) return `${label} ${focusLabel} ${m}m`
+  const h = Math.floor(m / 60)
+  const mins = m % 60
+  return mins === 0 ? `${label} ${focusLabel} ${h}h` : `${label} ${focusLabel} ${h}h ${mins}m`
+})
 
 function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m === 0 ? `${h}h` : `${h}h${m}m`;
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h}h` : `${h}h${m}m`
 }
 
-const TOOLTIP_ID = 'annual-heatmap-tooltip';
+const TOOLTIP_ID = 'annual-heatmap-tooltip'
 
 function showCellTooltip(
   e: MouseEvent,
-  cell: { date: string; minutes: number; level: string }
+  cell: { date: string, minutes: number, level: string },
 ) {
-  if (!cell.date) return;
-  let tooltip = document.getElementById(TOOLTIP_ID);
+  if (!cell.date) return
+  let tooltip = document.getElementById(TOOLTIP_ID)
   if (!tooltip) {
-    tooltip = document.createElement('div');
-    tooltip.id = TOOLTIP_ID;
+    tooltip = document.createElement('div')
+    tooltip.id = TOOLTIP_ID
     tooltip.style.cssText = `
       position: fixed;
       background: rgba(0, 0, 0, 0.8);
@@ -210,59 +239,59 @@ function showCellTooltip(
       opacity: 0;
       transition: opacity 0.2s;
       line-height: 1.5;
-    `;
-    document.body.appendChild(tooltip);
+    `
+    document.body.appendChild(tooltip)
   }
 
-  tooltip.innerHTML = `${cell.date}<br/>${t('pomodoroStats').focusDuration}: ${formatDuration(cell.minutes)}`;
-  tooltip.style.opacity = '1';
+  tooltip.innerHTML = `${cell.date}<br/>${t('pomodoroStats').focusDuration}: ${formatDuration(cell.minutes)}`
+  tooltip.style.opacity = '1'
 
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-  const tooltipRect = tooltip.getBoundingClientRect();
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const tooltipRect = tooltip.getBoundingClientRect()
 
-  let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
-  let top = rect.top - tooltipRect.height - 8;
+  let left = rect.left + rect.width / 2 - tooltipRect.width / 2
+  let top = rect.top - tooltipRect.height - 8
 
-  if (left < 8) left = 8;
+  if (left < 8) left = 8
   if (left + tooltipRect.width > window.innerWidth - 8) {
-    left = window.innerWidth - tooltipRect.width - 8;
+    left = window.innerWidth - tooltipRect.width - 8
   }
   if (top < 8) {
-    top = rect.bottom + 8;
+    top = rect.bottom + 8
   }
 
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`
+  tooltip.style.top = `${top}px`
 }
 
 function hideTooltip() {
-  const tooltip = document.getElementById(TOOLTIP_ID);
+  const tooltip = document.getElementById(TOOLTIP_ID)
   if (tooltip) {
-    tooltip.style.opacity = '0';
+    tooltip.style.opacity = '0'
   }
 }
 
-let resizeObserver: ResizeObserver | null = null;
+let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   if (wrapperRef.value) {
-    containerWidth.value = wrapperRef.value.offsetWidth;
+    containerWidth.value = wrapperRef.value.offsetWidth
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const w = entry.contentRect.width;
-        if (w > 0) containerWidth.value = w;
+        const w = entry.contentRect.width
+        if (w > 0) containerWidth.value = w
       }
-    });
-    resizeObserver.observe(wrapperRef.value);
+    })
+    resizeObserver.observe(wrapperRef.value)
   }
-});
+})
 
 onUnmounted(() => {
   if (resizeObserver && wrapperRef.value) {
-    resizeObserver.unobserve(wrapperRef.value);
-    resizeObserver = null;
+    resizeObserver.unobserve(wrapperRef.value)
+    resizeObserver = null
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

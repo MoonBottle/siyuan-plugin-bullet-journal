@@ -23,29 +23,33 @@
 
 使用 emoji 作为优先级标记，位于事项内容中：
 
-| 优先级 | Emoji | 标记 | 排序权重 | 说明 |
-|--------|-------|------|---------|------|
-| 高 | 🔥 | `🔥` | 0 | 紧急重要事项，置顶显示 |
-| 中 | 🌱 | `🌱` | 1 | 普通优先级 |
-| 低 | 🍃 | `🍃` | 2 | 低优先级，可延后处理 |
-| 无 | - | - | 3 | 未设置优先级的事项排最后 |
+| 优先级 | Emoji | 标记 | 排序权重 | 说明                     |
+| ------ | ----- | ---- | -------- | ------------------------ |
+| 高     | 🔥    | `🔥` | 0        | 紧急重要事项，置顶显示   |
+| 中     | 🌱    | `🌱` | 1        | 普通优先级               |
+| 低     | 🍃    | `🍃` | 2        | 低优先级，可延后处理     |
+| 无     | -     | -    | 3        | 未设置优先级的事项排最后 |
 
 **语法示例：**
+
 ```markdown
-完成项目报告 @2026-04-09 🔥      # 高优先级
-整理文档资料 @2026-04-09 🌱      # 中优先级
-备份旧数据 @2026-04-09 🍃        # 低优先级
-日常检查 @2026-04-09            # 无优先级
+完成项目报告 @2026-04-09 🔥 # 高优先级
+整理文档资料 @2026-04-09 🌱 # 中优先级
+备份旧数据 @2026-04-09 🍃 # 低优先级
+日常检查 @2026-04-09 # 无优先级
+
 ```
 
 ### 2.2 标记位置
 
 优先级标记位于事项内容中，解析时会提取并移除，不影响内容显示：
+
 ```markdown
-完成项目报告 📅2026-04-09 🔥     # 原始内容
+完成项目报告 📅2026-04-09 🔥 # 原始内容
 ↓ 解析后
 content: "完成项目报告"
 priority: "high"
+
 ```
 
 ---
@@ -54,19 +58,21 @@ priority: "high"
 
 ### 3.1 斜杠命令
 
-| 命令 | 功能 | 交互 |
-|------|------|------|
+| 命令                  | 功能       | 交互               |
+| --------------------- | ---------- | ------------------ |
 | `/priority` 或 `/yxj` | 设置优先级 | 唤起优先级选择弹框 |
 
 弹框选项：
+
 - 🔥 高优先级
-- 🌱 中优先级  
+- 🌱 中优先级
 - 🍃 低优先级
 - ⚪ 清除优先级
 
 ### 3.2 右键菜单
 
 在事项右键菜单中增加"设置优先级"子菜单：
+
 ```
 设置优先级
 ├── 🔥 高优先级
@@ -82,6 +88,7 @@ priority: "high"
 ### 3.4 待办列表筛选栏
 
 在 TodoDock 顶部增加筛选栏：
+
 ```
 ┌─────────────────────────────────────────┐
 │ 🔍 搜索事项...                         │  <- 搜索框（第一行）
@@ -105,12 +112,12 @@ priority: "high"
 // src/types/models.ts
 
 // 优先级类型
-export type PriorityLevel = 'high' | 'medium' | 'low';
+export type PriorityLevel = 'high' | 'medium' | 'low'
 
 // 在 Item 接口中扩展 priority 字段
 export interface Item {
   // ... 现有字段
-  priority?: PriorityLevel;  // 优先级（可选）
+  priority?: PriorityLevel // 优先级（可选）
 }
 ```
 
@@ -119,14 +126,14 @@ export interface Item {
 ```typescript
 // 优先级配置常量
 export const PRIORITY_CONFIG: Record<PriorityLevel, {
-  emoji: string;
-  label: string;
-  sortOrder: number;
+  emoji: string
+  label: string
+  sortOrder: number
 }> = {
-  high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
+  high: { emoji: '🔥', label: '高优先级', sortOrder: 0 },
   medium: { emoji: '🌱', label: '中优先级', sortOrder: 1 },
-  low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
-};
+  low: { emoji: '🍃', label: '低优先级', sortOrder: 2 },
+}
 ```
 
 ---
@@ -211,17 +218,20 @@ src/
  * @returns PriorityLevel 或 undefined
  */
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
-  if (line.includes('🔥')) return 'high';
-  if (line.includes('🌱')) return 'medium';
-  if (line.includes('🍃')) return 'low';
-  return undefined;
+  if (line.includes('🔥'))
+    return 'high'
+  if (line.includes('🌱'))
+    return 'medium'
+  if (line.includes('🍃'))
+    return 'low'
+  return undefined
 }
 
 /**
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌱🍃]/gu, '').trim();
+  return content.replace(/[🔥🌱🍃]/gu, '').trim()
 }
 
 /**
@@ -232,8 +242,8 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
     high: '🔥',
     medium: '🌱',
     low: '🍃',
-  };
-  return emojiMap[priority] || '';
+  }
+  return emojiMap[priority] || ''
 }
 
 /**
@@ -244,8 +254,8 @@ export function getPrioritySortOrder(priority?: PriorityLevel): number {
     high: 0,
     medium: 1,
     low: 2,
-  };
-  return priority !== undefined ? orderMap[priority] : 3;
+  }
+  return priority !== undefined ? orderMap[priority] : 3
 }
 
 /**
@@ -256,7 +266,7 @@ export function comparePriority(
   a?: PriorityLevel,
   b?: PriorityLevel
 ): number {
-  return getPrioritySortOrder(a) - getPrioritySortOrder(b);
+  return getPrioritySortOrder(a) - getPrioritySortOrder(b)
 }
 ```
 
@@ -290,57 +300,58 @@ public static parseItemLine(line: string, lineNumber: number, links?: Link[]): I
 
 ```typescript
 // 按分组获取过滤和排序后的事项
-getFilteredAndSortedItems: (state) => (params: {
-  groupId: string;
-  searchQuery?: string;
-  dateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
+getFilteredAndSortedItems: state => (params: {
+  groupId: string
+  searchQuery?: string
+  dateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
 }) => {
   // 1. 获取基础事项列表（多日期去重）
   let items = computeDisplayItems(
     (state as any).items as Item[],
     state.currentDate,
     params.groupId
-  );
+  )
 
   // 2. 应用搜索过滤
   if (params.searchQuery?.trim()) {
-    const query = params.searchQuery.toLowerCase().trim();
-    items = items.filter(item => 
-      item.content.toLowerCase().includes(query) ||
-      item.project?.name.toLowerCase().includes(query) ||
-      item.task?.name.toLowerCase().includes(query)
-    );
+    const query = params.searchQuery.toLowerCase().trim()
+    items = items.filter(item =>
+      item.content.toLowerCase().includes(query)
+      || item.project?.name.toLowerCase().includes(query)
+      || item.task?.name.toLowerCase().includes(query)
+    )
   }
 
   // 3. 应用日期筛选
   if (params.dateRange) {
-    items = items.filter(item => 
-      item.date >= params.dateRange!.start && 
-      item.date <= params.dateRange!.end
-    );
+    items = items.filter(item =>
+      item.date >= params.dateRange!.start
+      && item.date <= params.dateRange!.end
+    )
   }
 
   // 4. 应用优先级筛选
   if (params.priorities && params.priorities.length > 0) {
-    items = items.filter(item => 
+    items = items.filter(item =>
       item.priority && params.priorities!.includes(item.priority)
-    );
+    )
   }
 
   // 5. 按优先级和时间排序
   items.sort((a, b) => {
     // 先按优先级排序（高→中→低→无）
-    const priorityDiff = comparePriority(a.priority, b.priority);
-    if (priorityDiff !== 0) return priorityDiff;
+    const priorityDiff = comparePriority(a.priority, b.priority)
+    if (priorityDiff !== 0)
+      return priorityDiff
 
     // 同优先级按时间排序（开始时间或日期）
-    const timeA = a.startDateTime || a.date;
-    const timeB = b.startDateTime || b.date;
-    return timeA.localeCompare(timeB);
-  });
+    const timeA = a.startDateTime || a.date
+    const timeB = b.startDateTime || b.date
+    return timeA.localeCompare(timeB)
+  })
 
-  return items;
+  return items
 }
 ```
 
@@ -354,15 +365,15 @@ getFilteredAndSortedItems: (state) => (params: {
     <!-- 第一行：搜索框 -->
     <div class="search-row">
       <div class="search-box">
-        <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-        <input 
-          v-model="searchQuery" 
-          type="text" 
+        <svg class="search-icon"><use xlink:href="#iconSearch" /></svg>
+        <input
+          v-model="searchQuery"
+          type="text"
           :placeholder="t('todo').searchPlaceholder"
           class="search-input"
-        />
+        >
         <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">
-          <svg><use xlink:href="#iconClose"></use></svg>
+          <svg><use xlink:href="#iconClose" /></svg>
         </button>
       </div>
     </div>
@@ -370,12 +381,12 @@ getFilteredAndSortedItems: (state) => (params: {
     <!-- 第二行：分组 + 优先级 + 日期 -->
     <div class="filter-row">
       <SySelect v-model="selectedGroup" :options="groupOptions" class="group-select" />
-      
+
       <div class="priority-filter">
-        <button 
-          v-for="p in priorityOptions" 
+        <button
+          v-for="p in priorityOptions"
           :key="p.value"
-          :class="['priority-btn', { active: selectedPriorities.includes(p.value) }]"
+          class="priority-btn" :class="[{ active: selectedPriorities.includes(p.value) }]"
           @click="togglePriority(p.value)"
         >
           {{ p.emoji }}
@@ -392,23 +403,23 @@ getFilteredAndSortedItems: (state) => (params: {
 
 ## 七、文件变更清单
 
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `src/types/models.ts` | 修改 | 添加 PriorityLevel 类型和 Item.priority 字段 |
-| `src/parser/priorityParser.ts` | 新增 | 优先级解析、生成、排序工具函数 |
-| `src/parser/lineParser.ts` | 修改 | 集成优先级解析逻辑 |
-| `src/constants.ts` | 修改 | 添加 SET_PRIORITY 斜杠命令常量 |
-| `src/utils/slashCommands.ts` | 修改 | 添加 /priority 斜杠命令处理 |
-| `src/utils/dialog.ts` | 修改 | 添加 showPrioritySettingDialog 函数 |
-| `src/utils/contextMenu.ts` | 修改 | 右键菜单添加"设置优先级"子菜单 |
-| `src/utils/fileUtils.ts` | 修改 | 添加 updateBlockPriority API |
-| `src/components/dialog/PrioritySettingDialog.vue` | 新增 | 优先级选择弹框组件 |
-| `src/components/dialog/ItemDetailDialog.vue` | 修改 | 显示和编辑优先级 |
-| `src/components/todo/TodoSidebar.vue` | 修改 | 接收筛选参数，调整 props |
-| `src/tabs/TodoDock.vue` | 修改 | 新增搜索框和筛选栏布局 |
-| `src/stores/projectStore.ts` | 修改 | 添加 getFilteredAndSortedItems getter |
-| `src/i18n/zh_CN.json` | 修改 | 添加优先级相关中文翻译 |
-| `src/i18n/en_US.json` | 修改 | 添加优先级相关英文翻译 |
+| 文件                                              | 操作 | 说明                                         |
+| ------------------------------------------------- | ---- | -------------------------------------------- |
+| `src/types/models.ts`                             | 修改 | 添加 PriorityLevel 类型和 Item.priority 字段 |
+| `src/parser/priorityParser.ts`                    | 新增 | 优先级解析、生成、排序工具函数               |
+| `src/parser/lineParser.ts`                        | 修改 | 集成优先级解析逻辑                           |
+| `src/constants.ts`                                | 修改 | 添加 SET_PRIORITY 斜杠命令常量               |
+| `src/utils/slashCommands.ts`                      | 修改 | 添加 /priority 斜杠命令处理                  |
+| `src/utils/dialog.ts`                             | 修改 | 添加 showPrioritySettingDialog 函数          |
+| `src/utils/contextMenu.ts`                        | 修改 | 右键菜单添加"设置优先级"子菜单               |
+| `src/utils/fileUtils.ts`                          | 修改 | 添加 updateBlockPriority API                 |
+| `src/components/dialog/PrioritySettingDialog.vue` | 新增 | 优先级选择弹框组件                           |
+| `src/components/dialog/ItemDetailDialog.vue`      | 修改 | 显示和编辑优先级                             |
+| `src/components/todo/TodoSidebar.vue`             | 修改 | 接收筛选参数，调整 props                     |
+| `src/tabs/TodoDock.vue`                           | 修改 | 新增搜索框和筛选栏布局                       |
+| `src/stores/projectStore.ts`                      | 修改 | 添加 getFilteredAndSortedItems getter        |
+| `src/i18n/zh_CN.json`                             | 修改 | 添加优先级相关中文翻译                       |
+| `src/i18n/en_US.json`                             | 修改 | 添加优先级相关英文翻译                       |
 
 ---
 

@@ -1,23 +1,27 @@
+import type { PomodoroStatsOutput } from '@/utils/pomodoroUtils'
+import dayjs from '@/utils/dayjs'
+import {
+  aggregatePomodorosFromProjects,
+  computePomodoroStats,
+  filterPomodoros,
+
+  toPomodoroRecordOutput,
+} from '@/utils/pomodoroUtils'
+import {
+  loadProjectsAndItems,
+  loadSettings,
+} from './dataLoader'
+
 /**
  * MCP 番茄钟工具实现
  */
-import { SiYuanClient } from './siyuan-client';
-import { loadSettings } from './dataLoader';
-import { loadProjectsAndItems } from './dataLoader';
-import dayjs from '@/utils/dayjs';
-import {
-  aggregatePomodorosFromProjects,
-  filterPomodoros,
-  computePomodoroStats,
-  toPomodoroRecordOutput,
-  type PomodoroStatsOutput
-} from '@/utils/pomodoroUtils';
+import { SiYuanClient } from './siyuan-client'
 
 export interface GetPomodoroArgs {
-  date?: string;
-  startDate?: string;
-  endDate?: string;
-  projectId?: string;
+  date?: string
+  startDate?: string
+  endDate?: string
+  projectId?: string
 }
 
 /**
@@ -25,43 +29,49 @@ export interface GetPomodoroArgs {
  */
 export async function executeGetPomodoroStats(
   client: SiYuanClient,
-  args: GetPomodoroArgs
+  args: GetPomodoroArgs,
 ): Promise<PomodoroStatsOutput> {
-  const { directories, scanMode } = await loadSettings(client);
-  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode);
+  const {
+    directories,
+    scanMode,
+  } = await loadSettings(client)
+  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode)
 
-  const todayDate = dayjs().format('YYYY-MM-DD');
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  const todayDate = dayjs().format('YYYY-MM-DD')
+  let startDate = args.startDate
+  let endDate = args.endDate
 
   if (args.date === 'today') {
-    startDate = todayDate;
-    endDate = todayDate;
+    startDate = todayDate
+    endDate = todayDate
   }
 
-  const enriched = aggregatePomodorosFromProjects(projects);
+  const enriched = aggregatePomodorosFromProjects(projects)
   const filtered = filterPomodoros(enriched, {
     startDate,
     endDate,
-    projectId: args.projectId
-  });
-  const stats = computePomodoroStats(filtered, todayDate);
+    projectId: args.projectId,
+  })
+  const stats = computePomodoroStats(filtered, todayDate)
 
   const result: PomodoroStatsOutput = {
     todayCount: stats.todayCount,
     todayMinutes: stats.todayMinutes,
     totalCount: stats.count,
-    totalMinutes: stats.totalMinutes
-  };
+    totalMinutes: stats.totalMinutes,
+  }
 
   if (startDate && endDate) {
-    result.dateRange = { startDate, endDate };
+    result.dateRange = {
+      startDate,
+      endDate,
+    }
   }
   if (args.projectId) {
-    result.projectId = args.projectId;
+    result.projectId = args.projectId
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -69,32 +79,35 @@ export async function executeGetPomodoroStats(
  */
 export async function executeGetPomodoroRecords(
   client: SiYuanClient,
-  args: GetPomodoroArgs
+  args: GetPomodoroArgs,
 ): Promise<{ records: ReturnType<typeof toPomodoroRecordOutput>[] }> {
-  const { directories, scanMode } = await loadSettings(client);
-  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode);
+  const {
+    directories,
+    scanMode,
+  } = await loadSettings(client)
+  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode)
 
-  const todayDate = dayjs().format('YYYY-MM-DD');
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  const todayDate = dayjs().format('YYYY-MM-DD')
+  let startDate = args.startDate
+  let endDate = args.endDate
 
   if (args.date === 'today') {
-    startDate = todayDate;
-    endDate = todayDate;
+    startDate = todayDate
+    endDate = todayDate
   }
 
-  const enriched = aggregatePomodorosFromProjects(projects);
+  const enriched = aggregatePomodorosFromProjects(projects)
   const filtered = filterPomodoros(enriched, {
     startDate,
     endDate,
-    projectId: args.projectId
-  });
+    projectId: args.projectId,
+  })
 
-  const records = filtered.map(toPomodoroRecordOutput);
+  const records = filtered.map(toPomodoroRecordOutput)
   records.sort((a, b) => {
-    const dateCompare = a.date.localeCompare(b.date);
-    return dateCompare !== 0 ? dateCompare : a.startTime.localeCompare(b.startTime);
-  });
+    const dateCompare = a.date.localeCompare(b.date)
+    return dateCompare !== 0 ? dateCompare : a.startTime.localeCompare(b.startTime)
+  })
 
-  return { records };
+  return { records }
 }

@@ -2,16 +2,16 @@
  * 日期范围工具函数
  * 多日期事项（连续范围 @07~09 或离散 @07,09）的代表项选择与状态判断
  */
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
 
 /** 日期范围状态（用于状态 emoji 判断） */
-export type DateRangeStatus = 'in_progress' | 'pending' | 'expired';
+export type DateRangeStatus = 'in_progress' | 'pending' | 'expired'
 
 /**
  * 获取用于分组/状态判断的有效日期（多日期取结束日）
  */
 export function getEffectiveDate(item: Item): string {
-  return item.dateRangeEnd ?? item.date;
+  return item.dateRangeEnd ?? item.date
 }
 
 /**
@@ -22,27 +22,27 @@ export function getEffectiveDate(item: Item): string {
  */
 export function filterDateRangeRepresentative(
   items: Item[],
-  currentDate: string
+  currentDate: string,
 ): Item[] {
-  return items.filter(item => {
-    if (!item.dateRangeEnd) return true;
-    const start = item.dateRangeStart!;
-    const end = item.dateRangeEnd;
-    const groupKey = item.blockId ?? `${item.docId}-${item.lineNumber}`;
+  return items.filter((item) => {
+    if (!item.dateRangeEnd) return true
+    const start = item.dateRangeStart!
+    const end = item.dateRangeEnd
+    const groupKey = item.blockId ?? `${item.docId}-${item.lineNumber}`
     const groupItems = items.filter(
-      i =>
-        (i.blockId ?? `${i.docId}-${i.lineNumber}`) === groupKey &&
-        i.dateRangeEnd === end
-    );
-    const allDates = groupItems.map(i => i.date);
-    if (currentDate < start) return item.date === start;
-    if (currentDate > end) return item.date === end;
-    const hasToday = allDates.includes(currentDate);
+      (i) =>
+        (i.blockId ?? `${i.docId}-${i.lineNumber}`) === groupKey
+        && i.dateRangeEnd === end,
+    )
+    const allDates = groupItems.map((i) => i.date)
+    if (currentDate < start) return item.date === start
+    if (currentDate > end) return item.date === end
+    const hasToday = allDates.includes(currentDate)
     const nextDate = hasToday
       ? currentDate
-      : allDates.filter(d => d >= currentDate).sort()[0];
-    return item.date === nextDate;
-  });
+      : allDates.filter((d) => d >= currentDate).sort()[0]
+    return item.date === nextDate
+  })
 }
 
 /**
@@ -54,14 +54,14 @@ export function filterDateRangeRepresentative(
  */
 export function getDateRangeStatus(
   item: Item,
-  currentDate: string
+  currentDate: string,
 ): DateRangeStatus | undefined {
-  const start = item.dateRangeStart;
-  const end = item.dateRangeEnd ?? item.date;
-  if (!start || !item.dateRangeEnd) return undefined;
-  if (currentDate < start) return 'pending';
-  if (currentDate > end) return 'expired';
-  return 'in_progress';
+  const start = item.dateRangeStart
+  const end = item.dateRangeEnd ?? item.date
+  if (!start || !item.dateRangeEnd) return undefined
+  if (currentDate < start) return 'pending'
+  if (currentDate > end) return 'expired'
+  return 'in_progress'
 }
 
 /**
@@ -71,34 +71,34 @@ export function getDateRangeStatus(
  * @returns 单日事项返回状态，无 date 返回 undefined
  */
 export function getTimeRangeStatus(
-  item: { date?: string; startDateTime?: string; endDateTime?: string },
-  currentDateTime: string
+  item: { date?: string, startDateTime?: string, endDateTime?: string },
+  currentDateTime: string,
 ): DateRangeStatus | undefined {
-  const todayStr = currentDateTime.slice(0, 10);
-  if (!item.date) return undefined;
+  const todayStr = currentDateTime.slice(0, 10)
+  if (!item.date) return undefined
 
-  const date = item.date;
-  const start = item.startDateTime;
-  const end = item.endDateTime;
+  const date = item.date
+  const start = item.startDateTime
+  const end = item.endDateTime
 
-  if (date < todayStr) return 'expired';
-  if (date > todayStr) return 'pending';
+  if (date < todayStr) return 'expired'
+  if (date > todayStr) return 'pending'
 
   // date === today
   if (!start && !end) {
-    return 'in_progress';
+    return 'in_progress'
   }
   if (start && end) {
-    if (currentDateTime < start) return 'pending';
-    if (currentDateTime > end) return 'expired';
-    return 'in_progress';
+    if (currentDateTime < start) return 'pending'
+    if (currentDateTime > end) return 'expired'
+    return 'in_progress'
   }
   if (start && !end) {
-    if (currentDateTime < start) return 'pending';
-    if (currentDateTime > start) return 'expired';
-    return 'in_progress';
+    if (currentDateTime < start) return 'pending'
+    if (currentDateTime > start) return 'expired'
+    return 'in_progress'
   }
-  return 'in_progress';
+  return 'in_progress'
 }
 
 /**
@@ -107,12 +107,12 @@ export function getTimeRangeStatus(
 export function dateRangeStatusToEmoji(status: DateRangeStatus): string {
   switch (status) {
     case 'in_progress':
-      return '🔄 ';
+      return '🔄 '
     case 'pending':
-      return '⏳ ';
+      return '⏳ '
     case 'expired':
-      return '⚠️ ';
+      return '⚠️ '
     default:
-      return '⏳ ';
+      return '⏳ '
   }
 }

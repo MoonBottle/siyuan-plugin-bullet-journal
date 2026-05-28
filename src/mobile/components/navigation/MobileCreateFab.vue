@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
+import { t } from '@/i18n'
 </script>
 
 <style lang="scss" scoped>

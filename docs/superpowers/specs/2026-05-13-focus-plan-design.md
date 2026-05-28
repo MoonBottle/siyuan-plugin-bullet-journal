@@ -1,7 +1,7 @@
 # 专注预算设计
 
-日期：2026-05-13  
-状态：设计已确认，可进入实现计划  
+日期：2026-05-13
+状态：设计已确认，可进入实现计划
 范围：事项级专注预算、斜杠命令入口、运行时解析，以及 V1 复盘模型
 
 ## 1. 背景
@@ -151,11 +151,11 @@ V1 在事项层新增一个运行时概念结构：
 
 ```ts
 interface FocusPlan {
-  type: 'duration' | 'pomodoro';
-  rawValue: number;
-  normalizedMinutes: number;
-  sourceText: string;
-  ignoredSourceTexts?: string[];
+  type: 'duration' | 'pomodoro'
+  rawValue: number
+  normalizedMinutes: number
+  sourceText: string
+  ignoredSourceTexts?: string[]
 }
 ```
 

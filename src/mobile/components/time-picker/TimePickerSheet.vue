@@ -1,12 +1,24 @@
 <template>
   <Teleport to="body">
     <Transition name="sheet-fade">
-      <div v-if="modelValue" class="time-picker-dialog-root b3-dialog">
-        <div class="time-picker-overlay" @click="onCancel">
-          <div class="time-picker-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+      <div
+        v-if="modelValue"
+        class="time-picker-dialog-root b3-dialog"
+      >
+        <div
+          class="time-picker-overlay"
+          @click="onCancel"
+        >
+          <div
+            class="time-picker-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- 标题栏（仅标题，无按钮） -->
             <div class="sheet-header">
-              <div class="header-title">{{ title || t('mobile.time.selectTime') }}</div>
+              <div class="header-title">
+                {{ title || t('mobile.time.selectTime') }}
+              </div>
             </div>
 
             <!-- 当前选中时间大字体显示 -->
@@ -22,7 +34,9 @@
                 :options="hourOptions"
                 :label="t('mobile.time.hour')"
               />
-              <div class="time-colon">:</div>
+              <div class="time-colon">
+                :
+              </div>
               <TimeWheel
                 ref="minuteWheelRef"
                 v-model="currentMinute"
@@ -33,7 +47,9 @@
 
             <!-- 快捷时间按钮 -->
             <div class="quick-times-section">
-              <div class="quick-times-label">{{ t('mobile.time.quickTime') }}</div>
+              <div class="quick-times-label">
+                {{ t('mobile.time.quickTime') }}
+              </div>
               <div class="quick-times-grid">
                 <button
                   v-for="time in quickTimes"
@@ -49,10 +65,16 @@
 
             <!-- 底部按钮（取消/确认） -->
             <div class="sheet-footer">
-              <button class="footer-btn cancel" @click="onCancel">
+              <button
+                class="footer-btn cancel"
+                @click="onCancel"
+              >
                 {{ t('common.cancel') }}
               </button>
-              <button class="footer-btn confirm" @click="onConfirm">
+              <button
+                class="footer-btn confirm"
+                @click="onConfirm"
+              >
                 {{ t('common.confirm') }}
               </button>
             </div>
@@ -64,101 +86,111 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { t } from '@/i18n';
-import TimeWheel from './TimeWheel.vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import TimeWheel from './TimeWheel.vue'
 
 interface Props {
-  modelValue: boolean;
-  title?: string;
-  time?: string; // "HH:mm"
+  modelValue: boolean
+  title?: string
+  time?: string // "HH:mm"
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
-  time: '09:00'
-});
+  time: '09:00',
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  confirm: [time: string];
-  cancel: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "confirm": [time: string]
+  "cancel": []
+}>()
 
 // t 函数直接导入自 @/i18n
 
-const hourWheelRef = ref<InstanceType<typeof TimeWheel>>();
-const minuteWheelRef = ref<InstanceType<typeof TimeWheel>>();
+const hourWheelRef = ref<InstanceType<typeof TimeWheel>>()
+const minuteWheelRef = ref<InstanceType<typeof TimeWheel>>()
 
 // 当前选中时间
-const currentHour = ref('09');
-const currentMinute = ref('00');
+const currentHour = ref('09')
+const currentMinute = ref('00')
 
 // 选项数据
-const hourOptions = computed(() => 
+const hourOptions = computed(() =>
   Array.from({ length: 24 }, (_, i) => ({
     value: i.toString().padStart(2, '0'),
-    label: i.toString().padStart(2, '0')
-  }))
-);
+    label: i.toString().padStart(2, '0'),
+  })),
+)
 
-const minuteOptions = computed(() => 
+const minuteOptions = computed(() =>
   Array.from({ length: 60 }, (_, i) => ({
     value: i.toString().padStart(2, '0'),
-    label: i.toString().padStart(2, '0')
-  }))
-);
+    label: i.toString().padStart(2, '0'),
+  })),
+)
 
 // 快捷时间列表
-const quickTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+const quickTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
 // 解析传入的时间
 function parseTime(timeStr: string) {
-  const [hour, minute] = timeStr.split(':');
+  const [hour, minute] = timeStr.split(':')
   return {
     hour: hour?.padStart(2, '0') || '09',
-    minute: minute?.padStart(2, '0') || '00'
-  };
+    minute: minute?.padStart(2, '0') || '00',
+  }
 }
 
 // 打开时初始化时间
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && props.time) {
-    const { hour, minute } = parseTime(props.time);
-    currentHour.value = hour;
-    currentMinute.value = minute;
+    const {
+      hour,
+      minute,
+    } = parseTime(props.time)
+    currentHour.value = hour
+    currentMinute.value = minute
     // 滚动到对应位置
     setTimeout(() => {
-      hourWheelRef.value?.scrollToValue(hour, false);
-      minuteWheelRef.value?.scrollToValue(minute, false);
-    }, 50);
+      hourWheelRef.value?.scrollToValue(hour, false)
+      minuteWheelRef.value?.scrollToValue(minute, false)
+    }, 50)
   }
-});
+})
 
 // 选择快捷时间
 function selectQuickTime(time: string) {
-  const { hour, minute } = parseTime(time);
-  currentHour.value = hour;
-  currentMinute.value = minute;
-  hourWheelRef.value?.scrollToValue(hour, true);
-  minuteWheelRef.value?.scrollToValue(minute, true);
+  const {
+    hour,
+    minute,
+  } = parseTime(time)
+  currentHour.value = hour
+  currentMinute.value = minute
+  hourWheelRef.value?.scrollToValue(hour, true)
+  minuteWheelRef.value?.scrollToValue(minute, true)
 }
 
 // 确认
 function onConfirm() {
-  const timeStr = `${currentHour.value}:${currentMinute.value}:00`;
-  emit('confirm', timeStr);
-  emit('update:modelValue', false);
+  const timeStr = `${currentHour.value}:${currentMinute.value}:00`
+  emit('confirm', timeStr)
+  emit('update:modelValue', false)
 }
 
 // 取消
 function onCancel() {
-  emit('cancel');
-  emit('update:modelValue', false);
+  emit('cancel')
+  emit('update:modelValue', false)
 }
 
 // 当前时间字符串
-const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.value}`);
+const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.value}`)
 </script>
 
 <style scoped>

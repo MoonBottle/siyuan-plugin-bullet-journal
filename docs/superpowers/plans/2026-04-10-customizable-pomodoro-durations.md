@@ -12,20 +12,21 @@
 
 ## 文件变更清单
 
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `src/settings/types.ts` | 修改 | 新增 4 个配置字段，更新默认值常量 |
-| `src/i18n/zh_CN.json` | 修改 | 新增 8 个中文翻译键 |
-| `src/i18n/en_US.json` | 修改 | 新增 8 个英文翻译键 |
-| `src/components/settings/PomodoroConfigSection.vue` | 修改 | 新增配置UI（预设输入框 + 默认下拉选择） |
-| `src/components/pomodoro/PomodoroTimerDialog.vue` | 修改 | 读取自定义专注预设和默认值 |
-| `src/components/pomodoro/PomodoroCompleteDialog.vue` | 修改 | 读取自定义休息预设和默认值 |
+| 文件                                                 | 操作 | 说明                                    |
+| ---------------------------------------------------- | ---- | --------------------------------------- |
+| `src/settings/types.ts`                              | 修改 | 新增 4 个配置字段，更新默认值常量       |
+| `src/i18n/zh_CN.json`                                | 修改 | 新增 8 个中文翻译键                     |
+| `src/i18n/en_US.json`                                | 修改 | 新增 8 个英文翻译键                     |
+| `src/components/settings/PomodoroConfigSection.vue`  | 修改 | 新增配置UI（预设输入框 + 默认下拉选择） |
+| `src/components/pomodoro/PomodoroTimerDialog.vue`    | 修改 | 读取自定义专注预设和默认值              |
+| `src/components/pomodoro/PomodoroCompleteDialog.vue` | 修改 | 读取自定义休息预设和默认值              |
 
 ---
 
 ## Task 1: 新增配置类型定义
 
 **Files:**
+
 - Modify: `src/settings/types.ts:17-29` (PomodoroSettings 接口)
 - Modify: `src/settings/types.ts:67-79` (defaultPomodoroSettings 常量)
 
@@ -68,7 +69,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   defaultFocusDuration: 25,
   breakDurationPresets: [5, 10, 15],
   defaultBreakDuration: 5,
-};
+}
 ```
 
 - [ ] **Step 3: 验证类型定义**
@@ -88,6 +89,7 @@ git commit -m "feat(pomodoro): add customizable duration settings types"
 ## Task 2: 添加国际化翻译
 
 **Files:**
+
 - Modify: `src/i18n/zh_CN.json` (settings.pomodoro 对象)
 - Modify: `src/i18n/en_US.json` (settings.pomodoro 对象)
 
@@ -139,6 +141,7 @@ git commit -m "feat(i18n): add pomodoro duration customization translations"
 ## Task 3: 实现设置页面 UI
 
 **Files:**
+
 - Modify: `src/components/settings/PomodoroConfigSection.vue` (template 和 script)
 
 - [ ] **Step 1: 在 template 中新增配置项**
@@ -218,69 +221,73 @@ git commit -m "feat(i18n): add pomodoro duration customization translations"
 在 `<script setup>` 中，现有的 `recordModeOptions` 后添加：
 
 ```typescript
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
-  pomodoro: PomodoroSettings;
-}>();
+  pomodoro: PomodoroSettings
+}>()
 
 // 专注时长预设本地状态（4个）
-const focusPresets = ref<number[]>([15, 25, 45, 60]);
+const focusPresets = ref<number[]>([15, 25, 45, 60])
 
 // 休息时长预设本地状态（3个）
-const breakPresets = ref<number[]>([5, 10, 15]);
+const breakPresets = ref<number[]>([5, 10, 15])
 
 // 从 props 初始化预设值
-const initPresets = () => {
+function initPresets() {
   if (props.pomodoro.focusDurationPresets?.length === 4) {
-    focusPresets.value = [...props.pomodoro.focusDurationPresets];
+    focusPresets.value = [...props.pomodoro.focusDurationPresets]
   }
   if (props.pomodoro.breakDurationPresets?.length === 3) {
-    breakPresets.value = [...props.pomodoro.breakDurationPresets];
+    breakPresets.value = [...props.pomodoro.breakDurationPresets]
   }
-};
-initPresets();
+}
+initPresets()
 
 // 监听预设变化，同步到 pomodoro 配置
 watch(focusPresets, (newVal) => {
-  props.pomodoro.focusDurationPresets = [...newVal];
-}, { deep: true });
+  props.pomodoro.focusDurationPresets = [...newVal]
+}, { deep: true })
 
 watch(breakPresets, (newVal) => {
-  props.pomodoro.breakDurationPresets = [...newVal];
-}, { deep: true });
+  props.pomodoro.breakDurationPresets = [...newVal]
+}, { deep: true })
 
 // 验证专注预设输入
-const validateFocusPreset = (index: number) => {
-  let value = focusPresets.value[index];
-  if (value < 1) value = 1;
-  if (value > 180) value = 180;
-  focusPresets.value[index] = value;
-};
+function validateFocusPreset(index: number) {
+  let value = focusPresets.value[index]
+  if (value < 1)
+    value = 1
+  if (value > 180)
+    value = 180
+  focusPresets.value[index] = value
+}
 
 // 验证休息预设输入
-const validateBreakPreset = (index: number) => {
-  let value = breakPresets.value[index];
-  if (value < 1) value = 1;
-  if (value > 60) value = 60;
-  breakPresets.value[index] = value;
-};
+function validateBreakPreset(index: number) {
+  let value = breakPresets.value[index]
+  if (value < 1)
+    value = 1
+  if (value > 60)
+    value = 60
+  breakPresets.value[index] = value
+}
 
 // 专注时长下拉选项（从 presets 动态生成）
 const focusDurationOptions = computed(() => {
   return focusPresets.value.map(minutes => ({
     value: minutes,
     label: `${minutes} ${t('common').minutes}`
-  }));
-});
+  }))
+})
 
 // 休息时长下拉选项（从 presets 动态生成）
 const breakDurationOptions = computed(() => {
   return breakPresets.value.map(minutes => ({
     value: minutes,
     label: `${minutes} ${t('common').minutes}`
-  }));
-});
+  }))
+})
 ```
 
 - [ ] **Step 3: 添加样式**
@@ -303,6 +310,7 @@ const breakDurationOptions = computed(() => {
     margin-left: 4px;
   }
 }
+
 ```
 
 - [ ] **Step 4: 验证编译**
@@ -322,6 +330,7 @@ git commit -m "feat(settings): add pomodoro duration customization UI"
 ## Task 4: 专注弹窗读取配置
 
 **Files:**
+
 - Modify: `src/components/pomodoro/PomodoroTimerDialog.vue`
 
 - [ ] **Step 1: 修改 hardcoded 值为读取配置**
@@ -331,18 +340,18 @@ git commit -m "feat(settings): add pomodoro duration customization UI"
 ```typescript
 // 从设置读取专注时长预设，使用默认值兜底
 const quickDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60]
+})
 
 // 从设置读取默认专注时长
 const defaultDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultFocusDuration ?? 25;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultFocusDuration ?? 25
+})
 
-const selectedDuration = ref(defaultDuration.value);
-const customDuration = ref(defaultDuration.value);
+const selectedDuration = ref(defaultDuration.value)
+const customDuration = ref(defaultDuration.value)
 ```
 
 - [ ] **Step 2: 修复 v-for 循环依赖 computed**
@@ -368,9 +377,9 @@ const customDuration = ref(defaultDuration.value);
 ```typescript
 // 当默认时长变化时，更新选中值（仅当用户未手动选择时）
 watch(defaultDuration, (newVal) => {
-  selectedDuration.value = newVal;
-  customDuration.value = newVal;
-});
+  selectedDuration.value = newVal
+  customDuration.value = newVal
+})
 ```
 
 - [ ] **Step 4: 验证编译**
@@ -390,6 +399,7 @@ git commit -m "feat(pomodoro): read focus duration presets from settings"
 ## Task 5: 休息弹窗读取配置
 
 **Files:**
+
 - Modify: `src/components/pomodoro/PomodoroCompleteDialog.vue`
 
 - [ ] **Step 1: 修改硬编码的休息按钮**
@@ -425,27 +435,27 @@ git commit -m "feat(pomodoro): read focus duration presets from settings"
 在 `<script setup>` 中添加：
 
 ```typescript
-import { ref, computed, onBeforeUnmount, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 // 从设置读取休息时长预设
 const breakDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15]
+})
 
 // 从设置读取默认休息时长
 const defaultBreakDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultBreakDuration ?? 5;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultBreakDuration ?? 5
+})
 
 // 当前选中的休息时长
-const selectedBreakDuration = ref(defaultBreakDuration.value);
+const selectedBreakDuration = ref(defaultBreakDuration.value)
 
 // 默认选中设置的默认值
 watch(defaultBreakDuration, (newVal) => {
-  selectedBreakDuration.value = newVal;
-}, { immediate: true });
+  selectedBreakDuration.value = newVal
+}, { immediate: true })
 ```
 
 - [ ] **Step 3: 添加按钮高亮样式**
@@ -462,6 +472,7 @@ watch(defaultBreakDuration, (newVal) => {
     border-color: var(--b3-theme-primary);
   }
 }
+
 ```
 
 - [ ] **Step 4: 验证编译**
@@ -481,6 +492,7 @@ git commit -m "feat(pomodoro): read break duration presets from settings"
 ## Task 6: 验证测试
 
 **Files:**
+
 - Test manually via UI
 
 - [ ] **Step 1: 开发模式启动**
@@ -539,6 +551,7 @@ git commit -m "feat(pomodoro): complete customizable duration presets feature
 ## Self-Review 检查
 
 **1. Spec coverage:**
+
 - ✅ 专注时长预设（4个）- Task 1, 3, 4
 - ✅ 默认专注时长 - Task 1, 3, 4
 - ✅ 休息时长预设（3个）- Task 1, 3, 5
@@ -547,10 +560,12 @@ git commit -m "feat(pomodoro): complete customizable duration presets feature
 - ✅ 默认值兜底（不写入配置）- Task 1 defaultPomodoroSettings
 
 **2. Placeholder scan:**
+
 - ✅ 无 TBD/TODO
 - ✅ 所有代码步骤包含完整代码
 - ✅ 所有命令包含预期输出
 
 **3. Type consistency:**
+
 - ✅ 配置字段名一致：`focusDurationPresets`, `defaultFocusDuration`, `breakDurationPresets`, `defaultBreakDuration`
 - ✅ 默认值 25/5 与设计一致

@@ -1,7 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { defaultSettings } from '@/settings';
+import {
+  createPinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import { defaultSettings } from '@/settings'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const {
   getSettings,
@@ -9,78 +18,78 @@ const {
 } = vi.hoisted(() => ({
   getSettings: vi.fn(),
   updateSettings: vi.fn(),
-}));
+}))
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({
     getSettings,
     updateSettings,
   })),
-}));
+}))
 
 describe('settingsStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
   it('loadFromPlugin loads habitCheckInTimePrecision from plugin settings', () => {
     getSettings.mockReturnValue({
       habitCheckInTimePrecision: 'second',
-    });
+    })
 
-    const store = useSettingsStore();
-    store.loadFromPlugin();
+    const store = useSettingsStore()
+    store.loadFromPlugin()
 
-    expect(store.habitCheckInTimePrecision).toBe('second');
-  });
+    expect(store.habitCheckInTimePrecision).toBe('second')
+  })
 
   it('loadFromPlugin falls back to day when persisted habitCheckInTimePrecision is invalid', () => {
     getSettings.mockReturnValue({
       habitCheckInTimePrecision: 'hour',
-    });
+    })
 
-    const store = useSettingsStore();
-    store.loadFromPlugin();
+    const store = useSettingsStore()
+    store.loadFromPlugin()
 
-    expect(store.habitCheckInTimePrecision).toBe('day');
-  });
+    expect(store.habitCheckInTimePrecision).toBe('day')
+  })
 
   it('saveToPlugin persists habitCheckInTimePrecision through updateSettings', () => {
-    getSettings.mockReturnValue({});
+    getSettings.mockReturnValue({})
 
-    const store = useSettingsStore();
-    store.habitCheckInTimePrecision = 'minute';
-    store.saveToPlugin();
+    const store = useSettingsStore()
+    store.habitCheckInTimePrecision = 'minute'
+    store.saveToPlugin()
 
     expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
       habitCheckInTimePrecision: 'minute',
-    }));
-  });
+    }))
+  })
 
   it('loads and saves focusWorkbench selectedGroup', () => {
     getSettings.mockReturnValue({
       focusWorkbench: {
         selectedGroup: 'group-a',
       },
-    });
+    })
 
-    const store = useSettingsStore();
-    store.loadFromPlugin();
-    expect(store.focusWorkbench.selectedGroup).toBe('group-a');
+    const store = useSettingsStore()
+    store.loadFromPlugin()
+    expect(store.focusWorkbench.selectedGroup).toBe('group-a')
 
-    store.focusWorkbench.selectedGroup = 'group-b';
-    store.saveToPlugin();
+    store.focusWorkbench.selectedGroup = 'group-b'
+    store.saveToPlugin()
 
     expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
       focusWorkbench: {
         selectedGroup: 'group-b',
       },
-    }));
-  });
+    }))
+  })
 
   it('defaults pomodoro floating display mode to inline', () => {
-    const settings = structuredClone(defaultSettings);
-    expect(settings.pomodoro?.floatingDisplayMode).toBe('inline');
-  });
-});
+    const settings = structuredClone(defaultSettings)
+    expect(settings.pomodoro?.floatingDisplayMode).toBe('inline')
+  })
+})

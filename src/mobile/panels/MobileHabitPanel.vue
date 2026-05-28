@@ -1,5 +1,8 @@
 <template>
-  <section class="mobile-habit-panel" data-testid="habit-panel">
+  <section
+    class="mobile-habit-panel"
+    data-testid="habit-panel"
+  >
     <div class="mobile-habit-panel__header">
       <span class="mobile-habit-panel__title">{{ t('habit').title }}</span>
     </div>
@@ -15,7 +18,10 @@
       />
     </div>
 
-    <div v-if="habits.length > 0" class="mobile-habit-panel__list">
+    <div
+      v-if="habits.length > 0"
+      class="mobile-habit-panel__list"
+    >
       <HabitListItem
         v-for="habit in habits"
         :key="habit.blockId"
@@ -32,10 +38,19 @@
       />
     </div>
 
-    <div v-else class="mobile-habit-panel__empty">
-      <div class="mobile-habit-panel__empty-icon">🎯</div>
-      <div class="mobile-habit-panel__empty-title">{{ t('habit').noHabits }}</div>
-      <div class="mobile-habit-panel__empty-desc">{{ t('habit').noHabitsDesc }}</div>
+    <div
+      v-else
+      class="mobile-habit-panel__empty"
+    >
+      <div class="mobile-habit-panel__empty-icon">
+        🎯
+      </div>
+      <div class="mobile-habit-panel__empty-title">
+        {{ t('habit').noHabits }}
+      </div>
+      <div class="mobile-habit-panel__empty-desc">
+        {{ t('habit').noHabitsDesc }}
+      </div>
     </div>
 
     <MobileHabitDetailSheet
@@ -49,7 +64,10 @@
       @unarchive="handleUnarchiveSelectedHabit"
       @update:view-month="state.selectedViewMonth = $event"
     >
-      <div v-if="state.selectedHabit && displaySelectedStats" class="mobile-habit-detail__body">
+      <div
+        v-if="state.selectedHabit && displaySelectedStats"
+        class="mobile-habit-detail__body"
+      >
 
         <HabitMonthCalendar
           :habit="state.selectedHabit"
@@ -71,16 +89,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, watch } from 'vue';
-import HabitListItem from '@/components/habit/HabitListItem.vue';
-import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
-import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
-import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
-import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
-import MobileHabitDetailSheet from '@/mobile/components/habit/MobileHabitDetailSheet.vue';
-import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  watch,
+} from 'vue'
+import HabitListItem from '@/components/habit/HabitListItem.vue'
+import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue'
+import HabitRecordLog from '@/components/habit/HabitRecordLog.vue'
+import HabitStatsCards from '@/components/habit/HabitStatsCards.vue'
+import HabitWeekBar from '@/components/habit/HabitWeekBar.vue'
+import {
+  getHabitDayState,
+  getHabitPeriodState,
+} from '@/domain/habit/habitCompletion'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import MobileHabitDetailSheet from '@/mobile/components/habit/MobileHabitDetailSheet.vue'
 import {
   archiveHabit,
   checkIn,
@@ -89,25 +121,30 @@ import {
   markHabitMissed,
   resetHabitRecord,
   unarchiveHabit,
-} from '@/services/habitService';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import type { Habit, HabitStats } from '@/types/models';
+} from '@/services/habitService'
 import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  DATA_REFRESH_CHANNEL,
   eventBus,
   Events,
-  DATA_REFRESH_CHANNEL,
-} from '@/utils/eventBus';
-import { calculateAllHabitStats, calculateHabitStats } from '@/utils/habitStatsUtils';
+} from '@/utils/eventBus'
 import {
   consumePendingHabitDockTarget,
-  type HabitDockNavigationTarget,
-} from '@/utils/habitDockNavigation';
-import dayjs from '@/utils/dayjs';
 
-const plugin = usePlugin() as any;
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
-const initialDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD');
+} from '@/utils/habitDockNavigation'
+import {
+  calculateAllHabitStats,
+  calculateHabitStats,
+} from '@/utils/habitStatsUtils'
+
+const plugin = usePlugin() as any
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
+const initialDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD')
 
 const state = reactive({
   selectedDate: initialDate,
@@ -115,202 +152,202 @@ const state = reactive({
   showHabitDetail: false,
   selectedHabit: null as Habit | null,
   selectedStatsCache: null as HabitStats | null,
-});
+})
 
-const currentDate = computed(() => projectStore.currentDate);
-const allHabits = computed(() => projectStore.getHabits(''));
-const habits = computed(() => allHabits.value.filter(habit => !habit.archivedAt));
+const currentDate = computed(() => projectStore.currentDate)
+const allHabits = computed(() => projectStore.getHabits(''))
+const habits = computed(() => allHabits.value.filter((habit) => !habit.archivedAt))
 
 const habitStatsMap = computed(() => {
-  return calculateAllHabitStats(habits.value, currentDate.value);
-});
+  return calculateAllHabitStats(habits.value, currentDate.value)
+})
 
 const habitDayStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, state.selectedDate)]));
-});
+  return new Map(habits.value.map((habit) => [habit.blockId, getHabitDayState(habit, state.selectedDate)]))
+})
 
 const habitPeriodStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, state.selectedDate)]));
-});
+  return new Map(habits.value.map((habit) => [habit.blockId, getHabitPeriodState(habit, state.selectedDate)]))
+})
 
 const selectedStats = computed(() => {
   if (!state.selectedHabit)
-    return null;
+    return null
 
-  return calculateHabitStats(state.selectedHabit, currentDate.value, state.selectedViewMonth);
-});
+  return calculateHabitStats(state.selectedHabit, currentDate.value, state.selectedViewMonth)
+})
 
-const displaySelectedStats = computed(() => selectedStats.value ?? state.selectedStatsCache);
-const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day');
+const displaySelectedStats = computed(() => selectedStats.value ?? state.selectedStatsCache)
+const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day')
 
 watch(selectedStats, (value) => {
   if (value) {
-    state.selectedStatsCache = value;
+    state.selectedStatsCache = value
   }
-}, { immediate: true });
+}, { immediate: true })
 
 watch(currentDate, (nextDate, previousDate) => {
   if (!nextDate) {
-    return;
+    return
   }
 
   if (!state.selectedDate || state.selectedDate === previousDate) {
-    state.selectedDate = nextDate;
+    state.selectedDate = nextDate
   }
 
-  const previousMonth = previousDate?.substring(0, 7);
+  const previousMonth = previousDate?.substring(0, 7)
   if (!state.selectedViewMonth || state.selectedViewMonth === previousMonth) {
-    state.selectedViewMonth = state.selectedDate.substring(0, 7);
+    state.selectedViewMonth = state.selectedDate.substring(0, 7)
   }
-});
+})
 
 function openHabitDetail(habit: Habit) {
-  state.selectedViewMonth = state.selectedDate.substring(0, 7);
-  state.selectedHabit = habit;
-  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
-  state.showHabitDetail = true;
+  state.selectedViewMonth = state.selectedDate.substring(0, 7)
+  state.selectedHabit = habit
+  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
+  state.showHabitDetail = true
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  const habit = allHabits.value.find(item => item.blockId === target.habitId);
+  const habit = allHabits.value.find((item) => item.blockId === target.habitId)
   if (!habit) {
-    return false;
+    return false
   }
 
-  const targetDate = target.date || currentDate.value;
-  state.selectedDate = targetDate;
-  state.selectedViewMonth = targetDate.substring(0, 7);
-  state.selectedHabit = habit;
-  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
-  state.showHabitDetail = true;
-  return true;
+  const targetDate = target.date || currentDate.value
+  state.selectedDate = targetDate
+  state.selectedViewMonth = targetDate.substring(0, 7)
+  state.selectedHabit = habit
+  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
+  state.showHabitDetail = true
+  return true
 }
 
 function syncSelectedHabit() {
   if (!state.selectedHabit)
-    return;
+    return
 
-  state.selectedHabit = allHabits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
+  state.selectedHabit = allHabits.value.find((habit) => habit.blockId === state.selectedHabit?.blockId) ?? null
 }
 
 function handleCloseHabitDetail() {
-  state.showHabitDetail = false;
+  state.showHabitDetail = false
 }
 
 async function refreshHabits() {
   if (!plugin)
-    return;
+    return
 
   await plugin.requestRefresh?.({
     type: 'full',
     reason: 'mobile-habit:manual-refresh',
-  });
-  syncSelectedHabit();
+  })
+  syncSelectedHabit()
 }
 
 async function handleCheckIn(habit: Habit) {
-  const dayState = getHabitDayState(habit, state.selectedDate);
+  const dayState = getHabitDayState(habit, state.selectedDate)
   if (dayState.isCompleted) {
-    return;
+    return
   }
 
-  const success = await checkIn(habit, state.selectedDate, undefined, habitCheckInTimePrecision.value);
+  const success = await checkIn(habit, state.selectedDate, undefined, habitCheckInTimePrecision.value)
   if (success)
-    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
 }
 
 async function handleIncrement(habit: Habit) {
-  const success = await checkInCount(habit, state.selectedDate, 1, undefined, habitCheckInTimePrecision.value);
+  const success = await checkInCount(habit, state.selectedDate, 1, undefined, habitCheckInTimePrecision.value)
   if (success)
-    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
 }
 
 async function handleMarkMissed(habit: Habit, date: string) {
-  const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value);
+  const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value)
   if (success)
-    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
 }
 
 async function handleResetRecord(habit: Habit, date: string) {
-  const record = getRecordForDate(habit, date);
+  const record = getRecordForDate(habit, date)
   if (!record) {
-    return;
+    return
   }
 
-  const success = await resetHabitRecord(record);
+  const success = await resetHabitRecord(record)
   if (success)
-    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth)
 }
 
 async function handleArchiveSelectedHabit() {
   if (!state.selectedHabit || state.selectedHabit.archivedAt) {
-    return;
+    return
   }
 
-  const success = await archiveHabit(state.selectedHabit, dayjs().format('YYYY-MM-DD'));
+  const success = await archiveHabit(state.selectedHabit, dayjs().format('YYYY-MM-DD'))
   if (success) {
     await plugin?.requestRefresh?.({
       type: 'full',
       reason: 'mobile-habit:archive',
-    });
+    })
   }
 }
 
 async function handleUnarchiveSelectedHabit() {
   if (!state.selectedHabit || !state.selectedHabit.archivedAt) {
-    return;
+    return
   }
 
-  const success = await unarchiveHabit(state.selectedHabit);
+  const success = await unarchiveHabit(state.selectedHabit)
   if (success) {
     await plugin?.requestRefresh?.({
       type: 'full',
       reason: 'mobile-habit:unarchive',
-    });
+    })
   }
 }
 
 const handleDataRefresh = async () => {
-  syncSelectedHabit();
-};
+  syncSelectedHabit()
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let unsubscribeHabitNavigate: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let unsubscribeHabitNavigate: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
-  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
+  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation)
 
-  const pendingTarget = consumePendingHabitDockTarget();
+  const pendingTarget = consumePendingHabitDockTarget()
   if (pendingTarget) {
-    applyHabitDockNavigation(pendingTarget);
+    applyHabitDockNavigation(pendingTarget)
   }
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannel.onmessage = (event) => {
       if (event.data?.type === 'DATA_REFRESHED') {
-        void handleDataRefresh();
+        void handleDataRefresh()
       }
-    };
+    }
   } catch {
     // ignore
   }
-});
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh)
-    unsubscribeRefresh();
+    unsubscribeRefresh()
 
   if (unsubscribeHabitNavigate)
-    unsubscribeHabitNavigate();
+    unsubscribeHabitNavigate()
 
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

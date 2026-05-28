@@ -1,115 +1,127 @@
+import type { McpCache } from './kernelTools'
+import {
+  collectPomodoros,
+  filterPomodoros,
+
+  toolFilterItems,
+  toolListGroups,
+  toolListProjects,
+} from './kernelTools'
+
 declare const siyuan: {
   plugin: {
-    name: string;
-    version: string;
-    displayName: string;
-    platform: string;
+    name: string
+    version: string
+    displayName: string
+    platform: string
     lifecycle: {
-      onload: (() => Promise<void>) | null;
-      onloaded: (() => Promise<void>) | null;
-      onrunning: (() => Promise<void>) | null;
-      onunload: (() => Promise<void>) | null;
-    };
-  };
+      onload: (() => Promise<void>) | null
+      onloaded: (() => Promise<void>) | null
+      onrunning: (() => Promise<void>) | null
+      onunload: (() => Promise<void>) | null
+    }
+  }
   logger: {
-    info: (...args: any[]) => Promise<void>;
-    error: (...args: any[]) => Promise<void>;
-  };
+    info: (...args: any[]) => Promise<void>
+    error: (...args: any[]) => Promise<void>
+  }
   storage: {
     get: (path: string) => Promise<{
-      text: () => Promise<string>;
-      json: () => Promise<any>;
-    }>;
-    put: (path: string, content: string) => Promise<void>;
-  };
+      text: () => Promise<string>
+      json: () => Promise<any>
+    }>
+    put: (path: string, content: string) => Promise<void>
+  }
   server: {
     private: {
       es: {
-        handler: ((req: SseRequest) => Promise<void>) | null;
-      };
+        handler: ((req: SseRequest) => Promise<void>) | null
+      }
       http: {
-        handler: ((req: HttpRequest) => Promise<HttpResponse>) | null;
-      };
-    };
-  };
-};
+        handler: ((req: HttpRequest) => Promise<HttpResponse>) | null
+      }
+    }
+  }
+}
 
 interface SseRequest {
   url: {
-    host: string;
-    pathname: string;
-    query: Record<string, string[]>;
-  };
+    host: string
+    pathname: string
+    query: Record<string, string[]>
+  }
   request: {
-    method: string;
-    headers: Record<string, string[]>;
+    method: string
+    headers: Record<string, string[]>
     body: {
-      data: { text: () => Promise<string>; json: () => Promise<any> } | undefined;
-    };
-  };
+      data: { text: () => Promise<string>, json: () => Promise<any> } | undefined
+    }
+  }
   port: {
-    onopen: ((e: { type: string }) => void) | null;
-    onclose: ((e: { type: string }) => void) | null;
-    send: (name: string, message: any) => void;
-    close: () => void;
-  };
+    onopen: ((e: { type: string }) => void) | null
+    onclose: ((e: { type: string }) => void) | null
+    send: (name: string, message: any) => void
+    close: () => void
+  }
 }
 
 interface HttpRequest {
   url: {
-    host: string;
-    pathname: string;
-    query: Record<string, string[]>;
-  };
+    host: string
+    pathname: string
+    query: Record<string, string[]>
+  }
   request: {
-    method: string;
-    headers: Record<string, string[]>;
+    method: string
+    headers: Record<string, string[]>
     body: {
-      data: { text: () => Promise<string>; json: () => Promise<any> } | undefined;
-    };
-  };
+      data: { text: () => Promise<string>, json: () => Promise<any> } | undefined
+    }
+  }
 }
 
 interface HttpResponse {
-  statusCode: number;
-  headers?: Record<string, string[]>;
+  statusCode: number
+  headers?: Record<string, string[]>
   body?: {
-    raw?: { contentType: string; data: string };
-  };
+    raw?: { contentType: string, data: string }
+  }
 }
 
-import {
-  toolListGroups,
-  toolListProjects,
-  toolFilterItems,
-  collectPomodoros,
-  filterPomodoros,
-  type McpCache,
-} from './kernelTools';
-
-const MCP_CACHE_PATH = 'mcp-cache.json';
-const SERVER_NAME = 'sy-task-assistant';
-const SERVER_VERSION = '1.0.0';
+const MCP_CACHE_PATH = 'mcp-cache.json'
+const SERVER_NAME = 'sy-task-assistant'
+const SERVER_VERSION = '1.0.0'
 
 async function loadCache(): Promise<McpCache> {
   try {
-    const file = await siyuan.storage.get(MCP_CACHE_PATH);
-    const text = await file.text();
-    const data = JSON.parse(text) as McpCache;
-    return data;
+    const file = await siyuan.storage.get(MCP_CACHE_PATH)
+    const text = await file.text()
+    const data = JSON.parse(text) as McpCache
+    return data
   } catch (e: any) {
     throw new Error(
-      'MCP 缓存不可用。请先打开思源笔记并确保任务助手插件已加载。'
-    );
+      'MCP 缓存不可用。请先打开思源笔记并确保任务助手插件已加载。',
+    )
   }
 }
 
 function makeJsonRpcResult(id: any, result: any) {
-  return { jsonrpc: '2.0', id: id, result: result };
+  return {
+    jsonrpc: '2.0',
+    id,
+    result,
+  }
 }
 
 function makeJsonRpcError(id: any, code: number, message: string) {
-  return { jsonrpc: '2.0', id: id, error: { code: code, message: message } };
+  return {
+    jsonrpc: '2.0',
+    id,
+    error: {
+      code,
+      message,
+    },
+  }
 }
 
 const TOOLS = [
@@ -117,7 +129,11 @@ const TOOLS = [
     name: 'list_groups',
     description:
       '查询任务助手中配置的所有分组。返回分组列表，每项含 id、name。id 可用于 filter_items 的 groupId 或 list_projects 的 groupId 参数进行过滤。无参数。',
-    inputSchema: { type: 'object', properties: {} as Record<string, any>, required: [] },
+    inputSchema: {
+      type: 'object',
+      properties: {} as Record<string, any>,
+      required: [],
+    },
   },
   {
     name: 'list_projects',
@@ -141,12 +157,32 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string', description: '项目文档 ID，来自 list_projects 返回的 id' },
-        projectIds: { type: 'array', items: { type: 'string' }, description: '项目 ID 数组，多选时使用' },
-        groupId: { type: 'string', description: '分组 ID，来自 list_groups 返回的 id' },
-        startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
-        endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
-        status: { type: 'string', enum: ['pending', 'completed', 'abandoned'], description: 'pending=待办, completed=已完成, abandoned=已放弃' },
+        projectId: {
+          type: 'string',
+          description: '项目文档 ID，来自 list_projects 返回的 id',
+        },
+        projectIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '项目 ID 数组，多选时使用',
+        },
+        groupId: {
+          type: 'string',
+          description: '分组 ID，来自 list_groups 返回的 id',
+        },
+        startDate: {
+          type: 'string',
+          description: '起始日期，格式 YYYY-MM-DD',
+        },
+        endDate: {
+          type: 'string',
+          description: '结束日期，格式 YYYY-MM-DD',
+        },
+        status: {
+          type: 'string',
+          enum: ['pending', 'completed', 'abandoned'],
+          description: 'pending=待办, completed=已完成, abandoned=已放弃',
+        },
       },
       required: [],
     },
@@ -158,10 +194,23 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        date: { type: 'string', enum: ['today'], description: '设为 "today" 时查询今日统计' },
-        startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
-        endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
-        projectId: { type: 'string', description: '项目 ID，来自 list_projects 返回的 id' },
+        date: {
+          type: 'string',
+          enum: ['today'],
+          description: '设为 "today" 时查询今日统计',
+        },
+        startDate: {
+          type: 'string',
+          description: '起始日期，格式 YYYY-MM-DD',
+        },
+        endDate: {
+          type: 'string',
+          description: '结束日期，格式 YYYY-MM-DD',
+        },
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id',
+        },
       },
       required: [],
     },
@@ -173,61 +222,77 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        date: { type: 'string', enum: ['today'], description: '设为 "today" 时查询今日记录' },
-        startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
-        endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
-        projectId: { type: 'string', description: '项目 ID，来自 list_projects 返回的 id' },
+        date: {
+          type: 'string',
+          enum: ['today'],
+          description: '设为 "today" 时查询今日记录',
+        },
+        startDate: {
+          type: 'string',
+          description: '起始日期，格式 YYYY-MM-DD',
+        },
+        endDate: {
+          type: 'string',
+          description: '结束日期，格式 YYYY-MM-DD',
+        },
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id',
+        },
       },
       required: [],
     },
   },
-];
+]
 
 function toolGetPomodoroStats(args: any, cache: McpCache) {
-  const pomodoros = filterPomodoros(collectPomodoros(cache), args);
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const pomodoros = filterPomodoros(collectPomodoros(cache), args)
+  const todayDate = new Date().toISOString().slice(0, 10)
 
-  let todayCount = 0;
-  let todayMinutes = 0;
+  let todayCount = 0
+  let todayMinutes = 0
   for (const p of pomodoros) {
     if (p.date === todayDate) {
-      todayCount++;
-      todayMinutes += p.actualDurationMinutes || p.durationMinutes;
+      todayCount++
+      todayMinutes += p.actualDurationMinutes || p.durationMinutes
     }
   }
 
-  let totalMinutes = 0;
+  let totalMinutes = 0
   for (const p of pomodoros) {
-    totalMinutes += p.actualDurationMinutes || p.durationMinutes;
+    totalMinutes += p.actualDurationMinutes || p.durationMinutes
   }
 
   const result: any = {
-    todayCount: todayCount,
-    todayMinutes: todayMinutes,
+    todayCount,
+    todayMinutes,
     totalCount: pomodoros.length,
-    totalMinutes: totalMinutes,
-  };
+    totalMinutes,
+  }
 
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  let startDate = args.startDate
+  let endDate = args.endDate
   if (args.date === 'today') {
-    startDate = todayDate;
-    endDate = todayDate;
+    startDate = todayDate
+    endDate = todayDate
   }
   if (startDate && endDate) {
-    result.dateRange = { startDate: startDate, endDate: endDate };
+    result.dateRange = {
+      startDate,
+      endDate,
+    }
   }
   if (args.projectId) {
-    result.projectId = args.projectId;
+    result.projectId = args.projectId
   }
 
-  return result;
+  return result
 }
 
 function toolGetPomodoroRecords(args: any, cache: McpCache) {
-  const pomodoros = filterPomodoros(collectPomodoros(cache), args);
+  const pomodoros = filterPomodoros(collectPomodoros(cache), args)
 
-  const records = pomodoros.map(function(p) {
+  const records = pomodoros.map((p) => {
     return {
       id: p.id,
       date: p.date,
@@ -238,163 +303,187 @@ function toolGetPomodoroRecords(args: any, cache: McpCache) {
       itemContent: p.itemContent,
       projectName: p.projectName,
       description: p.description,
-    };
-  });
+    }
+  })
 
-  records.sort(function(a, b) {
-    const dc = a.date.localeCompare(b.date);
-    return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
-  });
+  records.sort((a, b) => {
+    const dc = a.date.localeCompare(b.date)
+    return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime)
+  })
 
-  return { records: records };
+  return { records }
 }
 
 async function handleToolCall(name: string, args: any, id: any) {
-  let cache: McpCache;
+  let cache: McpCache
   try {
-    cache = await loadCache();
+    cache = await loadCache()
   } catch (e: any) {
-    return makeJsonRpcError(id, -32000, e.message || String(e));
+    return makeJsonRpcError(id, -32000, e.message || String(e))
   }
 
-  let result: any;
+  let result: any
   switch (name) {
     case 'list_groups':
-      result = toolListGroups(args, cache);
-      break;
+      result = toolListGroups(args, cache)
+      break
     case 'list_projects':
-      result = toolListProjects(args, cache);
-      break;
+      result = toolListProjects(args, cache)
+      break
     case 'filter_items':
-      result = toolFilterItems(args, cache);
-      break;
+      result = toolFilterItems(args, cache)
+      break
     case 'get_pomodoro_stats':
-      result = toolGetPomodoroStats(args, cache);
-      break;
+      result = toolGetPomodoroStats(args, cache)
+      break
     case 'get_pomodoro_records':
-      result = toolGetPomodoroRecords(args, cache);
-      break;
+      result = toolGetPomodoroRecords(args, cache)
+      break
     default:
-      return makeJsonRpcError(id, -32601, 'Method not found: ' + name);
+      return makeJsonRpcError(id, -32601, `Method not found: ${name}`)
   }
 
   return makeJsonRpcResult(id, {
-    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-  });
+    content: [{
+      type: 'text',
+      text: JSON.stringify(result, null, 2),
+    }],
+  })
 }
 
 async function handleJsonRpc(message: any): Promise<any> {
   if (!message || message.jsonrpc !== '2.0') {
-    return makeJsonRpcError(null, -32600, 'Invalid Request');
+    return makeJsonRpcError(null, -32600, 'Invalid Request')
   }
 
-  const id = message.id;
-  const method = message.method;
+  const id = message.id
+  const method = message.method
 
   switch (method) {
     case 'initialize':
       return makeJsonRpcResult(id, {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-      });
+        serverInfo: {
+          name: SERVER_NAME,
+          version: SERVER_VERSION,
+        },
+      })
 
     case 'notifications/initialized':
-      return undefined;
+      return undefined
 
     case 'ping':
-      return makeJsonRpcResult(id, {});
+      return makeJsonRpcResult(id, {})
 
     case 'tools/list':
-      return makeJsonRpcResult(id, { tools: TOOLS });
+      return makeJsonRpcResult(id, { tools: TOOLS })
 
     case 'tools/call': {
-      const params = message.params || {};
-      return handleToolCall(params.name, params.arguments || {}, id);
+      const params = message.params || {}
+      return handleToolCall(params.name, params.arguments || {}, id)
     }
 
     default:
-      return makeJsonRpcError(id, -32601, 'Method not found: ' + method);
+      return makeJsonRpcError(id, -32601, `Method not found: ${method}`)
   }
 }
 
 async function handleSseRequest(req: SseRequest) {
-  const bodyData = req.request.body.data;
+  const bodyData = req.request.body.data
   if (!bodyData) {
-    req.port.close();
-    return;
+    req.port.close()
+    return
   }
 
-  let message: any;
+  let message: any
   try {
-    message = await bodyData.json();
+    message = await bodyData.json()
   } catch (e) {
-    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')));
-    req.port.close();
-    return;
+    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')))
+    req.port.close()
+    return
   }
 
-  const response = await handleJsonRpc(message);
+  const response = await handleJsonRpc(message)
 
   if (response !== undefined) {
-    req.port.send('message', JSON.stringify(response));
+    req.port.send('message', JSON.stringify(response))
   }
 
-  req.port.close();
+  req.port.close()
 }
 
 siyuan.plugin.lifecycle.onrunning = async function () {
-  await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE and HTTP handlers');
+  await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE and HTTP handlers')
 
   siyuan.server.private.es.handler = async function (req: SseRequest) {
     try {
       if (req.port.onopen) {
-        req.port.onopen({ type: 'open' });
+        req.port.onopen({ type: 'open' })
       }
-      await handleSseRequest(req);
+      await handleSseRequest(req)
     } catch (e: any) {
-      await siyuan.logger.error('[MCP Kernel Plugin] SSE handler error:', e.message || String(e));
+      await siyuan.logger.error('[MCP Kernel Plugin] SSE handler error:', e.message || String(e))
       try {
-        req.port.close();
+        req.port.close()
       } catch (_) {}
     }
-  };
+  }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
-    const bodyData = req.request.body.data;
+    const bodyData = req.request.body.data
     if (!bodyData) {
       return {
         statusCode: 400,
-        body: { raw: { contentType: 'application/json', data: '{"error":"no body"}' } },
-      };
+        body: {
+          raw: {
+            contentType: 'application/json',
+            data: '{"error":"no body"}',
+          },
+        },
+      }
     }
 
-    let message: any;
+    let message: any
     try {
-      message = await bodyData.json();
+      message = await bodyData.json()
     } catch (e) {
       return {
         statusCode: 400,
-        body: { raw: { contentType: 'application/json', data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}' } },
-      };
+        body: {
+          raw: {
+            contentType: 'application/json',
+            data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}',
+          },
+        },
+      }
     }
 
-    const response = await handleJsonRpc(message);
+    const response = await handleJsonRpc(message)
 
     if (response === undefined) {
-      return { statusCode: 202, headers: {} };
+      return {
+        statusCode: 202,
+        headers: {},
+      }
     }
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': ['application/json'] },
-      body: { raw: { contentType: 'application/json', data: JSON.stringify(response) } },
-    };
-  };
+      body: {
+        raw: {
+          contentType: 'application/json',
+          data: JSON.stringify(response),
+        },
+      },
+    }
+  }
 
-  await siyuan.logger.info('[MCP Kernel Plugin] Handlers registered successfully');
-};
+  await siyuan.logger.info('[MCP Kernel Plugin] Handlers registered successfully')
+}
 
 siyuan.plugin.lifecycle.onunload = async function () {
-  await siyuan.logger.info('[MCP Kernel Plugin] Unloading');
-};
+  await siyuan.logger.info('[MCP Kernel Plugin] Unloading')
+}

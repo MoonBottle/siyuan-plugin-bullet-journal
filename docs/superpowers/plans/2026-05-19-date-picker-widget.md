@@ -14,27 +14,27 @@
 
 ### 新增文件（4 个）
 
-| 文件 | 职责 |
-|------|------|
-| `src/components/workbench/widgets/DatePickerWidget.vue` | 日历 widget 主组件（月/周视图切换、日期选择、范围高亮、联动 emit） |
-| `src/components/workbench/dialogs/DatePickerWidgetConfigDialog.vue` | 主配置弹框（联动规则列表、添加/编辑/删除） |
-| `src/components/workbench/dialogs/DatePickerLinkageEditorDialog.vue` | 二级弹框（选择目标组件 + 字段关联展示） |
-| `src/workbench/datePickerWidgetConfigDialog.ts` | 弹框打开函数（SiYuan Dialog + Vue createApp 挂载） |
+| 文件                                                                 | 职责                                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `src/components/workbench/widgets/DatePickerWidget.vue`              | 日历 widget 主组件（月/周视图切换、日期选择、范围高亮、联动 emit） |
+| `src/components/workbench/dialogs/DatePickerWidgetConfigDialog.vue`  | 主配置弹框（联动规则列表、添加/编辑/删除）                         |
+| `src/components/workbench/dialogs/DatePickerLinkageEditorDialog.vue` | 二级弹框（选择目标组件 + 字段关联展示）                            |
+| `src/workbench/datePickerWidgetConfigDialog.ts`                      | 弹框打开函数（SiYuan Dialog + Vue createApp 挂载）                 |
 
 ### 修改文件（5 个）
 
-| 文件 | 改动内容 |
-|------|----------|
-| `src/types/workbench.ts` | 新增类型：`datePicker` 到 union、`LinkableWidgetType`、`WidgetLinkageRule`、`WorkbenchDatePickerWidgetConfig` |
-| `src/utils/eventBus.ts` | Events 枚举新增 `WIDGET_DATE_RANGE_CHANGED` |
-| `src/workbench/widgetRegistry.ts` | 注册 `datePicker` definition（type/name/icon/sizes/config/dialog） |
-| `src/components/workbench/dashboard/DashboardCanvas.vue` | widgetComponents map 新增 datePicker；handleConfigureWidget 传 dashboardWidgets |
-| `src/components/workbench/widgets/TodoListWidget.vue` | 新增 eventBus 监听 WIDGET_DATE_RANGE_CHANGED，匹配则写入 todoState |
+| 文件                                                     | 改动内容                                                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `src/types/workbench.ts`                                 | 新增类型：`datePicker` 到 union、`LinkableWidgetType`、`WidgetLinkageRule`、`WorkbenchDatePickerWidgetConfig` |
+| `src/utils/eventBus.ts`                                  | Events 枚举新增 `WIDGET_DATE_RANGE_CHANGED`                                                                   |
+| `src/workbench/widgetRegistry.ts`                        | 注册 `datePicker` definition（type/name/icon/sizes/config/dialog）                                            |
+| `src/components/workbench/dashboard/DashboardCanvas.vue` | widgetComponents map 新增 datePicker；handleConfigureWidget 传 dashboardWidgets                               |
+| `src/components/workbench/widgets/TodoListWidget.vue`    | 新增 eventBus 监听 WIDGET_DATE_RANGE_CHANGED，匹配则写入 todoState                                            |
 
 ### i18n 修改（2 个）
 
-| 文件 | 改动内容 |
-|------|----------|
+| 文件                  | 改动内容                                |
+| --------------------- | --------------------------------------- |
 | `src/i18n/zh_CN.json` | 新增 `datePicker` 命名空间（12 个 key） |
 | `src/i18n/en_US.json` | 新增 `datePicker` 命名空间（12 个 key） |
 
@@ -43,6 +43,7 @@
 ## 任务 1：类型定义 + eventBus 扩展
 
 **文件：**
+
 - 修改：`src/types/workbench.ts`
 - 修改：`src/utils/eventBus.ts`
 
@@ -51,13 +52,13 @@
 在 [workbench.ts](file:///c:\dev\projects\open-source\siyuan-plugin-bullet-journal\src\types\workbench.ts) 的 `WorkbenchWidgetType` 联合类型中追加 `'datePicker'`：
 
 ```typescript
-export type WorkbenchWidgetType =
-  | 'todoList'
-  | 'quadrantSummary'
-  | 'habitWeek'
-  | 'miniCalendar'
-  | 'pomodoroStats'
-  | 'datePicker';
+export type WorkbenchWidgetType
+  = | 'todoList'
+    | 'quadrantSummary'
+    | 'habitWeek'
+    | 'miniCalendar'
+    | 'pomodoroStats'
+    | 'datePicker'
 ```
 
 - [ ] **步骤 2：新增联动相关类型**
@@ -66,26 +67,26 @@ export type WorkbenchWidgetType =
 
 ```typescript
 /** 可联动的目标组件类型（可扩展） */
-export type LinkableWidgetType = 'todoList';
+export type LinkableWidgetType = 'todoList'
 
 /** 字段映射：日历产出字段 → 目标组件属性 */
 export interface WidgetLinkageFieldMap {
-  sourceField: 'dateRange';
-  targetProperty: 'dateRange';
+  sourceField: 'dateRange'
+  targetProperty: 'dateRange'
 }
 
 /** 单条联动规则 */
 export interface WidgetLinkageRule {
-  id: string;
-  targetWidgetId: string;
-  targetType: LinkableWidgetType;
-  fieldMapping: WidgetLinkageFieldMap;
+  id: string
+  targetWidgetId: string
+  targetType: LinkableWidgetType
+  fieldMapping: WidgetLinkageFieldMap
 }
 
 /** DatePickerWidget 配置 */
 export interface WorkbenchDatePickerWidgetConfig {
-  view?: 'month' | 'week';
-  linkages: WidgetLinkageRule[];
+  view?: 'month' | 'week'
+  linkages: WidgetLinkageRule[]
 }
 ```
 
@@ -98,6 +99,7 @@ WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
 ```
 
 在 `Events` 对象的 JSDoc 或注释中说明 payload 类型：
+
 ```typescript
 // payload: { sourceWidgetId: string; targetWidgetId: string; dateRange: { start: string; end: string } }
 ```
@@ -119,6 +121,7 @@ git commit -m "feat(types, eventbus): add DatePickerWidget types and WIDGET_DATE
 ## 任务 2：i18n 国际化文案
 
 **文件：**
+
 - 修改：`src/i18n/zh_CN.json`
 - 修改：`src/i18n/en_US.json`
 
@@ -181,6 +184,7 @@ git commit -m "feat(i18n): add DatePicker widget i18n keys"
 ## 任务 3：DatePickerWidget 组件
 
 **文件：**
+
 - 创建：`src/components/workbench/widgets/DatePickerWidget.vue`
 
 - [ ] **步骤 1：创建 DatePickerWidget.vue 基础结构**
@@ -188,6 +192,7 @@ git commit -m "feat(i18n): add DatePicker widget i18n keys"
 创建文件并写入基础模板和脚本骨架。核心要点：
 
 **模板结构：**
+
 ```vue
 <template>
   <div class="workbench-widget-date-picker" data-testid="workbench-widget-date-picker">
@@ -197,13 +202,17 @@ git commit -m "feat(i18n): add DatePicker widget i18n keys"
         :class="{ 'is-active': currentView === 'month' }"
         type="button"
         @click="currentView = 'month'"
-      >{{ t('datePicker').month }}</button>
+      >
+        {{ t('datePicker').month }}
+      </button>
       <button
         class="workbench-widget-date-picker__view-btn"
         :class="{ 'is-active': currentView === 'week' }"
         type="button"
         @click="currentView = 'week'"
-      >{{ t('datePicker').week }}</button>
+      >
+        {{ t('datePicker').week }}
+      </button>
     </div>
 
     <div v-if="currentView === 'month'" class="workbench-widget-date-picker__calendar">
@@ -230,70 +239,74 @@ git commit -m "feat(i18n): add DatePicker widget i18n keys"
 ```
 
 **脚本逻辑：**
+
 ```vue
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { t } from '@/i18n';
-import { eventBus, Events } from '@/utils/eventBus';
-import { useSafeProjectStore } from './useSafeProjectStore';
-import type { WorkbenchDatePickerWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
-import dayjs from '@/utils/dayjs';
+import type { WorkbenchDatePickerWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench'
+import { computed, ref, watch } from 'vue'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
+import { eventBus, Events } from '@/utils/eventBus'
+import { useSafeProjectStore } from './useSafeProjectStore'
 
 const props = defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
+  widget?: WorkbenchWidgetInstance
+}>()
 
-const projectStore = useSafeProjectStore();
-const pickerConfig = computed(() => (props.widget?.config ?? {}) as WorkbenchDatePickerWidgetConfig);
-const currentView = ref(pickerConfig.value.view ?? 'month');
-const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
-const rangeStart = ref<string>('');
-const rangeEnd = ref<string<string>>('');
-let lastClickedDate = '';
+const projectStore = useSafeProjectStore()
+const pickerConfig = computed(() => (props.widget?.config ?? {}) as WorkbenchDatePickerWidgetConfig)
+const currentView = ref(pickerConfig.value.view ?? 'month')
+const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
+const rangeStart = ref<string>('')
+const rangeEnd = ref < string < string >> ('')
+let lastClickedDate = ''
 
 watch(() => pickerConfig.value.view, (v) => {
-  if (v) currentView.value = v;
-});
+  if (v)
+    currentView.value = v
+})
 
 function getSummaryByDate(date: string) {
-  return projectStore?.getFocusPlanSummaryByDate(date, '') ?? emptySummary();
+  return projectStore?.getFocusPlanSummaryByDate(date, '') ?? emptySummary()
 }
 
 function handleDateClick(date: string, event: MouseEvent) {
   if (event.shiftKey && lastClickedDate) {
-    const d1 = dayjs(lastClickedDate);
-    const d2 = dayjs(date);
-    rangeStart.value = d1.isBefore(d2) ? lastClickedDate : date;
-    rangeEnd.value = d1.isBefore(d2) ? date : lastClickedDate;
-  } else {
-    rangeStart.value = date;
-    rangeEnd.value = date;
-    lastClickedDate = date;
+    const d1 = dayjs(lastClickedDate)
+    const d2 = dayjs(date)
+    rangeStart.value = d1.isBefore(d2) ? lastClickedDate : date
+    rangeEnd.value = d1.isBefore(d2) ? date : lastClickedDate
   }
-  selectedDate.value = date;
-  emitLinkageEvent(rangeStart.value, rangeEnd.value);
+  else {
+    rangeStart.value = date
+    rangeEnd.value = date
+    lastClickedDate = date
+  }
+  selectedDate.value = date
+  emitLinkageEvent(rangeStart.value, rangeEnd.value)
 }
 
 function emitLinkageEvent(start: string, end: string) {
-  if (!props.widget?.id) return;
-  const linkages = pickerConfig.value.linkages ?? [];
+  if (!props.widget?.id)
+    return
+  const linkages = pickerConfig.value.linkages ?? []
   for (const rule of linkages) {
     eventBus.emit(Events.WIDGET_DATE_RANGE_CHANGED, {
       sourceWidgetId: props.widget.id,
       targetWidgetId: rule.targetWidgetId,
       dateRange: { start, end },
-    });
+    })
   }
 }
 
 function emptySummary() {
-  return { date: '', total: 0, estimatedMinutes: 0, actualMinutes: 0,
-    matched: 0, overrun: 0, underrun: 0, notStarted: 0, inProgress: 0, unplanned: 0 };
+  return { date: '', total: 0, estimatedMinutes: 0, actualMinutes: 0, matched: 0, overrun: 0, underrun: 0, notStarted: 0, inProgress: 0, unplanned: 0 }
 }
 </script>
 ```
 
 **样式：**
+
 ```scss
 <style lang="scss" scoped>
 .workbench-widget-date-picker {
@@ -337,6 +350,7 @@ function emptySummary() {
 创建 `src/components/workbench/widgets/DatePickerMonthGrid.vue`，基于 [FocusWorkbenchMiniCalendar.vue](file:///c:\dev\projects\open-source\siyuan-plugin-bullet-journal\src\components\pomodoro\review\FocusWorkbenchMiniCalendar.vue) 改造：
 
 关键差异（相对于原始 FocusWorkbenchMiniCalendar）：
+
 1. **移除 v-model 双向绑定**，改为 `selectedDate` prop + `@date-click` emit
 2. **新增 rangeStart/rangeEnd props**，用于高亮选中范围
 3. **移除 legend 图例**（由父组件控制是否显示）
@@ -344,35 +358,36 @@ function emptySummary() {
 5. **新增范围高亮 CSS class**：`.cell--in-range`
 
 模板中 cell 的 class 绑定增加：
+
 ```html
-:class="{
-  ...
-  'cell--in-range': isInRange(cell.date),
-  'cell--range-start': cell.date === rangeStart,
-  'cell--range-end': cell.date === rangeEnd,
-}"
+:class="{ ... 'cell--in-range': isInRange(cell.date), 'cell--range-start': cell.date === rangeStart, 'cell--range-end':
+cell.date === rangeEnd, }"
+
 ```
 
 新增 `isInRange` 方法：
+
 ```ts
 function isInRange(date: string): boolean {
-  if (!rangeStart.value || !rangeEnd.value || !date) return false;
-  return date >= rangeStart.value && date <= rangeEnd.value;
+  if (!rangeStart.value || !rangeEnd.value || !date)
+    return false
+  return date >= rangeStart.value && date <= rangeEnd.value
 }
 ```
 
 Props 定义：
+
 ```ts
 defineProps<{
-  selectedDate: string;
-  rangeStart: string;
-  rangeEnd: string;
-  getSummaryByDate: (date: string) => FocusPlanDailySummary;
-}>();
+  selectedDate: string
+  rangeStart: string
+  rangeEnd: string
+  getSummaryByDate: (date: string) => FocusPlanDailySummary
+}>()
 defineEmits<{
-  'update:selectedDate': [value: string];
-  'date-click': [date: string, event: MouseEvent];
-}>();
+  'update:selectedDate': [value: string]
+  'date-click': [date: string, event: MouseEvent]
+}>()
 ```
 
 - [ ] **步骤 3：创建 DatePickerWeekGrid 子组件**
@@ -380,22 +395,24 @@ defineEmits<{
 创建 `src/components/workbench/widgets/DatePickerWeekGrid.vue`：
 
 周视图为简化版网格：
+
 - 计算当前 selectedDate 所在周的周一到周日（7 天）
 - 每个单元格显示星期标题 + 日期号 + 标记点
 - 支持 range 高亮（同月历）
 - 点击行为 emit `date-click`
 
 核心计算逻辑：
+
 ```ts
 const weekDates = computed(() => {
-  const d = dayjs(selectedDate.value);
-  let dow = d.day(); // 0=Sun
-  if (dow === 0) dow = 7;
-  const monday = d.subtract(dow - 1, 'day');
+  const d = dayjs(selectedDate.value)
+  let dow = d.day() // 0=Sun
+  if (dow === 0)
+    dow = 7
+  const monday = d.subtract(dow - 1, 'day')
   return Array.from({ length: 7 }, (_, i) =>
-    monday.add(i, 'day').format('YYYY-MM-DD')
-  );
-});
+    monday.add(i, 'day').format('YYYY-MM-DD'))
+})
 ```
 
 - [ ] **步骤 4：运行 lint + typecheck**
@@ -417,6 +434,7 @@ git commit -m "feat(widgets): add DatePickerWidget with month/week views and dat
 ## 任务 4：配置弹框 — 二级弹框（联动规则编辑器）
 
 **文件：**
+
 - 创建：`src/components/workbench/dialogs/DatePickerLinkageEditorDialog.vue`
 
 这是先于主弹框实现的子弹框，因为主弹框依赖它。
@@ -424,6 +442,7 @@ git commit -m "feat(widgets): add DatePickerWidget with month/week views and dat
 - [ ] **步骤 1：创建 DatePickerLinkageEditorDialog.vue**
 
 **模板：**
+
 ```vue
 <template>
   <WorkbenchConfigDialogLayout>
@@ -441,7 +460,7 @@ git commit -m "feat(widgets): add DatePickerWidget with month/week views and dat
               name="targetWidget"
               type="radio"
               @change="selectedTargetId = widget.id"
-            />
+            >
             <span>{{ widget.title || getWidgetTypeName(widget.type) }}</span>
           </label>
         </div>
@@ -475,47 +494,50 @@ git commit -m "feat(widgets): add DatePickerWidget with month/week views and dat
 ```
 
 **脚本：**
+
 ```vue
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-import type { WorkbenchWidgetInstance, WidgetLinkageRule, LinkableWidgetType } from '@/types/workbench';
+import type { LinkableWidgetType, WidgetLinkageRule, WorkbenchWidgetInstance } from '@/types/workbench'
+import { computed, ref } from 'vue'
+import { t } from '@/i18n'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
+import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue'
 
 const props = defineProps<{
-  editingRule?: WidgetLinkageRule | null;
-  availableWidgets: WorkbenchWidgetInstance[];
-  onConfirm: (rule: WidgetLinkageRule) => void;
-  onCancel: () => void;
-}>();
+  editingRule?: WidgetLinkageRule | null
+  availableWidgets: WorkbenchWidgetInstance[]
+  onConfirm: (rule: WidgetLinkageRule) => void
+  onCancel: () => void
+}>()
 
-const selectedTargetId = ref(props.editingRule?.targetWidgetId ?? '');
+const selectedTargetId = ref(props.editingRule?.targetWidgetId ?? '')
 
 const availableWidgets = computed(() =>
   props.availableWidgets.filter(w =>
     ['todoList'].includes(w.type) as string[]
   )
-);
+)
 
 function getWidgetTypeName(type: string): string {
-  try { return getWidgetDefinition(type as any).name; }
-  catch { return type; }
+  try { return getWidgetDefinition(type as any).name }
+  catch { return type }
 }
 
 function handleConfirm() {
-  if (!selectedTargetId.value) return;
+  if (!selectedTargetId.value)
+    return
   props.onConfirm({
     id: props.editingRule?.id ?? crypto.randomUUID(),
     targetWidgetId: selectedTargetId.value,
     targetType: 'todoList' as LinkableWidgetType,
     fieldMapping: { sourceField: 'dateRange', targetProperty: 'dateRange' },
-  });
+  })
 }
 </script>
 ```
 
 **样式：**
+
 ```scss
 <linkage-editor-dialog__body {
   display: grid;
@@ -542,7 +564,9 @@ function handleConfirm() {
   border: 1px solid var(--b3-border-color);
   border-radius: 6px;
   cursor: pointer;
-  &:hover { background: var(--b3-theme-surface); }
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
 }
 .linkage-editor-dialog__field-map {
   display: flex;
@@ -558,6 +582,7 @@ function handleConfirm() {
   color: var(--b3-theme-primary);
   font-weight: 600;
 }
+
 ```
 
 - [ ] **步骤 2：运行 lint 验证**
@@ -577,12 +602,14 @@ git commit -m "feat(dialogs): add DatePicker linkage editor dialog (level 2)"
 ## 任务 5：配置弹框 — 主弹框 + 打开函数
 
 **文件：**
+
 - 创建：`src/components/workbench/dialogs/DatePickerWidgetConfigDialog.vue`
 - 创建：`src/workbench/datePickerWidgetConfigDialog.ts`
 
 - [ ] **步骤 1：创建 DatePickerWidgetConfigDialog.vue**
 
 **模板：**
+
 ```vue
 <template>
   <WorkbenchConfigDialogLayout>
@@ -594,7 +621,9 @@ git commit -m "feat(dialogs): add DatePicker linkage editor dialog (level 2)"
             class="date-picker-config-dialog__add-btn"
             type="button"
             @click="handleAdd"
-          >+ {{ t('datePicker').addLinkage }}</button>
+          >
+            + {{ t('datePicker').addLinkage }}
+          </button>
         </div>
 
         <div v-if="linkages.length === 0" class="date-picker-config-dialog__empty">
@@ -611,8 +640,12 @@ git commit -m "feat(dialogs): add DatePicker linkage editor dialog (level 2)"
               {{ getTargetWidgetName(rule.targetWidgetId) }}
             </span>
             <div class="date-picker-config-dialog__rule-actions">
-              <button type="button" @click="handleEdit(rule)">✏️</button>
-              <button type="button" @click="handleDelete(rule.id)">🗑️</button>
+              <button type="button" @click="handleEdit(rule)">
+                ✏️
+              </button>
+              <button type="button" @click="handleDelete(rule.id)">
+                🗑️
+              </button>
             </div>
           </div>
         </div>
@@ -628,95 +661,103 @@ git commit -m "feat(dialogs): add DatePicker linkage editor dialog (level 2)"
       </button>
     </template>
   </WorkbenchConfigDialogLayout>
+</template>
 ```
 
 **脚本：**
+
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
-import { createApp } from 'vue';
-import { Dialog } from 'siyuan';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue';
-import DatePickerLinkageEditorDialog from './DatePickerLinkageEditorDialog.vue';
-import { t } from '@/i18n';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-import type { WorkbenchDatePickerWidgetConfig, WidgetLinkageRule, WorkbenchWidgetInstance } from '@/types/workbench';
+import type { WidgetLinkageRule, WorkbenchDatePickerWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench'
+import { Dialog } from 'siyuan'
+import { createApp, ref } from 'vue'
+
+import { t } from '@/i18n'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
+import DatePickerLinkageEditorDialog from './DatePickerLinkageEditorDialog.vue'
+import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue'
 
 const props = defineProps<{
-  initialConfig: WorkbenchDatePickerWidgetConfig;
-  dashboardWidgets: WorkbenchWidgetInstance[];
-  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchDatePickerWidgetConfig
+  dashboardWidgets: WorkbenchWidgetInstance[]
+  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void
+  onCancel: () => void
+}>()
 
-const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])]);
+const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])])
 
 function getTargetWidgetName(widgetId: string): string {
-  const w = props.dashboardWidgets.find(w => w.id === widgetId);
-  if (w?.title) return w.title;
-  if (w) return getWidgetDefinition(w.type).name;
-  return `(unknown: ${widgetId})`;
+  const w = props.dashboardWidgets.find(w => w.id === widgetId)
+  if (w?.title)
+    return w.title
+  if (w)
+    return getWidgetDefinition(w.type).name
+  return `(unknown: ${widgetId})`
 }
 
 function handleAdd() {
-  openEditor(null);
+  openEditor(null)
 }
 
 function handleEdit(rule: WidgetLinkageRule) {
-  openEditor(rule);
+  openEditor(rule)
 }
 
 function handleDelete(ruleId: string) {
-  linkages.value = linkages.value.filter(r => r.id !== ruleId);
+  linkages.value = linkages.value.filter(r => r.id !== ruleId)
 }
 
 function openEditor(editingRule: WidgetLinkageRule | null) {
-  let dialog: Dialog | null = null;
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
+  let dialog: Dialog | null = null
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
 
   dialog = new Dialog({
     title: editingRule ? t('datePicker').editLinkage : t('datePicker').addLinkage,
     content: '',
     width: '480px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   app = createApp(DatePickerLinkageEditorDialog, {
     editingRule,
     availableWidgets: props.dashboardWidgets,
     onConfirm: (rule: WidgetLinkageRule) => {
       if (editingRule) {
-        const idx = linkages.value.findIndex(r => r.id === editingRule.id);
-        if (idx >= 0) linkages.value[idx] = rule;
-      } else {
-        linkages.value.push(rule);
+        const idx = linkages.value.findIndex(r => r.id === editingRule.id)
+        if (idx >= 0)
+          linkages.value[idx] = rule
       }
-      dialog?.destroy();
+      else {
+        linkages.value.push(rule)
+      }
+      dialog?.destroy()
     },
     onCancel: () => dialog?.destroy(),
-  });
+  })
 
-  const pinia = getSharedPinia();
-  if (pinia) app.use(pinia);
-  app.mount(mountEl);
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
+  const pinia = getSharedPinia()
+  if (pinia)
+    app.use(pinia)
+  app.mount(mountEl)
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
 }
 
 function handleConfirm() {
   props.onConfirm({
     view: props.initialConfig.view ?? 'month',
     linkages: linkages.value,
-  });
+  })
 }
 </script>
 ```
 
 **样式：**
+
 ```scss
 .date-picker-config-dialog__body {
   display: flex;
@@ -774,6 +815,7 @@ function handleConfirm() {
   cursor: pointer;
   font-size: 14px;
 }
+
 ```
 
 - [ ] **步骤 2：创建打开函数 datePickerWidgetConfigDialog.ts**
@@ -850,6 +892,7 @@ git commit -m "feat(dialogs): add DatePicker widget config dialog with linkage r
 ## 任务 6：注册 Widget + DashboardCanvas 接入
 
 **文件：**
+
 - 修改：`src/workbench/widgetRegistry.ts`
 - 修改：`src/components/workbench/dashboard/DashboardCanvas.vue`
 
@@ -858,6 +901,7 @@ git commit -m "feat(dialogs): add DatePicker widget config dialog with linkage r
 在 [widgetRegistry.ts](file:///c:\dev\projects\open-source\siyuan-plugin-bullet-journal\src\workbench\widgetRegistry.ts) 的 `createWidgetRegistry()` 返回对象中，`pomodoroStats` 条目之后追加：
 
 首先更新 import 行，加入新类型：
+
 ```typescript
 import type {
   WorkbenchCalendarWidgetConfig,
@@ -868,11 +912,13 @@ import type {
 ```
 
 新增 import：
+
 ```typescript
-import { openDatePickerWidgetConfigDialog } from '@/workbench/datePickerWidgetConfigDialog';
+import { openDatePickerWidgetConfigDialog } from '@/workbench/datePickerWidgetConfigDialog'
 ```
 
 注册条目：
+
 ```typescript
 datePicker: {
   type: 'datePicker',
@@ -900,11 +946,11 @@ datePicker: {
 注意：`openConfigDialog` 的 context 类型 `WorkbenchWidgetConfigContext` 需要扩展以支持 `dashboardWidgets` 参数。修改 context 类型定义为：
 
 ```typescript
-type WorkbenchWidgetConfigContext = {
-  widget: WorkbenchWidgetInstance;
-  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
-  dashboardWidgets?: WorkbenchWidgetInstance[];  // 新增可选字段
-};
+interface WorkbenchWidgetConfigContext {
+  widget: WorkbenchWidgetInstance
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>
+  dashboardWidgets?: WorkbenchWidgetInstance[] // 新增可选字段
+}
 ```
 
 - [ ] **步骤 2：在 DashboardCanvas.vue 中注册组件并传递 widgets**
@@ -912,11 +958,13 @@ type WorkbenchWidgetConfigContext = {
 在 [DashboardCanvas.vue](file:///c:\dev\projects\open-source\siyuan-plugin-bullet-journal\src\components\workbench\dashboard\DashboardCanvas.vue) 中：
 
 1. 新增 import：
+
 ```typescript
-import DatePickerWidget from '@/components/workbench/widgets/DatePickerWidget.vue';
+import DatePickerWidget from '@/components/workbench/widgets/DatePickerWidget.vue'
 ```
 
 2. 在 `widgetComponents` map 中追加：
+
 ```typescript
 const widgetComponents: Record<WorkbenchWidgetType, Component> = {
   ...
@@ -927,24 +975,26 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
 3. 修改 `handleConfigureWidget` 方法，传递 `dashboardWidgets` 给 context：
 
 将：
+
 ```typescript
 definition.openConfigDialog?.({
   widget,
   onUpdateConfig: async (config) => {
-    await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
+    await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config)
   },
-});
+})
 ```
 
 改为：
+
 ```typescript
 definition.openConfigDialog?.({
   widget,
   onUpdateConfig: async (config) => {
-    await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
+    await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config)
   },
   dashboardWidgets: dashboard.value?.widgets ?? [],
-});
+})
 ```
 
 - [ ] **步骤 3：运行 lint + typecheck**
@@ -964,6 +1014,7 @@ git commit -m "feat(workbench): register DatePickerWidget and wire up DashboardC
 ## 任务 7：TodoListWidget 联动接收端改造
 
 **文件：**
+
 - 修改：`src/components/workbench/widgets/TodoListWidget.vue`
 
 - [ ] **步骤 1：添加 eventBus 导入和监听**
@@ -971,26 +1022,30 @@ git commit -m "feat(workbench): register DatePickerWidget and wire up DashboardC
 在 [TodoListWidget.vue](file:///c:\dev\projects\open-source\siyuan-plugin-bullet-journal\src\components\workbench\widgets\TodoListWidget.vue) 的 `<script setup>` 中：
 
 1. 新增导入（在现有 import 区域末尾追加）：
+
 ```typescript
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus'
 ```
 
 2. 在 `onMounted` 回调中（现有代码约第 235 行附近），在 `document.addEventListener` 之前追加：
+
 ```typescript
 const unsubscribeDateRange = eventBus.on(
   Events.WIDGET_DATE_RANGE_CHANGED,
-  (payload: { sourceWidgetId: string; targetWidgetId: string; dateRange: { start: string; end: string } }) => {
-    if (!props.widget || payload.targetWidgetId !== props.widget.id) return;
-    todoState.dateFilterType.value = 'custom';
-    todoState.startDate.value = payload.dateRange.start;
-    todoState.endDate.value = payload.dateRange.end;
+  (payload: { sourceWidgetId: string, targetWidgetId: string, dateRange: { start: string, end: string } }) => {
+    if (!props.widget || payload.targetWidgetId !== props.widget.id)
+      return
+    todoState.dateFilterType.value = 'custom'
+    todoState.startDate.value = payload.dateRange.start
+    todoState.endDate.value = payload.dateRange.end
   },
-);
+)
 ```
 
 3. 在 `onUnmounted` 回调中（约第 253 行），在 `preview.dispose()` 之前追加：
+
 ```typescript
-unsubscribeDateRange?.();
+unsubscribeDateRange?.()
 ```
 
 - [ ] **步骤 2：运行 lint + typecheck**
@@ -1037,15 +1092,15 @@ git commit -m "fix: final adjustments for DatePickerWidget feature"
 
 ### 规格覆盖度
 
-| 规格章节 | 实现任务 |
-|----------|----------|
-| §2 数据模型（类型+eventBus） | 任务 1 |
-| §4 DatePickerWidget 组件（月/周视图、选择、联动emit） | 任务 3 |
-| §5 配置弹框（主弹框+二级弹框+打开函数） | 任务 4 + 任务 5 |
-| §6 TodoListWidget 接收端改造 | 任务 7 |
-| §7 文件变更清单 | 全部任务覆盖 |
-| §8 Widget 注册 | 任务 6 |
-| i18n | 任务 2 |
+| 规格章节                                              | 实现任务        |
+| ----------------------------------------------------- | --------------- |
+| §2 数据模型（类型+eventBus）                          | 任务 1          |
+| §4 DatePickerWidget 组件（月/周视图、选择、联动emit） | 任务 3          |
+| §5 配置弹框（主弹框+二级弹框+打开函数）               | 任务 4 + 任务 5 |
+| §6 TodoListWidget 接收端改造                          | 任务 7          |
+| §7 文件变更清单                                       | 全部任务覆盖    |
+| §8 Widget 注册                                        | 任务 6          |
+| i18n                                                  | 任务 2          |
 
 ### 占位符扫描
 

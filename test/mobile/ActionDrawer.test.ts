@@ -1,13 +1,23 @@
 // @vitest-environment happy-dom
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
 
-const mockWriteBlock = vi.hoisted(() => vi.fn(async () => true));
+const mockWriteBlock = vi.hoisted(() => vi.fn(async () => true))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn(() => ''),
-}));
+}))
 
 vi.mock('@/utils/dayjs', () => ({
   default: () => ({
@@ -15,44 +25,47 @@ vi.mock('@/utils/dayjs', () => ({
       format: () => '2026-05-02',
     }),
   }),
-}));
+}))
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
-}));
+}))
 
 async function mountDrawer(props: Record<string, unknown>) {
-  const { default: ActionDrawer } = await import('@/mobile/drawers/action/ActionDrawer.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: ActionDrawer } = await import('@/mobile/drawers/action/ActionDrawer.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const events: Array<{ name: string; payload: unknown }> = [];
+  const events: Array<{ name: string, payload: unknown }> = []
   const app = createApp(ActionDrawer, {
     ...props,
     'onUpdate:modelValue': (payload: unknown) => {
-      events.push({ name: 'update:modelValue', payload });
+      events.push({
+        name: 'update:modelValue',
+        payload,
+      })
     },
-  });
-  app.mount(container);
-  await nextTick();
+  })
+  app.mount(container)
+  await nextTick()
 
   return {
     events,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('ActionDrawer', () => {
+describe('actionDrawer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   afterEach(() => {
-    document.body.innerHTML = '';
-  });
+    document.body.innerHTML = ''
+  })
 
   it('uses BlockWriter setStatus when completing an item', async () => {
     const mounted = await mountDrawer({
@@ -65,19 +78,25 @@ describe('ActionDrawer', () => {
       },
     });
 
-    (document.body.querySelector('.action-complete') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (document.body.querySelector('.action-complete') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
     expect(mockWriteBlock).toHaveBeenCalledWith(
       { blockId: 'block-1' },
-      { type: 'setStatus', status: 'completed' },
-    );
+      {
+        type: 'setStatus',
+        status: 'completed',
+      },
+    )
     expect(mounted.events).toEqual([
-      { name: 'update:modelValue', payload: false },
-    ]);
+      {
+        name: 'update:modelValue',
+        payload: false,
+      },
+    ])
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('uses BlockWriter addDate when migrating an item', async () => {
     const mounted = await mountDrawer({
@@ -93,8 +112,8 @@ describe('ActionDrawer', () => {
       },
     });
 
-    (document.body.querySelector('.action-migrate') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (document.body.querySelector('.action-migrate') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
     expect(mockWriteBlock).toHaveBeenCalledWith(
       { blockId: 'block-2' },
@@ -117,11 +136,14 @@ describe('ActionDrawer', () => {
         ],
         timePrecision: undefined,
       },
-    );
+    )
     expect(mounted.events).toEqual([
-      { name: 'update:modelValue', payload: false },
-    ]);
+      {
+        name: 'update:modelValue',
+        payload: false,
+      },
+    ])
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

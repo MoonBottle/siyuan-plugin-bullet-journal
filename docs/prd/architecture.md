@@ -35,16 +35,16 @@
 
 ### 1.2 技术栈
 
-| 层级 | 技术 | 用途 |
-|------|------|------|
-| 前端框架 | Vue 3 + TypeScript | UI 组件开发 |
-| 状态管理 | Pinia | 全局状态管理 |
-| 构建工具 | Vite | 项目构建 |
-| 日历组件 | FullCalendar | 日历视图 |
-| 甘特图组件 | dhtmlx-gantt | 甘特图视图 |
-| AI 集成 | OpenAI API | AI 对话 |
-| MCP 服务 | MCP SDK | 外部 AI 集成 |
-| 测试框架 | Vitest | 单元测试 |
+| 层级       | 技术               | 用途         |
+| ---------- | ------------------ | ------------ |
+| 前端框架   | Vue 3 + TypeScript | UI 组件开发  |
+| 状态管理   | Pinia              | 全局状态管理 |
+| 构建工具   | Vite               | 项目构建     |
+| 日历组件   | FullCalendar       | 日历视图     |
+| 甘特图组件 | dhtmlx-gantt       | 甘特图视图   |
+| AI 集成    | OpenAI API         | AI 对话      |
+| MCP 服务   | MCP SDK            | 外部 AI 集成 |
+| 测试框架   | Vitest             | 单元测试     |
 
 ## 二、模块架构
 
@@ -133,6 +133,7 @@ Project[]
 ### 3.1 解析器模块
 
 #### 职责
+
 - 解析思源 Kramdown 格式
 - 提取项目、任务、事项数据
 - 支持番茄钟解析
@@ -142,19 +143,19 @@ Project[]
 ```typescript
 // 行解析器
 class LineParser {
-  static parseTaskLine(line: string, lineNumber: number): Task;
-  static parseItemLine(line: string, lineNumber: number, links?: Link[]): Item[];
-  static parsePomodoroLine(line: string, blockId?: string): PomodoroRecord | null;
+  static parseTaskLine(line: string, lineNumber: number): Task
+  static parseItemLine(line: string, lineNumber: number, links?: Link[]): Item[]
+  static parsePomodoroLine(line: string, blockId?: string): PomodoroRecord | null
 }
 
 // Markdown 解析器
 class MarkdownParser {
-  parseAllProjects(): Promise<Project[]>;
-  getAllItems(): Promise<Item[]>;
+  parseAllProjects(): Promise<Project[]>
+  getAllItems(): Promise<Item[]>
 }
 
 // 核心解析函数
-function parseKramdown(kramdown: string, docId: string, groupId?: string): Project | null;
+function parseKramdown(kramdown: string, docId: string, groupId?: string): Project | null
 ```
 
 ### 3.2 状态管理
@@ -163,19 +164,19 @@ function parseKramdown(kramdown: string, docId: string, groupId?: string): Proje
 
 ```typescript
 interface ProjectState {
-  projects: Project[];
-  items: Item[];
-  calendarEvents: CalendarEvent[];
-  loading: boolean;
-  refreshing: boolean;
-  refreshKey: number;
-  hideCompleted: boolean;
-  hideAbandoned: boolean;
-  currentDate: string;
+  projects: Project[]
+  items: Item[]
+  calendarEvents: CalendarEvent[]
+  loading: boolean
+  refreshing: boolean
+  refreshKey: number
+  hideCompleted: boolean
+  hideAbandoned: boolean
+  currentDate: string
 }
 
 // Getters
-- getFilteredProjects(groupId)
+-getFilteredProjects(groupId)
 - getFilteredItems(groupId)
 - getFilteredCalendarEvents(groupId)
 - getAllPomodoros(groupId)
@@ -193,11 +194,11 @@ interface ProjectState {
 
 ```typescript
 interface SettingsState extends SettingsData {
-  plugin: Plugin | null;
+  plugin: Plugin | null
 }
 
 // Actions
-- init(plugin)
+-init(plugin)
 - saveToPlugin()
 - addDirectory(directory)
 - removeDirectory(id)
@@ -273,62 +274,62 @@ MCP Server (独立进程)
 ```typescript
 // 项目
 interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  tasks: Task[];
-  path: string;
-  groupId?: string;
-  links?: Link[];
-  pomodoros?: PomodoroRecord[];
+  id: string
+  name: string
+  description?: string
+  tasks: Task[]
+  path: string
+  groupId?: string
+  links?: Link[]
+  pomodoros?: PomodoroRecord[]
 }
 
 // 任务
 interface Task {
-  id: string;
-  name: string;
-  level: 'L1' | 'L2' | 'L3';
-  date?: string;
-  items: Item[];
-  lineNumber: number;
-  docId?: string;
-  blockId?: string;
-  links?: Link[];
-  pomodoros?: PomodoroRecord[];
+  id: string
+  name: string
+  level: 'L1' | 'L2' | 'L3'
+  date?: string
+  items: Item[]
+  lineNumber: number
+  docId?: string
+  blockId?: string
+  links?: Link[]
+  pomodoros?: PomodoroRecord[]
 }
 
 // 事项
 interface Item {
-  id: string;
-  content: string;
-  date: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  task?: Task;
-  project?: Project;
-  lineNumber: number;
-  docId: string;
-  blockId?: string;
-  status: ItemStatus;
-  links?: Link[];
-  siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>;
-  pomodoros?: PomodoroRecord[];
+  id: string
+  content: string
+  date: string
+  startDateTime?: string
+  endDateTime?: string
+  task?: Task
+  project?: Project
+  lineNumber: number
+  docId: string
+  blockId?: string
+  status: ItemStatus
+  links?: Link[]
+  siblingItems?: Array<{ date: string, startDateTime?: string, endDateTime?: string }>
+  pomodoros?: PomodoroRecord[]
 }
 
 // 番茄钟
 interface PomodoroRecord {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime?: string;
-  description?: string;
-  durationMinutes: number;
-  blockId?: string;
-  projectId?: string;
-  taskId?: string;
-  itemId?: string;
-  status?: PomodoroStatus;
-  itemContent?: string;
+  id: string
+  date: string
+  startTime: string
+  endTime?: string
+  description?: string
+  durationMinutes: number
+  blockId?: string
+  projectId?: string
+  taskId?: string
+  itemId?: string
+  status?: PomodoroStatus
+  itemContent?: string
 }
 ```
 
@@ -336,16 +337,16 @@ interface PomodoroRecord {
 
 ```typescript
 interface SettingsData {
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  lunchBreakStart: string;
-  lunchBreakEnd: string;
-  todoDock: TodoDockSettings;
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
+  lunchBreakStart: string
+  lunchBreakEnd: string
+  todoDock: TodoDockSettings
   ai?: {
-    providers: AIProviderConfig[];
-    activeProviderId: string | null;
-  };
+    providers: AIProviderConfig[]
+    activeProviderId: string | null
+  }
 }
 ```
 
@@ -362,8 +363,8 @@ enum Events {
 }
 
 // 使用方式
-eventBus.emit(Events.DATA_REFRESH);
-eventBus.on(Events.DATA_REFRESH, callback);
+eventBus.emit(Events.DATA_REFRESH)
+eventBus.on(Events.DATA_REFRESH, callback)
 ```
 
 ### 5.2 跨 Tab 通信
@@ -380,11 +381,11 @@ channel.onmessage = (event) => { ... };
 ```typescript
 // 监听思源 WebSocket
 this.eventBus.on('ws-main', (event) => {
-  const data = event.detail;
+  const data = event.detail
   if (refreshCmds.includes(data.cmd)) {
-    this.scheduleRefresh();
+    this.scheduleRefresh()
   }
-});
+})
 ```
 
 ## 六、性能优化

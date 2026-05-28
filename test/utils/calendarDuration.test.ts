@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
-import type { CalendarEvent } from '@/types/models';
+import type { CalendarEvent } from '@/types/models'
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
+import {
+  calculateDayTotalDurationMinutes,
+  formatTotalDuration,
+} from '@/utils/calendarDuration'
 
 function createEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
   return {
@@ -16,7 +23,7 @@ function createEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
       ...overrides.extendedProps,
     },
     ...overrides,
-  };
+  }
 }
 
 describe('calendarDuration', () => {
@@ -63,17 +70,17 @@ describe('calendarDuration', () => {
           date: '2026-04-26',
         },
       }),
-    ];
+    ]
 
     const totalMinutes = calculateDayTotalDurationMinutes(
       events,
       '2026-04-25',
       '12:00',
-      '13:00'
-    );
+      '13:00',
+    )
 
-    expect(totalMinutes).toBe(120);
-  });
+    expect(totalMinutes).toBe(120)
+  })
 
   it('忽略没有完整起止时间的事件', () => {
     const events: CalendarEvent[] = [
@@ -92,13 +99,13 @@ describe('calendarDuration', () => {
           date: '2026-04-25',
         },
       }),
-    ];
+    ]
 
-    expect(calculateDayTotalDurationMinutes(events, '2026-04-25')).toBe(90);
-  });
+    expect(calculateDayTotalDurationMinutes(events, '2026-04-25')).toBe(90)
+  })
 
   it('格式化总耗时为 H:mm', () => {
-    expect(formatTotalDuration(45)).toBe('0:45');
-    expect(formatTotalDuration(135)).toBe('2:15');
-  });
-});
+    expect(formatTotalDuration(45)).toBe('0:45')
+    expect(formatTotalDuration(135)).toBe('2:15')
+  })
+})

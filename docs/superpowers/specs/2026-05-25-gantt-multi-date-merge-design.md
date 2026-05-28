@@ -38,43 +38,44 @@ task-yyy (任务行)
 
 ### 示例
 
-| 语法 | Parser 产出 | 合并结果 |
-|---|---|---|
-| `整理资料 @2026-03-01, 2026-03-10~03-12` | 3/1(全天), 3/10(全天), 3/11(全天), 3/12(全天) | 2 根条：3/1 一根，3/10~3/12 一根 |
-| `整理资料 @2026-03-10~03-12 14:00~15:00` | 3/10(14-15), 3/11(14-15), 3/12(14-15) | 3 根条：每天各一根 |
-| `整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00~15:00` | 3/6(9-9:30), 3/10(14-15) | 2 根条：各一根 |
-| `整理资料 @2026-03-01, 2026-03-02, 2026-03-10` | 3/1(全天), 3/2(全天), 3/10(全天) | 2 根条：3/1~3/2 一根，3/10 一根 |
-| `整理资料 @2026-03-01, 2026-03-10 14:00~15:00` | 3/1(全天), 3/10(14-15) | 2 根条：3/1 一根，3/10 一根 |
+| 语法                                                       | Parser 产出                                   | 合并结果                         |
+| ---------------------------------------------------------- | --------------------------------------------- | -------------------------------- |
+| `整理资料 @2026-03-01, 2026-03-10~03-12`                   | 3/1(全天), 3/10(全天), 3/11(全天), 3/12(全天) | 2 根条：3/1 一根，3/10~3/12 一根 |
+| `整理资料 @2026-03-10~03-12 14:00~15:00`                   | 3/10(14-15), 3/11(14-15), 3/12(14-15)         | 3 根条：每天各一根               |
+| `整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00~15:00` | 3/6(9-9:30), 3/10(14-15)                      | 2 根条：各一根                   |
+| `整理资料 @2026-03-01, 2026-03-02, 2026-03-10`             | 3/1(全天), 3/2(全天), 3/10(全天)              | 2 根条：3/1~3/2 一根，3/10 一根  |
+| `整理资料 @2026-03-01, 2026-03-10 14:00~15:00`             | 3/1(全天), 3/10(14-15)                        | 2 根条：3/1 一根，3/10 一根      |
 
 ### 算法伪代码
 
 ```typescript
 interface Segment {
-  items: Item[];
+  items: Item[]
 }
 
 function mergeItemsToSegments(items: Item[]): Segment[] {
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date))
 
-  const segments: Segment[] = [];
-  let current: Segment | null = null;
+  const segments: Segment[] = []
+  let current: Segment | null = null
 
   for (const item of sorted) {
     if (item.startDateTime) {
-      segments.push({ items: [item] });
-      current = null;
-      continue;
+      segments.push({ items: [item] })
+      current = null
+      continue
     }
 
     if (current && isNextDay(lastDateOf(current), item.date)) {
-      current.items.push(item);
-    } else {
-      current = { items: [item] };
-      segments.push(current);
+      current.items.push(item)
+    }
+    else {
+      current = { items: [item] }
+      segments.push(current)
     }
   }
 
-  return segments;
+  return segments
 }
 ```
 
@@ -130,7 +131,7 @@ Split 父任务属性：
 #### 2.1 配置
 
 ```typescript
-gantt.config.open_split_tasks = true;
+gantt.config.open_split_tasks = true
 ```
 
 #### 2.2 点击事件
@@ -150,7 +151,8 @@ gantt.config.open_split_tasks = true;
 `task_class` 模板新增 split 父任务样式：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return 'gantt-split-parent';
+if (String(task.id).startsWith('split-'))
+  return 'gantt-split-parent'
 ```
 
 CSS：

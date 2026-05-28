@@ -8,18 +8,19 @@ Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro
 
 ## 📋 Features
 
-| Feature | Description | Best For |
-|---------|-------------|----------|
-| **Calendar View** | Display tasks in calendar format with month/week/day/list views | Daily/weekly planning and time blocking |
-| **Gantt Chart** | Visualize project progress with hierarchical task display | Understanding project timelines and dependencies |
-| **Todo Dock** | Show upcoming todo items in sidebar for quick access | Quick glance at today's and future tasks |
-| **Habit Check-in** | Track daily habits, support binary and count types | Build habits, view streaks and completion rates |
-| **Quadrant View** | Auto-categorize tasks by priority into importance/urgency matrix | Focus on key items, manage time effectively |
-| **Workbench** | Integrated workspace with dashboard and multiple views | One-stop task management |
-| **Pomodoro** | Display Pomodoro focus status in sidebar | Track Pomodoro focus time |
-| **AI Chat** | Display AI conversation history in sidebar | Interact with AI assistant to query projects, tasks, and items |
+| Feature            | Description                                                      | Best For                                                       |
+| ------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Calendar View**  | Display tasks in calendar format with month/week/day/list views  | Daily/weekly planning and time blocking                        |
+| **Gantt Chart**    | Visualize project progress with hierarchical task display        | Understanding project timelines and dependencies               |
+| **Todo Dock**      | Show upcoming todo items in sidebar for quick access             | Quick glance at today's and future tasks                       |
+| **Habit Check-in** | Track daily habits, support binary and count types               | Build habits, view streaks and completion rates                |
+| **Quadrant View**  | Auto-categorize tasks by priority into importance/urgency matrix | Focus on key items, manage time effectively                    |
+| **Workbench**      | Integrated workspace with dashboard and multiple views           | One-stop task management                                       |
+| **Pomodoro**       | Display Pomodoro focus status in sidebar                         | Track Pomodoro focus time                                      |
+| **AI Chat**        | Display AI conversation history in sidebar                       | Interact with AI assistant to query projects, tasks, and items |
 
 **Key Differentiators:**
+
 - 🔗 **Bidirectional links** - Click any task to jump directly to its location in your notes
 - 🎯 **Non-invasive** - Documents are tasks; just add markers in notes to view and manage tasks in visual interfaces
 - ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
@@ -50,9 +51,11 @@ Back + Biceps + Cardio 📅2026-03-11 ❌
 Got dragged to drink, gave up, will try another day (Notes related to the item)
 
 Back + Biceps + Cardio 📅2026-03-12 08:00~10:00
+
 ```
 
 **Marker Reference:**
+
 - `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
 - `📋` - Marks a line as a task
 - `📅YYYY-MM-DD` / `📅YYYY-MM-DD HH:mm~HH:mm` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period (supports both minute and second precision)
@@ -60,15 +63,15 @@ Back + Biceps + Cardio 📅2026-03-12 08:00~10:00
 
 📌 Use slash commands to quickly add markers:
 
-| Command | Function |
-|---------|----------|
-| `/task` | Mark as task |
-| `/today` | Add today's item |
+| Command     | Function            |
+| ----------- | ------------------- |
+| `/task`     | Mark as task        |
+| `/today`    | Add today's item    |
 | `/tomorrow` | Add tomorrow's item |
-| `/done` | Mark as completed |
-| `/calendar` | Open calendar view |
-| `/todo` | Open todo dock |
-| `/focus` | Start focus session |
+| `/done`     | Mark as completed   |
+| `/calendar` | Open calendar view  |
+| `/todo`     | Open todo dock      |
+| `/focus`    | Start focus session |
 
 ### 👀 2. View in Visual Interfaces
 
@@ -132,10 +135,10 @@ If Task Assistant helps you, please consider:
 
 Starting from v0.12.2, the plugin supports two scanning modes:
 
-| Mode | Description |
-|------|-------------|
-| **Scan Entire Workspace** (default) | Scan all documents containing task markers. Directory config is only used for **grouping**. All tasks are visible. |
-| **Scan Configured Directories Only** | Only scan configured directories, same behavior as older versions. Suitable for large workspaces. |
+| Mode                                 | Description                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Scan Entire Workspace** (default)  | Scan all documents containing task markers. Directory config is only used for **grouping**. All tasks are visible. |
+| **Scan Configured Directories Only** | Only scan configured directories, same behavior as older versions. Suitable for large workspaces.                  |
 
 **Upgrade Note**: After upgrading from older versions, "Full Scan Mode" is enabled by default, and tasks that disappeared due to directory configuration will **reappear**. To restore original behavior, manually switch to "Scan Configured Directories Only" mode in settings.
 

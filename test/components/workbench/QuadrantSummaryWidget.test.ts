@@ -1,45 +1,95 @@
 // @vitest-environment happy-dom
 
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, getActivePinia, setActivePinia } from 'pinia';
-import { initI18n } from '@/i18n';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import {
+  createPinia,
+  getActivePinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+} from 'vue'
+import { initI18n } from '@/i18n'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
 
-const todoSidebarProps = vi.fn();
-const nativePreviewOpen = vi.fn();
-const nativePreviewClose = vi.fn();
-const nativePreviewContainsTarget = vi.fn(() => false);
-const mockPlugin = { name: 'plugin' };
-const mockApp = { name: 'app' };
+const todoSidebarProps = vi.fn()
+const nativePreviewOpen = vi.fn()
+const nativePreviewClose = vi.fn()
+const nativePreviewContainsTarget = vi.fn(() => false)
+const mockPlugin = { name: 'plugin' }
+const mockApp = { name: 'app' }
 
 const mockQuadrantConfigStore = {
   loaded: true,
   config: {
     version: 1,
     panels: [
-      { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
-      { id: 'q2', title: 'Follow-up', rules: { priority: ['medium'] } },
-      { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
-      { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+      {
+        id: 'q1',
+        title: '重要且紧急',
+        rules: { priority: ['high'] },
+      },
+      {
+        id: 'q2',
+        title: 'Follow-up',
+        rules: { priority: ['medium'] },
+      },
+      {
+        id: 'q3',
+        title: '紧急不重要',
+        rules: { priority: ['low'] },
+      },
+      {
+        id: 'q4',
+        title: '不重要不紧急',
+        rules: { priority: ['none'] },
+      },
     ],
   },
   panels: [
-    { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
-    { id: 'q2', title: 'Follow-up', rules: { priority: ['medium'] } },
-    { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
-    { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+    {
+      id: 'q1',
+      title: '重要且紧急',
+      rules: { priority: ['high'] },
+    },
+    {
+      id: 'q2',
+      title: 'Follow-up',
+      rules: { priority: ['medium'] },
+    },
+    {
+      id: 'q3',
+      title: '紧急不重要',
+      rules: { priority: ['low'] },
+    },
+    {
+      id: 'q4',
+      title: '不重要不紧急',
+      rules: { priority: ['none'] },
+    },
   ],
   loadConfig: vi.fn(),
   savePanel: vi.fn(),
   resetAll: vi.fn(),
-};
+}
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => mockPlugin),
   useApp: vi.fn(() => mockApp),
-}));
+}))
 
 vi.mock('@/utils/nativeBlockPreview', () => ({
   createNativeBlockPreviewController: () => ({
@@ -48,11 +98,11 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
     containsTarget: nativePreviewContainsTarget,
     isOpen: vi.fn(() => false),
   }),
-}));
+}))
 
 vi.mock('@/stores/quadrantConfigStore', () => ({
   useQuadrantConfigStore: () => mockQuadrantConfigStore,
-}));
+}))
 
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   default: defineComponent({
@@ -60,7 +110,10 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
     props: ['modelValue', 'options', 'placeholder', 'disabled'],
     emits: ['update:modelValue'],
     inheritAttrs: false,
-    setup(props, { emit, attrs }) {
+    setup(props, {
+      emit,
+      attrs,
+    }) {
       return () => h('select', {
         ...attrs,
         value: props.modelValue,
@@ -73,10 +126,10 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
         ...(props.options ?? []).map((option: { value: string, label: string }) =>
           h('option', { value: option.value }, option.label),
         ),
-      ]);
+      ])
     },
   }),
-}));
+}))
 
 vi.mock('@/components/todo/TodoSidebarList.vue', () => ({
   default: defineComponent({
@@ -95,15 +148,15 @@ vi.mock('@/components/todo/TodoSidebarList.vue', () => ({
         hasActiveFilters: props.hasActiveFilters,
         previewTriggerMode: props.previewTriggerMode,
         onItemPreviewClick: props.onItemPreviewClick,
-      });
+      })
 
       return () => h('div', {
         'data-testid': 'quadrant-widget-todo-sidebar',
         'data-items-count': String(props.items?.length ?? 0),
-      });
+      })
     },
   }),
-}));
+}))
 
 function createItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -114,46 +167,46 @@ function createItem(overrides: Partial<Item> = {}): Item {
     docId: 'doc-1',
     status: 'pending',
     ...overrides,
-  };
+  }
 }
 
 async function mountDialog(options?: {
-  initialConfig?: Record<string, unknown>;
-  onConfirm?: ReturnType<typeof vi.fn>;
-  onCancel?: ReturnType<typeof vi.fn>;
+  initialConfig?: Record<string, unknown>
+  onConfirm?: ReturnType<typeof vi.fn>
+  onCancel?: ReturnType<typeof vi.fn>
 }) {
-  const { default: QuadrantWidgetConfigDialog } = await import('@/components/workbench/dialogs/QuadrantWidgetConfigDialog.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: QuadrantWidgetConfigDialog } = await import('@/components/workbench/dialogs/QuadrantWidgetConfigDialog.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const onConfirm = options?.onConfirm ?? vi.fn();
-  const onCancel = options?.onCancel ?? vi.fn();
+  const onConfirm = options?.onConfirm ?? vi.fn()
+  const onCancel = options?.onCancel ?? vi.fn()
 
   const app = createApp(QuadrantWidgetConfigDialog, {
     initialConfig: options?.initialConfig ?? {},
     onConfirm,
     onCancel,
-  });
+  })
 
-  app.use(getActivePinia()!);
-  app.mount(container);
-  await nextTick();
+  app.use(getActivePinia()!)
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     onConfirm,
     onCancel,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 async function mountWidget(widgetConfig: Record<string, unknown>) {
-  const pinia = createPinia();
-  setActivePinia(pinia);
-  const projectStore = useProjectStore();
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const projectStore = useProjectStore()
   projectStore.projects = [
     {
       id: 'project-a',
@@ -165,8 +218,15 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
           level: 'L1',
           lineNumber: 1,
           items: [
-            createItem({ id: 'item-high-a', priority: 'high' }),
-            createItem({ id: 'item-high-b', priority: 'high', status: 'completed' }),
+            createItem({
+              id: 'item-high-a',
+              priority: 'high',
+            }),
+            createItem({
+              id: 'item-high-b',
+              priority: 'high',
+              status: 'completed',
+            }),
           ],
         },
       ],
@@ -184,7 +244,10 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
           level: 'L1',
           lineNumber: 1,
           items: [
-            createItem({ id: 'item-low-a', priority: 'low' }),
+            createItem({
+              id: 'item-low-a',
+              priority: 'low',
+            }),
             createItem({ id: 'item-none-a' }),
           ],
         },
@@ -193,150 +256,161 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
       links: [],
       groupId: 'group-b',
     } as any,
-  ];
+  ]
 
-  const { default: QuadrantSummaryWidget } = await import('@/components/workbench/widgets/QuadrantSummaryWidget.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const onTitleMetaChange = vi.fn();
+  const { default: QuadrantSummaryWidget } = await import('@/components/workbench/widgets/QuadrantSummaryWidget.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const onTitleMetaChange = vi.fn()
 
   const app = createApp(QuadrantSummaryWidget, {
     widget: {
       id: 'widget-1',
       type: 'quadrantSummary',
       title: 'Quadrant Widget',
-      layout: { x: 0, y: 0, w: 6, h: 4 },
+      layout: {
+        x: 0,
+        y: 0,
+        w: 6,
+        h: 4,
+      },
       config: widgetConfig,
     },
     onTitleMetaChange,
-  });
+  })
 
-  app.use(pinia);
-  app.mount(container);
-  await nextTick();
+  app.use(pinia)
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     onTitleMetaChange,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('QuadrantWidgetConfigDialog', () => {
+describe('quadrantWidgetConfigDialog', () => {
   beforeEach(() => {
-    initI18n('en_US');
-    setActivePinia(createPinia());
-    document.body.innerHTML = '';
-    vi.clearAllMocks();
-  });
+    initI18n('en_US')
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    vi.clearAllMocks()
+  })
 
   it('confirms selected quadrant and group', async () => {
-    const settingsStore = useSettingsStore();
-    settingsStore.loaded = true;
+    const settingsStore = useSettingsStore()
+    settingsStore.loaded = true
     settingsStore.groups = [
-      { id: 'group-a', name: 'Alpha' } as any,
-      { id: 'group-b', name: 'Beta' } as any,
-    ];
+      {
+        id: 'group-a',
+        name: 'Alpha',
+      } as any,
+      {
+        id: 'group-b',
+        name: 'Beta',
+      } as any,
+    ]
 
     const mounted = await mountDialog({
       initialConfig: {
         groupId: 'group-a',
         quadrant: 'q1',
       },
-    });
+    })
 
-    const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement;
-    quadrantSelect.value = 'q4';
-    quadrantSelect.dispatchEvent(new Event('change'));
+    const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement
+    quadrantSelect.value = 'q4'
+    quadrantSelect.dispatchEvent(new Event('change'))
+    await nextTick()
+
+    const groupSelect = mounted.container.querySelector('[data-testid="quadrant-widget-group-select"]') as HTMLSelectElement
+    groupSelect.value = 'group-b'
+    groupSelect.dispatchEvent(new Event('change'))
     await nextTick();
 
-    const groupSelect = mounted.container.querySelector('[data-testid="quadrant-widget-group-select"]') as HTMLSelectElement;
-    groupSelect.value = 'group-b';
-    groupSelect.dispatchEvent(new Event('change'));
-    await nextTick();
-
-    (mounted.container.querySelector('[data-testid="quadrant-widget-config-confirm"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="quadrant-widget-config-confirm"]') as HTMLButtonElement).click()
 
     expect(mounted.onConfirm).toHaveBeenCalledWith({
       groupId: 'group-b',
       quadrant: 'q4',
-    });
+    })
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('maps legacy workbench keys to q1-q4', async () => {
-    const settingsStore = useSettingsStore();
-    settingsStore.loaded = true;
-    settingsStore.groups = [];
+    const settingsStore = useSettingsStore()
+    settingsStore.loaded = true
+    settingsStore.groups = []
 
     const mounted = await mountDialog({
       initialConfig: {
         quadrant: 'high',
       },
-    });
+    })
 
-    const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement;
-    expect(quadrantSelect.value).toBe('q1');
+    const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement
+    expect(quadrantSelect.value).toBe('q1')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 
-describe('QuadrantSummaryWidget', () => {
+describe('quadrantSummaryWidget', () => {
   beforeEach(() => {
-    initI18n('en_US');
-    document.body.innerHTML = '';
-    vi.clearAllMocks();
-  });
+    initI18n('en_US')
+    document.body.innerHTML = ''
+    vi.clearAllMocks()
+  })
 
   it('renders the configured panel title in the summary widget', async () => {
     const mounted = await mountWidget({
       groupId: 'group-b',
       quadrant: 'q4',
-    });
+    })
 
-    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith('1 项 · 不重要不紧急');
+    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith('1 项 · 不重要不紧急')
 
-    const sidebar = mounted.container.querySelector('[data-testid="quadrant-widget-todo-sidebar"]');
-    expect(sidebar?.getAttribute('data-items-count')).toBe('1');
+    const sidebar = mounted.container.querySelector('[data-testid="quadrant-widget-todo-sidebar"]')
+    expect(sidebar?.getAttribute('data-items-count')).toBe('1')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('renders custom panel title from config', async () => {
     const mounted = await mountWidget({
       groupId: '',
       quadrant: 'q2',
-    });
+    })
 
-    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith(expect.stringContaining('Follow-up'));
+    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith(expect.stringContaining('Follow-up'))
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('wires click-trigger preview callbacks and opens native preview from card clicks', async () => {
     const mounted = await mountWidget({
       groupId: '',
       quadrant: 'q4',
-    });
+    })
 
-    const sidebarPropsCall = todoSidebarProps.mock.calls.at(-1)?.[0];
-    expect(sidebarPropsCall.previewTriggerMode).toBe('click');
-    expect(sidebarPropsCall.onItemPreviewClick).toBeTypeOf('function');
+    const sidebarPropsCall = todoSidebarProps.mock.calls.at(-1)?.[0]
+    expect(sidebarPropsCall.previewTriggerMode).toBe('click')
+    expect(sidebarPropsCall.onItemPreviewClick).toBeTypeOf('function')
 
-    const anchorEl = document.createElement('div');
-    document.body.appendChild(anchorEl);
+    const anchorEl = document.createElement('div')
+    document.body.appendChild(anchorEl)
 
     sidebarPropsCall.onItemPreviewClick({
       blockId: 'block-1',
       itemId: 'item-1',
       anchorEl,
-    });
-    await nextTick();
+    })
+    await nextTick()
 
     expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({
       app: mockApp,
@@ -345,8 +419,8 @@ describe('QuadrantSummaryWidget', () => {
       anchorEl,
       onHoverChange: expect.any(Function),
       onPanelDestroyed: expect.any(Function),
-    }));
+    }))
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

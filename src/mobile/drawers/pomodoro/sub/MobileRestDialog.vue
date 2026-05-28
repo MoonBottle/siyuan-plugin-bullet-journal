@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="rest-overlay b3-dialog" @click="handleClose">
+      <div
+        v-if="modelValue"
+        class="rest-overlay b3-dialog"
+        @click="handleClose"
+      >
         <Transition name="zoom">
           <div
             v-if="modelValue"
@@ -12,16 +16,23 @@
             <!-- 成功图标 -->
             <div class="success-icon">
               <svg viewBox="0 0 24 24">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                <path
+                  d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                  fill="currentColor"
+                />
               </svg>
             </div>
 
             <!-- 标题 -->
-            <h3 class="dialog-title">{{ t('pomodoroComplete').focusComplete }}</h3>
+            <h3 class="dialog-title">
+              {{ t('pomodoroComplete').focusComplete }}
+            </h3>
 
             <!-- 休息选择 -->
             <div class="break-section">
-              <p class="break-hint">{{ t('settings').pomodoro.breakHint }}</p>
+              <p class="break-hint">
+                {{ t('settings').pomodoro.breakHint }}
+              </p>
               <div class="break-options">
                 <button
                   v-for="duration in breakDurations"
@@ -37,10 +48,16 @@
 
             <!-- 按钮 -->
             <div class="dialog-footer">
-              <button class="skip-btn" @click="handleSkip">
+              <button
+                class="skip-btn"
+                @click="handleSkip"
+              >
                 {{ t('settings').pomodoro.skipBreak }}
               </button>
-              <button class="start-btn" @click="handleStart">
+              <button
+                class="start-btn"
+                @click="handleStart"
+              >
                 {{ t('settings').pomodoro.startBreak }}
               </button>
             </div>
@@ -52,60 +69,64 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { usePlugin } from '@/main';
-import { t } from '@/i18n';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
 
 const props = defineProps<{
-  modelValue: boolean;
-}>();
+  modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  start: [duration: number];
-  skip: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "start": [duration: number]
+  "skip": []
+}>()
 
-const plugin = usePlugin() as any;
+const plugin = usePlugin() as any
 
-const selectedDuration = ref(5);
+const selectedDuration = ref(5)
 
 // 从设置读取休息时长预设
 const breakDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15]
+})
 
 // 从设置读取默认休息时长
 const defaultBreakDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultBreakDuration ?? 5;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultBreakDuration ?? 5
+})
 
 // 默认选中设置的默认值
 watch(() => props.modelValue, (visible) => {
   if (visible) {
-    selectedDuration.value = defaultBreakDuration.value;
+    selectedDuration.value = defaultBreakDuration.value
   }
-}, { immediate: true });
+}, { immediate: true })
 
 function selectDuration(minutes: number) {
-  selectedDuration.value = minutes;
+  selectedDuration.value = minutes
 }
 
 function handleStart() {
-  emit('start', selectedDuration.value);
-  emit('update:modelValue', false);
+  emit('start', selectedDuration.value)
+  emit('update:modelValue', false)
 }
 
 function handleSkip() {
-  emit('skip');
-  emit('update:modelValue', false);
+  emit('skip')
+  emit('update:modelValue', false)
 }
 
 function handleClose() {
-  emit('skip');
-  emit('update:modelValue', false);
+  emit('skip')
+  emit('update:modelValue', false)
 }
 </script>
 

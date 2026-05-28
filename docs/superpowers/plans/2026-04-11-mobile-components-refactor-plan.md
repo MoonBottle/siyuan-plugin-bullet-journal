@@ -13,6 +13,7 @@
 ## 文件结构概览
 
 ### 需要创建的目录
+
 ```
 src/mobile/
 ├── index.ts
@@ -40,6 +41,7 @@ src/mobile/
 ```
 
 ### 源文件位置（供引用）
+
 - `src/components/mobile/` (2个文件)
 - `src/components/time-picker/` (5个文件)
 - `src/tabs/mobile/` (39个文件)
@@ -51,6 +53,7 @@ src/mobile/
 ## Task 1: 创建目录结构
 
 **Files:**
+
 - Create: `src/mobile/index.ts`
 - Create: `src/mobile/components/index.ts`
 - Create: `src/mobile/components/pickers/index.ts`
@@ -122,6 +125,7 @@ git commit -m "chore: create mobile directory structure"
 ## Task 2: 移动 components/mobile/ 文件
 
 **Files:**
+
 - Move: `src/components/mobile/MobileDatePicker.vue` → `src/mobile/components/pickers/MobileDatePicker.vue`
 - Move: `src/components/mobile/MobilePriorityPicker.vue` → `src/mobile/components/pickers/MobilePriorityPicker.vue`
 - Modify: `src/mobile/components/pickers/index.ts` (创建)
@@ -137,8 +141,8 @@ Move-Item src/components/mobile/MobilePriorityPicker.vue src/mobile/components/p
 
 ```typescript
 // src/mobile/components/pickers/index.ts
-export { default as MobileDatePicker } from './MobileDatePicker.vue';
-export { default as MobilePriorityPicker } from './MobilePriorityPicker.vue';
+export { default as MobileDatePicker } from './MobileDatePicker.vue'
+export { default as MobilePriorityPicker } from './MobilePriorityPicker.vue'
 ```
 
 - [ ] **Step 3: 删除空目录**
@@ -160,6 +164,7 @@ git commit -m "refactor: move mobile pickers to src/mobile/components/pickers/"
 ## Task 3: 移动 components/time-picker/ 文件
 
 **Files:**
+
 - Move: `src/components/time-picker/index.ts` → `src/mobile/components/time-picker/index.ts`
 - Move: `src/components/time-picker/TimePickerSheet.vue` → `src/mobile/components/time-picker/TimePickerSheet.vue`
 - Move: `src/components/time-picker/TimeRangeSelector.vue` → `src/mobile/components/time-picker/TimeRangeSelector.vue`
@@ -176,11 +181,12 @@ Remove-Item src/components/time-picker -Force -Recurse
 - [ ] **Step 2: 验证 index.ts 内容**
 
 确认 `src/mobile/components/time-picker/index.ts` 内容正确：
+
 ```typescript
-export { default as TimeWheel } from './TimeWheel.vue';
-export { default as TimePickerSheet } from './TimePickerSheet.vue';
-export { default as TimeRangeSelector } from './TimeRangeSelector.vue';
-export { default as TimeSettingDrawer } from './TimeSettingDrawer.vue';
+export { default as TimePickerSheet } from './TimePickerSheet.vue'
+export { default as TimeRangeSelector } from './TimeRangeSelector.vue'
+export { default as TimeSettingDrawer } from './TimeSettingDrawer.vue'
+export { default as TimeWheel } from './TimeWheel.vue'
 ```
 
 - [ ] **Step 3: Commit**
@@ -196,6 +202,7 @@ git commit -m "refactor: move time-picker to src/mobile/components/time-picker/"
 ## Task 4: 移动 tabs/mobile/ 主要文件
 
 **Files:**
+
 - Move: `src/tabs/mobile/index.ts` → `src/mobile/index.ts`
 - Move: `src/tabs/mobile/MobileTodoDock.vue` → `src/mobile/MobileTodoDock.vue`
 - Move: `src/tabs/mobile/components/*` → `src/mobile/components/todo/`
@@ -263,6 +270,7 @@ git commit -m "refactor: move tabs/mobile core files to src/mobile/"
 ## Task 5: 移动 tabs/mobile/drawers/ 文件
 
 **Files:**
+
 - Move: `src/tabs/mobile/drawers/ActionDrawer.vue` → `src/mobile/drawers/action/ActionDrawer.vue`
 - Move: `src/tabs/mobile/drawers/FilterDrawer.vue` → `src/mobile/drawers/filter/FilterDrawer.vue`
 - Move: `src/tabs/mobile/drawers/MobileItemDetail.vue` → `src/mobile/drawers/item/MobileItemDetail.vue`
@@ -323,6 +331,7 @@ git commit -m "refactor: move tabs/mobile/drawers to src/mobile/drawers/"
 ## Task 6: 删除空的 tabs/mobile 目录
 
 **Files:**
+
 - Delete: `src/tabs/mobile/` (此时应该已空)
 
 - [ ] **Step 1: 验证目录为空并删除**
@@ -344,6 +353,7 @@ git commit -m "chore: remove empty src/tabs/mobile directory"
 ## Task 7: 移动 components/pomodoro/MobilePomodoroTimerDrawer.vue
 
 **Files:**
+
 - Move: `src/components/pomodoro/MobilePomodoroTimerDrawer.vue` → `src/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue`
 
 - [ ] **Step 1: 移动文件**
@@ -365,6 +375,7 @@ git commit -m "refactor: move MobilePomodoroTimerDrawer to src/mobile/drawers/po
 ## Task 8: 移动 components/settings/mobile/ 文件
 
 **Files:**
+
 - Move: `src/components/settings/mobile/MobileAiConfig.vue` → `src/mobile/drawers/settings/MobileAiConfig.vue`
 - Move: `src/components/settings/mobile/MobileCalendarConfig.vue` → `src/mobile/drawers/settings/MobileCalendarConfig.vue`
 - Move: `src/components/settings/mobile/MobileDirectoryConfig.vue` → `src/mobile/drawers/settings/MobileDirectoryConfig.vue`
@@ -397,6 +408,7 @@ git commit -m "refactor: move settings/mobile to src/mobile/drawers/settings/"
 ## Task 9: 更新 Import 路径 - MobileItemDetail.vue
 
 **Files:**
+
 - Modify: `src/mobile/drawers/item/MobileItemDetail.vue` (原 tabs/mobile/drawers/MobileItemDetail.vue)
 
 - [ ] **Step 1: 更新 import 路径**
@@ -428,6 +440,7 @@ git commit -m "refactor: update imports in MobileItemDetail.vue"
 ## Task 10: 更新 Import 路径 - QuickCreateDrawer.vue
 
 **Files:**
+
 - Modify: `src/mobile/drawers/quick-create/QuickCreateDrawer.vue`
 
 - [ ] **Step 1: 更新 import 路径**
@@ -455,6 +468,7 @@ git commit -m "refactor: update imports in QuickCreateDrawer.vue"
 ## Task 11: 更新 Import 路径 - utils/dialog.ts
 
 **Files:**
+
 - Modify: `src/utils/dialog.ts`
 
 - [ ] **Step 1: 更新 import 路径**
@@ -464,10 +478,10 @@ git commit -m "refactor: update imports in QuickCreateDrawer.vue"
 // 新路径：@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue
 
 // 找到以下行：
-import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue';
+import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue'
 
 // 替换为：
-import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
+import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue'
 ```
 
 - [ ] **Step 2: Commit**
@@ -482,6 +496,7 @@ git commit -m "refactor: update imports in utils/dialog.ts"
 ## Task 12: 更新 Import 路径 - MobileSettingsDrawer.vue
 
 **Files:**
+
 - Modify: `src/components/settings/MobileSettingsDrawer.vue`
 
 - [ ] **Step 1: 更新所有 settings 相关 import 路径**
@@ -523,6 +538,7 @@ git commit -m "refactor: update imports in MobileSettingsDrawer.vue"
 ## Task 13: 更新 Import 路径 - TodoDock.vue
 
 **Files:**
+
 - Modify: `src/tabs/TodoDock.vue`
 
 - [ ] **Step 1: 更新 import 路径**
@@ -550,6 +566,7 @@ git commit -m "refactor: update imports in TodoDock.vue"
 ## Task 14: 创建各目录的 index.ts 导出文件
 
 **Files:**
+
 - Modify: `src/mobile/components/index.ts`
 - Modify: `src/mobile/components/todo/index.ts`
 - Modify: `src/mobile/composables/index.ts`
@@ -571,144 +588,144 @@ git commit -m "refactor: update imports in TodoDock.vue"
 - [ ] **Step 1: components/index.ts**
 
 ```typescript
-export * from './pickers';
-export * from './time-picker';
-export * from './todo';
+export * from './pickers'
+export * from './time-picker'
+export * from './todo'
 ```
 
 - [ ] **Step 2: components/todo/index.ts**
 
 ```typescript
-export { default as MobileBottomNav } from './MobileBottomNav.vue';
-export { default as MobileFilterBar } from './MobileFilterBar.vue';
-export { default as MobileHeader } from './MobileHeader.vue';
-export { default as MobileTaskCard } from './MobileTaskCard.vue';
-export { default as MobileTodoItem } from './MobileTodoItem.vue';
-export { default as MobileTodoList } from './MobileTodoList.vue';
+export { default as MobileBottomNav } from './MobileBottomNav.vue'
+export { default as MobileFilterBar } from './MobileFilterBar.vue'
+export { default as MobileHeader } from './MobileHeader.vue'
+export { default as MobileTaskCard } from './MobileTaskCard.vue'
+export { default as MobileTodoItem } from './MobileTodoItem.vue'
+export { default as MobileTodoList } from './MobileTodoList.vue'
 ```
 
 - [ ] **Step 3: composables/index.ts**
 
 ```typescript
-export * from './useItemDetail';
-export * from './useMobileTodo';
-export * from './useQuickCreate';
-export * from './useSwipeActions';
+export * from './useItemDetail'
+export * from './useMobileTodo'
+export * from './useQuickCreate'
+export * from './useSwipeActions'
 ```
 
 - [ ] **Step 4: directives/index.ts**
 
 ```typescript
-export { default as vSwipe } from './vSwipe';
+export { default as vSwipe } from './vSwipe'
 ```
 
 - [ ] **Step 5: styles/index.ts**
 
 ```typescript
-import './variables.scss';
-import './animations.scss';
-import './mobile.scss';
+import './variables.scss'
+import './animations.scss'
+import './mobile.scss'
 ```
 
 - [ ] **Step 6: drawers/action/index.ts**
 
 ```typescript
-export { default as ActionDrawer } from './ActionDrawer.vue';
+export { default as ActionDrawer } from './ActionDrawer.vue'
 ```
 
 - [ ] **Step 7: drawers/confirm/index.ts**
 
 ```typescript
-export { default as MobileConfirmDrawer } from './MobileConfirmDrawer.vue';
+export { default as MobileConfirmDrawer } from './MobileConfirmDrawer.vue'
 ```
 
 - [ ] **Step 8: drawers/filter/index.ts**
 
 ```typescript
-export { default as FilterDrawer } from './FilterDrawer.vue';
+export { default as FilterDrawer } from './FilterDrawer.vue'
 ```
 
 - [ ] **Step 9: drawers/item/index.ts**
 
 ```typescript
-export { default as MobileItemDetail } from './MobileItemDetail.vue';
+export { default as MobileItemDetail } from './MobileItemDetail.vue'
 ```
 
 - [ ] **Step 10: drawers/pomodoro/index.ts**
 
 ```typescript
-export { default as MobilePomodoroDrawer } from './MobilePomodoroDrawer.vue';
-export { default as MobileRecurringDrawer } from './MobileRecurringDrawer.vue';
-export { default as MobileReminderDrawer } from './MobileReminderDrawer.vue';
-export { default as MobilePomodoroTimerDrawer } from './MobilePomodoroTimerDrawer.vue';
-export * from './sub';
+export { default as MobilePomodoroDrawer } from './MobilePomodoroDrawer.vue'
+export { default as MobilePomodoroTimerDrawer } from './MobilePomodoroTimerDrawer.vue'
+export { default as MobileRecurringDrawer } from './MobileRecurringDrawer.vue'
+export { default as MobileReminderDrawer } from './MobileReminderDrawer.vue'
+export * from './sub'
 ```
 
 - [ ] **Step 11: drawers/pomodoro/sub/index.ts**
 
 ```typescript
-export { default as ItemSelectorSheet } from './ItemSelectorSheet.vue';
-export { default as MobileActiveTimer } from './MobileActiveTimer.vue';
-export { default as MobileBreakTimer } from './MobileBreakTimer.vue';
-export { default as MobileComplete } from './MobileComplete.vue';
-export { default as MobileRestDialog } from './MobileRestDialog.vue';
+export { default as ItemSelectorSheet } from './ItemSelectorSheet.vue'
+export { default as MobileActiveTimer } from './MobileActiveTimer.vue'
+export { default as MobileBreakTimer } from './MobileBreakTimer.vue'
+export { default as MobileComplete } from './MobileComplete.vue'
+export { default as MobileRestDialog } from './MobileRestDialog.vue'
 ```
 
 - [ ] **Step 12: drawers/project/index.ts**
 
 ```typescript
-export { default as ProjectDetail } from './ProjectDetail.vue';
+export { default as ProjectDetail } from './ProjectDetail.vue'
 ```
 
 - [ ] **Step 13: drawers/quick-create/index.ts**
 
 ```typescript
-export { default as QuickCreateDrawer } from './QuickCreateDrawer.vue';
+export { default as QuickCreateDrawer } from './QuickCreateDrawer.vue'
 ```
 
 - [ ] **Step 14: drawers/settings/index.ts**
 
 ```typescript
-export { default as SettingsDrawer } from './SettingsDrawer.vue';
-export { default as MobileAiConfig } from './MobileAiConfig.vue';
-export { default as MobileCalendarConfig } from './MobileCalendarConfig.vue';
-export { default as MobileDirectoryConfig } from './MobileDirectoryConfig.vue';
-export { default as MobileGroupConfig } from './MobileGroupConfig.vue';
-export { default as MobileLunchBreakConfig } from './MobileLunchBreakConfig.vue';
-export { default as MobileMcpConfig } from './MobileMcpConfig.vue';
-export { default as MobilePomodoroConfig } from './MobilePomodoroConfig.vue';
-export { default as MobileSlashCommandConfig } from './MobileSlashCommandConfig.vue';
+export { default as MobileAiConfig } from './MobileAiConfig.vue'
+export { default as MobileCalendarConfig } from './MobileCalendarConfig.vue'
+export { default as MobileDirectoryConfig } from './MobileDirectoryConfig.vue'
+export { default as MobileGroupConfig } from './MobileGroupConfig.vue'
+export { default as MobileLunchBreakConfig } from './MobileLunchBreakConfig.vue'
+export { default as MobileMcpConfig } from './MobileMcpConfig.vue'
+export { default as MobilePomodoroConfig } from './MobilePomodoroConfig.vue'
+export { default as MobileSlashCommandConfig } from './MobileSlashCommandConfig.vue'
+export { default as SettingsDrawer } from './SettingsDrawer.vue'
 ```
 
 - [ ] **Step 15: drawers/task/index.ts**
 
 ```typescript
-export { default as TaskDetail } from './TaskDetail.vue';
-export { default as TaskItemDetail } from './TaskItemDetail.vue';
+export { default as TaskDetail } from './TaskDetail.vue'
+export { default as TaskItemDetail } from './TaskItemDetail.vue'
 ```
 
 - [ ] **Step 16: drawers/index.ts**
 
 ```typescript
-export * from './action';
-export * from './confirm';
-export * from './filter';
-export * from './item';
-export * from './pomodoro';
-export * from './project';
-export * from './quick-create';
-export * from './settings';
-export * from './task';
+export * from './action'
+export * from './confirm'
+export * from './filter'
+export * from './item'
+export * from './pomodoro'
+export * from './project'
+export * from './quick-create'
+export * from './settings'
+export * from './task'
 ```
 
 - [ ] **Step 17: mobile/index.ts (根目录)**
 
 ```typescript
-export { default as MobileTodoDock } from './MobileTodoDock.vue';
-export * from './components';
-export * from './composables';
-export * from './directives';
-export * from './drawers';
+export * from './components'
+export * from './composables'
+export * from './directives'
+export * from './drawers'
+export { default as MobileTodoDock } from './MobileTodoDock.vue'
 // styles 是副作用导入，不导出
 ```
 
@@ -724,6 +741,7 @@ git commit -m "chore: add index.ts export files for all mobile modules"
 ## Task 15: 验证类型检查
 
 **Files:**
+
 - All modified files
 
 - [ ] **Step 1: 运行类型检查**
@@ -737,6 +755,7 @@ Expected: 无错误
 - [ ] **Step 2: 如果存在错误，修复**
 
 常见错误：
+
 - Import 路径错误
 - 文件找不到
 - 循环依赖

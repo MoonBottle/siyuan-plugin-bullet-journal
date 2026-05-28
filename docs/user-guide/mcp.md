@@ -38,13 +38,13 @@
 
 AI 通过以下工具访问任务助手数据（参数均为可选，可组合使用）。
 
-| 工具 | 用途 | 主要参数 |
-|------|------|----------|
-| **list_groups** | 查询所有项目分组 | 无 |
-| **list_projects** | 查询项目列表 | `groupId`：按分组筛选 |
-| **filter_items** | 按条件筛选任务事项 | `projectId` / `projectIds`、`groupId`、`startDate` / `endDate`（YYYY-MM-DD）、`status`（pending / completed / abandoned）；返回项含该事项的番茄钟列表 `pomodoros` |
-| **get_pomodoro_stats** | 获取番茄钟统计数据 | `date: "today"` 或 `startDate` / `endDate`、可选 `projectId`；返回番茄数、专注分钟数 |
-| **get_pomodoro_records** | 获取番茄钟记录列表 | 同 get_pomodoro_stats；返回每条记录的时间、事项、时长等 |
+| 工具                     | 用途               | 主要参数                                                                                                                                                          |
+| ------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **list_groups**          | 查询所有项目分组   | 无                                                                                                                                                                |
+| **list_projects**        | 查询项目列表       | `groupId`：按分组筛选                                                                                                                                             |
+| **filter_items**         | 按条件筛选任务事项 | `projectId` / `projectIds`、`groupId`、`startDate` / `endDate`（YYYY-MM-DD）、`status`（pending / completed / abandoned）；返回项含该事项的番茄钟列表 `pomodoros` |
+| **get_pomodoro_stats**   | 获取番茄钟统计数据 | `date: "today"` 或 `startDate` / `endDate`、可选 `projectId`；返回番茄数、专注分钟数                                                                              |
+| **get_pomodoro_records** | 获取番茄钟记录列表 | 同 get_pomodoro_stats；返回每条记录的时间、事项、时长等                                                                                                           |
 
 - **list_groups** 返回的 `id` 可用于 **list_projects** 的 `groupId` 和 **filter_items** 的 `groupId`。
 - **list_projects** 返回的 `id` 可用于 **filter_items** 的 `projectId` / `projectIds` 以及 **get_pomodoro_stats** / **get_pomodoro_records** 的 `projectId`。

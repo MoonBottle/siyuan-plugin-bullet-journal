@@ -12,18 +12,19 @@
 
 ## 文件结构
 
-| 文件 | 职责 | 操作 |
-|---|---|---|
-| `src/types/models.ts` | GanttTask 接口添加 render 字段 | 修改 |
-| `src/utils/dataConverter.ts` | 核心合并逻辑：按 blockId 分组 + mergeItemsToSegments + 生成 split 结构 | 修改 |
-| `src/components/gantt/GanttView.vue` | 适配 split 父任务的交互（点击/右键/tooltip）和样式 | 修改 |
-| `test/utils/dataConverter.test.ts` | mergeItemsToSegments 和 projectsToGanttTasks 的单元测试 | 修改 |
+| 文件                                 | 职责                                                                   | 操作 |
+| ------------------------------------ | ---------------------------------------------------------------------- | ---- |
+| `src/types/models.ts`                | GanttTask 接口添加 render 字段                                         | 修改 |
+| `src/utils/dataConverter.ts`         | 核心合并逻辑：按 blockId 分组 + mergeItemsToSegments + 生成 split 结构 | 修改 |
+| `src/components/gantt/GanttView.vue` | 适配 split 父任务的交互（点击/右键/tooltip）和样式                     | 修改 |
+| `test/utils/dataConverter.test.ts`   | mergeItemsToSegments 和 projectsToGanttTasks 的单元测试                | 修改 |
 
 ---
 
 ### 任务 1：GanttTask 类型添加 render 字段
 
 **文件：**
+
 - 修改：`src/types/models.ts`
 
 - [ ] **步骤 1：在 GanttTask 接口中添加 render 字段**
@@ -52,6 +53,7 @@ git commit -m "feat(gantt): GanttTask 接口添加 render 字段支持 split 模
 ### 任务 2：实现 mergeItemsToSegments 纯函数及测试
 
 **文件：**
+
 - 修改：`src/utils/dataConverter.ts`
 - 修改：`test/utils/dataConverter.test.ts`
 
@@ -71,28 +73,28 @@ describe('DataConverter.mergeItemsToSegments', () => {
     lineNumber: 1,
     status: 'pending' as const,
     blockId: 'block-1',
-  });
+  })
 
   it('全天连续日期合并为一段', () => {
     const items = [
       mkItem('2026-03-10'),
       mkItem('2026-03-11'),
       mkItem('2026-03-12'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(1);
-    expect(segments[0].items).toHaveLength(3);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(1)
+    expect(segments[0].items).toHaveLength(3)
+  })
 
   it('全天不连续日期拆为多段', () => {
     const items = [
       mkItem('2026-03-01'),
       mkItem('2026-03-10'),
       mkItem('2026-03-12'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(3);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(3)
+  })
 
   it('全天混合连续与不连续', () => {
     const items = [
@@ -100,56 +102,56 @@ describe('DataConverter.mergeItemsToSegments', () => {
       mkItem('2026-03-10'),
       mkItem('2026-03-11'),
       mkItem('2026-03-12'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(2);
-    expect(segments[0].items).toHaveLength(1);
-    expect(segments[1].items).toHaveLength(3);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(2)
+    expect(segments[0].items).toHaveLength(1)
+    expect(segments[1].items).toHaveLength(3)
+  })
 
   it('有时间的事项各自独立成段', () => {
     const items = [
       mkItem('2026-03-10', '2026-03-10 14:00:00', '2026-03-10 15:00:00'),
       mkItem('2026-03-11', '2026-03-11 14:00:00', '2026-03-11 15:00:00'),
       mkItem('2026-03-12', '2026-03-12 14:00:00', '2026-03-12 15:00:00'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(3);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(3)
+  })
 
   it('全天与有时间混合', () => {
     const items = [
       mkItem('2026-03-01'),
       mkItem('2026-03-10', '2026-03-10 14:00:00', '2026-03-10 15:00:00'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(2);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(2)
+  })
 
   it('全天连续后接有时间事项，全天段合并、时间项独立', () => {
     const items = [
       mkItem('2026-03-10'),
       mkItem('2026-03-11'),
       mkItem('2026-03-12', '2026-03-12 09:00:00', '2026-03-12 10:00:00'),
-    ];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(2);
-    expect(segments[0].items).toHaveLength(2);
-    expect(segments[1].items).toHaveLength(1);
-  });
+    ]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(2)
+    expect(segments[0].items).toHaveLength(2)
+    expect(segments[1].items).toHaveLength(1)
+  })
 
   it('单日全天返回一段', () => {
-    const items = [mkItem('2026-03-10')];
-    const segments = DataConverter.mergeItemsToSegments(items);
-    expect(segments).toHaveLength(1);
-    expect(segments[0].items).toHaveLength(1);
-  });
+    const items = [mkItem('2026-03-10')]
+    const segments = DataConverter.mergeItemsToSegments(items)
+    expect(segments).toHaveLength(1)
+    expect(segments[0].items).toHaveLength(1)
+  })
 
   it('空数组返回空', () => {
-    const segments = DataConverter.mergeItemsToSegments([]);
-    expect(segments).toHaveLength(0);
-  });
-});
+    const segments = DataConverter.mergeItemsToSegments([])
+    expect(segments).toHaveLength(0)
+  })
+})
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -215,6 +217,7 @@ git commit -m "feat(gantt): 添加 mergeItemsToSegments 分段合并算法及测
 ### 任务 3：改造 projectsToGanttTasks 支持 split 结构
 
 **文件：**
+
 - 修改：`src/utils/dataConverter.ts`
 - 修改：`test/utils/dataConverter.test.ts`
 
@@ -271,26 +274,26 @@ it('多日期全天事项合并为 split 结构', () => {
         lineNumber: 1,
       },
     ]),
-  ], true);
+  ], true)
 
-  const splitParent = tasks.find(t => t.id === 'split-block-1');
-  expect(splitParent).toBeDefined();
-  expect(splitParent!.type).toBe('project');
-  expect(splitParent!.render).toBe('split');
-  expect(splitParent!.parent).toBe('task-task-1');
-  expect(splitParent!.text).toBe('整理资料');
+  const splitParent = tasks.find(t => t.id === 'split-block-1')
+  expect(splitParent).toBeDefined()
+  expect(splitParent!.type).toBe('project')
+  expect(splitParent!.render).toBe('split')
+  expect(splitParent!.parent).toBe('task-task-1')
+  expect(splitParent!.text).toBe('整理资料')
 
-  const segmentItems = tasks.filter(t => t.parent === 'split-block-1');
-  expect(segmentItems).toHaveLength(2);
+  const segmentItems = tasks.filter(t => t.parent === 'split-block-1')
+  expect(segmentItems).toHaveLength(2)
 
-  const seg1 = segmentItems.find(t => t.id === 'item-item-1');
-  expect(seg1).toBeDefined();
+  const seg1 = segmentItems.find(t => t.id === 'item-item-1')
+  expect(seg1).toBeDefined()
 
-  const seg2 = segmentItems.find(t => t.id === 'item-item-2');
-  expect(seg2).toBeDefined();
-  expect(seg2!.start_date).toBeInstanceOf(Date);
-  expect(seg2!.end_date).toBeInstanceOf(Date);
-});
+  const seg2 = segmentItems.find(t => t.id === 'item-item-2')
+  expect(seg2).toBeDefined()
+  expect(seg2!.start_date).toBeInstanceOf(Date)
+  expect(seg2!.end_date).toBeInstanceOf(Date)
+})
 
 it('多日期有时间事项合并为 split 结构，每个日期独立分段', () => {
   const tasks = DataConverter.projectsToGanttTasks([
@@ -326,14 +329,14 @@ it('多日期有时间事项合并为 split 结构，每个日期独立分段', 
         lineNumber: 1,
       },
     ]),
-  ], true);
+  ], true)
 
-  const splitParent = tasks.find(t => t.id === 'split-block-1');
-  expect(splitParent).toBeDefined();
+  const splitParent = tasks.find(t => t.id === 'split-block-1')
+  expect(splitParent).toBeDefined()
 
-  const segmentItems = tasks.filter(t => t.parent === 'split-block-1');
-  expect(segmentItems).toHaveLength(2);
-});
+  const segmentItems = tasks.filter(t => t.parent === 'split-block-1')
+  expect(segmentItems).toHaveLength(2)
+})
 
 it('单日期事项不生成 split 结构', () => {
   const tasks = DataConverter.projectsToGanttTasks([
@@ -356,15 +359,15 @@ it('单日期事项不生成 split 结构', () => {
         lineNumber: 1,
       },
     ]),
-  ], true);
+  ], true)
 
-  const splitParent = tasks.find(t => t.id === 'split-block-1');
-  expect(splitParent).toBeUndefined();
+  const splitParent = tasks.find(t => t.id === 'split-block-1')
+  expect(splitParent).toBeUndefined()
 
-  const item = tasks.find(t => t.id === 'item-item-1');
-  expect(item).toBeDefined();
-  expect(item!.parent).toBe('task-task-1');
-});
+  const item = tasks.find(t => t.id === 'item-item-1')
+  expect(item).toBeDefined()
+  expect(item!.parent).toBe('task-task-1')
+})
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -378,27 +381,28 @@ it('单日期事项不生成 split 结构', () => {
 
 ```typescript
 if (showItems && task.items.length > 0) {
-  const itemGroups = new Map<string, Item[]>();
+  const itemGroups = new Map<string, Item[]>()
   for (const item of task.items) {
-    const key = item.blockId ?? item.id;
-    if (!itemGroups.has(key)) itemGroups.set(key, []);
-    itemGroups.get(key)!.push(item);
+    const key = item.blockId ?? item.id
+    if (!itemGroups.has(key))
+      itemGroups.set(key, [])
+    itemGroups.get(key)!.push(item)
   }
 
   for (const [, group] of itemGroups) {
     if (group.length === 1) {
-      const item = group[0];
-      const itemStart = item.startDateTime || item.date;
-      const itemEnd = item.endDateTime || item.startDateTime || item.date;
+      const item = group[0]
+      const itemStart = item.startDateTime || item.date
+      const itemEnd = item.endDateTime || item.startDateTime || item.date
 
       if (itemStart) {
-        const startDate = this.parseGanttDate(itemStart, 'start');
+        const startDate = this.parseGanttDate(itemStart, 'start')
         let endDate = itemEnd
           ? this.parseGanttDate(itemEnd, 'end')
-          : this.parseGanttDate(itemStart, 'end');
+          : this.parseGanttDate(itemStart, 'end')
 
         if (startDate.getTime() === endDate.getTime()) {
-          endDate = this.getGanttEndDate(itemStart);
+          endDate = this.getGanttEndDate(itemStart)
         }
 
         ganttTasks.push({
@@ -431,16 +435,17 @@ if (showItems && task.items.length > 0) {
             dateRangeEnd: item.dateRangeEnd,
             pomodoros: item.pomodoros
           }
-        });
+        })
       }
-    } else {
-      const segments = this.mergeItemsToSegments(group);
-      const firstItem = group[0];
-      const blockKey = firstItem.blockId ?? firstItem.id;
+    }
+    else {
+      const segments = this.mergeItemsToSegments(group)
+      const firstItem = group[0]
+      const blockKey = firstItem.blockId ?? firstItem.id
 
-      const allDates = group.map(i => i.startDateTime || i.date).filter(Boolean) as string[];
-      const minDate = allDates.reduce((a, b) => a < b ? a : b);
-      const maxDate = (group.map(i => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b);
+      const allDates = group.map(i => i.startDateTime || i.date).filter(Boolean) as string[]
+      const minDate = allDates.reduce((a, b) => a < b ? a : b)
+      const maxDate = (group.map(i => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
 
       ganttTasks.push({
         id: `split-${blockKey}`,
@@ -452,22 +457,22 @@ if (showItems && task.items.length > 0) {
         render: 'split',
         open: true,
         progress: 0,
-      });
+      })
 
       for (const segment of segments) {
-        const segFirst = segment.items[0];
-        const segStart = segFirst.startDateTime || segFirst.date;
-        const segLast = segment.items[segment.items.length - 1];
-        const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
+        const segFirst = segment.items[0]
+        const segStart = segFirst.startDateTime || segFirst.date
+        const segLast = segment.items.at(-1)
+        const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
 
         if (segStart) {
-          const startDate = this.parseGanttDate(segStart, 'start');
+          const startDate = this.parseGanttDate(segStart, 'start')
           let endDate = segEnd
             ? this.parseGanttDate(segEnd, 'end')
-            : this.parseGanttDate(segStart, 'end');
+            : this.parseGanttDate(segStart, 'end')
 
           if (startDate.getTime() === endDate.getTime()) {
-            endDate = this.getGanttEndDate(segStart);
+            endDate = this.getGanttEndDate(segStart)
           }
 
           ganttTasks.push({
@@ -500,7 +505,7 @@ if (showItems && task.items.length > 0) {
               dateRangeEnd: segFirst.dateRangeEnd,
               pomodoros: segFirst.pomodoros
             }
-          });
+          })
         }
       }
     }
@@ -525,6 +530,7 @@ git commit -m "feat(gantt): projectsToGanttTasks 支持多日期事项 split 结
 ### 任务 4：GanttView.vue 交互适配
 
 **文件：**
+
 - 修改：`src/components/gantt/GanttView.vue`
 
 - [ ] **步骤 1：添加 open_split_tasks 配置**
@@ -532,7 +538,7 @@ git commit -m "feat(gantt): projectsToGanttTasks 支持多日期事项 split 结
 在 `onMounted` 中 `gantt.init(ganttEl.value)` 之前添加：
 
 ```typescript
-gantt.config.open_split_tasks = true;
+gantt.config.open_split_tasks = true
 ```
 
 - [ ] **步骤 2：handleGanttTaskClick 跳过 split 父任务**
@@ -540,7 +546,8 @@ gantt.config.open_split_tasks = true;
 在 `handleGanttTaskClick` 函数中，`if (!task?.extendedProps?.item) return;` 之后添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return;
+if (String(task.id).startsWith('split-'))
+  return
 ```
 
 - [ ] **步骤 3：handleGanttContextMenu 跳过 split 父任务**
@@ -548,7 +555,8 @@ if (String(task.id).startsWith('split-')) return;
 在 `handleGanttContextMenu` 函数中，`if (!task?.extendedProps?.item) return true;` 之后添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return true;
+if (String(task.id).startsWith('split-'))
+  return true
 ```
 
 - [ ] **步骤 4：showGanttEventTooltip 跳过 split 父任务**
@@ -556,7 +564,8 @@ if (String(task.id).startsWith('split-')) return true;
 在 `showGanttEventTooltip` 回调中，`if (!task?.extendedProps?.item) return;` 之后添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return;
+if (String(task.id).startsWith('split-'))
+  return
 ```
 
 - [ ] **步骤 5：task_class 模板添加 split 父任务样式**
@@ -564,7 +573,8 @@ if (String(task.id).startsWith('split-')) return;
 在 `gantt.templates.task_class` 中，`if (task.type === 'project')` 之前添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return 'gantt-split-parent';
+if (String(task.id).startsWith('split-'))
+  return 'gantt-split-parent'
 ```
 
 - [ ] **步骤 6：task_text 模板对 split 父任务返回空字符串**
@@ -572,7 +582,8 @@ if (String(task.id).startsWith('split-')) return 'gantt-split-parent';
 在 `gantt.templates.task_text` 中，函数开头添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return '';
+if (String(task.id).startsWith('split-'))
+  return ''
 ```
 
 - [ ] **步骤 7：rightside_text 模板对 split 父任务返回空字符串**
@@ -580,7 +591,8 @@ if (String(task.id).startsWith('split-')) return '';
 在 `gantt.templates.rightside_text` 中，函数开头添加：
 
 ```typescript
-if (String(task.id).startsWith('split-')) return '';
+if (String(task.id).startsWith('split-'))
+  return ''
 ```
 
 - [ ] **步骤 8：添加 split 父任务 CSS**

@@ -1,5 +1,8 @@
 <template>
-  <div class="workbench-widget-habit-week" data-testid="workbench-widget-habit-week">
+  <div
+    class="workbench-widget-habit-week"
+    data-testid="workbench-widget-habit-week"
+  >
     <HabitWorkspaceListPane
       :selected-date="selectedDate"
       :current-date="currentDate"
@@ -20,21 +23,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue';
-import type { Dialog } from 'siyuan';
-import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
-import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
-import type { Habit } from '@/types/models';
-import type { WorkbenchHabitWeekWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
-import { openHabitWidgetDetailDialog } from '@/workbench/habitWidgetDetailDialog';
+import type { Dialog } from 'siyuan'
+import type { Habit } from '@/types/models'
+import type {
+  WorkbenchHabitWeekWidgetConfig,
+  WorkbenchWidgetInstance,
+} from '@/types/workbench'
+import {
+  computed,
+  onBeforeUnmount,
+} from 'vue'
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue'
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace'
+import { openHabitWidgetDetailDialog } from '@/workbench/habitWidgetDetailDialog'
 
 const props = defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
+  widget?: WorkbenchWidgetInstance
+}>()
 
 const habitConfig = computed(() => {
-  return (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig;
-});
+  return (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig
+})
 
 const {
   selectedDate,
@@ -50,23 +59,23 @@ const {
 } = useHabitWorkspace({
   groupId: () => habitConfig.value.groupId,
   defaultListMode: () => habitConfig.value.habitScope ?? 'active',
-});
+})
 
-let detailDialog: Dialog | null = null;
+let detailDialog: Dialog | null = null
 
 function handleOpenDetail(habit: Habit) {
-  detailDialog?.destroy();
+  detailDialog?.destroy()
   detailDialog = openHabitWidgetDetailDialog({
     habitId: habit.blockId,
     habitName: habit.name,
     groupId: habitConfig.value.groupId,
-  });
+  })
 }
 
 onBeforeUnmount(() => {
-  detailDialog?.destroy();
-  detailDialog = null;
-});
+  detailDialog?.destroy()
+  detailDialog = null
+})
 </script>
 
 <style lang="scss" scoped>

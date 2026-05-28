@@ -17,7 +17,10 @@
           style="overscroll-behavior: contain; touch-action: pan-y;"
           @click.stop
         >
-          <div class="mobile-habit-detail-sheet__handle" aria-hidden="true"></div>
+          <div
+            class="mobile-habit-detail-sheet__handle"
+            aria-hidden="true"
+          ></div>
 
           <div class="mobile-habit-detail-sheet__header">
             <div
@@ -66,37 +69,43 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import type { Habit, HabitStats } from '@/types/models';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import { t } from '@/i18n'
+import {
+  hideIconTooltip,
+  showIconTooltip,
+} from '@/utils/dialog'
 
 const props = defineProps<{
-  open: boolean;
-  habit: Habit | null;
-  selectedDate: string;
-  viewMonth: string;
-  stats: HabitStats | null | undefined;
-}>();
+  open: boolean
+  habit: Habit | null
+  selectedDate: string
+  viewMonth: string
+  stats: HabitStats | null | undefined
+}>()
 
 const emit = defineEmits<{
-  archive: [];
-  close: [];
-  unarchive: [];
-}>();
+  archive: []
+  close: []
+  unarchive: []
+}>()
 
 function handleArchiveAction() {
-  hideIconTooltip();
+  hideIconTooltip()
   if (props.habit?.archivedAt) {
-    emit('unarchive');
-    return;
+    emit('unarchive')
+    return
   }
 
-  emit('archive');
+  emit('archive')
 }
 
 function handleClose() {
-  hideIconTooltip();
-  emit('close');
+  hideIconTooltip()
+  emit('close')
 }
 </script>
 

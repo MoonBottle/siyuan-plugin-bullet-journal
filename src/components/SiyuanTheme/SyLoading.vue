@@ -1,8 +1,24 @@
 <template>
-  <div class="sy-loading" :class="{ inline }">
+  <div
+    class="sy-loading"
+    :class="{ inline }"
+  >
     <div class="loading-spinner">
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10">
+      <svg
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke-dasharray="31.4"
+          stroke-dashoffset="10"
+        >
           <animateTransform
             attributeName="transform"
             type="rotate"
@@ -14,17 +30,20 @@
         </circle>
       </svg>
     </div>
-    <span v-if="text" class="loading-text">{{ text }}</span>
+    <span
+      v-if="text"
+      class="loading-text"
+    >{{ text }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 interface Props {
-  text?: string;
-  inline?: boolean;
+  text?: string
+  inline?: boolean
 }
 
-defineProps<Props>();
+defineProps<Props>()
 </script>
 
 <style lang="scss" scoped>

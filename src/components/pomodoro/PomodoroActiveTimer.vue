@@ -1,13 +1,23 @@
 <template>
   <div class="pomodoro-active-timer">
     <div class="timer-header">
-      <TomatoIcon :width="20" :height="20" class="timer-icon" />
+      <TomatoIcon
+        :width="20"
+        :height="20"
+        class="timer-icon"
+      />
       <span class="timer-title">{{ isPaused ? t('pomodoroActive').paused : t('pomodoroActive').focusing }}</span>
     </div>
 
-    <div class="timer-display" :class="{ 'is-paused': isPaused }">
+    <div
+      class="timer-display"
+      :class="{ 'is-paused': isPaused }"
+    >
       <div class="timer-circle">
-        <svg class="progress-ring" viewBox="0 0 120 120">
+        <svg
+          class="progress-ring"
+          viewBox="0 0 120 120"
+        >
           <circle
             class="progress-ring-bg"
             cx="60"
@@ -24,10 +34,27 @@
           />
         </svg>
         <div class="timer-content">
-          <div class="time-remaining">{{ formattedTime }}</div>
-          <div v-if="!isStopwatch" class="focused-time-badge">{{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}</div>
-          <div v-else class="focused-time-badge">{{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}</div>
-          <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
+          <div class="time-remaining">
+            {{ formattedTime }}
+          </div>
+          <div
+            v-if="!isStopwatch"
+            class="focused-time-badge"
+          >
+            {{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}
+          </div>
+          <div
+            v-else
+            class="focused-time-badge"
+          >
+            {{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}
+          </div>
+          <div
+            v-if="isPaused"
+            class="pause-badge"
+          >
+            {{ t('pomodoroActive').pauseBadge }}
+          </div>
         </div>
       </div>
     </div>
@@ -36,35 +63,69 @@
     <div class="pomodoro-timeline">
       <div class="timeline-header">
         <span class="timeline-label">{{ t('pomodoroActive').pomodoroTimer }}</span>
-        <span v-if="!isStopwatch" class="timeline-duration">{{ t('pomodoroActive').target.replace('{minutes}', String(targetMinutes)) }}</span>
-        <span v-else class="timeline-duration">{{ t('pomodoroActive').stopwatch }}</span>
+        <span
+          v-if="!isStopwatch"
+          class="timeline-duration"
+        >{{ t('pomodoroActive').target.replace('{minutes}', String(targetMinutes)) }}</span>
+        <span
+          v-else
+          class="timeline-duration"
+        >{{ t('pomodoroActive').stopwatch }}</span>
       </div>
       <div class="timeline-track">
         <div class="timeline-point start">
-          <div class="timeline-time">{{ formattedStartTime }}</div>
-          <PlayIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">{{ t('pomodoroActive').start }}</div>
+          <div class="timeline-time">
+            {{ formattedStartTime }}
+          </div>
+          <PlayIcon
+            :width="14"
+            :height="14"
+            class="timeline-icon"
+          />
+          <div class="timeline-desc">
+            {{ t('pomodoroActive').start }}
+          </div>
         </div>
         <div class="timeline-progress-container">
           <div class="timeline-progress-bar">
-            <div class="timeline-progress-fill" :style="{ width: timelineProgress + '%' }"></div>
-            <div class="timeline-progress-indicator" :style="{ left: timelineProgress + '%' }"></div>
+            <div
+              class="timeline-progress-fill"
+              :style="{ width: `${timelineProgress}%` }"
+            ></div>
+            <div
+              class="timeline-progress-indicator"
+              :style="{ left: `${timelineProgress}%` }"
+            ></div>
           </div>
         </div>
         <div class="timeline-point end">
-          <div class="timeline-time">{{ formattedEndTime }}</div>
-          <StopIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">{{ isStopwatch ? t('pomodoroActive').manualEnd : t('pomodoroActive').estimatedEnd }}</div>
+          <div class="timeline-time">
+            {{ formattedEndTime }}
+          </div>
+          <StopIcon
+            :width="14"
+            :height="14"
+            class="timeline-icon"
+          />
+          <div class="timeline-desc">
+            {{ isStopwatch ? t('pomodoroActive').manualEnd : t('pomodoroActive').estimatedEnd }}
+          </div>
         </div>
       </div>
     </div>
 
-    <div v-if="focusPlanDisplay" class="focus-plan-progress">
+    <div
+      v-if="focusPlanDisplay"
+      class="focus-plan-progress"
+    >
       <div class="focus-plan-progress-header">
         <span class="focus-plan-progress-label">{{ t('focusPlan').currentPlan }}</span>
         <span class="focus-plan-progress-value">{{ focusPlanDisplay }}</span>
       </div>
-      <div v-if="focusPlanProgressDisplay" class="focus-plan-progress-body">
+      <div
+        v-if="focusPlanProgressDisplay"
+        class="focus-plan-progress-body"
+      >
         {{ t('focusPlan').actualShort }} {{ focusPlanProgressDisplay }}
       </div>
     </div>
@@ -85,7 +146,10 @@
           <span>{{ currentItem.project.name }}</span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="currentItem.project.links || []" @link-click="handleLinkClick" />
+          <TodoTypedLinks
+            :links="currentItem.project.links || []"
+            @link-click="handleLinkClick"
+          />
         </template>
       </Card>
 
@@ -98,7 +162,11 @@
       >
         <template #header>
           <span class="info-card-label">{{ t('todo').task }}</span>
-          <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
+          <span
+            v-if="currentItem.task.level"
+            class="task-level-badge"
+            :class="`level-${currentItem.task.level.toLowerCase()}`"
+          >
             {{ currentItem.task.level }}
           </span>
         </template>
@@ -106,7 +174,10 @@
           <span>{{ currentItem.task.name }}</span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="currentItem.task.links || []" @link-click="handleLinkClick" />
+          <TodoTypedLinks
+            :links="currentItem.task.links || []"
+            @link-click="handleLinkClick"
+          />
         </template>
       </Card>
 
@@ -126,7 +197,11 @@
         </div>
         <template #footer>
           <div class="item-footer-content">
-            <TodoTypedLinks :links="currentItem?.links || []" align="right" @link-click="handleLinkClick" />
+            <TodoTypedLinks
+              :links="currentItem?.links || []"
+              align="right"
+              @link-click="handleLinkClick"
+            />
             <div class="item-actions">
               <span
                 v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
@@ -166,25 +241,61 @@
 
     <div class="timer-actions">
       <template v-if="!isPaused">
-        <button class="pause-btn" @click="pausePomodoro">
-          <svg class="btn-icon" viewBox="0 0 24 24">
-            <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
-            <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+        <button
+          class="pause-btn"
+          @click="pausePomodoro"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+          >
+            <rect
+              x="6"
+              y="4"
+              width="4"
+              height="16"
+              fill="currentColor"
+            />
+            <rect
+              x="14"
+              y="4"
+              width="4"
+              height="16"
+              fill="currentColor"
+            />
           </svg>
           {{ t('pomodoroActive').pause }}
         </button>
       </template>
       <template v-else>
-        <button class="resume-btn" @click="resumePomodoro">
-          <svg class="btn-icon" viewBox="0 0 24 24">
-            <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+        <button
+          class="resume-btn"
+          @click="resumePomodoro"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+          >
+            <polygon
+              points="5,3 19,12 5,21"
+              fill="currentColor"
+            />
           </svg>
           {{ t('pomodoroActive').resume }}
         </button>
       </template>
-      <button class="end-btn" @click="endPomodoro">
-        <svg class="btn-icon" viewBox="0 0 24 24">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+      <button
+        class="end-btn"
+        @click="endPomodoro"
+      >
+        <svg
+          class="btn-icon"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+            fill="currentColor"
+          />
         </svg>
         {{ t('pomodoroActive').endFocus }}
       </button>
@@ -193,155 +304,171 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { showMessage } from 'siyuan';
-import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
-import dayjs from '@/utils/dayjs';
-import type { Item, Link } from '@/types/models';
-import TomatoIcon from '@/components/icons/TomatoIcon.vue';
-import PlayIcon from '@/components/icons/PlayIcon.vue';
-import StopIcon from '@/components/icons/StopIcon.vue';
-import Card from '@/components/common/Card.vue';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { writeBlock } from '@/utils/blockWriter';
-import { showConfirmDialog, showItemDetailModal } from '@/utils/dialog';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
-import { t } from '@/i18n';
-import { TAB_TYPES } from '@/constants';
-import { getProgressDirection } from '@/utils/progressDirection';
-import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
-import { formatFocusPlanDisplay, formatFocusPlanProgress } from '@/utils/focusPlanReview';
+import type {
+  Item,
+  Link,
+} from '@/types/models'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  ref,
+} from 'vue'
+import Card from '@/components/common/Card.vue'
+import PlayIcon from '@/components/icons/PlayIcon.vue'
+import StopIcon from '@/components/icons/StopIcon.vue'
+import TomatoIcon from '@/components/icons/TomatoIcon.vue'
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
+import { TAB_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import { writeBlock } from '@/utils/blockWriter'
+import dayjs from '@/utils/dayjs'
+import {
+  showConfirmDialog,
+  showItemDetailModal,
+} from '@/utils/dialog'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import {
+  formatFocusPlanDisplay,
+  formatFocusPlanProgress,
+} from '@/utils/focusPlanReview'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
+import { getProgressDirection } from '@/utils/progressDirection'
 
-const plugin = usePlugin() as any;
-const pomodoroStore = usePomodoroStore();
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
+const plugin = usePlugin() as any
+const pomodoroStore = usePomodoroStore()
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
 
 // 防止重复点击的执行锁
-const isProcessing = ref(false);
+const isProcessing = ref(false)
 
 // 圆周长
-const radius = 54;
-const circumference = 2 * Math.PI * radius;
+const radius = 54
+const circumference = 2 * Math.PI * radius
 
 // 根据 blockId 从 projectStore 中查找对应的 item（使用 Map 索引，O(1) 查找）
 const currentItem = computed<Item | undefined>(() => {
-  const blockId = pomodoroStore.activePomodoro?.blockId;
-  if (!blockId) return undefined;
-  return projectStore.getItemByBlockId(blockId);
-});
+  const blockId = pomodoroStore.activePomodoro?.blockId
+  if (!blockId) return undefined
+  return projectStore.getItemByBlockId(blockId)
+})
 
 // 当前专注的事项内容（优先使用 store 中的，但用 currentItem 作为后备）
 const itemContent = computed(() => {
-  return currentItem.value?.content || pomodoroStore.activePomodoro?.itemContent || '未知事项';
-});
-const focusPlanDisplay = computed(() => formatFocusPlanDisplay(currentItem.value?.focusPlan));
+  return currentItem.value?.content || pomodoroStore.activePomodoro?.itemContent || '未知事项'
+})
+const focusPlanDisplay = computed(() => formatFocusPlanDisplay(currentItem.value?.focusPlan))
 const currentItemHistoricalFocusMinutes = computed(() => {
   return (currentItem.value?.pomodoros ?? []).reduce((sum, record) => {
-    return sum + (record.actualDurationMinutes ?? record.durationMinutes);
-  }, 0);
-});
+    return sum + (record.actualDurationMinutes ?? record.durationMinutes)
+  }, 0)
+})
 const currentItemTotalFocusMinutes = computed(() => {
-  return currentItemHistoricalFocusMinutes.value + accumulatedMinutes.value;
-});
+  return currentItemHistoricalFocusMinutes.value + accumulatedMinutes.value
+})
 const focusPlanProgressDisplay = computed(() => {
-  return formatFocusPlanProgress(currentItem.value?.focusPlan, currentItemTotalFocusMinutes.value);
-});
+  return formatFocusPlanProgress(currentItem.value?.focusPlan, currentItemTotalFocusMinutes.value)
+})
 
 // 是否处于暂停状态
 const isPaused = computed(() => {
-  return pomodoroStore.activePomodoro?.isPaused || false;
-});
+  return pomodoroStore.activePomodoro?.isPaused || false
+})
 
 // 是否正计时模式
-const isStopwatch = computed(() => pomodoroStore.isStopwatch);
+const isStopwatch = computed(() => pomodoroStore.isStopwatch)
 
 // 进度条方向：正计时延长，倒计时缩短
-const progressDirection = computed(() => getProgressDirection(pomodoroStore.activePomodoro?.timerMode));
+const progressDirection = computed(() => getProgressDirection(pomodoroStore.activePomodoro?.timerMode))
 
 // 已专注分钟数
 const accumulatedMinutes = computed(() => {
-  if (!pomodoroStore.activePomodoro) return 0;
-  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60);
-});
+  if (!pomodoroStore.activePomodoro) return 0
+  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60)
+})
 
 // 目标分钟数
 const targetMinutes = computed(() => {
-  return pomodoroStore.activePomodoro?.targetDurationMinutes || 25;
-});
+  return pomodoroStore.activePomodoro?.targetDurationMinutes || 25
+})
 
 // 格式化的时间（MM:SS）：倒计时显示剩余，正计时显示已专注
 const formattedTime = computed(() => {
-  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-});
+  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+})
 
 // 专注开始时间戳
 const startTime = computed(() => {
-  return pomodoroStore.activePomodoro?.startTime || 0;
-});
+  return pomodoroStore.activePomodoro?.startTime || 0
+})
 
 // 格式化的开始时间（HH:mm）
 const formattedStartTime = computed(() => {
-  if (!startTime.value) return '--:--';
-  return dayjs(startTime.value).format('HH:mm');
-});
+  if (!startTime.value) return '--:--'
+  return dayjs(startTime.value).format('HH:mm')
+})
 
 // 预计结束时间戳（正计时无预计结束）
 const endTime = computed(() => {
-  if (!startTime.value || isStopwatch.value) return 0;
-  return startTime.value + targetMinutes.value * 60 * 1000;
-});
+  if (!startTime.value || isStopwatch.value) return 0
+  return startTime.value + targetMinutes.value * 60 * 1000
+})
 
 // 格式化的预计结束时间（HH:mm），正计时显示 "--"
 const formattedEndTime = computed(() => {
-  if (!endTime.value) return '--:--';
-  return dayjs(endTime.value).format('HH:mm');
-});
+  if (!endTime.value) return '--:--'
+  return dayjs(endTime.value).format('HH:mm')
+})
 
 // 正计时参考时长（25分钟），用于进度显示
-const stopwatchReferenceSeconds = 25 * 60;
+const stopwatchReferenceSeconds = 25 * 60
 
 // 时间线进度（0-100）：根据方向决定显示效果
 const timelineProgress = computed(() => {
-  if (!pomodoroStore.activePomodoro) return 0;
-  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  if (!pomodoroStore.activePomodoro) return 0
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds
   const totalSeconds = isStopwatch.value
     ? stopwatchReferenceSeconds
-    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  const progress = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
-  return progressDirection.value === 'shrink' ? 100 - progress : progress;
-});
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60
+  const progress = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100))
+  return progressDirection.value === 'shrink' ? 100 - progress : progress
+})
 
 // 进度环偏移量：根据方向决定填充效果
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore.activePomodoro) {
-    return progressDirection.value === 'shrink' ? 0 : circumference;
+    return progressDirection.value === 'shrink' ? 0 : circumference
   }
 
-  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds
   const totalSeconds = isStopwatch.value
     ? stopwatchReferenceSeconds
-    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  const progress = Math.min(1, elapsedSeconds / totalSeconds);
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60
+  const progress = Math.min(1, elapsedSeconds / totalSeconds)
 
   return progressDirection.value === 'shrink'
     ? circumference * progress
-    : circumference * (1 - progress);
-});
+    : circumference * (1 - progress)
+})
 
 // 暂停专注
 const pausePomodoro = async () => {
-  await pomodoroStore.pausePomodoro(plugin);
-};
+  await pomodoroStore.pausePomodoro(plugin)
+}
 
 // 继续专注
 const resumePomodoro = async () => {
-  await pomodoroStore.resumePomodoro(plugin);
-};
+  await pomodoroStore.resumePomodoro(plugin)
+}
 
 // 结束专注
 const endPomodoro = () => {
@@ -349,31 +476,41 @@ const endPomodoro = () => {
     t('pomodoroActive').confirmEndTitle,
     t('pomodoroActive').confirmEndMessage,
     async () => {
-      await pomodoroStore.completePomodoro(plugin);
-    }
-  );
-};
+      await pomodoroStore.completePomodoro(plugin)
+    },
+  )
+}
 
 // 打开事项所在文档
 const openItemDocument = async () => {
-  if (!currentItem.value) return;
-  const { docId, lineNumber, blockId } = currentItem.value;
+  if (!currentItem.value) return
+  const {
+    docId,
+    lineNumber,
+    blockId,
+  } = currentItem.value
   if (docId) {
-    await openDocumentAtLine(docId, lineNumber, blockId);
+    await openDocumentAtLine(docId, lineNumber, blockId)
   }
-};
+}
 
 // 标记完成
 const handleDone = async () => {
-  if (!currentItem.value?.blockId) return;
-  if (isProcessing.value) return; // 防止重复点击
+  if (!currentItem.value?.blockId) return
+  if (isProcessing.value) return // 防止重复点击
 
-  isProcessing.value = true;
+  isProcessing.value = true
   try {
     const success = await writeBlock(
-      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
-      { type: 'setStatus', status: 'completed' },
-    );
+      {
+        blockId: currentItem.value.blockId,
+        listItemBlockId: currentItem.value.listItemBlockId,
+      },
+      {
+        type: 'setStatus',
+        status: 'completed',
+      },
+    )
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
@@ -381,66 +518,72 @@ const handleDone = async () => {
       await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-active:complete-item',
-      });
+      })
     }
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 // 标记放弃
 const handleAbandon = async () => {
-  if (!currentItem.value?.blockId) return;
-  if (isProcessing.value) return; // 防止重复点击
+  if (!currentItem.value?.blockId) return
+  if (isProcessing.value) return // 防止重复点击
 
-  isProcessing.value = true;
+  isProcessing.value = true
   try {
     const success = await writeBlock(
-      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
-      { type: 'setStatus', status: 'abandoned' },
-    );
+      {
+        blockId: currentItem.value.blockId,
+        listItemBlockId: currentItem.value.listItemBlockId,
+      },
+      {
+        type: 'setStatus',
+        status: 'abandoned',
+      },
+    )
     if (success && plugin) {
       await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-active:abandon-item',
-      });
+      })
     }
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 // 打开详情
 const openDetail = () => {
-  if (!currentItem.value) return;
-  showItemDetailModal(currentItem.value);
-};
+  if (!currentItem.value) return
+  showItemDetailModal(currentItem.value)
+}
 
 // 在日历中打开
 const openCalendar = () => {
-  if (!currentItem.value?.date) return;
+  if (!currentItem.value?.date) return
   if (plugin && plugin.openCustomTab) {
-    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date });
+    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date })
   }
-};
+}
 
 const handleLinkClick = async (link: Link) => {
   if (link.type !== 'attachment') {
-    return;
+    return
   }
 
-  const docId = currentItem.value?.docId;
-  const targetBlockId = resolveAttachmentTargetBlockId(link, currentItem.value?.blockId);
+  const docId = currentItem.value?.docId
+  const targetBlockId = resolveAttachmentTargetBlockId(link, currentItem.value?.blockId)
   if (!docId || !targetBlockId) {
-    showMessage(t('common').blockIdError, 'error');
-    return;
+    showMessage(t('common').blockIdError, 'error')
+    return
   }
 
-  const opened = await openDocumentAtLine(docId, undefined, targetBlockId);
+  const opened = await openDocumentAtLine(docId, undefined, targetBlockId)
   if (!opened) {
-    showMessage(t('common').blockIdError, 'error');
+    showMessage(t('common').blockIdError, 'error')
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -512,7 +655,10 @@ const handleLinkClick = async (link: Link) => {
   stroke: var(--b3-theme-primary);
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear, stroke 0.3s, opacity 0.3s;
+  transition:
+    stroke-dashoffset 1s linear,
+    stroke 0.3s,
+    opacity 0.3s;
 }
 
 .timer-content {
@@ -739,17 +885,17 @@ const handleLinkClick = async (link: Link) => {
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
-    color: #4CAF50;
+    color: #4caf50;
   }
 
   &.level-l2 {
     background: rgba(255, 152, 0, 0.15);
-    color: #FF9800;
+    color: #ff9800;
   }
 
   &.level-l3 {
     background: rgba(33, 150, 243, 0.15);
-    color: #2196F3;
+    color: #2196f3;
   }
 }
 

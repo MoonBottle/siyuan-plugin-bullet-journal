@@ -1,11 +1,11 @@
-import type { WorkbenchSettings } from '@/types/workbench';
+import type { WorkbenchSettings } from '@/types/workbench'
 
-export const WORKBENCH_FILE = 'workbench.json';
+export const WORKBENCH_FILE = 'workbench.json'
 
-type WorkbenchPlugin = {
-  loadData: (path: string) => Promise<unknown>;
-  saveData: (path: string, data: string) => Promise<void>;
-};
+interface WorkbenchPlugin {
+  loadData: (path: string) => Promise<unknown>
+  saveData: (path: string, data: string) => Promise<void>
+}
 
 export function createEmptyWorkbenchSettings(): WorkbenchSettings {
   return {
@@ -13,22 +13,22 @@ export function createEmptyWorkbenchSettings(): WorkbenchSettings {
     dashboards: [],
     activeEntryId: null,
     sidebarCollapsed: false,
-  };
+  }
 }
 
 function normalizeWorkbenchSettings(value: unknown): WorkbenchSettings {
   if (!value || typeof value !== 'object') {
-    return createEmptyWorkbenchSettings();
+    return createEmptyWorkbenchSettings()
   }
 
-  const raw = value as Partial<WorkbenchSettings>;
+  const raw = value as Partial<WorkbenchSettings>
 
   return {
     entries: Array.isArray(raw.entries) ? raw.entries : [],
     dashboards: Array.isArray(raw.dashboards) ? raw.dashboards : [],
     activeEntryId: typeof raw.activeEntryId === 'string' ? raw.activeEntryId : null,
     sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : false,
-  };
+  }
 }
 
 export async function loadWorkbenchSettings(
@@ -36,23 +36,23 @@ export async function loadWorkbenchSettings(
 ): Promise<WorkbenchSettings> {
   try {
     if (!plugin) {
-      return createEmptyWorkbenchSettings();
+      return createEmptyWorkbenchSettings()
     }
 
-    const content = await plugin.loadData(WORKBENCH_FILE);
+    const content = await plugin.loadData(WORKBENCH_FILE)
     if (!content) {
-      return createEmptyWorkbenchSettings();
+      return createEmptyWorkbenchSettings()
     }
 
     if (typeof content === 'object') {
-      return normalizeWorkbenchSettings(content);
+      return normalizeWorkbenchSettings(content)
     }
 
-    return normalizeWorkbenchSettings(JSON.parse(content as string));
+    return normalizeWorkbenchSettings(JSON.parse(content as string))
   }
   catch (error) {
-    console.error('[WorkbenchStorage] Failed to load workbench settings:', error);
-    return createEmptyWorkbenchSettings();
+    console.error('[WorkbenchStorage] Failed to load workbench settings:', error)
+    return createEmptyWorkbenchSettings()
   }
 }
 
@@ -62,14 +62,14 @@ export async function saveWorkbenchSettings(
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      return false;
+      return false
     }
 
-    await plugin.saveData(WORKBENCH_FILE, JSON.stringify(settings, null, 2));
-    return true;
+    await plugin.saveData(WORKBENCH_FILE, JSON.stringify(settings, null, 2))
+    return true
   }
   catch (error) {
-    console.error('[WorkbenchStorage] Failed to save workbench settings:', error);
-    return false;
+    console.error('[WorkbenchStorage] Failed to save workbench settings:', error)
+    return false
   }
 }

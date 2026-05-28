@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { calculateHabitStats } from '@/domain/habit/habitStats';
-import type { CheckInRecord, Habit } from '@/types/models';
+import type {
+  CheckInRecord,
+  Habit,
+} from '@/types/models'
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
+import { calculateHabitStats } from '@/domain/habit/habitStats'
 
 function mkRecord(date: string, overrides: Partial<CheckInRecord> = {}): CheckInRecord {
   return {
@@ -10,7 +17,7 @@ function mkRecord(date: string, overrides: Partial<CheckInRecord> = {}): CheckIn
     blockId: `record-${date}`,
     habitId: 'habit-1',
     ...overrides,
-  };
+  }
 }
 
 function mkHabit(overrides: Partial<Habit> = {}): Habit {
@@ -23,89 +30,95 @@ function mkHabit(overrides: Partial<Habit> = {}): Habit {
     records: [],
     frequency: { type: 'weekly' },
     ...overrides,
-  };
+  }
 }
 
 describe('calculateHabitStats', () => {
   it('weekly 完成率应按周数而不是自然天数计算', () => {
     const habit = mkHabit({
       records: [mkRecord('2026-04-03'), mkRecord('2026-04-08'), mkRecord('2026-04-15')],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-20');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-20')
 
-    expect(stats.completionRate).toBeCloseTo(3 / 4, 5);
-  });
+    expect(stats.completionRate).toBeCloseTo(3 / 4, 5)
+  })
 
   it('durationDays 到期应返回 isEnded=true', () => {
-    const habit = mkHabit({ durationDays: 7 });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.isEnded).toBe(true);
-  });
+    const habit = mkHabit({ durationDays: 7 })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.isEnded).toBe(true)
+  })
 
   it('weekly 连续按周期完成时 streak 应按周累积', () => {
     const habit = mkHabit({
       records: [mkRecord('2026-04-03'), mkRecord('2026-04-08'), mkRecord('2026-04-15')],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-20');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-20')
 
-    expect(stats.currentStreak).toBe(3);
-    expect(stats.longestStreak).toBe(3);
-  });
+    expect(stats.currentStreak).toBe(3)
+    expect(stats.longestStreak).toBe(3)
+  })
 
   it('weekly_days 非要求日记录不应提升完成率', () => {
     const habit = mkHabit({
-      frequency: { type: 'weekly_days', daysOfWeek: [1, 3, 5] },
+      frequency: {
+        type: 'weekly_days',
+        daysOfWeek: [1, 3, 5],
+      },
       records: [mkRecord('2026-04-09')],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-12');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-12')
 
-    expect(stats.totalCheckins).toBe(1);
-    expect(stats.completionRate).toBe(0);
-  });
+    expect(stats.totalCheckins).toBe(1)
+    expect(stats.completionRate).toBe(0)
+  })
 
   it('详情查看历史月份时 monthlyCheckins 应按选中月份统计', () => {
     const habit = mkHabit({
       frequency: { type: 'daily' },
       records: [mkRecord('2026-04-18'), mkRecord('2026-04-19'), mkRecord('2026-04-30')],
-    });
-    const stats = calculateHabitStats(habit, '2026-05-01', '2026-04');
+    })
+    const stats = calculateHabitStats(habit, '2026-05-01', '2026-04')
 
-    expect(stats.monthlyCheckins).toBe(3);
-    expect(stats.totalCheckins).toBe(3);
-  });
+    expect(stats.monthlyCheckins).toBe(3)
+    expect(stats.totalCheckins).toBe(3)
+  })
 
   it('当前周期未完成时 currentStreak 应归零', () => {
     const habit = mkHabit({
       records: [mkRecord('2026-04-03')],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-20');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-20')
 
-    expect(stats.currentStreak).toBe(0);
-    expect(stats.longestStreak).toBe(1);
-  });
+    expect(stats.currentStreak).toBe(0)
+    expect(stats.longestStreak).toBe(1)
+  })
 
   it('every_n_days 的月窗口若不含可打卡日，不应增加月完成率分母', () => {
     const habit = mkHabit({
-      frequency: { type: 'every_n_days', interval: 3 },
+      frequency: {
+        type: 'every_n_days',
+        interval: 3,
+      },
       startDate: '2026-03-31',
       records: [],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-02');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-02')
 
-    expect(stats.monthlyCompletionRate).toBe(0);
-    expect(stats.weeklyCompletionRate).toBe(0);
-  });
+    expect(stats.monthlyCompletionRate).toBe(0)
+    expect(stats.weeklyCompletionRate).toBe(0)
+  })
 
   it('daily 的本月完成率应按整月窗口计算，而不是截至今天', () => {
     const habit = mkHabit({
       frequency: { type: 'daily' },
       startDate: '2026-05-01',
       records: [mkRecord('2026-05-01')],
-    });
-    const stats = calculateHabitStats(habit, '2026-05-01');
+    })
+    const stats = calculateHabitStats(habit, '2026-05-01')
 
-    expect(stats.monthlyCompletionRate).toBeCloseTo(1 / 31, 5);
-  });
+    expect(stats.monthlyCompletionRate).toBeCloseTo(1 / 31, 5)
+  })
 
   it('未打卡记录不应计入 monthlyCheckins 和 totalCheckins', () => {
     const habit = mkHabit({
@@ -114,12 +127,12 @@ describe('calculateHabitStats', () => {
         mkRecord('2026-04-03'),
         mkRecord('2026-04-04', { status: 'missed' }),
       ],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-10');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-10')
 
-    expect(stats.totalCheckins).toBe(1);
-    expect(stats.monthlyCheckins).toBe(1);
-  });
+    expect(stats.totalCheckins).toBe(1)
+    expect(stats.monthlyCheckins).toBe(1)
+  })
 
   it('未打卡周期应打断 streak', () => {
     const habit = mkHabit({
@@ -129,39 +142,45 @@ describe('calculateHabitStats', () => {
         mkRecord('2026-04-04', { status: 'missed' }),
         mkRecord('2026-04-05'),
       ],
-    });
-    const stats = calculateHabitStats(habit, '2026-04-05');
+    })
+    const stats = calculateHabitStats(habit, '2026-04-05')
 
-    expect(stats.longestStreak).toBe(1);
-    expect(stats.currentStreak).toBe(1);
-  });
+    expect(stats.longestStreak).toBe(1)
+    expect(stats.currentStreak).toBe(1)
+  })
 
   it('ebbinghaus 完成率应按到期节点而不是活跃天数计算', () => {
     const habit = mkHabit({
       name: '英语单词',
       startDate: '2026-05-14',
-      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      frequency: {
+        type: 'ebbinghaus',
+        intervals: [1, 2, 4, 7, 15],
+      },
       records: [
         mkRecord('2026-05-14', { content: '英语单词' }),
         mkRecord('2026-05-15', { content: '英语单词' }),
       ],
-    });
+    })
 
-    const stats = calculateHabitStats(habit, '2026-05-20');
-    expect(stats.totalCheckins).toBe(2);
-    expect(stats.completionRate).toBeCloseTo(2 / 3, 5);
-  });
+    const stats = calculateHabitStats(habit, '2026-05-20')
+    expect(stats.totalCheckins).toBe(2)
+    expect(stats.completionRate).toBeCloseTo(2 / 3, 5)
+  })
 
   it('ebbinghaus 第一版 streak 统一返回 0', () => {
     const habit = mkHabit({
       name: '英语单词',
       startDate: '2026-05-14',
-      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      frequency: {
+        type: 'ebbinghaus',
+        intervals: [1, 2, 4, 7, 15],
+      },
       records: [mkRecord('2026-05-14', { content: '英语单词' })],
-    });
+    })
 
-    const stats = calculateHabitStats(habit, '2026-05-20');
-    expect(stats.currentStreak).toBe(0);
-    expect(stats.longestStreak).toBe(0);
-  });
-});
+    const stats = calculateHabitStats(habit, '2026-05-20')
+    expect(stats.currentStreak).toBe(0)
+    expect(stats.longestStreak).toBe(0)
+  })
+})

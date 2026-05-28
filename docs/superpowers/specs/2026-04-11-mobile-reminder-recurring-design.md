@@ -1,7 +1,7 @@
 # 移动端提醒与重复设置功能设计文档
 
-**日期**: 2026-04-11  
-**类型**: 移动端功能增强  
+**日期**: 2026-04-11
+**类型**: 移动端功能增强
 **关联组件**: MobileItemDetail, QuickCreateDrawer, MobileReminderDrawer, MobileRecurringDrawer
 
 ---
@@ -21,16 +21,16 @@
 
 两个组件统一采用以下顺序：
 
-| 顺序 | 元素 | 优先级 | 说明 |
-|------|------|--------|------|
-| 1 | **事项内容** | P0 | 核心信息，用户首先关心"要做什么" |
-| 2 | **所属项目** | P1 | 上下文信息，建立归属关系 |
-| 3 | **所属任务** | P1 | 上下文信息，任务的层级结构 |
-| 4 | **日期** | P1 | 核心时间属性，决定事项显示日期 |
-| 5 | **时间范围** | P2 | 细化信息，开始/结束时间（可选） |
-| 6 | **优先级** | P2 | 辅助排序属性，视觉颜色区分 |
-| 7 | **提醒** | P3 | 增强功能，默认折叠/未设置状态 |
-| 8 | **重复** | P3 | 增强功能，默认折叠/未设置状态 |
+| 顺序 | 元素         | 优先级 | 说明                             |
+| ---- | ------------ | ------ | -------------------------------- |
+| 1    | **事项内容** | P0     | 核心信息，用户首先关心"要做什么" |
+| 2    | **所属项目** | P1     | 上下文信息，建立归属关系         |
+| 3    | **所属任务** | P1     | 上下文信息，任务的层级结构       |
+| 4    | **日期**     | P1     | 核心时间属性，决定事项显示日期   |
+| 5    | **时间范围** | P2     | 细化信息，开始/结束时间（可选）  |
+| 6    | **优先级**   | P2     | 辅助排序属性，视觉颜色区分       |
+| 7    | **提醒**     | P3     | 增强功能，默认折叠/未设置状态    |
+| 8    | **重复**     | P3     | 增强功能，默认折叠/未设置状态    |
 
 ### 2.2 视觉层级
 
@@ -60,15 +60,15 @@
 
 #### 当前 → 调整后
 
-| 当前顺序 | 当前内容 | 调整后顺序 | 调整后内容 |
-|----------|----------|------------|------------|
-| 1 | 事项内容 | 1 | 事项内容（保持） |
-| 2 | 项目 & 任务 | 2 | 项目 & 任务（保持） |
-| 3 | 优先级 | 3 | **日期**（上移） |
-| 4 | 时间（日期+时间） | 4 | **时间范围**（拆分） |
-| 5 | 提醒 & 重复 | 5 | **优先级**（下移） |
-| 6 | 链接、番茄钟 | 6 | 提醒 & 重复（保持） |
-| - | - | 7 | 链接、番茄钟 |
+| 当前顺序 | 当前内容          | 调整后顺序 | 调整后内容           |
+| -------- | ----------------- | ---------- | -------------------- |
+| 1        | 事项内容          | 1          | 事项内容（保持）     |
+| 2        | 项目 & 任务       | 2          | 项目 & 任务（保持）  |
+| 3        | 优先级            | 3          | **日期**（上移）     |
+| 4        | 时间（日期+时间） | 4          | **时间范围**（拆分） |
+| 5        | 提醒 & 重复       | 5          | **优先级**（下移）   |
+| 6        | 链接、番茄钟      | 6          | 提醒 & 重复（保持）  |
+| -        | -                 | 7          | 链接、番茄钟         |
 
 #### 时间区域拆分
 
@@ -81,6 +81,7 @@
     <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
     <span class="info-label">日期</span>
   </div>
+
   <div class="info-right">
     <span class="info-value">{{ formatDateDisplay }}</span>
     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -93,6 +94,7 @@
     <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
     <span class="info-label">时间</span>
   </div>
+
   <div class="info-right">
     <span class="info-value">{{ formatTimeDisplay }}</span>
     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -104,16 +106,16 @@
 
 #### 当前 → 调整后
 
-| 当前顺序 | 当前内容 | 调整后顺序 | 调整后内容 |
-|----------|----------|------------|------------|
-| 1 | 所属项目 | 1 | **事项内容**（移到顶部） |
-| 2 | 所属任务 | 2 | 所属项目（下移） |
-| 3 | 事项内容 | 3 | 所属任务（下移） |
-| 4 | 日期 | 4 | 日期（保持） |
-| 5 | 时间范围 | 5 | 时间范围（保持） |
-| 6 | 优先级 | 6 | 优先级（保持） |
-| - | - | 7 | **提醒**（新增） |
-| - | - | 8 | **重复**（新增） |
+| 当前顺序 | 当前内容 | 调整后顺序 | 调整后内容               |
+| -------- | -------- | ---------- | ------------------------ |
+| 1        | 所属项目 | 1          | **事项内容**（移到顶部） |
+| 2        | 所属任务 | 2          | 所属项目（下移）         |
+| 3        | 事项内容 | 3          | 所属任务（下移）         |
+| 4        | 日期     | 4          | 日期（保持）             |
+| 5        | 时间范围 | 5          | 时间范围（保持）         |
+| 6        | 优先级   | 6          | 优先级（保持）           |
+| -        | -        | 7          | **提醒**（新增）         |
+| -        | -        | 8          | **重复**（新增）         |
 
 #### 新增入口样式
 
@@ -122,7 +124,7 @@
 ```vue
 <!-- Quick Actions Section -->
 <div class="actions-card">
-  <button 
+  <button
     class="action-item"
     :class="{ active: hasReminder }"
     @click="handleSetReminder"
@@ -130,11 +132,17 @@
     <div class="action-icon-wrapper">
       <svg><use xlink:href="#iconClock"></use></svg>
     </div>
-    <span class="action-text">{{ reminderText }}</span>
-    <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
+
+    <span class="action-text">
+{{ reminderText }}
+</span>
+
+    <svg class="action-arrow">
+<use xlink:href="#iconRight"></use>
+</svg>
   </button>
-  
-  <button 
+
+  <button
     class="action-item"
     :class="{ active: hasRecurring }"
     @click="handleSetRecurring"
@@ -156,18 +164,18 @@
 
 ```typescript
 interface MobileReminderDrawerProps {
-  modelValue: boolean;              // 显示/隐藏
-  blockId?: string;                 // 事项块ID（编辑模式）
-  initialConfig?: ReminderConfig;   // 初始配置
-  itemDate?: string;                // 事项日期（用于计算相对提醒）
-  itemStartTime?: string;           // 事项开始时间
-  itemEndTime?: string;             // 事项结束时间
+  modelValue: boolean // 显示/隐藏
+  blockId?: string // 事项块ID（编辑模式）
+  initialConfig?: ReminderConfig // 初始配置
+  itemDate?: string // 事项日期（用于计算相对提醒）
+  itemStartTime?: string // 事项开始时间
+  itemEndTime?: string // 事项结束时间
 }
 
 interface MobileReminderDrawerEmits {
-  'update:modelValue': [value: boolean];
-  'save': [config: ReminderConfig]; // 保存时触发
-  'cancel': [];                     // 取消时触发
+  'update:modelValue': [value: boolean]
+  'save': [config: ReminderConfig] // 保存时触发
+  'cancel': [] // 取消时触发
 }
 ```
 
@@ -188,24 +196,25 @@ MobileReminderDrawer.vue
 .mobile-reminder-drawer {
   max-height: 85vh;
   border-radius: 24px 24px 0 0;
-  
+
   .reminder-setting-dialog {
     // 覆盖桌面端样式适配移动端
     padding: 16px;
     min-width: auto;
     max-width: 100%;
   }
-  
+
   .quick-buttons {
     grid-template-columns: repeat(2, 1fr); // 移动端双列
     gap: 12px;
   }
-  
+
   .mode-btn {
     min-height: 48px; // 44px+ touch target
     padding: 12px 16px;
   }
 }
+
 ```
 
 ### 3.4 MobileRecurringDrawer（新增）
@@ -216,17 +225,17 @@ MobileReminderDrawer.vue
 
 ```typescript
 interface MobileRecurringDrawerProps {
-  modelValue: boolean;
-  blockId?: string;
-  initialRepeatRule?: RepeatRule;
-  initialEndCondition?: EndCondition;
-  itemDate?: string;  // 用于默认周几选择
+  modelValue: boolean
+  blockId?: string
+  initialRepeatRule?: RepeatRule
+  initialEndCondition?: EndCondition
+  itemDate?: string // 用于默认周几选择
 }
 
 interface MobileRecurringDrawerEmits {
-  'update:modelValue': [value: boolean];
-  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined];
-  'cancel': [];
+  'update:modelValue': [value: boolean]
+  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined]
+  'cancel': []
 }
 ```
 
@@ -244,23 +253,26 @@ interface MobileRecurringDrawerEmits {
  * 从 dialog.ts 迁移，供桌面端和移动端共用
  */
 export async function updateItemWithReminder(
-  item: Item, 
+  item: Item,
   config: ReminderConfig
 ): Promise<void> {
-  if (!item.blockId) return;
-  
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-  
-  let content = block.content || block.markdown || '';
-  content = stripReminderMarker(content);
-  
+  if (!item.blockId)
+    return
+
+  const block = await siyuanAPI.getBlockByID(item.blockId)
+  if (!block)
+    return
+
+  let content = block.content || block.markdown || ''
+  content = stripReminderMarker(content)
+
   if (config.enabled) {
-    const marker = generateReminderMarker(config);
-    if (marker) content += ` ${marker}`;
+    const marker = generateReminderMarker(config)
+    if (marker)
+      content += ` ${marker}`
   }
-  
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId)
 }
 
 /**
@@ -271,23 +283,26 @@ export async function updateItemWithRecurring(
   repeatRule: RepeatRule | undefined,
   endCondition: EndCondition | undefined
 ): Promise<void> {
-  if (!item.blockId) return;
-  
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-  
-  let content = block.content || block.markdown || '';
-  content = stripRecurringMarkers(content);
-  
+  if (!item.blockId)
+    return
+
+  const block = await siyuanAPI.getBlockByID(item.blockId)
+  if (!block)
+    return
+
+  let content = block.content || block.markdown || ''
+  content = stripRecurringMarkers(content)
+
   if (repeatRule) {
-    content += ` ${generateRepeatRuleMarker(repeatRule)}`;
+    content += ` ${generateRepeatRuleMarker(repeatRule)}`
     if (endCondition) {
-      const endMarker = generateEndConditionMarker(endCondition);
-      if (endMarker) content += ` ${endMarker}`;
+      const endMarker = generateEndConditionMarker(endCondition)
+      if (endMarker)
+        content += ` ${endMarker}`
     }
   }
-  
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId)
 }
 
 /**
@@ -298,46 +313,48 @@ export function buildItemContent(
   baseContent: string,
   date: string,
   options: {
-    startTime?: string;
-    endTime?: string;
-    priority?: PriorityLevel;
-    reminder?: ReminderConfig;
-    repeatRule?: RepeatRule;
-    endCondition?: EndCondition;
+    startTime?: string
+    endTime?: string
+    priority?: PriorityLevel
+    reminder?: ReminderConfig
+    repeatRule?: RepeatRule
+    endCondition?: EndCondition
   }
 ): string {
-  let content = baseContent;
-  
+  let content = baseContent
+
   // 日期部分
-  let datePart = `📅${date}`;
+  let datePart = `📅${date}`
   if (options.startTime && options.endTime) {
-    datePart = `📅${date} ${options.startTime}~${options.endTime}`;
-  } else if (options.startTime) {
-    datePart = `📅${date} ${options.startTime}`;
+    datePart = `📅${date} ${options.startTime}~${options.endTime}`
   }
-  content += ` ${datePart}`;
-  
+  else if (options.startTime) {
+    datePart = `📅${date} ${options.startTime}`
+  }
+  content += ` ${datePart}`
+
   // 优先级
   if (options.priority) {
-    const priorityMap = { high: '🔥', medium: '🌱', low: '🍃' };
-    content += ` ${priorityMap[options.priority]}`;
+    const priorityMap = { high: '🔥', medium: '🌱', low: '🍃' }
+    content += ` ${priorityMap[options.priority]}`
   }
-  
+
   // 提醒
   if (options.reminder?.enabled) {
-    content += ` ${generateReminderMarker(options.reminder)}`;
+    content += ` ${generateReminderMarker(options.reminder)}`
   }
-  
+
   // 重复
   if (options.repeatRule) {
-    content += ` ${generateRepeatRuleMarker(options.repeatRule)}`;
+    content += ` ${generateRepeatRuleMarker(options.repeatRule)}`
     if (options.endCondition) {
-      const endMarker = generateEndConditionMarker(options.endCondition);
-      if (endMarker) content += ` ${endMarker}`;
+      const endMarker = generateEndConditionMarker(options.endCondition)
+      if (endMarker)
+        content += ` ${endMarker}`
     }
   }
-  
-  return content;
+
+  return content
 }
 ```
 
@@ -347,11 +364,11 @@ export function buildItemContent(
 
 ```typescript
 export interface CreateItemOptions {
-  priority?: 'high' | 'medium' | 'low';
-  tags?: string[];
-  reminder?: ReminderConfig;        // 新增
-  repeatRule?: RepeatRule;          // 新增
-  endCondition?: EndCondition;      // 新增
+  priority?: 'high' | 'medium' | 'low'
+  tags?: string[]
+  reminder?: ReminderConfig // 新增
+  repeatRule?: RepeatRule // 新增
+  endCondition?: EndCondition // 新增
 }
 
 export async function createItem(
@@ -426,7 +443,8 @@ MobileTodoDock 接收事件
 
 ```scss
 // 卡片容器
-.info-card, .actions-card {
+.info-card,
+.actions-card {
   background: var(--b3-theme-surface);
   border-radius: 16px;
   padding: 12px 16px;
@@ -441,11 +459,11 @@ MobileTodoDock 接收事件
   min-height: 44px; // UX 规范: 触摸目标 44px+
   padding: 10px 0;
   cursor: pointer;
-  
+
   &:active {
     opacity: 0.7;
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
@@ -461,11 +479,11 @@ MobileTodoDock 接收事件
   border: none;
   background: transparent;
   cursor: pointer;
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
-  
+
   &.active {
     .action-icon-wrapper {
       background: rgba(var(--b3-theme-primary-rgb), 0.15);
@@ -487,6 +505,7 @@ MobileTodoDock 接收事件
   border-radius: 10px;
   flex-shrink: 0;
 }
+
 ```
 
 ### 6.2 抽屉动画
@@ -512,6 +531,7 @@ MobileTodoDock 接收事件
 .fade-leave-to {
   opacity: 0;
 }
+
 ```
 
 ---
@@ -519,22 +539,26 @@ MobileTodoDock 接收事件
 ## 七、实现计划
 
 ### Phase 1: 基础设施
+
 1. 创建 `src/utils/itemSettingUtils.ts`（提取公共函数）
 2. 修改 `src/utils/quickCreate.ts`（扩展参数）
 3. 修改 `src/utils/dialog.ts`（使用新的公共函数）
 
 ### Phase 2: 组件实现
+
 1. 创建 `src/tabs/mobile/drawers/MobileReminderDrawer.vue`
 2. 创建 `src/tabs/mobile/drawers/MobileRecurringDrawer.vue`
 3. 修改 `src/components/dialog/ReminderSettingDialog.vue`（适配 drawer 模式）
 4. 修改 `src/components/dialog/RecurringSettingDialog.vue`（适配 drawer 模式）
 
 ### Phase 3: 布局调整
+
 1. 修改 `src/tabs/mobile/drawers/MobileItemDetail.vue`（调整顺序）
 2. 修改 `src/tabs/mobile/drawers/QuickCreateDrawer.vue`（调整顺序 + 添加入口）
 3. 修改 `src/tabs/mobile/MobileTodoDock.vue`（集成抽屉）
 
 ### Phase 4: 测试
+
 1. 桌面端弹框功能回归测试
 2. 移动端抽屉功能测试
 3. QuickCreate 创建带提醒/重复的事项测试
@@ -554,15 +578,15 @@ MobileTodoDock 接收事件
 
 ### 相关文件清单
 
-| 文件路径 | 操作 | 说明 |
-|----------|------|------|
-| `src/utils/itemSettingUtils.ts` | 新增 | 公共保存函数 |
-| `src/utils/quickCreate.ts` | 修改 | 扩展 createItem 参数 |
-| `src/utils/dialog.ts` | 修改 | 使用公共函数 |
-| `src/tabs/mobile/drawers/MobileReminderDrawer.vue` | 新增 | 提醒设置抽屉 |
-| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 新增 | 重复设置抽屉 |
-| `src/components/dialog/ReminderSettingDialog.vue` | 修改 | 适配 drawer 模式 |
-| `src/components/dialog/RecurringSettingDialog.vue` | 修改 | 适配 drawer 模式 |
-| `src/tabs/mobile/drawers/MobileItemDetail.vue` | 修改 | 调整布局顺序 |
-| `src/tabs/mobile/drawers/QuickCreateDrawer.vue` | 修改 | 调整布局 + 添加入口 |
-| `src/tabs/mobile/MobileTodoDock.vue` | 修改 | 集成抽屉组件 |
+| 文件路径                                            | 操作 | 说明                 |
+| --------------------------------------------------- | ---- | -------------------- |
+| `src/utils/itemSettingUtils.ts`                     | 新增 | 公共保存函数         |
+| `src/utils/quickCreate.ts`                          | 修改 | 扩展 createItem 参数 |
+| `src/utils/dialog.ts`                               | 修改 | 使用公共函数         |
+| `src/tabs/mobile/drawers/MobileReminderDrawer.vue`  | 新增 | 提醒设置抽屉         |
+| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 新增 | 重复设置抽屉         |
+| `src/components/dialog/ReminderSettingDialog.vue`   | 修改 | 适配 drawer 模式     |
+| `src/components/dialog/RecurringSettingDialog.vue`  | 修改 | 适配 drawer 模式     |
+| `src/tabs/mobile/drawers/MobileItemDetail.vue`      | 修改 | 调整布局顺序         |
+| `src/tabs/mobile/drawers/QuickCreateDrawer.vue`     | 修改 | 调整布局 + 添加入口  |
+| `src/tabs/mobile/MobileTodoDock.vue`                | 修改 | 集成抽屉组件         |

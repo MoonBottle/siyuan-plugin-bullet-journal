@@ -1,5 +1,8 @@
 <template>
-  <div class="workbench-widget-pomodoro-stats" data-testid="workbench-widget-pomodoro-stats">
+  <div
+    class="workbench-widget-pomodoro-stats"
+    data-testid="workbench-widget-pomodoro-stats"
+  >
     <div class="workbench-widget-pomodoro-stats__content">
       <StatsOverview
         v-if="section === 'overview'"
@@ -32,26 +35,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import BestFocusTimeChart from '@/components/pomodoro/stats/BestFocusTimeChart.vue';
-import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue';
-import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue';
-import FocusTimelineChart from '@/components/pomodoro/stats/FocusTimelineChart.vue';
-import FocusTrendChart from '@/components/pomodoro/stats/FocusTrendChart.vue';
-import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue';
-import type { WorkbenchPomodoroStatsWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
+import type {
+  WorkbenchPomodoroStatsWidgetConfig,
+  WorkbenchWidgetInstance,
+} from '@/types/workbench'
+import {
+  computed,
+  ref,
+} from 'vue'
+import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue'
+import BestFocusTimeChart from '@/components/pomodoro/stats/BestFocusTimeChart.vue'
+import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue'
+import FocusTimelineChart from '@/components/pomodoro/stats/FocusTimelineChart.vue'
+import FocusTrendChart from '@/components/pomodoro/stats/FocusTrendChart.vue'
+import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue'
 
 const props = defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
+  widget?: WorkbenchWidgetInstance
+}>()
 
 const pomodoroConfig = computed(() => {
-  return (props.widget?.config ?? {}) as WorkbenchPomodoroStatsWidgetConfig;
-});
+  return (props.widget?.config ?? {}) as WorkbenchPomodoroStatsWidgetConfig
+})
 
-const section = computed(() => pomodoroConfig.value.section ?? 'overview');
-const focusDetailRange = ref<'today' | 'week' | 'month' | 'year'>('week');
-const focusDetailRangeOffset = ref(0);
+const section = computed(() => pomodoroConfig.value.section ?? 'overview')
+const focusDetailRange = ref<'today' | 'week' | 'month' | 'year'>('week')
+const focusDetailRangeOffset = ref(0)
 </script>
 
 <style lang="scss" scoped>

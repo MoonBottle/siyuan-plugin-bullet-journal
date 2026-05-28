@@ -13,13 +13,23 @@
 
     <!-- 底部按钮 -->
     <div class="dialog-footer">
-      <button class="b3-button b3-button--outline" data-initial-focus @click="handleClose">
+      <button
+        class="b3-button b3-button--outline"
+        data-initial-focus
+        @click="handleClose"
+      >
         {{ t('common').cancel }}
       </button>
-      <button class="b3-button b3-button--outline" @click="handleOpenCalendar">
+      <button
+        class="b3-button b3-button--outline"
+        @click="handleOpenCalendar"
+      >
         {{ t('todo').viewInCalendar }}
       </button>
-      <button class="b3-button b3-button--text" @click="handleOpenDoc">
+      <button
+        class="b3-button b3-button--text"
+        @click="handleOpenDoc"
+      >
         {{ t('todo').openDoc }}
       </button>
     </div>
@@ -27,56 +37,56 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import { t } from '@/i18n'
 
 interface Props {
-  item: Item;
-  showAllDates?: boolean;
+  item: Item
+  showAllDates?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showAllDates: false
-});
+  showAllDates: false,
+})
 
 const emit = defineEmits<{
-  close: [];
-  openDoc: [];
-  openCalendar: [date: string];
-  setReminder: [];
-  setRecurring: [];
-  skipOccurrence: [];
-}>();
+  close: []
+  openDoc: []
+  openCalendar: [date: string]
+  setReminder: []
+  setRecurring: []
+  skipOccurrence: []
+}>()
 
 // 关闭弹框
 function handleClose() {
-  emit('close');
+  emit('close')
 }
 
 // 打开文档
 function handleOpenDoc() {
-  emit('openDoc');
+  emit('openDoc')
 }
 
 // 打开日历
 function handleOpenCalendar() {
-  emit('openCalendar', props.item.date);
+  emit('openCalendar', props.item.date)
 }
 
 // 设置提醒
 function handleSetReminder() {
-  emit('setReminder');
+  emit('setReminder')
 }
 
 // 设置重复
 function handleSetRecurring() {
-  emit('setRecurring');
+  emit('setRecurring')
 }
 
 // 跳过本次
 function handleSkipOccurrence() {
-  emit('skipOccurrence');
+  emit('skipOccurrence')
 }
 
 </script>

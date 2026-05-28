@@ -42,15 +42,24 @@
               @click="handleSearchSelect(entry.id)"
               @mouseenter="highlightedSearchIndex = index"
             >
-              <span class="workbench-sidebar__search-result-icon" aria-hidden="true">
+              <span
+                class="workbench-sidebar__search-result-icon"
+                aria-hidden="true"
+              >
                 <svg><use :xlink:href="`#${entry.icon}`"></use></svg>
               </span>
               <span class="workbench-sidebar__search-result-title">{{ entry.title }}</span>
             </button>
           </template>
 
-          <div v-else class="workbench-sidebar__search-empty">
-            <div class="workbench-sidebar__search-empty-art" aria-hidden="true">
+          <div
+            v-else
+            class="workbench-sidebar__search-empty"
+          >
+            <div
+              class="workbench-sidebar__search-empty-art"
+              aria-hidden="true"
+            >
               <div class="workbench-sidebar__search-empty-art-circle">
                 <svg><use xlink:href="#iconSearch"></use></svg>
               </div>
@@ -58,8 +67,12 @@
               <span class="workbench-sidebar__search-empty-art-line workbench-sidebar__search-empty-art-line--two"></span>
               <span class="workbench-sidebar__search-empty-art-line workbench-sidebar__search-empty-art-line--three"></span>
             </div>
-            <div class="workbench-sidebar__search-empty-title">{{ t('workbench').searchNoResultsTitle }}</div>
-            <div class="workbench-sidebar__search-empty-desc">{{ t('workbench').searchNoResultsDesc }}</div>
+            <div class="workbench-sidebar__search-empty-title">
+              {{ t('workbench').searchNoResultsTitle }}
+            </div>
+            <div class="workbench-sidebar__search-empty-desc">
+              {{ t('workbench').searchNoResultsDesc }}
+            </div>
           </div>
         </div>
       </div>
@@ -79,7 +92,10 @@
       </button>
     </div>
 
-    <div ref="entriesContainerRef" class="workbench-sidebar__entries">
+    <div
+      ref="entriesContainerRef"
+      class="workbench-sidebar__entries"
+    >
       <button
         v-for="entry in entries"
         :key="entry.id"
@@ -100,10 +116,16 @@
         >
           <svg><use xlink:href="#iconMove"></use></svg>
         </span>
-        <span class="workbench-sidebar__entry-icon" aria-hidden="true">
+        <span
+          class="workbench-sidebar__entry-icon"
+          aria-hidden="true"
+        >
           <svg><use :xlink:href="`#${entry.icon}`"></use></svg>
         </span>
-        <span v-if="!collapsed" class="workbench-sidebar__entry-title">{{ entry.title }}</span>
+        <span
+          v-if="!collapsed"
+          class="workbench-sidebar__entry-title"
+        >{{ entry.title }}</span>
         <span
           v-if="!collapsed"
           class="workbench-sidebar__entry-more"
@@ -123,7 +145,10 @@
         type="button"
         @click="handleCreateTriggerClick"
       >
-        <span class="workbench-sidebar__create-trigger-icon" aria-hidden="true">+</span>
+        <span
+          class="workbench-sidebar__create-trigger-icon"
+          aria-hidden="true"
+        >+</span>
         <span v-if="!collapsed">{{ t('workbench').newView }}</span>
       </button>
     </div>
@@ -142,7 +167,10 @@
         type="button"
         @click="handleCreateDashboard"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconBoard"></use></svg>
         </span>
         <span>{{ t('workbench').newDashboard }}</span>
@@ -153,7 +181,10 @@
         type="button"
         @click="handleCreateView('todo')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconList"></use></svg>
         </span>
         <span>{{ t('todo').title }}</span>
@@ -164,7 +195,10 @@
         type="button"
         @click="handleCreateView('habit')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconCheck"></use></svg>
         </span>
         <span>{{ t('habit').title }}</span>
@@ -175,7 +209,10 @@
         type="button"
         @click="handleCreateView('quadrant')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconLayout"></use></svg>
         </span>
         <span>{{ t('quadrant').title }}</span>
@@ -186,7 +223,10 @@
         type="button"
         @click="handleCreateView('pomodoroStats')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconClock"></use></svg>
         </span>
         <span>{{ t('pomodoroStats').statsTitle }}</span>
@@ -197,7 +237,10 @@
         type="button"
         @click="handleCreateView('focusWorkbench')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconClock"></use></svg>
         </span>
         <span>{{ t('focusWorkbench').title }}</span>
@@ -208,7 +251,10 @@
         type="button"
         @click="handleCreateView('project')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconFolder"></use></svg>
         </span>
         <span>{{ t('project').title }}</span>
@@ -219,7 +265,10 @@
         type="button"
         @click="handleCreateView('aiChat')"
       >
-        <span class="workbench-create-popup__icon" aria-hidden="true">
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
           <svg><use xlink:href="#iconSparkles"></use></svg>
         </span>
         <span>{{ t('aiChat').title }}</span>
@@ -229,253 +278,269 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Menu } from 'siyuan';
-import Sortable from 'sortablejs';
-import { t } from '@/i18n';
-import { hideIconTooltip, showConfirmDialog, showIconTooltip, showInputDialog } from '@/utils/dialog';
-import type { WorkbenchEntry, WorkbenchViewType } from '@/types/workbench';
+import type {
+  WorkbenchEntry,
+  WorkbenchViewType,
+} from '@/types/workbench'
+import { Menu } from 'siyuan'
+import Sortable from 'sortablejs'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import {
+  hideIconTooltip,
+  showConfirmDialog,
+  showIconTooltip,
+  showInputDialog,
+} from '@/utils/dialog'
 
 const props = defineProps<{
-  entries: WorkbenchEntry[];
-  activeEntryId: string | null;
-  collapsed: boolean;
-}>();
+  entries: WorkbenchEntry[]
+  activeEntryId: string | null
+  collapsed: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'select', id: string): void;
-  (event: 'create-dashboard'): void;
-  (event: 'create-view', viewType: WorkbenchViewType): void;
-  (event: 'rename-entry', id: string, title: string): void;
-  (event: 'delete-entry', id: string): void;
-  (event: 'reorder-entries', orderedIds: string[]): void;
-  (event: 'toggle-sidebar'): void;
-}>();
+  (event: 'select', id: string): void
+  (event: 'create-dashboard'): void
+  (event: 'create-view', viewType: WorkbenchViewType): void
+  (event: 'rename-entry', id: string, title: string): void
+  (event: 'delete-entry', id: string): void
+  (event: 'reorder-entries', orderedIds: string[]): void
+  (event: 'toggle-sidebar'): void
+}>()
 
-const entriesContainerRef = ref<HTMLElement | null>(null);
-const searchContainerRef = ref<HTMLElement | null>(null);
-const searchInputRef = ref<HTMLInputElement | null>(null);
-const createTriggerRef = ref<HTMLElement | null>(null);
-const isCreateMenuOpen = ref(false);
-const lastClickEvent = ref<MouseEvent | null>(null);
-const isSearchOpen = ref(false);
-const searchQuery = ref('');
-const highlightedSearchIndex = ref(0);
-let sortableInstance: Sortable | null = null;
+const entriesContainerRef = ref<HTMLElement | null>(null)
+const searchContainerRef = ref<HTMLElement | null>(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const createTriggerRef = ref<HTMLElement | null>(null)
+const isCreateMenuOpen = ref(false)
+const lastClickEvent = ref<MouseEvent | null>(null)
+const isSearchOpen = ref(false)
+const searchQuery = ref('')
+const highlightedSearchIndex = ref(0)
+let sortableInstance: Sortable | null = null
 
-const createMenuStyle = ref<Record<string, string>>({});
+const createMenuStyle = ref<Record<string, string>>({})
 
 function updateCreateMenuPosition() {
-  const trigger = createTriggerRef.value;
-  if (!trigger) return;
-  const gap = 8;
+  const trigger = createTriggerRef.value
+  if (!trigger) return
+  const gap = 8
   if (props.collapsed) {
-    const evt = lastClickEvent.value;
-    if (!evt) return;
+    const evt = lastClickEvent.value
+    if (!evt) return
     createMenuStyle.value = {
       position: 'fixed',
       left: `${evt.clientX}px`,
       bottom: `${window.innerHeight - evt.clientY}px`,
-    };
+    }
   } else {
-    const rect = trigger.getBoundingClientRect();
+    const rect = trigger.getBoundingClientRect()
     createMenuStyle.value = {
       position: 'fixed',
       left: `${rect.left}px`,
       bottom: `${window.innerHeight - rect.top + gap}px`,
-    };
+    }
   }
- }
-const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase());
+}
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase())
 const filteredEntries = computed(() => {
-  const query = normalizedSearchQuery.value;
+  const query = normalizedSearchQuery.value
   if (!query) {
-    return [];
+    return []
   }
 
-  return props.entries.filter(entry =>
+  return props.entries.filter((entry) =>
     entry.title.toLocaleLowerCase().includes(query),
-  );
-});
+  )
+})
 const shouldShowSearchPopup = computed(() => {
-  return !props.collapsed && isSearchOpen.value && normalizedSearchQuery.value.length > 0;
-});
+  return !props.collapsed && isSearchOpen.value && normalizedSearchQuery.value.length > 0
+})
 
 function initSortable() {
-  destroySortable();
-  if (!entriesContainerRef.value || props.collapsed) return;
+  destroySortable()
+  if (!entriesContainerRef.value || props.collapsed) return
 
   sortableInstance = Sortable.create(entriesContainerRef.value, {
     handle: '.workbench-sidebar__entry-drag',
     animation: 150,
     onEnd: () => {
-      if (!entriesContainerRef.value) return;
+      if (!entriesContainerRef.value) return
       const ids = Array.from(entriesContainerRef.value.children)
-        .map(el => (el as HTMLElement).dataset.id)
-        .filter((id): id is string => typeof id === 'string');
-      emit('reorder-entries', ids);
+        .map((el) => (el as HTMLElement).dataset.id)
+        .filter((id): id is string => typeof id === 'string')
+      emit('reorder-entries', ids)
     },
-  });
+  })
 }
 
 function destroySortable() {
   if (sortableInstance) {
-    sortableInstance.destroy();
-    sortableInstance = null;
+    sortableInstance.destroy()
+    sortableInstance = null
   }
 }
 
 watch(() => props.collapsed, (collapsed) => {
   if (collapsed) {
-    destroySortable();
-    closeSearch();
+    destroySortable()
+    closeSearch()
   } else {
-    nextTick(() => initSortable());
+    nextTick(() => initSortable())
   }
-});
+})
 
 onMounted(() => {
   if (!props.collapsed) {
-    initSortable();
+    initSortable()
   }
-});
+})
 
 onUnmounted(() => {
-  destroySortable();
-});
+  destroySortable()
+})
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
-  document.addEventListener('keydown', handleDocumentKeydown);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
+  document.addEventListener('keydown', handleDocumentKeydown)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown);
-  document.removeEventListener('keydown', handleDocumentKeydown);
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
+  document.removeEventListener('keydown', handleDocumentKeydown)
+})
 
 function toggleCreateMenu() {
-  isCreateMenuOpen.value = !isCreateMenuOpen.value;
+  isCreateMenuOpen.value = !isCreateMenuOpen.value
   if (isCreateMenuOpen.value) {
     nextTick(() => {
-      updateCreateMenuPosition();
+      updateCreateMenuPosition()
       // 确保 DOM 完全渲染后再次更新位置
-      nextTick(() => updateCreateMenuPosition());
-    });
+      nextTick(() => updateCreateMenuPosition())
+    })
   }
 }
 
 function handleCreateTriggerClick(event: MouseEvent) {
-  lastClickEvent.value = event;
-  toggleCreateMenu();
- }
+  lastClickEvent.value = event
+  toggleCreateMenu()
+}
 
 function handleDocumentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && isCreateMenuOpen.value) {
-    isCreateMenuOpen.value = false;
+    isCreateMenuOpen.value = false
   }
- }
+}
 
 function openSearch() {
   if (props.collapsed || !normalizedSearchQuery.value) {
-    return;
+    return
   }
 
-  isSearchOpen.value = true;
-  highlightedSearchIndex.value = 0;
+  isSearchOpen.value = true
+  highlightedSearchIndex.value = 0
 }
 
 function closeSearch() {
-  isSearchOpen.value = false;
-  highlightedSearchIndex.value = 0;
+  isSearchOpen.value = false
+  highlightedSearchIndex.value = 0
 }
 
 function resetSearch() {
-  searchQuery.value = '';
-  closeSearch();
+  searchQuery.value = ''
+  closeSearch()
 }
 
 function handleSearchFocus() {
-  openSearch();
+  openSearch()
 }
 
 function handleSearchSelect(id: string) {
-  emit('select', id);
-  resetSearch();
+  emit('select', id)
+  resetSearch()
 }
 
 function handleSearchKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
-    closeSearch();
-    return;
+    closeSearch()
+    return
   }
 
   if (!shouldShowSearchPopup.value || filteredEntries.value.length === 0) {
-    return;
+    return
   }
 
   if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    highlightedSearchIndex.value = (highlightedSearchIndex.value + 1) % filteredEntries.value.length;
-    return;
+    event.preventDefault()
+    highlightedSearchIndex.value = (highlightedSearchIndex.value + 1) % filteredEntries.value.length
+    return
   }
 
   if (event.key === 'ArrowUp') {
-    event.preventDefault();
+    event.preventDefault()
     highlightedSearchIndex.value = highlightedSearchIndex.value <= 0
       ? filteredEntries.value.length - 1
-      : highlightedSearchIndex.value - 1;
-    return;
+      : highlightedSearchIndex.value - 1
+    return
   }
 
   if (event.key === 'Enter') {
-    event.preventDefault();
-    const targetEntry = filteredEntries.value[highlightedSearchIndex.value] ?? filteredEntries.value[0];
+    event.preventDefault()
+    const targetEntry = filteredEntries.value[highlightedSearchIndex.value] ?? filteredEntries.value[0]
     if (targetEntry) {
-      handleSearchSelect(targetEntry.id);
+      handleSearchSelect(targetEntry.id)
     }
   }
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  const target = event.target;
+  const target = event.target
   if (!(target instanceof Node)) {
-    return;
+    return
   }
 
   if (isCreateMenuOpen.value) {
     if (createTriggerRef.value?.contains(target)) {
-      return;
+      return
     }
-    const popup = document.querySelector('.workbench-create-popup');
+    const popup = document.querySelector('.workbench-create-popup')
     if (popup?.contains(target)) {
-      return;
+      return
     }
-    isCreateMenuOpen.value = false;
+    isCreateMenuOpen.value = false
   }
 
   if (searchContainerRef.value?.contains(target)) {
-    return;
+    return
   }
 
-  closeSearch();
+  closeSearch()
 }
 
 function handleCreateDashboard() {
-  isCreateMenuOpen.value = false;
-  emit('create-dashboard');
+  isCreateMenuOpen.value = false
+  emit('create-dashboard')
 }
 
 function handleCreateView(viewType: WorkbenchViewType) {
-  isCreateMenuOpen.value = false;
-  emit('create-view', viewType);
+  isCreateMenuOpen.value = false
+  emit('create-view', viewType)
 }
 
 function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault()
+  event.stopPropagation()
 
-  const menu = new Menu('workbench-entry-menu');
+  const menu = new Menu('workbench-entry-menu')
   menu.addItem({
     icon: 'iconEdit',
     label: t('workbench').rename,
@@ -486,14 +551,14 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
         entry.title,
         (nextTitle) => {
           if (!nextTitle || nextTitle === entry.title) {
-            return;
+            return
           }
 
-          emit('rename-entry', entry.id, nextTitle);
+          emit('rename-entry', entry.id, nextTitle)
         },
-      );
+      )
     },
-  });
+  })
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('workbench').delete,
@@ -502,51 +567,51 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
         t('workbench').delete,
         t('workbench').deleteConfirm.replace('{name}', entry.title),
         () => emit('delete-entry', entry.id),
-      );
+      )
     },
-  });
+  })
   menu.open({
     x: event.clientX,
     y: event.clientY,
-  });
+  })
 }
 
 function handleEntryMouseEnter(entry: WorkbenchEntry, event: MouseEvent) {
-  if (!props.collapsed) return;
-  showIconTooltip(event.currentTarget as HTMLElement, entry.title);
+  if (!props.collapsed) return
+  showIconTooltip(event.currentTarget as HTMLElement, entry.title)
 }
 
 function handleEntryMouseLeave() {
-  if (!props.collapsed) return;
-  hideIconTooltip();
+  if (!props.collapsed) return
+  hideIconTooltip()
 }
 
 function handleHeaderToggleMouseEnter(event: MouseEvent | FocusEvent) {
-  const target = event.currentTarget;
+  const target = event.currentTarget
   if (!(target instanceof HTMLElement)) {
-    return;
+    return
   }
 
   showIconTooltip(
     target,
     props.collapsed ? t('workbench').expandSidebar : t('workbench').collapseSidebar,
-  );
+  )
 }
 
 function handleHeaderToggleMouseLeave() {
-  hideIconTooltip();
+  hideIconTooltip()
 }
 
 watch(searchQuery, () => {
   if (!normalizedSearchQuery.value) {
-    closeSearch();
-    return;
+    closeSearch()
+    return
   }
 
   if (!props.collapsed) {
-    openSearch();
+    openSearch()
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -563,7 +628,10 @@ watch(searchQuery, () => {
   border-right: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
   overflow: hidden;
-  transition: width 200ms ease, flex-basis 200ms ease, padding 200ms ease;
+  transition:
+    width 200ms ease,
+    flex-basis 200ms ease,
+    padding 200ms ease;
   position: relative;
 }
 
@@ -784,7 +852,6 @@ watch(searchQuery, () => {
   padding-top: 8px;
 }
 
-
 .workbench-sidebar__create-trigger {
   display: flex;
   align-items: center;
@@ -851,8 +918,6 @@ watch(searchQuery, () => {
   font-size: 16px;
   line-height: 1;
 }
-
-
 
 .workbench-sidebar__entry {
   display: flex;

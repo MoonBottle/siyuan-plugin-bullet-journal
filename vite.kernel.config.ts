@@ -1,5 +1,5 @@
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { resolve } from 'node:path'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   resolve: {
@@ -25,4 +25,4 @@ export default defineConfig({
     target: 'es2018',
     minify: false,
   },
-});
+})

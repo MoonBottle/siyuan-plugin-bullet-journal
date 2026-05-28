@@ -1,6 +1,13 @@
 <template>
-  <div v-if="shouldRender" class="item-meta-panel">
-    <TodoTypedLinks v-if="showLinks && visibleLinks.length > 0" :links="visibleLinks" @link-click="handleLinkClick" />
+  <div
+    v-if="shouldRender"
+    class="item-meta-panel"
+  >
+    <TodoTypedLinks
+      v-if="showLinks && visibleLinks.length > 0"
+      :links="visibleLinks"
+      @link-click="handleLinkClick"
+    />
 
     <TodoItemActionButtons
       v-if="showReminderAndRecurring && (!isCompletedOrAbandoned || hasReminder || hasRecurring)"
@@ -20,57 +27,67 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { showMessage } from 'siyuan';
-import type { Item, Link } from '@/types/models';
-import { useSettingsStore } from '@/stores';
-import { t } from '@/i18n';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { generateEndConditionMarker, generateRepeatRuleMarker, getNextOccurrenceDate } from '@/parser/recurringParser';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
-import { showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
-import dayjs from '@/utils/dayjs';
-import TodoItemActionButtons from './TodoItemActionButtons.vue';
-import TodoTypedLinks from './TodoTypedLinks.vue';
+import type {
+  Item,
+  Link,
+} from '@/types/models'
+import { showMessage } from 'siyuan'
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+  getNextOccurrenceDate,
+} from '@/parser/recurringParser'
+import { calculateReminderTime } from '@/parser/reminderParser'
+import { useSettingsStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  showRecurringSettingDialog,
+  showReminderSettingDialog,
+} from '@/utils/dialog'
+import { formatReminderDisplay } from '@/utils/displayUtils'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
+import TodoItemActionButtons from './TodoItemActionButtons.vue'
+import TodoTypedLinks from './TodoTypedLinks.vue'
 
 const props = defineProps<{
-  item: Item;
-}>();
+  item: Item
+}>()
 
-const settingsStore = useSettingsStore();
+const settingsStore = useSettingsStore()
 
-const showLinks = computed(() => settingsStore.todoDock.showLinks);
-const showReminderAndRecurring = computed(() => settingsStore.todoDock.showReminderAndRecurring);
-const isCompletedOrAbandoned = computed(() => props.item.status === 'completed' || props.item.status === 'abandoned');
-const hasReminder = computed(() => !!props.item.reminder?.enabled);
-const hasRecurring = computed(() => !!props.item.repeatRule);
-const canSetRecurring = computed(() => !props.item.siblingItems?.length);
+const showLinks = computed(() => settingsStore.todoDock.showLinks)
+const showReminderAndRecurring = computed(() => settingsStore.todoDock.showReminderAndRecurring)
+const isCompletedOrAbandoned = computed(() => props.item.status === 'completed' || props.item.status === 'abandoned')
+const hasReminder = computed(() => !!props.item.reminder?.enabled)
+const hasRecurring = computed(() => !!props.item.repeatRule)
+const canSetRecurring = computed(() => !props.item.siblingItems?.length)
 
 const visibleLinks = computed<Link[]>(() => {
-  const merged = [...(props.item.links || []), ...(props.item.task?.links || [])];
-  const deduped = new Map<string, Link>();
+  const merged = [...(props.item.links || []), ...(props.item.task?.links || [])]
+  const deduped = new Map<string, Link>()
   for (const link of merged) {
-    deduped.set(`${link.name}|${link.url}|${link.type || ''}`, link);
+    deduped.set(`${link.name}|${link.url}|${link.type || ''}`, link)
   }
-  return [...deduped.values()];
-});
+  return [...deduped.values()]
+})
 
 const reminderText = computed(() => {
-  if (!hasReminder.value) return t('reminder.setReminder');
-  return formatReminderDisplay(props.item.reminder, t);
-});
+  if (!hasReminder.value) return t('reminder.setReminder')
+  return formatReminderDisplay(props.item.reminder, t)
+})
 
 const recurringText = computed(() => {
-  if (!hasRecurring.value) return t('recurring.setRecurring');
-  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false });
-  const endMarker = generateEndConditionMarker(props.item.endCondition);
-  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
-});
+  if (!hasRecurring.value) return t('recurring.setRecurring')
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false })
+  const endMarker = generateEndConditionMarker(props.item.endCondition)
+  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker
+})
 
 const reminderTooltip = computed(() => {
-  if (!hasReminder.value || !props.item.reminder) return reminderText.value;
+  if (!hasReminder.value || !props.item.reminder) return reminderText.value
   const reminderTime = calculateReminderTime(
     props.item.date,
     props.item.startDateTime,
@@ -78,19 +95,19 @@ const reminderTooltip = computed(() => {
     undefined,
     undefined,
     props.item.reminder,
-  );
-  if (!reminderTime) return reminderText.value;
-  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm');
+  )
+  if (!reminderTime) return reminderText.value
+  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm')
   return reminderTime < Date.now()
     ? t('reminder.lastReminder', { time: formattedTime })
-    : t('reminder.nextReminder', { time: formattedTime });
-});
+    : t('reminder.nextReminder', { time: formattedTime })
+})
 
 const recurringTooltip = computed(() => {
-  if (!hasRecurring.value || !props.item.repeatRule) return recurringText.value;
-  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
-  return t('recurring.nextOccurrence', { date: nextDate });
-});
+  if (!hasRecurring.value || !props.item.repeatRule) return recurringText.value
+  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule)
+  return t('recurring.nextOccurrence', { date: nextDate })
+})
 
 const shouldRender = computed(() => {
   return (
@@ -99,33 +116,33 @@ const shouldRender = computed(() => {
       showReminderAndRecurring.value
       && (!isCompletedOrAbandoned.value || hasReminder.value || hasRecurring.value)
     )
-  );
-});
+  )
+})
 
 function openReminderSetting() {
-  if (isCompletedOrAbandoned.value) return;
-  showReminderSettingDialog(props.item);
+  if (isCompletedOrAbandoned.value) return
+  showReminderSettingDialog(props.item)
 }
 
 function openRecurringSetting() {
-  if (isCompletedOrAbandoned.value || !canSetRecurring.value) return;
-  showRecurringSettingDialog(props.item);
+  if (isCompletedOrAbandoned.value || !canSetRecurring.value) return
+  showRecurringSettingDialog(props.item)
 }
 
 async function handleLinkClick(link: Link) {
   if (link.type !== 'attachment') {
-    return;
+    return
   }
 
-  const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId);
+  const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId)
   if (!props.item.docId || !targetBlockId) {
-    showMessage(t('common').blockIdError, 'error');
-    return;
+    showMessage(t('common').blockIdError, 'error')
+    return
   }
 
-  const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId);
+  const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId)
   if (!opened) {
-    showMessage(t('common').blockIdError, 'error');
+    showMessage(t('common').blockIdError, 'error')
   }
 }
 </script>

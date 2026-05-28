@@ -44,20 +44,23 @@ TimeRangeSelector (时间范围选择器 - 主组件)
 **功能**：可滚动的数字选择器，支持 00-23 或 00-55
 
 **Props**:
+
 ```typescript
 interface TimeWheelProps {
-  modelValue: string;        // 当前选中的值，如 "09" 或 "30"
-  options: string[];         // 选项列表，如 ["00", "01", ...] 或 ["00", "05", ...]
-  label?: string;            // 标签文字，如 "时" / "分"
+  modelValue: string // 当前选中的值，如 "09" 或 "30"
+  options: string[] // 选项列表，如 ["00", "01", ...] 或 ["00", "05", ...]
+  label?: string // 标签文字，如 "时" / "分"
 }
 ```
 
 **Events**:
+
 ```typescript
 update:modelValue(value: string): void  // 选中值变化时触发
 ```
 
 **Features**:
+
 - CSS scroll-snap 吸附效果
 - 滚动停止后自动选中中间项
 - 点击项自动滚动到中心
@@ -70,21 +73,24 @@ update:modelValue(value: string): void  // 选中值变化时触发
 **功能**：底部弹出的时间选择抽屉，包含双滚轮和快捷按钮
 
 **Props**:
+
 ```typescript
 interface TimePickerSheetProps {
-  modelValue: boolean;       // 显示/隐藏
-  title?: string;            // 标题，如 "选择开始时间"
-  time: string;              // 当前时间，如 "09:00"
+  modelValue: boolean // 显示/隐藏
+  title?: string // 标题，如 "选择开始时间"
+  time: string // 当前时间，如 "09:00"
 }
 ```
 
 **Events**:
+
 ```typescript
 confirm(time: string): void  // 确认选择，返回 "HH:mm"
 cancel(): void              // 取消
 ```
 
 **Features**:
+
 - 复用 TimeWheel 组件
 - 顶部显示当前选中时间大字体
 - 快捷时间按钮行（09:00, 10:00, 14:00...）
@@ -97,15 +103,17 @@ cancel(): void              // 取消
 **功能**：主业务组件，包含全天切换和时间行
 
 **Props**:
+
 ```typescript
 interface TimeRangeSelectorProps {
-  isAllDay: boolean;         // 是否全天
-  startTime?: string;        // 开始时间 "HH:mm"
-  endTime?: string;          // 结束时间 "HH:mm"
+  isAllDay: boolean // 是否全天
+  startTime?: string // 开始时间 "HH:mm"
+  endTime?: string // 结束时间 "HH:mm"
 }
 ```
 
 **Events**:
+
 ```typescript
 update:isAllDay(value: boolean): void
 update:startTime(value: string): void
@@ -113,6 +121,7 @@ update:endTime(value: string): void
 ```
 
 **内部使用**：
+
 - TimePickerSheet 用于选择具体时间
 
 ---
@@ -122,22 +131,25 @@ update:endTime(value: string): void
 **功能**：详情页专用的时间设置抽屉，底部有保存/取消按钮
 
 **Props**:
+
 ```typescript
 interface TimeSettingDrawerProps {
-  modelValue: boolean;       // 显示/隐藏
-  isAllDay: boolean;
-  startTime?: string;
-  endTime?: string;
+  modelValue: boolean // 显示/隐藏
+  isAllDay: boolean
+  startTime?: string
+  endTime?: string
 }
 ```
 
 **Events**:
+
 ```typescript
 save(payload: { isAllDay: boolean; startTime?: string; endTime?: string }): void
 cancel(): void
 ```
 
 **内部使用**：
+
 - TimeRangeSelector 作为内容区
 - 底部添加"取消/保存"按钮
 - 内部验证时间完整性
@@ -166,6 +178,34 @@ cancel(): void
 #### 代码示例
 
 ```vue
+<script setup>
+const itemForm = ref({
+  content: '',
+  date: dayjs().format('YYYY-MM-DD'),
+  isAllDay: true, // 新增
+  startTime: '',
+  endTime: '',
+  priority: undefined,
+})
+
+const canSubmit = computed(() => {
+  if (!selectedProjectId.value)
+    return false
+  if (!taskInput.value.trim())
+    return false
+  if (!itemForm.value.content.trim())
+    return false
+
+  // 自定义时间必须完整
+  if (!itemForm.value.isAllDay) {
+    if (!itemForm.value.startTime || !itemForm.value.endTime)
+      return false
+  }
+
+  return true
+})
+</script>
+
 <template>
   <TimeRangeSelector
     v-model:is-all-day="itemForm.isAllDay"
@@ -173,30 +213,6 @@ cancel(): void
     v-model:end-time="itemForm.endTime"
   />
 </template>
-
-<script setup>
-const itemForm = ref({
-  content: '',
-  date: dayjs().format('YYYY-MM-DD'),
-  isAllDay: true,           // 新增
-  startTime: '',
-  endTime: '',
-  priority: undefined,
-});
-
-const canSubmit = computed(() => {
-  if (!selectedProjectId.value) return false;
-  if (!taskInput.value.trim()) return false;
-  if (!itemForm.value.content.trim()) return false;
-  
-  // 自定义时间必须完整
-  if (!itemForm.value.isAllDay) {
-    if (!itemForm.value.startTime || !itemForm.value.endTime) return false;
-  }
-  
-  return true;
-});
-</script>
 ```
 
 ---
@@ -236,7 +252,7 @@ const canSubmit = computed(() => {
     <span>时间</span>
     <span>{{ displayTime }}</span>
   </div>
-  
+
   <!-- 时间设置抽屉 -->
   <TimeSettingDrawer
     v-model="showTimeDrawer"
@@ -257,13 +273,13 @@ const canSubmit = computed(() => {
 
 ```typescript
 interface Item {
-  id: string;
-  content: string;
-  date: string;
-  isAllDay: boolean;        // 新增：是否全天
-  startTime?: string;       // 格式: "HH:mm"
-  endTime?: string;         // 格式: "HH:mm"
-  priority?: PriorityLevel;
+  id: string
+  content: string
+  date: string
+  isAllDay: boolean // 新增：是否全天
+  startTime?: string // 格式: "HH:mm"
+  endTime?: string // 格式: "HH:mm"
+  priority?: PriorityLevel
   // ... 其他字段
 }
 ```
@@ -271,13 +287,14 @@ interface Item {
 ### 向后兼容
 
 现有数据迁移逻辑：
+
 ```typescript
 function migrateItem(item: any): Item {
   // 旧数据没有 isAllDay 字段
   if (item.isAllDay === undefined) {
-    item.isAllDay = !item.startTime && !item.endTime;
+    item.isAllDay = !item.startTime && !item.endTime
   }
-  return item;
+  return item
 }
 ```
 
@@ -288,14 +305,14 @@ function migrateItem(item: any): Item {
 ```yaml
 mobile:
   time:
-    allDay: "全天"
-    customTime: "自定义时间"
-    startTime: "开始时间"
-    endTime: "结束时间"
-    selectTime: "选择时间"
-    timeSetting: "时间设置"
-    hour: "时"
-    minute: "分"
+    allDay: 全天
+    customTime: 自定义时间
+    startTime: 开始时间
+    endTime: 结束时间
+    selectTime: 选择时间
+    timeSetting: 时间设置
+    hour: 时
+    minute: 分
 ```
 
 ---

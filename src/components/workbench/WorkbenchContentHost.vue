@@ -1,5 +1,8 @@
 <template>
-  <section class="workbench-content-host" data-testid="workbench-content-host">
+  <section
+    class="workbench-content-host"
+    data-testid="workbench-content-host"
+  >
     <template v-if="activeEntry">
       <DashboardCanvas
         v-if="activeEntry.type === 'dashboard'"
@@ -11,25 +14,29 @@
         :entry="activeEntry"
       />
     </template>
-    <div v-else class="workbench-content-host__empty" data-testid="workbench-content-empty">
+    <div
+      v-else
+      class="workbench-content-host__empty"
+      data-testid="workbench-content-empty"
+    >
       {{ t('workbench').emptyState }}
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import DashboardCanvas from '@/components/workbench/dashboard/DashboardCanvas.vue';
-import WorkbenchViewHost from '@/components/workbench/view/WorkbenchViewHost.vue';
-import { t } from '@/i18n';
-import type { WorkbenchEntry } from '@/types/workbench';
+import type { WorkbenchEntry } from '@/types/workbench'
+import DashboardCanvas from '@/components/workbench/dashboard/DashboardCanvas.vue'
+import WorkbenchViewHost from '@/components/workbench/view/WorkbenchViewHost.vue'
+import { t } from '@/i18n'
 
 defineProps<{
-  activeEntry: WorkbenchEntry | null;
-}>();
+  activeEntry: WorkbenchEntry | null
+}>()
 
 const emit = defineEmits<{
-  (event: 'request-add-widget'): void;
-}>();
+  (event: 'request-add-widget'): void
+}>()
 </script>
 
 <style lang="scss" scoped>

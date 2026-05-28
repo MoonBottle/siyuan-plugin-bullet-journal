@@ -217,7 +217,7 @@
 建议内部先整理出：
 
 ```ts
-type FloatingPomodoroViewState = {
+interface FloatingPomodoroViewState {
   phase: 'focus' | 'break'
   timerMode?: 'countdown' | 'stopwatch'
   isPaused?: boolean

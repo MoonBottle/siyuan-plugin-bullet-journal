@@ -1,21 +1,25 @@
+import type {
+  Project,
+  ProjectDirectory,
+  ScanMode,
+} from '@/types/models'
+import { loadProjectsAndItems } from './dataLoader'
 /**
  * list_projects 工具完整实现（纯函数 + execute 编排）
  */
-import { SiYuanClient } from './siyuan-client';
-import { loadProjectsAndItems } from './dataLoader';
-import type { Project, ProjectDirectory, ScanMode } from '@/types/models';
+import { SiYuanClient } from './siyuan-client'
 
 export interface ListProjectsArgs {
-  groupId?: string;
+  groupId?: string
 }
 
 export interface ListProjectOutput {
-  id: string;
-  name: string;
-  description: string | undefined;
-  path: string;
-  groupId: string | undefined;
-  taskCount: number;
+  id: string
+  name: string
+  description: string | undefined
+  path: string
+  groupId: string | undefined
+  taskCount: number
 }
 
 /**
@@ -24,19 +28,19 @@ export interface ListProjectOutput {
  */
 export function buildListProjectsResult(
   projects: Project[],
-  args: ListProjectsArgs
+  args: ListProjectsArgs,
 ): ListProjectOutput[] {
   const filtered = args.groupId
-    ? projects.filter(p => p.groupId === args.groupId)
-    : projects;
-  return filtered.map(p => ({
+    ? projects.filter((p) => p.groupId === args.groupId)
+    : projects
+  return filtered.map((p) => ({
     id: p.id,
     name: p.name,
     description: p.description,
     path: p.path,
     groupId: p.groupId,
-    taskCount: p.tasks.length
-  }));
+    taskCount: p.tasks.length,
+  }))
 }
 
 /**
@@ -47,8 +51,8 @@ export async function executeListProjects(
   client: SiYuanClient,
   directories: ProjectDirectory[],
   args: ListProjectsArgs,
-  scanMode: ScanMode = 'full'
+  scanMode: ScanMode = 'full',
 ): Promise<{ projects: ListProjectOutput[] }> {
-  const { projects } = await loadProjectsAndItems(client, directories, scanMode);
-  return { projects: buildListProjectsResult(projects, args) };
+  const { projects } = await loadProjectsAndItems(client, directories, scanMode)
+  return { projects: buildListProjectsResult(projects, args) }
 }

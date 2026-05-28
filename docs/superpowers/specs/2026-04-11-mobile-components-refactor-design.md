@@ -5,6 +5,7 @@
 ### 当前问题
 
 移动端相关组件分散在多个目录中：
+
 - `src/components/mobile/` - 2个通用组件
 - `src/components/time-picker/` - 5个时间选择组件（主要供移动端使用）
 - `src/components/settings/mobile/` - 8个设置项适配组件
@@ -109,44 +110,45 @@ src/mobile/
 
 ### 1. 从 `src/components/mobile/` 移动
 
-| 原路径 | 新路径 |
-|--------|--------|
-| `src/components/mobile/MobileDatePicker.vue` | `src/mobile/components/pickers/MobileDatePicker.vue` |
+| 原路径                                           | 新路径                                                   |
+| ------------------------------------------------ | -------------------------------------------------------- |
+| `src/components/mobile/MobileDatePicker.vue`     | `src/mobile/components/pickers/MobileDatePicker.vue`     |
 | `src/components/mobile/MobilePriorityPicker.vue` | `src/mobile/components/pickers/MobilePriorityPicker.vue` |
 
 **操作：** 原目录 `src/components/mobile/` 删除
 
 ### 2. 从 `src/components/time-picker/` 移动
 
-| 原路径 | 新路径 |
-|--------|--------|
-| `src/components/time-picker/index.ts` | `src/mobile/components/time-picker/index.ts` |
-| `src/components/time-picker/TimePickerSheet.vue` | `src/mobile/components/time-picker/TimePickerSheet.vue` |
+| 原路径                                             | 新路径                                                    |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| `src/components/time-picker/index.ts`              | `src/mobile/components/time-picker/index.ts`              |
+| `src/components/time-picker/TimePickerSheet.vue`   | `src/mobile/components/time-picker/TimePickerSheet.vue`   |
 | `src/components/time-picker/TimeRangeSelector.vue` | `src/mobile/components/time-picker/TimeRangeSelector.vue` |
 | `src/components/time-picker/TimeSettingDrawer.vue` | `src/mobile/components/time-picker/TimeSettingDrawer.vue` |
-| `src/components/time-picker/TimeWheel.vue` | `src/mobile/components/time-picker/TimeWheel.vue` |
+| `src/components/time-picker/TimeWheel.vue`         | `src/mobile/components/time-picker/TimeWheel.vue`         |
 
 **操作：** 原目录 `src/components/time-picker/` 删除
 
 ### 3. 从 `src/tabs/mobile/` 移动
 
-| 原路径 | 新路径 |
-|--------|--------|
-| `src/tabs/mobile/index.ts` | `src/mobile/index.ts` |
-| `src/tabs/mobile/MobileTodoDock.vue` | `src/mobile/MobileTodoDock.vue` |
-| `src/tabs/mobile/components/MobileBottomNav.vue` | `src/mobile/components/todo/MobileBottomNav.vue` |
-| `src/tabs/mobile/components/MobileFilterBar.vue` | `src/mobile/components/todo/MobileFilterBar.vue` |
-| `src/tabs/mobile/components/MobileHeader.vue` | `src/mobile/components/todo/MobileHeader.vue` |
-| `src/tabs/mobile/components/MobileTaskCard.vue` | `src/mobile/components/todo/MobileTaskCard.vue` |
-| `src/tabs/mobile/components/MobileTodoItem.vue` | `src/mobile/components/todo/MobileTodoItem.vue` |
-| `src/tabs/mobile/components/MobileTodoList.vue` | `src/mobile/components/todo/MobileTodoList.vue` |
-| `src/tabs/mobile/drawers/ActionDrawer.vue` | `src/mobile/drawers/action/ActionDrawer.vue` |
-| `src/tabs/mobile/drawers/FilterDrawer.vue` | `src/mobile/drawers/filter/FilterDrawer.vue` |
-| `src/tabs/mobile/drawers/MobileConfirmDrawer.vue` | `src/mobile/drawers/confirm/MobileConfirmDrawer.vue` |
-| `src/tabs/mobile/drawers/MobileItemDetail.vue` | `src/mobile/drawers/item/MobileItemDetail.vue` |
-| `src/tabs/mobile/drawers/MobilePomodoroDrawer.vue` | `src/mobile/drawers/pomodoro/MobilePomodoroDrawer.vue` |
+| 原路径                                              | 新路径                                                  |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| `src/tabs/mobile/index.ts`                          | `src/mobile/index.ts`                                   |
+| `src/tabs/mobile/MobileTodoDock.vue`                | `src/mobile/MobileTodoDock.vue`                         |
+| `src/tabs/mobile/components/MobileBottomNav.vue`    | `src/mobile/components/todo/MobileBottomNav.vue`        |
+| `src/tabs/mobile/components/MobileFilterBar.vue`    | `src/mobile/components/todo/MobileFilterBar.vue`        |
+| `src/tabs/mobile/components/MobileHeader.vue`       | `src/mobile/components/todo/MobileHeader.vue`           |
+| `src/tabs/mobile/components/MobileTaskCard.vue`     | `src/mobile/components/todo/MobileTaskCard.vue`         |
+| `src/tabs/mobile/components/MobileTodoItem.vue`     | `src/mobile/components/todo/MobileTodoItem.vue`         |
+| `src/tabs/mobile/components/MobileTodoList.vue`     | `src/mobile/components/todo/MobileTodoList.vue`         |
+| `src/tabs/mobile/drawers/ActionDrawer.vue`          | `src/mobile/drawers/action/ActionDrawer.vue`            |
+| `src/tabs/mobile/drawers/FilterDrawer.vue`          | `src/mobile/drawers/filter/FilterDrawer.vue`            |
+| `src/tabs/mobile/drawers/MobileConfirmDrawer.vue`   | `src/mobile/drawers/confirm/MobileConfirmDrawer.vue`    |
+| `src/tabs/mobile/drawers/MobileItemDetail.vue`      | `src/mobile/drawers/item/MobileItemDetail.vue`          |
+| `src/tabs/mobile/drawers/MobilePomodoroDrawer.vue`  | `src/mobile/drawers/pomodoro/MobilePomodoroDrawer.vue`  |
 | `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | `src/mobile/drawers/pomodoro/MobileRecurringDrawer.vue` |
-| `src/tabs/mobile/drawers/MobileReminderDrawer.vue` | `src/mobile/drawers/pomodoro/MobileReminderDrawer.vue` |
+| `src/tabs/mobile/drawers/MobileReminderDrawer.vue`  | `src/mobile/drawers/pomodoro/MobileReminderDrawer.vue`  |
+
 (已合并到上方)
 | `src/tabs/mobile/drawers/ProjectDetail.vue` | `src/mobile/drawers/project/ProjectDetail.vue` |
 | `src/tabs/mobile/drawers/QuickCreateDrawer.vue` | `src/mobile/drawers/quick-create/QuickCreateDrawer.vue` |
@@ -170,23 +172,23 @@ src/mobile/
 
 ### 4. 从 `src/components/pomodoro/` 移动
 
-| 原路径 | 新路径 |
-|--------|--------|
+| 原路径                                                  | 新路径                                                      |
+| ------------------------------------------------------- | ----------------------------------------------------------- |
 | `src/components/pomodoro/MobilePomodoroTimerDrawer.vue` | `src/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue` |
 
 **操作：** 原文件删除
 
 ### 5. 从 `src/components/settings/mobile/` 移动
 
-| 原路径 | 新路径 |
-|--------|--------|
-| `src/components/settings/mobile/MobileAiConfig.vue` | `src/mobile/drawers/settings/MobileAiConfig.vue` |
-| `src/components/settings/mobile/MobileCalendarConfig.vue` | `src/mobile/drawers/settings/MobileCalendarConfig.vue` |
-| `src/components/settings/mobile/MobileDirectoryConfig.vue` | `src/mobile/drawers/settings/MobileDirectoryConfig.vue` |
-| `src/components/settings/mobile/MobileGroupConfig.vue` | `src/mobile/drawers/settings/MobileGroupConfig.vue` |
-| `src/components/settings/mobile/MobileLunchBreakConfig.vue` | `src/mobile/drawers/settings/MobileLunchBreakConfig.vue` |
-| `src/components/settings/mobile/MobileMcpConfig.vue` | `src/mobile/drawers/settings/MobileMcpConfig.vue` |
-| `src/components/settings/mobile/MobilePomodoroConfig.vue` | `src/mobile/drawers/settings/MobilePomodoroConfig.vue` |
+| 原路径                                                        | 新路径                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------- |
+| `src/components/settings/mobile/MobileAiConfig.vue`           | `src/mobile/drawers/settings/MobileAiConfig.vue`           |
+| `src/components/settings/mobile/MobileCalendarConfig.vue`     | `src/mobile/drawers/settings/MobileCalendarConfig.vue`     |
+| `src/components/settings/mobile/MobileDirectoryConfig.vue`    | `src/mobile/drawers/settings/MobileDirectoryConfig.vue`    |
+| `src/components/settings/mobile/MobileGroupConfig.vue`        | `src/mobile/drawers/settings/MobileGroupConfig.vue`        |
+| `src/components/settings/mobile/MobileLunchBreakConfig.vue`   | `src/mobile/drawers/settings/MobileLunchBreakConfig.vue`   |
+| `src/components/settings/mobile/MobileMcpConfig.vue`          | `src/mobile/drawers/settings/MobileMcpConfig.vue`          |
+| `src/components/settings/mobile/MobilePomodoroConfig.vue`     | `src/mobile/drawers/settings/MobilePomodoroConfig.vue`     |
 | `src/components/settings/mobile/MobileSlashCommandConfig.vue` | `src/mobile/drawers/settings/MobileSlashCommandConfig.vue` |
 
 **操作：** 原目录 `src/components/settings/mobile/` 删除
@@ -196,50 +198,55 @@ src/mobile/
 ### 需要更新的文件
 
 1. **`src/tabs/TodoDock.vue`**
+
    ```typescript
-   // 变更前
-   import MobileTodoDock from './mobile/MobileTodoDock.vue';
    // 变更后
-   import MobileTodoDock from '@/mobile/MobileTodoDock.vue';
+   import MobileTodoDock from '@/mobile/MobileTodoDock.vue'
+   // 变更前
+   import MobileTodoDock from './mobile/MobileTodoDock.vue'
    ```
 
 2. **`src/tabs/mobile/drawers/MobileItemDetail.vue`** (移动后路径: `src/mobile/drawers/item/MobileItemDetail.vue`)
+
    ```typescript
+   import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue'
    // 变更前
-   import MobilePriorityPicker from '@/components/mobile/MobilePriorityPicker.vue';
-   import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue';
-   import { TimeSettingDrawer } from '@/components/time-picker';
+   import MobilePriorityPicker from '@/components/mobile/MobilePriorityPicker.vue'
+   import { TimeSettingDrawer } from '@/components/time-picker'
+   import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue'
    // 变更后
-   import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
-   import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
-   import { TimeSettingDrawer } from '@/mobile/components/time-picker';
+   import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue'
+   import { TimeSettingDrawer } from '@/mobile/components/time-picker'
    ```
 
 3. **`src/tabs/mobile/drawers/QuickCreateDrawer.vue`** (移动后路径: `src/mobile/drawers/quick-create/QuickCreateDrawer.vue`)
+
    ```typescript
    // 变更前
-   import { TimeRangeSelector } from '@/components/time-picker';
+   import { TimeRangeSelector } from '@/components/time-picker'
    // 变更后
-   import { TimeRangeSelector } from '@/mobile/components/time-picker';
+   import { TimeRangeSelector } from '@/mobile/components/time-picker'
    ```
 
 4. **`src/utils/dialog.ts`**
+
    ```typescript
    // 变更前
-   import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue';
+   import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue'
    // 变更后
-   import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
+   import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue'
    ```
 
 5. **`src/components/settings/MobileSettingsDrawer.vue`**
+
    ```typescript
-   // 变更前
-   import MobileDirectoryConfig from './mobile/MobileDirectoryConfig.vue';
-   import MobileGroupConfig from './mobile/MobileGroupConfig.vue';
    // ... 其他6个
    // 变更后
-   import MobileDirectoryConfig from '@/mobile/drawers/settings/MobileDirectoryConfig.vue';
-   import MobileGroupConfig from '@/mobile/drawers/settings/MobileGroupConfig.vue';
+   import MobileDirectoryConfig from '@/mobile/drawers/settings/MobileDirectoryConfig.vue'
+   import MobileGroupConfig from '@/mobile/drawers/settings/MobileGroupConfig.vue'
+   // 变更前
+   import MobileDirectoryConfig from './mobile/MobileDirectoryConfig.vue'
+   import MobileGroupConfig from './mobile/MobileGroupConfig.vue'
    // ... 其他6个
    ```
 
@@ -271,12 +278,12 @@ src/mobile/
 
 ## 风险评估
 
-| 风险 | 可能性 | 影响 | 缓解措施 |
-|------|--------|------|----------|
-| Import 路径遗漏 | 中 | 高 | 使用全局搜索确认所有引用已更新 |
-| 循环依赖 | 低 | 中 | 检查各 index.ts 的导出关系 |
-| 样式丢失 | 低 | 中 | 确认 styles 目录正确移动并被导入 |
-| 运行时错误 | 低 | 高 | 完整功能测试 |
+| 风险            | 可能性 | 影响 | 缓解措施                         |
+| --------------- | ------ | ---- | -------------------------------- |
+| Import 路径遗漏 | 中     | 高   | 使用全局搜索确认所有引用已更新   |
+| 循环依赖        | 低     | 中   | 检查各 index.ts 的导出关系       |
+| 样式丢失        | 低     | 中   | 确认 styles 目录正确移动并被导入 |
+| 运行时错误      | 低     | 高   | 完整功能测试                     |
 
 ## 未使用组件分析
 

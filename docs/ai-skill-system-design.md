@@ -3,9 +3,11 @@
 ## 1. 概述
 
 ### 1.1 目标
+
 实现一个灵活的 AI Skill 系统，允许用户将思源笔记中的文档定义为 AI 技能，AI 可以根据用户输入智能选择并执行相应技能，同时记录执行历史。
 
 ### 1.2 核心功能
+
 - **技能文档化**：技能以 Markdown 文档形式存储在思源笔记中
 - **自定义技能**：用户可选择任意文档标记为技能
 - **启用/停用**：支持技能的动态启用和停用
@@ -13,6 +15,7 @@
 - **执行记录**：记录技能执行历史，支持查看和追溯
 
 ### 1.3 设计原则
+
 - **渐进式加载**：类似 Claude Skill 的三级加载机制（元数据 → 技能内容 → 资源文件）
 - **低侵入性**：最小化改动现有代码结构
 - **可扩展性**：支持未来扩展更多技能类型和执行方式
@@ -31,27 +34,27 @@
  * 存储在文档的 YAML frontmatter 中
  */
 export interface SkillMetadata {
-  name: string;           // 技能名称（唯一标识）
-  description: string;    // 技能描述（用于 AI 选择技能）
-  version?: string;       // 版本号
-  author?: string;        // 作者
-  tags?: string[];        // 标签
+  name: string // 技能名称（唯一标识）
+  description: string // 技能描述（用于 AI 选择技能）
+  version?: string // 版本号
+  author?: string // 作者
+  tags?: string[] // 标签
 }
 
 /**
  * 技能配置（存储在插件设置中）
  */
 export interface SkillConfig {
-  id: string;             // 技能 ID（使用文档路径或 ID）
-  docId: string;          // 思源文档 ID
-  docPath: string;        // 文档路径（便于展示）
-  name: string;           // 技能名称
-  description: string;    // 技能描述
-  enabled: boolean;       // 是否启用
-  createdAt: number;      // 创建时间
-  updatedAt: number;      // 更新时间
-  isBuiltin?: boolean;    // 是否为内置技能（仅用于展示，不存储）
-  isOverride?: boolean;   // 是否覆盖了内置技能（仅用于展示，不存储）
+  id: string // 技能 ID（使用文档路径或 ID）
+  docId: string // 思源文档 ID
+  docPath: string // 文档路径（便于展示）
+  name: string // 技能名称
+  description: string // 技能描述
+  enabled: boolean // 是否启用
+  createdAt: number // 创建时间
+  updatedAt: number // 更新时间
+  isBuiltin?: boolean // 是否为内置技能（仅用于展示，不存储）
+  isOverride?: boolean // 是否覆盖了内置技能（仅用于展示，不存储）
 }
 
 /**
@@ -59,59 +62,59 @@ export interface SkillConfig {
  * 存储在对应会话文件中，便于关联查看
  */
 export interface SkillExecutionRecord {
-  id: string;             // 记录 ID
-  skillId: string;        // 执行的技能 ID
-  skillName: string;      // 技能名称（快照）
-  conversationId: string; // 所属对话 ID
-  messageId: string;      // 触发执行的消息 ID
-  input: string;          // 用户输入
-  output: string;         // 技能执行结果
-  status: 'running' | 'completed' | 'failed';
-  startedAt: number;      // 开始时间
-  completedAt?: number;   // 完成时间
-  error?: string;         // 错误信息
-  tokenUsage?: {          // Token 使用情况
-    prompt: number;
-    completion: number;
-    total: number;
-  };
+  id: string // 记录 ID
+  skillId: string // 执行的技能 ID
+  skillName: string // 技能名称（快照）
+  conversationId: string // 所属对话 ID
+  messageId: string // 触发执行的消息 ID
+  input: string // 用户输入
+  output: string // 技能执行结果
+  status: 'running' | 'completed' | 'failed'
+  startedAt: number // 开始时间
+  completedAt?: number // 完成时间
+  error?: string // 错误信息
+  tokenUsage?: { // Token 使用情况
+    prompt: number
+    completion: number
+    total: number
+  }
 }
 
 /**
  * 简化的执行记录索引（用于快速展示历史）
  */
 export interface SkillExecutionSummary {
-  id: string;
-  skillId: string;
-  skillName: string;
-  conversationId: string;
-  conversationTitle: string;
-  status: SkillExecutionRecord['status'];
-  startedAt: number;
-  completedAt?: number;
+  id: string
+  skillId: string
+  skillName: string
+  conversationId: string
+  conversationTitle: string
+  status: SkillExecutionRecord['status']
+  startedAt: number
+  completedAt?: number
 }
 
 /**
  * 技能文件结构（解析后的技能内容）
  */
 export interface ParsedSkill {
-  metadata: SkillMetadata;
-  content: string;        // SKILL.md 主体内容
-  scripts: SkillScript[]; // 脚本文件
-  references: SkillReference[]; // 参考文件
+  metadata: SkillMetadata
+  content: string // SKILL.md 主体内容
+  scripts: SkillScript[] // 脚本文件
+  references: SkillReference[] // 参考文件
 }
 
 export interface SkillScript {
-  name: string;
-  path: string;
-  content: string;
-  language: string;
+  name: string
+  path: string
+  content: string
+  language: string
 }
 
 export interface SkillReference {
-  name: string;
-  path: string;
-  content: string;
+  name: string
+  path: string
+  content: string
 }
 ```
 
@@ -125,33 +128,33 @@ export interface SkillReference {
  */
 export interface ChatMessage {
   // ... 原有字段
-  
+
   // 技能执行相关
-  skillExecution?: SkillExecutionInfo;
+  skillExecution?: SkillExecutionInfo
 }
 
 export interface SkillExecutionInfo {
-  skillId: string;
-  skillName: string;
-  status: 'running' | 'completed' | 'failed';
-  output?: string;
-  error?: string;
+  skillId: string
+  skillName: string
+  status: 'running' | 'completed' | 'failed'
+  output?: string
+  error?: string
 }
 
 /**
  * 技能工具定义（用于 Function Calling）
  */
 export interface SkillToolDefinition {
-  type: 'function';
+  type: 'function'
   function: {
-    name: string;
-    description: string;
+    name: string
+    description: string
     parameters: {
-      type: 'object';
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
+      type: 'object'
+      properties: Record<string, unknown>
+      required?: string[]
+    }
+  }
 }
 ```
 
@@ -166,12 +169,12 @@ export interface SkillToolDefinition {
 
 interface PluginSettings {
   // ... 原有设置
-  
+
   // AI Skill 配置
   aiSkills?: {
-    skills: SkillConfig[];           // 技能列表
-    executions: SkillExecutionRecord[]; // 执行记录（可选，可单独存储）
-  };
+    skills: SkillConfig[] // 技能列表
+    executions: SkillExecutionRecord[] // 执行记录（可选，可单独存储）
+  }
 }
 ```
 
@@ -196,19 +199,19 @@ data/
 
 ```typescript
 interface ConversationsIndex {
-  version: number;           // 数据版本，便于迁移
-  currentConversationId: string | null;
-  conversations: ConversationMeta[];
+  version: number // 数据版本，便于迁移
+  currentConversationId: string | null
+  conversations: ConversationMeta[]
 }
 
 interface ConversationMeta {
-  id: string;                // 会话 ID
-  title: string;             // 会话标题
-  createdAt: number;         // 创建时间
-  updatedAt: number;         // 最后更新时间
-  messageCount: number;      // 消息数量
-  fileSize: number;          // 文件大小（字节）
-  hasSkillExecutions: boolean; // 是否包含技能执行
+  id: string // 会话 ID
+  title: string // 会话标题
+  createdAt: number // 创建时间
+  updatedAt: number // 最后更新时间
+  messageCount: number // 消息数量
+  fileSize: number // 文件大小（字节）
+  hasSkillExecutions: boolean // 是否包含技能执行
 }
 ```
 
@@ -218,20 +221,20 @@ interface ConversationMeta {
 
 ```typescript
 interface ConversationData {
-  id: string;
-  title: string;
-  messages: ChatMessage[];
-  skillExecutions?: SkillExecutionRecord[]; // 该会话的技能执行记录
-  createdAt: number;
-  updatedAt: number;
+  id: string
+  title: string
+  messages: ChatMessage[]
+  skillExecutions?: SkillExecutionRecord[] // 该会话的技能执行记录
+  createdAt: number
+  updatedAt: number
 }
 ```
 
 #### 3.2.3 存储策略优势
 
-| 策略 | 优点 | 缺点 |
-|------|------|------|
-| 单文件存储 | 简单，原子操作 | 文件过大，加载慢 |
+| 策略           | 优点                     | 缺点                   |
+| -------------- | ------------------------ | ---------------------- |
+| 单文件存储     | 简单，原子操作           | 文件过大，加载慢       |
 | **按会话拆分** | 按需加载，性能高，易归档 | 文件数多，需要索引管理 |
 
 #### 3.2.4 清理和归档
@@ -239,10 +242,10 @@ interface ConversationData {
 ```typescript
 // 自动清理旧会话（保留最近 30 天或 100 个会话）
 interface ConversationRetentionPolicy {
-  maxAgeDays: number;        // 最大保留天数
-  maxCount: number;          // 最大保留数量
-  archiveEnabled: boolean;   // 是否启用归档
-  archiveDirectory?: string; // 归档目录
+  maxAgeDays: number // 最大保留天数
+  maxCount: number // 最大保留数量
+  archiveEnabled: boolean // 是否启用归档
+  archiveDirectory?: string // 归档目录
 }
 ```
 
@@ -282,9 +285,9 @@ interface ConversationRetentionPolicy {
 // 2. 内置技能（插件代码）
 
 interface SkillResolutionResult {
-  source: 'user' | 'builtin';
-  skill: ParsedSkill;
-  isOverride: boolean;  // 是否覆盖了内置技能
+  source: 'user' | 'builtin'
+  skill: ParsedSkill
+  isOverride: boolean // 是否覆盖了内置技能
 }
 
 /**
@@ -292,33 +295,33 @@ interface SkillResolutionResult {
  */
 async function resolveSkill(skillName: string): Promise<SkillResolutionResult> {
   // 1. 先查找用户自定义技能
-  const userSkill = await findUserSkillByName(skillName);
+  const userSkill = await findUserSkillByName(skillName)
   if (userSkill) {
     return {
       source: 'user',
       skill: await parseSkillDocument(userSkill.docId),
       isOverride: isBuiltinSkill(skillName)
-    };
+    }
   }
-  
+
   // 2. 查找内置技能
-  const builtinSkill = getBuiltinSkill(skillName);
+  const builtinSkill = getBuiltinSkill(skillName)
   if (builtinSkill) {
     return {
       source: 'builtin',
       skill: builtinSkill,
       isOverride: false
-    };
+    }
   }
-  
-  throw new Error(`Skill not found: ${skillName}`);
+
+  throw new Error(`Skill not found: ${skillName}`)
 }
 ```
 
 #### 3.4.3 内置技能列表
 
-| 技能名称 | 文件名 | 功能描述 |
-|---------|--------|---------|
+| 技能名称 | 文件名            | 功能描述                 |
+| -------- | ----------------- | ------------------------ |
 | 日报生成 | `daily-report.md` | 根据今日任务数据生成日报 |
 
 ---
@@ -335,79 +338,79 @@ async function resolveSkill(skillName: string): Promise<SkillResolutionResult> {
  * 管理按会话拆分的存储逻辑
  */
 export class ConversationStorageService {
-  private plugin: Plugin;
-  private indexCache: ConversationsIndex | null = null;
-  private loadedConversations: Map<string, ConversationData> = new Map();
-  
+  private plugin: Plugin
+  private indexCache: ConversationsIndex | null = null
+  private loadedConversations: Map<string, ConversationData> = new Map()
+
   // 索引文件路径
-  private readonly INDEX_FILE = 'ai-conversations/conversations-index.json';
+  private readonly INDEX_FILE = 'ai-conversations/conversations-index.json'
   private getConversationFile(conversationId: string): string {
-    return `ai-conversations/conv-${conversationId}.json`;
+    return `ai-conversations/conv-${conversationId}.json`
   }
-  
+
   /**
    * 初始化：加载索引
    */
-  async initialize(): Promise<void>;
-  
+  async initialize(): Promise<void>
+
   /**
    * 获取会话索引（轻量级，用于列表展示）
    */
-  async getIndex(): Promise<ConversationsIndex>;
-  
+  async getIndex(): Promise<ConversationsIndex>
+
   /**
    * 加载单个会话完整数据（懒加载）
    */
-  async loadConversation(conversationId: string): Promise<ConversationData | null>;
-  
+  async loadConversation(conversationId: string): Promise<ConversationData | null>
+
   /**
    * 保存会话
    */
-  async saveConversation(conversation: ConversationData): Promise<void>;
-  
+  async saveConversation(conversation: ConversationData): Promise<void>
+
   /**
    * 删除会话（删除文件并更新索引）
    */
-  async deleteConversation(conversationId: string): Promise<void>;
-  
+  async deleteConversation(conversationId: string): Promise<void>
+
   /**
    * 创建新会话
    */
-  async createConversation(title: string): Promise<ConversationData>;
-  
+  async createConversation(title: string): Promise<ConversationData>
+
   /**
    * 更新索引（内部调用）
    */
-  private async updateIndex(meta: ConversationMeta): Promise<void>;
-  
+  private async updateIndex(meta: ConversationMeta): Promise<void>
+
   /**
    * 清理旧会话
    */
-  async cleanupOldConversations(policy: ConversationRetentionPolicy): Promise<void>;
-  
+  async cleanupOldConversations(policy: ConversationRetentionPolicy): Promise<void>
+
   /**
    * 归档会话
    */
-  async archiveConversation(conversationId: string, archiveDir: string): Promise<void>;
+  async archiveConversation(conversationId: string, archiveDir: string): Promise<void>
 }
 
 /**
  * 使用示例
  */
 async function example() {
-  const storage = new ConversationStorageService(plugin);
-  await storage.initialize();
-  
+  const storage = new ConversationStorageService(plugin)
+  await storage.initialize()
+
   // 加载索引（轻量级）
-  const index = await storage.getIndex();
-  console.log(`共有 ${index.conversations.length} 个会话`);
-  
+  const index = await storage.getIndex()
+  console.log(`共有 ${index.conversations.length} 个会话`)
+
   // 按需加载单个会话
-  const conversation = await storage.loadConversation('conv-xxx');
-  
+  const conversation = await storage.loadConversation('conv-xxx')
+
   // 修改后保存
-  conversation.messages.push(newMessage);
-  await storage.saveConversation(conversation);
+  conversation.messages.push(newMessage)
+  await storage.saveConversation(conversation)
 }
 ```
 
@@ -416,37 +419,37 @@ async function example() {
 ```typescript
 // src/services/skillService.ts
 
-import { BUILTIN_SKILLS, getBuiltinSkill, isBuiltinSkill } from '@/utils/skillTemplates';
+import { BUILTIN_SKILLS, getBuiltinSkill, isBuiltinSkill } from '@/utils/skillTemplates'
 
 /**
  * 技能服务
  * 负责技能的解析、管理和执行（支持用户自定义覆盖内置技能）
  */
 export class SkillService {
-  private plugin: Plugin;
-  private skillStore: SkillStore;
-  
+  private plugin: Plugin
+  private skillStore: SkillStore
+
   constructor(plugin: Plugin, skillStore: SkillStore) {
-    this.plugin = plugin;
-    this.skillStore = skillStore;
+    this.plugin = plugin
+    this.skillStore = skillStore
   }
-  
+
   /**
    * 扫描文档并解析为技能
    */
-  async parseSkillDocument(docId: string): Promise<ParsedSkill | null>;
-  
+  async parseSkillDocument(docId: string): Promise<ParsedSkill | null>
+
   /**
    * 验证技能文档格式是否正确
    */
-  validateSkillDocument(content: string): { valid: boolean; errors: string[] };
-  
+  validateSkillDocument(content: string): { valid: boolean, errors: string[] }
+
   /**
    * 获取所有已启用的技能（包含内置技能，用户自定义优先）
    */
   async getEnabledSkills(): Promise<SkillConfig[]> {
-    const userSkills = this.skillStore.enabledSkills;
-    
+    const userSkills = this.skillStore.enabledSkills
+
     // 内置技能列表
     const builtinSkillConfigs: SkillConfig[] = Object.values(BUILTIN_SKILLS).map(builtin => ({
       id: builtin.id,
@@ -458,66 +461,66 @@ export class SkillService {
       createdAt: 0,
       updatedAt: 0,
       isBuiltin: true // 标记为内置技能
-    }));
-    
+    }))
+
     // 用户自定义技能覆盖内置技能
-    const userSkillNames = new Set(userSkills.map(s => s.name));
+    const userSkillNames = new Set(userSkills.map(s => s.name))
     const filteredBuiltinSkills = builtinSkillConfigs.filter(
       builtin => !userSkillNames.has(builtin.name)
-    );
-    
-    return [...userSkills, ...filteredBuiltinSkills];
+    )
+
+    return [...userSkills, ...filteredBuiltinSkills]
   }
-  
+
   /**
    * 解析技能（支持用户覆盖内置技能）
    */
   async resolveSkill(skillName: string): Promise<SkillResolutionResult> {
     // 1. 先查找用户自定义技能
-    const userSkill = this.skillStore.skills.find(s => s.name === skillName);
+    const userSkill = this.skillStore.skills.find(s => s.name === skillName)
     if (userSkill) {
-      const parsed = await this.parseSkillDocument(userSkill.docId);
+      const parsed = await this.parseSkillDocument(userSkill.docId)
       return {
         source: 'user',
         skill: parsed!,
         isOverride: isBuiltinSkill(skillName)
-      };
+      }
     }
-    
+
     // 2. 查找内置技能
-    const builtinSkill = getBuiltinSkill(skillName);
+    const builtinSkill = getBuiltinSkill(skillName)
     if (builtinSkill) {
       return {
         source: 'builtin',
         skill: builtinSkill,
         isOverride: false
-      };
+      }
     }
-    
-    throw new Error(`Skill not found: ${skillName}`);
+
+    throw new Error(`Skill not found: ${skillName}`)
   }
-  
+
   /**
    * 获取技能内容（用于传递给 AI）
    * 支持用户自定义覆盖
    */
   async getSkillContent(skillName: string): Promise<string> {
-    const result = await this.resolveSkill(skillName);
-    return result.skill.content;
+    const result = await this.resolveSkill(skillName)
+    return result.skill.content
   }
-  
+
   /**
    * 构建技能选择提示词
    */
   buildSkillSelectionPrompt(skills: SkillConfig[]): string {
-    const skillList = skills.map(skill => {
-      const sourceTag = skill.isBuiltin ? '[内置]' : '[自定义]';
-      return `- ${skill.name} ${sourceTag}: ${skill.description}`;
-    }).join('\n');
-    
-    return `## 可用技能\n\n${skillList}\n\n## 使用规则\n- 当用户需求匹配某个技能时，调用对应技能\n- 用户可通过创建同名文档覆盖内置技能\n`;
+    const skillList = skills.map((skill) => {
+      const sourceTag = skill.isBuiltin ? '[内置]' : '[自定义]'
+      return `- ${skill.name} ${sourceTag}: ${skill.description}`
+    }).join('\n')
+
+    return `## 可用技能\n\n${skillList}\n\n## 使用规则\n- 当用户需求匹配某个技能时，调用对应技能\n- 用户可通过创建同名文档覆盖内置技能\n`
   }
-  
+
   /**
    * 执行技能
    */
@@ -526,11 +529,11 @@ export class SkillService {
     input: string,
     context: SkillExecutionContext
   ): Promise<SkillExecutionResult> {
-    const skillResult = await this.resolveSkill(skillName);
-    
+    const skillResult = await this.resolveSkill(skillName)
+
     // 记录技能来源
-    console.log(`[Skill] Executing "${skillName}" from ${skillResult.source}`);
-    
+    console.log(`[Skill] Executing "${skillName}" from ${skillResult.source}`)
+
     // 执行逻辑...
   }
 }
@@ -547,60 +550,60 @@ export const useAIStore = defineStore('ai', () => {
     version: 1,
     currentConversationId: null,
     conversations: []
-  });
-  const currentConversation = ref<ConversationData | null>(null);
-  const isLoading = ref(false);
-  
+  })
+  const currentConversation = ref<ConversationData | null>(null)
+  const isLoading = ref(false)
+
   // 存储服务实例
-  let storageService: ConversationStorageService;
-  
+  let storageService: ConversationStorageService
+
   // Getters
-  const conversations = computed(() => conversationsIndex.value.conversations);
-  const currentConversationId = computed(() => conversationsIndex.value.currentConversationId);
-  const currentMessages = computed(() => currentConversation.value?.messages || []);
-  
+  const conversations = computed(() => conversationsIndex.value.conversations)
+  const currentConversationId = computed(() => conversationsIndex.value.currentConversationId)
+  const currentMessages = computed(() => currentConversation.value?.messages || [])
+
   /**
    * 初始化存储服务
    */
   async function initializeStorage(plugin: Plugin) {
-    storageService = new ConversationStorageService(plugin);
-    await storageService.initialize();
-    
+    storageService = new ConversationStorageService(plugin)
+    await storageService.initialize()
+
     // 加载索引
-    const index = await storageService.getIndex();
-    conversationsIndex.value = index;
-    
+    const index = await storageService.getIndex()
+    conversationsIndex.value = index
+
     // 加载当前会话
     if (index.currentConversationId) {
       currentConversation.value = await storageService.loadConversation(
         index.currentConversationId
-      );
+      )
     }
   }
-  
+
   /**
    * 切换会话（按需加载）
    */
   async function switchConversation(conversationId: string) {
     // 先保存当前会话
     if (currentConversation.value) {
-      await storageService.saveConversation(currentConversation.value);
+      await storageService.saveConversation(currentConversation.value)
     }
-    
+
     // 加载新会话
-    currentConversation.value = await storageService.loadConversation(conversationId);
-    conversationsIndex.value.currentConversationId = conversationId;
-    
+    currentConversation.value = await storageService.loadConversation(conversationId)
+    conversationsIndex.value.currentConversationId = conversationId
+
     // 保存索引更新
-    await storageService.getIndex(); // 触发索引更新
+    await storageService.getIndex() // 触发索引更新
   }
-  
+
   /**
    * 创建新会话
    */
   async function createConversation(title = '新对话') {
-    const conversation = await storageService.createConversation(title);
-    
+    const conversation = await storageService.createConversation(title)
+
     // 更新索引
     conversationsIndex.value.conversations.unshift({
       id: conversation.id,
@@ -610,59 +613,61 @@ export const useAIStore = defineStore('ai', () => {
       messageCount: 0,
       fileSize: 0,
       hasSkillExecutions: false
-    });
-    
+    })
+
     // 切换到新会话
-    currentConversation.value = conversation;
-    conversationsIndex.value.currentConversationId = conversation.id;
+    currentConversation.value = conversation
+    conversationsIndex.value.currentConversationId = conversation.id
   }
-  
+
   /**
    * 删除会话
    */
   async function deleteConversation(conversationId: string) {
-    await storageService.deleteConversation(conversationId);
-    
+    await storageService.deleteConversation(conversationId)
+
     // 更新索引
-    const idx = conversationsIndex.value.conversations.findIndex(c => c.id === conversationId);
+    const idx = conversationsIndex.value.conversations.findIndex(c => c.id === conversationId)
     if (idx > -1) {
-      conversationsIndex.value.conversations.splice(idx, 1);
+      conversationsIndex.value.conversations.splice(idx, 1)
     }
-    
+
     // 如果删除的是当前会话，切换到其他会话
     if (conversationsIndex.value.currentConversationId === conversationId) {
-      const nextConv = conversationsIndex.value.conversations[0];
+      const nextConv = conversationsIndex.value.conversations[0]
       if (nextConv) {
-        await switchConversation(nextConv.id);
-      } else {
-        currentConversation.value = null;
-        conversationsIndex.value.currentConversationId = null;
+        await switchConversation(nextConv.id)
+      }
+      else {
+        currentConversation.value = null
+        conversationsIndex.value.currentConversationId = null
       }
     }
   }
-  
+
   /**
    * 添加消息并保存
    */
   async function addMessage(message: ChatMessage) {
-    if (!currentConversation.value) return;
-    
-    currentConversation.value.messages.push(message);
-    currentConversation.value.updatedAt = Date.now();
-    
+    if (!currentConversation.value)
+      return
+
+    currentConversation.value.messages.push(message)
+    currentConversation.value.updatedAt = Date.now()
+
     // 更新索引中的元数据
     const meta = conversationsIndex.value.conversations.find(
       c => c.id === currentConversation.value!.id
-    );
+    )
     if (meta) {
-      meta.messageCount = currentConversation.value.messages.length;
-      meta.updatedAt = Date.now();
+      meta.messageCount = currentConversation.value.messages.length
+      meta.updatedAt = Date.now()
     }
-    
+
     // 保存会话
-    await storageService.saveConversation(currentConversation.value);
+    await storageService.saveConversation(currentConversation.value)
   }
-});
+})
 ```
 
 ### 4.3 Skill Store (Pinia)
@@ -672,26 +677,26 @@ export const useAIStore = defineStore('ai', () => {
 
 export const useSkillStore = defineStore('skill', () => {
   // State
-  const skills = ref<SkillConfig[]>([]);
-  const isLoading = ref(false);
-  
+  const skills = ref<SkillConfig[]>([])
+  const isLoading = ref(false)
+
   // Getters
-  const enabledSkills = computed(() => skills.value.filter(s => s.enabled));
-  
+  const enabledSkills = computed(() => skills.value.filter(s => s.enabled))
+
   // Actions
-  function loadSkills(savedSkills: SkillConfig[]);
-  function addSkill(skill: SkillConfig);
-  function updateSkill(skillId: string, updates: Partial<SkillConfig>);
-  function removeSkill(skillId: string);
-  function toggleSkillEnabled(skillId: string);
-  
+  function loadSkills(savedSkills: SkillConfig[])
+  function addSkill(skill: SkillConfig)
+  function updateSkill(skillId: string, updates: Partial<SkillConfig>)
+  function removeSkill(skillId: string)
+  function toggleSkillEnabled(skillId: string)
+
   // 执行记录现在存储在对应会话文件中
   // 这里只提供获取当前会话执行记录的方法
   function getCurrentConversationExecutions(): SkillExecutionRecord[] {
-    const aiStore = useAIStore();
-    return aiStore.currentConversation?.skillExecutions || [];
+    const aiStore = useAIStore()
+    return aiStore.currentConversation?.skillExecutions || []
   }
-});
+})
 ```
 
 ### 4.3 AI Service 扩展
@@ -708,7 +713,7 @@ export function buildSkillTools(skills: SkillConfig[]): ToolDefinition[] {
   return skills.map(skill => ({
     type: 'function',
     function: {
-      name: `skill_${skill.name.replace(/[^a-zA-Z0-9_]/g, '_')}`,
+      name: `skill_${skill.name.replace(/\W/g, '_')}`,
       description: skill.description,
       parameters: {
         type: 'object',
@@ -721,7 +726,7 @@ export function buildSkillTools(skills: SkillConfig[]): ToolDefinition[] {
         required: ['input']
       }
     }
-  }));
+  }))
 }
 
 // 修改 callAIWithToolsStream 支持技能执行
@@ -729,9 +734,9 @@ export async function callAIWithToolsStream(
   config: AIProviderConfig,
   messages: ChatMessage[],
   tools: ToolDefinition[],
-  skillContext: SkillContext,  // 新增
+  skillContext: SkillContext, // 新增
   onChunk?: (chunk: string, reasoning?: string, usage?: UsageInfo) => void
-): Promise<AIResponseWithTools>;
+): Promise<AIResponseWithTools>
 ```
 
 ---
@@ -745,7 +750,7 @@ export async function callAIWithToolsStream(
 ```vue
 <template>
   <!-- 现有 AI 供应商配置 -->
-  
+
   <!-- 新增：技能管理区域 -->
   <SySettingsSection
     icon="iconMagic"
@@ -762,7 +767,7 @@ export async function callAIWithToolsStream(
         <SyButton icon="iconFolder" @click="browseDirectory" />
       </div>
     </SySettingItem>
-    
+
     <!-- 内置技能列表（只读） -->
     <div v-if="builtinSkills.length > 0" class="skill-section">
       <h4 class="skill-section-title">
@@ -782,8 +787,8 @@ export async function callAIWithToolsStream(
               <span class="custom-item-path">{{ skill.description }}</span>
             </div>
             <div class="custom-item-actions">
-              <SyButton 
-                icon="iconCopy" 
+              <SyButton
+                icon="iconCopy"
                 :text="t('settings').aiSkills?.customize"
                 @click="createOverrideSkill(skill)"
               />
@@ -796,18 +801,20 @@ export async function callAIWithToolsStream(
         </div>
       </div>
     </div>
-    
+
     <!-- 用户自定义技能列表 -->
     <div class="skill-section">
-      <h4 class="skill-section-title">{{ t('settings').aiSkills?.customSkills ?? '自定义技能' }}</h4>
+      <h4 class="skill-section-title">
+        {{ t('settings').aiSkills?.customSkills ?? '自定义技能' }}
+      </h4>
       <div v-if="userSkills.length === 0" class="skill-empty">
         {{ t('settings').aiSkills?.emptySkills ?? '暂无自定义技能，点击下方按钮添加' }}
       </div>
       <div v-else class="custom-list">
-        <div 
-          v-for="skill in userSkills" 
-          :key="skill.id" 
-          :class="['custom-item', { 'is-override': skill.isOverride }]"
+        <div
+          v-for="skill in userSkills"
+          :key="skill.id"
+          class="custom-item" :class="[{ 'is-override': skill.isOverride }]"
         >
           <div class="custom-item-header">
             <div class="custom-item-info">
@@ -831,7 +838,7 @@ export async function callAIWithToolsStream(
         </div>
       </div>
     </div>
-    
+
     <!-- 添加技能按钮 -->
     <SySettingsActionButton
       icon="iconAdd"
@@ -848,14 +855,16 @@ export async function callAIWithToolsStream(
 <!-- src/components/dialog/SkillSelectDialog.vue -->
 <template>
   <div class="b3-dialog">
-    <div class="b3-dialog__scrim" @click="close"></div>
+    <div class="b3-dialog__scrim" @click="close" />
     <div class="b3-dialog__container">
       <div class="b3-dialog__header">
-        <div class="b3-dialog__title">选择技能文档</div>
+        <div class="b3-dialog__title">
+          选择技能文档
+        </div>
       </div>
       <div class="b3-dialog__content">
         <!-- 文档树选择器 -->
-        <DocumentTree 
+        <DocumentTree
           v-model="selectedDocId"
           :filter="isSkillDocument"
         />
@@ -866,8 +875,12 @@ export async function callAIWithToolsStream(
         </div>
       </div>
       <div class="b3-dialog__action">
-        <button class="b3-button b3-button--cancel" @click="close">取消</button>
-        <button class="b3-button b3-button--text" @click="confirm">确认</button>
+        <button class="b3-button b3-button--cancel" @click="close">
+          取消
+        </button>
+        <button class="b3-button b3-button--text" @click="confirm">
+          确认
+        </button>
       </div>
     </div>
   </div>
@@ -881,13 +894,13 @@ export async function callAIWithToolsStream(
 
 <template>
   <!-- 现有消息列表 -->
-  
+
   <!-- 新增：技能执行指示器 -->
-  <SkillExecutionIndicator 
+  <SkillExecutionIndicator
     v-if="currentSkillExecution"
     :execution="currentSkillExecution"
   />
-  
+
   <!-- 输入区域扩展 -->
   <div class="chat-panel__input-card">
     <!-- 技能快捷按钮 -->
@@ -904,7 +917,7 @@ export async function callAIWithToolsStream(
         +{{ enabledSkills.length - 3 }}
       </button>
     </div>
-    
+
     <!-- 现有输入框 -->
     <ChatInput ... />
   </div>
@@ -919,7 +932,7 @@ export async function callAIWithToolsStream(
   <div class="skill-execution-panel">
     <div class="skill-execution-header">
       <span class="skill-name">{{ execution.skillName }}</span>
-      <span :class="['skill-status', `status-${execution.status}`]">
+      <span class="skill-status" :class="[`status-${execution.status}`]">
         {{ statusText }}
       </span>
     </div>
@@ -1018,7 +1031,7 @@ tags: []
 
 - 注意点1
 - 注意点2
-`;
+`
 
 /**
  * 生成技能文档内容
@@ -1029,9 +1042,9 @@ export function generateSkillDocument(
   author: string
 ): string {
   return SKILL_TEMPLATE
-    .replace(/{{skillName}}/g, skillName)
-    .replace(/{{description}}/g, description)
-    .replace(/{{author}}/g, author);
+    .replace(/\{\{skillName\}\}/g, skillName)
+    .replace(/\{\{description\}\}/g, description)
+    .replace(/\{\{author\}\}/g, author)
 }
 ```
 
@@ -1039,14 +1052,150 @@ export function generateSkillDocument(
 
 ```vue
 <!-- src/components/dialog/CreateSkillDialog.vue -->
+<script setup lang="ts">
+import { showMessage } from 'siyuan'
+import { computed, reactive, ref } from 'vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SyInput from '@/components/SiyuanTheme/SyInput.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue'
+import { t } from '@/i18n'
+import { useSkillStore } from '@/stores/skillStore'
+import { generateSkillDocument } from '@/utils/skillTemplates'
+
+const emit = defineEmits<{
+  close: []
+  created: [skillId: string]
+}>()
+
+const skillStore = useSkillStore()
+
+const form = reactive({
+  name: '',
+  description: '',
+  savePath: 'AI技能/未命名技能',
+  autoEnable: true
+})
+
+const errors = reactive({
+  name: '',
+  description: ''
+})
+
+const isValid = computed(() => {
+  return form.name.trim().length > 0
+    && form.description.trim().length > 0
+    && !errors.name
+    && !errors.description
+})
+
+function validateName() {
+  const name = form.name.trim()
+  if (!name) {
+    errors.name = t('slash').skillNameRequired
+    return
+  }
+  // 检查是否已存在同名技能
+  const existing = skillStore.skills.find(s => s.name === name)
+  if (existing) {
+    errors.name = t('slash').skillNameExists
+    return
+  }
+  errors.name = ''
+}
+
+async function selectLocation() {
+  // 调用思源 API 选择目录
+  // ...
+}
+
+async function createSkill() {
+  if (!isValid.value)
+    return
+
+  // 检查是否为内置技能名称
+  const isBuiltin = isBuiltinSkill(form.name)
+  if (isBuiltin) {
+    const confirmed = confirm(
+      t('slash').overrideBuiltinSkill
+        .replace('{name}', form.name)
+        .replace('{description}', BUILTIN_SKILLS[form.name]?.description || '')
+    )
+    if (!confirmed)
+      return
+  }
+
+  try {
+    // 1. 生成技能文档内容（如果是内置技能，以内置内容为基础）
+    let documentContent: string
+    if (isBuiltin) {
+      // 基于内置技能模板创建，保留原有结构
+      const builtin = BUILTIN_SKILLS[form.name]
+      documentContent = generateSkillDocumentFromTemplate(
+        form.name,
+        form.description,
+        'User',
+        builtin.content
+      )
+    }
+    else {
+      documentContent = generateSkillDocument(
+        form.name,
+        form.description,
+        'User'
+      )
+    }
+
+    // 2. 创建思源文档
+    const docId = await createSiyuanDocument(form.savePath, documentContent)
+
+    // 3. 添加到技能列表
+    const skillConfig: SkillConfig = {
+      id: `skill-${Date.now()}`,
+      docId,
+      docPath: form.savePath,
+      name: form.name,
+      description: form.description,
+      enabled: form.autoEnable,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      isOverride: isBuiltin
+    }
+
+    skillStore.addSkill(skillConfig)
+
+    // 4. 显示成功提示
+    if (isBuiltin) {
+      showMessage(t('slash').overrideSuccess.replace('{name}', form.name), 3000, 'info')
+    }
+    else {
+      showMessage(t('slash').createSkillSuccess, 3000, 'info')
+    }
+
+    emit('created', skillConfig.id)
+    emit('close')
+  }
+  catch (error) {
+    console.error('Failed to create skill:', error)
+    showMessage(t('slash').createSkillFailed, 3000, 'error')
+  }
+}
+
+function close() {
+  emit('close')
+}
+</script>
+
 <template>
   <div class="b3-dialog">
-    <div class="b3-dialog__scrim" @click="close"></div>
+    <div class="b3-dialog__scrim" @click="close" />
     <div class="b3-dialog__container" style="width: 520px;">
       <div class="b3-dialog__header">
-        <div class="b3-dialog__title">{{ t('slash').createSkillTitle }}</div>
+        <div class="b3-dialog__title">
+          {{ t('slash').createSkillTitle }}
+        </div>
         <button class="b3-dialog__close" @click="close">
-          <svg><use xlink:href="#iconClose"></use></svg>
+          <svg><use xlink:href="#iconClose" /></svg>
         </button>
       </div>
       <div class="b3-dialog__content">
@@ -1054,25 +1203,25 @@ export function generateSkillDocument(
           <!-- 技能名称 -->
           <div class="form-item">
             <label class="form-label">{{ t('slash').skillName }}</label>
-            <SyInput 
-              v-model="form.name" 
+            <SyInput
+              v-model="form.name"
               :placeholder="t('slash').skillNamePlaceholder"
               @blur="validateName"
             />
             <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
           </div>
-          
+
           <!-- 技能描述 -->
           <div class="form-item">
             <label class="form-label">{{ t('slash').skillDescription }}</label>
-            <SyTextarea 
+            <SyTextarea
               v-model="form.description"
               :placeholder="t('slash').skillDescriptionPlaceholder"
               :rows="3"
             />
             <span v-if="errors.description" class="form-error">{{ errors.description }}</span>
           </div>
-          
+
           <!-- 保存位置 -->
           <div class="form-item">
             <label class="form-label">{{ t('slash').skillSaveLocation }}</label>
@@ -1081,7 +1230,7 @@ export function generateSkillDocument(
               <SyButton icon="iconFolder" @click="selectLocation" />
             </div>
           </div>
-          
+
           <!-- 自动启用 -->
           <div class="form-item form-item-inline">
             <SySwitch v-model="form.autoEnable" />
@@ -1093,8 +1242,8 @@ export function generateSkillDocument(
         <button class="b3-button b3-button--cancel" @click="close">
           {{ t('common').cancel }}
         </button>
-        <button 
-          class="b3-button b3-button--text" 
+        <button
+          class="b3-button b3-button--text"
           :disabled="!isValid"
           @click="createSkill"
         >
@@ -1104,135 +1253,6 @@ export function generateSkillDocument(
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { t } from '@/i18n';
-import { showMessage } from 'siyuan';
-import SyInput from '@/components/SiyuanTheme/SyInput.vue';
-import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import { generateSkillDocument } from '@/utils/skillTemplates';
-import { useSkillStore } from '@/stores/skillStore';
-
-const emit = defineEmits<{
-  close: [];
-  created: [skillId: string];
-}>();
-
-const skillStore = useSkillStore();
-
-const form = reactive({
-  name: '',
-  description: '',
-  savePath: 'AI技能/未命名技能',
-  autoEnable: true
-});
-
-const errors = reactive({
-  name: '',
-  description: ''
-});
-
-const isValid = computed(() => {
-  return form.name.trim().length > 0 && 
-         form.description.trim().length > 0 &&
-         !errors.name &&
-         !errors.description;
-});
-
-function validateName() {
-  const name = form.name.trim();
-  if (!name) {
-    errors.name = t('slash').skillNameRequired;
-    return;
-  }
-  // 检查是否已存在同名技能
-  const existing = skillStore.skills.find(s => s.name === name);
-  if (existing) {
-    errors.name = t('slash').skillNameExists;
-    return;
-  }
-  errors.name = '';
-}
-
-async function selectLocation() {
-  // 调用思源 API 选择目录
-  // ...
-}
-
-async function createSkill() {
-  if (!isValid.value) return;
-  
-  // 检查是否为内置技能名称
-  const isBuiltin = isBuiltinSkill(form.name);
-  if (isBuiltin) {
-    const confirmed = confirm(
-      t('slash').overrideBuiltinSkill
-        .replace('{name}', form.name)
-        .replace('{description}', BUILTIN_SKILLS[form.name]?.description || '')
-    );
-    if (!confirmed) return;
-  }
-  
-  try {
-    // 1. 生成技能文档内容（如果是内置技能，以内置内容为基础）
-    let documentContent: string;
-    if (isBuiltin) {
-      // 基于内置技能模板创建，保留原有结构
-      const builtin = BUILTIN_SKILLS[form.name];
-      documentContent = generateSkillDocumentFromTemplate(
-        form.name,
-        form.description,
-        'User',
-        builtin.content
-      );
-    } else {
-      documentContent = generateSkillDocument(
-        form.name,
-        form.description,
-        'User'
-      );
-    }
-    
-    // 2. 创建思源文档
-    const docId = await createSiyuanDocument(form.savePath, documentContent);
-    
-    // 3. 添加到技能列表
-    const skillConfig: SkillConfig = {
-      id: `skill-${Date.now()}`,
-      docId: docId,
-      docPath: form.savePath,
-      name: form.name,
-      description: form.description,
-      enabled: form.autoEnable,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      isOverride: isBuiltin
-    };
-    
-    skillStore.addSkill(skillConfig);
-    
-    // 4. 显示成功提示
-    if (isBuiltin) {
-      showMessage(t('slash').overrideSuccess.replace('{name}', form.name), 3000, 'info');
-    } else {
-      showMessage(t('slash').createSkillSuccess, 3000, 'info');
-    }
-    
-    emit('created', skillConfig.id);
-    emit('close');
-  } catch (error) {
-    console.error('Failed to create skill:', error);
-    showMessage(t('slash').createSkillFailed, 3000, 'error');
-  }
-}
-
-function close() {
-  emit('close');
-}
-</script>
 ```
 
 #### 5.5.4 斜杠命令处理函数
@@ -1240,52 +1260,53 @@ function close() {
 ```typescript
 // src/utils/slashCommands.ts
 
-import { createDialog } from '@/utils/dialog';
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
-import { createApp } from 'vue';
+import { createApp } from 'vue'
+import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue'
+import { createDialog } from '@/utils/dialog'
 
 /**
  * 从斜杠命令创建技能
  */
 async function createSkillFromSlash(nodeElement: HTMLElement) {
   // 获取当前文档路径作为默认保存位置
-  const blockId = nodeElement.getAttribute('data-node-id');
-  let defaultPath = 'AI技能/未命名技能';
-  
+  const blockId = nodeElement.getAttribute('data-node-id')
+  let defaultPath = 'AI技能/未命名技能'
+
   if (blockId) {
     try {
-      const hPath = await getHPathByID(blockId);
+      const hPath = await getHPathByID(blockId)
       if (hPath) {
         // 使用当前文档所在目录
-        const parts = hPath.split('/');
-        parts.pop(); // 移除文档名
-        defaultPath = parts.length > 0 
-          ? `${parts.join('/')}/新技能` 
-          : 'AI技能/新技能';
+        const parts = hPath.split('/')
+        parts.pop() // 移除文档名
+        defaultPath = parts.length > 0
+          ? `${parts.join('/')}/新技能`
+          : 'AI技能/新技能'
       }
-    } catch {
+    }
+    catch {
       // 忽略错误，使用默认路径
     }
   }
-  
+
   // 打开创建技能对话框
   const dialog = createDialog({
     title: '',
     content: '<div id="create-skill-dialog-mount"></div>',
     width: '560px',
     height: 'auto'
-  });
-  
-  const mountEl = dialog.element.querySelector('#create-skill-dialog-mount');
+  })
+
+  const mountEl = dialog.element.querySelector('#create-skill-dialog-mount')
   if (mountEl) {
     const app = createApp(CreateSkillDialog, {
       defaultPath,
       close: () => dialog.destroy(),
       created: (skillId: string) => {
-        showMessage(`技能创建成功！`, 3000, 'info');
+        showMessage(`技能创建成功！`, 3000, 'info')
       }
-    });
-    app.mount(mountEl);
+    })
+    app.mount(mountEl)
   }
 }
 ```
@@ -1314,7 +1335,7 @@ export const zh_CN = {
     overrideBuiltinSkill: '「{name}」是内置技能，功能：{description}\n\n创建同名技能将覆盖内置版本，确定吗？',
     overrideSuccess: '已覆盖内置技能「{name}」'
   }
-};
+}
 ```
 
 #### 5.5.6 内置技能模板
@@ -1351,25 +1372,31 @@ tags: ['report', 'daily', 'summary']
 ## 日报格式
 
 ```
+
 # 日报 - YYYY年MM月DD日
 
 ## 📊 今日概览
+
 - 完成任务：X 个
 - 专注时长：X 小时 X 分钟
 - 番茄钟数：X 个
 
 ## ✅ 已完成
+
 | 项目 | 任务 | 内容 |
-|------|------|------|
-| ... | ... | ... |
+| ---- | ---- | ---- |
+| ...  | ...  | ...  |
 
 ## 📋 待办中
+
 | 项目 | 任务 | 内容 |
-|------|------|------|
-| ... | ... | ... |
+| ---- | ---- | ---- |
+| ...  | ...  | ...  |
 
 ## 📝 备注
+
 （用户可自行添加备注）
+
 ```
 
 ## 示例
@@ -1382,23 +1409,28 @@ tags: ['report', 'daily', 'summary']
 **输出：**
 （根据实际数据生成的日报）
 ```
+
 # 日报 - 2026年3月29日
 
 ## 📊 今日概览
+
 - 完成任务：5 个
 - 专注时长：4 小时 30 分钟
 - 番茄钟数：6 个
 
 ## ✅ 已完成
-| 项目 | 任务 | 内容 |
-|------|------|------|
+
+| 项目  | 任务     | 内容             |
+| ----- | -------- | ---------------- |
 | 项目A | 前端开发 | 完成登录页面设计 |
-| 项目B | 文档编写 | 更新API文档 |
+| 项目B | 文档编写 | 更新API文档      |
 
 ## 📋 待办中
-| 项目 | 任务 | 内容 |
-|------|------|------|
+
+| 项目  | 任务     | 内容             |
+| ----- | -------- | ---------------- |
 | 项目A | 前端开发 | 优化页面加载速度 |
+
 ```
 
 ## 注意事项
@@ -1417,12 +1449,12 @@ tags: ['report', 'daily', 'summary']
  * 内置技能定义
  */
 export interface BuiltinSkill {
-  id: string;
-  name: string;
-  description: string;
-  content: string;      // 完整的 SKILL.md 内容
-  version: string;
-  author: string;
+  id: string
+  name: string
+  description: string
+  content: string // 完整的 SKILL.md 内容
+  version: string
+  author: string
 }
 
 /**
@@ -1442,7 +1474,7 @@ description: 根据今日任务完成情况自动生成日报...
 # 日报生成
 ...（完整内容）
 `
-};
+}
 
 /**
  * 所有内置技能
@@ -1451,23 +1483,24 @@ export const BUILTIN_SKILLS: Record<string, BuiltinSkill> = {
   '日报生成': BUILTIN_DAILY_REPORT_SKILL,
   'daily-report': BUILTIN_DAILY_REPORT_SKILL,
   // 未来可扩展更多内置技能
-};
+}
 
 /**
  * 检查是否为内置技能
  */
 export function isBuiltinSkill(name: string): boolean {
-  return name in BUILTIN_SKILLS;
+  return name in BUILTIN_SKILLS
 }
 
 /**
  * 获取内置技能内容
  */
 export function getBuiltinSkill(name: string): ParsedSkill | null {
-  const builtin = BUILTIN_SKILLS[name];
-  if (!builtin) return null;
-  
-  return parseSkillContent(builtin.content);
+  const builtin = BUILTIN_SKILLS[name]
+  if (!builtin)
+    return null
+
+  return parseSkillContent(builtin.content)
 }
 ```
 
@@ -1508,16 +1541,20 @@ AI 决定：
 你是一个智能助手，可以根据用户需求选择合适的工具技能。
 
 ## 可用技能
+
 {{SKILL_LIST}}
 
 ## 工作原则
+
 1. 分析用户意图，判断是否需要使用技能
 2. 如果需要技能，选择最匹配的一个
 3. 如果不需要技能，直接回答
 
 ## 响应格式
+
 - 直接回答：正常回复内容
 - 调用技能：使用 function_call 调用相应 skill_XXX 函数
+
 ```
 
 **技能执行系统提示词**：
@@ -1526,9 +1563,11 @@ AI 决定：
 {{SKILL_CONTENT}}
 
 ## 当前任务
+
 用户输入：{{USER_INPUT}}
 
 请根据上述技能文档执行相应任务，并输出结果。
+
 ```
 
 ---
@@ -1617,7 +1656,7 @@ const messages = {
       overriding: '已覆盖',
     }
   }
-};
+}
 ```
 
 ---
@@ -1625,12 +1664,14 @@ const messages = {
 ## 9. 实施计划
 
 ### Phase 1: 会话存储改造（高优先级）
+
 1. 创建 `src/services/conversationStorageService.ts`
 2. 改造 `src/stores/aiStore.ts` 使用新的存储服务
 3. 实现数据迁移逻辑（从单文件 `ai-chat-history.json` 迁移到分会话存储）
 4. 更新 `src/index.ts` 中的存储接口
 
 ### Phase 2: 技能系统基础（含内置技能）
+
 1. 定义 `src/types/skill.ts` 类型（含内置技能标识）
 2. 创建 `src/stores/skillStore.ts`
 3. 创建 `src/builtin-skills/daily-report.md` 内置日报技能
@@ -1639,23 +1680,27 @@ const messages = {
 6. 实现 `src/utils/skillParser.ts`
 
 ### Phase 3: AI 集成
+
 1. 扩展 `src/services/aiService.ts` 支持技能调用
 2. 在 `aiStore.ts` 集成技能执行逻辑
 3. 实现技能执行记录存储
 
 ### Phase 4: 斜杠命令创建技能
+
 1. 创建 `src/utils/skillTemplates.ts` 技能模板
 2. 创建 `src/components/dialog/CreateSkillDialog.vue` 对话框
 3. 扩展 `src/utils/slashCommands.ts` 添加 `/创建技能` 命令
 4. 添加国际化翻译
 
 ### Phase 5: UI 组件
+
 1. 扩展 `AiConfigSection.vue` 添加技能配置
 2. 创建 `SkillSelectDialog.vue`
 3. 创建 `SkillExecutionPanel.vue`
 4. 在 `ChatPanel.vue` 集成技能执行展示
 
 ### Phase 6: 优化和清理
+
 1. 实现会话清理和归档功能
 2. 添加国际化
 3. 性能优化（索引缓存、懒加载）
@@ -1702,39 +1747,39 @@ const messages = {
 
 async function migrateFromLegacyFormat(plugin: Plugin): Promise<boolean> {
   // 检查是否存在旧版 ai-chat-history.json
-  const legacyData = await plugin.loadData('ai-chat-history');
+  const legacyData = await plugin.loadData('ai-chat-history')
   if (!legacyData || !legacyData.conversations) {
-    return false; // 无需迁移
+    return false // 无需迁移
   }
-  
+
   // 检查是否已迁移过
-  const index = await plugin.loadData('ai-conversations/conversations-index.json');
+  const index = await plugin.loadData('ai-conversations/conversations-index.json')
   if (index) {
-    return false; // 已迁移
+    return false // 已迁移
   }
-  
+
   // 执行迁移
-  console.log('[Task Assistant] Migrating ai-chat-history to new format...');
-  
+  console.log('[Task Assistant] Migrating ai-chat-history to new format...')
+
   const conversationsIndex: ConversationsIndex = {
     version: 1,
     currentConversationId: legacyData.currentConversationId,
     conversations: []
-  };
-  
+  }
+
   // 逐个保存会话
   for (const conv of legacyData.conversations) {
     const conversationData: ConversationData = {
       ...conv,
       skillExecutions: [] // 旧格式没有技能执行记录
-    };
-    
+    }
+
     // 保存单个会话文件
     await plugin.saveData(
       `ai-conversations/conv-${conv.id}.json`,
       conversationData
-    );
-    
+    )
+
     // 添加到索引
     conversationsIndex.conversations.push({
       id: conv.id,
@@ -1744,18 +1789,18 @@ async function migrateFromLegacyFormat(plugin: Plugin): Promise<boolean> {
       messageCount: conv.messages?.length || 0,
       fileSize: JSON.stringify(conversationData).length,
       hasSkillExecutions: false
-    });
+    })
   }
-  
+
   // 保存索引
-  await plugin.saveData('ai-conversations/conversations-index.json', conversationsIndex);
-  
+  await plugin.saveData('ai-conversations/conversations-index.json', conversationsIndex)
+
   // 重命名旧文件作为备份
-  await plugin.saveData('ai-chat-history-backup', legacyData);
-  await plugin.saveData('ai-chat-history', null); // 清空旧数据
-  
-  console.log('[Task Assistant] Migration completed');
-  return true;
+  await plugin.saveData('ai-chat-history-backup', legacyData)
+  await plugin.saveData('ai-chat-history', null) // 清空旧数据
+
+  console.log('[Task Assistant] Migration completed')
+  return true
 }
 ```
 
@@ -1764,24 +1809,25 @@ async function migrateFromLegacyFormat(plugin: Plugin): Promise<boolean> {
 ```typescript
 // 如果存储失败，使用内存模式
 class ConversationStorageService {
-  private memoryMode = false;
-  private memoryCache = new Map<string, ConversationData>();
-  
+  private memoryMode = false
+  private memoryCache = new Map<string, ConversationData>()
+
   async saveConversation(conversation: ConversationData): Promise<void> {
     if (this.memoryMode) {
-      this.memoryCache.set(conversation.id, conversation);
-      return;
+      this.memoryCache.set(conversation.id, conversation)
+      return
     }
-    
+
     try {
       await this.plugin.saveData(
         this.getConversationFile(conversation.id),
         conversation
-      );
-    } catch (error) {
-      console.warn('[Storage] Failed to save, switching to memory mode:', error);
-      this.memoryMode = true;
-      this.memoryCache.set(conversation.id, conversation);
+      )
+    }
+    catch (error) {
+      console.warn('[Storage] Failed to save, switching to memory mode:', error)
+      this.memoryMode = true
+      this.memoryCache.set(conversation.id, conversation)
     }
   }
 }

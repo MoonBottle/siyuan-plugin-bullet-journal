@@ -3,41 +3,50 @@ import type {
   Habit,
   HabitDayState,
   HabitPeriodState,
-} from '@/types/models';
-import { getHabitRecordStatus, getRecordsForDate, hasMissedRecord } from './habitStatus';
-import { getEbbinghausScheduleState, getHabitPeriod, isDateEligibleForHabit, isEbbinghausDueOnDate } from './habitPeriod';
+} from '@/types/models'
+import {
+  getEbbinghausScheduleState,
+  getHabitPeriod,
+  isDateEligibleForHabit,
+  isEbbinghausDueOnDate,
+} from './habitPeriod'
+import {
+  getHabitRecordStatus,
+  getRecordsForDate,
+  hasMissedRecord,
+} from './habitStatus'
 
 export function isHabitRecordCompleted(record: CheckInRecord, habit: Habit): boolean {
   if (getHabitRecordStatus(record) === 'missed')
-    return false;
+    return false
 
   if (habit.type === 'binary')
-    return true;
+    return true
 
-  const target = habit.target ?? record.targetValue ?? 0;
-  return (record.currentValue ?? 0) >= target;
+  const target = habit.target ?? record.targetValue ?? 0
+  return (record.currentValue ?? 0) >= target
 }
 
 function getBestRecordForDate(habit: Habit, date: string): CheckInRecord | null {
-  const records = getRecordsForDate(habit, date);
+  const records = getRecordsForDate(habit, date)
   if (records.length === 0)
-    return null;
+    return null
 
   if (habit.type === 'binary')
-    return records[0];
+    return records[0]
 
   return records.reduce((best, record) => {
-    const bestValue = best.currentValue ?? 0;
-    const currentValue = record.currentValue ?? 0;
-    return currentValue >= bestValue ? record : best;
-  });
+    const bestValue = best.currentValue ?? 0
+    const currentValue = record.currentValue ?? 0
+    return currentValue >= bestValue ? record : best
+  })
 }
 
 export function getHabitDayState(habit: Habit, date: string): HabitDayState {
-  const records = getRecordsForDate(habit, date);
+  const records = getRecordsForDate(habit, date)
   const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
     ? getEbbinghausScheduleState(habit, date)
-    : null;
+    : null
   if (records.length === 0) {
     return {
       date,
@@ -50,7 +59,7 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
       nextDueDate: ebbinghausState?.nextDueDate,
       currentStageIndex: ebbinghausState?.currentStageIndex,
       currentIntervalDays: ebbinghausState?.currentIntervalDays,
-    };
+    }
   }
 
   if (hasMissedRecord(habit, date)) {
@@ -65,10 +74,10 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
       nextDueDate: ebbinghausState?.nextDueDate,
       currentStageIndex: ebbinghausState?.currentStageIndex,
       currentIntervalDays: ebbinghausState?.currentIntervalDays,
-    };
+    }
   }
 
-  const bestRecord = getBestRecordForDate(habit, date);
+  const bestRecord = getBestRecordForDate(habit, date)
 
   if (!bestRecord) {
     return {
@@ -76,7 +85,7 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
       hasRecord: false,
       isCompleted: false,
       isMissed: false,
-    };
+    }
   }
 
   return {
@@ -92,7 +101,7 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
     currentIntervalDays: ebbinghausState?.currentIntervalDays,
     currentValue: bestRecord.currentValue,
     targetValue: habit.target ?? bestRecord.targetValue,
-  };
+  }
 }
 
 function getCompletedCountInRange(habit: Habit, start: string, end: string): number {
@@ -101,29 +110,29 @@ function getCompletedCountInRange(habit: Habit, start: string, end: string): num
       .filter((record) => {
         return record.date >= start
           && record.date <= end
-          && isDateEligibleForHabit(habit, record.date);
+          && isDateEligibleForHabit(habit, record.date)
       })
-      .map(record => record.date),
-  );
+      .map((record) => record.date),
+  )
 
-  let completedCount = 0;
+  let completedCount = 0
   for (const date of dates) {
     if (getHabitDayState(habit, date).isCompleted)
-      completedCount++;
+      completedCount++
   }
 
-  return completedCount;
+  return completedCount
 }
 
 export function getHabitPeriodState(habit: Habit, date: string): HabitPeriodState {
-  const period = getHabitPeriod(habit, date);
-  const completedCount = getCompletedCountInRange(habit, period.periodStart, period.periodEnd);
-  const requiredCount = period.requiredCount;
-  const normalizedCompletedCount = Math.min(completedCount, requiredCount);
+  const period = getHabitPeriod(habit, date)
+  const completedCount = getCompletedCountInRange(habit, period.periodStart, period.periodEnd)
+  const requiredCount = period.requiredCount
+  const normalizedCompletedCount = Math.min(completedCount, requiredCount)
   const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
     ? getEbbinghausScheduleState(habit, date)
-    : null;
-  const isCompleted = requiredCount > 0 && normalizedCompletedCount >= requiredCount;
+    : null
+  const isCompleted = requiredCount > 0 && normalizedCompletedCount >= requiredCount
 
   return {
     ...period,
@@ -137,5 +146,5 @@ export function getHabitPeriodState(habit: Habit, date: string): HabitPeriodStat
     currentStageIndex: ebbinghausState?.currentStageIndex ?? period.currentStageIndex,
     currentIntervalDays: ebbinghausState?.currentIntervalDays ?? period.currentIntervalDays,
     overdueDays: ebbinghausState?.overdueDays ?? period.overdueDays,
-  };
+  }
 }

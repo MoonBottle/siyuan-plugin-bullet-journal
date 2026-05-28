@@ -1,27 +1,53 @@
 <template>
   <Teleport to="body">
     <Transition name="slide-up">
-      <div v-if="modelValue" class="ios-pomodoro-overlay b3-dialog" @click="closeOnOverlay">
-        <div class="ios-pomodoro-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+      <div
+        v-if="modelValue"
+        class="ios-pomodoro-overlay b3-dialog"
+        @click="closeOnOverlay"
+      >
+        <div
+          class="ios-pomodoro-drawer"
+          style="overscroll-behavior: contain; touch-action: pan-y;"
+          @click.stop
+        >
           <!-- Header -->
           <div class="drawer-header">
             <div class="drag-handle"></div>
             <span class="header-title">{{ t('pomodoro').startFocusTitle }}</span>
-            <button class="close-btn" @click="close">
+            <button
+              class="close-btn"
+              @click="close"
+            >
               <svg><use xlink:href="#iconClose"></use></svg>
             </button>
           </div>
 
           <!-- Content -->
-          <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+          <div
+            class="drawer-content"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+          >
             <!-- Selected Item -->
-            <div v-if="selectedItem" class="selected-item-card">
-              <div class="item-project" v-if="selectedItem.project">
+            <div
+              v-if="selectedItem"
+              class="selected-item-card"
+            >
+              <div
+                v-if="selectedItem.project"
+                class="item-project"
+              >
                 📁 {{ selectedItem.project.name }}
               </div>
-              <div class="item-task" v-if="selectedItem.task">
+              <div
+                v-if="selectedItem.task"
+                class="item-task"
+              >
                 📋 {{ selectedItem.task.name }}
-                <span v-if="selectedItem.task.level" class="level-badge">{{ selectedItem.task.level }}</span>
+                <span
+                  v-if="selectedItem.task.level"
+                  class="level-badge"
+                >{{ selectedItem.task.level }}</span>
               </div>
               <div class="item-content">
                 <span class="status-emoji">{{ getStatusEmoji(selectedItem) }}</span>
@@ -30,19 +56,36 @@
             </div>
 
             <!-- Item Selector (if no preselected item) -->
-            <div v-if="!preselectedBlockId" class="item-selector">
+            <div
+              v-if="!preselectedBlockId"
+              class="item-selector"
+            >
               <div class="selector-header">
-                <div class="selector-label">{{ t('pomodoroDialog').selectItem }}</div>
-                <select v-model="selectedGroup" class="group-select-mobile">
-                  <option v-for="opt in groupOptions" :key="opt.value" :value="opt.value">
+                <div class="selector-label">
+                  {{ t('pomodoroDialog').selectItem }}
+                </div>
+                <select
+                  v-model="selectedGroup"
+                  class="group-select-mobile"
+                >
+                  <option
+                    v-for="opt in groupOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
                     {{ opt.label }}
                   </option>
                 </select>
               </div>
-              
+
               <!-- Expired Items -->
-              <div v-if="expiredItems.length > 0" class="item-section">
-                <div class="section-label">{{ t('pomodoroDialog').expiredItems }}</div>
+              <div
+                v-if="expiredItems.length > 0"
+                class="item-section"
+              >
+                <div class="section-label">
+                  {{ t('pomodoroDialog').expiredItems }}
+                </div>
                 <div
                   v-for="item in expiredItems"
                   :key="item.id"
@@ -57,8 +100,13 @@
               </div>
 
               <!-- Today Items -->
-              <div v-if="todayItems.length > 0" class="item-section">
-                <div class="section-label">{{ t('pomodoroDialog').todayItems }}</div>
+              <div
+                v-if="todayItems.length > 0"
+                class="item-section"
+              >
+                <div class="section-label">
+                  {{ t('pomodoroDialog').todayItems }}
+                </div>
                 <div
                   v-for="item in todayItems"
                   :key="item.id"
@@ -72,14 +120,19 @@
               </div>
 
               <!-- Empty State -->
-              <div v-if="expiredItems.length === 0 && todayItems.length === 0" class="empty-state">
+              <div
+                v-if="expiredItems.length === 0 && todayItems.length === 0"
+                class="empty-state"
+              >
                 {{ t('pomodoroDialog').noItems }}
               </div>
             </div>
 
             <!-- Timer Mode -->
             <div class="timer-mode-section">
-              <div class="mode-label">{{ t('pomodoroDialog').timerMode }}</div>
+              <div class="mode-label">
+                {{ t('pomodoroDialog').timerMode }}
+              </div>
               <div class="mode-segment">
                 <button
                   class="mode-btn"
@@ -99,8 +152,13 @@
             </div>
 
             <!-- Duration Selector (countdown mode only) -->
-            <div v-if="timerMode === 'countdown'" class="duration-section">
-              <div class="duration-label">{{ t('pomodoroDialog').setDuration }}</div>
+            <div
+              v-if="timerMode === 'countdown'"
+              class="duration-section"
+            >
+              <div class="duration-label">
+                {{ t('pomodoroDialog').setDuration }}
+              </div>
               <div class="duration-grid">
                 <button
                   v-for="duration in quickDurations"
@@ -135,7 +193,10 @@
               >
                 {{ t('pomodoroDialog').startFocus }}
               </button>
-              <button class="cancel-btn" @click="close">
+              <button
+                class="cancel-btn"
+                @click="close"
+              >
                 {{ t('pomodoroDialog').cancel }}
               </button>
             </div>
@@ -147,186 +208,201 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useProjectStore, usePomodoroStore, useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import type { Item } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { DOCK_TYPES } from '@/constants';
-import { t } from '@/i18n';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import { DOCK_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 const props = defineProps<{
-  modelValue: boolean;
-  preselectedBlockId?: string;
-  initialGroupId?: string;
-}>();
+  modelValue: boolean
+  preselectedBlockId?: string
+  initialGroupId?: string
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-}>();
+  'update:modelValue': [value: boolean]
+}>()
 
-const plugin = usePlugin() as any;
-const pinia = getSharedPinia();
-const projectStore = pinia ? useProjectStore(pinia) : null;
-const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
-const settingsStore = pinia ? useSettingsStore(pinia) : null;
+const plugin = usePlugin() as any
+const pinia = getSharedPinia()
+const projectStore = pinia ? useProjectStore(pinia) : null
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null
+const settingsStore = pinia ? useSettingsStore(pinia) : null
 
-const selectedItem = ref<Item | null>(null);
-const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
-const currentDate = dayjs().format('YYYY-MM-DD');
+const selectedItem = ref<Item | null>(null)
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown')
+const currentDate = dayjs().format('YYYY-MM-DD')
 
 // 分组筛选
-const selectedGroup = ref(props.initialGroupId ?? '');
+const selectedGroup = ref(props.initialGroupId ?? '')
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
   if (settingsStore) {
-    settingsStore.groups.forEach(g => {
-      options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-    });
+    settingsStore.groups.forEach((g) => {
+      options.push({
+        value: g.id,
+        label: g.name || t('settings').projectGroups.unnamed,
+      })
+    })
   }
-  return options;
-});
+  return options
+})
 
 const quickDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60]
+})
 
 const defaultDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultFocusDuration ?? 25;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultFocusDuration ?? 25
+})
 
-const selectedDuration = ref(defaultDuration.value);
-const customDuration = ref(defaultDuration.value);
+const selectedDuration = ref(defaultDuration.value)
+const customDuration = ref(defaultDuration.value)
 
 const preselectedItem = computed(() => {
-  if (!props.preselectedBlockId || !projectStore) return null;
-  return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
-});
+  if (!props.preselectedBlockId || !projectStore) return null
+  return projectStore.getItemByBlockId(props.preselectedBlockId) || null
+})
 
 const expiredItems = computed(() => {
-  if (!projectStore) return [];
-  const items = projectStore.getExpiredItems(selectedGroup.value);
-  return (items || []).filter((item: Item) => item.status === 'pending');
-});
+  if (!projectStore) return []
+  const items = projectStore.getExpiredItems(selectedGroup.value)
+  return (items || []).filter((item: Item) => item.status === 'pending')
+})
 
 const todayItems = computed(() => {
-  if (!projectStore) return [];
-  const items = projectStore.getFutureItems(selectedGroup.value);
-  return (items || []).filter((item: Item) => item.date === currentDate && item.status === 'pending');
-});
+  if (!projectStore) return []
+  const items = projectStore.getFutureItems(selectedGroup.value)
+  return (items || []).filter((item: Item) => item.date === currentDate && item.status === 'pending')
+})
 
 const selectItem = (item: Item) => {
-  selectedItem.value = item;
-};
+  selectedItem.value = item
+}
 
 const selectDuration = (duration: number) => {
-  selectedDuration.value = duration;
-  customDuration.value = duration;
-};
+  selectedDuration.value = duration
+  customDuration.value = duration
+}
 
 const onCustomDurationChange = () => {
-  let value = customDuration.value;
-  if (value < 1) value = 1;
-  if (value > 180) value = 180;
-  customDuration.value = value;
-  selectedDuration.value = value;
-};
+  let value = customDuration.value
+  if (value < 1) value = 1
+  if (value > 180) value = 180
+  customDuration.value = value
+  selectedDuration.value = value
+}
 
 const formatDate = (dateStr: string): string => {
-  const date = dayjs(dateStr);
-  const today = dayjs();
-  const diff = today.diff(date, 'day');
+  const date = dayjs(dateStr)
+  const today = dayjs()
+  const diff = today.diff(date, 'day')
 
-  if (diff === 1) return t('pomodoroDialog').yesterday;
-  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday;
-  return date.format('MM-DD');
-};
+  if (diff === 1) return t('pomodoroDialog').yesterday
+  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday
+  return date.format('MM-DD')
+}
 
 const getStatusEmoji = (item: Item): string => {
-  if (item.status === 'completed') return '✅';
-  if (item.status === 'abandoned') return '❌';
-  return '⏳';
-};
+  if (item.status === 'completed') return '✅'
+  if (item.status === 'abandoned') return '❌'
+  return '⏳'
+}
 
 const startPomodoro = async () => {
-  if (!selectedItem.value) return;
+  if (!selectedItem.value) return
   if (!pomodoroStore) {
-    console.warn('[MobilePomodoroTimerDrawer] Pinia 未初始化');
-    return;
+    console.warn('[MobilePomodoroTimerDrawer] Pinia 未初始化')
+    return
   }
 
-  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId;
+  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID');
-    return;
+    alert('无法获取事项块ID')
+    return
   }
 
-  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value;
+  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value
 
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
     duration,
     parentBlockId,
     plugin,
-    timerMode.value
-  );
+    timerMode.value,
+  )
 
   if (success) {
-    close();
+    close()
     // 自动切换到番茄 Dock
-    const rightDock = (window as any).siyuan?.layout?.rightDock;
+    const rightDock = (window as any).siyuan?.layout?.rightDock
     if (rightDock) {
-      rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true);
+      rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true)
     }
   }
-};
+}
 
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 
 const closeOnOverlay = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
-    close();
+    close()
   }
-};
+}
 
 onMounted(() => {
   if (preselectedItem.value) {
-    selectedItem.value = preselectedItem.value;
+    selectedItem.value = preselectedItem.value
   } else {
     if (expiredItems.value.length > 0) {
-      selectedItem.value = expiredItems.value[0];
+      selectedItem.value = expiredItems.value[0]
     } else if (todayItems.value.length > 0) {
-      selectedItem.value = todayItems.value[0];
+      selectedItem.value = todayItems.value[0]
     }
   }
-});
+})
 
 watch(defaultDuration, (newVal) => {
-  selectedDuration.value = newVal;
-  customDuration.value = newVal;
-});
+  selectedDuration.value = newVal
+  customDuration.value = newVal
+})
 
 watch(preselectedItem, (newItem) => {
   if (newItem && props.preselectedBlockId) {
-    selectedItem.value = newItem;
+    selectedItem.value = newItem
   }
-});
+})
 
 watch(selectedGroup, () => {
   if (selectedItem.value) {
-    const allItems = [...expiredItems.value, ...todayItems.value];
-    const stillValid = allItems.some(item => item.id === selectedItem.value!.id);
+    const allItems = [...expiredItems.value, ...todayItems.value]
+    const stillValid = allItems.some((item) => item.id === selectedItem.value!.id)
     if (!stillValid) {
-      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null;
+      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null
     }
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

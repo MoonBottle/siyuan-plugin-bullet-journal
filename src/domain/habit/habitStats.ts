@@ -1,212 +1,240 @@
-import type { Habit, HabitStats } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { getHabitDayState, getHabitPeriodState, isHabitRecordCompleted } from './habitCompletion';
-import { getRecordsForDate } from './habitStatus';
-import { getEbbinghausIntervals, getHabitEndDate, getHabitPeriod, isDateEligibleForHabit, isHabitActiveOnDate } from './habitPeriod';
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import dayjs from '@/utils/dayjs'
+import {
+  getHabitDayState,
+  getHabitPeriodState,
+  isHabitRecordCompleted,
+} from './habitCompletion'
+import {
+  getEbbinghausIntervals,
+  getHabitEndDate,
+  getHabitPeriod,
+  isDateEligibleForHabit,
+  isHabitActiveOnDate,
+} from './habitPeriod'
+import { getRecordsForDate } from './habitStatus'
 
-type CompletionWindow = {
-  completedCount: number;
-  expectedCount: number;
-};
+interface CompletionWindow {
+  completedCount: number
+  expectedCount: number
+}
 
 function getUniqueRecordDates(habit: Habit): string[] {
-  return Array.from(new Set(habit.records.map(record => record.date))).sort();
+  return Array.from(new Set(habit.records.map((record) => record.date))).sort()
 }
 
 function getCompletedRecordDates(habit: Habit, startDate?: string, endDate?: string): string[] {
   return getUniqueRecordDates(habit).filter((date) => {
     if (startDate && date < startDate)
-      return false;
+      return false
     if (endDate && date > endDate)
-      return false;
+      return false
 
-    const records = getRecordsForDate(habit, date);
+    const records = getRecordsForDate(habit, date)
     if (habit.type === 'binary')
-      return records.some(record => isHabitRecordCompleted(record, habit));
+      return records.some((record) => isHabitRecordCompleted(record, habit))
 
-    return records.some(record => isHabitRecordCompleted(record, habit));
-  });
+    return records.some((record) => isHabitRecordCompleted(record, habit))
+  })
 }
 
 function getEligibleCompletedDates(habit: Habit, startDate?: string, endDate?: string): string[] {
   return getUniqueRecordDates(habit).filter((date) => {
     if (startDate && date < startDate)
-      return false;
+      return false
     if (endDate && date > endDate)
-      return false;
+      return false
     if (!isDateEligibleForHabit(habit, date))
-      return false;
-    return getHabitDayState(habit, date).isCompleted;
-  });
+      return false
+    return getHabitDayState(habit, date).isCompleted
+  })
 }
 
 function getPeriodStatesUntil(habit: Habit, currentDate: string) {
   const states: Array<{
-    key: string;
-    isCompleted: boolean;
-  }> = [];
-  const visitedPeriods = new Set<string>();
-  let cursor = dayjs(habit.startDate);
-  const endDate = dayjs(currentDate);
+    key: string
+    isCompleted: boolean
+  }> = []
+  const visitedPeriods = new Set<string>()
+  let cursor = dayjs(habit.startDate)
+  const endDate = dayjs(currentDate)
 
   while (cursor.isSame(endDate, 'day') || cursor.isBefore(endDate, 'day')) {
-    const current = cursor.format('YYYY-MM-DD');
+    const current = cursor.format('YYYY-MM-DD')
     if (!isHabitActiveOnDate(habit, current)) {
-      cursor = cursor.add(1, 'day');
-      continue;
+      cursor = cursor.add(1, 'day')
+      continue
     }
 
-    const period = getHabitPeriod(habit, current);
-    const key = `${period.periodType}:${period.periodStart}`;
+    const period = getHabitPeriod(habit, current)
+    const key = `${period.periodType}:${period.periodStart}`
     if (!visitedPeriods.has(key)) {
-      visitedPeriods.add(key);
+      visitedPeriods.add(key)
       states.push({
         key,
         isCompleted: getHabitPeriodState(habit, current).isCompleted,
-      });
+      })
     }
 
-    cursor = cursor.add(1, 'day');
+    cursor = cursor.add(1, 'day')
   }
 
-  return states;
+  return states
 }
 
 function calculateStreaks(habit: Habit, currentDate: string) {
   if (habit.frequency?.type === 'ebbinghaus') {
-    return { currentStreak: 0, longestStreak: 0 };
+    return {
+      currentStreak: 0,
+      longestStreak: 0,
+    }
   }
 
-  const states = getPeriodStatesUntil(habit, currentDate);
-  const completedStates = states.filter(state => state.isCompleted);
+  const states = getPeriodStatesUntil(habit, currentDate)
+  const completedStates = states.filter((state) => state.isCompleted)
   if (completedStates.length === 0) {
-    return { currentStreak: 0, longestStreak: 0 };
+    return {
+      currentStreak: 0,
+      longestStreak: 0,
+    }
   }
 
-  let longestStreak = 0;
-  let tempStreak = 0;
+  let longestStreak = 0
+  let tempStreak = 0
   for (const state of states) {
     if (state.isCompleted) {
-      tempStreak++;
-      longestStreak = Math.max(longestStreak, tempStreak);
+      tempStreak++
+      longestStreak = Math.max(longestStreak, tempStreak)
     }
     else {
-      tempStreak = 0;
+      tempStreak = 0
     }
   }
 
-  let currentStreak = 0;
-  let cursor = states.length - 1;
+  let currentStreak = 0
+  let cursor = states.length - 1
   if (cursor < 0) {
-    return { currentStreak, longestStreak };
+    return {
+      currentStreak,
+      longestStreak,
+    }
   }
 
   if (!states[cursor].isCompleted) {
-    cursor--;
+    cursor--
   }
   if (cursor < 0 || !states[cursor].isCompleted) {
-    return { currentStreak, longestStreak };
+    return {
+      currentStreak,
+      longestStreak,
+    }
   }
 
   while (cursor >= 0 && states[cursor].isCompleted) {
-    currentStreak++;
-    cursor--;
+    currentStreak++
+    cursor--
   }
 
-  return { currentStreak, longestStreak };
+  return {
+    currentStreak,
+    longestStreak,
+  }
 }
 
 function getBestValueByDate(habit: Habit, date: string): number {
   if (habit.type !== 'count')
-    return 0;
+    return 0
 
   return habit.records
-    .filter(record => record.date === date)
-    .reduce((maxValue, record) => Math.max(maxValue, record.currentValue ?? 0), 0);
+    .filter((record) => record.date === date)
+    .reduce((maxValue, record) => Math.max(maxValue, record.currentValue ?? 0), 0)
 }
 
 function getCompletedCountInDateRange(habit: Habit, start: string, end: string): number {
-  return getEligibleCompletedDates(habit, start, end).length;
+  return getEligibleCompletedDates(habit, start, end).length
 }
 
 function countEbbinghausWindowForRange(habit: Habit, start: string, end: string): CompletionWindow {
-  const completedDates = getCompletedRecordDates(habit).filter(date => date <= end);
-  const intervals = getEbbinghausIntervals(habit.frequency);
-  const completedCount = completedDates.filter(date => date >= start && date <= end).length;
+  const completedDates = getCompletedRecordDates(habit).filter((date) => date <= end)
+  const intervals = getEbbinghausIntervals(habit.frequency)
+  const completedCount = completedDates.filter((date) => date >= start && date <= end).length
 
-  let expectedCount = 0;
-  let completionIndex = 0;
-  let currentStageIndex = -1;
-  let nextDueDate = habit.startDate;
+  let expectedCount = 0
+  let completionIndex = 0
+  let currentStageIndex = -1
+  let nextDueDate = habit.startDate
 
   while (nextDueDate <= end) {
     if (nextDueDate >= start) {
-      expectedCount++;
+      expectedCount++
     }
 
     while (completionIndex < completedDates.length && completedDates[completionIndex] < nextDueDate) {
-      completionIndex++;
+      completionIndex++
     }
 
     if (completionIndex >= completedDates.length) {
-      break;
+      break
     }
 
-    const completionDate = completedDates[completionIndex];
+    const completionDate = completedDates[completionIndex]
     if (completionDate > end) {
-      break;
+      break
     }
 
-    currentStageIndex = Math.min(currentStageIndex + 1, intervals.length - 1);
-    nextDueDate = dayjs(completionDate).add(intervals[currentStageIndex], 'day').format('YYYY-MM-DD');
-    completionIndex++;
+    currentStageIndex = Math.min(currentStageIndex + 1, intervals.length - 1)
+    nextDueDate = dayjs(completionDate).add(intervals[currentStageIndex], 'day').format('YYYY-MM-DD')
+    completionIndex++
   }
 
   return {
     completedCount: Math.min(completedCount, expectedCount),
     expectedCount,
-  };
+  }
 }
 
 function countExpectedAndCompletedForRange(habit: Habit, start: string, end: string): CompletionWindow {
   if (habit.frequency?.type === 'ebbinghaus') {
-    return countEbbinghausWindowForRange(habit, start, end);
+    return countEbbinghausWindowForRange(habit, start, end)
   }
 
-  let cursor = dayjs(start);
-  const endDate = dayjs(end);
-  const visitedPeriods = new Set<string>();
-  let completedCount = 0;
-  let expectedCount = 0;
+  let cursor = dayjs(start)
+  const endDate = dayjs(end)
+  const visitedPeriods = new Set<string>()
+  let completedCount = 0
+  let expectedCount = 0
 
   while (cursor.isSame(endDate, 'day') || cursor.isBefore(endDate, 'day')) {
-    const current = cursor.format('YYYY-MM-DD');
+    const current = cursor.format('YYYY-MM-DD')
     if (!isHabitActiveOnDate(habit, current)) {
-      cursor = cursor.add(1, 'day');
-      continue;
+      cursor = cursor.add(1, 'day')
+      continue
     }
 
-    const period = getHabitPeriod(habit, current);
-    const periodKey = `${period.periodType}:${period.periodStart}`;
+    const period = getHabitPeriod(habit, current)
+    const periodKey = `${period.periodType}:${period.periodStart}`
     if (!visitedPeriods.has(periodKey)) {
-      visitedPeriods.add(periodKey);
+      visitedPeriods.add(periodKey)
 
-      const overlapStart = period.periodStart > start ? period.periodStart : start;
-      const overlapEnd = period.periodEnd < end ? period.periodEnd : end;
-      const activeRequiredCount = getActiveRequiredCount(habit, overlapStart, overlapEnd, period.requiredCount);
-      const completedCountInOverlap = getCompletedCountInDateRange(habit, overlapStart, overlapEnd);
+      const overlapStart = period.periodStart > start ? period.periodStart : start
+      const overlapEnd = period.periodEnd < end ? period.periodEnd : end
+      const activeRequiredCount = getActiveRequiredCount(habit, overlapStart, overlapEnd, period.requiredCount)
+      const completedCountInOverlap = getCompletedCountInDateRange(habit, overlapStart, overlapEnd)
 
-      expectedCount += activeRequiredCount;
-      completedCount += Math.min(completedCountInOverlap, activeRequiredCount);
+      expectedCount += activeRequiredCount
+      completedCount += Math.min(completedCountInOverlap, activeRequiredCount)
     }
 
-    cursor = cursor.add(1, 'day');
+    cursor = cursor.add(1, 'day')
   }
 
   return {
     completedCount,
     expectedCount,
-  };
+  }
 }
 
 function getActiveRequiredCount(
@@ -215,59 +243,62 @@ function getActiveRequiredCount(
   end: string,
   fallbackRequiredCount: number,
 ): number {
-  const frequencyType = habit.frequency?.type ?? 'daily';
+  const frequencyType = habit.frequency?.type ?? 'daily'
 
   if (frequencyType === 'daily' || frequencyType === 'weekly_days' || frequencyType === 'every_n_days') {
-    let count = 0;
-    let cursor = dayjs(start);
-    const endDate = dayjs(end);
+    let count = 0
+    let cursor = dayjs(start)
+    const endDate = dayjs(end)
     while (cursor.isSame(endDate, 'day') || cursor.isBefore(endDate, 'day')) {
       if (isDateEligibleForHabit(habit, cursor.format('YYYY-MM-DD')))
-        count++;
-      cursor = cursor.add(1, 'day');
+        count++
+      cursor = cursor.add(1, 'day')
     }
-    return count;
+    return count
   }
 
-  return fallbackRequiredCount;
+  return fallbackRequiredCount
 }
 
 export function calculateHabitStats(habit: Habit, currentDate: string, viewMonth?: string): HabitStats {
-  const completedRecordDates = getCompletedRecordDates(habit);
-  const totalCheckins = completedRecordDates.length;
-  const targetMonth = viewMonth ?? currentDate.slice(0, 7);
-  const monthlyCheckins = completedRecordDates.filter(date => date.startsWith(targetMonth)).length;
+  const completedRecordDates = getCompletedRecordDates(habit)
+  const totalCheckins = completedRecordDates.length
+  const targetMonth = viewMonth ?? currentDate.slice(0, 7)
+  const monthlyCheckins = completedRecordDates.filter((date) => date.startsWith(targetMonth)).length
 
-  const { currentStreak, longestStreak } = calculateStreaks(habit, currentDate);
+  const {
+    currentStreak,
+    longestStreak,
+  } = calculateStreaks(habit, currentDate)
 
-  const overallWindow = countExpectedAndCompletedForRange(habit, habit.startDate, currentDate);
-  const weekStart = dayjs(currentDate).startOf('isoWeek').format('YYYY-MM-DD');
-  const monthStart = `${targetMonth}-01`;
-  const monthEnd = dayjs(`${targetMonth}-01`).endOf('month').format('YYYY-MM-DD');
-  const habitEndDate = getHabitEndDate(habit);
-  const monthlyWindowEnd = habitEndDate && habitEndDate < monthEnd ? habitEndDate : monthEnd;
+  const overallWindow = countExpectedAndCompletedForRange(habit, habit.startDate, currentDate)
+  const weekStart = dayjs(currentDate).startOf('isoWeek').format('YYYY-MM-DD')
+  const monthStart = `${targetMonth}-01`
+  const monthEnd = dayjs(`${targetMonth}-01`).endOf('month').format('YYYY-MM-DD')
+  const habitEndDate = getHabitEndDate(habit)
+  const monthlyWindowEnd = habitEndDate && habitEndDate < monthEnd ? habitEndDate : monthEnd
   const monthlyWindow = countExpectedAndCompletedForRange(
     habit,
     habit.startDate > monthStart ? habit.startDate : monthStart,
     monthlyWindowEnd,
-  );
+  )
   const weeklyWindow = countExpectedAndCompletedForRange(
     habit,
     habit.startDate > weekStart ? habit.startDate : weekStart,
     currentDate,
-  );
+  )
 
-  const uniqueDates = getUniqueRecordDates(habit);
+  const uniqueDates = getUniqueRecordDates(habit)
   const totalValue = habit.type === 'count'
     ? uniqueDates.reduce((sum, date) => sum + getBestValueByDate(habit, date), 0)
-    : undefined;
-  const elapsedDays = dayjs(currentDate).diff(dayjs(habit.startDate), 'day') + 1;
+    : undefined
+  const elapsedDays = dayjs(currentDate).diff(dayjs(habit.startDate), 'day') + 1
   const averageValue = habit.type === 'count' && totalValue !== undefined && elapsedDays > 0
     ? totalValue / elapsedDays
-    : undefined;
+    : undefined
 
-  const isEnded = Boolean(getHabitEndDate(habit) && getHabitEndDate(habit)! <= currentDate);
-  const currentPeriodState = getHabitPeriodState(habit, currentDate);
+  const isEnded = Boolean(getHabitEndDate(habit) && getHabitEndDate(habit)! <= currentDate)
+  const currentPeriodState = getHabitPeriodState(habit, currentDate)
 
   return {
     habitId: habit.blockId,
@@ -283,11 +314,11 @@ export function calculateHabitStats(habit: Habit, currentDate: string, viewMonth
     isEnded,
     isCompleted: isEnded,
     isPeriodCompleted: currentPeriodState.isCompleted,
-  };
+  }
 }
 
 export function calculateAllHabitStats(habits: Habit[], currentDate: string): Map<string, HabitStats> {
-  return new Map(habits.map(habit => [habit.blockId, calculateHabitStats(habit, currentDate)]));
+  return new Map(habits.map((habit) => [habit.blockId, calculateHabitStats(habit, currentDate)]))
 }
 
-export { isHabitRecordCompleted as isRecordCompleted };
+export { isHabitRecordCompleted as isRecordCompleted }

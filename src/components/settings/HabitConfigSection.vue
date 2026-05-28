@@ -1,6 +1,9 @@
 <template>
   <template v-if="!isMobile">
-    <SySettingsSection icon="iconCheck" :title="t('settings').habitSettings.title">
+    <SySettingsSection
+      icon="iconCheck"
+      :title="t('settings').habitSettings.title"
+    >
       <SySettingItemList>
         <SySettingItem
           :label="t('settings').habitSettings.checkInTimePrecision"
@@ -19,16 +22,22 @@
   <template v-else>
     <div class="ios-settings-content">
       <div class="ios-group-header">
-        <div class="header-icon">✅</div>
+        <div class="header-icon">
+          ✅
+        </div>
         <div class="header-info">
-          <div class="header-title">{{ t('settings').habitSettings.title }}</div>
+          <div class="header-title">
+            {{ t('settings').habitSettings.title }}
+          </div>
         </div>
       </div>
 
       <div class="ios-group">
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').habitSettings.checkInTimePrecision }}</div>
+            <div class="cell-title">
+              {{ t('settings').habitSettings.checkInTimePrecision }}
+            </div>
           </div>
           <div class="cell-accessory">
             <select
@@ -46,35 +55,46 @@
             </select>
           </div>
         </div>
-        <div class="cell-footer">{{ t('settings').habitSettings.checkInTimePrecisionDesc }}</div>
+        <div class="cell-footer">
+          {{ t('settings').habitSettings.checkInTimePrecisionDesc }}
+        </div>
       </div>
     </div>
   </template>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
-import type { HabitCheckInTimePrecision } from '@/settings/types';
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import SySettingsSection from './SySettingsSection.vue';
+import type { HabitCheckInTimePrecision } from '@/settings/types'
+import { computed } from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import { t } from '@/i18n'
+import SySettingsSection from './SySettingsSection.vue'
 
 defineProps<{
-  habitCheckInTimePrecision: HabitCheckInTimePrecision;
-  isMobile?: boolean;
-}>();
+  habitCheckInTimePrecision: HabitCheckInTimePrecision
+  isMobile?: boolean
+}>()
 
 defineEmits<{
-  'update:habitCheckInTimePrecision': [value: HabitCheckInTimePrecision];
-}>();
+  'update:habitCheckInTimePrecision': [value: HabitCheckInTimePrecision]
+}>()
 
 const precisionOptions = computed(() => [
-  { value: 'day', label: t('settings').habitSettings.precisionDay },
-  { value: 'minute', label: t('settings').habitSettings.precisionMinute },
-  { value: 'second', label: t('settings').habitSettings.precisionSecond },
-]);
+  {
+    value: 'day',
+    label: t('settings').habitSettings.precisionDay,
+  },
+  {
+    value: 'minute',
+    label: t('settings').habitSettings.precisionMinute,
+  },
+  {
+    value: 'second',
+    label: t('settings').habitSettings.precisionSecond,
+  },
+])
 </script>
 
 <style lang="scss" scoped>

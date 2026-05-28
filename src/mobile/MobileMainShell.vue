@@ -1,5 +1,8 @@
 <template>
-  <div class="mobile-main-shell" data-testid="mobile-main-shell">
+  <div
+    class="mobile-main-shell"
+    data-testid="mobile-main-shell"
+  >
     <main class="mobile-main-shell__content">
       <MobileTodoPanel
         v-if="hasMountedTodoPanel"
@@ -30,74 +33,85 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import VConsole from 'vconsole';
-import MobileBottomTabBar from '@/mobile/components/navigation/MobileBottomTabBar.vue';
-import MobileCreateFab from '@/mobile/components/navigation/MobileCreateFab.vue';
-import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
-import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue';
-import MobileMorePanel from '@/mobile/panels/MobileMorePanel.vue';
-import MobilePomodoroPanel from '@/mobile/panels/MobilePomodoroPanel.vue';
-import MobileTodoPanel from '@/mobile/panels/MobileTodoPanel.vue';
-import { eventBus, Events } from '@/utils/eventBus';
+import type {
+  MobileMainShellNavigationTarget,
+  MobileMainShellTab,
+} from '@/utils/mobileMainShellNavigation'
+import VConsole from 'vconsole'
+import {
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import MobileBottomTabBar from '@/mobile/components/navigation/MobileBottomTabBar.vue'
+import MobileCreateFab from '@/mobile/components/navigation/MobileCreateFab.vue'
+import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue'
+import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue'
+import MobileMorePanel from '@/mobile/panels/MobileMorePanel.vue'
+import MobilePomodoroPanel from '@/mobile/panels/MobilePomodoroPanel.vue'
+import MobileTodoPanel from '@/mobile/panels/MobileTodoPanel.vue'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
 import {
   consumePendingMobileMainShellTabTarget,
-  type MobileMainShellNavigationTarget,
-  type MobileMainShellTab,
-} from '@/utils/mobileMainShellNavigation';
 
-type PomodoroLaunchContext = {
+
+} from '@/utils/mobileMainShellNavigation'
+
+interface PomodoroLaunchContext {
   blockId: string
-};
+}
 
-const activeTab = ref<MobileMainShellTab>('todo');
-const pomodoroContext = ref<PomodoroLaunchContext | null>(null);
-const todoPanelRef = ref<InstanceType<typeof MobileTodoPanel> | null>(null);
-const hasMountedTodoPanel = ref(true);
+const activeTab = ref<MobileMainShellTab>('todo')
+const pomodoroContext = ref<PomodoroLaunchContext | null>(null)
+const todoPanelRef = ref<InstanceType<typeof MobileTodoPanel> | null>(null)
+const hasMountedTodoPanel = ref(true)
 
 function navigateToTab(tab: MobileMainShellTab) {
   if (tab === 'todo') {
-    hasMountedTodoPanel.value = true;
+    hasMountedTodoPanel.value = true
   }
-  activeTab.value = tab;
+  activeTab.value = tab
 }
 
 function handleOpenPomodoro(payload: PomodoroLaunchContext) {
-  pomodoroContext.value = payload;
-  navigateToTab('pomodoro');
+  pomodoroContext.value = payload
+  navigateToTab('pomodoro')
 }
 
 function handleCreate() {
-  todoPanelRef.value?.openQuickCreate();
+  todoPanelRef.value?.openQuickCreate()
 }
 
 function handleShellNavigate(target: MobileMainShellNavigationTarget) {
   if (target.tab === 'pomodoro') {
-    pomodoroContext.value = null;
+    pomodoroContext.value = null
   }
-  navigateToTab(target.tab);
+  navigateToTab(target.tab)
 }
 
-let unsubscribeShellNavigate: (() => void) | null = null;
+let unsubscribeShellNavigate: (() => void) | null = null
 
 onMounted(() => {
-  const pendingTarget = consumePendingMobileMainShellTabTarget();
+  const pendingTarget = consumePendingMobileMainShellTabTarget()
   if (pendingTarget) {
-    handleShellNavigate(pendingTarget);
+    handleShellNavigate(pendingTarget)
   }
-  unsubscribeShellNavigate = eventBus.on(Events.MOBILE_MAIN_SHELL_NAVIGATE, handleShellNavigate);
+  unsubscribeShellNavigate = eventBus.on(Events.MOBILE_MAIN_SHELL_NAVIGATE, handleShellNavigate)
 
   if (process.env.DEV_MODE === 'true') {
-    new VConsole();
+    new VConsole()
   }
-});
+})
 
 onUnmounted(() => {
   if (unsubscribeShellNavigate) {
-    unsubscribeShellNavigate();
-    unsubscribeShellNavigate = null;
+    unsubscribeShellNavigate()
+    unsubscribeShellNavigate = null
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

@@ -1,10 +1,18 @@
 <template>
   <div class="habit-record-log">
-    <div class="habit-record-log__header">{{ headerTitle }}</div>
-    <div v-if="monthlyRecords.length === 0" class="habit-record-log__empty">
+    <div class="habit-record-log__header">
+      {{ headerTitle }}
+    </div>
+    <div
+      v-if="monthlyRecords.length === 0"
+      class="habit-record-log__empty"
+    >
       {{ t('habit').noMonthlyCheckinLog }}
     </div>
-    <div v-else class="habit-record-log__list">
+    <div
+      v-else
+      class="habit-record-log__list"
+    >
       <div
         v-for="record in monthlyRecords"
         :key="record.blockId"
@@ -12,10 +20,15 @@
         :data-testid="`habit-record-log-item-${record.blockId}`"
         @click="handleOpenRecord(record, $event)"
       >
-        <div class="habit-record-log__date">{{ formatRecordDate(record) }}</div>
+        <div class="habit-record-log__date">
+          {{ formatRecordDate(record) }}
+        </div>
         <div class="habit-record-log__content">
           <span class="habit-record-log__text">{{ formatRecordContent(record) }}</span>
-          <span v-if="habit.type === 'count' && record.currentValue !== undefined" class="habit-record-log__count">
+          <span
+            v-if="habit.type === 'count' && record.currentValue !== undefined"
+            class="habit-record-log__count"
+          >
             {{ record.currentValue }}/{{ habit.target || record.targetValue || 0 }}{{ habit.unit || record.unit || '' }}
           </span>
         </div>
@@ -25,56 +38,59 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
-import type { Habit, CheckInRecord } from '@/types/models';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { formatHabitCompletedAtForDisplay } from '@/utils/habitDateTime';
+import type {
+  CheckInRecord,
+  Habit,
+} from '@/types/models'
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores/settingsStore'
+import dayjs from '@/utils/dayjs'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { formatHabitCompletedAtForDisplay } from '@/utils/habitDateTime'
 
-export type HabitRecordLogPreviewPayload = {
-  blockId: string;
-  docId: string;
-  anchorEl: HTMLElement;
-};
+export interface HabitRecordLogPreviewPayload {
+  blockId: string
+  docId: string
+  anchorEl: HTMLElement
+}
 
 const props = defineProps<{
-  habit: Habit;
-  viewMonth: string;
-  previewTriggerMode?: 'document' | 'preview';
-  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
-}>();
+  habit: Habit
+  viewMonth: string
+  previewTriggerMode?: 'document' | 'preview'
+  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void
+}>()
 
-const settingsStore = useSettingsStore();
+const settingsStore = useSettingsStore()
 
 const monthlyRecords = computed(() => {
   return [...(props.habit.records || [])]
-    .filter(record => record.date.startsWith(`${props.viewMonth}-`))
-    .sort((a, b) => b.date.localeCompare(a.date));
-});
+    .filter((record) => record.date.startsWith(`${props.viewMonth}-`))
+    .sort((a, b) => b.date.localeCompare(a.date))
+})
 
 const headerTitle = computed(() => {
-  const month = dayjs(`${props.viewMonth}-01`).format('M');
-  return t('habit').monthlyCheckinLog.replace('{month}', month);
-});
+  const month = dayjs(`${props.viewMonth}-01`).format('M')
+  return t('habit').monthlyCheckinLog.replace('{month}', month)
+})
 
 function formatRecordDate(record: CheckInRecord): string {
   return formatHabitCompletedAtForDisplay(
     record.completedAt || record.date,
     settingsStore.habitCheckInTimePrecision || 'day',
-  );
+  )
 }
 
 function formatRecordContent(record: CheckInRecord): string {
   return record.status === 'missed'
     ? `${record.content} ❌`
-    : record.content;
+    : record.content
 }
 
 async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {
   if (!record.docId || !record.blockId) {
-    return;
+    return
   }
 
   if (props.previewTriggerMode === 'preview') {
@@ -82,11 +98,11 @@ async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {
       blockId: record.blockId,
       docId: record.docId,
       anchorEl: event.currentTarget as HTMLElement,
-    }, event);
-    return;
+    }, event)
+    return
   }
 
-  await openDocumentAtLine(record.docId, undefined, record.blockId);
+  await openDocumentAtLine(record.docId, undefined, record.blockId)
 }
 </script>
 
@@ -164,5 +180,4 @@ async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {
   color: var(--b3-theme-on-surface-light);
   white-space: nowrap;
 }
-
 </style>

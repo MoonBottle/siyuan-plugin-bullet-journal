@@ -13,6 +13,7 @@
 ### Task 1: Add POMODORO_AUTO_EXTENDED event
 
 **Files:**
+
 - Modify: `src/utils/eventBus.ts:74-91`
 
 - [ ] **Step 1: Add new event constant**
@@ -35,6 +36,7 @@ git commit -m "feat: add POMODORO_AUTO_EXTENDED event"
 ### Task 2: Add settings fields and i18n
 
 **Files:**
+
 - Modify: `src/settings/types.ts:17-25,58-66`
 - Modify: `src/i18n/zh_CN.json` (add keys after `minFocusMinutesDesc` line)
 - Modify: `src/i18n/en_US.json` (add keys after `minFocusMinutesDesc` line)
@@ -108,6 +110,7 @@ git commit -m "feat: add auto-extend pomodoro settings and i18n"
 ### Task 3: Add settings UI
 
 **Files:**
+
 - Modify: `src/components/settings/PomodoroConfigSection.vue`
 
 - [ ] **Step 1: Add setting items to template**
@@ -115,53 +118,54 @@ git commit -m "feat: add auto-extend pomodoro settings and i18n"
 In `src/components/settings/PomodoroConfigSection.vue`, add after the `minFocusMinutes` SySettingItem block (after the `</SySettingItem>` that contains the minFocusMinutes input, around line 50, before `</SySettingItemList>`):
 
 ```html
-      <SySettingItem
-        :label="t('settings').pomodoro.autoExtendEnabled"
-        :description="t('settings').pomodoro.autoExtendEnabledDesc"
-      >
-        <SySwitch v-model="pomodoro.autoExtendEnabled" />
-      </SySettingItem>
-      <template v-if="pomodoro.autoExtendEnabled">
-        <SySettingItem
-          :label="t('settings').pomodoro.autoExtendWaitSeconds"
-          :description="t('settings').pomodoro.autoExtendWaitSecondsDesc"
-        >
-          <input
-            type="number"
-            class="b3-text-field fn__flex-center fn__size200"
-            :value="pomodoro.autoExtendWaitSeconds ?? 30"
-            @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value)"
-            min="10"
-            max="300"
-          />
-        </SySettingItem>
-        <SySettingItem
-          :label="t('settings').pomodoro.autoExtendMinutes"
-          :description="t('settings').pomodoro.autoExtendMinutesDesc"
-        >
-          <input
-            type="number"
-            class="b3-text-field fn__flex-center fn__size200"
-            :value="pomodoro.autoExtendMinutes ?? 5"
-            @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value)"
-            min="1"
-            max="60"
-          />
-        </SySettingItem>
-        <SySettingItem
-          :label="t('settings').pomodoro.autoExtendMaxCount"
-          :description="t('settings').pomodoro.autoExtendMaxCountDesc"
-        >
-          <input
-            type="number"
-            class="b3-text-field fn__flex-center fn__size200"
-            :value="pomodoro.autoExtendMaxCount ?? 3"
-            @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value)"
-            min="1"
-            max="10"
-          />
-        </SySettingItem>
-      </template>
+<SySettingItem
+  :label="t('settings').pomodoro.autoExtendEnabled"
+  :description="t('settings').pomodoro.autoExtendEnabledDesc"
+>
+  <SySwitch v-model="pomodoro.autoExtendEnabled" />
+</SySettingItem>
+<template v-if="pomodoro.autoExtendEnabled">
+  <SySettingItem
+    :label="t('settings').pomodoro.autoExtendWaitSeconds"
+    :description="t('settings').pomodoro.autoExtendWaitSecondsDesc"
+  >
+    <input
+      type="number"
+      class="b3-text-field fn__flex-center fn__size200"
+      :value="pomodoro.autoExtendWaitSeconds ?? 30"
+      @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value)"
+      min="10"
+      max="300"
+    />
+  </SySettingItem>
+  <SySettingItem
+    :label="t('settings').pomodoro.autoExtendMinutes"
+    :description="t('settings').pomodoro.autoExtendMinutesDesc"
+  >
+    <input
+      type="number"
+      class="b3-text-field fn__flex-center fn__size200"
+      :value="pomodoro.autoExtendMinutes ?? 5"
+      @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value)"
+      min="1"
+      max="60"
+    />
+  </SySettingItem>
+  <SySettingItem
+    :label="t('settings').pomodoro.autoExtendMaxCount"
+    :description="t('settings').pomodoro.autoExtendMaxCountDesc"
+  >
+    <input
+      type="number"
+      class="b3-text-field fn__flex-center fn__size200"
+      :value="pomodoro.autoExtendMaxCount ?? 3"
+      @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value)"
+      min="1"
+      max="10"
+    />
+  </SySettingItem>
+</template>
+
 ```
 
 - [ ] **Step 2: Verify build**
@@ -181,6 +185,7 @@ git commit -m "feat: add auto-extend settings UI in PomodoroConfigSection"
 ### Task 4: Add auto-extend logic to pomodoroStore
 
 **Files:**
+
 - Modify: `src/stores/pomodoroStore.ts`
 
 This is the core task. Changes to the store:
@@ -198,15 +203,15 @@ In `src/stores/pomodoroStore.ts`, update the import from `@/utils/pomodoroStorag
 
 ```ts
 import {
-  saveActivePomodoro,
   loadActivePomodoro,
-  removeActivePomodoro,
-  savePendingCompletion,
   loadPendingCompletion,
+  removeActiveBreak,
+  removeActivePomodoro,
   removePendingCompletion,
   saveActiveBreak,
-  removeActiveBreak
-} from '@/utils/pomodoroStorage';
+  saveActivePomodoro,
+  savePendingCompletion
+} from '@/utils/pomodoroStorage'
 ```
 
 - [ ] **Step 2: Add state fields**
@@ -214,9 +219,9 @@ import {
 In the `PomodoroState` interface (lines 27-39), add after `isBreakOverlayVisible: boolean;`:
 
 ```ts
-  // 自动延迟状态（不持久化）
-  autoExtendCount: number;
-  autoExtendTimeoutId: ReturnType<typeof setTimeout> | null;
+// 自动延迟状态（不持久化）
+autoExtendCount: number
+autoExtendTimeoutId: ReturnType<typeof setTimeout> | null
 ```
 
 In the `state()` return object (lines 42-52), add after `isBreakOverlayVisible: false`:
@@ -231,9 +236,9 @@ In the `state()` return object (lines 42-52), add after `isBreakOverlayVisible: 
 In `startPomodoro()` action (around line 83, after `try {`), add as the first line inside the try block:
 
 ```ts
-      // 重置自动延迟计数
-      this.autoExtendCount = 0;
-      this.cancelAutoExtend();
+// 重置自动延迟计数
+this.autoExtendCount = 0
+this.cancelAutoExtend()
 ```
 
 - [ ] **Step 4: Modify completePomodoro to start auto-extend timer**
@@ -241,8 +246,8 @@ In `startPomodoro()` action (around line 83, after `try {`), add as the first li
 In `completePomodoro()` action, after `eventBus.emit(Events.POMODORO_PENDING_COMPLETION, pending);` (line 468), add:
 
 ```ts
-        // 启动自动延迟倒计时（如果开启）
-        this.scheduleAutoExtend(pluginToUse);
+// 启动自动延迟倒计时（如果开启）
+this.scheduleAutoExtend(pluginToUse)
 ```
 
 - [ ] **Step 5: Add scheduleAutoExtend action**
@@ -364,8 +369,8 @@ Add after `autoExtendPomodoro`:
 In `savePomodoroRecordFromPending()` action, add at the beginning (after the `try {`):
 
 ```ts
-        // 用户确认保存，取消自动延迟
-        this.cancelAutoExtend();
+// 用户确认保存，取消自动延迟
+this.cancelAutoExtend()
 ```
 
 - [ ] **Step 9: Verify build**
@@ -385,6 +390,7 @@ git commit -m "feat: add auto-extend logic to pomodoroStore"
 ### Task 5: Update PomodoroCompleteDialog to handle auto-extend
 
 **Files:**
+
 - Modify: `src/components/pomodoro/PomodoroCompleteDialog.vue`
 
 - [ ] **Step 1: Add eventBus import and Events**
@@ -392,7 +398,7 @@ git commit -m "feat: add auto-extend logic to pomodoroStore"
 Update the imports at the top of the `<script setup>` block. Add after `import { t } from '@/i18n';`:
 
 ```ts
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus'
 ```
 
 - [ ] **Step 2: Add skipAutoSave ref and event listener**
@@ -400,13 +406,13 @@ import { eventBus, Events } from '@/utils/eventBus';
 After `const discarded = ref(false);` (line 161), add:
 
 ```ts
-const skipAutoSave = ref(false);
+const skipAutoSave = ref(false)
 
 // 监听自动延迟事件，关闭弹窗并跳过自动保存
 const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-  skipAutoSave.value = true;
-  props.closeDialog();
-});
+  skipAutoSave.value = true
+  props.closeDialog()
+})
 ```
 
 - [ ] **Step 3: Update onBeforeUnmount to skip auto-save**
@@ -416,16 +422,16 @@ Replace the existing `onBeforeUnmount` block (lines 225-239):
 ```ts
 onBeforeUnmount(async () => {
   // 清理自动延迟事件监听
-  unsubscribeAutoExtend();
+  unsubscribeAutoExtend()
 
   // 自动延迟关闭时不保存
   if (skipAutoSave.value) {
-    return;
+    return
   }
 
   // 如果用户选择不记录，则不保存
   if (discarded.value) {
-    return;
+    return
   }
   // 正常情况：未保存且专注时长足够，自动保存
   if (!saved.value && props.pending && !isDurationTooShort.value) {
@@ -433,10 +439,10 @@ onBeforeUnmount(async () => {
       plugin,
       props.pending,
       description.value
-    );
+    )
   }
   // 如果时长过短且未保存也未丢弃，则不自动保存（让用户决定）
-});
+})
 ```
 
 - [ ] **Step 4: Verify build**
@@ -456,6 +462,7 @@ git commit -m "feat: PomodoroCompleteDialog handles auto-extend event"
 ### Task 6: Update PomodoroDock to handle auto-extend event
 
 **Files:**
+
 - Modify: `src/tabs/PomodoroDock.vue`
 
 The PomodoroDock's `openCompleteDialog` function creates a SiYuan Dialog. We need to listen for `POMODORO_AUTO_EXTENDED` and destroy it.
@@ -465,19 +472,19 @@ The PomodoroDock's `openCompleteDialog` function creates a SiYuan Dialog. We nee
 In `src/tabs/PomodoroDock.vue`, find the `openCompleteDialog` function. After the `setTimeout` block that mounts the Vue app (around line 142, after the `}, 0);`), add:
 
 ```ts
-  // 监听自动延迟事件，关闭完成弹窗
-  const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-    closeCompleteDialog();
-  });
+// 监听自动延迟事件，关闭完成弹窗
+const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
+  closeCompleteDialog()
+})
 
-  // 将取消订阅存储以便在对话框关闭时清理
-  const originalDestroyCallback = completeDialog.destroy;
-  // 注意：Dialog 的 destroyCallback 已在上方定义，我们在 closeCompleteDialog 中处理清理
-  // 由于 closeCompleteDialog 已经会 destroy 对话框，
-  // 我们需要在 completeDialog 被销毁时取消订阅
-  const originalCloseCompleteDialog = closeCompleteDialog;
-  // 替换为带清理的版本（直接在下方重新定义不可行，因为 closeCompleteDialog 是 const）
-  // 改为在 destroyCallback 中处理
+// 将取消订阅存储以便在对话框关闭时清理
+const originalDestroyCallback = completeDialog.destroy
+// 注意：Dialog 的 destroyCallback 已在上方定义，我们在 closeCompleteDialog 中处理清理
+// 由于 closeCompleteDialog 已经会 destroy 对话框，
+// 我们需要在 completeDialog 被销毁时取消订阅
+const originalCloseCompleteDialog = closeCompleteDialog
+// 替换为带清理的版本（直接在下方重新定义不可行，因为 closeCompleteDialog 是 const）
+// 改为在 destroyCallback 中处理
 ```
 
 Wait, this approach is getting complicated because `closeCompleteDialog` is a `const`. Let me rethink.
@@ -487,16 +494,16 @@ Actually, the simplest approach: add the event listener INSIDE the `destroyCallb
 Find the variable declarations at the top of the `<script setup>` block (around line 94-95) and add:
 
 ```ts
-let unsubscribeAutoExtendCompleteDialog: (() => void) | null = null;
+const unsubscribeAutoExtendCompleteDialog: (() => void) | null = null
 ```
 
 Then in `openCompleteDialog`, after creating the dialog (after `completeDialog = new Dialog({...})`), add:
 
 ```ts
-  // 监听自动延迟事件
-  unsubscribeAutoExtendCompleteDialog = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-    closeCompleteDialog();
-  });
+// 监听自动延迟事件
+unsubscribeAutoExtendCompleteDialog = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
+  closeCompleteDialog()
+})
 ```
 
 And in `closeCompleteDialog`, add cleanup at the beginning:
@@ -527,6 +534,7 @@ git commit -m "feat: PomodoroDock closes complete dialog on auto-extend"
 ### Task 7: Update dialog.ts showPomodoroCompleteDialog to handle auto-extend
 
 **Files:**
+
 - Modify: `src/utils/dialog.ts:563-599`
 
 - [ ] **Step 1: Add event listener in showPomodoroCompleteDialog**
@@ -534,23 +542,23 @@ git commit -m "feat: PomodoroDock closes complete dialog on auto-extend"
 Find `showPomodoroCompleteDialog` function (around line 563). After the `setTimeout` block that mounts the Vue app (after line 596), add the auto-extend listener:
 
 ```ts
-  // 监听自动延迟事件，关闭弹窗
-  const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-    closeDialog();
-  });
+// 监听自动延迟事件，关闭弹窗
+const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
+  closeDialog()
+})
 
-  // 覆盖 destroyCallback 以同时清理事件监听
-  const originalDestroy = dialog.destroy.bind(dialog);
-  dialog.destroy = () => {
-    unsubscribeAutoExtend();
-    originalDestroy();
-  };
+// 覆盖 destroyCallback 以同时清理事件监听
+const originalDestroy = dialog.destroy.bind(dialog)
+dialog.destroy = () => {
+  unsubscribeAutoExtend()
+  originalDestroy()
+}
 ```
 
 Make sure `eventBus` and `Events` are imported at the top of the file. Check if they already are:
 
 ```ts
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus'
 ```
 
 If not present, add this import.
@@ -589,6 +597,7 @@ Expected: No errors (or only pre-existing eslint config issue)
 - [ ] **Step 4: Verify all spec requirements are covered**
 
 Check that each spec requirement has a corresponding implementation:
+
 - [x] 4 config fields in PomodoroSettings
 - [x] completePomodoro starts auto-extend timer
 - [x] autoExtendPomodoro creates new active pomodoro from pending

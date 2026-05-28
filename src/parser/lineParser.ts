@@ -3,42 +3,62 @@
  * 从 obsidian-hk-work-plugin 移植
  */
 import type {
-  Task,
   Item,
-  Link,
+  ItemDateTimeInfo,
   ItemStatus,
+  Link,
   PomodoroRecord,
   PomodoroStatus,
+  Task,
   TimePrecision,
-  ItemDateTimeInfo,
-} from '@/types/models';
-import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
-import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
-import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
-import { parsePinnedFromLine, stripPinnedMarker } from './pinParser';
-import { parseTagsFromLine, stripTagsFromLine } from './tagParser';
-import { extractFocusPlanMarkers, stripFocusPlanMarkers } from './focusPlanParser';
-import { processLineText } from '@/utils/stringUtils';
-import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
+} from '@/types/models'
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants'
+import { processLineText } from '@/utils/stringUtils'
+import {
+  extractFocusPlanMarkers,
+  stripFocusPlanMarkers,
+} from './focusPlanParser'
+import {
+  parsePinnedFromLine,
+  stripPinnedMarker,
+} from './pinParser'
+import {
+  parsePriorityFromLine,
+  stripPriorityMarker,
+} from './priorityParser'
+import {
+  hasRepeatRule,
+  parseEndCondition,
+  parseRepeatRule,
+  stripRecurringMarkers,
+} from './recurringParser'
+import {
+  parseReminderFromLine,
+  stripReminderMarker,
+} from './reminderParser'
+import {
+  parseTagsFromLine,
+  stripTagsFromLine,
+} from './tagParser'
 
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
-const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
-const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
-const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
-const DATE_WITH_OPTIONAL_TIME_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`;
-const STATUS_TAG_BOUNDARY = '(?=$|[\\s#.,，。！？；：、)\\]】」』}）〕〗〙〛])';
-const COMPLETED_STATUS_TAG_REGEX = new RegExp(`#done${STATUS_TAG_BOUNDARY}|#已完成${STATUS_TAG_BOUNDARY}`, 'u');
-const ABANDONED_STATUS_TAG_REGEX = new RegExp(`#abandoned${STATUS_TAG_BOUNDARY}|#已放弃${STATUS_TAG_BOUNDARY}`, 'u');
-const STATUS_TAGS_STRIP_REGEX = new RegExp(`(#done|#abandoned|#已完成|#已放弃)${STATUS_TAG_BOUNDARY}`, 'gu');
+const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g
+const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?'
+const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`
+const DATE_WITH_OPTIONAL_TIME_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`
+const STATUS_TAG_BOUNDARY = '(?=$|[\\s#.,，。！？；：、)\\]】」』}）〕〗〙〛])'
+const COMPLETED_STATUS_TAG_REGEX = new RegExp(`#done${STATUS_TAG_BOUNDARY}|#已完成${STATUS_TAG_BOUNDARY}`, 'u')
+const ABANDONED_STATUS_TAG_REGEX = new RegExp(`#abandoned${STATUS_TAG_BOUNDARY}|#已放弃${STATUS_TAG_BOUNDARY}`, 'u')
+const STATUS_TAGS_STRIP_REGEX = new RegExp(`(#done|#abandoned|#已完成|#已放弃)${STATUS_TAG_BOUNDARY}`, 'gu')
 
 export function inferLinkType(url: string): Link['type'] {
   if (url.startsWith('siyuan://')) {
-    return 'siyuan';
+    return 'siyuan'
   }
   if (url.startsWith('assets/')) {
-    return 'attachment';
+    return 'attachment'
   }
-  return 'external';
+  return 'external'
 }
 
 export function createLink(name: string, url: string, type?: Link['type'], blockId?: string): Link {
@@ -46,17 +66,17 @@ export function createLink(name: string, url: string, type?: Link['type'], block
     name,
     url,
     type: type ?? inferLinkType(url),
-    ...(blockId ? { blockId } : {})
-  };
+    ...(blockId ? { blockId } : {}),
+  }
 }
 
 export function isStandaloneBlockRefLine(text: string): boolean {
-  if (!text.trim()) return false;
-  const remainder = text.replace(BLOCK_REF_REGEX, '').trim();
-  BLOCK_REF_REGEX.lastIndex = 0;
-  const hasBlockRef = BLOCK_REF_REGEX.test(text);
-  BLOCK_REF_REGEX.lastIndex = 0;
-  return remainder.length === 0 && hasBlockRef;
+  if (!text.trim()) return false
+  const remainder = text.replace(BLOCK_REF_REGEX, '').trim()
+  BLOCK_REF_REGEX.lastIndex = 0
+  const hasBlockRef = BLOCK_REF_REGEX.test(text)
+  BLOCK_REF_REGEX.lastIndex = 0
+  return remainder.length === 0 && hasBlockRef
 }
 
 /**
@@ -64,34 +84,37 @@ export function isStandaloneBlockRefLine(text: string): boolean {
  * @param text 原始文本
  * @returns stripped 移除/替换块引用后的文本，links 解析出的 Link 数组
  */
-export function parseBlockRefs(text: string): { stripped: string; links: Link[] } {
-  const links: Link[] = [];
+export function parseBlockRefs(text: string): { stripped: string, links: Link[] } {
+  const links: Link[] = []
   const stripped = text.replace(BLOCK_REF_REGEX, (_, blockId, aliasDouble, aliasSingle) => {
-    const alias = aliasDouble ?? aliasSingle ?? undefined;
-    links.push(createLink(alias || '块引用', `siyuan://blocks/${blockId}`, 'block-ref'));
-    return alias ?? '';
-  });
+    const alias = aliasDouble ?? aliasSingle ?? undefined
+    links.push(createLink(alias || '块引用', `siyuan://blocks/${blockId}`, 'block-ref'))
+    return alias ?? ''
+  })
   // 保留换行符，只将非换行的连续空白字符替换为单个空格
-  return { stripped: stripped.trim().replace(/[ \t]+/g, ' '), links };
+  return {
+    stripped: stripped.trim().replace(/[ \t]+/g, ' '),
+    links,
+  }
 }
 
 function stripBlockRefsForMetadata(text: string): string {
-  return text.replace(BLOCK_REF_REGEX, '');
+  return text.replace(BLOCK_REF_REGEX, '')
 }
 
 function protectBlockRefs(text: string, transform: (maskedText: string) => string): string {
-  const protectedRefs: string[] = [];
+  const protectedRefs: string[] = []
   const masked = text.replace(BLOCK_REF_REGEX, (match) => {
-    const token = `__BLOCK_REF_${protectedRefs.length}__`;
-    protectedRefs.push(match);
-    return token;
-  });
+    const token = `__BLOCK_REF_${protectedRefs.length}__`
+    protectedRefs.push(match)
+    return token
+  })
 
-  let restored = transform(masked);
+  let restored = transform(masked)
   protectedRefs.forEach((blockRef, index) => {
-    restored = restored.replace(`__BLOCK_REF_${index}__`, blockRef);
-  });
-  return restored;
+    restored = restored.replace(`__BLOCK_REF_${index}__`, blockRef)
+  })
+  return restored
 }
 
 export class LineParser {
@@ -101,33 +124,33 @@ export class LineParser {
    */
   public static parseTaskLine(line: string, lineNumber: number): Task {
     // 解析任务级别 @L1 @L2 @L3
-    const levelMatch = line.match(/@L([123])/);
-    const level = levelMatch ? `L${levelMatch[1]}` as 'L1' | 'L2' | 'L3' : 'L1';
+    const levelMatch = line.match(/@L([123])/)
+    const level = levelMatch ? `L${levelMatch[1]}` as 'L1' | 'L2' | 'L3' : 'L1'
 
     // 解析日期 @YYYY-MM-DD 或 📅YYYY-MM-DD
-    const dateMatch = line.match(/@(\d{4}-\d{2}-\d{2})/) || line.match(/📅(\d{4}-\d{2}-\d{2})/);
-    const date = dateMatch ? dateMatch[1] : undefined;
+    const dateMatch = line.match(/@(\d{4}-\d{2}-\d{2})/) || line.match(/📅(\d{4}-\d{2}-\d{2})/)
+    const date = dateMatch ? dateMatch[1] : undefined
 
     // 解析时间范围 @YYYY-MM-DD HH:mm:ss~HH:mm:ss
     const timeRangeMatch = line.match(
-      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})~(${TIME_PART_PATTERN})`)
-    );
+      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})~(${TIME_PART_PATTERN})`),
+    )
 
     // 解析单个时间 @YYYY-MM-DD HH:mm:ss
     const singleTimeMatch = line.match(
-      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})(?!~)`)
-    );
+      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})(?!~)`),
+    )
 
     // 解析链接（支持多个）
-    const links: Link[] = [];
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    let urlMatch;
+    const links: Link[] = []
+    const urlRegex = /(https?:\/\/\S+)/g
+    let urlMatch
     while ((urlMatch = urlRegex.exec(line)) !== null) {
-      links.push(createLink('链接', urlMatch[1]));
+      links.push(createLink('链接', urlMatch[1]))
     }
 
     // 解析业务标签
-    const tags = parseTagsFromLine(line);
+    const tags = parseTagsFromLine(line)
 
     // 提取任务名称（移除所有标记）
     // 注意：思源 Kramdown 中 #任务 会显示为 #任务#（末尾多一个 #）
@@ -139,15 +162,18 @@ export class LineParser {
       .replace(/📋/g, '')
       .replace(/@L[123]/g, '')
       .replace(new RegExp(DATE_WITH_OPTIONAL_TIME_PATTERN, 'g'), '')
-      .replace(/https?:\/\/[^\s]+/g, '');
+      .replace(/https?:\/\/\S+/g, '')
     // 移除业务标签（保留系统保留标签）
-    name = stripTagsFromLine(name);
-    name = name.trim();
+    name = stripTagsFromLine(name)
+    name = name.trim()
 
     // 解析块引用：strip 显示名，提取到 links
-    const { stripped: nameStripped, links: blockRefLinks } = parseBlockRefs(name);
-    name = nameStripped;
-    const allLinks = [...blockRefLinks, ...links];
+    const {
+      stripped: nameStripped,
+      links: blockRefLinks,
+    } = parseBlockRefs(name)
+    name = nameStripped
+    const allLinks = [...blockRefLinks, ...links]
 
     return {
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -166,7 +192,7 @@ export class LineParser {
       items: [],
       lineNumber,
       tags: tags.length > 0 ? tags : undefined,
-    };
+    }
   }
 
   /**
@@ -183,173 +209,186 @@ export class LineParser {
    */
   public static parseItemLine(line: string, lineNumber: number, links?: Link[]): Item[] {
     // 必须包含日期标记（支持 @ 或 📅 前缀）
-    if (!line.match(/@\d{4}-\d{2}-\d{2}/) && !line.match(/📅\d{4}-\d{2}-\d{2}/)) {
-      return [];
+    if (!/@\d{4}-\d{2}-\d{2}/.test(line) && !/📅\d{4}-\d{2}-\d{2}/.test(line)) {
+      return []
     }
 
     // 解析提醒配置
-    const reminder = parseReminderFromLine(line);
+    const reminder = parseReminderFromLine(line)
 
     // 解析优先级
-    const priority = parsePriorityFromLine(line);
+    const priority = parsePriorityFromLine(line)
 
     // 解析置顶和业务标签（每行只解析一次，应用到所有展开项）
-    const metadataLine = stripBlockRefsForMetadata(line);
-    const pinned = parsePinnedFromLine(metadataLine);
-    const tags = parseTagsFromLine(metadataLine);
-    const focusPlanResult = extractFocusPlanMarkers(metadataLine);
+    const metadataLine = stripBlockRefsForMetadata(line)
+    const pinned = parsePinnedFromLine(metadataLine)
+    const tags = parseTagsFromLine(metadataLine)
+    const focusPlanResult = extractFocusPlanMarkers(metadataLine)
 
     // 解析重复规则（多日期与重复互斥时优先多日期）
     // 匹配多日期：
     // 1. 逗号分隔：@日期, 或 📅日期, 或 @日期， 或 📅日期，
     // 2. 日期范围：@日期~日期 或 📅日期~日期（波浪号后面必须是日期格式，避免误匹配时间范围 09:00:00~10:00:00）
-    const hasMultipleDates = line.match(/(?:@|📅)\d{4}-\d{2}-\d{2}[^\w]*[,，]|(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})/);
-    const repeatRule = (!hasMultipleDates && hasRepeatRule(line)) ? parseRepeatRule(line) : undefined;
-    const endCondition = repeatRule ? parseEndCondition(line) : undefined;
+    const hasMultipleDates = line.match(/(?:@|📅)\d{4}-\d{2}-\d{2}\W*[,，]|(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})/)
+    const repeatRule = (!hasMultipleDates && hasRepeatRule(line)) ? parseRepeatRule(line) : undefined
+    const endCondition = repeatRule ? parseEndCondition(line) : undefined
 
     // 解析任务列表标记 [ ] [x] [X]（在去除块属性后解析）
-    let taskListStatus: ItemStatus | null = null;
-    const taskListMatch = metadataLine.match(/\[([ xX])\]/);
+    let taskListStatus: ItemStatus | null = null
+    const taskListMatch = metadataLine.match(/\[([ x])\]/i)
     if (taskListMatch) {
-      const taskListMarker = taskListMatch[1];
+      const taskListMarker = taskListMatch[1]
       if (taskListMarker === 'x' || taskListMarker === 'X') {
-        taskListStatus = 'completed';
+        taskListStatus = 'completed'
       } else {
-        taskListStatus = 'pending';
+        taskListStatus = 'pending'
       }
     }
 
     // 解析状态标签（中英文 + Emoji 兼容）- 优先级高于任务列表标记
-    let status: ItemStatus = 'pending';
+    let status: ItemStatus = 'pending'
     if (COMPLETED_STATUS_TAG_REGEX.test(metadataLine) || metadataLine.includes('✅')) {
-      status = 'completed';
+      status = 'completed'
     } else if (ABANDONED_STATUS_TAG_REGEX.test(metadataLine) || metadataLine.includes('❌')) {
-      status = 'abandoned';
+      status = 'abandoned'
     } else if (taskListStatus) {
       // 没有状态标签时，使用任务列表状态
-      status = taskListStatus;
+      status = taskListStatus
     }
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
     // 使用英文逗号处理日期分隔，但保留原始行用于内容提取
     // 将中文逗号替换为英文逗号，便于统一处理
-    const normalizedLineForDates = line.replace(/，/g, ',');
+    const normalizedLineForDates = line.replace(/，/g, ',')
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
-    const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLineForDates);
-    if (dateTimeExpressions.length === 0) return [];
+    const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLineForDates)
+    if (dateTimeExpressions.length === 0) return []
 
     // 提取内容（在规范化 line 上移除所有日期时间表达式、状态标签和任务列表标记）
     // 使用规范化 line 以确保 fullMatch 能正确匹配（中文逗号已转为英文逗号）
-    let content = normalizedLineForDates;
+    let content = normalizedLineForDates
 
     // 移除行首 Markdown 标题标记（# ... ######）
-    content = content.replace(/^#{1,6}\s+/, '');
+    content = content.replace(/^#{1,6}\s+/, '')
 
     for (const expr of dateTimeExpressions) {
       // 直接移除 fullMatch（使用字符串替换，避免正则特殊字符问题）
-      content = content.split(expr.fullMatch).join('');
+      content = content.split(expr.fullMatch).join('')
     }
     // 移除所有标记（使用规范化字符串处理 Emoji）
     content = protectBlockRefs(content, (maskedContent) => {
       let cleanedContent = maskedContent
         .replace(STATUS_TAGS_STRIP_REGEX, '')
-        .replace(/[✅❌📅📋]/gu, '')  // 移除 Emoji 标记
-        .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
-        .trim();
+        .replace(/[✅❌📅📋]/gu, '') // 移除 Emoji 标记
+        .replace(/\[([ x])\]\s*/i, '') // 移除任务列表标记 [ ] [x] [X] 及其后的空格
+        .trim()
 
       // 移除提醒标记
-      cleanedContent = stripReminderMarker(cleanedContent);
+      cleanedContent = stripReminderMarker(cleanedContent)
 
       // 移除优先级标记
-      cleanedContent = stripPriorityMarker(cleanedContent);
+      cleanedContent = stripPriorityMarker(cleanedContent)
 
       // 移除置顶与业务标签标记，保留系统保留标签以供既有状态清理逻辑处理
-      cleanedContent = stripPinnedMarker(cleanedContent);
-      cleanedContent = stripTagsFromLine(cleanedContent);
+      cleanedContent = stripPinnedMarker(cleanedContent)
+      cleanedContent = stripTagsFromLine(cleanedContent)
 
       // 移除重复和结束条件标记（🔁🔚🔢 等）
       // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
-      cleanedContent = stripRecurringMarkers(cleanedContent);
+      cleanedContent = stripRecurringMarkers(cleanedContent)
 
       // 移除预计专注标记
-      cleanedContent = stripFocusPlanMarkers(cleanedContent);
+      cleanedContent = stripFocusPlanMarkers(cleanedContent)
 
       // 移除斜杠命令
-      cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+      cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS)
 
       // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
-      return cleanedContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-    });
+      return cleanedContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()
+    })
 
     // 清理日期表达式之间残留的逗号分隔符
     // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符
-    content = content.replace(/\s*[,，]\s*(?=\d{4}-\d{2}-\d{2})/g, ' ').trim();
+    content = content.replace(/\s*[,，]\s*(?=\d{4}-\d{2}-\d{2})/g, ' ').trim()
     // 清理行尾的逗号当它是独立的（前面是空白字符）
-    content = content.replace(/\s+[，,]$/g, '').trim();
+    content = content.replace(/\s+[，,]$/g, '').trim()
 
     // 如果原始行包含中文逗号，将内容中的英文逗号转换回中文逗号
     if (line.includes('，')) {
-      content = content.replace(/,/g, '，');
+      content = content.replace(/,/g, '，')
     }
 
     // 解析块引用：strip 显示内容，提取到 links
-    const { stripped: contentStripped, links: blockRefLinks } = parseBlockRefs(content);
-    content = contentStripped;
+    const {
+      stripped: contentStripped,
+      links: blockRefLinks,
+    } = parseBlockRefs(content)
+    content = contentStripped
 
-    if (!content) return [];
+    if (!content) return []
 
-    const mergedLinks = [...(links ?? []), ...blockRefLinks];
+    const mergedLinks = [...(links ?? []), ...blockRefLinks]
 
     // 展开所有日期时间组合
-    const items: Item[] = [];
+    const items: Item[] = []
 
     // 先收集所有日期时间信息
-    const allDateTimeInfo: ItemDateTimeInfo[] = [];
+    const allDateTimeInfo: ItemDateTimeInfo[] = []
 
     for (const expr of dateTimeExpressions) {
-      const dates = this.parseDatePart(expr.datePart);
-      const timeInfo = this.parseTimePart(expr.timePart);
+      const dates = this.parseDatePart(expr.datePart)
+      const timeInfo = this.parseTimePart(expr.timePart)
 
       for (const date of dates) {
-        let startDateTime: string | undefined;
-        let endDateTime: string | undefined;
-        let timePrecision: TimePrecision | undefined;
+        let startDateTime: string | undefined
+        let endDateTime: string | undefined
+        let timePrecision: TimePrecision | undefined
 
         if (timeInfo) {
-          timePrecision = timeInfo.precision;
+          timePrecision = timeInfo.precision
           if (timeInfo.endTime) {
-            startDateTime = `${date} ${timeInfo.startTime}`;
-            endDateTime = `${date} ${timeInfo.endTime}`;
+            startDateTime = `${date} ${timeInfo.startTime}`
+            endDateTime = `${date} ${timeInfo.endTime}`
           } else {
-            startDateTime = `${date} ${timeInfo.startTime}`;
+            startDateTime = `${date} ${timeInfo.startTime}`
           }
         }
 
-        allDateTimeInfo.push({ date, startDateTime, endDateTime, timePrecision });
+        allDateTimeInfo.push({
+          date,
+          startDateTime,
+          endDateTime,
+          timePrecision,
+        })
       }
     }
 
     // 多日期事项：计算 dateRangeStart、dateRangeEnd
-    const allDates = allDateTimeInfo.map(info => info.date);
+    const allDates = allDateTimeInfo.map((info) => info.date)
     const dateRangeStart =
-      allDates.length >= 2 ? allDates.slice().sort()[0] : undefined;
+      allDates.length >= 2 ? allDates.slice().sort()[0] : undefined
     const dateRangeEnd =
-      allDates.length >= 2 ? allDates.slice().sort().pop() : undefined;
+      allDates.length >= 2 ? allDates.slice().sort().pop() : undefined
 
     // 为每个日期创建 Item，并填充 siblingItems
     for (let i = 0; i < allDateTimeInfo.length; i++) {
-      const { date, startDateTime, endDateTime, timePrecision } = allDateTimeInfo[i];
+      const {
+        date,
+        startDateTime,
+        endDateTime,
+        timePrecision,
+      } = allDateTimeInfo[i]
 
       // 构建 siblingItems（排除当前 Item 自身）
       const siblingItems = allDateTimeInfo
         .filter((_, index) => index !== i)
-        .map(info => ({
+        .map((info) => ({
           date: info.date,
           startDateTime: info.startDateTime,
           endDateTime: info.endDateTime,
-          timePrecision: info.timePrecision
-        }));
+          timePrecision: info.timePrecision,
+        }))
 
       items.push({
         id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -361,7 +400,7 @@ export class LineParser {
         lineNumber,
         docId: '',
         status,
-        links: mergedLinks.length > 0 ? mergedLinks : undefined,  // 块引用 + 事项下方链接
+        links: mergedLinks.length > 0 ? mergedLinks : undefined, // 块引用 + 事项下方链接
         siblingItems: siblingItems.length > 0 ? siblingItems : undefined,
         dateRangeStart,
         dateRangeEnd,
@@ -371,11 +410,11 @@ export class LineParser {
         endCondition,
         priority,
         pinned: pinned || undefined,
-        tags: tags.length > 0 ? tags : undefined
-      });
+        tags: tags.length > 0 ? tags : undefined,
+      })
     }
 
-    return items;
+    return items
   }
 
   /**
@@ -383,66 +422,66 @@ export class LineParser {
    * 支持逗号分隔的多个日期，如: @2024-01-01, 2024-01-03, 2024-01-05
    */
   private static extractDateTimeExpressions(line: string): Array<{
-    fullMatch: string;
-    datePart: string;
-    timePart: string | null;
+    fullMatch: string
+    datePart: string
+    timePart: string | null
   }> {
-    const expressions: Array<{ fullMatch: string; datePart: string; timePart: string | null }> = [];
+    const expressions: Array<{ fullMatch: string, datePart: string, timePart: string | null }> = []
 
     // 首先找到所有以 @ 或 📅 开头的日期时间块
     // 匹配 @日期 或 📅日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
     const mainRegex = new RegExp(
       `(?:@|📅)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_RANGE_PATTERN}))?`,
-      'g'
-    );
+      'g',
+    )
 
-    let mainMatch;
+    let mainMatch
     while ((mainMatch = mainRegex.exec(line)) !== null) {
-      const startIndex = mainMatch.index;
-      const mainDatePart = mainMatch[1];
-      const mainTimePart = mainMatch[2] || null;
-      const mainFullMatch = mainMatch[0];
+      const startIndex = mainMatch.index
+      const mainDatePart = mainMatch[1]
+      const mainTimePart = mainMatch[2] || null
+      const mainFullMatch = mainMatch[0]
 
       // 添加主日期表达式
       expressions.push({
         fullMatch: mainFullMatch,
         datePart: mainDatePart,
-        timePart: mainTimePart
-      });
+        timePart: mainTimePart,
+      })
 
       // 查找该日期后的逗号分隔日期
       // 从主日期结束位置开始查找
-      const afterMainDate = line.substring(startIndex + mainFullMatch.length);
+      const afterMainDate = line.substring(startIndex + mainFullMatch.length)
 
       // 匹配逗号或逗号+空格后跟着的日期（可能带时间）
       // 格式: , 2024-01-03 或 , 2024-01-03 09:00:00~10:00:00
       const continuationRegex = new RegExp(
-        `^(?:\\s*,\\s*|\\s+)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_RANGE_PATTERN}))?`
-      );
+        `^(?:\\s*,\\s*|\\s+)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_RANGE_PATTERN}))?`,
+      )
 
-      let remaining = afterMainDate;
+      let remaining = afterMainDate
       while (remaining.length > 0) {
-        const contMatch = remaining.match(continuationRegex);
-        if (!contMatch) break;
+        const contMatch = remaining.match(continuationRegex)
+        if (!contMatch) break
 
         // 检查是否遇到状态标签或行尾（不应再解析）
-        const beforeMatch = remaining.substring(0, contMatch.index || 0);
-        if (beforeMatch.includes('#')) break;
+        const beforeMatch = remaining.substring(0, contMatch.index || 0)
+        if (beforeMatch.includes('#')) break
 
         expressions.push({
           fullMatch: contMatch[0],
           datePart: contMatch[1],
-          timePart: contMatch[2] || null
-        });
+          timePart: contMatch[2] || null,
+        })
 
-        remaining = remaining.substring(contMatch[0].length);
+        remaining = remaining.substring(contMatch[0].length)
 
         // 安全检查：防止无限循环
-        if (contMatch[0].length === 0) break;
+        if (contMatch[0].length === 0) break
       }
     }
 
-    return expressions;
+    return expressions
   }
 
   /**
@@ -450,48 +489,57 @@ export class LineParser {
    */
   private static parseDatePart(datePart: string): string[] {
     if (datePart.includes('~')) {
-      const [startStr, endStr] = datePart.split('~');
-      const startDate = this.parseDate(startStr);
-      const endDate = this.parseDate(endStr, startDate);
+      const [startStr, endStr] = datePart.split('~')
+      const startDate = this.parseDate(startStr)
+      const endDate = this.parseDate(endStr, startDate)
 
       if (startDate && endDate) {
-        return this.expandDateRange(startDate, endDate);
+        return this.expandDateRange(startDate, endDate)
       }
     }
 
-    const date = this.parseDate(datePart);
-    return date ? [this.formatDate(date)] : [];
+    const date = this.parseDate(datePart)
+    return date ? [this.formatDate(date)] : []
   }
 
   /**
    * 解析时间部分
    */
   private static parseTimePart(
-    timePart: string | null
-  ): { startTime: string; endTime?: string; precision: TimePrecision } | null {
-    if (!timePart) return null;
+    timePart: string | null,
+  ): { startTime: string, endTime?: string, precision: TimePrecision } | null {
+    if (!timePart) return null
 
     if (timePart.includes('~')) {
-      const [start, end] = timePart.split('~');
-      const normalizedStart = this.normalizeTime(start);
-      const normalizedEnd = this.normalizeTime(end);
+      const [start, end] = timePart.split('~')
+      const normalizedStart = this.normalizeTime(start)
+      const normalizedEnd = this.normalizeTime(end)
       return {
         startTime: normalizedStart.value,
         endTime: normalizedEnd.value,
         precision: normalizedStart.precision === 'second' || normalizedEnd.precision === 'second'
           ? 'second'
-          : 'minute'
-      };
+          : 'minute',
+      }
     }
 
-    const normalizedTime = this.normalizeTime(timePart);
-    return { startTime: normalizedTime.value, precision: normalizedTime.precision };
+    const normalizedTime = this.normalizeTime(timePart)
+    return {
+      startTime: normalizedTime.value,
+      precision: normalizedTime.precision,
+    }
   }
 
-  private static normalizeTime(time: string): { value: string; precision: TimePrecision } {
+  private static normalizeTime(time: string): { value: string, precision: TimePrecision } {
     return time.length === 5
-      ? { value: `${time}:00`, precision: 'minute' }
-      : { value: time, precision: 'second' };
+      ? {
+          value: `${time}:00`,
+          precision: 'minute',
+        }
+      : {
+          value: time,
+          precision: 'second',
+        }
   }
 
   /**
@@ -499,46 +547,46 @@ export class LineParser {
    */
   private static parseDate(dateStr: string, referenceDate?: Date): Date | null {
     // 完整格式: 2024-01-01
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const date = new Date(dateStr)
+      return isNaN(date.getTime()) ? null : date
     }
 
     // 简写格式: 01-01（继承参考日期的年月）
-    if (dateStr.match(/^\d{2}-\d{2}$/) && referenceDate) {
-      const year = referenceDate.getFullYear();
-      const month = dateStr.substring(0, 2);
-      const day = dateStr.substring(3, 5);
-      const date = new Date(`${year}-${month}-${day}`);
-      return isNaN(date.getTime()) ? null : date;
+    if (/^\d{2}-\d{2}$/.test(dateStr) && referenceDate) {
+      const year = referenceDate.getFullYear()
+      const month = dateStr.substring(0, 2)
+      const day = dateStr.substring(3, 5)
+      const date = new Date(`${year}-${month}-${day}`)
+      return isNaN(date.getTime()) ? null : date
     }
 
-    return null;
+    return null
   }
 
   /**
    * 展开日期范围
    */
   private static expandDateRange(start: Date, end: Date): string[] {
-    const dates: string[] = [];
-    const current = new Date(start);
+    const dates: string[] = []
+    const current = new Date(start)
 
     while (current <= end) {
-      dates.push(this.formatDate(new Date(current)));
-      current.setDate(current.getDate() + 1);
+      dates.push(this.formatDate(new Date(current)))
+      current.setDate(current.getDate() + 1)
     }
 
-    return dates;
+    return dates
   }
 
   /**
    * 格式化日期为 YYYY-MM-DD
    */
   private static formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   /**
@@ -548,22 +596,22 @@ export class LineParser {
    * @returns 属性对象
    */
   public static parseBlockAttrs(line: string): { [key: string]: string } {
-    const attrs: { [key: string]: string } = {};
-    const attrRegex = /\{\:\s*([^}]*)\}/;
-    const match = line.match(attrRegex);
+    const attrs: { [key: string]: string } = {}
+    const attrRegex = /\{:\s*([^}]*)\}/
+    const match = line.match(attrRegex)
 
     if (match) {
-      const attrContent = match[1];
+      const attrContent = match[1]
       // 匹配 key="value" 或 key='value' 格式
       // key 支持字母、数字、下划线、连字符（如 custom-pomodoro-status）
-      const keyValueRegex = /([\w-]+)=['"]([^'"]*)['"]/g;
-      let kvMatch;
+      const keyValueRegex = /([\w-]+)=['"]([^'"]*)['"]/g
+      let kvMatch
       while ((kvMatch = keyValueRegex.exec(attrContent)) !== null) {
-        attrs[kvMatch[1]] = kvMatch[2];
+        attrs[kvMatch[1]] = kvMatch[2]
       }
     }
 
-    return attrs;
+    return attrs
   }
 
   /**
@@ -580,78 +628,78 @@ export class LineParser {
    */
   public static parsePomodoroLine(line: string, blockId?: string, attrs?: { [key: string]: string }): PomodoroRecord | null {
     // 分离多行内容
-    const lines = line.split('\n');
-    const firstLine = lines[0] || '';
+    const lines = line.split('\n')
+    const firstLine = lines[0] || ''
 
     // 去除列表标记、块属性和缩进
     const cleanedLine = firstLine
-      .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记 - 或 1. 等
-      .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
-      .trim();
+      .replace(/^\s*(-|\d+\.)\s+/, '') // 列表标记 - 或 1. 等
+      .replace(/^\{:[^}]*\}\s*/, '') // 块属性 {: ... }
+      .trim()
 
     // 检查是否以 🍅 开头
     if (!cleanedLine.startsWith('🍅')) {
-      return null;
+      return null
     }
 
     // 提取日期时间部分: YYYY-MM-DD HH:mm:ss~HH:mm:ss
     // 支持可选的实际时长前缀: N, 或 N，（中英文逗号，逗号后任意空格）
     // 注意：Kramdown 中 ~ 可能被转义为 \~
-    const pomodoroRegex = /^🍅(?:(\d+)[,，]\s*)?(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/;
-    const match = cleanedLine.match(pomodoroRegex);
+    const pomodoroRegex = /^🍅(?:(\d+)[,，]\s*)?(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/
+    const match = cleanedLine.match(pomodoroRegex)
 
     if (!match) {
-      return null;
+      return null
     }
 
-    const actualDurationMinutes = match[1] ? parseInt(match[1], 10) : undefined;
-    const date = match[2];
-    const startTime = match[3];
-    const endTime = match[4];
+    const actualDurationMinutes = match[1] ? Number.parseInt(match[1], 10) : undefined
+    const date = match[2]
+    const startTime = match[3]
+    const endTime = match[4]
 
     // 处理描述：第一行可能已有描述，加上后续行
-    let rawDescription = match[5]?.trim() || '';
+    let rawDescription = match[5]?.trim() || ''
 
     // 如果有后续行，合并为描述（过滤掉块属性行）
     if (lines.length > 1) {
       const descriptionLines = lines
         .slice(1)
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('{:')); // 过滤空行和块属性行
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith('{:')) // 过滤空行和块属性行
       if (descriptionLines.length > 0) {
         rawDescription = rawDescription
-          ? rawDescription + '\n' + descriptionLines.join('\n')
-          : descriptionLines.join('\n');
+          ? `${rawDescription}\n${descriptionLines.join('\n')}`
+          : descriptionLines.join('\n')
       }
     }
 
-    const description = rawDescription ? parseBlockRefs(rawDescription).stripped || undefined : undefined;
+    const description = rawDescription ? parseBlockRefs(rawDescription).stripped || undefined : undefined
 
     // 计算专注时长（分钟）
-    let durationMinutes = 25; // 默认25分钟
+    let durationMinutes = 25 // 默认25分钟
     if (endTime) {
-      const startMinutes = this.timeToMinutes(startTime);
-      const endMinutes = this.timeToMinutes(endTime);
-      durationMinutes = endMinutes - startMinutes;
+      const startMinutes = this.timeToMinutes(startTime)
+      const endMinutes = this.timeToMinutes(endTime)
+      durationMinutes = endMinutes - startMinutes
       if (durationMinutes < 0) {
-        durationMinutes += 24 * 60; // 跨天情况
+        durationMinutes += 24 * 60 // 跨天情况
       }
       // 确保至少1分钟
       if (durationMinutes < 1) {
-        durationMinutes = 1;
+        durationMinutes = 1
       }
     }
 
     // 解析块属性中的专注状态
-    let status: PomodoroStatus | undefined;
-    let itemContent: string | undefined;
+    let status: PomodoroStatus | undefined
+    let itemContent: string | undefined
 
     if (attrs) {
       if (attrs['custom-pomodoro-status'] === 'running' || attrs['custom-pomodoro-status'] === 'completed') {
-        status = attrs['custom-pomodoro-status'];
+        status = attrs['custom-pomodoro-status']
       }
       if (attrs['custom-pomodoro-item-content']) {
-        itemContent = attrs['custom-pomodoro-item-content'];
+        itemContent = attrs['custom-pomodoro-item-content']
       }
     }
 
@@ -665,16 +713,16 @@ export class LineParser {
       actualDurationMinutes,
       blockId,
       status,
-      itemContent
-    };
+      itemContent,
+    }
   }
 
   /**
    * 将时间字符串转换为分钟数
    */
   private static timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
   }
 
   /**
@@ -690,31 +738,31 @@ export class LineParser {
   public static parsePomodoroAttrValue(
     value: string,
     blockId?: string,
-    attrPrefix: string = 'custom-pomodoro'
+    attrPrefix: string = 'custom-pomodoro',
   ): PomodoroRecord | null {
-    if (!value || typeof value !== 'string') return null;
+    if (!value || typeof value !== 'string') return null
 
-    const trimmedValue = value.trim();
+    const trimmedValue = value.trim()
 
     // 检查是否包含真正的换行符（多行描述格式）
     // 支持两种形式：真正的换行符 \n 或转义的 \\n
-    const newlineChar = '\n';
+    const newlineChar = '\n'
     if (trimmedValue.includes(newlineChar)) {
-      const parts = trimmedValue.split(newlineChar);
-      const headerPart = parts[0];
-      const descLines = parts.slice(1).map(line => line.trim()).filter(line => line && !line.startsWith('{:'));
+      const parts = trimmedValue.split(newlineChar)
+      const headerPart = parts[0]
+      const descLines = parts.slice(1).map((line) => line.trim()).filter((line) => line && !line.startsWith('{:'))
 
       // 解析头部: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss
-      const headerRegex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/;
-      const headerMatch = headerPart.match(headerRegex);
+      const headerRegex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/
+      const headerMatch = headerPart.match(headerRegex)
 
-      if (!headerMatch) return null;
+      if (!headerMatch) return null
 
-      const durationMinutes = parseInt(headerMatch[1], 10);
-      const date = headerMatch[2];
-      const startTime = headerMatch[3];
-      const endTime = headerMatch[4];
-      const description = descLines.join('\n') || undefined;
+      const durationMinutes = Number.parseInt(headerMatch[1], 10)
+      const date = headerMatch[2]
+      const startTime = headerMatch[3]
+      const endTime = headerMatch[4]
+      const description = descLines.join('\n') || undefined
 
       return {
         id: `${attrPrefix}-${blockId || 'unknown'}-${date}-${startTime}`,
@@ -724,21 +772,21 @@ export class LineParser {
         description,
         durationMinutes,
         actualDurationMinutes: durationMinutes,
-        blockId
-      };
+        blockId,
+      }
     }
 
     // 单行描述格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述
-    const regex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/;
-    const match = trimmedValue.match(regex);
+    const regex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/
+    const match = trimmedValue.match(regex)
 
-    if (!match) return null;
+    if (!match) return null
 
-    const durationMinutes = parseInt(match[1], 10);
-    const date = match[2];
-    const startTime = match[3];
-    const endTime = match[4];
-    const description = match[5]?.trim() || undefined;
+    const durationMinutes = Number.parseInt(match[1], 10)
+    const date = match[2]
+    const startTime = match[3]
+    const endTime = match[4]
+    const description = match[5]?.trim() || undefined
 
     return {
       id: `${attrPrefix}-${blockId || 'unknown'}-${date}-${startTime}`,
@@ -748,8 +796,8 @@ export class LineParser {
       description: description || undefined,
       durationMinutes,
       actualDurationMinutes: durationMinutes,
-      blockId
-    };
+      blockId,
+    }
   }
 
   /**
@@ -761,18 +809,18 @@ export class LineParser {
   public static parsePomodoroAttrs(
     attrs: { [key: string]: string },
     blockId?: string,
-    attrPrefix: string = 'custom-pomodoro'
+    attrPrefix: string = 'custom-pomodoro',
   ): PomodoroRecord[] {
-    const records: PomodoroRecord[] = [];
-    const prefix = attrPrefix.endsWith('-') ? attrPrefix : attrPrefix + '-';
+    const records: PomodoroRecord[] = []
+    const prefix = attrPrefix.endsWith('-') ? attrPrefix : `${attrPrefix}-`
 
     for (const [key, value] of Object.entries(attrs)) {
       if (key.startsWith(prefix) && value) {
-        const record = this.parsePomodoroAttrValue(value, blockId, attrPrefix);
-        if (record) records.push(record);
+        const record = this.parsePomodoroAttrValue(value, blockId, attrPrefix)
+        if (record) records.push(record)
       }
     }
 
-    return records;
+    return records
   }
 }

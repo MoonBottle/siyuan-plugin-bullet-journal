@@ -11,14 +11,14 @@ withDefaults(defineProps<{
   isActive?: boolean
 }>(), {
   isActive: false,
-});
+})
 
 const emit = defineEmits<{
-  (e: 'drag-start', event: MouseEvent): void;
-}>();
+  (e: 'drag-start', event: MouseEvent): void
+}>()
 
 function handleMouseDown(event: MouseEvent) {
-  emit('drag-start', event);
+  emit('drag-start', event)
 }
 </script>
 
@@ -48,7 +48,9 @@ function handleMouseDown(event: MouseEvent) {
     height: 100%;
     background-color: var(--b3-border-color);
     opacity: 0.5;
-    transition: opacity 0.15s, background-color 0.15s;
+    transition:
+      opacity 0.15s,
+      background-color 0.15s;
   }
 
   &:hover::after {

@@ -1,5 +1,8 @@
 <template>
-  <div class="hk-work-tab project-tab" :class="{ 'project-tab--embedded': embedded }">
+  <div
+    class="hk-work-tab project-tab"
+    :class="{ 'project-tab--embedded': embedded }"
+  >
     <div class="block__icons">
       <SySelect
         v-if="settingsStore.groups.length > 0"
@@ -44,91 +47,114 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
-import { showMessage } from '@/utils/dialog';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildViewDebugContext } from '@/utils/viewDebug';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import ProjectView from '@/components/project/ProjectView.vue';
-import { t } from '@/i18n';
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import ProjectView from '@/components/project/ProjectView.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
-  onUpdateConfig?: (config: Record<string, unknown>) => void;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
+  onUpdateConfig?: (config: Record<string, unknown>) => void
 }>(), {
   embedded: false,
-});
+})
 
-const plugin = usePlugin() as any;
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
+const plugin = usePlugin() as any
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
 
-const selectedGroup = ref('');
-const projectViewRef = ref<InstanceType<typeof ProjectView> | null>(null);
+const selectedGroup = ref('')
+const projectViewRef = ref<InstanceType<typeof ProjectView> | null>(null)
 
-const DEFAULT_COLUMN_RATIOS: [number, number, number] = [20, 20, 60];
+const DEFAULT_COLUMN_RATIOS: [number, number, number] = [20, 20, 60]
 
-const columnRatios = ref<[number, number, number]>(getInitialColumnRatios());
+const columnRatios = ref<[number, number, number]>(getInitialColumnRatios())
 
 function getInitialColumnRatios(): [number, number, number] {
   if (props.embedded && props.viewConfig?.columnRatios) {
-    const ratios = props.viewConfig.columnRatios as [number, number, number];
+    const ratios = props.viewConfig.columnRatios as [number, number, number]
     if (Array.isArray(ratios) && ratios.length === 3) {
-      return ratios;
+      return ratios
     }
   }
-  return [...DEFAULT_COLUMN_RATIOS];
+  return [...DEFAULT_COLUMN_RATIOS]
 }
 
 function handleColumnRatiosChange(newRatios: [number, number, number]) {
-  columnRatios.value = newRatios;
-  persistColumnRatios(newRatios);
+  columnRatios.value = newRatios
+  persistColumnRatios(newRatios)
 }
 
-let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | null = null
 
 function persistColumnRatios(ratios: [number, number, number]) {
-  if (!props.embedded || !props.onUpdateConfig) return;
-  if (persistTimer) clearTimeout(persistTimer);
+  if (!props.embedded || !props.onUpdateConfig) return
+  if (persistTimer) clearTimeout(persistTimer)
   persistTimer = setTimeout(() => {
     props.onUpdateConfig!({
       ...(props.viewConfig ?? {}),
       columnRatios: ratios,
-    });
-    persistTimer = null;
-  }, 300);
+    })
+    persistTimer = null
+  }, 300)
 }
 
 function handleResetColumnRatios() {
   if (persistTimer) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
+    clearTimeout(persistTimer)
+    persistTimer = null
   }
-  columnRatios.value = [...DEFAULT_COLUMN_RATIOS];
+  columnRatios.value = [...DEFAULT_COLUMN_RATIOS]
   if (props.embedded && props.onUpdateConfig) {
     props.onUpdateConfig({
       ...(props.viewConfig ?? {}),
       columnRatios: [...DEFAULT_COLUMN_RATIOS],
-    });
+    })
   }
 }
 
 const filteredProjects = computed(() => {
-  return projectStore.getFilteredProjects(selectedGroup.value);
-});
+  return projectStore.getFilteredProjects(selectedGroup.value)
+})
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
-  settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
+  settingsStore.groups.forEach((g) => {
+    options.push({
+      value: g.id,
+      label: g.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
@@ -136,52 +162,52 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     ...buildViewDebugContext('ProjectTab', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
-  });
-  if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  })
+  if (!plugin) return
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock']
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
-    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
-    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
+    const patch: Record<string, unknown> = {}
+    storeKeys.forEach((k) => { if (payload[k] !== undefined) patch[k] = payload[k] })
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch)
   } else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-  await nextTick();
-};
+  await nextTick()
+}
 
 // 事件取消订阅函数
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 watch(() => props.viewConfig, (config) => {
-  const groupId = (config as WorkbenchProjectViewConfig | undefined)?.groupId;
+  const groupId = (config as WorkbenchProjectViewConfig | undefined)?.groupId
   if (groupId) {
-    selectedGroup.value = groupId;
+    selectedGroup.value = groupId
   }
-  const ratios = (config as WorkbenchProjectViewConfig | undefined)?.columnRatios;
+  const ratios = (config as WorkbenchProjectViewConfig | undefined)?.columnRatios
   if (ratios && Array.isArray(ratios) && ratios.length === 3) {
-    columnRatios.value = [...ratios];
+    columnRatios.value = [...ratios]
   }
-}, { immediate: true });
+}, { immediate: true })
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('ProjectTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('ProjectTab', plugin))
   // 从插件加载设置
-  settingsStore.loadFromPlugin();
+  settingsStore.loadFromPlugin()
 
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
-    selectedGroup.value = settingsStore.defaultGroup;
+    selectedGroup.value = settingsStore.defaultGroup
   }
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
@@ -189,41 +215,46 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('ProjectTab', plugin),
-          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
-        });
-        return handleDataRefresh(payload);
+          data: payload
+            ? {
+                type: 'SETTINGS_CHANGED',
+                ...payload,
+              }
+            : { type: 'SETTINGS_CHANGED' },
+        })
+        return handleDataRefresh(payload)
       },
       viewName: 'ProjectTab',
-    });
+    })
   } catch {
     // 忽略
   }
-});
+})
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('ProjectTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('ProjectTab', plugin))
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 
 const handleRefresh = async () => {
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'project-tab:manual-refresh',
-    });
-    showMessage(t('common').dataRefreshed);
+    })
+    showMessage(t('common').dataRefreshed)
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -248,7 +279,6 @@ const handleRefresh = async () => {
   .sy-select {
     margin-left: 8px;
   }
-
 }
 
 .tab-content {

@@ -30,28 +30,31 @@
       <svg><use xlink:href="#iconUndo"></use></svg>
     </span>
     <span class="calendar-day-header__title">{{ title }}</span>
-    <span v-if="durationLabel" class="calendar-day-header__duration">{{ durationLabel }}</span>
+    <span
+      v-if="durationLabel"
+      class="calendar-day-header__duration"
+    >{{ durationLabel }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
+import { t } from '@/i18n'
 
 withDefaults(defineProps<{
-  title: string;
-  durationLabel?: string;
-  showBack?: boolean;
+  title: string
+  durationLabel?: string
+  showBack?: boolean
 }>(), {
   durationLabel: '',
   showBack: false,
-});
+})
 
 const emit = defineEmits<{
-  (event: 'prev'): void;
-  (event: 'next'): void;
-  (event: 'today'): void;
-  (event: 'back'): void;
-}>();
+  (event: 'prev'): void
+  (event: 'next'): void
+  (event: 'today'): void
+  (event: 'back'): void
+}>()
 </script>
 
 <style lang="scss" scoped>

@@ -9,9 +9,9 @@
 
 <script setup lang="ts">
 defineProps<{
-  modelValue: boolean;
+  modelValue: boolean
 }>()
 defineEmits<{
-  'update:modelValue': [value: boolean];
+  'update:modelValue': [value: boolean]
 }>()
 </script>

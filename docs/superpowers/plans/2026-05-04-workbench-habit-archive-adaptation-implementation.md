@@ -37,6 +37,7 @@
 ### Task 1: Extend `useHabitWorkspace` For Host-Provided Default List Mode
 
 **Files:**
+
 - Modify: `src/composables/useHabitWorkspace.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 
@@ -46,8 +47,8 @@ Add tests in `test/composables/useHabitWorkspace.test.ts`:
 
 ```ts
 it('supports an archived default list mode at initialization', async () => {
-  const projectStore = useProjectStore();
-  projectStore.currentDate = '2026-05-04';
+  const projectStore = useProjectStore()
+  projectStore.currentDate = '2026-05-04'
   projectStore.projects = [{
     id: 'project-a',
     name: 'Project A',
@@ -59,20 +60,20 @@ it('supports an archived default list mode at initialization', async () => {
     ],
     links: [],
     groupId: 'group-a',
-  } as any];
+  } as any]
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
   const workspace = useHabitWorkspace({
     defaultListMode: 'archived',
-  });
+  })
 
-  expect(workspace.listMode.value).toBe('archived');
-  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);
-});
+  expect(workspace.listMode.value).toBe('archived')
+  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1'])
+})
 
 it('returns to the host-provided default list mode when explicitly requested', async () => {
-  const projectStore = useProjectStore();
-  projectStore.currentDate = '2026-05-04';
+  const projectStore = useProjectStore()
+  projectStore.currentDate = '2026-05-04'
   projectStore.projects = [{
     id: 'project-a',
     name: 'Project A',
@@ -84,19 +85,19 @@ it('returns to the host-provided default list mode when explicitly requested', a
     ],
     links: [],
     groupId: 'group-a',
-  } as any];
+  } as any]
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
   const workspace = useHabitWorkspace({
     defaultListMode: 'archived',
-  });
+  })
 
-  workspace.showActiveHabits();
-  expect(workspace.listMode.value).toBe('active');
+  workspace.showActiveHabits()
+  expect(workspace.listMode.value).toBe('active')
 
-  workspace.resetListMode();
-  expect(workspace.listMode.value).toBe('archived');
-});
+  workspace.resetListMode()
+  expect(workspace.listMode.value).toBe('archived')
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -108,6 +109,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - FAIL
 - `defaultListMode` / `resetListMode()` are not supported yet
 
@@ -116,33 +118,33 @@ Expected:
 In `src/composables/useHabitWorkspace.ts`, extend the options type:
 
 ```ts
-type HabitListMode = 'active' | 'archived';
+type HabitListMode = 'active' | 'archived'
 
-type UseHabitWorkspaceOptions = {
-  groupId?: MaybeRefOrGetter<string | undefined>;
-  defaultListMode?: MaybeRefOrGetter<HabitListMode | undefined>;
-};
+interface UseHabitWorkspaceOptions {
+  groupId?: MaybeRefOrGetter<string | undefined>
+  defaultListMode?: MaybeRefOrGetter<HabitListMode | undefined>
+}
 ```
 
 Drive the initial and reset behavior from a computed default:
 
 ```ts
 const defaultListMode = computed<HabitListMode>(() => {
-  return toValue(options.defaultListMode) ?? 'active';
-});
+  return toValue(options.defaultListMode) ?? 'active'
+})
 
-const listMode = ref<HabitListMode>(defaultListMode.value);
+const listMode = ref<HabitListMode>(defaultListMode.value)
 ```
 
 Keep the host default in sync without overwriting an active detail selection:
 
 ```ts
 watch(defaultListMode, (value) => {
-  listMode.value = value;
-}, { immediate: false });
+  listMode.value = value
+}, { immediate: false })
 
 function resetListMode() {
-  listMode.value = defaultListMode.value;
+  listMode.value = defaultListMode.value
 }
 ```
 
@@ -153,7 +155,7 @@ return {
   listMode,
   resetListMode,
   // ...
-};
+}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -165,6 +167,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -179,6 +182,7 @@ git commit -m "refactor(habit): support configurable workspace list mode"
 ### Task 2: Adapt `WorkbenchHabitView` To Archived List Navigation
 
 **Files:**
+
 - Modify: `src/components/workbench/view/WorkbenchHabitView.vue`
 - Test: `test/components/workbench/WorkbenchHabitView.test.ts`
 
@@ -188,49 +192,49 @@ Extend `test/components/workbench/WorkbenchHabitView.test.ts` with:
 
 ```ts
 it('shows an archived list entry and switches the sidebar to archived habits', async () => {
-  const mounted = await mountView();
-  const projectStore = useProjectStore();
+  const mounted = await mountView()
+  const projectStore = useProjectStore()
   projectStore.projects[0].habits = [
     createHabit({ blockId: 'active-1', name: 'Active Habit' }),
     createHabit({ blockId: 'archived-1', name: 'Archived Habit', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')?.textContent).toContain('Archived');
-  expect(mounted.container.textContent).toContain('Archived Habit');
-  expect(mounted.container.textContent).not.toContain('Active Habit');
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')?.textContent).toContain('Archived')
+  expect(mounted.container.textContent).toContain('Archived Habit')
+  expect(mounted.container.textContent).not.toContain('Active Habit')
+  mounted.unmount()
+})
 
 it('returns from archived detail to archived list context', async () => {
-  const mounted = await mountView();
-  const projectStore = useProjectStore();
+  const mounted = await mountView()
+  const projectStore = useProjectStore()
   projectStore.projects[0].habits = [
     createHabit({ blockId: 'active-1', name: 'Active Habit' }),
     createHabit({ blockId: 'archived-1', name: 'Archived Habit', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="workbench-habit-back-to-list"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull();
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull()
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -242,6 +246,7 @@ npx vitest run test/components/workbench/WorkbenchHabitView.test.ts
 ```
 
 Expected:
+
 - FAIL
 - Archived-list entry and archived header test ids do not exist
 
@@ -269,7 +274,7 @@ const {
   checkInHabit,
   incrementHabit,
   openSelectedHabitDoc,
-} = useHabitWorkspace();
+} = useHabitWorkspace()
 ```
 
 Add a sidebar header before `HabitWorkspaceListPane`:
@@ -285,8 +290,11 @@ Add a sidebar header before `HabitWorkspaceListPane`:
     >
       <svg><use xlink:href="#iconLeft"></use></svg>
     </button>
-    <div class="workbench-habit-view__sidebar-title">{{ selectedHabit.name }}</div>
+    <div class="workbench-habit-view__sidebar-title">{{ selectedHabit.name }}
+</div>
+
     <span class="fn__flex-1"></span>
+
     <button
       class="block__icon"
       data-testid="workbench-habit-refresh-button"
@@ -295,27 +303,31 @@ Add a sidebar header before `HabitWorkspaceListPane`:
     >
       <svg><use xlink:href="#iconRefresh"></use></svg>
     </button>
+
   </template>
-  <template v-else-if="listMode === 'archived'">
-    <button
-      class="block__icon"
-      data-testid="workbench-habit-back-active"
-      :aria-label="t('habit').backToList"
-      @click="showActiveHabits"
-    >
-      <svg><use xlink:href="#iconLeft"></use></svg>
-    </button>
-    <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-archived-header">{{ t('habit').archivedList }}</div>
-    <span class="fn__flex-1"></span>
-    <button
-      class="block__icon"
-      data-testid="workbench-habit-refresh-button"
-      :aria-label="t('common').refresh"
-      @click="refreshHabits"
-    >
-      <svg><use xlink:href="#iconRefresh"></use></svg>
-    </button>
-  </template>
+<template v-else-if="listMode === 'archived'">
+  <button
+    class="block__icon"
+    data-testid="workbench-habit-back-active"
+    :aria-label="t('habit').backToList"
+    @click="showActiveHabits"
+  >
+    <svg><use xlink:href="#iconLeft" /></svg>
+  </button>
+  <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-archived-header">
+    {{ t('habit').archivedList }}
+  </div>
+  <span class="fn__flex-1" />
+  <button
+    class="block__icon"
+    data-testid="workbench-habit-refresh-button"
+    :aria-label="t('common').refresh"
+    @click="refreshHabits"
+  >
+    <svg><use xlink:href="#iconRefresh" /></svg>
+  </button>
+</template>
+
   <template v-else>
     <div class="workbench-habit-view__sidebar-title">{{ t('habit').title }}</div>
     <span class="fn__flex-1"></span>
@@ -373,6 +385,7 @@ npx vitest run test/components/workbench/WorkbenchHabitView.test.ts
 ```
 
 Expected:
+
 - PASS
 - Archived list navigation and return context work inside the workbench shell
 
@@ -388,6 +401,7 @@ git commit -m "feat(workbench): add archived list to habit view"
 ### Task 3: Add Widget `habitScope` Config And Archived Filtering
 
 **Files:**
+
 - Modify: `src/types/workbench.ts`
 - Modify: `src/workbench/widgetRegistry.ts`
 - Modify: `src/components/workbench/dialogs/HabitWidgetConfigDialog.vue`
@@ -401,48 +415,48 @@ Extend `test/components/workbench/HabitWeekWidget.test.ts` with:
 
 ```ts
 it('confirms the selected habit scope together with group id', async () => {
-  const settingsStore = useSettingsStore();
-  settingsStore.loaded = true;
-  settingsStore.groups = [{ id: 'group-a', name: 'Alpha' } as any];
+  const settingsStore = useSettingsStore()
+  settingsStore.loaded = true
+  settingsStore.groups = [{ id: 'group-a', name: 'Alpha' } as any]
 
   const mounted = await mountDialog({
     initialConfig: {
       groupId: 'group-a',
       habitScope: 'active',
     },
-  });
+  })
 
-  const scopeSelect = mounted.container.querySelector('[data-testid="habit-widget-scope-select"]') as HTMLSelectElement;
-  scopeSelect.value = 'archived';
-  scopeSelect.dispatchEvent(new Event('change'));
+  const scopeSelect = mounted.container.querySelector('[data-testid="habit-widget-scope-select"]') as HTMLSelectElement
+  scopeSelect.value = 'archived'
+  scopeSelect.dispatchEvent(new Event('change'))
   await nextTick();
 
-  (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click()
 
   expect(mounted.onConfirm).toHaveBeenCalledWith({
     groupId: 'group-a',
     habitScope: 'archived',
-  });
+  })
 
-  mounted.unmount();
-});
+  mounted.unmount()
+})
 
 it('shows only archived habits when widget scope is archived', async () => {
   const mounted = await mountWidget({
     groupId: 'group-a',
     habitScope: 'archived',
-  });
-  const projectStore = useProjectStore();
+  })
+  const projectStore = useProjectStore()
   projectStore.projects[0].habits = [
     createHabit({ blockId: 'active-a', name: 'Active Habit' }),
     createHabit({ blockId: 'archived-a', name: 'Archived Habit', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
-  expect(mounted.container.textContent).toContain('Archived Habit');
-  expect(mounted.container.textContent).not.toContain('Active Habit');
-  mounted.unmount();
-});
+  expect(mounted.container.textContent).toContain('Archived Habit')
+  expect(mounted.container.textContent).not.toContain('Active Habit')
+  mounted.unmount()
+})
 ```
 
 Extend `test/components/workbench/DashboardCanvas.test.ts` with a persistence assertion:
@@ -451,7 +465,7 @@ Extend `test/components/workbench/DashboardCanvas.test.ts` with a persistence as
 expect(savedWidget.config).toEqual({
   groupId: 'group-a',
   habitScope: 'archived',
-});
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -463,6 +477,7 @@ npx vitest run test/components/workbench/HabitWeekWidget.test.ts test/components
 ```
 
 Expected:
+
 - FAIL
 - `habitScope` is missing from config typing or confirmation payload
 - Archived widget scope does not filter rendered habits
@@ -473,8 +488,8 @@ In `src/types/workbench.ts`, update the config type:
 
 ```ts
 export interface WorkbenchHabitWeekWidgetConfig {
-  groupId?: string;
-  habitScope?: 'active' | 'archived';
+  groupId?: string
+  habitScope?: 'active' | 'archived'
 }
 ```
 
@@ -492,12 +507,12 @@ createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
 In `src/components/workbench/dialogs/HabitWidgetConfigDialog.vue`, add state:
 
 ```ts
-const selectedScope = ref(props.initialConfig.habitScope ?? 'active');
+const selectedScope = ref(props.initialConfig.habitScope ?? 'active')
 
 const scopeOptions = computed(() => [
   { value: 'active', label: t('workbench').habitWidgetScopeActive },
   { value: 'archived', label: t('workbench').habitWidgetScopeArchived },
-]);
+])
 ```
 
 Render the new select:
@@ -521,17 +536,17 @@ Return it on confirm:
 props.onConfirm({
   groupId: selectedGroup.value || undefined,
   habitScope: selectedScope.value === 'archived' ? 'archived' : 'active',
-});
+})
 ```
 
 In `src/components/workbench/widgets/HabitWeekWidget.vue`, bind workspace mode from config:
 
 ```ts
 const habitConfig = computed(() => {
-  return (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig;
-});
+  return (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig
+})
 
-const habitScope = computed(() => habitConfig.value.habitScope ?? 'active');
+const habitScope = computed(() => habitConfig.value.habitScope ?? 'active')
 
 const {
   selectedDate,
@@ -545,7 +560,7 @@ const {
 } = useHabitWorkspace({
   groupId: () => habitConfig.value.groupId,
   defaultListMode: () => habitScope.value,
-});
+})
 ```
 
 Pass readonly rendering to the list pane:
@@ -578,6 +593,7 @@ npx vitest run test/components/workbench/HabitWeekWidget.test.ts test/components
 ```
 
 Expected:
+
 - PASS
 - Widget config persists `habitScope`
 - Archived widget scope renders archived habits only
@@ -594,6 +610,7 @@ git commit -m "feat(workbench): add habit widget archive scope"
 ### Task 4: Run Shared Workbench + Habit Regression
 
 **Files:**
+
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
 
@@ -626,6 +643,7 @@ npx vitest run test/components/workbench/WorkbenchHabitView.test.ts test/compone
 ```
 
 Expected:
+
 - PASS
 - Shared workspace state works for both workbench hosts
 
@@ -638,6 +656,7 @@ npx vitest run test/components/workbench/WorkbenchHabitView.test.ts test/compone
 ```
 
 Expected:
+
 - PASS
 - No regression in Desktop HabitDock archived list behavior
 - No regression in mobile habit archive/detail flows

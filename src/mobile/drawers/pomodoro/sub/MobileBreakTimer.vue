@@ -2,24 +2,41 @@
   <div class="mobile-break-timer">
     <!-- 顶部标题 -->
     <div class="break-header">
-      <h2 class="break-title">{{ t('settings').pomodoro.breakTitle || '休息时间' }}</h2>
-      <p class="break-subtitle">{{ t('settings').pomodoro.breakSubtitle || '放松身心，为下一轮专注做准备' }}</p>
+      <h2 class="break-title">
+        {{ t('settings').pomodoro.breakTitle || '休息时间' }}
+      </h2>
+      <p class="break-subtitle">
+        {{ t('settings').pomodoro.breakSubtitle || '放松身心，为下一轮专注做准备' }}
+      </p>
     </div>
 
     <!-- 呼吸圆圈与倒计时 -->
     <div class="timer-section">
       <div class="breathing-circle">
         <div class="circle-inner">
-          <div class="time-remaining">{{ formattedTime }}</div>
-          <div class="time-label">{{ t('common').minutes }}</div>
+          <div class="time-remaining">
+            {{ formattedTime }}
+          </div>
+          <div class="time-label">
+            {{ t('common').minutes }}
+          </div>
         </div>
       </div>
     </div>
     <!-- 跳过按钮 -->
     <div class="action-section">
-      <button class="skip-btn" @click="skipBreak">
-        <svg class="btn-icon" viewBox="0 0 24 24">
-          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
+      <button
+        class="skip-btn"
+        @click="skipBreak"
+      >
+        <svg
+          class="btn-icon"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"
+            fill="currentColor"
+          />
         </svg>
         {{ t('settings').pomodoro.skipBreak }}
       </button>
@@ -28,43 +45,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { t } from '@/i18n';
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { usePomodoroStore } from '@/stores'
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const plugin = usePlugin() as any;
-const pomodoroStore = usePomodoroStore();
+const plugin = usePlugin() as any
+const pomodoroStore = usePomodoroStore()
 
 // Break remaining seconds
-const breakRemainingSeconds = computed(() => pomodoroStore.breakRemainingSeconds);
+const breakRemainingSeconds = computed(() => pomodoroStore.breakRemainingSeconds)
 
 // Processing lock to prevent double clicks
-const isProcessing = ref(false);
+const isProcessing = ref(false)
 
 // Formatted time MM:SS
 const formattedTime = computed(() => {
-  const secs = breakRemainingSeconds.value;
-  const mins = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-});
+  const secs = breakRemainingSeconds.value
+  const mins = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+})
 
 // Skip break
 const skipBreak = async () => {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
+  if (isProcessing.value) return
+  isProcessing.value = true
   try {
-    await pomodoroStore.stopBreak(plugin);
-    emit('close');
+    await pomodoroStore.stopBreak(plugin)
+    emit('close')
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -115,7 +135,7 @@ const skipBreak = async () => {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--b3-theme-success) 0%, #66BB6A 100%);
+  background: linear-gradient(135deg, var(--b3-theme-success) 0%, #66bb6a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,7 +172,8 @@ const skipBreak = async () => {
 
 // 轻量呼吸动画
 @keyframes breathe-scale {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateZ(0) scale(0.985);
   }
   50% {

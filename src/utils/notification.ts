@@ -3,18 +3,17 @@
  * 优先使用思源原生通知，失败时回退到 Web Notifications API，再回退到站内消息
  */
 
-import * as siyuan from 'siyuan';
-import { showMessage } from './dialog';
-import { t } from '@/i18n';
-import { getCurrentPlugin } from '@/main';
-import { useAIStore } from '@/stores/aiStore';
-import { getSharedPinia } from '@/utils/sharedPinia';
+import * as siyuan from 'siyuan'
+import { t } from '@/i18n'
+import { useAIStore } from '@/stores/aiStore'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import { showMessage } from './dialog'
 
 /**
  * 检查浏览器是否支持 Notification API
  */
 export function isNotificationSupported(): boolean {
-  return typeof window !== 'undefined' && 'Notification' in window;
+  return typeof window !== 'undefined' && 'Notification' in window
 }
 
 /**
@@ -23,25 +22,25 @@ export function isNotificationSupported(): boolean {
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!isNotificationSupported()) {
-    console.log('[Notification] 浏览器不支持 Notification API');
-    return false;
+    console.log('[Notification] 浏览器不支持 Notification API')
+    return false
   }
 
   if (Notification.permission === 'granted') {
-    return true;
+    return true
   }
 
   if (Notification.permission === 'denied') {
-    console.log('[Notification] 用户已拒绝通知权限');
-    return false;
+    console.log('[Notification] 用户已拒绝通知权限')
+    return false
   }
 
   try {
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    const permission = await Notification.requestPermission()
+    return permission === 'granted'
   } catch (error) {
-    console.error('[Notification] 请求通知权限失败:', error);
-    return false;
+    console.error('[Notification] 请求通知权限失败:', error)
+    return false
   }
 }
 
@@ -49,61 +48,61 @@ export async function requestNotificationPermission(): Promise<boolean> {
  * 发送微信通知（fire-and-forget，不阻塞主流程）
  */
 function sendWechatNotification(title: string, body: string): void {
-  console.log('[Notification] sendWechatNotification called, title:', title);
+  console.log('[Notification] sendWechatNotification called, title:', title)
   try {
-    const pinia = getSharedPinia();
+    const pinia = getSharedPinia()
     if (!pinia) {
-      console.warn('[Notification] getSharedPinia() returned null');
-      return;
+      console.warn('[Notification] getSharedPinia() returned null')
+      return
     }
-    const aiStore = useAIStore(pinia);
-    console.log('[Notification] got aiStore, calling sendWechatNotification...');
+    const aiStore = useAIStore(pinia)
+    console.log('[Notification] got aiStore, calling sendWechatNotification...')
     aiStore.sendWechatNotification(`${title}\n${body}`).then(() => {
-      console.log('[Notification] sendWechatNotification completed');
+      console.log('[Notification] sendWechatNotification completed')
     }).catch((err: unknown) => {
-      console.error('[Notification] sendWechatNotification promise rejected:', err);
-    });
+      console.error('[Notification] sendWechatNotification promise rejected:', err)
+    })
   } catch (err) {
-    console.error('[Notification] WeChat notification error:', err);
+    console.error('[Notification] WeChat notification error:', err)
   }
 }
 
 /**
  * 显示系统级通知（内部实现）
  */
-type NotificationOptions = {
-  icon?: string;
-  tag?: string;
-  onClick?: () => void;
-  onClose?: () => void;
-};
+interface NotificationOptions {
+  icon?: string
+  tag?: string
+  onClick?: () => void
+  onClose?: () => void
+}
 
 export type NativeScheduleFailureReason =
   | 'invalid-id'
-  | 'exception';
+  | 'exception'
 
-export type NativeScheduleAttemptResult = {
-  notificationId: number | null;
-  rawNotificationId: number | null;
-  failureReason: NativeScheduleFailureReason | null;
-};
+export interface NativeScheduleAttemptResult {
+  notificationId: number | null
+  rawNotificationId: number | null
+  failureReason: NativeScheduleFailureReason | null
+}
 
-type UnifiedNotificationResult = number | Notification | null;
-type NativeNotificationApi = {
+type UnifiedNotificationResult = number | Notification | null
+interface NativeNotificationApi {
   sendNotification?: (options: {
-    title?: string;
-    body?: string;
-    delayInSeconds?: number;
-    channel?: string;
-    timeoutType?: 'default' | 'never';
-  }) => Promise<number>;
-  cancelNotification?: (id: number) => void;
-};
+    title?: string
+    body?: string
+    delayInSeconds?: number
+    channel?: string
+    timeoutType?: 'default' | 'never'
+  }) => Promise<number>
+  cancelNotification?: (id: number) => void
+}
 
 function buildNativeNotificationOptions(
   title: string,
   body: string,
-  options?: NotificationOptions & { delayInSeconds?: number }
+  options?: NotificationOptions & { delayInSeconds?: number },
 ) {
   return {
     title,
@@ -111,21 +110,21 @@ function buildNativeNotificationOptions(
     delayInSeconds: options?.delayInSeconds,
     channel: options?.tag,
     timeoutType: 'never' as const,
-  };
+  }
 }
 
 function getNativeNotificationApi(): NativeNotificationApi {
-  const platformUtils = (siyuan as { platformUtils?: NativeNotificationApi }).platformUtils;
+  const platformUtils = (siyuan as { platformUtils?: NativeNotificationApi }).platformUtils
   if (platformUtils?.sendNotification || platformUtils?.cancelNotification) {
-    return platformUtils;
+    return platformUtils
   }
 
-  return siyuan as NativeNotificationApi;
+  return siyuan as NativeNotificationApi
 }
 
 function showFallbackMessage(title: string, body: string): null {
-  showMessage(`${title}: ${body}`);
-  return null;
+  showMessage(`${title}: ${body}`)
+  return null
 }
 
 function _showBrowserNotification(
@@ -134,13 +133,13 @@ function _showBrowserNotification(
   options?: NotificationOptions,
 ): Notification | null {
   if (!isNotificationSupported()) {
-    console.log('[Notification] 浏览器不支持 Notification API，回退到思源内部通知');
-    return showFallbackMessage(title, body);
+    console.log('[Notification] 浏览器不支持 Notification API，回退到思源内部通知')
+    return showFallbackMessage(title, body)
   }
 
   if (Notification.permission !== 'granted') {
-    console.log('[Notification] 没有通知权限，回退到思源内部通知');
-    return showFallbackMessage(title, body);
+    console.log('[Notification] 没有通知权限，回退到思源内部通知')
+    return showFallbackMessage(title, body)
   }
 
   try {
@@ -149,27 +148,27 @@ function _showBrowserNotification(
       icon: options?.icon,
       tag: options?.tag,
       requireInteraction: true,
-    });
+    })
 
     if (options?.onClick) {
       notification.onclick = () => {
-        options.onClick!();
-        notification.close();
-      };
+        options.onClick!()
+        notification.close()
+      }
     }
 
     if (options?.onClose) {
-      notification.onclose = options.onClose;
+      notification.onclose = options.onClose
     }
 
     setTimeout(() => {
-      notification.close();
-    }, 5000);
+      notification.close()
+    }, 5000)
 
-    return notification;
+    return notification
   } catch (error) {
-    console.error('[Notification] 显示通知失败:', error);
-    return showFallbackMessage(title, body);
+    console.error('[Notification] 显示通知失败:', error)
+    return showFallbackMessage(title, body)
   }
 }
 
@@ -178,13 +177,13 @@ async function sendNativeImmediateNotification(
   body: string,
   options?: NotificationOptions,
 ): Promise<number> {
-  const { sendNotification } = getNativeNotificationApi();
+  const { sendNotification } = getNativeNotificationApi()
   if (!sendNotification) {
-    throw new Error('Native notification API unavailable');
+    throw new Error('Native notification API unavailable')
   }
 
   // Native notifications in SiYuan do not expose click/close hooks to plugin code.
-  return sendNotification(buildNativeNotificationOptions(title, body, options));
+  return sendNotification(buildNativeNotificationOptions(title, body, options))
 }
 
 /**
@@ -199,18 +198,18 @@ export async function showSystemNotification(
   body: string,
   options?: NotificationOptions,
 ): Promise<UnifiedNotificationResult> {
-  let result: UnifiedNotificationResult = null;
+  let result: UnifiedNotificationResult = null
 
   try {
-    result = await sendNativeImmediateNotification(title, body, options);
+    result = await sendNativeImmediateNotification(title, body, options)
   } catch (error) {
-    console.error('[Notification] 原生通知失败，回退到浏览器通知:', error);
-    result = _showBrowserNotification(title, body, options);
+    console.error('[Notification] 原生通知失败，回退到浏览器通知:', error)
+    result = _showBrowserNotification(title, body, options)
   }
 
-  sendWechatNotification(title, body);
+  sendWechatNotification(title, body)
 
-  return result;
+  return result
 }
 
 export async function scheduleNativeNotification(
@@ -219,8 +218,8 @@ export async function scheduleNativeNotification(
   delayInSeconds: number,
   options?: Omit<NotificationOptions, 'onClick' | 'onClose'>,
 ): Promise<number | null> {
-  const result = await scheduleNativeNotificationWithDebug(title, body, delayInSeconds, options);
-  return result.notificationId;
+  const result = await scheduleNativeNotificationWithDebug(title, body, delayInSeconds, options)
+  return result.notificationId
 }
 
 export async function scheduleNativeNotificationWithDebug(
@@ -230,41 +229,41 @@ export async function scheduleNativeNotificationWithDebug(
   options?: Omit<NotificationOptions, 'onClick' | 'onClose'>,
 ): Promise<NativeScheduleAttemptResult> {
   try {
-    const { sendNotification } = getNativeNotificationApi();
+    const { sendNotification } = getNativeNotificationApi()
     if (!sendNotification) {
-      throw new Error('Native notification API unavailable');
+      throw new Error('Native notification API unavailable')
     }
 
     const rawNotificationId = await sendNotification(buildNativeNotificationOptions(title, body, {
       ...options,
       delayInSeconds,
-    }));
+    }))
 
     if (!Number.isInteger(rawNotificationId) || rawNotificationId < 0) {
       return {
         notificationId: null,
         rawNotificationId,
         failureReason: 'invalid-id',
-      };
+      }
     }
 
     return {
       notificationId: rawNotificationId,
       rawNotificationId,
       failureReason: null,
-    };
+    }
   } catch (error) {
-    console.error('[Notification] 调度原生通知失败:', error);
+    console.error('[Notification] 调度原生通知失败:', error)
     return {
       notificationId: null,
       rawNotificationId: null,
       failureReason: 'exception',
-    };
+    }
   }
 }
 
 export function cancelNativeNotification(id: number): void {
-  getNativeNotificationApi().cancelNotification?.(id);
+  getNativeNotificationApi().cancelNotification?.(id)
 }
 
 /**
@@ -278,12 +277,12 @@ export async function showPomodoroCompleteNotification(
   durationMinutes: number,
   onClick?: () => void,
 ): Promise<UnifiedNotificationResult> {
-  const title = t('pomodoro').completeNotifyTitle;
-  const body = t('pomodoro').completeNotifyBody.replace('{content}', itemContent).replace('{minutes}', String(durationMinutes));
+  const title = t('pomodoro').completeNotifyTitle
+  const body = t('pomodoro').completeNotifyBody.replace('{content}', itemContent).replace('{minutes}', String(durationMinutes))
 
   return showSystemNotification(title, body, {
     tag: 'pomodoro-complete',
     icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
     onClick,
-  });
+  })
 }

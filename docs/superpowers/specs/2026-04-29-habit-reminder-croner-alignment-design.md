@@ -169,9 +169,9 @@
 
 ```ts
 interface HabitReminderEntry {
-  habit: Habit;
-  reminderTime: number;
-  key: string;
+  habit: Habit
+  reminderTime: number
+  key: string
 }
 
 function getHabitReminderEntries(

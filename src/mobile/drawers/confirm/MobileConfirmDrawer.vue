@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="confirm-overlay b3-dialog" @click="handleCancel">
+      <div
+        v-if="modelValue"
+        class="confirm-overlay b3-dialog"
+        @click="handleCancel"
+      >
         <Transition name="zoom">
           <div
             v-if="modelValue"
@@ -9,24 +13,35 @@
             style="overscroll-behavior: contain; touch-action: pan-y;"
             @click.stop
           >
-            <div class="confirm-icon" :class="{ danger: type === 'danger' }" v-if="icon">
+            <div
+              v-if="icon"
+              class="confirm-icon"
+              :class="{ danger: type === 'danger' }"
+            >
               <svg class="icon-svg">
                 <use :xlink:href="`#${icon}`"></use>
               </svg>
             </div>
 
             <div class="confirm-content">
-              <h3 class="confirm-title">{{ title }}</h3>
-              <p class="confirm-message">{{ message }}</p>
+              <h3 class="confirm-title">
+                {{ title }}
+              </h3>
+              <p class="confirm-message">
+                {{ message }}
+              </p>
             </div>
 
             <div class="confirm-footer">
-              <button class="cancel-btn" @click="handleCancel">
+              <button
+                class="cancel-btn"
+                @click="handleCancel"
+              >
                 {{ cancelText }}
               </button>
-              <button 
-                class="confirm-btn" 
-                :class="{ 'danger': type === 'danger' }"
+              <button
+                class="confirm-btn"
+                :class="{ danger: type === 'danger' }"
                 @click="handleConfirm"
               >
                 {{ confirmText }}
@@ -41,33 +56,33 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  modelValue: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  type?: 'default' | 'danger';
-  icon?: string;
-}>();
+  modelValue: boolean
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  type?: 'default' | 'danger'
+  icon?: string
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  confirm: [];
-  cancel: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "confirm": []
+  "cancel": []
+}>()
 
-const confirmText = props.confirmText || '确认';
-const cancelText = props.cancelText || '取消';
+const confirmText = props.confirmText || '确认'
+const cancelText = props.cancelText || '取消'
 
 const handleConfirm = () => {
-  emit('confirm');
-  emit('update:modelValue', false);
-};
+  emit('confirm')
+  emit('update:modelValue', false)
+}
 
 const handleCancel = () => {
-  emit('cancel');
-  emit('update:modelValue', false);
-};
+  emit('cancel')
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>

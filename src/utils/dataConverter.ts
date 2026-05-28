@@ -2,73 +2,80 @@
  * 数据转换器
  * 将项目数据转换为日历和甘特图所需格式
  */
-import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } from '@/types/models';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
+import type {
+  CalendarEvent,
+  GanttTask,
+  Item,
+  PomodoroRecord,
+  Project,
+  Task,
+} from '@/types/models'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
 
 export interface GanttSegment {
-  startTs: number;
-  endTs: number;
+  startTs: number
+  endTs: number
 }
 
 interface ItemSegment {
-  items: Item[];
+  items: Item[]
 }
 
 export class DataConverter {
   private static isDateOnly(value: string): boolean {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+    return /^\d{4}-\d{2}-\d{2}$/.test(value)
   }
 
   private static parseGanttDate(
     value: string,
-    boundary: 'start' | 'end'
+    boundary: 'start' | 'end',
   ): Date {
-    const parsed = dayjs(value);
+    const parsed = dayjs(value)
     if (!this.isDateOnly(value)) {
-      return parsed.toDate();
+      return parsed.toDate()
     }
 
     return boundary === 'start'
       ? parsed.startOf('day').toDate()
-      : parsed.endOf('day').toDate();
+      : parsed.endOf('day').toDate()
   }
 
   private static getGanttEndDate(value: string): Date {
-    return dayjs(value).endOf('day').toDate();
+    return dayjs(value).endOf('day').toDate()
   }
 
   /**
    * 将项目列表转换为日历事件
    */
   public static projectsToCalendarEvents(projects: Project[]): CalendarEvent[] {
-    const events: CalendarEvent[] = [];
+    const events: CalendarEvent[] = []
 
     for (const project of projects) {
       for (const task of project.tasks) {
         // 为每个任务添加事件
         if (task.date || task.startDateTime) {
-          const event = this.taskToCalendarEvent(task, project);
-          events.push(event);
+          const event = this.taskToCalendarEvent(task, project)
+          events.push(event)
         }
 
         // 为每个工作事项添加事件
         for (const item of task.items) {
-          const itemEvent = this.itemToCalendarEvent(item, task, project);
-          events.push(itemEvent);
+          const itemEvent = this.itemToCalendarEvent(item, task, project)
+          events.push(itemEvent)
         }
       }
     }
 
-    return events;
+    return events
   }
 
   /**
    * 将任务转换为日历事件
    */
   private static taskToCalendarEvent(task: Task, project: Project): CalendarEvent {
-    const start = task.startDateTime || task.date;
-    const end = task.endDateTime || task.startDateTime || task.date;
+    const start = task.startDateTime || task.date
+    const end = task.endDateTime || task.startDateTime || task.date
 
     return {
       id: task.id,
@@ -86,9 +93,9 @@ export class DataConverter {
         hasItems: task.items.length > 0,
         docId: project.id,
         lineNumber: task.lineNumber,
-        blockId: task.blockId
-      }
-    };
+        blockId: task.blockId,
+      },
+    }
   }
 
   /**
@@ -97,10 +104,10 @@ export class DataConverter {
   private static itemToCalendarEvent(
     item: Item,
     task: Task,
-    project: Project
+    project: Project,
   ): CalendarEvent {
-    const start = item.startDateTime || item.date;
-    const end = item.endDateTime || item.startDateTime || item.date;
+    const start = item.startDateTime || item.date
+    const end = item.endDateTime || item.startDateTime || item.date
 
     return {
       id: item.id,
@@ -133,8 +140,8 @@ export class DataConverter {
         repeatRule: item.repeatRule,
         endCondition: item.endCondition,
         priority: item.priority,
-      }
-    };
+      },
+    }
   }
 
   /**
@@ -145,22 +152,22 @@ export class DataConverter {
    */
   public static pomodoroBlocksToEvents(
     pomodoros: PomodoroRecord[] | undefined,
-    visibleDate?: string
+    visibleDate?: string,
   ): CalendarEvent[] {
-    if (!pomodoros || pomodoros.length === 0) return [];
+    if (!pomodoros || pomodoros.length === 0) return []
 
-    const events: CalendarEvent[] = [];
+    const events: CalendarEvent[] = []
 
     for (const record of pomodoros) {
       // 必须有 startTime 和 endTime 才能定位到时间轴
-      if (!record.startTime || !record.endTime) continue;
+      if (!record.startTime || !record.endTime) continue
 
       // 如果指定了可见日期，只显示该日期的记录
-      if (visibleDate && record.date !== visibleDate) continue;
+      if (visibleDate && record.date !== visibleDate) continue
 
-      const durationMinutes = record.actualDurationMinutes ?? record.durationMinutes;
-      const startDateTime = `${record.date}T${record.startTime}`;
-      const endDateTime = `${record.date}T${record.endTime}`;
+      const durationMinutes = record.actualDurationMinutes ?? record.durationMinutes
+      const startDateTime = `${record.date}T${record.startTime}`
+      const endDateTime = `${record.date}T${record.endTime}`
 
       events.push({
         id: `pomodoro-block-${record.id}`,
@@ -173,11 +180,11 @@ export class DataConverter {
           isPomodoroBlock: true,
           pomodoroDurationMinutes: durationMinutes,
           pomodoroDescription: record.description,
-        }
-      });
+        },
+      })
     }
 
-    return events;
+    return events
   }
 
   /**
@@ -186,20 +193,20 @@ export class DataConverter {
   public static projectsToGanttTasks(
     projects: Project[],
     showItems: boolean = false,
-    dateFilter?: { start?: string; end?: string }
+    dateFilter?: { start?: string, end?: string },
   ): GanttTask[] {
-    const ganttTasks: GanttTask[] = [];
+    const ganttTasks: GanttTask[] = []
 
     for (const project of projects) {
-      const projectId = `proj-${project.id}`;
+      const projectId = `proj-${project.id}`
 
       // 过滤任务
-      const filteredTasks = project.tasks.filter(task => {
-        if (!dateFilter) return true;
-        return this.isTaskInDateRange(task, dateFilter.start, dateFilter.end);
-      });
+      const filteredTasks = project.tasks.filter((task) => {
+        if (!dateFilter) return true
+        return this.isTaskInDateRange(task, dateFilter.start, dateFilter.end)
+      })
 
-      if (filteredTasks.length === 0) continue;
+      if (filteredTasks.length === 0) continue
 
       // 添加项目节点
       ganttTasks.push({
@@ -207,30 +214,33 @@ export class DataConverter {
         text: project.name,
         type: 'project',
         open: true,
-        progress: 0
-      });
+        progress: 0,
+      })
 
       // 层级追踪
-      let lastL1Id: string | null = null;
-      let lastL2Id: string | null = null;
+      let lastL1Id: string | null = null
+      let lastL2Id: string | null = null
 
       for (const task of filteredTasks) {
-        const taskId = `task-${task.id}`;
-        let parentId = projectId;
+        const taskId = `task-${task.id}`
+        let parentId = projectId
 
         // 确定层级
         if (task.level === 'L1') {
-          parentId = projectId;
-          lastL1Id = taskId;
-          lastL2Id = null;
+          parentId = projectId
+          lastL1Id = taskId
+          lastL2Id = null
         } else if (task.level === 'L2') {
-          parentId = lastL1Id || projectId;
-          lastL2Id = taskId;
+          parentId = lastL1Id || projectId
+          lastL2Id = taskId
         } else if (task.level === 'L3') {
-          parentId = lastL2Id || lastL1Id || projectId;
+          parentId = lastL2Id || lastL1Id || projectId
         }
 
-        const { start, end } = this.calculateTaskDates(task);
+        const {
+          start,
+          end,
+        } = this.calculateTaskDates(task)
 
         ganttTasks.push({
           id: taskId,
@@ -240,32 +250,32 @@ export class DataConverter {
           parent: parentId,
           type: 'task',
           open: true,
-          progress: 0
-        });
+          progress: 0,
+        })
 
         // 添加工作事项
         if (showItems && task.items.length > 0) {
-          const itemGroups = new Map<string, Item[]>();
+          const itemGroups = new Map<string, Item[]>()
           for (const item of task.items) {
-            const key = item.blockId ?? item.id;
-            if (!itemGroups.has(key)) itemGroups.set(key, []);
-            itemGroups.get(key)!.push(item);
+            const key = item.blockId ?? item.id
+            if (!itemGroups.has(key)) itemGroups.set(key, [])
+            itemGroups.get(key)!.push(item)
           }
 
           for (const [, group] of itemGroups) {
             if (group.length === 1) {
-              const item = group[0];
-              const itemStart = item.startDateTime || item.date;
-              const itemEnd = item.endDateTime || item.startDateTime || item.date;
+              const item = group[0]
+              const itemStart = item.startDateTime || item.date
+              const itemEnd = item.endDateTime || item.startDateTime || item.date
 
               if (itemStart) {
-                const startDate = this.parseGanttDate(itemStart, 'start');
+                const startDate = this.parseGanttDate(itemStart, 'start')
                 let endDate = itemEnd
                   ? this.parseGanttDate(itemEnd, 'end')
-                  : this.parseGanttDate(itemStart, 'end');
+                  : this.parseGanttDate(itemStart, 'end')
 
                 if (startDate.getTime() === endDate.getTime()) {
-                  endDate = this.getGanttEndDate(itemStart);
+                  endDate = this.getGanttEndDate(itemStart)
                 }
 
                 ganttTasks.push({
@@ -298,33 +308,33 @@ export class DataConverter {
                     dateRangeEnd: item.dateRangeEnd,
                     pomodoros: item.pomodoros,
                   },
-                });
+                })
               }
             } else {
-              const segments = this.mergeItemsToSegments(group);
-              const firstItem = group[0];
+              const segments = this.mergeItemsToSegments(group)
+              const firstItem = group[0]
 
-              const allDates = group.map(i => i.startDateTime || i.date).filter(Boolean) as string[];
-              const minDate = allDates.reduce((a, b) => a < b ? a : b);
-              const maxDate = (group.map(i => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b);
+              const allDates = group.map((i) => i.startDateTime || i.date).filter(Boolean) as string[]
+              const minDate = allDates.reduce((a, b) => a < b ? a : b)
+              const maxDate = (group.map((i) => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
 
-              const ganttSegments: GanttSegment[] = segments.map(seg => {
-                const segFirst = seg.items[0];
-                const segLast = seg.items.at(-1)!;
-                const segStart = segFirst.startDateTime || segFirst.date;
-                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
+              const ganttSegments: GanttSegment[] = segments.map((seg) => {
+                const segFirst = seg.items[0]
+                const segLast = seg.items.at(-1)!
+                const segStart = segFirst.startDateTime || segFirst.date
+                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
                 return {
                   startTs: this.parseGanttDate(segStart, 'start').getTime(),
                   endTs: segEnd
                     ? (this.parseGanttDate(segEnd, 'end').getTime())
                     : this.parseGanttDate(segStart, 'end').getTime(),
-                };
-              });
+                }
+              })
 
-              const startDate = this.parseGanttDate(minDate, 'start');
-              let endDate = this.parseGanttDate(maxDate, 'end');
+              const startDate = this.parseGanttDate(minDate, 'start')
+              let endDate = this.parseGanttDate(maxDate, 'end')
               if (startDate.getTime() === endDate.getTime()) {
-                endDate = this.getGanttEndDate(maxDate);
+                endDate = this.getGanttEndDate(maxDate)
               }
 
               ganttTasks.push({
@@ -359,70 +369,82 @@ export class DataConverter {
                   isMultiDate: true,
                   segments: ganttSegments,
                 },
-              });
+              })
             }
           }
         }
       }
     }
 
-    return ganttTasks;
+    return ganttTasks
   }
 
   /**
    * 计算任务日期
    */
   private static calculateTaskDates(
-    task: Task
-  ): { start: Date | undefined; end: Date | undefined } {
+    task: Task,
+  ): { start: Date | undefined, end: Date | undefined } {
     if (task.date || task.startDateTime) {
-      const startStr = task.startDateTime || task.date;
-      const endStr = task.endDateTime || task.startDateTime || task.date;
+      const startStr = task.startDateTime || task.date
+      const endStr = task.endDateTime || task.startDateTime || task.date
 
       if (startStr) {
-        const start = this.parseGanttDate(startStr, 'start');
+        const start = this.parseGanttDate(startStr, 'start')
         let end = endStr
           ? this.parseGanttDate(endStr, 'end')
-          : this.parseGanttDate(startStr, 'end');
+          : this.parseGanttDate(startStr, 'end')
 
         if (start.getTime() === end.getTime()) {
-          end = this.getGanttEndDate(startStr);
+          end = this.getGanttEndDate(startStr)
         }
 
-        return { start, end };
+        return {
+          start,
+          end,
+        }
       }
     }
 
     if (task.items && task.items.length > 0) {
-      let minDate: Date | null = null;
-      let maxDate: Date | null = null;
+      let minDate: Date | null = null
+      let maxDate: Date | null = null
 
       for (const item of task.items) {
-        const itemStart = item.startDateTime || item.date;
-        const itemEnd = item.endDateTime || item.startDateTime || item.date;
+        const itemStart = item.startDateTime || item.date
+        const itemEnd = item.endDateTime || item.startDateTime || item.date
 
         if (itemStart) {
-          const d = this.parseGanttDate(itemStart, 'start');
-          if (!minDate || d < minDate) minDate = d;
-          if (!maxDate || d > maxDate) maxDate = d;
+          const d = this.parseGanttDate(itemStart, 'start')
+          if (!minDate || d < minDate) minDate = d
+          if (!maxDate || d > maxDate) maxDate = d
         }
         if (itemEnd) {
-          const d = this.parseGanttDate(itemEnd, 'end');
-          if (!maxDate || d > maxDate) maxDate = d;
-          if (!minDate || d < minDate) minDate = d;
+          const d = this.parseGanttDate(itemEnd, 'end')
+          if (!maxDate || d > maxDate) maxDate = d
+          if (!minDate || d < minDate) minDate = d
         }
       }
 
       if (minDate && maxDate) {
         if (minDate.getTime() === maxDate.getTime()) {
-          const adjustedMax = dayjs(maxDate).endOf('day').toDate();
-          return { start: minDate, end: adjustedMax };
+          const adjustedMax = dayjs(maxDate).endOf('day').toDate()
+          return {
+            start: minDate,
+            end: adjustedMax,
+          }
         }
-        return { start: minDate, end: maxDate };
+        return {
+          start: minDate,
+          end: maxDate,
+        }
       }
     }
 
-    return { start: undefined, end: undefined };
+    return {
+      start: undefined,
+      end: undefined,
+    }
   }
 
   /**
@@ -431,50 +453,53 @@ export class DataConverter {
   private static isTaskInDateRange(
     task: Task,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): boolean {
-    if (!startDate && !endDate) return true;
+    if (!startDate && !endDate) return true
 
-    const { start, end } = this.calculateTaskDates(task);
-    if (!start || !end) return true;
+    const {
+      start,
+      end,
+    } = this.calculateTaskDates(task)
+    if (!start || !end) return true
 
-    const filterStart = startDate ? this.parseGanttDate(startDate, 'start') : null;
-    const filterEnd = endDate ? this.parseGanttDate(endDate, 'end') : null;
+    const filterStart = startDate ? this.parseGanttDate(startDate, 'start') : null
+    const filterEnd = endDate ? this.parseGanttDate(endDate, 'end') : null
 
-    const taskStartInRange = !filterEnd || start <= filterEnd;
-    const taskEndInRange = !filterStart || end >= filterStart;
+    const taskStartInRange = !filterEnd || start <= filterEnd
+    const taskEndInRange = !filterStart || end >= filterStart
 
-    return taskStartInRange && taskEndInRange;
+    return taskStartInRange && taskEndInRange
   }
 
   public static mergeItemsToSegments(items: Item[]): ItemSegment[] {
-    if (items.length === 0) return [];
+    if (items.length === 0) return []
 
-    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date))
 
-    const segments: ItemSegment[] = [];
-    let current: ItemSegment | null = null;
+    const segments: ItemSegment[] = []
+    let current: ItemSegment | null = null
 
     for (const item of sorted) {
       if (item.startDateTime) {
-        segments.push({ items: [item] });
-        current = null;
-        continue;
+        segments.push({ items: [item] })
+        current = null
+        continue
       }
 
       if (current) {
-        const lastDate = current.items.at(-1)!.date;
-        const nextDay = dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD');
+        const lastDate = current.items.at(-1)!.date
+        const nextDay = dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD')
         if (item.date === nextDay) {
-          current.items.push(item);
-          continue;
+          current.items.push(item)
+          continue
         }
       }
 
-      current = { items: [item] };
-      segments.push(current);
+      current = { items: [item] }
+      segments.push(current)
     }
 
-    return segments;
+    return segments
   }
 }

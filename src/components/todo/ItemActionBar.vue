@@ -1,5 +1,8 @@
 <template>
-  <div v-if="item" class="item-action-bar">
+  <div
+    v-if="item"
+    class="item-action-bar"
+  >
     <span
       v-if="canComplete"
       class="block__icon"
@@ -79,71 +82,87 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useApp, usePlugin } from '@/main';
-import { usePomodoroStore } from '@/stores';
-import { t } from '@/i18n';
-import { TAB_TYPES } from '@/constants';
-import { hideIconTooltip, showFocusPlanDialog, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
-import dayjs from '@/utils/dayjs';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { writeBlock } from '@/utils/blockWriter';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { TAB_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import { usePomodoroStore } from '@/stores'
+import { writeBlock } from '@/utils/blockWriter'
+import dayjs from '@/utils/dayjs'
+import {
+  hideIconTooltip,
+  showFocusPlanDialog,
+  showIconTooltip,
+  showPomodoroTimerDialog,
+} from '@/utils/dialog'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 
-type OpenDocMode = 'navigate' | 'preview';
+type OpenDocMode = 'navigate' | 'preview'
 
 const props = withDefaults(defineProps<{
-  item: Item | null;
-  openDocMode?: OpenDocMode;
+  item: Item | null
+  openDocMode?: OpenDocMode
 }>(), {
   openDocMode: 'navigate',
-});
+})
 
 const emit = defineEmits<{
-  (event: 'open-doc', docId: string, blockId: string): void;
-}>();
+  (event: 'open-doc', docId: string, blockId: string): void
+}>()
 
-const app = useApp();
-const plugin = usePlugin() as any;
-const pomodoroStore = usePomodoroStore();
-const isProcessing = ref(false);
-const docIconRef = ref<HTMLElement | null>(null);
+const app = useApp()
+const plugin = usePlugin() as any
+const pomodoroStore = usePomodoroStore()
+const isProcessing = ref(false)
+const docIconRef = ref<HTMLElement | null>(null)
 
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
-const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed');
-const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
+const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed')
+const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const focusPlanLabel = computed(() => {
   return props.item?.focusPlan
     ? t('focusPlan').editAction
-    : t('focusPlan').setAction;
-});
+    : t('focusPlan').setAction
+})
 const migrateLabel = computed(() => {
-  if (!props.item) return '';
+  if (!props.item) return ''
   return props.item.date < dayjs().format('YYYY-MM-DD')
     ? t('todo').migrateToToday
-    : t('todo').migrateToTomorrow;
-});
+    : t('todo').migrateToTomorrow
+})
 
 function buildDatePatch(item: Item, targetDate: string) {
   const completeSiblingItems = [
     ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime,
-    }] : []),
-  ];
+    ...(item.date
+      ? [{
+          date: item.date,
+          startDateTime: item.startDateTime,
+          endDateTime: item.endDateTime,
+        }]
+      : []),
+  ]
 
   return {
     type: 'addDate' as const,
@@ -153,101 +172,113 @@ function buildDatePatch(item: Item, targetDate: string) {
     allDay: !item.startDateTime,
     originalDate: item.date,
     siblingItems: completeSiblingItems,
-  };
+  }
 }
 
 function handleTooltipEnter(event: MouseEvent, text: string) {
-  const el = event.currentTarget as HTMLElement | null;
-  if (!el || !text) return;
-  showIconTooltip(el, text);
+  const el = event.currentTarget as HTMLElement | null
+  if (!el || !text) return
+  showIconTooltip(el, text)
 }
 
 function handleTooltipLeave() {
-  hideIconTooltip();
+  hideIconTooltip()
 }
 
 async function handleComplete() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
+  if (!props.item?.blockId || isProcessing.value) return
+  isProcessing.value = true
   try {
-    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
+    await writeBlock({
+      blockId: props.item.blockId,
+      listItemBlockId: props.item.listItemBlockId,
+    }, {
+      type: 'setStatus',
+      status: 'completed',
+    })
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
 }
 
 async function handleAbandon() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
+  if (!props.item?.blockId || isProcessing.value) return
+  isProcessing.value = true
   try {
-    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
+    await writeBlock({
+      blockId: props.item.blockId,
+      listItemBlockId: props.item.listItemBlockId,
+    }, {
+      type: 'setStatus',
+      status: 'abandoned',
+    })
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
 }
 
 function handleStartFocus() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  showPomodoroTimerDialog(props.item.blockId);
+  if (!props.item?.blockId || isProcessing.value) return
+  showPomodoroTimerDialog(props.item.blockId)
 }
 
 function handleFocusPlan() {
-  if (!props.item || isProcessing.value) return;
-  showFocusPlanDialog(props.item);
+  if (!props.item || isProcessing.value) return
+  showFocusPlanDialog(props.item)
 }
 
 async function handleMigrate() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
+  if (!props.item?.blockId || isProcessing.value) return
+  isProcessing.value = true
   try {
     const targetDate = props.item.date < dayjs().format('YYYY-MM-DD')
       ? dayjs().format('YYYY-MM-DD')
-      : dayjs().add(1, 'day').format('YYYY-MM-DD');
-    await writeBlock({ blockId: props.item.blockId }, buildDatePatch(props.item, targetDate));
+      : dayjs().add(1, 'day').format('YYYY-MM-DD')
+    await writeBlock({ blockId: props.item.blockId }, buildDatePatch(props.item, targetDate))
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
 }
 
 function handleOpenDocClick() {
-  if (!props.item?.blockId || isProcessing.value) return;
+  if (!props.item?.blockId || isProcessing.value) return
 
-  emit('open-doc', props.item.docId, props.item.blockId);
+  emit('open-doc', props.item.docId, props.item.blockId)
 
   if (props.openDocMode === 'preview') {
-    openBlockPreview(props.item.blockId);
-    return;
+    openBlockPreview(props.item.blockId)
+    return
   }
 
   if (props.item.docId) {
-    openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
+    openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId)
   }
 }
 
 function openBlockPreview(blockId: string) {
-  if (!docIconRef.value || !blockId) return;
+  if (!docIconRef.value || !blockId) return
 
   preview.showNow({
     blockId,
     itemId: blockId,
     anchorEl: docIconRef.value,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  if (props.openDocMode !== 'preview') return;
-  if (!preview.isOpen.value) return;
-  if (nativePreview.containsTarget(event.target)) return;
-  preview.forceClose();
+  if (props.openDocMode !== 'preview') return
+  if (!preview.isOpen.value) return
+  if (nativePreview.containsTarget(event.target)) return
+  preview.forceClose()
 }
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
-    if (props.openDocMode !== 'preview') return;
+    if (props.openDocMode !== 'preview') return
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -257,25 +288,25 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: () => {},
-    });
+    })
   },
   { flush: 'post' },
-);
+)
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 
 function handleOpenCalendar() {
-  if (!props.item || isProcessing.value) return;
+  if (!props.item || isProcessing.value) return
   if (plugin?.openCustomTab) {
-    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date });
+    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date })
   }
 }
 </script>
@@ -303,7 +334,9 @@ function handleOpenCalendar() {
   cursor: pointer;
   flex-shrink: 0;
   opacity: 1;
-  transition: opacity 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
 
   svg {
     width: 14px;

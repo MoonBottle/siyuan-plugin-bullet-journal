@@ -69,10 +69,10 @@
 
 在设置中增加日历相关配置项：
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
+| 字段                 | 类型      | 默认值 | 说明                           |
+| -------------------- | --------- | ------ | ------------------------------ |
 | `showPomodoroBlocks` | `boolean` | `true` | 日历日视图是否显示番茄钟时间块 |
-| `showPomodoroTotal` | `boolean` | `true` | 事项条是否显示专注总时长 |
+| `showPomodoroTotal`  | `boolean` | `true` | 事项条是否显示专注总时长       |
 
 放在日历设置区域（CalendarConfigSection 或相关位置）。两个开关独立控制，方便用户按需显示。
 
@@ -87,11 +87,11 @@
 
 ## 影响范围
 
-| 文件 | 改动 |
-|------|------|
-| `src/utils/dataConverter.ts` | 新增番茄钟 → background event 转换函数 |
+| 文件                                       | 改动                                                          |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `src/utils/dataConverter.ts`               | 新增番茄钟 → background event 转换函数                        |
 | `src/components/calendar/CalendarView.vue` | `eventDidMount` 注入时长文字；`renderEventContent` 显示总时长 |
-| `src/settings/types.ts` | 新增 `showPomodoroBlocks` 和 `showPomodoroTotal` 配置字段 |
-| `src/components/settings/` 相关 | 设置 UI 开关 |
-| `src/i18n/zh_CN.json` + `en_US.json` | 翻译 key |
-| `src/index.scss` 或组件样式 | 番茄钟色块和时长文字样式 |
+| `src/settings/types.ts`                    | 新增 `showPomodoroBlocks` 和 `showPomodoroTotal` 配置字段     |
+| `src/components/settings/` 相关            | 设置 UI 开关                                                  |
+| `src/i18n/zh_CN.json` + `en_US.json`       | 翻译 key                                                      |
+| `src/index.scss` 或组件样式                | 番茄钟色块和时长文字样式                                      |

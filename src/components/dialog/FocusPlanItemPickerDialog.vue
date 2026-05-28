@@ -17,7 +17,9 @@
           type="button"
           @click="emit('select', item)"
         >
-          <div class="focus-plan-item-picker__item-title">{{ item.content }}</div>
+          <div class="focus-plan-item-picker__item-title">
+            {{ item.content }}
+          </div>
           <div class="focus-plan-item-picker__item-meta">
             <span>{{ item.task?.name || item.project?.name || t('todo').detail }}</span>
             <span>{{ item.date }}</span>
@@ -27,35 +29,38 @@
       </div>
     </div>
 
-    <div v-if="sections.length === 0" class="focus-plan-item-picker__empty">
+    <div
+      v-if="sections.length === 0"
+      class="focus-plan-item-picker__empty"
+    >
       {{ t('focusWorkbench').pickerEmpty }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { formatFocusPlanDisplay } from '@/utils/focusPlanReview';
-import type { Item } from '@/types/models';
-import type { FocusPlanCandidateSection } from '@/utils/focusPlanWorkbench';
+import type { Item } from '@/types/models'
+import type { FocusPlanCandidateSection } from '@/utils/focusPlanWorkbench'
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
+import { formatFocusPlanDisplay } from '@/utils/focusPlanReview'
 
 const props = defineProps<{
-  sections: FocusPlanCandidateSection[];
-  selectedDate: string;
-}>();
+  sections: FocusPlanCandidateSection[]
+  selectedDate: string
+}>()
 
 const emit = defineEmits<{
-  select: [item: Item];
-}>();
+  select: [item: Item]
+}>()
 
-const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D日事项'));
+const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D日事项'))
 
 function getSectionTitle(key: FocusPlanCandidateSection['key']) {
-  if (key === 'expired') return t('focusWorkbench').expiredItems;
-  if (key === 'other-open') return t('focusWorkbench').otherOpenItems;
-  return selectedDateTitle.value;
+  if (key === 'expired') return t('focusWorkbench').expiredItems
+  if (key === 'other-open') return t('focusWorkbench').otherOpenItems
+  return selectedDateTitle.value
 }
 </script>
 

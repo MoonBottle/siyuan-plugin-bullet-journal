@@ -6,7 +6,7 @@
  * setContent 其次（更新基础内容），日期/提醒/循环等属性变更随后，
  * setStatus 最后（状态变更可能影响其他属性的渲染）
  */
-import type { BlockPatch } from '@/utils/blockWriter/shared/types';
+import type { BlockPatch } from '@/utils/blockWriter/shared/types'
 
 /** patch 类型执行优先级：数值越小越先执行 */
 const PATCH_ORDER: Record<BlockPatch['type'], number> = {
@@ -24,15 +24,18 @@ const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   setHabitDefinition: 100,
   setHabitRecord: 110,
   replaceMarkdown: 120,
-};
+}
 
 /** 对 patch 序列进行稳定排序，确保执行顺序符合依赖关系 */
 export function normalizePatchSequence(patches: BlockPatch[]): BlockPatch[] {
   return patches
-    .map((patch, index) => ({ patch, index }))
+    .map((patch, index) => ({
+      patch,
+      index,
+    }))
     .sort((a, b) => {
-      const orderDelta = PATCH_ORDER[a.patch.type] - PATCH_ORDER[b.patch.type];
-      return orderDelta !== 0 ? orderDelta : a.index - b.index;
+      const orderDelta = PATCH_ORDER[a.patch.type] - PATCH_ORDER[b.patch.type]
+      return orderDelta !== 0 ? orderDelta : a.index - b.index
     })
-    .map(entry => entry.patch);
+    .map((entry) => entry.patch)
 }

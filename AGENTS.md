@@ -30,6 +30,7 @@ npm run lint:fix     # Lint and auto-fix
 ### Plugin Entry & Lifecycle
 
 `src/index.ts` exports `TaskAssistantPlugin extends Plugin` (SiYuan's plugin base class). `onload()`:
+
 1. Inits i18n and settings
 2. Creates a **shared Pinia instance** (all tabs/docks share one store to prevent state divergence via `src/utils/sharedPinia.ts`)
 3. Registers 4 Tabs (Calendar, Gantt, Project, PomodoroStats) and 3 Docks (Todo, AI Chat, Pomodoro)
@@ -59,6 +60,7 @@ SiYuan notes (markdown with markers)
 ### Build Pipeline
 
 Two separate Vite builds:
+
 1. **MCP server** (`vite.mcp.config.ts`) — ESM, Node 18 target, bundles all deps into `dist/mcp-server.js`
 2. **Plugin** (`vite.config.ts`) — CJS library (SiYuan requirement), Vue + SCSS, static file copy. Production removes console.log and creates `package.zip`
 

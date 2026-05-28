@@ -1,4 +1,3 @@
-
 ---
 
 ## Phase 3: Drawer Components
@@ -12,6 +11,100 @@
 
 ```vue
 <!-- src/tabs/mobile/drawers/FilterDrawer.vue -->
+<script setup lang="ts">
+import type { PriorityLevel } from '@/types/models'
+import { ref, Teleport, watch } from 'vue'
+
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { useSettingsStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+
+const props = defineProps<{
+  modelValue: boolean
+  selectedGroup: string
+  dateFilter: 'today' | 'week' | 'all' | 'custom'
+  dateRange: { start: string, end: string } | null
+  priorities: PriorityLevel[]
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'update:selectedGroup': [value: string]
+  'update:dateFilter': [value: 'today' | 'week' | 'all' | 'custom']
+  'update:dateRange': [value: { start: string, end: string } | null]
+  'update:priorities': [value: PriorityLevel[]]
+  'apply': []
+}>()
+
+const settingsStore = useSettingsStore()
+
+// Local state
+const localGroup = ref(props.selectedGroup)
+const localDateFilter = ref(props.dateFilter)
+const localStartDate = ref(props.dateRange?.start || dayjs().format('YYYY-MM-DD'))
+const localEndDate = ref(props.dateRange?.end || dayjs().add(7, 'day').format('YYYY-MM-DD'))
+const localPriorities = ref<PriorityLevel[]>([...props.priorities])
+
+// Sync with props
+watch(() => props.modelValue, (val) => {
+  if (val) {
+    localGroup.value = props.selectedGroup
+    localDateFilter.value = props.dateFilter
+    localStartDate.value = props.dateRange?.start || dayjs().format('YYYY-MM-DD')
+    localEndDate.value = props.dateRange?.end || dayjs().add(7, 'day').format('YYYY-MM-DD')
+    localPriorities.value = [...props.priorities]
+  }
+})
+
+const dateOptions = [
+  { value: 'today', label: t('todo').dateFilter?.today || '今天' },
+  { value: 'week', label: t('todo').dateFilter?.thisWeek || '近7天' },
+  { value: 'all', label: t('todo').dateFilter?.all || '全部' },
+  { value: 'custom', label: t('todo').dateFilter?.custom || '自定义' },
+]
+
+const priorityOptions = [
+  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: t('todo').priority?.high || '高' },
+  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: t('todo').priority?.medium || '中' },
+  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: t('todo').priority?.low || '低' },
+]
+
+function togglePriority(priority: PriorityLevel) {
+  const index = localPriorities.value.indexOf(priority)
+  if (index > -1) {
+    localPriorities.value.splice(index, 1)
+  }
+  else {
+    localPriorities.value.push(priority)
+  }
+}
+
+function resetFilters() {
+  localGroup.value = ''
+  localDateFilter.value = 'today'
+  localPriorities.value = []
+}
+
+function applyFilters() {
+  emit('update:selectedGroup', localGroup.value)
+  emit('update:dateFilter', localDateFilter.value)
+  if (localDateFilter.value === 'custom') {
+    emit('update:dateRange', { start: localStartDate.value, end: localEndDate.value })
+  }
+  else {
+    emit('update:dateRange', null)
+  }
+  emit('update:priorities', localPriorities.value)
+  emit('apply')
+  close()
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -19,26 +112,32 @@
         <Transition name="slide-up">
           <div v-if="modelValue" class="filter-drawer" @click.stop>
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
-            
+
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('mobile.filter.title') || '筛选' }}</h3>
-              <button class="reset-btn" @click="resetFilters">{{ t('mobile.filter.reset') || '重置' }}</button>
+              <h3 class="drawer-title">
+                {{ t('mobile.filter.title') || '筛选' }}
+              </h3>
+              <button class="reset-btn" @click="resetFilters">
+                {{ t('mobile.filter.reset') || '重置' }}
+              </button>
             </div>
-            
+
             <div class="drawer-content">
               <!-- Project Group -->
               <div class="filter-section">
                 <label class="section-label">{{ t('mobile.filter.projectGroup') || '项目分组' }}</label>
                 <select v-model="localGroup" class="filter-select">
-                  <option value="">{{ t('settings').projectGroups.allGroups }}</option>
+                  <option value="">
+                    {{ t('settings').projectGroups.allGroups }}
+                  </option>
                   <option v-for="group in settingsStore.groups" :key="group.id" :value="group.id">
                     {{ group.name }}
                   </option>
                 </select>
               </div>
-              
+
               <!-- Date Filter -->
               <div class="filter-section">
                 <label class="section-label">{{ t('mobile.filter.dateFilter') || '日期筛选' }}</label>
@@ -53,15 +152,15 @@
                     {{ opt.label }}
                   </button>
                 </div>
-                
+
                 <!-- Custom date range -->
                 <div v-if="localDateFilter === 'custom'" class="date-range-inputs">
-                  <input v-model="localStartDate" type="date" class="date-input" />
+                  <input v-model="localStartDate" type="date" class="date-input">
                   <span>至</span>
-                  <input v-model="localEndDate" type="date" class="date-input" />
+                  <input v-model="localEndDate" type="date" class="date-input">
                 </div>
               </div>
-              
+
               <!-- Priority -->
               <div class="filter-section">
                 <label class="section-label">{{ t('mobile.filter.priority') || '优先级' }}</label>
@@ -78,7 +177,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="drawer-footer">
               <button class="b3-button b3-button--text" @click="applyFilters">
                 {{ t('mobile.filter.confirm') || '确认' }}
@@ -90,98 +189,6 @@
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Teleport } from 'vue';
-import { useSettingsStore } from '@/stores';
-import { t } from '@/i18n';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { PriorityLevel } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-
-const props = defineProps<{
-  modelValue: boolean;
-  selectedGroup: string;
-  dateFilter: 'today' | 'week' | 'all' | 'custom';
-  dateRange: { start: string; end: string } | null;
-  priorities: PriorityLevel[];
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'update:selectedGroup': [value: string];
-  'update:dateFilter': [value: 'today' | 'week' | 'all' | 'custom'];
-  'update:dateRange': [value: { start: string; end: string } | null];
-  'update:priorities': [value: PriorityLevel[]];
-  'apply': [];
-}>();
-
-const settingsStore = useSettingsStore();
-
-// Local state
-const localGroup = ref(props.selectedGroup);
-const localDateFilter = ref(props.dateFilter);
-const localStartDate = ref(props.dateRange?.start || dayjs().format('YYYY-MM-DD'));
-const localEndDate = ref(props.dateRange?.end || dayjs().add(7, 'day').format('YYYY-MM-DD'));
-const localPriorities = ref<PriorityLevel[]>([...props.priorities]);
-
-// Sync with props
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    localGroup.value = props.selectedGroup;
-    localDateFilter.value = props.dateFilter;
-    localStartDate.value = props.dateRange?.start || dayjs().format('YYYY-MM-DD');
-    localEndDate.value = props.dateRange?.end || dayjs().add(7, 'day').format('YYYY-MM-DD');
-    localPriorities.value = [...props.priorities];
-  }
-});
-
-const dateOptions = [
-  { value: 'today', label: t('todo').dateFilter?.today || '今天' },
-  { value: 'week', label: t('todo').dateFilter?.thisWeek || '近7天' },
-  { value: 'all', label: t('todo').dateFilter?.all || '全部' },
-  { value: 'custom', label: t('todo').dateFilter?.custom || '自定义' },
-];
-
-const priorityOptions = [
-  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: t('todo').priority?.high || '高' },
-  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: t('todo').priority?.medium || '中' },
-  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: t('todo').priority?.low || '低' },
-];
-
-const togglePriority = (priority: PriorityLevel) => {
-  const index = localPriorities.value.indexOf(priority);
-  if (index > -1) {
-    localPriorities.value.splice(index, 1);
-  } else {
-    localPriorities.value.push(priority);
-  }
-};
-
-const resetFilters = () => {
-  localGroup.value = '';
-  localDateFilter.value = 'today';
-  localPriorities.value = [];
-};
-
-const applyFilters = () => {
-  emit('update:selectedGroup', localGroup.value);
-  emit('update:dateFilter', localDateFilter.value);
-  if (localDateFilter.value === 'custom') {
-    emit('update:dateRange', { start: localStartDate.value, end: localEndDate.value });
-  } else {
-    emit('update:dateRange', null);
-  }
-  emit('update:priorities', localPriorities.value);
-  emit('apply');
-  close();
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -348,12 +355,94 @@ git commit -m "feat: add FilterDrawer component"
 ### Task 12: Create ActionDrawer Component
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/ActionDrawer.vue`
 
 - [ ] **Step 1: Create the component**
 
 ```vue
 <!-- src/tabs/mobile/drawers/ActionDrawer.vue -->
+<script setup lang="ts">
+import type { Item } from '@/types/models'
+import { Teleport } from 'vue'
+import { useRouter } from 'vue-router'
+import { TAB_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { showItemDetailModal } from '@/utils/dialog'
+import { openDocumentAtLine, updateBlockContent } from '@/utils/fileUtils'
+
+const props = defineProps<{
+  modelValue: boolean
+  item: Item | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'openDetail': [item: Item]
+  'openPomodoro': [item: Item]
+}>()
+
+async function handleComplete() {
+  if (!props.item?.blockId)
+    return
+  const tag = t('statusTag').completed || '✅'
+  await updateBlockContent(props.item.blockId, tag)
+  close()
+}
+
+function handlePomodoro() {
+  if (!props.item)
+    return
+  emit('openPomodoro', props.item)
+  close()
+}
+
+async function handleMigrate() {
+  if (!props.item?.blockId)
+    return
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const dateStr = tomorrow.toISOString().split('T')[0]
+
+  // Open date picker or directly migrate to tomorrow
+  // For now, migrate to tomorrow by default
+  const { updateBlockDateTime } = await import('@/utils/fileUtils')
+  await updateBlockDateTime(
+    props.item.blockId,
+    dateStr,
+    props.item.startDateTime?.split(' ')[1],
+    props.item.endDateTime?.split(' ')[1]
+  )
+  close()
+}
+
+async function handleAbandon() {
+  if (!props.item?.blockId)
+    return
+  const tag = t('statusTag').abandoned || '❌'
+  await updateBlockContent(props.item.blockId, tag)
+  close()
+}
+
+function handleDetail() {
+  if (!props.item)
+    return
+  emit('openDetail', props.item)
+  close()
+}
+
+function handleCalendar() {
+  if (!props.item)
+    return
+  // Use plugin to open calendar tab
+  close()
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -361,18 +450,20 @@ git commit -m "feat: add FilterDrawer component"
         <Transition name="slide-up">
           <div v-if="modelValue" class="action-drawer" @click.stop>
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
-            
+
             <!-- Item Info -->
             <div v-if="item" class="item-info">
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">
+                {{ item.content }}
+              </div>
               <div v-if="item.project || item.task" class="item-breadcrumb">
                 <span v-if="item.project">{{ item.project.name }}</span>
                 <span v-if="item.task">> {{ item.task.name }}</span>
               </div>
             </div>
-            
+
             <!-- Action Grid -->
             <div class="action-grid">
               <button class="action-btn" @click="handleComplete">
@@ -406,81 +497,6 @@ git commit -m "feat: add FilterDrawer component"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { Teleport } from 'vue';
-import { useRouter } from 'vue-router';
-import { t } from '@/i18n';
-import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
-import { showItemDetailModal } from '@/utils/dialog';
-import { TAB_TYPES } from '@/constants';
-import type { Item } from '@/types/models';
-
-const props = defineProps<{
-  modelValue: boolean;
-  item: Item | null;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openDetail': [item: Item];
-  'openPomodoro': [item: Item];
-}>();
-
-const handleComplete = async () => {
-  if (!props.item?.blockId) return;
-  const tag = t('statusTag').completed || '✅';
-  await updateBlockContent(props.item.blockId, tag);
-  close();
-};
-
-const handlePomodoro = () => {
-  if (!props.item) return;
-  emit('openPomodoro', props.item);
-  close();
-};
-
-const handleMigrate = async () => {
-  if (!props.item?.blockId) return;
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dateStr = tomorrow.toISOString().split('T')[0];
-  
-  // Open date picker or directly migrate to tomorrow
-  // For now, migrate to tomorrow by default
-  const { updateBlockDateTime } = await import('@/utils/fileUtils');
-  await updateBlockDateTime(
-    props.item.blockId,
-    dateStr,
-    props.item.startDateTime?.split(' ')[1],
-    props.item.endDateTime?.split(' ')[1]
-  );
-  close();
-};
-
-const handleAbandon = async () => {
-  if (!props.item?.blockId) return;
-  const tag = t('statusTag').abandoned || '❌';
-  await updateBlockContent(props.item.blockId, tag);
-  close();
-};
-
-const handleDetail = () => {
-  if (!props.item) return;
-  emit('openDetail', props.item);
-  close();
-};
-
-const handleCalendar = () => {
-  if (!props.item) return;
-  // Use plugin to open calendar tab
-  close();
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -614,26 +630,27 @@ Two execution options:
 ### Task 13: Create useItemDetail Composable
 
 **Files:**
+
 - Create: `src/tabs/mobile/composables/useItemDetail.ts`
 
 - [ ] **Step 1: Create the composable**
 
 ```typescript
+import type { Item, PomodoroRecord, Project, Task } from '@/types/models'
 // src/tabs/mobile/composables/useItemDetail.ts
-import { ref, reactive, computed } from 'vue';
-import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
+import { computed, reactive, ref } from 'vue'
 
 export interface DetailState {
   // Navigation stack for hierarchical browsing
-  stack: Array<{ type: 'item' | 'project' | 'task'; id: string }>;
-  
+  stack: Array<{ type: 'item' | 'project' | 'task', id: string }>
+
   // Current view data
-  currentItem: Item | null;
-  currentProject: Project | null;
-  currentTask: Task | null;
-  
+  currentItem: Item | null
+  currentProject: Project | null
+  currentTask: Task | null
+
   // UI state
-  showPomodoroList: boolean;
+  showPomodoroList: boolean
 }
 
 const state = reactive<DetailState>({
@@ -642,70 +659,72 @@ const state = reactive<DetailState>({
   currentProject: null,
   currentTask: null,
   showPomodoroList: false,
-});
+})
 
 export function useItemDetail() {
-  const isRootLevel = computed(() => state.stack.length === 0);
-  const currentLevel = computed(() => state.stack.length);
-  const canGoBack = computed(() => state.stack.length > 0);
+  const isRootLevel = computed(() => state.stack.length === 0)
+  const currentLevel = computed(() => state.stack.length)
+  const canGoBack = computed(() => state.stack.length > 0)
   const breadcrumb = computed(() => {
     return state.stack.map(s => ({
       type: s.type,
-      name: s.type === 'project' 
-        ? state.currentProject?.name 
-        : s.type === 'task' 
-          ? state.currentTask?.name 
+      name: s.type === 'project'
+        ? state.currentProject?.name
+        : s.type === 'task'
+          ? state.currentTask?.name
           : state.currentItem?.content,
-    }));
-  });
+    }))
+  })
 
   const openItem = (item: Item) => {
-    state.currentItem = item;
-    state.currentProject = item.project || null;
-    state.currentTask = item.task || null;
-    state.stack = [];
-  };
+    state.currentItem = item
+    state.currentProject = item.project || null
+    state.currentTask = item.task || null
+    state.stack = []
+  }
 
   const openProject = (project: Project) => {
     if (state.currentProject) {
-      state.stack.push({ type: 'project', id: project.id });
+      state.stack.push({ type: 'project', id: project.id })
     }
-    state.currentProject = project;
-    state.currentTask = null;
-  };
+    state.currentProject = project
+    state.currentTask = null
+  }
 
   const openTask = (task: Task) => {
     if (state.currentTask) {
-      state.stack.push({ type: 'task', id: task.blockId || task.name });
+      state.stack.push({ type: 'task', id: task.blockId || task.name })
     }
-    state.currentTask = task;
-  };
+    state.currentTask = task
+  }
 
   const goBack = () => {
-    if (state.stack.length === 0) return false;
-    
-    const prev = state.stack.pop();
-    if (!prev) return false;
-    
+    if (state.stack.length === 0)
+      return false
+
+    const prev = state.stack.pop()
+    if (!prev)
+      return false
+
     // Restore previous state based on stack
     // This is simplified - in real implementation, you'd fetch the data
-    return true;
-  };
+    return true
+  }
 
   const reset = () => {
-    state.stack = [];
-    state.currentItem = null;
-    state.currentProject = null;
-    state.currentTask = null;
-    state.showPomodoroList = false;
-  };
+    state.stack = []
+    state.currentItem = null
+    state.currentProject = null
+    state.currentTask = null
+    state.showPomodoroList = false
+  }
 
   const formatPomodoroDuration = (pomodoro: PomodoroRecord): string => {
-    const start = new Date(pomodoro.startTime);
-    const end = new Date(pomodoro.endTime);
-    const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
-    return `${minutes}分钟`;
-  };
+    const start = new Date(pomodoro.startTime)
+    const end = new Date(pomodoro.endTime)
+    const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
+    return `${minutes}分钟`
+  }
 
   return {
     state,
@@ -719,7 +738,7 @@ export function useItemDetail() {
     goBack,
     reset,
     formatPomodoroDuration,
-  };
+  }
 }
 ```
 
@@ -735,12 +754,209 @@ git commit -m "feat: add useItemDetail composable"
 ### Task 14: Create MobileItemDetail Component
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/MobileItemDetail.vue`
 
 - [ ] **Step 1: Create the component**
 
 ```vue
 <!-- src/tabs/mobile/drawers/MobileItemDetail.vue -->
+<script setup lang="ts">
+import type { Item, PomodoroRecord, PriorityLevel } from '@/types/models'
+import { Menu, Teleport } from 'siyuan'
+import { computed, ref } from 'vue'
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { generateEndConditionMarker, generateRepeatRuleMarker } from '@/parser/recurringParser'
+import { useSettingsStore } from '@/stores'
+import { calculateDuration, formatDateLabel, formatTimeRange } from '@/utils/dateUtils'
+import dayjs from '@/utils/dayjs'
+import { formatReminderDisplay } from '@/utils/displayUtils'
+import { openDocumentAtLine, updateBlockContent } from '@/utils/fileUtils'
+
+const props = defineProps<{
+  modelValue: boolean
+  item: Item | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'openProject': [projectId: string]
+  'openTask': [taskBlockId: string]
+  'openPomodoro': [item: Item]
+  'setReminder': [item: Item]
+  'setRecurring': [item: Item]
+}>()
+
+const settingsStore = useSettingsStore()
+const showPomodoroList = ref(false)
+
+const isCompletedOrAbandoned = computed(() =>
+  props.item?.status === 'completed' || props.item?.status === 'abandoned'
+)
+
+const canSetRecurring = computed(() => !props.item?.siblingItems?.length)
+
+const hasReminder = computed(() => props.item?.reminder?.enabled)
+
+const hasRecurring = computed(() => !!props.item?.repeatRule)
+
+const reminderText = computed(() => {
+  if (!hasReminder.value)
+    return t('mobile.detail.setReminder') || '设置提醒'
+  return formatReminderDisplay(props.item!.reminder, t)
+})
+
+const recurringText = computed(() => {
+  if (!hasRecurring.value)
+    return t('mobile.detail.setRecurring') || '设置重复'
+  const rule = generateRepeatRuleMarker(props.item!.repeatRule)
+  const end = generateEndConditionMarker(props.item!.endCondition)
+  return end ? `${rule} ${end}` : rule
+})
+
+const formatTimeDisplay = computed(() => {
+  if (!props.item)
+    return ''
+  const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow)
+  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
+  return timeRange ? `${dateLabel} ${timeRange}` : dateLabel
+})
+
+const duration = computed(() => {
+  if (!props.item?.startDateTime || !props.item?.endDateTime)
+    return ''
+  return calculateDuration(
+    props.item.startDateTime,
+    props.item.endDateTime,
+    settingsStore.lunchBreakStart,
+    settingsStore.lunchBreakEnd
+  )
+})
+
+const focusTotalTime = computed(() => {
+  if (!props.item?.pomodoros?.length)
+    return ''
+  const totalMinutes = props.item.pomodoros.reduce((sum, p) => {
+    const start = new Date(p.startTime)
+    const end = new Date(p.endTime)
+    return sum + (end.getTime() - start.getTime()) / 60000
+  }, 0)
+  if (totalMinutes < 60)
+    return `${Math.round(totalMinutes)}分钟`
+  return `${Math.floor(totalMinutes / 60)}小时${Math.round(totalMinutes % 60)}分钟`
+})
+
+const pomodoroRecords = computed(() => props.item?.pomodoros || [])
+
+const itemLinks = computed(() => props.item?.links || [])
+
+function getStatusEmoji(item: Item): string {
+  if (item.status === 'completed')
+    return '✅'
+  if (item.status === 'abandoned')
+    return '❌'
+  return '⏳'
+}
+
+const getPriorityEmoji = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.emoji || ''
+
+const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.label || priority
+
+function copyContent() {
+  if (!props.item?.content)
+    return
+  navigator.clipboard.writeText(props.item.content)
+}
+
+function goToProject() {
+  if (!props.item?.project?.id)
+    return
+  emit('openProject', props.item.project.id)
+}
+
+function goToTask() {
+  if (!props.item?.task?.blockId)
+    return
+  emit('openTask', props.item.task.blockId)
+}
+
+function togglePomodoroList() {
+  showPomodoroList.value = !showPomodoroList.value
+}
+
+function formatPomodoroTime(p: PomodoroRecord): string {
+  const start = new Date(p.startTime)
+  const end = new Date(p.endTime)
+  return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
+}
+
+function formatPomodoroDuration(p: PomodoroRecord): string {
+  const start = new Date(p.startTime)
+  const end = new Date(p.endTime)
+  const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
+  return `${minutes}分钟`
+}
+
+function handleLinkClick(url: string) {
+  if (url.startsWith('siyuan://')) {
+    close()
+  }
+}
+
+async function handleComplete() {
+  if (!props.item?.blockId)
+    return
+  const tag = t('statusTag').completed || '✅'
+  await updateBlockContent(props.item.blockId, tag)
+  close()
+}
+
+function handleStartPomodoro() {
+  if (!props.item)
+    return
+  emit('openPomodoro', props.item)
+  close()
+}
+
+function handleOpenCalendar() {
+  close()
+}
+
+function handleSetReminder() {
+  if (!props.item)
+    return
+  emit('setReminder', props.item)
+}
+
+function handleSetRecurring() {
+  if (!props.item)
+    return
+  emit('setRecurring', props.item)
+}
+
+function showMoreMenu(event: MouseEvent) {
+  const menu = new Menu('item-detail-more')
+  menu.addItem({
+    icon: 'iconEdit',
+    label: t('todo').openDoc || '打开文档',
+    click: () => {
+      if (props.item?.docId) {
+        openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId)
+      }
+    },
+  })
+  menu.open({
+    x: event.clientX,
+    y: event.clientY,
+  })
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="slide-up-full">
@@ -748,29 +964,33 @@ git commit -m "feat: add useItemDetail composable"
         <!-- Header -->
         <div class="detail-header">
           <button class="back-btn" @click="close">
-            <svg><use xlink:href="#iconLeft"></use></svg>
+            <svg><use xlink:href="#iconLeft" /></svg>
           </button>
           <span class="header-title">{{ t('mobile.detail.item') || '事项详情' }}</span>
           <button class="more-btn" @click="showMoreMenu">
-            <svg><use xlink:href="#iconMore"></use></svg>
+            <svg><use xlink:href="#iconMore" /></svg>
           </button>
         </div>
-        
+
         <!-- Content -->
         <div v-if="item" class="detail-content">
           <!-- Project Section -->
           <div v-if="item.project" class="detail-section project-section" @click="goToProject">
-            <div class="section-label">{{ t('mobile.detail.project') || '项目' }}</div>
+            <div class="section-label">
+              {{ t('mobile.detail.project') || '项目' }}
+            </div>
             <div class="section-value">
               <span class="project-icon">📁</span>
               {{ item.project.name }}
               <span class="arrow">›</span>
             </div>
           </div>
-          
+
           <!-- Task Section -->
           <div v-if="item.task" class="detail-section task-section" @click="goToTask">
-            <div class="section-label">{{ t('mobile.detail.task') || '任务' }}</div>
+            <div class="section-label">
+              {{ t('mobile.detail.task') || '任务' }}
+            </div>
             <div class="section-value">
               <span class="task-icon">📋</span>
               {{ item.task.name }}
@@ -778,7 +998,7 @@ git commit -m "feat: add useItemDetail composable"
               <span class="arrow">›</span>
             </div>
           </div>
-          
+
           <!-- Item Content -->
           <div class="detail-section content-section">
             <div class="item-main-content" @longpress="copyContent">
@@ -789,7 +1009,7 @@ git commit -m "feat: add useItemDetail composable"
               {{ getPriorityEmoji(item.priority) }} {{ getPriorityLabel(item.priority) }}
             </div>
           </div>
-          
+
           <!-- Time Info -->
           <div class="detail-section time-section">
             <div class="info-row">
@@ -808,21 +1028,21 @@ git commit -m "feat: add useItemDetail composable"
               <span class="info-value">{{ focusTotalTime }}</span>
             </div>
           </div>
-          
+
           <!-- Quick Actions -->
           <div class="detail-section actions-section">
-            <button 
+            <button
               v-if="!isCompletedOrAbandoned"
-              class="action-chip" 
+              class="action-chip"
               :class="{ active: hasReminder }"
               @click="handleSetReminder"
             >
               <span>⏰</span>
               {{ reminderText }}
             </button>
-            <button 
+            <button
               v-if="!isCompletedOrAbandoned && canSetRecurring"
-              class="action-chip" 
+              class="action-chip"
               :class="{ active: hasRecurring }"
               @click="handleSetRecurring"
             >
@@ -830,13 +1050,15 @@ git commit -m "feat: add useItemDetail composable"
               {{ recurringText }}
             </button>
           </div>
-          
+
           <!-- Links -->
           <div v-if="itemLinks.length > 0" class="detail-section links-section">
-            <div class="section-label">{{ t('mobile.detail.relatedLinks') || '相关链接' }}</div>
+            <div class="section-label">
+              {{ t('mobile.detail.relatedLinks') || '相关链接' }}
+            </div>
             <div class="links-list">
-              <a 
-                v-for="link in itemLinks" 
+              <a
+                v-for="link in itemLinks"
                 :key="link.url"
                 :href="link.url"
                 class="link-item"
@@ -846,7 +1068,7 @@ git commit -m "feat: add useItemDetail composable"
               </a>
             </div>
           </div>
-          
+
           <!-- Pomodoro Records -->
           <div v-if="pomodoroRecords.length > 0" class="detail-section pomodoro-section">
             <div class="section-header" @click="togglePomodoroList">
@@ -854,8 +1076,8 @@ git commit -m "feat: add useItemDetail composable"
               <span class="toggle-icon" :class="{ expanded: showPomodoroList }">▼</span>
             </div>
             <div v-show="showPomodoroList" class="pomodoro-list">
-              <div 
-                v-for="p in pomodoroRecords" 
+              <div
+                v-for="p in pomodoroRecords"
                 :key="p.id"
                 class="pomodoro-item"
               >
@@ -866,7 +1088,7 @@ git commit -m "feat: add useItemDetail composable"
             </div>
           </div>
         </div>
-        
+
         <!-- Bottom Action Bar -->
         <div class="detail-footer">
           <button class="footer-btn" @click="handleOpenCalendar">
@@ -890,187 +1112,6 @@ git commit -m "feat: add useItemDetail composable"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Teleport, Menu } from 'siyuan';
-import { t } from '@/i18n';
-import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
-import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
-import { useSettingsStore } from '@/stores';
-import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-
-const props = defineProps<{
-  modelValue: boolean;
-  item: Item | null;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openProject': [projectId: string];
-  'openTask': [taskBlockId: string];
-  'openPomodoro': [item: Item];
-  'setReminder': [item: Item];
-  'setRecurring': [item: Item];
-}>();
-
-const settingsStore = useSettingsStore();
-const showPomodoroList = ref(false);
-
-const isCompletedOrAbandoned = computed(() => 
-  props.item?.status === 'completed' || props.item?.status === 'abandoned'
-);
-
-const canSetRecurring = computed(() => !props.item?.siblingItems?.length);
-
-const hasReminder = computed(() => props.item?.reminder?.enabled);
-
-const hasRecurring = computed(() => !!props.item?.repeatRule);
-
-const reminderText = computed(() => {
-  if (!hasReminder.value) return t('mobile.detail.setReminder') || '设置提醒';
-  return formatReminderDisplay(props.item!.reminder, t);
-});
-
-const recurringText = computed(() => {
-  if (!hasRecurring.value) return t('mobile.detail.setRecurring') || '设置重复';
-  const rule = generateRepeatRuleMarker(props.item!.repeatRule);
-  const end = generateEndConditionMarker(props.item!.endCondition);
-  return end ? `${rule} ${end}` : rule;
-});
-
-const formatTimeDisplay = computed(() => {
-  if (!props.item) return '';
-  const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow);
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-  return timeRange ? `${dateLabel} ${timeRange}` : dateLabel;
-});
-
-const duration = computed(() => {
-  if (!props.item?.startDateTime || !props.item?.endDateTime) return '';
-  return calculateDuration(
-    props.item.startDateTime,
-    props.item.endDateTime,
-    settingsStore.lunchBreakStart,
-    settingsStore.lunchBreakEnd
-  );
-});
-
-const focusTotalTime = computed(() => {
-  if (!props.item?.pomodoros?.length) return '';
-  const totalMinutes = props.item.pomodoros.reduce((sum, p) => {
-    const start = new Date(p.startTime);
-    const end = new Date(p.endTime);
-    return sum + (end.getTime() - start.getTime()) / 60000;
-  }, 0);
-  if (totalMinutes < 60) return `${Math.round(totalMinutes)}分钟`;
-  return `${Math.floor(totalMinutes / 60)}小时${Math.round(totalMinutes % 60)}分钟`;
-});
-
-const pomodoroRecords = computed(() => props.item?.pomodoros || []);
-
-const itemLinks = computed(() => props.item?.links || []);
-
-const getStatusEmoji = (item: Item): string => {
-  if (item.status === 'completed') return '✅';
-  if (item.status === 'abandoned') return '❌';
-  return '⏳';
-};
-
-const getPriorityEmoji = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.emoji || '';
-
-const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.label || priority;
-
-const copyContent = () => {
-  if (!props.item?.content) return;
-  navigator.clipboard.writeText(props.item.content);
-};
-
-const goToProject = () => {
-  if (!props.item?.project?.id) return;
-  emit('openProject', props.item.project.id);
-};
-
-const goToTask = () => {
-  if (!props.item?.task?.blockId) return;
-  emit('openTask', props.item.task.blockId);
-};
-
-const togglePomodoroList = () => {
-  showPomodoroList.value = !showPomodoroList.value;
-};
-
-const formatPomodoroTime = (p: PomodoroRecord): string => {
-  const start = new Date(p.startTime);
-  const end = new Date(p.endTime);
-  return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
-};
-
-const formatPomodoroDuration = (p: PomodoroRecord): string => {
-  const start = new Date(p.startTime);
-  const end = new Date(p.endTime);
-  const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
-  return `${minutes}分钟`;
-};
-
-const handleLinkClick = (url: string) => {
-  if (url.startsWith('siyuan://')) {
-    close();
-  }
-};
-
-const handleComplete = async () => {
-  if (!props.item?.blockId) return;
-  const tag = t('statusTag').completed || '✅';
-  await updateBlockContent(props.item.blockId, tag);
-  close();
-};
-
-const handleStartPomodoro = () => {
-  if (!props.item) return;
-  emit('openPomodoro', props.item);
-  close();
-};
-
-const handleOpenCalendar = () => {
-  close();
-};
-
-const handleSetReminder = () => {
-  if (!props.item) return;
-  emit('setReminder', props.item);
-};
-
-const handleSetRecurring = () => {
-  if (!props.item) return;
-  emit('setRecurring', props.item);
-};
-
-const showMoreMenu = (event: MouseEvent) => {
-  const menu = new Menu('item-detail-more');
-  menu.addItem({
-    icon: 'iconEdit',
-    label: t('todo').openDoc || '打开文档',
-    click: () => {
-      if (props.item?.docId) {
-        openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
-      }
-    },
-  });
-  menu.open({
-    x: event.clientX,
-    y: event.clientY,
-  });
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .item-detail-fullscreen {
@@ -1172,7 +1213,7 @@ const close = () => {
     line-height: 1.5;
     margin-bottom: 8px;
   }
-  
+
   .priority-badge {
     display: inline-flex;
     align-items: center;
@@ -1189,7 +1230,7 @@ const close = () => {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  
+
   &:not(:last-child) {
     border-bottom: 1px dashed var(--b3-border-color);
   }
@@ -1227,7 +1268,7 @@ const close = () => {
   background: var(--b3-theme-background);
   font-size: 13px;
   cursor: pointer;
-  
+
   &.active {
     border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
@@ -1257,11 +1298,11 @@ const close = () => {
     justify-content: space-between;
     cursor: pointer;
   }
-  
+
   .toggle-icon {
     font-size: 10px;
     transition: transform 0.2s;
-    
+
     &.expanded {
       transform: rotate(180deg);
     }
@@ -1279,7 +1320,7 @@ const close = () => {
   padding: 8px 0;
   font-size: 13px;
   border-bottom: 1px solid var(--b3-border-color);
-  
+
   &:last-child {
     border-bottom: none;
   }
@@ -1318,7 +1359,7 @@ const close = () => {
   color: var(--b3-theme-on-surface);
   font-size: 11px;
   cursor: pointer;
-  
+
   &.primary {
     color: var(--b3-theme-primary);
   }
@@ -1353,12 +1394,82 @@ git commit -m "feat: add MobileItemDetail full-screen drawer"
 ### Task 15: Create ProjectDetail Component
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/ProjectDetail.vue`
 
 - [ ] **Step 1: Create the component**
 
 ```vue
 <!-- src/tabs/mobile/drawers/ProjectDetail.vue -->
+<script setup lang="ts">
+import type { Project, Task } from '@/types/models'
+import { computed, Teleport } from 'vue'
+
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+
+const props = defineProps<{
+  modelValue: boolean
+  project: Project | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'openTask': [task: Task]
+  'createTask': [projectId: string]
+}>()
+
+const projectStore = useProjectStore()
+
+const tasks = computed(() => {
+  if (!props.project)
+    return []
+  // Get tasks from project store
+  return projectStore.tasks.filter(t => t.projectId === props.project!.id)
+})
+
+const highPriorityTasks = computed(() =>
+  tasks.value.filter(t => t.level === 'L1')
+)
+
+const mediumPriorityTasks = computed(() =>
+  tasks.value.filter(t => t.level === 'L2')
+)
+
+const lowPriorityTasks = computed(() =>
+  tasks.value.filter(t => t.level === 'L3')
+)
+
+const taskCount = computed(() => tasks.value.length)
+
+const itemCount = computed(() => {
+  return tasks.value.reduce((sum, t) => sum + (t.items?.length || 0), 0)
+})
+
+function getTaskProgress(task: Task): string {
+  if (!task.items?.length)
+    return '○'
+  const completed = task.items.filter(i => i.status === 'completed').length
+  if (completed === task.items.length)
+    return '✓'
+  return `${completed}/${task.items.length}`
+}
+
+function openTask(task: Task) {
+  emit('openTask', task)
+}
+
+function handleCreateTask() {
+  if (!props.project?.id)
+    return
+  emit('createTask', props.project.id)
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="slide-up-full">
@@ -1366,24 +1477,28 @@ git commit -m "feat: add MobileItemDetail full-screen drawer"
         <!-- Header -->
         <div class="detail-header">
           <button class="back-btn" @click="close">
-            <svg><use xlink:href="#iconLeft"></use></svg>
+            <svg><use xlink:href="#iconLeft" /></svg>
           </button>
           <span class="header-title">{{ t('mobile.detail.project') || '项目' }}</span>
           <button class="create-btn" @click="handleCreateTask">
-            <svg><use xlink:href="#iconAdd"></use></svg>
+            <svg><use xlink:href="#iconAdd" /></svg>
           </button>
         </div>
-        
+
         <!-- Project Info -->
         <div v-if="project" class="project-header">
-          <div class="project-icon">📁</div>
-          <div class="project-name">{{ project.name }}</div>
+          <div class="project-icon">
+            📁
+          </div>
+          <div class="project-name">
+            {{ project.name }}
+          </div>
           <div class="project-stats">
-            {{ taskCount }} {{ t('project').tasksUnit || '个任务' }} · 
+            {{ taskCount }} {{ t('project').tasksUnit || '个任务' }} ·
             {{ itemCount }} {{ t('project').itemsLabel || '个事项' }}
           </div>
         </div>
-        
+
         <!-- Task List Grouped by Level -->
         <div class="detail-content">
           <div v-if="highPriorityTasks.length > 0" class="task-group">
@@ -1404,7 +1519,7 @@ git commit -m "feat: add MobileItemDetail full-screen drawer"
               </div>
             </div>
           </div>
-          
+
           <div v-if="mediumPriorityTasks.length > 0" class="task-group">
             <div class="group-header medium">
               <span class="group-icon">🌱</span>
@@ -1423,7 +1538,7 @@ git commit -m "feat: add MobileItemDetail full-screen drawer"
               </div>
             </div>
           </div>
-          
+
           <div v-if="lowPriorityTasks.length > 0" class="task-group">
             <div class="group-header low">
               <span class="group-icon">🍃</span>
@@ -1447,71 +1562,6 @@ git commit -m "feat: add MobileItemDetail full-screen drawer"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import { Teleport } from 'vue';
-import { t } from '@/i18n';
-import { useProjectStore } from '@/stores';
-import type { Project, Task } from '@/types/models';
-
-const props = defineProps<{
-  modelValue: boolean;
-  project: Project | null;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openTask': [task: Task];
-  'createTask': [projectId: string];
-}>();
-
-const projectStore = useProjectStore();
-
-const tasks = computed(() => {
-  if (!props.project) return [];
-  // Get tasks from project store
-  return projectStore.tasks.filter(t => t.projectId === props.project!.id);
-});
-
-const highPriorityTasks = computed(() => 
-  tasks.value.filter(t => t.level === 'L1')
-);
-
-const mediumPriorityTasks = computed(() => 
-  tasks.value.filter(t => t.level === 'L2')
-);
-
-const lowPriorityTasks = computed(() => 
-  tasks.value.filter(t => t.level === 'L3')
-);
-
-const taskCount = computed(() => tasks.value.length);
-
-const itemCount = computed(() => {
-  return tasks.value.reduce((sum, t) => sum + (t.items?.length || 0), 0);
-});
-
-const getTaskProgress = (task: Task): string => {
-  if (!task.items?.length) return '○';
-  const completed = task.items.filter(i => i.status === 'completed').length;
-  if (completed === task.items.length) return '✓';
-  return `${completed}/${task.items.length}`;
-};
-
-const openTask = (task: Task) => {
-  emit('openTask', task);
-};
-
-const handleCreateTask = () => {
-  if (!props.project?.id) return;
-  emit('createTask', props.project.id);
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .project-detail-fullscreen {
@@ -1607,17 +1657,17 @@ const close = () => {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
-  
+
   &.high {
     background: rgba(244, 67, 54, 0.1);
     color: #f44336;
   }
-  
+
   &.medium {
     background: rgba(255, 152, 0, 0.1);
     color: #ff9800;
   }
-  
+
   &.low {
     background: rgba(76, 175, 80, 0.1);
     color: #4caf50;
@@ -1687,12 +1737,68 @@ git commit -m "feat: add ProjectDetail view"
 ### Task 16: Create TaskDetail Component
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/TaskDetail.vue`
 
 - [ ] **Step 1: Create the component**
 
 ```vue
 <!-- src/tabs/mobile/drawers/TaskDetail.vue -->
+<script setup lang="ts">
+import type { Item, Task } from '@/types/models'
+import { computed, Teleport } from 'vue'
+
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
+
+const props = defineProps<{
+  modelValue: boolean
+  task: Task | null
+  projectName?: string
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'openItem': [item: Item]
+  'createItem': [taskBlockId: string]
+}>()
+
+const items = computed(() => props.task?.items || [])
+
+const pendingItems = computed(() =>
+  items.value.filter(i => i.status !== 'completed' && i.status !== 'abandoned')
+)
+
+const completedItems = computed(() =>
+  items.value.filter(i => i.status === 'completed')
+)
+
+function formatDate(date: string): string {
+  const today = dayjs().format('YYYY-MM-DD')
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD')
+
+  if (date === today)
+    return t('todo').today || '今天'
+  if (date === tomorrow)
+    return t('todo').tomorrow || '明天'
+  return dayjs(date).format('M月D日')
+}
+
+function openItem(item: Item) {
+  emit('openItem', item)
+}
+
+function handleCreateItem() {
+  if (!props.task?.blockId)
+    return
+  emit('createItem', props.task.blockId)
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="slide-up-full">
@@ -1700,24 +1806,30 @@ git commit -m "feat: add ProjectDetail view"
         <!-- Header -->
         <div class="detail-header">
           <button class="back-btn" @click="close">
-            <svg><use xlink:href="#iconLeft"></use></svg>
+            <svg><use xlink:href="#iconLeft" /></svg>
           </button>
           <span class="header-title">{{ t('mobile.detail.task') || '任务' }}</span>
           <button class="create-btn" @click="handleCreateItem">
-            <svg><use xlink:href="#iconAdd"></use></svg>
+            <svg><use xlink:href="#iconAdd" /></svg>
           </button>
         </div>
-        
+
         <!-- Task Info -->
         <div v-if="task" class="task-header">
-          <div class="task-icon">📋</div>
-          <div class="task-name">{{ task.name }}</div>
-          <div v-if="task.level" class="task-level" :class="'level-' + task.level.toLowerCase()">
+          <div class="task-icon">
+            📋
+          </div>
+          <div class="task-name">
+            {{ task.name }}
+          </div>
+          <div v-if="task.level" class="task-level" :class="`level-${task.level.toLowerCase()}`">
             {{ task.level }}
           </div>
-          <div v-if="projectName" class="task-project">📁 {{ projectName }}</div>
+          <div v-if="projectName" class="task-project">
+            📁 {{ projectName }}
+          </div>
         </div>
-        
+
         <!-- Items List -->
         <div class="detail-content">
           <!-- Pending Items -->
@@ -1738,7 +1850,7 @@ git commit -m "feat: add ProjectDetail view"
               </div>
             </div>
           </div>
-          
+
           <!-- Completed Items -->
           <div v-if="completedItems.length > 0" class="item-group">
             <div class="group-header completed">
@@ -1762,58 +1874,6 @@ git commit -m "feat: add ProjectDetail view"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import { Teleport } from 'vue';
-import { t } from '@/i18n';
-import type { Task, Item } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-
-const props = defineProps<{
-  modelValue: boolean;
-  task: Task | null;
-  projectName?: string;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openItem': [item: Item];
-  'createItem': [taskBlockId: string];
-}>();
-
-const items = computed(() => props.task?.items || []);
-
-const pendingItems = computed(() => 
-  items.value.filter(i => i.status !== 'completed' && i.status !== 'abandoned')
-);
-
-const completedItems = computed(() => 
-  items.value.filter(i => i.status === 'completed')
-);
-
-const formatDate = (date: string): string => {
-  const today = dayjs().format('YYYY-MM-DD');
-  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
-  
-  if (date === today) return t('todo').today || '今天';
-  if (date === tomorrow) return t('todo').tomorrow || '明天';
-  return dayjs(date).format('M月D日');
-};
-
-const openItem = (item: Item) => {
-  emit('openItem', item);
-};
-
-const handleCreateItem = () => {
-  if (!props.task?.blockId) return;
-  emit('createItem', props.task.blockId);
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .task-detail-fullscreen {
@@ -1891,17 +1951,17 @@ const close = () => {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
-  
+
   &.level-l1 {
     background: #4caf50;
     color: #fff;
   }
-  
+
   &.level-l2 {
     background: #ff9800;
     color: #fff;
   }
-  
+
   &.level-l3 {
     background: #f44336;
     color: #fff;
@@ -1933,7 +1993,7 @@ const close = () => {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
-  
+
   &.completed {
     opacity: 0.6;
   }
@@ -1959,10 +2019,10 @@ const close = () => {
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
   cursor: pointer;
-  
+
   &.completed {
     opacity: 0.6;
-    
+
     .item-content {
       text-decoration: line-through;
     }
@@ -2011,41 +2071,42 @@ git commit -m "feat: add TaskDetail view"
 ### Task 17: Create quickCreate.ts Utility
 
 **Files:**
+
 - Create: `src/utils/quickCreate.ts`
 
 - [ ] **Step 1: Create the utility**
 
 ```typescript
 // src/utils/quickCreate.ts
-import { appendBlock, updateBlock } from '@/api';
-import { useSettingsStore } from '@/stores';
-import dayjs from '@/utils/dayjs';
+import { appendBlock, updateBlock } from '@/api'
+import { useSettingsStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
 
 export interface CreateTaskParams {
-  projectId: string;
-  projectBox: string;
-  taskName: string;
-  level?: 'L1' | 'L2' | 'L3';
+  projectId: string
+  projectBox: string
+  taskName: string
+  level?: 'L1' | 'L2' | 'L3'
 }
 
 export interface CreateItemParams {
-  projectId: string;
-  projectBox: string;
-  taskBlockId?: string;
-  content: string;
-  date?: string;
+  projectId: string
+  projectBox: string
+  taskBlockId?: string
+  content: string
+  date?: string
   timeRange?: {
-    start: string;
-    end: string;
-  };
-  priority?: 'high' | 'medium' | 'low';
+    start: string
+    end: string
+  }
+  priority?: 'high' | 'medium' | 'low'
 }
 
 export interface ParseResult {
-  content: string;
-  date?: string;
-  timeRange?: { start: string; end: string };
-  priority?: 'high' | 'medium' | 'low';
+  content: string
+  date?: string
+  timeRange?: { start: string, end: string }
+  priority?: 'high' | 'medium' | 'low'
 }
 
 /**
@@ -2053,19 +2114,20 @@ export interface ParseResult {
  */
 export async function createTask(params: CreateTaskParams): Promise<boolean> {
   try {
-    const levelMarker = params.level ? ` [${params.level}]` : '';
-    const content = `## ${params.taskName} 📋${levelMarker}`;
-    
+    const levelMarker = params.level ? ` [${params.level}]` : ''
+    const content = `## ${params.taskName} 📋${levelMarker}`
+
     await appendBlock({
       parentID: params.projectId,
       dataType: 'markdown',
       data: content,
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to create task:', error);
-    return false;
+    })
+
+    return true
+  }
+  catch (error) {
+    console.error('Failed to create task:', error)
+    return false
   }
 }
 
@@ -2074,42 +2136,45 @@ export async function createTask(params: CreateTaskParams): Promise<boolean> {
  */
 export async function createItem(params: CreateItemParams): Promise<boolean> {
   try {
-    let dateMarker = '';
-    
+    let dateMarker = ''
+
     if (params.date) {
-      dateMarker = `📅${params.date}`;
-      
+      dateMarker = `📅${params.date}`
+
       if (params.timeRange) {
-        dateMarker += ` ${params.timeRange.start}~${params.timeRange.end}`;
+        dateMarker += ` ${params.timeRange.start}~${params.timeRange.end}`
       }
-    } else {
-      // Default to today
-      dateMarker = `📅${dayjs().format('YYYY-MM-DD')}`;
     }
-    
-    const priorityMarker = params.priority ? ` ${getPriorityMarker(params.priority)}` : '';
-    const content = `${params.content} ${dateMarker}${priorityMarker}`;
-    
+    else {
+      // Default to today
+      dateMarker = `📅${dayjs().format('YYYY-MM-DD')}`
+    }
+
+    const priorityMarker = params.priority ? ` ${getPriorityMarker(params.priority)}` : ''
+    const content = `${params.content} ${dateMarker}${priorityMarker}`
+
     if (params.taskBlockId) {
       // Append as child of task block
       await appendBlock({
         parentID: params.taskBlockId,
         dataType: 'markdown',
         data: content,
-      });
-    } else {
+      })
+    }
+    else {
       // Append to end of project document
       await appendBlock({
         parentID: params.projectId,
         dataType: 'markdown',
         data: content,
-      });
+      })
     }
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to create item:', error);
-    return false;
+
+    return true
+  }
+  catch (error) {
+    console.error('Failed to create item:', error)
+    return false
   }
 }
 
@@ -2118,8 +2183,8 @@ function getPriorityMarker(priority: 'high' | 'medium' | 'low'): string {
     high: '🔥',
     medium: '🌱',
     low: '🍃',
-  };
-  return markers[priority];
+  }
+  return markers[priority]
 }
 
 /**
@@ -2130,53 +2195,57 @@ function getPriorityMarker(priority: 'high' | 'medium' | 'low'): string {
  * - "重要任务 🔥" -> { content: "重要任务", priority: "high" }
  */
 export function parseQuickInput(input: string): ParseResult {
-  let content = input.trim();
-  let date: string | undefined;
-  let timeRange: { start: string; end: string } | undefined;
-  let priority: 'high' | 'medium' | 'low' | undefined;
-  
+  let content = input.trim()
+  let date: string | undefined
+  let timeRange: { start: string, end: string } | undefined
+  let priority: 'high' | 'medium' | 'low' | undefined
+
   // Extract date emoji 📅YYYY-MM-DD or 📅明天
-  const dateMatch = content.match(/📅(\S+)/);
+  const dateMatch = content.match(/📅(\S+)/)
   if (dateMatch) {
-    const dateStr = dateMatch[1];
+    const dateStr = dateMatch[1]
     if (dateStr === '今天' || dateStr === 'today') {
-      date = dayjs().format('YYYY-MM-DD');
-    } else if (dateStr === '明天' || dateStr === 'tomorrow') {
-      date = dayjs().add(1, 'day').format('YYYY-MM-DD');
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      date = dateStr;
+      date = dayjs().format('YYYY-MM-DD')
     }
-    content = content.replace(dateMatch[0], '').trim();
+    else if (dateStr === '明天' || dateStr === 'tomorrow') {
+      date = dayjs().add(1, 'day').format('YYYY-MM-DD')
+    }
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      date = dateStr
+    }
+    content = content.replace(dateMatch[0], '').trim()
   }
-  
+
   // Extract time range HH:mm-HH:mm
-  const timeMatch = content.match(/(\d{1,2}:\d{2})~(\d{1,2}:\d{2})/);
+  const timeMatch = content.match(/(\d{1,2}:\d{2})~(\d{1,2}:\d{2})/)
   if (timeMatch) {
     timeRange = {
       start: timeMatch[1],
       end: timeMatch[2],
-    };
-    content = content.replace(timeMatch[0], '').trim();
+    }
+    content = content.replace(timeMatch[0], '').trim()
   }
-  
+
   // Extract priority emojis
   if (content.includes('🔥')) {
-    priority = 'high';
-    content = content.replace('🔥', '').trim();
-  } else if (content.includes('🌱')) {
-    priority = 'medium';
-    content = content.replace('🌱', '').trim();
-  } else if (content.includes('🍃')) {
-    priority = 'low';
-    content = content.replace('🍃', '').trim();
+    priority = 'high'
+    content = content.replace('🔥', '').trim()
   }
-  
+  else if (content.includes('🌱')) {
+    priority = 'medium'
+    content = content.replace('🌱', '').trim()
+  }
+  else if (content.includes('🍃')) {
+    priority = 'low'
+    content = content.replace('🍃', '').trim()
+  }
+
   return {
     content,
     date,
     timeRange,
     priority,
-  };
+  }
 }
 
 /**
@@ -2185,13 +2254,13 @@ export function parseQuickInput(input: string): ParseResult {
 export async function smartCreate(
   input: string,
   context: {
-    projectId: string;
-    projectBox: string;
-    taskBlockId?: string;
+    projectId: string
+    projectBox: string
+    taskBlockId?: string
   }
-): Promise<{ success: boolean; type: 'task' | 'item' }> {
-  const parsed = parseQuickInput(input);
-  
+): Promise<{ success: boolean, type: 'task' | 'item' }> {
+  const parsed = parseQuickInput(input)
+
   // If has date marker, create item; otherwise create task
   if (parsed.date || parsed.timeRange || parsed.priority) {
     const success = await createItem({
@@ -2202,15 +2271,16 @@ export async function smartCreate(
       date: parsed.date,
       timeRange: parsed.timeRange,
       priority: parsed.priority,
-    });
-    return { success, type: 'item' };
-  } else {
+    })
+    return { success, type: 'item' }
+  }
+  else {
     const success = await createTask({
       projectId: context.projectId,
       projectBox: context.projectBox,
       taskName: parsed.content,
-    });
-    return { success, type: 'task' };
+    })
+    return { success, type: 'task' }
   }
 }
 ```
@@ -2227,38 +2297,40 @@ git commit -m "feat: add quickCreate utility for tasks and items"
 ### Task 18: Create useQuickCreate Composable
 
 **Files:**
+
 - Create: `src/tabs/mobile/composables/useQuickCreate.ts`
 
 - [ ] **Step 1: Create the composable**
 
 ```typescript
+import type { Project, Task } from '@/types/models'
+import type { ParseResult } from '@/utils/quickCreate'
 // src/tabs/mobile/composables/useQuickCreate.ts
-import { ref, reactive, computed } from 'vue';
-import { createTask, createItem, parseQuickInput, type ParseResult } from '@/utils/quickCreate';
-import { useSettingsStore, useProjectStore } from '@/stores';
-import type { Project, Task } from '@/types/models';
+import { computed, reactive, ref } from 'vue'
+import { useProjectStore, useSettingsStore } from '@/stores'
+import { createItem, createTask, parseQuickInput } from '@/utils/quickCreate'
 
 export interface QuickCreateState {
   // Current mode
-  mode: 'task' | 'item';
-  
+  mode: 'task' | 'item'
+
   // Context
-  projectId: string | null;
-  taskBlockId: string | null;
-  
+  projectId: string | null
+  taskBlockId: string | null
+
   // Form data
-  taskName: string;
-  taskLevel: 'L1' | 'L2' | 'L3';
-  itemContent: string;
-  itemDate: string;
-  itemTimeStart: string;
-  itemTimeEnd: string;
-  itemPriority: 'high' | 'medium' | 'low' | null;
-  
+  taskName: string
+  taskLevel: 'L1' | 'L2' | 'L3'
+  itemContent: string
+  itemDate: string
+  itemTimeStart: string
+  itemTimeEnd: string
+  itemPriority: 'high' | 'medium' | 'low' | null
+
   // UI state
-  isSubmitting: boolean;
-  showDatePicker: boolean;
-  showTimePicker: boolean;
+  isSubmitting: boolean
+  showDatePicker: boolean
+  showTimePicker: boolean
 }
 
 const state = reactive<QuickCreateState>({
@@ -2275,84 +2347,90 @@ const state = reactive<QuickCreateState>({
   isSubmitting: false,
   showDatePicker: false,
   showTimePicker: false,
-});
+})
 
 export function useQuickCreate() {
-  const settingsStore = useSettingsStore();
-  const projectStore = useProjectStore();
-  
+  const settingsStore = useSettingsStore()
+  const projectStore = useProjectStore()
+
   const projects = computed(() => {
     return projectStore.projects.map(p => ({
       id: p.id,
       name: p.name,
       box: p.box,
-    }));
-  });
-  
+    }))
+  })
+
   const tasks = computed(() => {
-    if (!state.projectId) return [];
+    if (!state.projectId)
+      return []
     return projectStore.tasks
       .filter(t => t.projectId === state.projectId)
       .map(t => ({
         blockId: t.blockId,
         name: t.name,
-      }));
-  });
-  
+      }))
+  })
+
   const canSubmit = computed(() => {
-    if (!state.projectId) return false;
+    if (!state.projectId)
+      return false
     if (state.mode === 'task') {
-      return state.taskName.trim().length > 0;
-    } else {
-      return state.itemContent.trim().length > 0;
+      return state.taskName.trim().length > 0
     }
-  });
-  
+    else {
+      return state.itemContent.trim().length > 0
+    }
+  })
+
   const reset = () => {
-    state.mode = 'task';
-    state.projectId = null;
-    state.taskBlockId = null;
-    state.taskName = '';
-    state.taskLevel = 'L2';
-    state.itemContent = '';
-    state.itemDate = new Date().toISOString().split('T')[0];
-    state.itemTimeStart = '';
-    state.itemTimeEnd = '';
-    state.itemPriority = null;
-    state.isSubmitting = false;
-  };
-  
-  const setContext = (context?: { projectId?: string; taskBlockId?: string }) => {
+    state.mode = 'task'
+    state.projectId = null
+    state.taskBlockId = null
+    state.taskName = ''
+    state.taskLevel = 'L2'
+    state.itemContent = ''
+    state.itemDate = new Date().toISOString().split('T')[0]
+    state.itemTimeStart = ''
+    state.itemTimeEnd = ''
+    state.itemPriority = null
+    state.isSubmitting = false
+  }
+
+  const setContext = (context?: { projectId?: string, taskBlockId?: string }) => {
     if (context?.projectId) {
-      state.projectId = context.projectId;
+      state.projectId = context.projectId
     }
     if (context?.taskBlockId) {
-      state.taskBlockId = context.taskBlockId;
-      state.mode = 'item'; // Auto switch to item mode if task context provided
+      state.taskBlockId = context.taskBlockId
+      state.mode = 'item' // Auto switch to item mode if task context provided
     }
-  };
-  
+  }
+
   const submit = async (): Promise<boolean> => {
-    if (!canSubmit.value || !state.projectId) return false;
-    
-    state.isSubmitting = true;
-    
+    if (!canSubmit.value || !state.projectId)
+      return false
+
+    state.isSubmitting = true
+
     try {
-      const project = projects.value.find(p => p.id === state.projectId);
-      if (!project) return false;
-      
+      const project = projects.value.find(p => p.id === state.projectId)
+      if (!project)
+        return false
+
       if (state.mode === 'task') {
         return await createTask({
           projectId: state.projectId,
           projectBox: project.box,
           taskName: state.taskName.trim(),
           level: state.taskLevel,
-        });
-      } else {
+        })
+      }
+      else {
         const timeRange = state.itemTimeStart && state.itemTimeEnd
           ? { start: state.itemTimeStart, end: state.itemTimeEnd }
-          : undefined;
-          
+          : undefined
+
         return await createItem({
           projectId: state.projectId,
           projectBox: project.box,
@@ -2361,17 +2439,18 @@ export function useQuickCreate() {
           date: state.itemDate,
           timeRange,
           priority: state.itemPriority || undefined,
-        });
+        })
       }
-    } finally {
-      state.isSubmitting = false;
     }
-  };
-  
+    finally {
+      state.isSubmitting = false
+    }
+  }
+
   const parseSmartInput = (input: string): ParseResult => {
-    return parseQuickInput(input);
-  };
-  
+    return parseQuickInput(input)
+  }
+
   return {
     state,
     projects,
@@ -2381,7 +2460,7 @@ export function useQuickCreate() {
     setContext,
     submit,
     parseSmartInput,
-  };
+  }
 }
 ```
 
@@ -2397,12 +2476,68 @@ git commit -m "feat: add useQuickCreate composable"
 ### Task 19: Create QuickCreateDrawer Component
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/QuickCreateDrawer.vue`
 
 - [ ] **Step 1: Create the component**
 
 ```vue
 <!-- src/tabs/mobile/drawers/QuickCreateDrawer.vue -->
+<script setup lang="ts">
+import { Teleport, watch } from 'vue'
+import { t } from '@/i18n'
+import { showMessage } from '@/utils/dialog'
+import { useQuickCreate } from '../composables/useQuickCreate'
+
+const props = defineProps<{
+  modelValue: boolean
+  projectId?: string
+  taskBlockId?: string
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'created': []
+}>()
+
+const { state, projects, tasks, canSubmit, reset, setContext, submit } = useQuickCreate()
+
+const priorityOptions = [
+  { value: 'high' as const, emoji: '🔥', label: t('todo').priority?.high || '高' },
+  { value: 'medium' as const, emoji: '🌱', label: t('todo').priority?.medium || '中' },
+  { value: 'low' as const, emoji: '🍃', label: t('todo').priority?.low || '低' },
+]
+
+// Set context when drawer opens
+watch(() => props.modelValue, (val) => {
+  if (val) {
+    setContext({
+      projectId: props.projectId,
+      taskBlockId: props.taskBlockId,
+    })
+  }
+  else {
+    reset()
+  }
+})
+
+async function handleSubmit() {
+  const success = await submit()
+  if (success) {
+    showMessage(t('mobile.quickCreate.success') || '创建成功')
+    emit('created')
+    close()
+  }
+  else {
+    showMessage(t('mobile.quickCreate.failed') || '创建失败', 3000, 'error')
+  }
+}
+
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -2410,13 +2545,15 @@ git commit -m "feat: add useQuickCreate composable"
         <Transition name="slide-up">
           <div v-if="modelValue" class="quick-create-drawer" @click.stop>
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
-            
+
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('mobile.quickCreate.title') || '快速创建' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('mobile.quickCreate.title') || '快速创建' }}
+              </h3>
             </div>
-            
+
             <!-- Mode Tabs -->
             <div class="mode-tabs">
               <button
@@ -2434,19 +2571,21 @@ git commit -m "feat: add useQuickCreate composable"
                 ⏳ {{ t('mobile.quickCreate.createItem') || '创建事项' }}
               </button>
             </div>
-            
+
             <div class="drawer-content">
               <!-- Project Selection -->
               <div class="form-group">
                 <label class="form-label">{{ t('mobile.quickCreate.selectProject') || '选择项目' }}</label>
                 <select v-model="state.projectId" class="form-select">
-                  <option value="">{{ t('common').select || '请选择' }}</option>
+                  <option value="">
+                    {{ t('common').select || '请选择' }}
+                  </option>
                   <option v-for="p in projects" :key="p.id" :value="p.id">
                     {{ p.name }}
                   </option>
                 </select>
               </div>
-              
+
               <!-- Task Form -->
               <template v-if="state.mode === 'task'">
                 <div class="form-group">
@@ -2457,9 +2596,9 @@ git commit -m "feat: add useQuickCreate composable"
                     class="form-input"
                     :placeholder="t('mobile.quickCreate.taskNamePlaceholder') || '输入任务名称'"
                     @keyup.enter="submit"
-                  />
+                  >
                 </div>
-                
+
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.level') || '级别' }}</label>
                   <div class="level-selector">
@@ -2475,19 +2614,21 @@ git commit -m "feat: add useQuickCreate composable"
                   </div>
                 </div>
               </template>
-              
+
               <!-- Item Form -->
               <template v-else>
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.selectTask') || '选择任务' }}</label>
                   <select v-model="state.taskBlockId" class="form-select">
-                    <option value="">{{ t('mobile.quickCreate.noTask') || '不指定任务' }}</option>
+                    <option value="">
+                      {{ t('mobile.quickCreate.noTask') || '不指定任务' }}
+                    </option>
                     <option v-for="t in tasks" :key="t.blockId" :value="t.blockId">
                       {{ t.name }}
                     </option>
                   </select>
                 </div>
-                
+
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.itemContent') || '事项内容' }}</label>
                   <input
@@ -2496,23 +2637,23 @@ git commit -m "feat: add useQuickCreate composable"
                     class="form-input"
                     :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
                     @keyup.enter="submit"
-                  />
+                  >
                 </div>
-                
+
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.selectDate') || '选择日期' }}</label>
-                  <input v-model="state.itemDate" type="date" class="form-input" />
+                  <input v-model="state.itemDate" type="date" class="form-input">
                 </div>
-                
+
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.timeRange') || '时间范围' }}</label>
                   <div class="time-range">
-                    <input v-model="state.itemTimeStart" type="time" class="form-input time" />
+                    <input v-model="state.itemTimeStart" type="time" class="form-input time">
                     <span>~</span>
-                    <input v-model="state.itemTimeEnd" type="time" class="form-input time" />
+                    <input v-model="state.itemTimeEnd" type="time" class="form-input time">
                   </div>
                 </div>
-                
+
                 <div class="form-group">
                   <label class="form-label">{{ t('mobile.quickCreate.priority') || '优先级' }}</label>
                   <div class="priority-selector">
@@ -2529,7 +2670,7 @@ git commit -m "feat: add useQuickCreate composable"
                 </div>
               </template>
             </div>
-            
+
             <div class="drawer-footer">
               <button
                 class="submit-btn"
@@ -2546,59 +2687,6 @@ git commit -m "feat: add useQuickCreate composable"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { Teleport, watch } from 'vue';
-import { useQuickCreate } from '../composables/useQuickCreate';
-import { t } from '@/i18n';
-import { showMessage } from '@/utils/dialog';
-
-const props = defineProps<{
-  modelValue: boolean;
-  projectId?: string;
-  taskBlockId?: string;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'created': [];
-}>();
-
-const { state, projects, tasks, canSubmit, reset, setContext, submit } = useQuickCreate();
-
-const priorityOptions = [
-  { value: 'high' as const, emoji: '🔥', label: t('todo').priority?.high || '高' },
-  { value: 'medium' as const, emoji: '🌱', label: t('todo').priority?.medium || '中' },
-  { value: 'low' as const, emoji: '🍃', label: t('todo').priority?.low || '低' },
-];
-
-// Set context when drawer opens
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    setContext({
-      projectId: props.projectId,
-      taskBlockId: props.taskBlockId,
-    });
-  } else {
-    reset();
-  }
-});
-
-const handleSubmit = async () => {
-  const success = await submit();
-  if (success) {
-    showMessage(t('mobile.quickCreate.success') || '创建成功');
-    emit('created');
-    close();
-  } else {
-    showMessage(t('mobile.quickCreate.failed') || '创建失败', 3000, 'error');
-  }
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -2665,7 +2753,7 @@ const close = () => {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  
+
   &.active {
     color: var(--b3-theme-primary);
     border-bottom-color: var(--b3-theme-primary);
@@ -2697,12 +2785,12 @@ const close = () => {
   border-radius: var(--b3-border-radius);
   background: var(--b3-theme-surface);
   font-size: 14px;
-  
+
   &:focus {
     outline: none;
     border-color: var(--b3-theme-primary);
   }
-  
+
   &.time {
     flex: 1;
   }
@@ -2722,25 +2810,25 @@ const close = () => {
   background: var(--b3-theme-surface);
   font-size: 13px;
   cursor: pointer;
-  
+
   &.active {
     border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
     font-weight: 600;
   }
-  
+
   &.L1.active {
     background: rgba(76, 175, 80, 0.1);
     border-color: #4caf50;
     color: #4caf50;
   }
-  
+
   &.L2.active {
     background: rgba(255, 152, 0, 0.1);
     border-color: #ff9800;
     color: #ff9800;
   }
-  
+
   &.L3.active {
     background: rgba(244, 67, 54, 0.1);
     border-color: #f44336;
@@ -2756,7 +2844,7 @@ const close = () => {
   background: var(--b3-theme-surface);
   font-size: 13px;
   cursor: pointer;
-  
+
   &.active {
     border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
@@ -2784,7 +2872,7 @@ const close = () => {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -2828,6 +2916,7 @@ git commit -m "feat: add QuickCreateDrawer component"
 ### Task 20: Update MobileTodoDock with All Drawers
 
 **Files:**
+
 - Modify: `src/tabs/mobile/MobileTodoDock.vue`
 
 - [ ] **Step 1: Integrate all drawers**
@@ -2835,6 +2924,73 @@ git commit -m "feat: add QuickCreateDrawer component"
 Update `MobileTodoDock.vue` to include all drawer components and wire up the interactions.
 
 ```vue
+<script setup lang="ts">
+import ActionDrawer from './drawers/ActionDrawer.vue'
+// ... existing imports ...
+import FilterDrawer from './drawers/FilterDrawer.vue'
+import MobileItemDetail from './drawers/MobileItemDetail.vue'
+import ProjectDetail from './drawers/ProjectDetail.vue'
+import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue'
+import TaskDetail from './drawers/TaskDetail.vue'
+
+// ... existing code ...
+
+function openItemDetail(item: Item) {
+  state.selectedItem = item
+  state.showItemDetail = true
+}
+
+function openProjectDetail(projectId: string) {
+  // Find project from store
+  const project = projectStore.projects.find(p => p.id === projectId)
+  if (project) {
+    selectedProject.value = project
+    state.showProjectDetail = true
+  }
+}
+
+function openTaskDetail(taskBlockId: string) {
+  // Find task from store
+  const task = projectStore.tasks.find(t => t.blockId === taskBlockId)
+  if (task) {
+    selectedTask.value = task
+    state.showTaskDetail = true
+  }
+}
+
+function openTaskDetailFromProject(task: Task) {
+  selectedTask.value = task
+  state.showTaskDetail = true
+}
+
+function openPomodoro(item: Item) {
+  // Open pomodoro dialog
+}
+
+function handleSetReminder(item: Item) {
+  // Show reminder setting dialog
+}
+
+function handleSetRecurring(item: Item) {
+  // Show recurring setting dialog
+}
+
+function handleCreateTask(projectId: string) {
+  state.selectedProjectId = projectId
+  state.selectedTaskBlockId = null
+  state.showQuickCreate = true
+}
+
+function handleCreateItem(taskBlockId: string) {
+  state.selectedTaskBlockId = taskBlockId
+  state.showQuickCreate = true
+}
+
+function applyFilters() {
+  // Filters are automatically applied through computed properties
+}
+</script>
+
 <template>
   <div class="mobile-todo-dock">
     <MobileFilterBar
@@ -2842,7 +2998,7 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
       :has-active-filters="hasActiveFilters"
       @open-filter="state.showFilterDrawer = true"
     />
-    
+
     <MobileTodoList
       :group-id="state.selectedGroup"
       :search-query="state.searchQuery"
@@ -2853,12 +3009,12 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
       @item-long-press="handleQuickComplete"
       @refresh="handleRefresh"
     />
-    
+
     <MobileBottomNav
       @refresh="handleRefresh"
       @create="openQuickCreate"
     />
-    
+
     <!-- Drawers -->
     <FilterDrawer
       v-model="state.showFilterDrawer"
@@ -2872,14 +3028,14 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
       @update:priorities="state.selectedPriorities = $event"
       @apply="applyFilters"
     />
-    
+
     <ActionDrawer
       v-model="state.showActionDrawer"
       :item="state.selectedItem"
       @open-detail="openItemDetail"
       @open-pomodoro="openPomodoro"
     />
-    
+
     <MobileItemDetail
       v-model="state.showItemDetail"
       :item="state.selectedItem"
@@ -2889,14 +3045,14 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
       @set-reminder="handleSetReminder"
       @set-recurring="handleSetRecurring"
     />
-    
+
     <ProjectDetail
       v-model="state.showProjectDetail"
       :project="selectedProject"
       @open-task="openTaskDetailFromProject"
       @create-task="handleCreateTask"
     />
-    
+
     <TaskDetail
       v-model="state.showTaskDetail"
       :task="selectedTask"
@@ -2904,7 +3060,7 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
       @open-item="openItemDetail"
       @create-item="handleCreateItem"
     />
-    
+
     <QuickCreateDrawer
       v-model="state.showQuickCreate"
       :project-id="state.selectedProjectId || undefined"
@@ -2913,73 +3069,6 @@ Update `MobileTodoDock.vue` to include all drawer components and wire up the int
     />
   </div>
 </template>
-
-<script setup lang="ts">
-// ... existing imports ...
-import FilterDrawer from './drawers/FilterDrawer.vue';
-import ActionDrawer from './drawers/ActionDrawer.vue';
-import MobileItemDetail from './drawers/MobileItemDetail.vue';
-import ProjectDetail from './drawers/ProjectDetail.vue';
-import TaskDetail from './drawers/TaskDetail.vue';
-import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
-
-// ... existing code ...
-
-const openItemDetail = (item: Item) => {
-  state.selectedItem = item;
-  state.showItemDetail = true;
-};
-
-const openProjectDetail = (projectId: string) => {
-  // Find project from store
-  const project = projectStore.projects.find(p => p.id === projectId);
-  if (project) {
-    selectedProject.value = project;
-    state.showProjectDetail = true;
-  }
-};
-
-const openTaskDetail = (taskBlockId: string) => {
-  // Find task from store
-  const task = projectStore.tasks.find(t => t.blockId === taskBlockId);
-  if (task) {
-    selectedTask.value = task;
-    state.showTaskDetail = true;
-  }
-};
-
-const openTaskDetailFromProject = (task: Task) => {
-  selectedTask.value = task;
-  state.showTaskDetail = true;
-};
-
-const openPomodoro = (item: Item) => {
-  // Open pomodoro dialog
-};
-
-const handleSetReminder = (item: Item) => {
-  // Show reminder setting dialog
-};
-
-const handleSetRecurring = (item: Item) => {
-  // Show recurring setting dialog
-};
-
-const handleCreateTask = (projectId: string) => {
-  state.selectedProjectId = projectId;
-  state.selectedTaskBlockId = null;
-  state.showQuickCreate = true;
-};
-
-const handleCreateItem = (taskBlockId: string) => {
-  state.selectedTaskBlockId = taskBlockId;
-  state.showQuickCreate = true;
-};
-
-const applyFilters = () => {
-  // Filters are automatically applied through computed properties
-};
-</script>
 ```
 
 - [ ] **Step 2: Commit**
@@ -2994,6 +3083,7 @@ git commit -m "feat: integrate all drawers into MobileTodoDock"
 ### Task 21: Add i18n Translations
 
 **Files:**
+
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
 
@@ -3142,14 +3232,14 @@ git commit -m "feat: add mobile i18n translations"
 
 This implementation plan covers the complete mobile adaptation of TodoDock:
 
-| Phase | Tasks | Description |
-|-------|-------|-------------|
-| 1 | 1-4 | Foundation: directory structure, desktop rename, entry point, styles |
-| 2 | 5-10 | Core Components: composables, filter bar, task card, list, bottom nav |
-| 3 | 11-12 | Drawers: filter drawer, action drawer |
-| 4 | 13-16 | Detail Views: useItemDetail, ItemDetail, ProjectDetail, TaskDetail |
-| 5 | 17-19 | Quick Creation: quickCreate utility, useQuickCreate, QuickCreateDrawer |
-| 6 | 20-21 | Integration: wire up all components, add i18n |
+| Phase | Tasks | Description                                                            |
+| ----- | ----- | ---------------------------------------------------------------------- |
+| 1     | 1-4   | Foundation: directory structure, desktop rename, entry point, styles   |
+| 2     | 5-10  | Core Components: composables, filter bar, task card, list, bottom nav  |
+| 3     | 11-12 | Drawers: filter drawer, action drawer                                  |
+| 4     | 13-16 | Detail Views: useItemDetail, ItemDetail, ProjectDetail, TaskDetail     |
+| 5     | 17-19 | Quick Creation: quickCreate utility, useQuickCreate, QuickCreateDrawer |
+| 6     | 20-21 | Integration: wire up all components, add i18n                          |
 
 **Total Tasks: 21**
 **Estimated Time: 10-12 days**

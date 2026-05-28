@@ -1,123 +1,123 @@
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 
-export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete';
+export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete'
 
 export interface DetachedPomodoroWindowHost {
-  isAvailable(): boolean;
-  show(state: FloatingPomodoroViewState): void;
-  update(state: FloatingPomodoroViewState): void;
-  hide(): void;
-  destroy(): void;
+  isAvailable: () => boolean
+  show: (state: FloatingPomodoroViewState) => void
+  update: (state: FloatingPomodoroViewState) => void
+  hide: () => void
+  destroy: () => void
 }
 
 interface RemoteLike {
-  BrowserWindow: BrowserWindowConstructorLike;
+  BrowserWindow: BrowserWindowConstructorLike
   screen?: {
     getPrimaryDisplay?: () => {
       workArea?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      };
-    };
-  };
+        x: number
+        y: number
+        width: number
+        height: number
+      }
+    }
+  }
 }
 
 interface BrowserWindowConstructorLike {
-  new (options: Record<string, unknown>): BrowserWindowLike;
-  getAllWindows?: () => BrowserWindowLike[];
+  new (options: Record<string, unknown>): BrowserWindowLike
+  getAllWindows?: () => BrowserWindowLike[]
 }
 
 interface BrowserWindowLike {
-  loadURL?: (url: string) => void;
-  showInactive?: () => void;
-  show?: () => void;
-  close?: () => void;
-  isDestroyed?: () => boolean;
-  isVisible?: () => boolean;
+  loadURL?: (url: string) => void
+  showInactive?: () => void
+  show?: () => void
+  close?: () => void
+  isDestroyed?: () => boolean
+  isVisible?: () => boolean
   webContents?: {
-    executeJavaScript?: (code: string) => Promise<unknown> | unknown;
-    on?: (event: string, listener: (...args: any[]) => void) => void;
-  };
-  on?: (event: string, listener: (...args: any[]) => void) => void;
-  once?: (event: string, listener: (...args: any[]) => void) => void;
-  setAlwaysOnTop?: (flag: boolean, level?: string) => void;
-  getTitle?: () => string;
-  setPosition?: (x: number, y: number) => void;
+    executeJavaScript?: (code: string) => Promise<unknown> | unknown
+    on?: (event: string, listener: (...args: any[]) => void) => void
+  }
+  on?: (event: string, listener: (...args: any[]) => void) => void
+  once?: (event: string, listener: (...args: any[]) => void) => void
+  setAlwaysOnTop?: (flag: boolean, level?: string) => void
+  getTitle?: () => string
+  setPosition?: (x: number, y: number) => void
   setVisibleOnAllWorkspaces?: (
     visible: boolean,
-    options?: { visibleOnFullScreen?: boolean }
-  ) => void;
+    options?: { visibleOnFullScreen?: boolean },
+  ) => void
 }
 
 interface DetachedPomodoroWindowSupportInput {
-  frontEnd: string | undefined;
-  runtimeRequire?: ((id: string) => any) | undefined;
+  frontEnd: string | undefined
+  runtimeRequire?: ((id: string) => any) | undefined
 }
 
 interface CreateDetachedPomodoroWindowHostOptions
   extends DetachedPomodoroWindowSupportInput {
-  createMarkup: () => string;
+  createMarkup: () => string
   applyViewState: (
     host: HTMLElement,
-    state: FloatingPomodoroViewState
-  ) => void;
-  onAction: (action: DetachedPomodoroAction) => void;
+    state: FloatingPomodoroViewState,
+  ) => void
+  onAction: (action: DetachedPomodoroAction) => void
 }
 
-const ROOT_ID = 'bullet-journal-detached-pomodoro-root';
-const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__';
-const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action';
-const DETACHED_HOST_CLASS = 'detached-floating-tomato';
-const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window';
-const DETACHED_WINDOW_WIDTH = 372;
-const DETACHED_WINDOW_HEIGHT = 84;
-const DETACHED_WINDOW_MARGIN_RIGHT = 24;
-const DETACHED_WINDOW_MARGIN_BOTTOM = 24;
-const THEME_VARIABLE_PREFIX = '--b3-';
+const ROOT_ID = 'bullet-journal-detached-pomodoro-root'
+const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__'
+const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action'
+const DETACHED_HOST_CLASS = 'detached-floating-tomato'
+const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window'
+const DETACHED_WINDOW_WIDTH = 372
+const DETACHED_WINDOW_HEIGHT = 84
+const DETACHED_WINDOW_MARGIN_RIGHT = 24
+const DETACHED_WINDOW_MARGIN_BOTTOM = 24
+const THEME_VARIABLE_PREFIX = '--b3-'
 
 export function detectDetachedPomodoroWindowSupport(
-  input: DetachedPomodoroWindowSupportInput
+  input: DetachedPomodoroWindowSupportInput,
 ): boolean {
   if (input.frontEnd !== 'desktop' || !input.runtimeRequire) {
-    return false;
+    return false
   }
 
   try {
-    const remote = input.runtimeRequire('@electron/remote');
-    return typeof remote?.BrowserWindow === 'function';
+    const remote = input.runtimeRequire('@electron/remote')
+    return typeof remote?.BrowserWindow === 'function'
   } catch {
-    return false;
+    return false
   }
 }
 
 export function createDetachedPomodoroWindowHost(
-  options: CreateDetachedPomodoroWindowHostOptions
+  options: CreateDetachedPomodoroWindowHostOptions,
 ): DetachedPomodoroWindowHost {
-  const remote = getRemote(options);
+  const remote = getRemote(options)
   if (!remote) {
-    return createNoopHost();
+    return createNoopHost()
   }
 
-  let detachedWindow: BrowserWindowLike | null = null;
-  let lastRenderedPayload: RenderedPayload | null = null;
+  let detachedWindow: BrowserWindowLike | null = null
+  let lastRenderedPayload: RenderedPayload | null = null
 
   const handleActionMessage = (_event: unknown, channel: string, action: DetachedPomodoroAction) => {
     if (channel !== ACTION_CHANNEL) {
-      return;
+      return
     }
     if (action === 'pause' || action === 'resume' || action === 'complete') {
-      options.onAction(action);
+      options.onAction(action)
     }
-  };
+  }
 
   const ensureWindow = () => {
     if (detachedWindow && !detachedWindow.isDestroyed?.()) {
-      return detachedWindow;
+      return detachedWindow
     }
 
-    closeLingeringDetachedPomodoroWindows(remote);
+    closeLingeringDetachedPomodoroWindows(remote)
 
     detachedWindow = new remote.BrowserWindow({
       width: DETACHED_WINDOW_WIDTH,
@@ -140,33 +140,33 @@ export function createDetachedPomodoroWindowHost(
         contextIsolation: false,
         backgroundThrottling: false,
       },
-    });
+    })
 
-    positionDetachedWindow(detachedWindow, remote);
-    detachedWindow.setAlwaysOnTop?.(true, 'screen-saver');
-    detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true });
-    detachedWindow.webContents?.on?.('ipc-message', handleActionMessage);
+    positionDetachedWindow(detachedWindow, remote)
+    detachedWindow.setAlwaysOnTop?.(true, 'screen-saver')
+    detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true })
+    detachedWindow.webContents?.on?.('ipc-message', handleActionMessage)
     detachedWindow.loadURL?.(
-      `data:text/html;charset=UTF-8,${encodeURIComponent(buildDetachedWindowHtml())}`
-    );
+      `data:text/html;charset=UTF-8,${encodeURIComponent(buildDetachedWindowHtml())}`,
+    )
     detachedWindow.once?.('ready-to-show', () => {
-      detachedWindow?.showInactive?.();
+      detachedWindow?.showInactive?.()
       if (!detachedWindow?.isVisible?.()) {
-        detachedWindow?.show?.();
+        detachedWindow?.show?.()
       }
       if (lastRenderedPayload) {
-        syncPayload(lastRenderedPayload);
+        syncPayload(lastRenderedPayload)
       }
-    });
+    })
 
-    return detachedWindow;
-  };
+    return detachedWindow
+  }
 
   const renderPayload = (state: FloatingPomodoroViewState): RenderedPayload => {
-    const host = document.createElement('div');
-    host.className = `floating-tomato-btn ${DETACHED_HOST_CLASS}`;
-    host.innerHTML = options.createMarkup();
-    options.applyViewState(host, state);
+    const host = document.createElement('div')
+    host.className = `floating-tomato-btn ${DETACHED_HOST_CLASS}`
+    host.innerHTML = options.createMarkup()
+    options.applyViewState(host, state)
     return {
       className: host.className,
       innerHTML: host.innerHTML,
@@ -175,52 +175,52 @@ export function createDetachedPomodoroWindowHost(
         phase: state.phase,
         isPaused: state.isPaused,
       },
-    };
-  };
+    }
+  }
 
   const syncPayload = (payload: RenderedPayload) => {
-    const currentWindow = ensureWindow();
-    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`;
-    currentWindow.webContents?.executeJavaScript?.(script);
-    currentWindow.showInactive?.();
+    const currentWindow = ensureWindow()
+    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`
+    currentWindow.webContents?.executeJavaScript?.(script)
+    currentWindow.showInactive?.()
     if (!currentWindow.isVisible?.()) {
-      currentWindow.show?.();
+      currentWindow.show?.()
     }
-  };
+  }
 
   return {
     isAvailable: () => true,
     show: (state) => {
-      lastRenderedPayload = renderPayload(state);
-      syncPayload(lastRenderedPayload);
+      lastRenderedPayload = renderPayload(state)
+      syncPayload(lastRenderedPayload)
     },
     update: (state) => {
-      lastRenderedPayload = renderPayload(state);
-      syncPayload(lastRenderedPayload);
+      lastRenderedPayload = renderPayload(state)
+      syncPayload(lastRenderedPayload)
     },
     hide: () => {
-      closeDetachedWindow(detachedWindow);
-      detachedWindow = null;
+      closeDetachedWindow(detachedWindow)
+      detachedWindow = null
     },
     destroy: () => {
-      closeDetachedWindow(detachedWindow);
-      detachedWindow = null;
-      lastRenderedPayload = null;
+      closeDetachedWindow(detachedWindow)
+      detachedWindow = null
+      lastRenderedPayload = null
     },
-  };
+  }
 }
 
 function getRemote(
-  options: DetachedPomodoroWindowSupportInput
+  options: DetachedPomodoroWindowSupportInput,
 ): RemoteLike | null {
   if (!detectDetachedPomodoroWindowSupport(options)) {
-    return null;
+    return null
   }
 
   try {
-    return options.runtimeRequire?.('@electron/remote') ?? null;
+    return options.runtimeRequire?.('@electron/remote') ?? null
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -231,78 +231,78 @@ function createNoopHost(): DetachedPomodoroWindowHost {
     update: () => {},
     hide: () => {},
     destroy: () => {},
-  };
+  }
 }
 
 function closeDetachedWindow(windowInstance: BrowserWindowLike | null) {
   if (!windowInstance || windowInstance.isDestroyed?.()) {
-    return;
+    return
   }
 
-  windowInstance.close?.();
+  windowInstance.close?.()
 }
 
 function closeLingeringDetachedPomodoroWindows(remote: RemoteLike) {
-  const allWindows = remote.BrowserWindow.getAllWindows?.() ?? [];
+  const allWindows = remote.BrowserWindow.getAllWindows?.() ?? []
 
   for (const windowInstance of allWindows) {
     if (windowInstance.isDestroyed?.()) {
-      continue;
+      continue
     }
 
     if (windowInstance.getTitle?.() !== DETACHED_WINDOW_TITLE) {
-      continue;
+      continue
     }
 
-    windowInstance.close?.();
+    windowInstance.close?.()
   }
 }
 
 function positionDetachedWindow(
   windowInstance: BrowserWindowLike,
-  remote: RemoteLike
+  remote: RemoteLike,
 ) {
-  const workArea = remote.screen?.getPrimaryDisplay?.()?.workArea;
+  const workArea = remote.screen?.getPrimaryDisplay?.()?.workArea
   if (!workArea) {
-    return;
+    return
   }
 
   const x =
-    workArea.x +
-    Math.max(0, workArea.width - DETACHED_WINDOW_WIDTH - DETACHED_WINDOW_MARGIN_RIGHT);
+    workArea.x
+    + Math.max(0, workArea.width - DETACHED_WINDOW_WIDTH - DETACHED_WINDOW_MARGIN_RIGHT)
   const y =
-    workArea.y +
-    Math.max(0, workArea.height - DETACHED_WINDOW_HEIGHT - DETACHED_WINDOW_MARGIN_BOTTOM);
+    workArea.y
+    + Math.max(0, workArea.height - DETACHED_WINDOW_HEIGHT - DETACHED_WINDOW_MARGIN_BOTTOM)
 
-  windowInstance.setPosition?.(x, y);
+  windowInstance.setPosition?.(x, y)
 }
 
 function collectSiyuanThemeStyleText(): string {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return '';
+    return ''
   }
 
-  const computedStyle = window.getComputedStyle?.(document.documentElement);
+  const computedStyle = window.getComputedStyle?.(document.documentElement)
   if (!computedStyle) {
-    return '';
+    return ''
   }
 
-  const declarations: string[] = [];
+  const declarations: string[] = []
   for (let index = 0; index < computedStyle.length; index += 1) {
-    const propertyName = computedStyle.item(index);
+    const propertyName = computedStyle.item(index)
     if (!propertyName.startsWith(THEME_VARIABLE_PREFIX)) {
-      continue;
+      continue
     }
 
-    const propertyValue = computedStyle.getPropertyValue(propertyName).trim();
+    const propertyValue = computedStyle.getPropertyValue(propertyName).trim()
     if (!propertyValue) {
-      continue;
+      continue
     }
 
-    declarations.push(`${propertyName}: ${propertyValue};`);
+    declarations.push(`${propertyName}: ${propertyValue};`)
   }
 
-  return declarations.join(' ');
+  return declarations.join(' ')
 }
 
 function buildDetachedWindowHtml(): string {
@@ -578,15 +578,15 @@ function buildDetachedWindowHtml(): string {
       })();
     </script>
   </body>
-</html>`;
+</html>`
 }
 
 interface RenderedPayload {
-  className: string;
-  innerHTML: string;
-  themeStyleText: string;
+  className: string
+  innerHTML: string
+  themeStyleText: string
   state: {
-    phase: FloatingPomodoroViewState['phase'];
-    isPaused: boolean;
-  };
+    phase: FloatingPomodoroViewState['phase']
+    isPaused: boolean
+  }
 }

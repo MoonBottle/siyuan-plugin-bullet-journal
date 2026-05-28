@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="date-picker-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="date-picker-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
           <div
             v-if="modelValue"
@@ -9,43 +13,73 @@
             style="overscroll-behavior: contain; touch-action: pan-y;"
             @click.stop
           >
-            <div class="sheet-handle" @click="close">
+            <div
+              class="sheet-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ title }}</h4>
+              <h4 class="sheet-title">
+                {{ title }}
+              </h4>
             </div>
-            
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Quick Date Buttons -->
-              <div v-if="showQuickDates" class="quick-dates">
-                <button class="quick-date-btn" @click="selectQuickDate(0)">
+              <div
+                v-if="showQuickDates"
+                class="quick-dates"
+              >
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(0)"
+                >
                   <span class="quick-date-label">{{ todayText }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(0) }}</span>
                 </button>
-                <button class="quick-date-btn" @click="selectQuickDate(1)">
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(1)"
+                >
                   <span class="quick-date-label">{{ tomorrowText }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(1) }}</span>
                 </button>
-                <button class="quick-date-btn" @click="selectQuickDate(7)">
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(7)"
+                >
                   <span class="quick-date-label">{{ nextWeekText }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(7) }}</span>
                 </button>
               </div>
-              
+
               <!-- Calendar -->
               <div class="calendar">
                 <div class="calendar-header">
-                  <button class="nav-btn" @click="prevMonth">
+                  <button
+                    class="nav-btn"
+                    @click="prevMonth"
+                  >
                     <svg><use xlink:href="#iconLeft"></use></svg>
                   </button>
                   <span class="month-year">{{ calendarYear }}年{{ calendarMonth + 1 }}月</span>
-                  <button class="nav-btn" @click="nextMonth">
+                  <button
+                    class="nav-btn"
+                    @click="nextMonth"
+                  >
                     <svg><use xlink:href="#iconRight"></use></svg>
                   </button>
                 </div>
                 <div class="calendar-weekdays">
-                  <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
+                  <span
+                    v-for="day in weekdays"
+                    :key="day"
+                    class="weekday"
+                  >{{ day }}</span>
                 </div>
                 <div class="calendar-days">
                   <button
@@ -55,7 +89,7 @@
                     :class="{
                       'other-month': !day.isCurrentMonth,
                       'selected': day.date === tempSelectedDate,
-                      'today': day.isToday
+                      'today': day.isToday,
                     }"
                     @click="selectDate(day.date)"
                   >
@@ -64,12 +98,18 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="close">
+              <button
+                class="sheet-cancel-btn"
+                @click="close"
+              >
                 {{ cancelText }}
               </button>
-              <button class="sheet-confirm-btn" @click="confirm">
+              <button
+                class="sheet-confirm-btn"
+                @click="confirm"
+              >
                 {{ confirmText }}
               </button>
             </div>
@@ -81,20 +121,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
 
 const props = withDefaults(defineProps<{
-  modelValue: boolean;
-  date?: string;
-  title?: string;
-  cancelText?: string;
-  confirmText?: string;
-  todayText?: string;
-  tomorrowText?: string;
-  nextWeekText?: string;
-  showQuickDates?: boolean;
+  modelValue: boolean
+  date?: string
+  title?: string
+  cancelText?: string
+  confirmText?: string
+  todayText?: string
+  tomorrowText?: string
+  nextWeekText?: string
+  showQuickDates?: boolean
 }>(), {
   date: () => dayjs().format('YYYY-MM-DD'),
   title: () => t('mobile.quickCreate.selectDate') || '选择日期',
@@ -104,81 +148,81 @@ const props = withDefaults(defineProps<{
   tomorrowText: () => t('todo.tomorrow') || '明天',
   nextWeekText: () => t('mobile.nextWeek') || '一周后',
   showQuickDates: true,
-});
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  confirm: [date: string];
-  cancel: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "confirm": [date: string]
+  "cancel": []
+}>()
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-const calendarDate = ref(dayjs());
-const tempSelectedDate = ref(props.date);
+const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+const calendarDate = ref(dayjs())
+const tempSelectedDate = ref(props.date)
 
-const calendarYear = computed(() => calendarDate.value.year());
-const calendarMonth = computed(() => calendarDate.value.month());
+const calendarYear = computed(() => calendarDate.value.year())
+const calendarMonth = computed(() => calendarDate.value.month())
 
 const calendarDays = computed(() => {
-  const startOfMonth = calendarDate.value.startOf('month');
-  const endOfMonth = calendarDate.value.endOf('month');
-  const startDate = startOfMonth.startOf('week');
-  const endDate = endOfMonth.endOf('week');
-  
-  const days = [];
-  let current = startDate.clone();
-  
+  const startOfMonth = calendarDate.value.startOf('month')
+  const endOfMonth = calendarDate.value.endOf('month')
+  const startDate = startOfMonth.startOf('week')
+  const endDate = endOfMonth.endOf('week')
+
+  const days = []
+  let current = startDate.clone()
+
   while (current.isBefore(endDate) || current.isSame(endDate, 'day')) {
     days.push({
       date: current.format('YYYY-MM-DD'),
       day: current.date(),
       isCurrentMonth: current.month() === calendarMonth.value,
       isToday: current.isSame(dayjs(), 'day'),
-    });
-    current = current.add(1, 'day');
+    })
+    current = current.add(1, 'day')
   }
-  
-  return days;
-});
+
+  return days
+})
 
 // Sync with props when opened
 watch(() => props.modelValue, (val) => {
   if (val) {
-    calendarDate.value = dayjs(props.date);
-    tempSelectedDate.value = props.date;
+    calendarDate.value = dayjs(props.date)
+    tempSelectedDate.value = props.date
   }
-});
+})
 
 const prevMonth = () => {
-  calendarDate.value = calendarDate.value.subtract(1, 'month');
-};
+  calendarDate.value = calendarDate.value.subtract(1, 'month')
+}
 
 const nextMonth = () => {
-  calendarDate.value = calendarDate.value.add(1, 'month');
-};
+  calendarDate.value = calendarDate.value.add(1, 'month')
+}
 
 const selectDate = (date: string) => {
-  tempSelectedDate.value = date;
-};
+  tempSelectedDate.value = date
+}
 
 const formatQuickDate = (days: number) => {
-  return dayjs().add(days, 'day').format('MM-DD');
-};
+  return dayjs().add(days, 'day').format('MM-DD')
+}
 
 const selectQuickDate = (days: number) => {
-  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD');
-  confirm();
-};
+  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD')
+  confirm()
+}
 
 const close = () => {
-  emit('update:modelValue', false);
-  emit('cancel');
-};
+  emit('update:modelValue', false)
+  emit('cancel')
+}
 
 const confirm = () => {
-  emit('confirm', tempSelectedDate.value);
-  emit('update:modelValue', false);
-};
+  emit('confirm', tempSelectedDate.value)
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>

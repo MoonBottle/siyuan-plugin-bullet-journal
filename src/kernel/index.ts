@@ -1,18 +1,38 @@
-import { initScheduler, stopScheduler, loadTimerRegistry, persistTimerRegistry, setDispatchNotification, setRebuildReminderSchedule } from './scheduler'
-import { initReminderScheduler, handleFsNotify, rebuildReminderSchedule, setReloadWebhookConfig } from './reminder'
-import { initRpcApi } from './rpc'
 import { initMcpServer } from './mcp'
-import { dispatchNotification, loadWebhookConfig, reloadWebhookConfig, getWebhookConfig } from './webhook'
+import {
+  handleFsNotify,
+  initReminderScheduler,
+  rebuildReminderSchedule,
+  setReloadWebhookConfig,
+} from './reminder'
+import { initRpcApi } from './rpc'
+import {
+  initScheduler,
+  loadTimerRegistry,
+  persistTimerRegistry,
+  setDispatchNotification,
+  setRebuildReminderSchedule,
+  stopScheduler,
+} from './scheduler'
+import {
+  dispatchNotification,
+  getWebhookConfig,
+  loadWebhookConfig,
+  reloadWebhookConfig,
+} from './webhook'
 
 siyuan.plugin.lifecycle.onload = async function () {
   void siyuan.logger.info('[kernel] onload fired')
-  
+
   // 初始化 RPC API
   await initRpcApi()
 
-  await siyuan.rpc.bind('testBroadcast', function () {
+  await siyuan.rpc.bind('testBroadcast', () => {
     void siyuan.logger.info('[kernel] testBroadcast RPC: calling broadcast')
-    siyuan.rpc.broadcast('test-event', { ts: Date.now(), source: 'testBroadcast-rpc' })
+    siyuan.rpc.broadcast('test-event', {
+      ts: Date.now(),
+      source: 'testBroadcast-rpc',
+    })
     void siyuan.logger.info('[kernel] testBroadcast RPC: broadcast called')
     return { ok: true }
   }, '测试 broadcast')
@@ -28,14 +48,14 @@ siyuan.plugin.lifecycle.onload = async function () {
 }
 
 siyuan.plugin.lifecycle.onrunning = async function () {
-  void siyuan.logger.info('[kernel] onrunning fired, platform=' + siyuan.plugin.platform)
+  void siyuan.logger.info(`[kernel] onrunning fired, platform=${siyuan.plugin.platform}`)
 
-  console.log('[kernel] onrunning fired, platform=' + siyuan.plugin.platform)
+  console.log(`[kernel] onrunning fired, platform=${siyuan.plugin.platform}`)
 
   setDispatchNotification(dispatchNotification)
   setRebuildReminderSchedule(rebuildReminderSchedule)
   setReloadWebhookConfig(reloadWebhookConfig)
- 
+
   await loadTimerRegistry()
   console.log('[kernel] timer registry loaded')
   initScheduler()
@@ -44,8 +64,8 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   await initReminderScheduler()
   console.log('[kernel] reminder scheduler initialized')
   await loadWebhookConfig()
-  var whConfig = getWebhookConfig()
-  console.log('[kernel] webhook config loaded, enabled=' + whConfig.enabled + ' channels=' + whConfig.channels.length)
+  const whConfig = getWebhookConfig()
+  console.log(`[kernel] webhook config loaded, enabled=${whConfig.enabled} channels=${whConfig.channels.length}`)
 
   // 初始化 MCP 服务器
   initMcpServer()
@@ -53,16 +73,19 @@ siyuan.plugin.lifecycle.onrunning = async function () {
 
   // 测试 siyuan.client.fetch
   try {
-    var testResp = await siyuan.client.fetch('/api/system/version')
-    var testText = await testResp.text()
-    console.log('[kernel] siyuan.client.fetch test: ok=' + testResp.ok + ' body=' + testText.substring(0, 100))
+    const testResp = await siyuan.client.fetch('/api/system/version')
+    const testText = await testResp.text()
+    console.log(`[kernel] siyuan.client.fetch test: ok=${testResp.ok} body=${testText.substring(0, 100)}`)
   } catch (e) {
-    console.log('[kernel] siyuan.client.fetch test FAILED: ' + String(e))
+    console.log(`[kernel] siyuan.client.fetch test FAILED: ${String(e)}`)
   }
-  
+
   // 测试 broadcast
   void siyuan.logger.info('[kernel] TEST: calling broadcast without any console.log')
-  siyuan.rpc.broadcast('test-event', { ts: Date.now(), source: 'onrunning-direct' })
+  siyuan.rpc.broadcast('test-event', {
+    ts: Date.now(),
+    source: 'onrunning-direct',
+  })
   void siyuan.logger.info('[kernel] TEST: broadcast called')
 
   console.log('[kernel] initialized successfully')
@@ -70,10 +93,10 @@ siyuan.plugin.lifecycle.onrunning = async function () {
 
 siyuan.plugin.lifecycle.onunload = async function () {
   await siyuan.logger.info('[kernel] unloading...')
-  
+
   stopScheduler()
   await persistTimerRegistry()
-  
+
   siyuan.server.private.http.handler = null
   siyuan.server.private.es.handler = null
   siyuan.event.handler = null

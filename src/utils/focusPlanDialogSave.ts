@@ -1,10 +1,18 @@
-import type { FocusPlan, Item } from '@/types/models';
-import { writeBlock } from '@/utils/blockWriter';
-import { clearItemFocusPlan, type ItemSettingWriteOptions, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
+import type {
+  FocusPlan,
+  Item,
+} from '@/types/models'
+import type { ItemSettingWriteOptions } from '@/utils/itemSettingUtils'
+import { writeBlock } from '@/utils/blockWriter'
+import {
+  clearItemFocusPlan,
+  updateItemWithFocusPlan,
+
+} from '@/utils/itemSettingUtils'
 
 function itemHasDate(item: Item, date: string): boolean {
-  if (item.date === date) return true;
-  return (item.siblingItems ?? []).some(sibling => sibling.date === date);
+  if (item.date === date) return true
+  return (item.siblingItems ?? []).some((sibling) => sibling.date === date)
 }
 
 export async function saveFocusPlanWithOptionalDate(
@@ -13,14 +21,14 @@ export async function saveFocusPlanWithOptionalDate(
   options?: { ensureDate?: string } & ItemSettingWriteOptions,
 ): Promise<boolean> {
   if (!plan) {
-    await clearItemFocusPlan(item, options);
-    return true;
+    await clearItemFocusPlan(item, options)
+    return true
   }
 
   if (options?.ensureDate && !itemHasDate(item, options.ensureDate)) {
-    const blockId = item.blockId ?? '';
+    const blockId = item.blockId ?? ''
     if (!blockId) {
-      return false;
+      return false
     }
 
     return writeBlock(
@@ -38,9 +46,9 @@ export async function saveFocusPlanWithOptionalDate(
           plan,
         },
       ],
-    );
+    )
   }
 
-  await updateItemWithFocusPlan(item, plan, options);
-  return true;
+  await updateItemWithFocusPlan(item, plan, options)
+  return true
 }

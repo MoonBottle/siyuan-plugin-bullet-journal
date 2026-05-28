@@ -29,7 +29,10 @@
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
     </div>
-    <div ref="dockBodyRef" class="fn__flex-1 fn__flex-column todo-dock-body">
+    <div
+      ref="dockBodyRef"
+      class="fn__flex-1 fn__flex-column todo-dock-body"
+    >
       <TodoFilterBar
         :selected-group="selectedGroup"
         :search-query="searchQuery"
@@ -81,109 +84,194 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { Menu } from 'siyuan';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import TodoContentPane from '@/components/todo/TodoContentPane.vue';
-import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
-import { t } from '@/i18n';
-import { showMessage } from '@/utils/dialog';
-import { buildViewDebugContext } from '@/utils/viewDebug';
-import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
-import type { PriorityLevel } from '@/types/models';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { defaultTodoSortRules } from '@/settings';
-import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
-import dayjs from '@/utils/dayjs';
-import { useApp } from '@/main';
-import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
-import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
+import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue'
+import type {
+  TodoSortDirection,
+  TodoSortField,
+  TodoSortRule,
+} from '@/settings'
+import type { PriorityLevel } from '@/types/models'
+import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
+import { Menu } from 'siyuan'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import TodoContentPane from '@/components/todo/TodoContentPane.vue'
+import TodoFilterBar from '@/components/todo/TodoFilterBar.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { t } from '@/i18n'
+
+import {
+  getCurrentPlugin,
+  useApp,
+  usePlugin,
+
+} from '@/main'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { defaultTodoSortRules } from '@/settings'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  buildCompletedTodoDateRange,
+  buildTodoDateRange,
+
+} from '@/utils/todoDateFilter'
+import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
-  enableWorkbenchPreview?: boolean;
-  viewConfig?: Record<string, unknown>;
+  enableWorkbenchPreview?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   enableWorkbenchPreview: false,
-});
+})
 
-const plugin = usePlugin() as any;
-const app = useApp();
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
+const plugin = usePlugin() as any
+const app = useApp()
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
-const enableWorkbenchPreview = computed(() => props.enableWorkbenchPreview);
+})
+const nativePreview = createNativeBlockPreviewController()
+const enableWorkbenchPreview = computed(() => props.enableWorkbenchPreview)
 
-const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null);
-const dockBodyRef = ref<HTMLElement | null>(null);
-let dockScrollbarObserver: ResizeObserver | null = null;
-const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
+const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null)
+const dockBodyRef = ref<HTMLElement | null>(null)
+let dockScrollbarObserver: ResizeObserver | null = null
+const selectedGroup = ref(settingsStore.todoDock.selectedGroup)
 watch(selectedGroup, (val) => {
-  settingsStore.todoDock.selectedGroup = val;
-  settingsStore.saveToPlugin();
-});
+  settingsStore.todoDock.selectedGroup = val
+  settingsStore.saveToPlugin()
+})
 
-const searchQuery = ref('');
-const tagQuery = ref('');
-const selectedTags = ref<string[]>([]);
-const selectedPriorities = ref<PriorityLevel[]>([]);
-const showSortPanel = ref(false);
-const dateFilterType = ref<TodoDateFilterType>('today');
-const startDate = ref(dayjs().format('YYYY-MM-DD'));
-const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
-const currentDate = computed(() => projectStore.currentDate);
+const searchQuery = ref('')
+const tagQuery = ref('')
+const selectedTags = ref<string[]>([])
+const selectedPriorities = ref<PriorityLevel[]>([])
+const showSortPanel = ref(false)
+const dateFilterType = ref<TodoDateFilterType>('today')
+const startDate = ref(dayjs().format('YYYY-MM-DD'))
+const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'))
+const currentDate = computed(() => projectStore.currentDate)
 
 watch(() => props.viewConfig, (config) => {
-  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset;
-  if (!preset) return;
-  if (preset.groupId !== undefined) selectedGroup.value = preset.groupId;
-  if (preset.dateFilterType) dateFilterType.value = preset.dateFilterType;
-  if (preset.startDate) startDate.value = preset.startDate;
-  if (preset.endDate) endDate.value = preset.endDate;
-  if (preset.priorities) selectedPriorities.value = [...preset.priorities];
-  if (preset.selectedTags) selectedTags.value = [...preset.selectedTags];
-  if (preset.searchQuery !== undefined) searchQuery.value = preset.searchQuery;
-  if (preset.sortRules) settingsStore.todoDock.sortRules = preset.sortRules;
-}, { immediate: true, deep: true });
+  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset
+  if (!preset) return
+  if (preset.groupId !== undefined) selectedGroup.value = preset.groupId
+  if (preset.dateFilterType) dateFilterType.value = preset.dateFilterType
+  if (preset.startDate) startDate.value = preset.startDate
+  if (preset.endDate) endDate.value = preset.endDate
+  if (preset.priorities) selectedPriorities.value = [...preset.priorities]
+  if (preset.selectedTags) selectedTags.value = [...preset.selectedTags]
+  if (preset.searchQuery !== undefined) searchQuery.value = preset.searchQuery
+  if (preset.sortRules) settingsStore.todoDock.sortRules = preset.sortRules
+}, {
+  immediate: true,
+  deep: true,
+})
 
 const priorityOptions = [
-  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
-  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
-  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
-];
+  {
+    value: 'high' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.high.emoji,
+  },
+  {
+    value: 'medium' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.medium.emoji,
+  },
+  {
+    value: 'low' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.low.emoji,
+  },
+]
 
 const dateFilterOptions = [
-  { value: 'today', label: t('todo.dateFilter.today') },
-  { value: 'thisWeek', label: t('todo.dateFilter.thisWeek') },
-  { value: 'thisMonth', label: t('todo.dateFilter.thisMonth') },
-  { value: 'recent7', label: t('todo.dateFilter.recent7') },
-  { value: 'all', label: t('todo.dateFilter.all') },
-  { value: 'custom', label: t('todo.dateFilter.custom') },
-];
+  {
+    value: 'today',
+    label: t('todo.dateFilter.today'),
+  },
+  {
+    value: 'thisWeek',
+    label: t('todo.dateFilter.thisWeek'),
+  },
+  {
+    value: 'thisMonth',
+    label: t('todo.dateFilter.thisMonth'),
+  },
+  {
+    value: 'recent7',
+    label: t('todo.dateFilter.recent7'),
+  },
+  {
+    value: 'all',
+    label: t('todo.dateFilter.all'),
+  },
+  {
+    value: 'custom',
+    label: t('todo.dateFilter.custom'),
+  },
+]
 
 const sortFieldOptions = [
-  { value: 'priority' as TodoSortField, label: t('todo.sortFields.priority') },
-  { value: 'time' as TodoSortField, label: t('todo.sortFields.time') },
-  { value: 'date' as TodoSortField, label: t('todo.sortFields.date') },
-  { value: 'reminderTime' as TodoSortField, label: t('todo.sortFields.reminderTime') },
-  { value: 'project' as TodoSortField, label: t('todo.sortFields.project') },
-  { value: 'task' as TodoSortField, label: t('todo.sortFields.task') },
-  { value: 'content' as TodoSortField, label: t('todo.sortFields.content') },
-];
+  {
+    value: 'priority' as TodoSortField,
+    label: t('todo.sortFields.priority'),
+  },
+  {
+    value: 'time' as TodoSortField,
+    label: t('todo.sortFields.time'),
+  },
+  {
+    value: 'date' as TodoSortField,
+    label: t('todo.sortFields.date'),
+  },
+  {
+    value: 'reminderTime' as TodoSortField,
+    label: t('todo.sortFields.reminderTime'),
+  },
+  {
+    value: 'project' as TodoSortField,
+    label: t('todo.sortFields.project'),
+  },
+  {
+    value: 'task' as TodoSortField,
+    label: t('todo.sortFields.task'),
+  },
+  {
+    value: 'content' as TodoSortField,
+    label: t('todo.sortFields.content'),
+  },
+]
 
 const sortDirectionOptions = [
-  { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
-  { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
-];
+  {
+    value: 'asc' as TodoSortDirection,
+    label: t('todo.sortDirection.asc'),
+  },
+  {
+    value: 'desc' as TodoSortDirection,
+    label: t('todo.sortDirection.desc'),
+  },
+]
 
 const dateRange = computed(() => {
   return buildTodoDateRange(
@@ -191,27 +279,27 @@ const dateRange = computed(() => {
     currentDate.value,
     startDate.value,
     endDate.value,
-  );
-});
+  )
+})
 
 const completedDateRange = computed(() => {
-  return buildCompletedTodoDateRange(dateFilterType.value, currentDate.value, dateRange.value);
-});
+  return buildCompletedTodoDateRange(dateFilterType.value, currentDate.value, dateRange.value)
+})
 
 function handleItemPreviewClick(payload: TodoSidebarHoverPayload) {
-  preview.showNow(payload);
+  preview.showNow(payload)
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
   if (!enableWorkbenchPreview.value || !preview.isOpen.value) {
-    return;
+    return
   }
 
   if (nativePreview.containsTarget(event.target)) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 }
 
 function handleNativePreviewDestroyed({
@@ -219,19 +307,19 @@ function handleNativePreviewDestroyed({
   blockId,
   anchorEl,
 }: {
-  initiatedByController: boolean;
-  blockId: string;
-  anchorEl: HTMLElement;
+  initiatedByController: boolean
+  blockId: string
+  anchorEl: HTMLElement
 }) {
-  const activeBlockId = preview.activeBlockId.value;
-  const activeItemId = preview.activeItemId.value;
-  const activeAnchorEl = preview.anchorEl.value;
+  const activeBlockId = preview.activeBlockId.value
+  const activeItemId = preview.activeItemId.value
+  const activeAnchorEl = preview.anchorEl.value
 
   if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 
   if (
     initiatedByController
@@ -240,137 +328,146 @@ function handleNativePreviewDestroyed({
     || !activeAnchorEl
     || !anchorEl.matches(':hover')
   ) {
-    return;
+    return
   }
 
   preview.showNow({
     blockId: activeBlockId,
     itemId: activeItemId,
     anchorEl: activeAnchorEl,
-  });
+  })
 }
 
 const sortRules = computed(() => {
-  return settingsStore.todoDock.sortRules;
-});
+  return settingsStore.todoDock.sortRules
+})
 
 function togglePriority(priority: PriorityLevel) {
-  const index = selectedPriorities.value.indexOf(priority);
+  const index = selectedPriorities.value.indexOf(priority)
   if (index > -1) {
-    selectedPriorities.value.splice(index, 1);
+    selectedPriorities.value.splice(index, 1)
   } else {
-    selectedPriorities.value.push(priority);
+    selectedPriorities.value.push(priority)
   }
 }
 
 function normalizeTag(tag?: string) {
-  return (tag || '').trim().toLocaleLowerCase();
+  return (tag || '').trim().toLocaleLowerCase()
 }
 
 function handleAddTagFilter(tag: string) {
-  const normalizedTag = normalizeTag(tag);
+  const normalizedTag = normalizeTag(tag)
   if (!normalizedTag) {
-    return;
+    return
   }
 
   const nextSelectedTags = selectedTags.value.filter(
-    selectedTag => normalizeTag(selectedTag) !== normalizedTag,
-  );
+    (selectedTag) => normalizeTag(selectedTag) !== normalizedTag,
+  )
 
-  selectedTags.value = [...nextSelectedTags, tag];
+  selectedTags.value = [...nextSelectedTags, tag]
 }
 
 function onDateFilterChange(type: TodoDateFilterType) {
-  dateFilterType.value = type;
+  dateFilterType.value = type
   if (type === 'custom') {
     // 默认设置为今天到一周后
-    startDate.value = dayjs().format('YYYY-MM-DD');
-    endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+    startDate.value = dayjs().format('YYYY-MM-DD')
+    endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD')
   }
 }
 
 function persistSortRules(nextRules: TodoSortRule[]) {
   settingsStore.todoDock.sortRules = nextRules.length > 0
     ? nextRules
-    : [...defaultTodoSortRules];
-  settingsStore.saveToPlugin();
+    : [...defaultTodoSortRules]
+  settingsStore.saveToPlugin()
 }
 
 function toggleSortPanel() {
-  showSortPanel.value = !showSortPanel.value;
+  showSortPanel.value = !showSortPanel.value
 }
 
 function availableFieldOptions(index: number) {
   const usedFields = new Set(
     sortRules.value
       .filter((_, ruleIndex) => ruleIndex !== index)
-      .map(rule => rule.field),
-  );
+      .map((rule) => rule.field),
+  )
 
-  return sortFieldOptions.filter(option =>
+  return sortFieldOptions.filter((option) =>
     option.value === sortRules.value[index]?.field || !usedFields.has(option.value),
-  );
+  )
 }
 
 function updateSortField(index: number, value: string) {
-  const nextRules = [...sortRules.value];
+  const nextRules = [...sortRules.value]
   nextRules[index] = {
     ...nextRules[index],
     field: value as TodoSortField,
-  };
-  persistSortRules(nextRules);
+  }
+  persistSortRules(nextRules)
 }
 
 function updateSortDirection(index: number, value: string) {
-  const nextRules = [...sortRules.value];
+  const nextRules = [...sortRules.value]
   nextRules[index] = {
     ...nextRules[index],
     direction: value as TodoSortDirection,
-  };
-  persistSortRules(nextRules);
+  }
+  persistSortRules(nextRules)
 }
 
 function addSortRule() {
-  const usedFields = new Set(sortRules.value.map(rule => rule.field));
-  const nextField = sortFieldOptions.find(option => !usedFields.has(option.value));
-  if (!nextField) return;
+  const usedFields = new Set(sortRules.value.map((rule) => rule.field))
+  const nextField = sortFieldOptions.find((option) => !usedFields.has(option.value))
+  if (!nextField) return
 
   persistSortRules([
     ...sortRules.value,
-    { field: nextField.value, direction: 'asc' },
-  ]);
+    {
+      field: nextField.value,
+      direction: 'asc',
+    },
+  ])
 }
 
 function moveSortRule(index: number, delta: number) {
-  const targetIndex = index + delta;
-  if (targetIndex < 0 || targetIndex >= sortRules.value.length) return;
+  const targetIndex = index + delta
+  if (targetIndex < 0 || targetIndex >= sortRules.value.length) return
 
   const nextRules = [...sortRules.value];
-  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]];
-  persistSortRules(nextRules);
+  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]]
+  persistSortRules(nextRules)
 }
 
 function removeSortRule(index: number) {
-  if (sortRules.value.length <= 1) return;
-  const nextRules = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index);
-  persistSortRules(nextRules);
+  if (sortRules.value.length <= 1) return
+  const nextRules = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index)
+  persistSortRules(nextRules)
 }
 
 function resetSortRules() {
-  persistSortRules([...defaultTodoSortRules]);
+  persistSortRules([...defaultTodoSortRules])
 }
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
-  settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
+  settingsStore.groups.forEach((g) => {
+    options.push({
+      value: g.id,
+      label: g.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
 
 const tagOptions = computed(() => {
-  return projectStore.getTodoTagOptions(selectedGroup.value);
-});
+  return projectStore.getTodoTagOptions(selectedGroup.value)
+})
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
@@ -378,19 +475,19 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     ...buildViewDebugContext('DesktopTodoDock', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
-  });
-  if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  })
+  if (!plugin) return
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode']
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
-    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
-    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
+    const patch: Record<string, unknown> = {}
+    storeKeys.forEach((k) => { if (payload[k] !== undefined) patch[k] = payload[k] })
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch)
   } else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-  await nextTick();
-};
+  await nextTick()
+}
 
 // 手动刷新
 const handleRefresh = async () => {
@@ -398,109 +495,109 @@ const handleRefresh = async () => {
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'desktop-todo:manual-refresh',
-    });
-    showMessage(t('common').dataRefreshed);
+    })
+    showMessage(t('common').dataRefreshed)
   }
-};
+}
 
 // 更多按钮点击事件
 const handleMoreClick = (event: MouseEvent) => {
-  event.stopPropagation();
-  event.preventDefault();
+  event.stopPropagation()
+  event.preventDefault()
 
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
+  const target = event.currentTarget as HTMLElement
+  if (!target) return
 
-  const rect = target.getBoundingClientRect();
+  const rect = target.getBoundingClientRect()
 
-  const menu = new Menu('bullet-journal-more-menu');
+  const menu = new Menu('bullet-journal-more-menu')
 
   // 隐藏/显示已完成选项
-  const hideCompleted = projectStore.hideCompleted;
+  const hideCompleted = projectStore.hideCompleted
   menu.addItem({
     icon: hideCompleted ? 'iconEyeoff' : 'iconEye',
     label: hideCompleted ? t('todo').showCompleted : t('todo').hideCompleted,
     click: () => {
-      projectStore.toggleHideCompleted();
+      projectStore.toggleHideCompleted()
     },
-  });
+  })
 
   // 隐藏/显示已放弃选项
-  const hideAbandoned = projectStore.hideAbandoned;
+  const hideAbandoned = projectStore.hideAbandoned
   menu.addItem({
     icon: hideAbandoned ? 'iconEyeoff' : 'iconEye',
     label: hideAbandoned ? t('todo').showAbandoned : t('todo').hideAbandoned,
     click: () => {
-      projectStore.toggleHideAbandoned();
+      projectStore.toggleHideAbandoned()
     },
-  });
+  })
 
-  const showLinks = settingsStore.todoDock.showLinks;
+  const showLinks = settingsStore.todoDock.showLinks
   menu.addItem({
     icon: showLinks ? 'iconEyeoff' : 'iconEye',
     label: showLinks ? t('todo').hideLinks : t('todo').showLinks,
     click: () => {
-      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks;
-      settingsStore.saveToPlugin();
+      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks
+      settingsStore.saveToPlugin()
     },
-  });
+  })
 
-  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring;
+  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring
   menu.addItem({
     icon: showReminderAndRecurring ? 'iconEyeoff' : 'iconEye',
     label: showReminderAndRecurring
       ? t('todo').hideReminderRecurring
       : t('todo').showReminderRecurring,
     click: () => {
-      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring;
-      settingsStore.saveToPlugin();
+      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring
+      settingsStore.saveToPlugin()
     },
-  });
+  })
 
   menu.open({
     x: rect.left,
     y: rect.bottom + 4,
     isLeft: true,
-  });
-};
+  })
+}
 
 function syncDockScrollbarGutter() {
-  const hostEl = dockBodyRef.value;
-  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined;
+  const hostEl = dockBodyRef.value
+  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined
   if (!hostEl || !scrollEl) {
-    return;
+    return
   }
 
-  const gutterWidth = Math.max(0, scrollEl.offsetWidth - scrollEl.clientWidth);
-  hostEl.style.setProperty('--todo-scrollbar-gutter-width', `${gutterWidth}px`);
+  const gutterWidth = Math.max(0, scrollEl.offsetWidth - scrollEl.clientWidth)
+  hostEl.style.setProperty('--todo-scrollbar-gutter-width', `${gutterWidth}px`)
 }
 
 // 事件取消订阅函数
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopTodoDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopTodoDock', plugin))
   // 从插件加载设置
-  settingsStore.loadFromPlugin();
+  settingsStore.loadFromPlugin()
 
   // 初始默认分组（仅首次为空时应用）
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
-    selectedGroup.value = settingsStore.defaultGroup;
+    selectedGroup.value = settingsStore.defaultGroup
   }
 
   // 同步 todoDock 设置到 projectStore
-  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
-  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
 
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
@@ -508,60 +605,65 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('DesktopTodoDock', plugin),
-          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
-        });
-        return handleDataRefresh(payload);
+          data: payload
+            ? {
+                type: 'SETTINGS_CHANGED',
+                ...payload,
+              }
+            : { type: 'SETTINGS_CHANGED' },
+        })
+        return handleDataRefresh(payload)
       },
       viewName: 'DesktopTodoDock',
-    });
+    })
   } catch {
     // 忽略
   }
 
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
 
-  await nextTick();
-  syncDockScrollbarGutter();
-  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined;
-  const contentEl = scrollEl?.firstElementChild as HTMLElement | null;
+  await nextTick()
+  syncDockScrollbarGutter()
+  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined
+  const contentEl = scrollEl?.firstElementChild as HTMLElement | null
   dockScrollbarObserver = new ResizeObserver(() => {
-    syncDockScrollbarGutter();
-  });
+    syncDockScrollbarGutter()
+  })
   if (scrollEl) {
-    dockScrollbarObserver.observe(scrollEl);
+    dockScrollbarObserver.observe(scrollEl)
   }
   if (contentEl) {
-    dockScrollbarObserver.observe(contentEl);
+    dockScrollbarObserver.observe(contentEl)
   }
-});
+})
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopTodoDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopTodoDock', plugin))
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
-  dockScrollbarObserver?.disconnect();
-  dockScrollbarObserver = null;
+  dockScrollbarObserver?.disconnect()
+  dockScrollbarObserver = null
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
 
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 
 watch(
   () => [enableWorkbenchPreview.value, preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([enabled, isOpen, blockId, anchorEl]) => {
     if (!enabled || !isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -571,12 +673,12 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: handleNativePreviewDestroyed,
-    });
+    })
   },
   {
     flush: 'post',
   },
-);
+)
 </script>
 
 <style lang="scss" scoped>

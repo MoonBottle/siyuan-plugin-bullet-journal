@@ -1,11 +1,17 @@
 <template>
   <div class="time-wheel">
-    <div class="wheel-label">{{ label }}</div>
+    <div class="wheel-label">
+      {{ label }}
+    </div>
     <div class="wheel-wrapper">
-      <div ref="wheelRef" class="wheel-container" @scroll="handleScroll">
+      <div
+        ref="wheelRef"
+        class="wheel-container"
+        @scroll="handleScroll"
+      >
         <!-- 顶部 padding -->
         <div class="wheel-padding"></div>
-        
+
         <!-- 选项列表 -->
         <div
           v-for="option in options"
@@ -16,11 +22,11 @@
         >
           {{ option.label }}
         </div>
-        
+
         <!-- 底部 padding -->
         <div class="wheel-padding"></div>
       </div>
-      
+
       <!-- 中心高亮框 -->
       <div class="wheel-center-highlight"></div>
     </div>
@@ -28,99 +34,105 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
 
 interface Option {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 interface Props {
-  modelValue: string;
-  options: Option[];
-  label?: string;
-  itemHeight?: number; // 每项高度，默认 40px
+  modelValue: string
+  options: Option[]
+  label?: string
+  itemHeight?: number // 每项高度，默认 40px
 }
 
 const props = withDefaults(defineProps<Props>(), {
   label: '',
-  itemHeight: 40
-});
+  itemHeight: 40,
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
-}>();
+  'update:modelValue': [value: string]
+}>()
 
-const wheelRef = ref<HTMLDivElement>();
-let scrollTimeout: number | null = null;
-let isScrolling = false;
+const wheelRef = ref<HTMLDivElement>()
+let scrollTimeout: number | null = null
+const isScrolling = false
 
 // 滚动到指定选项
 function scrollToValue(value: string, smooth = true) {
-  const index = props.options.findIndex(opt => opt.value === value);
-  if (index === -1 || !wheelRef.value) return;
-  
-  const scrollTop = index * props.itemHeight;
+  const index = props.options.findIndex((opt) => opt.value === value)
+  if (index === -1 || !wheelRef.value) return
+
+  const scrollTop = index * props.itemHeight
   wheelRef.value.scrollTo({
     top: scrollTop,
-    behavior: smooth ? 'smooth' : 'auto'
-  });
+    behavior: smooth ? 'smooth' : 'auto',
+  })
 }
 
 // 选择选项
 function selectOption(value: string) {
-  emit('update:modelValue', value);
-  scrollToValue(value);
+  emit('update:modelValue', value)
+  scrollToValue(value)
 }
 
 // 滚动监听
 function handleScroll() {
-  if (!wheelRef.value || isScrolling) return;
-  
+  if (!wheelRef.value || isScrolling) return
+
   // 清除之前的 timeout
   if (scrollTimeout) {
-    clearTimeout(scrollTimeout);
+    clearTimeout(scrollTimeout)
   }
-  
+
   // 防抖：滚动停止后计算选中项
   scrollTimeout = window.setTimeout(() => {
-    if (!wheelRef.value) return;
-    
-    const scrollTop = wheelRef.value.scrollTop;
-    const index = Math.round(scrollTop / props.itemHeight);
-    const clampedIndex = Math.max(0, Math.min(index, props.options.length - 1));
-    
-    const selectedOption = props.options[clampedIndex];
+    if (!wheelRef.value) return
+
+    const scrollTop = wheelRef.value.scrollTop
+    const index = Math.round(scrollTop / props.itemHeight)
+    const clampedIndex = Math.max(0, Math.min(index, props.options.length - 1))
+
+    const selectedOption = props.options[clampedIndex]
     if (selectedOption && selectedOption.value !== props.modelValue) {
-      emit('update:modelValue', selectedOption.value);
+      emit('update:modelValue', selectedOption.value)
     }
-  }, 50);
+  }, 50)
 }
 
 // 监听 modelValue 变化，滚动到对应位置
 watch(() => props.modelValue, (newValue) => {
   if (!isScrolling) {
-    scrollToValue(newValue, false);
+    scrollToValue(newValue, false)
   }
-});
+})
 
 // 初始化滚动位置
 onMounted(() => {
   nextTick(() => {
-    scrollToValue(props.modelValue, false);
-  });
-});
+    scrollToValue(props.modelValue, false)
+  })
+})
 
 onUnmounted(() => {
   if (scrollTimeout) {
-    clearTimeout(scrollTimeout);
+    clearTimeout(scrollTimeout)
   }
-});
+})
 
 // 暴露方法供父组件调用
 defineExpose({
-  scrollToValue
-});
+  scrollToValue,
+})
 </script>
 
 <style scoped>
@@ -178,7 +190,9 @@ defineExpose({
   color: var(--text-secondary, #666);
   scroll-snap-align: center;
   scroll-snap-stop: always;
-  transition: color 0.15s ease, font-weight 0.15s ease;
+  transition:
+    color 0.15s ease,
+    font-weight 0.15s ease;
   cursor: pointer;
 }
 

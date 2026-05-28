@@ -13,6 +13,7 @@
 ### Task 1: Add settings fields and i18n
 
 **Files:**
+
 - Modify: `src/settings/types.ts`
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
@@ -74,6 +75,7 @@ git commit -m "feat: add calendar pomodoro blocks settings and i18n"
 ### Task 2: Add settings UI in CalendarConfigSection
 
 **Files:**
+
 - Modify: `src/components/settings/CalendarConfigSection.vue`
 
 - [ ] **Step 1: Add setting items to template**
@@ -86,10 +88,7 @@ Replace the entire template section with:
 <template>
   <SySettingsSection icon="iconCalendar" :title="t('settings').calendar.title">
     <SySettingItemList>
-      <SySettingItem
-        :label="t('settings').calendar.defaultView"
-        :description="t('settings').calendar.defaultViewDesc"
-      >
+      <SySettingItem :label="t('settings').calendar.defaultView" :description="t('settings').calendar.defaultViewDesc">
         <SySelect
           :model-value="calendarDefaultView"
           :options="viewOptions"
@@ -117,36 +116,37 @@ Replace the entire template section with:
     </SySettingItemList>
   </SySettingsSection>
 </template>
+
 ```
 
 Update the `<script setup>` to add new props, emits, and import:
 
 ```ts
-import { t } from '@/i18n';
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import SySettingsSection from './SySettingsSection.vue'
 
 defineProps<{
-  calendarDefaultView: string;
-  showPomodoroBlocks?: boolean;
-  showPomodoroTotal?: boolean;
-}>();
+  calendarDefaultView: string
+  showPomodoroBlocks?: boolean
+  showPomodoroTotal?: boolean
+}>()
 
 defineEmits<{
-  'update:calendarDefaultView': [value: string];
-  'update:showPomodoroBlocks': [value: boolean];
-  'update:showPomodoroTotal': [value: boolean];
-}>();
+  'update:calendarDefaultView': [value: string]
+  'update:showPomodoroBlocks': [value: boolean]
+  'update:showPomodoroTotal': [value: boolean]
+}>()
 
 const viewOptions = [
   { value: 'dayGridMonth', label: t('calendar').month },
   { value: 'timeGridWeek', label: t('calendar').week },
   { value: 'timeGridDay', label: t('calendar').day },
   { value: 'listWeek', label: t('calendar').list }
-];
+]
 ```
 
 - [ ] **Step 2: Wire up in SettingsDialog.vue**
@@ -154,12 +154,13 @@ const viewOptions = [
 In `src/components/settings/SettingsDialog.vue`, update the `CalendarConfigSection` usage (around line 60-63) to pass the new props:
 
 ```html
-          <CalendarConfigSection
-            v-show="sectionVisible('calendar')"
-            v-model:calendar-default-view="local.calendarDefaultView"
-            v-model:show-pomodoro-blocks="local.showPomodoroBlocks"
-            v-model:show-pomodoro-total="local.showPomodoroTotal"
-          />
+<CalendarConfigSection
+  v-show="sectionVisible('calendar')"
+  v-model:calendar-default-view="local.calendarDefaultView"
+  v-model:show-pomodoro-blocks="local.showPomodoroBlocks"
+  v-model:show-pomodoro-total="local.showPomodoroTotal"
+/>
+
 ```
 
 - [ ] **Step 3: Verify build**
@@ -179,6 +180,7 @@ git commit -m "feat: add pomodoro blocks settings UI in CalendarConfigSection"
 ### Task 3: Add pomodoro-to-background-event converter
 
 **Files:**
+
 - Modify: `src/utils/dataConverter.ts`
 
 - [ ] **Step 1: Add pomodoroBlocksToEvents static method**
@@ -234,12 +236,13 @@ In `src/utils/dataConverter.ts`, add a new public static method after `itemToCal
 Also add `PomodoroRecord` to the import on line 5:
 
 ```ts
-import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } from '@/types/models';
+import type { CalendarEvent, GanttTask, Item, PomodoroRecord, Project, Task } from '@/types/models'
 ```
 
 Note: The `CalendarEvent` type's `extendedProps` is defined with specific fields. Since `isPomodoroBlock`, `pomodoroDurationMinutes`, and `pomodoroDescription` are not in the interface, we'll need to handle this. FullCalendar accepts any object as `extendedProps`. The TypeScript type for `CalendarEvent.extendedProps` is defined in `src/types/models.ts`. Let's check if it uses an index signature.
 
 Actually, since FullCalendar's `EventInput` type accepts `extendedProps` as `Record<string, any>`, and our `CalendarEvent` interface has specific fields, we should either:
+
 1. Use type assertion, or
 2. Add these optional fields to the `CalendarEvent.extendedProps` interface.
 
@@ -273,6 +276,7 @@ git commit -m "feat: add pomodoro-to-background-event converter"
 ### Task 4: Integrate pomodoro blocks into CalendarView
 
 **Files:**
+
 - Modify: `src/tabs/CalendarTab.vue`
 - Modify: `src/components/calendar/CalendarView.vue`
 
@@ -288,7 +292,7 @@ This is the core integration task. Changes:
 In `src/tabs/CalendarTab.vue`, add a computed that generates pomodoro background events. First, add imports at the top of the `<script setup>`:
 
 ```ts
-import { DataConverter } from '@/utils/dataConverter';
+import { DataConverter } from '@/utils/dataConverter'
 ```
 
 Add this computed after `filteredCalendarEvents` (around line 87):
@@ -296,35 +300,36 @@ Add this computed after `filteredCalendarEvents` (around line 87):
 ```ts
 // 番茄钟背景时间块事件
 const pomodoroBlockEvents = computed(() => {
-  if (!settingsStore.showPomodoroBlocks) return [];
-  const events = filteredCalendarEvents.value;
-  const allPomodoros: PomodoroRecord[] = [];
-  const seenIds = new Set<string>();
+  if (!settingsStore.showPomodoroBlocks)
+    return []
+  const events = filteredCalendarEvents.value
+  const allPomodoros: PomodoroRecord[] = []
+  const seenIds = new Set<string>()
   for (const event of events) {
-    const pomodoros = event.extendedProps?.pomodoros;
+    const pomodoros = event.extendedProps?.pomodoros
     if (pomodoros) {
       for (const p of pomodoros) {
         if (!seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          allPomodoros.push(p);
+          seenIds.add(p.id)
+          allPomodoros.push(p)
         }
       }
     }
   }
-  return DataConverter.pomodoroBlocksToEvents(allPomodoros);
-});
+  return DataConverter.pomodoroBlocksToEvents(allPomodoros)
+})
 ```
 
 Add `PomodoroRecord` to the type import:
 
 ```ts
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
 ```
 
 Change to:
 
 ```ts
-import type { Item, PomodoroRecord } from '@/types/models';
+import type { Item, PomodoroRecord } from '@/types/models'
 ```
 
 - [ ] **Step 2: Merge events and pass to CalendarView**
@@ -334,26 +339,27 @@ In `src/tabs/CalendarTab.vue`, add a new computed that merges regular events wit
 ```ts
 // 合并日历事件 + 番茄钟背景时间块
 const allCalendarEvents = computed(() => {
-  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value];
-});
+  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value]
+})
 ```
 
 Update the CalendarView binding (line 44) from `:events="filteredCalendarEvents"` to `:events="allCalendarEvents"`:
 
 ```html
-      <CalendarView
-        v-if="isSettingsLoaded"
-        ref="calendarRef"
-        :events="allCalendarEvents"
-        :initial-view="currentView"
-        :show-pomodoro-total="settingsStore.showPomodoroTotal"
-        @event-click="handleEventClick"
-        @event-drop="handleEventDrop"
-        @event-resize="handleEventResize"
-        @navigated="updateTitle"
-        @day-view-from-click="handleDayViewFromClick"
-        @week-view-from-click="handleWeekViewFromClick"
-      />
+<CalendarView
+  v-if="isSettingsLoaded"
+  ref="calendarRef"
+  :events="allCalendarEvents"
+  :initial-view="currentView"
+  :show-pomodoro-total="settingsStore.showPomodoroTotal"
+  @event-click="handleEventClick"
+  @event-drop="handleEventDrop"
+  @event-resize="handleEventResize"
+  @navigated="updateTitle"
+  @day-view-from-click="handleDayViewFromClick"
+  @week-view-from-click="handleWeekViewFromClick"
+/>
+
 ```
 
 - [ ] **Step 3: Update CalendarView to accept showPomodoroTotal prop**
@@ -362,9 +368,9 @@ In `src/components/calendar/CalendarView.vue`, update the Props interface (aroun
 
 ```ts
 interface Props {
-  events: CalendarEvent[];
-  initialView?: string;
-  showPomodoroTotal?: boolean;
+  events: CalendarEvent[]
+  initialView?: string
+  showPomodoroTotal?: boolean
 }
 ```
 
@@ -402,22 +408,23 @@ In `src/components/calendar/CalendarView.vue`, update the `eventDidMount` callba
 In `src/components/calendar/CalendarView.vue`, update `renderEventContent` (around line 46-130). After the `line2` element is created and `titleEl` is appended (after `line2.appendChild(titleEl);`), add the pomodoro total display:
 
 ```ts
-  // 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
-  if (isItem && props.showPomodoroTotal) {
-    const pomodoros = arg.event.extendedProps?.pomodoros;
-    if (pomodoros && pomodoros.length > 0) {
-      const totalMinutes = pomodoros.reduce(
-        (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0
-      );
-      if (totalMinutes > 0) {
-        const totalEl = document.createElement('span');
-        totalEl.className = 'fc-event-pomodoro-total';
-        const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min';
-        totalEl.textContent = ' ' + label.replace('{minutes}', String(totalMinutes));
-        line2.appendChild(totalEl);
-      }
+// 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
+if (isItem && props.showPomodoroTotal) {
+  const pomodoros = arg.event.extendedProps?.pomodoros
+  if (pomodoros && pomodoros.length > 0) {
+    const totalMinutes = pomodoros.reduce(
+      (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes),
+      0
+    )
+    if (totalMinutes > 0) {
+      const totalEl = document.createElement('span')
+      totalEl.className = 'fc-event-pomodoro-total'
+      const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min'
+      totalEl.textContent = ` ${label.replace('{minutes}', String(totalMinutes))}`
+      line2.appendChild(totalEl)
     }
   }
+}
 ```
 
 Add `props` variable reference. Currently `renderEventContent` is a standalone arrow function, not inside setup context. Move it to be defined after the `props` definition or make it a function that takes `showPomodoroTotal` as a parameter. The simplest approach: since `renderEventContent` is defined in module scope before `defineProps`, we need to access the settings store directly.
@@ -437,8 +444,8 @@ Revert the Props interface back to:
 
 ```ts
 interface Props {
-  events: CalendarEvent[];
-  initialView?: string;
+  events: CalendarEvent[]
+  initialView?: string
 }
 ```
 
@@ -449,34 +456,35 @@ And remove `show-pomodoro-total` from CalendarTab's CalendarView binding.
 In `src/components/calendar/CalendarView.vue`, in the global `<style lang="scss">` block (non-scoped, around line 622), add these styles inside the `.fc` selector (after the existing styles, before the closing `}`):
 
 ```scss
-  /* 番茄钟背景时间块 */
-  .fc-bg-event {
-    &.fc-event {
-      cursor: default;
-      opacity: 1;
-    }
-
-    .pomodoro-block-label {
-      position: absolute;
-      top: 2px;
-      left: 4px;
-      font-size: 10px;
-      color: rgba(231, 76, 60, 0.7);
-      white-space: nowrap;
-      pointer-events: none;
-      font-weight: 500;
-    }
+/* 番茄钟背景时间块 */
+.fc-bg-event {
+  &.fc-event {
+    cursor: default;
+    opacity: 1;
   }
 
-  /* 事项条专注总时长 */
-  .fc-event-pomodoro-total {
+  .pomodoro-block-label {
+    position: absolute;
+    top: 2px;
+    left: 4px;
     font-size: 10px;
-    opacity: 0.75;
+    color: rgba(231, 76, 60, 0.7);
     white-space: nowrap;
-    flex-shrink: 0;
-    margin-left: auto;
-    color: var(--b3-theme-on-primary);
+    pointer-events: none;
+    font-weight: 500;
   }
+}
+
+/* 事项条专注总时长 */
+.fc-event-pomodoro-total {
+  font-size: 10px;
+  opacity: 0.75;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--b3-theme-on-primary);
+}
+
 ```
 
 - [ ] **Step 7: Verify build**
@@ -508,6 +516,7 @@ Expected: All pass
 - [ ] **Step 3: Verify spec coverage**
 
 Check that each spec requirement has corresponding implementation:
+
 - [x] Background time blocks from PomodoroRecords with startTime/endTime
 - [x] Duration text (e.g. "25min") on each block
 - [x] Total focus time on event bar right side

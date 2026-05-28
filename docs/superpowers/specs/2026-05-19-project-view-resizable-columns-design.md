@@ -18,27 +18,27 @@
 ```typescript
 // src/types/workbench.ts
 export interface WorkbenchProjectViewConfig {
-  groupId?: string;
-  columnRatios?: [number, number, number]; // 三栏宽度百分比，总和=100
+  groupId?: string
+  columnRatios?: [number, number, number] // 三栏宽度百分比，总和=100
 }
 ```
 
 ### Default Values & Constraints
 
-| Column       | Default Ratio | Min Ratio | Component        |
-|--------------|---------------|-----------|------------------|
-| 项目列表 (1) | 20%           | 10%       | ProjectListPane  |
-| 任务树 (2)   | 20%           | 15%       | ProjectTreePane  |
+| Column       | Default Ratio | Min Ratio | Component         |
+| ------------ | ------------- | --------- | ----------------- |
+| 项目列表 (1) | 20%           | 10%       | ProjectListPane   |
+| 任务树 (2)   | 20%           | 15%       | ProjectTreePane   |
 | 详情 (3)     | 60%           | 30%       | ProjectDetailPane |
 
 ### Mode Differences
 
-| Property          | Standalone Tab | Workbench Embedded |
-|-------------------|----------------|--------------------|
-| Drag resize       | ✅             | ✅                  |
-| Reset button      | ✅             | ✅                  |
-| Persistence       | ❌ (session)   | ✅ (viewConfig)     |
-| Initial value     | `[20,20,60]`   | from config or default |
+| Property      | Standalone Tab | Workbench Embedded     |
+| ------------- | -------------- | ---------------------- |
+| Drag resize   | ✅             | ✅                     |
+| Reset button  | ✅             | ✅                     |
+| Persistence   | ❌ (session)   | ✅ (viewConfig)        |
+| Initial value | `[20,20,60]`   | from config or default |
 
 ## Architecture
 
@@ -51,11 +51,11 @@ src/composables/useResizableColumns.ts       — 拖拽逻辑 composable
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `src/types/workbench.ts` | Add `columnRatios?` to `WorkbenchProjectViewConfig` |
+| File                                     | Change                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `src/types/workbench.ts`                 | Add `columnRatios?` to `WorkbenchProjectViewConfig`                                             |
 | `src/components/project/ProjectView.vue` | Insert 2 ResizeHandle components; accept + emit `columnRatios`; dynamic `grid-template-columns` |
-| `src/tabs/ProjectTab.vue` | Manage `columnRatios` state; persist in embedded mode; add reset button to toolbar |
+| `src/tabs/ProjectTab.vue`                | Manage `columnRatios` state; persist in embedded mode; add reset button to toolbar              |
 
 ### Component Hierarchy
 
@@ -115,11 +115,11 @@ mouseup:
 
 ### ResizeHandle Visual States
 
-| State    | Appearance                                    | Cursor    |
-|----------|------------------------------------------------|-----------|
-| Default  | 1px line, `--b3-border-color`, opacity 0.5    | default   |
-| Hover    | 1px line, darker color, opacity 0.8            | col-resize|
-| Active   | 1px line, `--b3-theme-primary`, opacity 1      | col-resize|
+| State   | Appearance                                 | Cursor     |
+| ------- | ------------------------------------------ | ---------- |
+| Default | 1px line, `--b3-border-color`, opacity 0.5 | default    |
+| Hover   | 1px line, darker color, opacity 0.8        | col-resize |
+| Active  | 1px line, `--b3-theme-primary`, opacity 1  | col-resize |
 
 - Hit area expanded to **8px** via `::before` pseudo-element (transparent overlay)
 - Visual width remains **1-4px**
@@ -131,6 +131,7 @@ The `.project-workbench` grid transitions from static:
 ```css
 /* Before */
 grid-template-columns: 2fr 2fr 6fr;
+
 ```
 
 To dynamic (controlled by JS):
@@ -138,6 +139,7 @@ To dynamic (controlled by JS):
 ```css
 /* After */
 grid-template-columns: <computed>% <computed>% <computed>%;
+
 ```
 
 ## Persistence Strategy
@@ -160,11 +162,11 @@ Drag end → emit ratios → ProjectTab receives
 
 ## Edge Cases
 
-| Scenario                     | Handling                                      |
-|------------------------------|-----------------------------------------------|
-| Column dragged below minimum | Clamp to min; visual "stop" effect            |
-| Window resize               | Percentages adapt automatically (no action needed) |
-| Rapid drag movements         | requestAnimationFrame throttle on mousemove    |
-| Touch devices               | Touch events mapped equivalently (future)     |
-| No persisted config yet      | Fall back to `[20, 20, 60]` defaults           |
-| Config with invalid ratios   | Validate sum=100, each ≥ min; otherwise reset  |
+| Scenario                     | Handling                                           |
+| ---------------------------- | -------------------------------------------------- |
+| Column dragged below minimum | Clamp to min; visual "stop" effect                 |
+| Window resize                | Percentages adapt automatically (no action needed) |
+| Rapid drag movements         | requestAnimationFrame throttle on mousemove        |
+| Touch devices                | Touch events mapped equivalently (future)          |
+| No persisted config yet      | Fall back to `[20, 20, 60]` defaults               |
+| Config with invalid ratios   | Validate sum=100, each ≥ min; otherwise reset      |

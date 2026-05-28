@@ -30,6 +30,7 @@
 ### Task 1: Add Parser-Level Failing Tests For China Workday Advancement
 
 **Files:**
+
 - Modify: `test/parser/recurringParser.test.ts`
 
 - [ ] **Step 1: Write the failing tests**
@@ -37,17 +38,17 @@
 Add the following cases under `describe('getNextOccurrenceDate', ...)` in `test/parser/recurringParser.test.ts`:
 
 ```ts
-    it('应该计算工作日的下一次（跳过中国法定节假日）', () => {
-      const rule: RepeatRule = { type: 'workday' };
-      const result = getNextOccurrenceDate('2026-04-30', rule);
-      expect(result).toBe('2026-05-06');
-    });
+it('应该计算工作日的下一次（跳过中国法定节假日）', () => {
+  const rule: RepeatRule = { type: 'workday' }
+  const result = getNextOccurrenceDate('2026-04-30', rule)
+  expect(result).toBe('2026-05-06')
+})
 
-    it('应该计算工作日的下一次（命中补班周六）', () => {
-      const rule: RepeatRule = { type: 'workday' };
-      const result = getNextOccurrenceDate('2026-05-08', rule);
-      expect(result).toBe('2026-05-09');
-    });
+it('应该计算工作日的下一次（命中补班周六）', () => {
+  const rule: RepeatRule = { type: 'workday' }
+  const result = getNextOccurrenceDate('2026-05-08', rule)
+  expect(result).toBe('2026-05-09')
+})
 ```
 
 - [ ] **Step 2: Run the parser test to verify it fails**
@@ -70,6 +71,7 @@ git commit -m "test(recurring): cover china holiday workday advancement"
 ### Task 2: Add Recurring Service Integration Failing Tests
 
 **Files:**
+
 - Modify: `test/services/recurringService.test.ts`
 
 - [ ] **Step 1: Write the failing integration tests**
@@ -77,53 +79,53 @@ git commit -m "test(recurring): cover china holiday workday advancement"
 Add the following cases under `describe('skipCurrentOccurrence', ...)` and `describe('createNextOccurrence', ...)` in `test/services/recurringService.test.ts`:
 
 ```ts
-    it('工作日重复遇到法定节假日时应跳过到节后工作日', async () => {
-      mockUpdateBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+it('工作日重复遇到法定节假日时应跳过到节后工作日', async () => {
+  mockUpdateBlock.mockResolvedValue([{ id: 'new-block-id' }])
 
-      const item: Item = {
-        id: '1',
-        content: '节前任务',
-        date: '2026-04-30',
-        status: 'pending',
-        lineNumber: 1,
-        docId: 'doc1',
-        blockId: 'block123',
-        repeatRule: { type: 'workday' }
-      };
+  const item: Item = {
+    id: '1',
+    content: '节前任务',
+    date: '2026-04-30',
+    status: 'pending',
+    lineNumber: 1,
+    docId: 'doc1',
+    blockId: 'block123',
+    repeatRule: { type: 'workday' }
+  }
 
-      const result = await skipCurrentOccurrence({} as any, item);
-      expect(result).toBe(true);
-      expect(mockUpdateBlock).toHaveBeenCalledWith(
-        'markdown',
-        expect.stringContaining('📅2026-05-06'),
-        'block123'
-      );
-    });
+  const result = await skipCurrentOccurrence({} as any, item)
+  expect(result).toBe(true)
+  expect(mockUpdateBlock).toHaveBeenCalledWith(
+    'markdown',
+    expect.stringContaining('📅2026-05-06'),
+    'block123'
+  )
+})
 
-    it('工作日重复创建下一次时应命中补班周六', async () => {
-      mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+it('工作日重复创建下一次时应命中补班周六', async () => {
+  mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }])
 
-      const item: Item = {
-        id: '1',
-        content: '节后任务',
-        date: '2026-05-08',
-        status: 'completed',
-        lineNumber: 1,
-        docId: 'doc1',
-        blockId: 'block123',
-        repeatRule: { type: 'workday' }
-      };
+  const item: Item = {
+    id: '1',
+    content: '节后任务',
+    date: '2026-05-08',
+    status: 'completed',
+    lineNumber: 1,
+    docId: 'doc1',
+    blockId: 'block123',
+    repeatRule: { type: 'workday' }
+  }
 
-      const result = await createNextOccurrence({} as any, item);
-      expect(result).toBe(true);
-      expect(mockInsertBlock).toHaveBeenCalledWith(
-        'markdown',
-        expect.stringContaining('📅2026-05-09'),
-        undefined,
-        'block123',
-        undefined,
-      );
-    });
+  const result = await createNextOccurrence({} as any, item)
+  expect(result).toBe(true)
+  expect(mockInsertBlock).toHaveBeenCalledWith(
+    'markdown',
+    expect.stringContaining('📅2026-05-09'),
+    undefined,
+    'block123',
+    undefined,
+  )
+})
 ```
 
 - [ ] **Step 2: Run the recurring service test to verify it fails**
@@ -146,6 +148,7 @@ git commit -m "test(recurring): cover holiday-aware workday integration"
 ### Task 3: Add China Workday Fallback Data And Service Tests
 
 **Files:**
+
 - Create: `src/constants/chinaWorkdayFallback.ts`
 - Create: `test/services/chinaWorkdayService.test.ts`
 
@@ -154,49 +157,49 @@ git commit -m "test(recurring): cover holiday-aware workday integration"
 Create `test/services/chinaWorkdayService.test.ts` with the following content:
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api', () => ({
   getFile: vi.fn(),
   putFile: vi.fn(),
-}));
+}))
 
 describe('chinaWorkdayService', () => {
   beforeEach(async () => {
-    vi.resetModules();
-    vi.unstubAllGlobals();
-  });
+    vi.resetModules()
+    vi.unstubAllGlobals()
+  })
 
   it('treats legal holiday dates as non-workdays', async () => {
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
+    const service = await import('@/services/chinaWorkdayService')
+    await service.__resetChinaWorkdayStateForTest()
 
-    expect(service.isChinaWorkday('2026-05-01')).toBe(false);
-    expect(service.isChinaWorkday('2026-05-05')).toBe(false);
-  });
+    expect(service.isChinaWorkday('2026-05-01')).toBe(false)
+    expect(service.isChinaWorkday('2026-05-05')).toBe(false)
+  })
 
   it('treats makeup weekend dates as workdays', async () => {
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
+    const service = await import('@/services/chinaWorkdayService')
+    await service.__resetChinaWorkdayStateForTest()
 
-    expect(service.isChinaWorkday('2026-05-09')).toBe(true);
-  });
+    expect(service.isChinaWorkday('2026-05-09')).toBe(true)
+  })
 
   it('falls back to normal weekdays when no special date is matched', async () => {
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
+    const service = await import('@/services/chinaWorkdayService')
+    await service.__resetChinaWorkdayStateForTest()
 
-    expect(service.isChinaWorkday('2026-03-20')).toBe(true);
-    expect(service.isChinaWorkday('2026-03-21')).toBe(false);
-  });
+    expect(service.isChinaWorkday('2026-03-20')).toBe(true)
+    expect(service.isChinaWorkday('2026-03-21')).toBe(false)
+  })
 
   it('finds the next china workday across a holiday break', async () => {
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
+    const service = await import('@/services/chinaWorkdayService')
+    await service.__resetChinaWorkdayStateForTest()
 
-    expect(service.getNextChinaWorkday('2026-04-30')).toBe('2026-05-06');
-  });
-});
+    expect(service.getNextChinaWorkday('2026-04-30')).toBe('2026-05-06')
+  })
+})
 ```
 
 - [ ] **Step 2: Add the fallback data file**
@@ -220,7 +223,7 @@ export const CHINA_WORKDAY_FALLBACK: ChinaWorkdayCalendarData = {
   workdays: [
     '2026-05-09',
   ],
-};
+}
 ```
 
 - [ ] **Step 3: Run the service test to verify it fails**
@@ -243,6 +246,7 @@ git commit -m "test(workday): add china workday service coverage"
 ### Task 4: Implement The Minimal China Workday Service
 
 **Files:**
+
 - Create: `src/services/chinaWorkdayService.ts`
 - Create: `src/constants/chinaWorkdayFallback.ts`
 - Test: `test/services/chinaWorkdayService.test.ts`
@@ -252,50 +256,51 @@ git commit -m "test(workday): add china workday service coverage"
 Create `src/services/chinaWorkdayService.ts` with this initial implementation:
 
 ```ts
-import { CHINA_WORKDAY_FALLBACK, type ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback';
+import type { ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback'
+import { CHINA_WORKDAY_FALLBACK } from '@/constants/chinaWorkdayFallback'
 
-let activeCalendar: ChinaWorkdayCalendarData = CHINA_WORKDAY_FALLBACK;
+let activeCalendar: ChinaWorkdayCalendarData = CHINA_WORKDAY_FALLBACK
 
 function isWeekend(date: Date): boolean {
-  const day = date.getDay();
-  return day === 0 || day === 6;
+  const day = date.getDay()
+  return day === 0 || day === 6
 }
 
 function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function isChinaWorkday(dateStr: string): boolean {
   if (activeCalendar.workdays.includes(dateStr)) {
-    return true;
+    return true
   }
 
   if (activeCalendar.holidays.includes(dateStr)) {
-    return false;
+    return false
   }
 
-  return !isWeekend(new Date(dateStr));
+  return !isWeekend(new Date(dateStr))
 }
 
 export function getNextChinaWorkday(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = new Date(dateStr)
 
   do {
-    date.setDate(date.getDate() + 1);
-  } while (!isChinaWorkday(formatDate(date)));
+    date.setDate(date.getDate() + 1)
+  } while (!isChinaWorkday(formatDate(date)))
 
-  return formatDate(date);
+  return formatDate(date)
 }
 
 export async function initializeChinaWorkdayCalendar(): Promise<void> {
-  activeCalendar = CHINA_WORKDAY_FALLBACK;
+  activeCalendar = CHINA_WORKDAY_FALLBACK
 }
 
 export async function __resetChinaWorkdayStateForTest(): Promise<void> {
-  activeCalendar = CHINA_WORKDAY_FALLBACK;
+  activeCalendar = CHINA_WORKDAY_FALLBACK
 }
 ```
 
@@ -319,6 +324,7 @@ git commit -m "feat(workday): add fallback china workday service"
 ### Task 5: Wire Workday Recurrence Through The New Service
 
 **Files:**
+
 - Modify: `src/parser/recurringParser.ts`
 - Test: `test/parser/recurringParser.test.ts`
 - Test: `test/services/recurringService.test.ts`
@@ -328,7 +334,7 @@ git commit -m "feat(workday): add fallback china workday service"
 Update the imports and `workday` branch in `src/parser/recurringParser.ts`:
 
 ```ts
-import { getNextChinaWorkday } from '@/services/chinaWorkdayService';
+import { getNextChinaWorkday } from '@/services/chinaWorkdayService'
 ```
 
 Replace:
@@ -370,6 +376,7 @@ git commit -m "fix(recurring): use china workday calendar for workday rule"
 ### Task 6: Add Cache And Remote Refresh Service Coverage
 
 **Files:**
+
 - Modify: `test/services/chinaWorkdayService.test.ts`
 - Modify: `src/services/chinaWorkdayService.ts`
 
@@ -378,56 +385,56 @@ git commit -m "fix(recurring): use china workday calendar for workday rule"
 Append these cases to `test/services/chinaWorkdayService.test.ts`:
 
 ```ts
-import { getFile, putFile } from '@/api';
+import { getFile, putFile } from '@/api'
 
-const mockedGetFile = vi.mocked(getFile);
-const mockedPutFile = vi.mocked(putFile);
+const mockedGetFile = vi.mocked(getFile)
+const mockedPutFile = vi.mocked(putFile)
 
-  it('uses cached data when present during initialization', async () => {
-    mockedGetFile.mockResolvedValueOnce(JSON.stringify({
-      holidays: ['2026-10-01'],
-      workdays: ['2026-10-10'],
-    }));
+it('uses cached data when present during initialization', async () => {
+  mockedGetFile.mockResolvedValueOnce(JSON.stringify({
+    holidays: ['2026-10-01'],
+    workdays: ['2026-10-10'],
+  }))
 
-    const service = await import('@/services/chinaWorkdayService');
-    await service.initializeChinaWorkdayCalendar();
+  const service = await import('@/services/chinaWorkdayService')
+  await service.initializeChinaWorkdayCalendar()
 
-    expect(service.isChinaWorkday('2026-10-01')).toBe(false);
-    expect(service.isChinaWorkday('2026-10-10')).toBe(true);
-  });
+  expect(service.isChinaWorkday('2026-10-01')).toBe(false)
+  expect(service.isChinaWorkday('2026-10-10')).toBe(true)
+})
 
-  it('keeps current data when remote refresh fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+it('keeps current data when remote refresh fails', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
 
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
-    await service.refreshChinaWorkdayCalendar();
+  const service = await import('@/services/chinaWorkdayService')
+  await service.__resetChinaWorkdayStateForTest()
+  await service.refreshChinaWorkdayCalendar()
 
-    expect(service.getNextChinaWorkday('2026-04-30')).toBe('2026-05-06');
-  });
+  expect(service.getNextChinaWorkday('2026-04-30')).toBe('2026-05-06')
+})
 
-  it('overrides active data and writes cache when remote refresh succeeds', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        Years: [
-          {
-            StartDate: '2026-10-01',
-            EndDate: '2026-10-03',
-            CompDays: ['2026-10-10'],
-          },
-        ],
-      }),
-    }));
+it('overrides active data and writes cache when remote refresh succeeds', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      Years: [
+        {
+          StartDate: '2026-10-01',
+          EndDate: '2026-10-03',
+          CompDays: ['2026-10-10'],
+        },
+      ],
+    }),
+  }))
 
-    const service = await import('@/services/chinaWorkdayService');
-    await service.__resetChinaWorkdayStateForTest();
-    await service.refreshChinaWorkdayCalendar();
+  const service = await import('@/services/chinaWorkdayService')
+  await service.__resetChinaWorkdayStateForTest()
+  await service.refreshChinaWorkdayCalendar()
 
-    expect(service.isChinaWorkday('2026-10-01')).toBe(false);
-    expect(service.isChinaWorkday('2026-10-10')).toBe(true);
-    expect(mockedPutFile).toHaveBeenCalled();
-  });
+  expect(service.isChinaWorkday('2026-10-01')).toBe(false)
+  expect(service.isChinaWorkday('2026-10-10')).toBe(true)
+  expect(mockedPutFile).toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: Run the service test to verify the new cases fail**
@@ -450,6 +457,7 @@ git commit -m "test(workday): cover cache and remote refresh behavior"
 ### Task 7: Implement Cache Loading And Remote Refresh
 
 **Files:**
+
 - Modify: `src/services/chinaWorkdayService.ts`
 - Test: `test/services/chinaWorkdayService.test.ts`
 
@@ -458,11 +466,12 @@ git commit -m "test(workday): cover cache and remote refresh behavior"
 Update `src/services/chinaWorkdayService.ts` to add a cache path, cache parsing, remote conversion, and refresh helpers:
 
 ```ts
-import { getFile, putFile } from '@/api';
-import { CHINA_WORKDAY_FALLBACK, type ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback';
+import type { ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback'
+import { getFile, putFile } from '@/api'
+import { CHINA_WORKDAY_FALLBACK } from '@/constants/chinaWorkdayFallback'
 
-const HOLIDAY_API_URL = 'https://raw.githubusercontent.com/lanceliao/china-holiday-calender/master/holidayAPI.json';
-const CACHE_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/china-workday-calendar.json';
+const HOLIDAY_API_URL = 'https://raw.githubusercontent.com/lanceliao/china-holiday-calender/master/holidayAPI.json'
+const CACHE_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/china-workday-calendar.json'
 
 interface HolidayApiYear {
   StartDate: string
@@ -474,93 +483,95 @@ interface HolidayApiPayload {
   Years?: HolidayApiYear[]
 }
 
-let activeCalendar: ChinaWorkdayCalendarData = CHINA_WORKDAY_FALLBACK;
+let activeCalendar: ChinaWorkdayCalendarData = CHINA_WORKDAY_FALLBACK
 
 function enumerateDateRange(start: string, end: string): string[] {
-  const result: string[] = [];
-  const date = new Date(start);
-  const endDate = new Date(end);
+  const result: string[] = []
+  const date = new Date(start)
+  const endDate = new Date(end)
 
   while (date <= endDate) {
-    result.push(formatDate(date));
-    date.setDate(date.getDate() + 1);
+    result.push(formatDate(date))
+    date.setDate(date.getDate() + 1)
   }
 
-  return result;
+  return result
 }
 
 function parseCalendarData(raw: string): ChinaWorkdayCalendarData | null {
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed.holidays) || !Array.isArray(parsed.workdays)) {
-      return null;
+      return null
     }
     return {
       holidays: parsed.holidays,
       workdays: parsed.workdays,
-    };
-  } catch {
-    return null;
+    }
+  }
+  catch {
+    return null
   }
 }
 
 function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendarData | null {
   if (!Array.isArray(payload.Years)) {
-    return null;
+    return null
   }
 
-  const holidays = new Set<string>();
-  const workdays = new Set<string>();
+  const holidays = new Set<string>()
+  const workdays = new Set<string>()
 
   for (const year of payload.Years) {
     for (const day of enumerateDateRange(year.StartDate, year.EndDate)) {
-      holidays.add(day);
+      holidays.add(day)
     }
 
     for (const day of year.CompDays || []) {
-      workdays.add(day);
+      workdays.add(day)
     }
   }
 
   return {
     holidays: [...holidays].sort(),
     workdays: [...workdays].sort(),
-  };
+  }
 }
 
 async function loadCachedCalendar(): Promise<ChinaWorkdayCalendarData | null> {
-  const raw = await getFile(CACHE_PATH);
+  const raw = await getFile(CACHE_PATH)
   if (typeof raw !== 'string' || !raw.trim()) {
-    return null;
+    return null
   }
-  return parseCalendarData(raw);
+  return parseCalendarData(raw)
 }
 
 async function saveCachedCalendar(data: ChinaWorkdayCalendarData): Promise<void> {
-  await putFile(CACHE_PATH, JSON.stringify(data, null, 2));
+  await putFile(CACHE_PATH, JSON.stringify(data, null, 2))
 }
 
 export async function initializeChinaWorkdayCalendar(): Promise<void> {
-  const cached = await loadCachedCalendar();
-  activeCalendar = cached || CHINA_WORKDAY_FALLBACK;
+  const cached = await loadCachedCalendar()
+  activeCalendar = cached || CHINA_WORKDAY_FALLBACK
 }
 
 export async function refreshChinaWorkdayCalendar(): Promise<void> {
   try {
-    const response = await fetch(HOLIDAY_API_URL);
+    const response = await fetch(HOLIDAY_API_URL)
     if (!response.ok) {
-      return;
+      return
     }
 
-    const payload = await response.json() as HolidayApiPayload;
-    const converted = convertHolidayPayload(payload);
+    const payload = await response.json() as HolidayApiPayload
+    const converted = convertHolidayPayload(payload)
     if (!converted) {
-      return;
+      return
     }
 
-    activeCalendar = converted;
-    await saveCachedCalendar(converted);
-  } catch {
+    activeCalendar = converted
+    await saveCachedCalendar(converted)
+  }
+  catch {
     // keep current calendar
   }
 }
@@ -572,7 +583,7 @@ Keep this helper at the bottom of `src/services/chinaWorkdayService.ts`:
 
 ```ts
 export async function __resetChinaWorkdayStateForTest(): Promise<void> {
-  activeCalendar = CHINA_WORKDAY_FALLBACK;
+  activeCalendar = CHINA_WORKDAY_FALLBACK
 }
 ```
 
@@ -596,6 +607,7 @@ git commit -m "feat(workday): add holiday cache and remote refresh"
 ### Task 8: Initialize The Calendar In Plugin Startup
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Test: `test/services/chinaWorkdayService.test.ts`
 
@@ -607,22 +619,22 @@ Import the service in `src/index.ts`:
 import {
   initializeChinaWorkdayCalendar,
   refreshChinaWorkdayCalendar,
-} from '@/services/chinaWorkdayService';
+} from '@/services/chinaWorkdayService'
 ```
 
 In `onload()`, after settings/i18n initialization and before recurrence behavior is used, add:
 
 ```ts
-    await initializeChinaWorkdayCalendar();
-    void refreshChinaWorkdayCalendar();
+await initializeChinaWorkdayCalendar()
+void refreshChinaWorkdayCalendar()
 ```
 
 If `onload()` cannot safely await this without slowing core startup, keep the same order but use:
 
 ```ts
-    void initializeChinaWorkdayCalendar().then(() => {
-      void refreshChinaWorkdayCalendar();
-    });
+void initializeChinaWorkdayCalendar().then(() => {
+  void refreshChinaWorkdayCalendar()
+})
 ```
 
 Choose the variant that matches the existing startup style around async initialization in `src/index.ts`.
@@ -647,6 +659,7 @@ git commit -m "feat(workday): initialize holiday calendar on plugin load"
 ### Task 9: Run Full Regression Checks And Clean Up
 
 **Files:**
+
 - Modify: `src/services/chinaWorkdayService.ts` (only if test cleanup is needed)
 - Modify: `test/services/chinaWorkdayService.test.ts` (only if mocks need tightening)
 
@@ -701,4 +714,3 @@ git commit -m "chore(workday): finalize holiday-aware recurring coverage"
   - Each implementation step includes concrete code or exact file edits.
 - Type consistency:
   - `ChinaWorkdayCalendarData`, `isChinaWorkday`, `getNextChinaWorkday`, `initializeChinaWorkdayCalendar`, and `refreshChinaWorkdayCalendar` are referenced consistently across tasks.
-

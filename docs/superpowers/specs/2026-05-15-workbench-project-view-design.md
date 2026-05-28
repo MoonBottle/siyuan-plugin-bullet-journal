@@ -15,6 +15,7 @@
 ### 已注册但未实现的视图类型
 
 `project` 已在以下位置注册：
+
 - `src/types/workbench.ts`：`WorkbenchViewType` 联合类型
 - `src/stores/workbenchStore.ts`：`getViewEntryDefinition` 函数中的 `definitions` 对象
 
@@ -28,6 +29,7 @@
 ### 方案概述
 
 补全 `project` 视图类型的实现，复用现有的 `ProjectTab.vue` 组件：
+
 1. 在 `WorkbenchViewHost.vue` 中添加 `project` 渲染分支
 2. 在 `WorkbenchSidebar.vue` 的"新建视图"菜单中添加 `project` 选项
 3. 确保 `ProjectTab.vue` 支持 `embedded` 模式（隐藏头部工具栏）
@@ -43,8 +45,9 @@
 ```
 
 导入 `ProjectTab` 组件：
+
 ```typescript
-import ProjectTab from '@/tabs/ProjectTab.vue';
+import ProjectTab from '@/tabs/ProjectTab.vue'
 ```
 
 #### 2. WorkbenchSidebar.vue 添加 project 菜单选项
@@ -71,13 +74,14 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
 
 ```typescript
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
+  embedded?: boolean
 }>(), {
   embedded: false,
-});
+})
 ```
 
 当 `embedded=true` 时：
+
 - 隐藏头部工具栏（`.block__icons`）
 - 内容区域占满剩余空间
 
@@ -85,19 +89,19 @@ const props = withDefaults(defineProps<{
 
 ### 方案对比
 
-| 方案 | 说明 | 优点 | 缺点 |
-|------|------|------|------|
-| A：复用 ProjectTab.vue | 直接在工作台中渲染 ProjectTab | 代码复用，功能完整 | ProjectTab 头部可能和工作台布局冲突 |
-| B：创建 WorkbenchProjectView.vue | 创建专门用于工作台的组件 | 布局更灵活，可定制 | 代码重复，维护成本高 |
+| 方案                             | 说明                          | 优点               | 缺点                                |
+| -------------------------------- | ----------------------------- | ------------------ | ----------------------------------- |
+| A：复用 ProjectTab.vue           | 直接在工作台中渲染 ProjectTab | 代码复用，功能完整 | ProjectTab 头部可能和工作台布局冲突 |
+| B：创建 WorkbenchProjectView.vue | 创建专门用于工作台的组件      | 布局更灵活，可定制 | 代码重复，维护成本高                |
 
 **推荐方案 A**：复用 `ProjectTab.vue`，因为它已经是一个完整的项目列表视图，且已有 `embedded` prop 支持。
 
 ## 变更文件
 
-| 文件 | 变更类型 | 说明 |
-|------|----------|------|
-| `src/components/workbench/view/WorkbenchViewHost.vue` | 修改 | 添加 `project` 渲染分支 |
-| `src/components/workbench/WorkbenchSidebar.vue` | 修改 | 添加 `project` 菜单选项 |
+| 文件                                                  | 变更类型 | 说明                    |
+| ----------------------------------------------------- | -------- | ----------------------- |
+| `src/components/workbench/view/WorkbenchViewHost.vue` | 修改     | 添加 `project` 渲染分支 |
+| `src/components/workbench/WorkbenchSidebar.vue`       | 修改     | 添加 `project` 菜单选项 |
 
 ## 验收标准
 

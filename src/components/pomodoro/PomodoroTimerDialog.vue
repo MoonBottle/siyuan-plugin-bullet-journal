@@ -1,10 +1,21 @@
 <template>
-  <div ref="dialogContent" class="pomodoro-timer-dialog">
-    <div class="dialog-body" :class="{ 'no-left-panel': hideItemList }">
+  <div
+    ref="dialogContent"
+    class="pomodoro-timer-dialog"
+  >
+    <div
+      class="dialog-body"
+      :class="{ 'no-left-panel': hideItemList }"
+    >
       <!-- 左侧：待办事项列表（仅在非预选模式下显示） -->
-      <div v-if="!hideItemList" class="left-panel">
+      <div
+        v-if="!hideItemList"
+        class="left-panel"
+      >
         <div class="left-panel-header">
-          <div class="panel-title">{{ t('pomodoroDialog').selectItem }}</div>
+          <div class="panel-title">
+            {{ t('pomodoroDialog').selectItem }}
+          </div>
           <SySelect
             v-model="selectedGroup"
             :options="groupOptions"
@@ -14,8 +25,13 @@
         </div>
         <div class="item-list">
           <!-- 过期事项 -->
-          <div v-if="expiredItems.length > 0" class="item-group">
-            <div class="group-label">{{ t('pomodoroDialog').expiredItems }}</div>
+          <div
+            v-if="expiredItems.length > 0"
+            class="item-group"
+          >
+            <div class="group-label">
+              {{ t('pomodoroDialog').expiredItems }}
+            </div>
             <div
               v-for="item in expiredItems"
               :key="item.id"
@@ -30,8 +46,13 @@
           </div>
 
           <!-- 今天事项 -->
-          <div v-if="todayItems.length > 0" class="item-group">
-            <div class="group-label">{{ t('pomodoroDialog').todayItems }}</div>
+          <div
+            v-if="todayItems.length > 0"
+            class="item-group"
+          >
+            <div class="group-label">
+              {{ t('pomodoroDialog').todayItems }}
+            </div>
             <div
               v-for="item in todayItems"
               :key="item.id"
@@ -41,35 +62,58 @@
             >
               <span class="item-radio">{{ selectedItem?.id === item.id ? '●' : '○' }}</span>
               <span class="item-content">{{ item.content }}</span>
-              <span class="item-project" v-if="item.project">{{ item.project.name }}</span>
+              <span
+                v-if="item.project"
+                class="item-project"
+              >{{ item.project.name }}</span>
             </div>
           </div>
 
           <!-- 无事项提示 -->
-          <div v-if="expiredItems.length === 0 && todayItems.length === 0" class="empty-tip">
+          <div
+            v-if="expiredItems.length === 0 && todayItems.length === 0"
+            class="empty-tip"
+          >
             {{ t('pomodoroDialog').noItems }}
           </div>
         </div>
       </div>
 
       <!-- 右侧：专注时长设置 -->
-      <div class="right-panel" :class="{ 'full-width': hideItemList }">
+      <div
+        class="right-panel"
+        :class="{ 'full-width': hideItemList }"
+      >
         <!-- 选中事项展示（预选模式或左侧选择联动） -->
-        <div v-if="selectedItem" class="selected-item-section">
-          <SelectedItemCard :item="selectedItem" :show-header="true" />
+        <div
+          v-if="selectedItem"
+          class="selected-item-section"
+        >
+          <SelectedItemCard
+            :item="selectedItem"
+            :show-header="true"
+          />
         </div>
-        <div v-if="selectedFocusPlanDisplay" class="focus-plan-summary">
+        <div
+          v-if="selectedFocusPlanDisplay"
+          class="focus-plan-summary"
+        >
           <div class="focus-plan-row">
             <span class="focus-plan-label">{{ t('focusPlan').currentPlan }}</span>
             <span class="focus-plan-value">{{ selectedFocusPlanDisplay }}</span>
           </div>
-          <div v-if="selectedActualFocusDisplay" class="focus-plan-row">
+          <div
+            v-if="selectedActualFocusDisplay"
+            class="focus-plan-row"
+          >
             <span class="focus-plan-label">{{ t('focusPlan').actualShort }}</span>
             <span class="focus-plan-value">{{ selectedActualFocusDisplay }}</span>
           </div>
         </div>
 
-        <div class="panel-title">{{ t('pomodoroDialog').timerMode }}</div>
+        <div class="panel-title">
+          {{ t('pomodoroDialog').timerMode }}
+        </div>
         <div class="timer-mode-section">
           <button
             class="mode-btn"
@@ -87,9 +131,17 @@
           </button>
         </div>
 
-        <div v-if="timerMode === 'countdown'" class="panel-title">{{ t('pomodoroDialog').setDuration }}</div>
+        <div
+          v-if="timerMode === 'countdown'"
+          class="panel-title"
+        >
+          {{ t('pomodoroDialog').setDuration }}
+        </div>
 
-        <div v-if="timerMode === 'countdown'" class="duration-section">
+        <div
+          v-if="timerMode === 'countdown'"
+          class="duration-section"
+        >
           <div class="quick-buttons">
             <button
               v-for="duration in quickDurations"
@@ -123,7 +175,12 @@
           >
             {{ t('pomodoroDialog').startFocus }}
           </button>
-          <button class="cancel-btn" @click="closeDialog">{{ t('pomodoroDialog').cancel }}</button>
+          <button
+            class="cancel-btn"
+            @click="closeDialog"
+          >
+            {{ t('pomodoroDialog').cancel }}
+          </button>
         </div>
       </div>
     </div>
@@ -131,203 +188,221 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useProjectStore, usePomodoroStore, useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import type { Item } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { DOCK_TYPES } from '@/constants';
-import { t } from '@/i18n';
-import SelectedItemCard from './SelectedItemCard.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import { formatFocusActualDisplay, formatFocusPlanDisplay } from '@/utils/focusPlanReview';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { DOCK_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  formatFocusActualDisplay,
+  formatFocusPlanDisplay,
+} from '@/utils/focusPlanReview'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import SelectedItemCard from './SelectedItemCard.vue'
 
 const props = defineProps<{
-  closeDialog: () => void;
-  preselectedBlockId?: string;
-  hideItemList?: boolean;
-  initialGroupId?: string;
+  closeDialog: () => void
+  preselectedBlockId?: string
+  hideItemList?: boolean
+  initialGroupId?: string
 }>()
 
-const plugin = usePlugin() as any;
-const pinia = getSharedPinia();
-const projectStore = pinia ? useProjectStore(pinia) : null;
-const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
-const settingsStore = pinia ? useSettingsStore(pinia) : null;
+const plugin = usePlugin() as any
+const pinia = getSharedPinia()
+const projectStore = pinia ? useProjectStore(pinia) : null
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null
+const settingsStore = pinia ? useSettingsStore(pinia) : null
 
 // 选中的事项
-const selectedItem = ref<Item | null>(null);
+const selectedItem = ref<Item | null>(null)
 
 // 分组筛选
-const selectedGroup = ref(props.initialGroupId ?? '');
+const selectedGroup = ref(props.initialGroupId ?? '')
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
   if (settingsStore) {
-    settingsStore.groups.forEach(g => {
-      options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-    });
+    settingsStore.groups.forEach((g) => {
+      options.push({
+        value: g.id,
+        label: g.name || t('settings').projectGroups.unnamed,
+      })
+    })
   }
-  return options;
-});
+  return options
+})
 
 // 根据 preselectedBlockId 实时查找 item，确保获取最新的数据（使用 Map 索引，O(1) 查找）
 const preselectedItem = computed(() => {
-  if (!props.preselectedBlockId || !projectStore) return null;
-  return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
-});
-const selectedFocusPlanDisplay = computed(() => formatFocusPlanDisplay(selectedItem.value?.focusPlan));
+  if (!props.preselectedBlockId || !projectStore) return null
+  return projectStore.getItemByBlockId(props.preselectedBlockId) || null
+})
+const selectedFocusPlanDisplay = computed(() => formatFocusPlanDisplay(selectedItem.value?.focusPlan))
 const selectedActualFocusMinutes = computed(() => {
-  if (!selectedItem.value || !projectStore) return 0;
-  return projectStore.getItemActualFocusMinutes(selectedItem.value);
-});
+  if (!selectedItem.value || !projectStore) return 0
+  return projectStore.getItemActualFocusMinutes(selectedItem.value)
+})
 const selectedActualFocusDisplay = computed(() => {
-  if (selectedActualFocusMinutes.value <= 0) return '';
-  return formatFocusActualDisplay(selectedActualFocusMinutes.value);
-});
+  if (selectedActualFocusMinutes.value <= 0) return ''
+  return formatFocusActualDisplay(selectedActualFocusMinutes.value)
+})
 
 // 计时模式：倒计时 / 正计时
-const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown')
 
 // 从设置读取专注时长预设，使用默认值兑底
 const quickDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60]
+})
 
 // 从设置读取默认专注时长
 const defaultDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultFocusDuration ?? 25;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultFocusDuration ?? 25
+})
 
-const selectedDuration = ref(defaultDuration.value);
-const customDuration = ref(defaultDuration.value);
+const selectedDuration = ref(defaultDuration.value)
+const customDuration = ref(defaultDuration.value)
 
 // 获取过期和今天的待办事项
-const currentDate = dayjs().format('YYYY-MM-DD');
+const currentDate = dayjs().format('YYYY-MM-DD')
 
 const expiredItems = computed(() => {
-  if (!projectStore) return [];
-  const items = projectStore.getExpiredItems(selectedGroup.value);
-  return (items || []).filter(item => item.status === 'pending');
-});
+  if (!projectStore) return []
+  const items = projectStore.getExpiredItems(selectedGroup.value)
+  return (items || []).filter((item) => item.status === 'pending')
+})
 
 const todayItems = computed(() => {
-  if (!projectStore) return [];
-  const items = projectStore.getFutureItems(selectedGroup.value);
-  return (items || []).filter(item => item.date === currentDate && item.status === 'pending');
-});
+  if (!projectStore) return []
+  const items = projectStore.getFutureItems(selectedGroup.value)
+  return (items || []).filter((item) => item.date === currentDate && item.status === 'pending')
+})
 
 // 选择事项
 const selectItem = (item: Item) => {
-  selectedItem.value = item;
-};
+  selectedItem.value = item
+}
 
 // 选择时长
 const selectDuration = (duration: number) => {
-  selectedDuration.value = duration;
-  customDuration.value = duration;
-};
+  selectedDuration.value = duration
+  customDuration.value = duration
+}
 
 // 自定义时长变化
 const onCustomDurationChange = () => {
-  let value = customDuration.value;
-  if (value < 1) value = 1;
-  if (value > 180) value = 180;
-  customDuration.value = value;
-  selectedDuration.value = value;
-};
+  let value = customDuration.value
+  if (value < 1) value = 1
+  if (value > 180) value = 180
+  customDuration.value = value
+  selectedDuration.value = value
+}
 
 // 格式化日期
 const formatDate = (dateStr: string): string => {
-  const date = dayjs(dateStr);
-  const today = dayjs();
-  const diff = today.diff(date, 'day');
+  const date = dayjs(dateStr)
+  const today = dayjs()
+  const diff = today.diff(date, 'day')
 
-  if (diff === 1) return t('pomodoroDialog').yesterday;
-  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday;
-  return date.format('MM-DD');
-};
+  if (diff === 1) return t('pomodoroDialog').yesterday
+  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday
+  return date.format('MM-DD')
+}
 
 // 开始专注
 const startPomodoro = async () => {
-  if (!selectedItem.value) return;
+  if (!selectedItem.value) return
   if (!pomodoroStore) {
-    console.warn('[PomodoroTimerDialog] Pinia 未初始化，无法开始专注');
-    return;
+    console.warn('[PomodoroTimerDialog] Pinia 未初始化，无法开始专注')
+    return
   }
 
-  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId;
+  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID');
-    return;
+    alert('无法获取事项块ID')
+    return
   }
 
   // 正计时：duration 为 0，由用户手动结束
-  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value;
+  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value
 
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
     duration,
     parentBlockId,
     plugin,
-    timerMode.value
-  );
+    timerMode.value,
+  )
 
   if (success) {
-    props.closeDialog();
+    props.closeDialog()
     // 自动切换到番茄 Dock
-    const rightDock = (window as any).siyuan?.layout?.rightDock;
+    const rightDock = (window as any).siyuan?.layout?.rightDock
     if (rightDock) {
-      rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true);
+      rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true)
     }
   }
-};
+}
 
 // 关闭弹框
 const closeDialog = () => {
-  props.closeDialog();
-};
+  props.closeDialog()
+}
 
 onMounted(() => {
   // 如果有预选事项，直接使用
   if (preselectedItem.value) {
-    selectedItem.value = preselectedItem.value;
+    selectedItem.value = preselectedItem.value
   } else {
     // 默认选中第一个事项（如果有）
     if (expiredItems.value.length > 0) {
-      selectedItem.value = expiredItems.value[0];
+      selectedItem.value = expiredItems.value[0]
     } else if (todayItems.value.length > 0) {
-      selectedItem.value = todayItems.value[0];
+      selectedItem.value = todayItems.value[0]
     }
   }
-});
+})
 
 // 当默认时长变化时，更新选中值（仅当用户未手动选择时）
 watch(defaultDuration, (newVal) => {
-  selectedDuration.value = newVal;
-  customDuration.value = newVal;
-});
+  selectedDuration.value = newVal
+  customDuration.value = newVal
+})
 
 // 监听 preselectedItem 变化，当 store 刷新后更新 selectedItem
 watch(preselectedItem, (newItem) => {
   if (newItem && props.preselectedBlockId) {
-    selectedItem.value = newItem;
+    selectedItem.value = newItem
   }
-});
+})
 
 // 分组切换时，如果当前选中事项不在新分组中，自动选中第一个事项
 watch(selectedGroup, () => {
   if (selectedItem.value) {
-    const allItems = [...expiredItems.value, ...todayItems.value];
-    const stillValid = allItems.some(item => item.id === selectedItem.value!.id);
+    const allItems = [...expiredItems.value, ...todayItems.value]
+    const stillValid = allItems.some((item) => item.id === selectedItem.value!.id)
     if (!stillValid) {
-      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null;
+      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null
     }
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

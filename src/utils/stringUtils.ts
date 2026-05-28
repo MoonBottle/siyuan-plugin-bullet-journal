@@ -3,39 +3,39 @@
  * 纯函数，无外部依赖，便于测试
  */
 
-const SLASH_COMMAND_START_CHARS = ['/', '、'] as const;
-const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u;
+const SLASH_COMMAND_START_CHARS = ['/', '、'] as const
+const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u
 
 function isSlashCommandStartChar(char: string | undefined): boolean {
-  return SLASH_COMMAND_START_CHARS.some(candidate => candidate === char);
+  return SLASH_COMMAND_START_CHARS.includes(char)
 }
 
 function findSlashTokenEnd(text: string, startOffset: number): number {
-  let endOffset = startOffset + 1;
+  let endOffset = startOffset + 1
   while (endOffset < text.length) {
-    const char = text[endOffset];
+    const char = text[endOffset]
     if (!char || /\s/u.test(char) || ZERO_WIDTH_CHARS.test(char)) {
-      break;
+      break
     }
-    endOffset += 1;
+    endOffset += 1
   }
-  return endOffset;
+  return endOffset
 }
 
 function buildSlashCommandTokenSet(filters: string[]): Set<string> {
-  const tokenSet = new Set<string>();
+  const tokenSet = new Set<string>()
   for (const filter of filters) {
     if (!filter) {
-      continue;
+      continue
     }
-    tokenSet.add(filter);
+    tokenSet.add(filter)
     if (filter.startsWith('/')) {
-      tokenSet.add(`、${filter.slice(1)}`);
+      tokenSet.add(`、${filter.slice(1)}`)
     } else if (filter.startsWith('、')) {
-      tokenSet.add(`/${filter.slice(1)}`);
+      tokenSet.add(`/${filter.slice(1)}`)
     }
   }
-  return tokenSet;
+  return tokenSet
 }
 
 /**
@@ -46,34 +46,34 @@ function buildSlashCommandTokenSet(filters: string[]): Set<string> {
  * @returns 处理后的行文本
  */
 export function processLineText(lineText: string, filters: string[]): string {
-  const slashCommandTokens = buildSlashCommandTokenSet(filters);
+  const slashCommandTokens = buildSlashCommandTokenSet(filters)
   if (slashCommandTokens.size === 0) {
-    return lineText.trimEnd();
+    return lineText.trimEnd()
   }
 
-  let result = '';
-  let index = 0;
+  let result = ''
+  let index = 0
   while (index < lineText.length) {
-    const currentChar = lineText[index];
+    const currentChar = lineText[index]
     if (!isSlashCommandStartChar(currentChar)) {
-      result += currentChar;
-      index += 1;
-      continue;
+      result += currentChar
+      index += 1
+      continue
     }
 
-    const tokenEnd = findSlashTokenEnd(lineText, index);
-    const token = lineText.slice(index, tokenEnd);
+    const tokenEnd = findSlashTokenEnd(lineText, index)
+    const token = lineText.slice(index, tokenEnd)
     if (!slashCommandTokens.has(token)) {
-      result += token;
-      index = tokenEnd;
-      continue;
+      result += token
+      index = tokenEnd
+      continue
     }
 
-    index = tokenEnd;
+    index = tokenEnd
     while (index < lineText.length && ZERO_WIDTH_CHARS.test(lineText[index])) {
-      index += 1;
+      index += 1
     }
   }
 
-  return result.trimEnd();
+  return result.trimEnd()
 }

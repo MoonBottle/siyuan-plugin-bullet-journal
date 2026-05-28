@@ -3,43 +3,43 @@
  * 使用 fetch 调用思源 Kernel HTTP API
  */
 
-const DEFAULT_API_URL = 'http://127.0.0.1:6806';
+const DEFAULT_API_URL = 'http://127.0.0.1:6806'
 
 export interface SiYuanClientConfig {
-  apiUrl?: string;
-  token: string;
+  apiUrl?: string
+  token: string
 }
 
 export class SiYuanClient {
-  private apiUrl: string;
-  private token: string;
+  private apiUrl: string
+  private token: string
 
   constructor(config: SiYuanClientConfig) {
-    this.apiUrl = config.apiUrl || DEFAULT_API_URL;
-    this.token = config.token;
+    this.apiUrl = config.apiUrl || DEFAULT_API_URL
+    this.token = config.token
   }
 
   private async request<T>(path: string, data: unknown): Promise<T | null> {
     try {
-      const url = `${this.apiUrl}${path}`;
+      const url = `${this.apiUrl}${path}`
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${this.token}`
+          'Authorization': `Token ${this.token}`,
         },
-        body: JSON.stringify(data)
-      });
+        body: JSON.stringify(data),
+      })
 
-      const result = await response.json();
+      const result = await response.json()
       if (result.code === 0) {
-        return result.data as T;
+        return result.data as T
       }
-      console.error('[Task Assistant MCP] API non-zero:', path, 'code:', result.code, 'msg:', result.msg);
-      return null;
+      console.error('[Task Assistant MCP] API non-zero:', path, 'code:', result.code, 'msg:', result.msg)
+      return null
     } catch (error) {
-      console.error('[Task Assistant MCP] API request failed:', error);
-      return null;
+      console.error('[Task Assistant MCP] API request failed:', error)
+      return null
     }
   }
 
@@ -47,16 +47,16 @@ export class SiYuanClient {
    * 执行 SQL 查询
    */
   async sql(stmt: string): Promise<unknown[]> {
-    const data = await this.request<unknown[]>('/api/query/sql', { stmt });
-    return Array.isArray(data) ? data : [];
+    const data = await this.request<unknown[]>('/api/query/sql', { stmt })
+    return Array.isArray(data) ? data : []
   }
 
   /**
    * 获取块/文档的 Kramdown 内容
    */
   async getBlockKramdown(id: string): Promise<string | null> {
-    const data = await this.request<{ kramdown?: string }>('/api/block/getBlockKramdown', { id });
-    return data?.kramdown ?? null;
+    const data = await this.request<{ kramdown?: string }>('/api/block/getBlockKramdown', { id })
+    return data?.kramdown ?? null
   }
 
   /**
@@ -65,29 +65,29 @@ export class SiYuanClient {
    */
   async getFile(path: string): Promise<string | null> {
     try {
-      const url = `${this.apiUrl}/api/file/getFile`;
+      const url = `${this.apiUrl}/api/file/getFile`
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${this.token}`
+          'Authorization': `Token ${this.token}`,
         },
-        body: JSON.stringify({ path })
-      });
+        body: JSON.stringify({ path }),
+      })
 
       if (response.status === 200) {
-        return await response.text();
+        return await response.text()
       }
       if (response.status === 202) {
-        const result = await response.json();
-        console.error('[Task Assistant MCP] getFile failed:', path, 'code:', result.code, 'msg:', result.msg);
-        return null;
+        const result = await response.json()
+        console.error('[Task Assistant MCP] getFile failed:', path, 'code:', result.code, 'msg:', result.msg)
+        return null
       }
-      console.error('[Task Assistant MCP] getFile unexpected status:', response.status);
-      return null;
+      console.error('[Task Assistant MCP] getFile unexpected status:', response.status)
+      return null
     } catch (error) {
-      console.error('[Task Assistant MCP] getFile request failed:', error);
-      return null;
+      console.error('[Task Assistant MCP] getFile request failed:', error)
+      return null
     }
   }
 }

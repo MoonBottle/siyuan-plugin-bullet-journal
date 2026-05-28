@@ -5,28 +5,26 @@ import type {
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchProjectViewConfig,
   WorkbenchQuadrantViewConfig,
-  WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchViewType,
-} from '@/types/workbench';
-import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
-import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
-import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
-import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog';
-import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog';
-import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog';
-import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
+} from '@/types/workbench'
+import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog'
+import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog'
+import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog'
+import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog'
+import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog'
+import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog'
 
-type WorkbenchViewConfigContext = {
-  entry: WorkbenchEntry;
-  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
-};
+interface WorkbenchViewConfigContext {
+  entry: WorkbenchEntry
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>
+}
 
-export type WorkbenchViewDefinition = {
-  type: WorkbenchViewType;
-  createDefaultConfig: () => Record<string, unknown>;
-  openConfigDialog?: (context: WorkbenchViewConfigContext) => void;
-};
+export interface WorkbenchViewDefinition {
+  type: WorkbenchViewType
+  createDefaultConfig: () => Record<string, unknown>
+  openConfigDialog?: (context: WorkbenchViewConfigContext) => void
+}
 
 function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition> {
   return {
@@ -35,8 +33,11 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
         preset: {},
       }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchTodoListWidgetConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchTodoListWidgetConfig
         openTodoWidgetConfigDialog({
           initialConfig: {
             preset: config?.preset ?? {},
@@ -44,9 +45,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               preset: nextConfig.preset ?? {},
-            });
+            })
           },
-        });
+        })
       },
     },
     habit: {
@@ -54,8 +55,11 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
         habitScope: 'active',
       }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchHabitWeekWidgetConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchHabitWeekWidgetConfig
         openHabitWidgetConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
@@ -65,24 +69,27 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               habitScope: nextConfig.habitScope ?? 'active',
-            });
+            })
           },
-        });
+        })
       },
     },
     quadrant: {
       type: 'quadrant',
       createDefaultConfig: (): WorkbenchQuadrantViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchQuadrantViewConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchQuadrantViewConfig
         openQuadrantViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId });
+            await onUpdateConfig({ groupId: nextConfig.groupId })
           },
-        });
+        })
       },
     },
     pomodoroStats: {
@@ -90,8 +97,11 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: (): WorkbenchPomodoroStatsWidgetConfig => ({
         section: 'overview',
       }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig
         openPomodoroWidgetConfigDialog({
           initialConfig: {
             section: config?.section ?? 'overview',
@@ -99,31 +109,37 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               section: nextConfig.section ?? 'overview',
-            });
+            })
           },
-        });
+        })
       },
     },
     focusWorkbench: {
       type: 'focusWorkbench',
       createDefaultConfig: (): WorkbenchFocusWorkbenchViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchFocusWorkbenchViewConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchFocusWorkbenchViewConfig
         openFocusWorkbenchViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId });
+            await onUpdateConfig({ groupId: nextConfig.groupId })
           },
-        });
+        })
       },
     },
     project: {
       type: 'project',
       createDefaultConfig: (): WorkbenchProjectViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchProjectViewConfig;
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchProjectViewConfig
         openProjectViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
@@ -133,9 +149,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               columnRatios: nextConfig.columnRatios,
-            });
+            })
           },
-        });
+        })
       },
     },
     calendar: {
@@ -150,9 +166,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       type: 'aiChat',
       createDefaultConfig: () => ({}),
     },
-  };
+  }
 }
 
 export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDefinition {
-  return createViewRegistry()[viewType];
+  return createViewRegistry()[viewType]
 }

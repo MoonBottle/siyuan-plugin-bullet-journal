@@ -1,39 +1,42 @@
-import { LineParser } from '@/parser/lineParser';
-import { useProjectStore } from '@/stores';
-import type { Item } from '@/types/models';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
+import type { Item } from '@/types/models'
+import { LineParser } from '@/parser/lineParser'
+import { useProjectStore } from '@/stores'
+import {
+  deleteSlashRangeText,
+  getActiveSlashRange,
+} from '@/utils/blockWriter/shared/slashRange'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 export interface ResolveSlashItemOptions {
-  blockId: string;
-  nodeElement?: HTMLElement | null;
+  blockId: string
+  nodeElement?: HTMLElement | null
 }
 
 function getNodePath(root: Node, target: Node): number[] | null {
-  const path: number[] = [];
-  let current: Node | null = target;
+  const path: number[] = []
+  let current: Node | null = target
 
   while (current && current !== root) {
-    const parent = current.parentNode;
+    const parent = current.parentNode
     if (!parent) {
-      return null;
+      return null
     }
-    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
-    current = parent;
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current))
+    current = parent
   }
 
-  return current === root ? path : null;
+  return current === root ? path : null
 }
 
 function getNodeByPath(root: Node, path: number[]): Node | null {
-  let current: Node | null = root;
+  let current: Node | null = root
   for (const index of path) {
-    current = current?.childNodes?.[index] ?? null;
+    current = current?.childNodes?.[index] ?? null
     if (!current) {
-      return null;
+      return null
     }
   }
-  return current;
+  return current
 }
 
 export function buildCandidateSemanticLine(
@@ -42,35 +45,35 @@ export function buildCandidateSemanticLine(
   slashStartOffset: number,
   slashEndOffset: number,
 ): string | null {
-  const editable = nodeElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
-  const root = editable ?? nodeElement;
-  const path = getNodePath(root, slashRange.startContainer);
+  const editable = nodeElement.querySelector('[contenteditable="true"]') as HTMLElement | null
+  const root = editable ?? nodeElement
+  const path = getNodePath(root, slashRange.startContainer)
   if (!path) {
-    return null;
+    return null
   }
 
-  const draftRoot = root.cloneNode(true) as HTMLElement;
-  const draftStartNode = getNodeByPath(draftRoot, path);
+  const draftRoot = root.cloneNode(true) as HTMLElement
+  const draftStartNode = getNodeByPath(draftRoot, path)
   if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
-    return null;
+    return null
   }
 
-  const draftRange = document.createRange();
-  draftRange.setStart(draftStartNode, slashRange.startOffset);
-  draftRange.collapse(true);
-  deleteSlashRangeText(draftRange, slashStartOffset, slashEndOffset);
+  const draftRange = document.createRange()
+  draftRange.setStart(draftStartNode, slashRange.startOffset)
+  draftRange.collapse(true)
+  deleteSlashRangeText(draftRange, slashStartOffset, slashEndOffset)
 
-  return draftRoot.textContent?.trim() ?? null;
+  return draftRoot.textContent?.trim() ?? null
 }
 
 function parseCandidateLine(candidateLine: string | null, blockId: string): Item | null {
   if (!candidateLine) {
-    return null;
+    return null
   }
 
-  const parsed = LineParser.parseItemLine(candidateLine, 0)[0];
+  const parsed = LineParser.parseItemLine(candidateLine, 0)[0]
   if (!parsed) {
-    return null;
+    return null
   }
 
   return {
@@ -78,26 +81,26 @@ function parseCandidateLine(candidateLine: string | null, blockId: string): Item
     id: parsed.id || blockId,
     blockId,
     docId: parsed.docId || '',
-  };
+  }
 }
 
 function lookupItemFromStore(blockId: string): Item | null {
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (!pinia) {
-    return null;
+    return null
   }
 
-  const projectStore = useProjectStore(pinia);
-  return projectStore.getItemByBlockId(blockId) ?? null;
+  const projectStore = useProjectStore(pinia)
+  return projectStore.getItemByBlockId(blockId) ?? null
 }
 
 function resolveTaskListMetadata(nodeElement?: HTMLElement | null): Pick<Item, 'isTaskList' | 'listItemBlockId'> {
-  const listItemElement = nodeElement?.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null;
-  const listItemBlockId = listItemElement?.getAttribute('data-node-id') || undefined;
+  const listItemElement = nodeElement?.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null
+  const listItemBlockId = listItemElement?.getAttribute('data-node-id') || undefined
   return {
     isTaskList: Boolean(listItemBlockId),
     listItemBlockId,
-  };
+  }
 }
 
 function mergeResolvedItemMetadata(
@@ -105,9 +108,9 @@ function mergeResolvedItemMetadata(
   storeItem: Item | null,
   nodeElement?: HTMLElement | null,
 ): Item {
-  const taskListMetadata = resolveTaskListMetadata(nodeElement);
-  const preserveStoreId = candidate.id === candidate.blockId ? storeItem?.id : undefined;
-  const preserveStoreDocId = candidate.docId || storeItem?.docId || '';
+  const taskListMetadata = resolveTaskListMetadata(nodeElement)
+  const preserveStoreId = candidate.id === candidate.blockId ? storeItem?.id : undefined
+  const preserveStoreDocId = candidate.docId || storeItem?.docId || ''
 
   return {
     ...(storeItem ?? {}),
@@ -116,13 +119,16 @@ function mergeResolvedItemMetadata(
     docId: preserveStoreDocId,
     isTaskList: candidate.isTaskList || storeItem?.isTaskList || taskListMetadata.isTaskList,
     listItemBlockId: taskListMetadata.listItemBlockId || storeItem?.listItemBlockId || candidate.listItemBlockId,
-  };
+  }
 }
 
 export async function resolveItemForSlashCommand(options: ResolveSlashItemOptions): Promise<Item | null> {
-  const { blockId, nodeElement } = options;
-  const activeSlash = getActiveSlashRange();
-  const storeItem = lookupItemFromStore(blockId);
+  const {
+    blockId,
+    nodeElement,
+  } = options
+  const activeSlash = getActiveSlashRange()
+  const storeItem = lookupItemFromStore(blockId)
 
   if (
     nodeElement
@@ -132,20 +138,20 @@ export async function resolveItemForSlashCommand(options: ResolveSlashItemOption
     const candidate = parseCandidateLine(
       buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset, activeSlash.slashEndOffset),
       blockId,
-    );
+    )
     if (candidate) {
-      return mergeResolvedItemMetadata(candidate, storeItem, nodeElement);
+      return mergeResolvedItemMetadata(candidate, storeItem, nodeElement)
     }
   }
 
   if (storeItem) {
-    const taskListMetadata = resolveTaskListMetadata(nodeElement);
+    const taskListMetadata = resolveTaskListMetadata(nodeElement)
     return {
       ...storeItem,
       isTaskList: storeItem.isTaskList || taskListMetadata.isTaskList,
       listItemBlockId: taskListMetadata.listItemBlockId || storeItem.listItemBlockId,
-    };
+    }
   }
 
-  return null;
+  return null
 }

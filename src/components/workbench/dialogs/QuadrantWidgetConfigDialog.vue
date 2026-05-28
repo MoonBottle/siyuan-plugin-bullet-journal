@@ -48,55 +48,62 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench';
-import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
-import { mapLegacyWorkbenchQuadrantKey } from '@/utils/quadrant';
+import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench'
+import {
+  computed,
+  onMounted,
+  ref,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore'
+import { mapLegacyWorkbenchQuadrantKey } from '@/utils/quadrant'
 
 const props = defineProps<{
-  initialConfig: WorkbenchQuadrantWidgetConfig;
-  onConfirm: (config: WorkbenchQuadrantWidgetConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchQuadrantWidgetConfig
+  onConfirm: (config: WorkbenchQuadrantWidgetConfig) => void
+  onCancel: () => void
+}>()
 
-const settingsStore = useSettingsStore();
-const quadrantConfigStore = useQuadrantConfigStore();
-const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant));
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
+const settingsStore = useSettingsStore()
+const quadrantConfigStore = useQuadrantConfigStore()
+const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant))
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
 
 onMounted(async () => {
   if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
   if (!quadrantConfigStore.loaded) {
-    await quadrantConfigStore.loadConfig();
+    await quadrantConfigStore.loadConfig()
   }
-});
+})
 
 const quadrantOptions = computed(() => {
-  return quadrantConfigStore.panels.map(panel => ({
+  return quadrantConfigStore.panels.map((panel) => ({
     value: panel.id,
     label: panel.title,
-  }));
-});
+  }))
+})
 
 const groupOptions = computed(() => [
-  { value: '', label: t('settings').projectGroups.allGroups },
-  ...settingsStore.groups.map(group => ({
+  {
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  },
+  ...settingsStore.groups.map((group) => ({
     value: group.id,
     label: group.name || t('settings').projectGroups.unnamed,
   })),
-]);
+])
 
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
     quadrant: selectedQuadrant.value,
-  });
+  })
 }
 </script>
 

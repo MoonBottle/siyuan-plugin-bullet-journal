@@ -162,11 +162,11 @@
 
 ```ts
 interface ProjectTaskTreeNode {
-  task: Task;
-  items: Item[];
-  children: ProjectTaskTreeNode[];
-  depth: number;
-  orphaned: boolean;
+  task: Task
+  items: Item[]
+  children: ProjectTaskTreeNode[]
+  depth: number
+  orphaned: boolean
 }
 ```
 

@@ -12,20 +12,21 @@
 
 ## 文件结构
 
-| 文件 | 操作 | 职责 |
-|------|------|------|
-| `src/kernel/scheduler.ts` | 修改 | `initScheduler()` 加防护；`checkTimers`/`initScheduler` 使用 `notifiedTimerIds.has()` |
-| `src/kernel/pomodoro.ts` | 修改 | `handleRegisterTimers` 补充 `notified: false` |
-| `src/kernel/reminder.ts` | 修改 | `handleFsNotify` 过滤 `timer-registry.json` |
-| `src/services/reminderService.ts` | 修改 | 移除 `rebuildScheduleKernel()`；简化 `rebuildSchedule()` 和 `kernelAvailable` watch |
+| 文件                                             | 操作 | 职责                                                                                   |
+| ------------------------------------------------ | ---- | -------------------------------------------------------------------------------------- |
+| `src/kernel/scheduler.ts`                        | 修改 | `initScheduler()` 加防护；`checkTimers`/`initScheduler` 使用 `notifiedTimerIds.has()`  |
+| `src/kernel/pomodoro.ts`                         | 修改 | `handleRegisterTimers` 补充 `notified: false`                                          |
+| `src/kernel/reminder.ts`                         | 修改 | `handleFsNotify` 过滤 `timer-registry.json`                                            |
+| `src/services/reminderService.ts`                | 修改 | 移除 `rebuildScheduleKernel()`；简化 `rebuildSchedule()` 和 `kernelAvailable` watch    |
 | `test/kernel/scheduler.notifiedTimerIds.test.ts` | 修改 | 更新现有测试 + 新增 `initScheduler` 防护测试和 `notifiedTimerIds` source-of-truth 测试 |
-| `test/kernel/reminder.dedup.test.ts` | 修改 | 新增 `timer-registry.json` 过滤测试 |
+| `test/kernel/reminder.dedup.test.ts`             | 修改 | 新增 `timer-registry.json` 过滤测试                                                    |
 
 ---
 
 ### 任务 1：scheduler.ts — `initScheduler()` 防护 + `notifiedTimerIds` 作为唯一去重源
 
 **文件：**
+
 - 修改：`src/kernel/scheduler.ts:116-136`（`initScheduler` 函数）
 - 修改：`src/kernel/scheduler.ts:146-157`（`checkTimers` 函数）
 - 修改：`test/kernel/scheduler.notifiedTimerIds.test.ts`
@@ -38,11 +39,11 @@
 describe('initScheduler guard', () => {
   it('calling initScheduler twice should not create duplicate setInterval timers', async () => {
     vi.useFakeTimers()
-    var dispatchFn = vi.fn()
+    const dispatchFn = vi.fn()
     setDispatchNotification(dispatchFn)
 
-    var pastTime = Math.floor(Date.now() / 1000) - 2
-    var entry: TimerEntry = {
+    const pastTime = Math.floor(Date.now() / 1000) - 2
+    const entry: TimerEntry = {
       id: 'guard-test-1',
       type: 'reminder',
       endTime: pastTime,
@@ -55,7 +56,7 @@ describe('initScheduler guard', () => {
       rpc: { broadcast: vi.fn() },
     } as any
 
-    var { initScheduler } = await import('@/kernel/scheduler')
+    const { initScheduler } = await import('@/kernel/scheduler')
     initScheduler()
     initScheduler()
 
@@ -63,7 +64,7 @@ describe('initScheduler guard', () => {
 
     expect(dispatchFn).toHaveBeenCalledTimes(1)
 
-    var { stopScheduler } = await import('@/kernel/scheduler')
+    const { stopScheduler } = await import('@/kernel/scheduler')
     stopScheduler()
     vi.useRealTimers()
   })
@@ -86,20 +87,21 @@ export function initScheduler(): void {
     checkInterval = null
   }
   lastKnownDate = formatDate(new Date())
-  console.log('[scheduler] initScheduler: existing timers=' + timers.size + ' today=' + lastKnownDate)
-  var now = Date.now() / 1000
-  timers.forEach(function (entry) {
+  console.log(`[scheduler] initScheduler: existing timers=${timers.size} today=${lastKnownDate}`)
+  const now = Date.now() / 1000
+  timers.forEach((entry) => {
     if (!notifiedTimerIds.has(entry.id) && entry.endTime <= now) {
-      var diffMs = (now - entry.endTime) * 1000
+      const diffMs = (now - entry.endTime) * 1000
       if (diffMs <= MISSED_THRESHOLD_MS) {
         entry.notified = true
         notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
+        console.log(`[scheduler] missed timer (within ${Math.round(diffMs / 1000)}s): id=${entry.id} type=${entry.type} content=${entry.metadata.content}`)
         dispatchNotification(entry)
-      } else {
+      }
+      else {
         entry.notified = true
         notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
+        console.log(`[scheduler] stale timer (${Math.round(diffMs / 60000)}min ago), skipping: id=${entry.id} type=${entry.type}`)
       }
     }
   })
@@ -114,34 +116,35 @@ export function initScheduler(): void {
 
 ```typescript
 function checkTimers(): void {
-  var now = Date.now() / 1000
-  var firedCount = 0
-  timers.forEach(function (entry) {
+  const now = Date.now() / 1000
+  let firedCount = 0
+  timers.forEach((entry) => {
     if (!notifiedTimerIds.has(entry.id) && now >= entry.endTime) {
       entry.notified = true
       notifiedTimerIds.add(entry.id)
       firedCount++
-      console.log('[scheduler] timer FIRED: id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content + ' endTime=' + entry.endTime + ' now=' + now)
+      console.log(`[scheduler] timer FIRED: id=${entry.id} type=${entry.type} content=${entry.metadata.content} endTime=${entry.endTime} now=${now}`)
       dispatchNotification(entry)
     }
   })
   if (firedCount > 0) {
-    console.log('[scheduler] checkTimers: ' + firedCount + ' timer(s) fired, active=' + timers.size)
+    console.log(`[scheduler] checkTimers: ${firedCount} timer(s) fired, active=${timers.size}`)
   }
 
-  var toDelete: string[] = []
-  timers.forEach(function (entry, key) {
+  const toDelete: string[] = []
+  timers.forEach((entry, key) => {
     if (entry.notified && (now - entry.endTime) > PURGE_THRESHOLD_S) {
       toDelete.push(key)
       notifiedTimerIds.delete(key)
     }
   })
-  for (var i = 0; i < toDelete.length; i++) {
+  for (let i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
-  if (toDelete.length > 0) schedulePersist()
+  if (toDelete.length > 0)
+    schedulePersist()
 
-  var today = formatDate(new Date())
+  const today = formatDate(new Date())
   if (today !== lastKnownDate) {
     lastKnownDate = today
     siyuan.rpc.broadcast('date-changed', { date: today })
@@ -158,11 +161,11 @@ function checkTimers(): void {
 describe('notifiedTimerIds as source of truth', () => {
   it('checkTimers skips timer when notifiedTimerIds has the id even if entry.notified is false', async () => {
     vi.useFakeTimers()
-    var dispatchFn = vi.fn()
+    const dispatchFn = vi.fn()
     setDispatchNotification(dispatchFn)
 
-    var futureTime = Math.floor(Date.now() / 1000) + 10
-    var entry: TimerEntry = {
+    const futureTime = Math.floor(Date.now() / 1000) + 10
+    const entry: TimerEntry = {
       id: 'sot-test-1',
       type: 'reminder',
       endTime: futureTime,
@@ -179,14 +182,14 @@ describe('notifiedTimerIds as source of truth', () => {
       rpc: { broadcast: vi.fn() },
     } as any
 
-    var { initScheduler } = await import('@/kernel/scheduler')
+    const { initScheduler } = await import('@/kernel/scheduler')
     initScheduler()
 
     vi.advanceTimersByTime(2000)
 
     expect(dispatchFn).not.toHaveBeenCalled()
 
-    var { stopScheduler } = await import('@/kernel/scheduler')
+    const { stopScheduler } = await import('@/kernel/scheduler')
     stopScheduler()
     vi.useRealTimers()
   })
@@ -210,6 +213,7 @@ git commit -m "fix(kernel): guard initScheduler against multiple calls, use noti
 ### 任务 2：pomodoro.ts — `handleRegisterTimers` 补充 `notified: false`
 
 **文件：**
+
 - 修改：`src/kernel/pomodoro.ts:18-22`（`handleRegisterTimers` 函数）
 
 - [ ] **步骤 1：实现修复**
@@ -218,8 +222,8 @@ git commit -m "fix(kernel): guard initScheduler against multiple calls, use noti
 
 ```typescript
 export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
-  console.log('[pomodoro] handleRegisterTimers: count=' + params.entries.length)
-  for (var i = 0; i < params.entries.length; i++) {
+  console.log(`[pomodoro] handleRegisterTimers: count=${params.entries.length}`)
+  for (let i = 0; i < params.entries.length; i++) {
     if (params.entries[i].notified === undefined) {
       params.entries[i].notified = false
     }
@@ -241,6 +245,7 @@ git commit -m "fix(kernel): set notified=false in handleRegisterTimers for missi
 ### 任务 3：reminder.ts — `handleFsNotify` 过滤 `timer-registry.json`
 
 **文件：**
+
 - 修改：`src/kernel/reminder.ts:104-108`（`handleFsNotify` 函数）
 - 修改：`test/kernel/reminder.dedup.test.ts`
 
@@ -250,8 +255,8 @@ git commit -m "fix(kernel): set notified=false in handleRegisterTimers for missi
 
 ```typescript
 it('ignores timer-registry.json events and does not trigger rebuild', async () => {
-  var handleFsNotify = await importHandleFsNotify()
-  var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  const handleFsNotify = await importHandleFsNotify()
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
   handleFsNotify({
     type: 'fs-notify',
@@ -277,19 +282,24 @@ it('ignores timer-registry.json events and does not trigger rebuild', async () =
 
 ```typescript
 export function handleFsNotify(event: { type: string, detail: any }): void {
-  if (event.type !== 'fs-notify') return
-  var path = event.detail.path.replace(/\\/g, '/')
-  if (path.endsWith('.tmp')) return
-  if (path === 'timer-registry.json') return
-  console.log('[reminder] fs-notify: path=' + path)
+  if (event.type !== 'fs-notify')
+    return
+  const path = event.detail.path.replace(/\\/g, '/')
+  if (path.endsWith('.tmp'))
+    return
+  if (path === 'timer-registry.json')
+    return
+  console.log(`[reminder] fs-notify: path=${path}`)
   pendingPaths[path] = true
-  if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
-  fsNotifyDebounceTimer = setTimeout(function () {
+  if (fsNotifyDebounceTimer)
+    clearTimeout(fsNotifyDebounceTimer)
+  fsNotifyDebounceTimer = setTimeout(() => {
     if (pendingPaths['kernel-data.json']) {
       void rebuildReminderSchedule()
     }
-    if (pendingPaths['settings']) {
-      if (reloadWebhookConfigFn) void reloadWebhookConfigFn()
+    if (pendingPaths.settings) {
+      if (reloadWebhookConfigFn)
+        void reloadWebhookConfigFn()
     }
     pendingPaths = {}
   }, 200)
@@ -313,6 +323,7 @@ git commit -m "fix(kernel): filter timer-registry.json from fs-notify events"
 ### 任务 4：reminderService.ts — 移除 `rebuildScheduleKernel()`，简化 `rebuildSchedule()`
 
 **文件：**
+
 - 修改：`src/services/reminderService.ts:154-160`（`rebuildSchedule` 方法）
 - 修改：`src/services/reminderService.ts:64-71`（`kernelAvailable` watch 回调）
 - 删除：`src/services/reminderService.ts:419-495`（`rebuildScheduleKernel` 方法）
@@ -341,11 +352,11 @@ private rebuildSchedule(): void {
 ```typescript
 this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
   if (available) {
-    console.log('[ReminderService] kernel became available, setting up listeners');
-    this.setupKernelListeners();
-    this.clearAllJobs();
+    console.log('[ReminderService] kernel became available, setting up listeners')
+    this.setupKernelListeners()
+    this.clearAllJobs()
   }
-});
+})
 ```
 
 - [ ] **步骤 3：移除 `rebuildScheduleKernel()` 方法**
@@ -355,6 +366,7 @@ this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
 - [ ] **步骤 4：清理未使用的 import**
 
 检查 `reminderService.ts` 顶部，移除 `rebuildScheduleKernel` 不再需要的 import：
+
 - `rpcCall` — 如果 `pomodoroStore` 仍在使用则保留（检查其他引用）
 - `getHabitReminderEntries` — 仅在 `rebuildScheduleKernel` 和 croner 路径中使用，croner 路径仍需要，保留
 - `calculateReminderTime` — croner 路径仍需要，保留

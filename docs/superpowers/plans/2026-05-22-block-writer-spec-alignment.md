@@ -34,34 +34,35 @@
 
 ## File Structure
 
-| 文件 | 责任 |
-| --- | --- |
-| `src/utils/blockWriter/index.ts` | 唯一公开 orchestration 入口，统一 update / insert 执行形态 |
-| `src/utils/blockWriter/intent.ts` | update / insert intent 归一化与 patch 顺序稳定化 |
-| `src/utils/blockWriter/targetResolver.ts` | 统一 target/source/commit 决策 |
-| `src/utils/blockWriter/sourceLoader.ts` | 当前 DOM / API kramdown 源加载与 slash cleanup draft |
-| `src/utils/blockWriter/updateRenderer.ts` | `nextMarkdown`、`domHtml`、`caretRestorePlan` 生成 |
-| `src/utils/blockWriter/insertRenderer.ts` | insert markdown 与 DOM-first payload 生成 |
-| `src/utils/blockWriter/apiCommitter.ts` | API update/insert 的 DOM-first commit |
-| `src/utils/blockWriter/protyleCommitter.ts` | 当前块 DOM transaction、task checkbox DOM 同步、slash 光标恢复 |
-| `src/utils/blockWriter/caretController.ts` | caret snapshot、`<wbr>` 注入、`focusByWbr()` / `focusByOffset()` |
-| `src/utils/blockWriter/datePatchWriter.ts` | date source/prepare helper；不再拥有完整写入链路 |
-| `src/utils/blockWriter/markdownWriter.ts` | 仅保留兼容 helper，最终不再从 `index.ts` 暴露 |
-| `src/utils/focusPlanDialogSave.ts` | ensured date + focus plan 的业务组合入口，必须通过 `writeBlock()` 提交 |
-| `src/utils/fileUtils.ts` | 兼容层；保留 deprecated wrapper，但不再成为计划内主路径 |
-| `test/utils/focusPlanDialogSave.test.ts` | 确认业务入口不再调用 legacy date writer |
-| `test/blockWriter/datePatchWriter.test.ts` | date prepare helper 测试 |
-| `test/blockWriter/protyleCommitter.test.ts` | `wbr-first` slash 恢复、task checkbox DOM 同步 |
-| `test/blockWriter/caretController.test.ts` | WBR 注入和 offset fallback 单测 |
-| `test/blockWriter/index.test.ts` | orchestration 主路径和 insert/update 统一回归 |
-| `test/blockWriter/updateRenderer.test.ts` | marker 顺序与 slash payload 回归 |
-| `test/utils/slashCommands.itemValidation.test.ts` | slash-in-marker 候选语义行与 `/wc` / `/fq` 业务回归 |
+| 文件                                              | 责任                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/utils/blockWriter/index.ts`                  | 唯一公开 orchestration 入口，统一 update / insert 执行形态             |
+| `src/utils/blockWriter/intent.ts`                 | update / insert intent 归一化与 patch 顺序稳定化                       |
+| `src/utils/blockWriter/targetResolver.ts`         | 统一 target/source/commit 决策                                         |
+| `src/utils/blockWriter/sourceLoader.ts`           | 当前 DOM / API kramdown 源加载与 slash cleanup draft                   |
+| `src/utils/blockWriter/updateRenderer.ts`         | `nextMarkdown`、`domHtml`、`caretRestorePlan` 生成                     |
+| `src/utils/blockWriter/insertRenderer.ts`         | insert markdown 与 DOM-first payload 生成                              |
+| `src/utils/blockWriter/apiCommitter.ts`           | API update/insert 的 DOM-first commit                                  |
+| `src/utils/blockWriter/protyleCommitter.ts`       | 当前块 DOM transaction、task checkbox DOM 同步、slash 光标恢复         |
+| `src/utils/blockWriter/caretController.ts`        | caret snapshot、`<wbr>` 注入、`focusByWbr()` / `focusByOffset()`       |
+| `src/utils/blockWriter/datePatchWriter.ts`        | date source/prepare helper；不再拥有完整写入链路                       |
+| `src/utils/blockWriter/markdownWriter.ts`         | 仅保留兼容 helper，最终不再从 `index.ts` 暴露                          |
+| `src/utils/focusPlanDialogSave.ts`                | ensured date + focus plan 的业务组合入口，必须通过 `writeBlock()` 提交 |
+| `src/utils/fileUtils.ts`                          | 兼容层；保留 deprecated wrapper，但不再成为计划内主路径                |
+| `test/utils/focusPlanDialogSave.test.ts`          | 确认业务入口不再调用 legacy date writer                                |
+| `test/blockWriter/datePatchWriter.test.ts`        | date prepare helper 测试                                               |
+| `test/blockWriter/protyleCommitter.test.ts`       | `wbr-first` slash 恢复、task checkbox DOM 同步                         |
+| `test/blockWriter/caretController.test.ts`        | WBR 注入和 offset fallback 单测                                        |
+| `test/blockWriter/index.test.ts`                  | orchestration 主路径和 insert/update 统一回归                          |
+| `test/blockWriter/updateRenderer.test.ts`         | marker 顺序与 slash payload 回归                                       |
+| `test/utils/slashCommands.itemValidation.test.ts` | slash-in-marker 候选语义行与 `/wc` / `/fq` 业务回归                    |
 
 ---
 
 ### Task 1: 把 `focusPlanDialogSave.ts` 从 `writeDatePatchWithWriter()` 切回统一流水线
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/datePatchWriter.ts`
 - Modify: `src/utils/focusPlanDialogSave.ts`
 - Modify: `test/utils/focusPlanDialogSave.test.ts`
@@ -72,21 +73,21 @@
 把 `test/utils/focusPlanDialogSave.test.ts` 的 mock 改成 helper-only 入口，并断言 `writeBlock()` 仍负责最后一次写入：
 
 ```ts
-import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter'
 
 vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
   prepareDatePatchWrite: vi.fn(async (_blockId: string, patch: { date: string }) => ({
     content: `事项 📅2026-05-14, ${patch.date}\n{: id="block-1" }`,
     targetBlockId: 'block-1',
   })),
-}));
+}))
 
 it('writes one final block update with both ensured date and focus plan when the item does not contain the date', async () => {
-  const item = createItem({ date: '2026-05-14' });
+  const item = createItem({ date: '2026-05-14' })
 
-  const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
+  const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' })
 
-  expect(saved).toBe(true);
+  expect(saved).toBe(true)
   expect(prepareDatePatchWrite).toHaveBeenCalledWith(
     'block-1',
     {
@@ -96,7 +97,7 @@ it('writes one final block update with both ensured date and focus plan when the
       siblingItems: [item],
       status: 'pending',
     },
-  );
+  )
   expect(writeBlock).toHaveBeenCalledWith(
     { blockId: 'block-1' },
     [
@@ -110,8 +111,8 @@ it('writes one final block update with both ensured date and focus plan when the
         plan,
       },
     ],
-  );
-});
+  )
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -134,22 +135,22 @@ export async function prepareDatePatchWrite(
   patch: DatePatch,
 ): Promise<PreparedDateWrite | null> {
   if (!blockId) {
-    return null;
+    return null
   }
 
-  const source = await resolveDatePatchSource(blockId);
+  const source = await resolveDatePatchSource(blockId)
   if (!source) {
-    return null;
+    return null
   }
 
-  return prepareDatePatchWriteFromSource(source, patch);
+  return prepareDatePatchWriteFromSource(source, patch)
 }
 ```
 
 把 `src/utils/focusPlanDialogSave.ts` 的 ensured date 路径改成先 prepare，再统一交给 `writeBlock()`：
 
 ```ts
-import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter'
 
 const prepared = await prepareDatePatchWrite(
   item.blockId ?? '',
@@ -160,14 +161,14 @@ const prepared = await prepareDatePatchWrite(
     siblingItems: [item, ...(item.siblingItems ?? [])],
     status: item.status,
   },
-);
+)
 
 if (!prepared) {
   console.error('[Task Assistant] Failed to add focus review date before saving focus plan', {
     blockId: item.blockId,
     ensureDate: options.ensureDate,
-  });
-  return false;
+  })
+  return false
 }
 
 const updated = await writeBlock(
@@ -183,7 +184,7 @@ const updated = await writeBlock(
       plan,
     },
   ],
-);
+)
 ```
 
 同时把 `test/blockWriter/datePatchWriter.test.ts` 的主用例改成 helper 语义：
@@ -194,14 +195,14 @@ it('prepares a same-block date rewrite without committing', async () => {
     type: 'addDate',
     date: '2026-05-21',
     allDay: true,
-  });
+  })
 
   expect(prepared).toEqual({
     content: '事项 📅2026-05-21\n{: id="block-1"}',
     targetBlockId: 'block-1',
-  });
-  expect(updateBlock).not.toHaveBeenCalled();
-});
+  })
+  expect(updateBlock).not.toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 4: 重新跑测试**
@@ -226,6 +227,7 @@ git commit -m "refactor(block-writer): route ensured date writes through pipelin
 ### Task 2: 把 `datePatchWriter.ts` 和 `markdownWriter.ts` 收成 helper-only 边界
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/datePatchWriter.ts`
 - Modify: `src/utils/blockWriter/markdownWriter.ts`
 - Modify: `src/utils/blockWriter/index.ts`
@@ -237,27 +239,27 @@ git commit -m "refactor(block-writer): route ensured date writes through pipelin
 把 `test/blockWriter/markdownWriter.test.ts` 改成只验证兼容 helper，而不是从 `@/utils/blockWriter` 入口读取：
 
 ```ts
-import { writeMarkdownToCurrentBlock } from '@/utils/blockWriter/markdownWriter';
+import { writeMarkdownToCurrentBlock } from '@/utils/blockWriter/markdownWriter'
 
 it('renders markdown into the current block without going through blockWriter public exports', async () => {
   const result = await writeMarkdownToCurrentBlock(
     { blockId: 'block-1', protyle, nodeElement: div },
     '测试事项 📅2026-05-21',
-  );
+  )
 
-  expect(result).toBe(true);
-  expect(protyle.transaction).toHaveBeenCalledOnce();
-});
+  expect(result).toBe(true)
+  expect(protyle.transaction).toHaveBeenCalledOnce()
+})
 ```
 
 再加一个 index 层导出约束测试：
 
 ```ts
-import * as blockWriter from '@/utils/blockWriter';
+import * as blockWriter from '@/utils/blockWriter'
 
 it('does not expose createProtyleMarkdownWriter from the public blockWriter entry', () => {
-  expect('createProtyleMarkdownWriter' in blockWriter).toBe(false);
-});
+  expect('createProtyleMarkdownWriter' in blockWriter).toBe(false)
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -276,7 +278,7 @@ Expected: FAIL，因为 `index.ts` 仍然 re-export `createProtyleMarkdownWriter
 
 ```ts
 // delete this line
-export { createProtyleMarkdownWriter } from './markdownWriter';
+export { createProtyleMarkdownWriter } from './markdownWriter'
 ```
 
 把 `src/utils/blockWriter/datePatchWriter.ts` 收到 helper-only 形态，保留：
@@ -339,6 +341,7 @@ git commit -m "refactor(block-writer): shrink legacy date and markdown writers"
 ### Task 3: 把 slash 光标恢复改成真正的 `wbr-first`
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/caretController.ts`
 - Modify: `src/utils/blockWriter/protyleCommitter.ts`
 - Modify: `test/blockWriter/caretController.test.ts`
@@ -350,15 +353,15 @@ git commit -m "refactor(block-writer): shrink legacy date and markdown writers"
 
 ```ts
 it('restores slash caret by WBR before offset fallback', async () => {
-  const focusOrder: string[] = [];
+  const focusOrder: string[] = []
   vi.spyOn(caretController, 'focusByWbr').mockImplementation(() => {
-    focusOrder.push('wbr');
-    return true;
-  });
+    focusOrder.push('wbr')
+    return true
+  })
   vi.spyOn(caretController, 'focusByOffset').mockImplementation(() => {
-    focusOrder.push('offset');
-    return true;
-  });
+    focusOrder.push('offset')
+    return true
+  })
 
   const success = await commitViaProtyle(
     { protyle },
@@ -377,22 +380,22 @@ it('restores slash caret by WBR before offset fallback', async () => {
         fallbackOffset: { start: 2, end: 2 },
       },
     },
-  );
+  )
 
-  expect(success).toBe(true);
-  expect(focusOrder[0]).toBe('wbr');
-});
+  expect(success).toBe(true)
+  expect(focusOrder[0]).toBe('wbr')
+})
 ```
 
 再在 `test/blockWriter/caretController.test.ts` 加一个兜底场景：
 
 ```ts
 it('falls back to the end of editable text when WBR is missing', () => {
-  const ok = focusByOffset(block, { start: 999, end: 999 });
+  const ok = focusByOffset(block, { start: 999, end: 999 })
 
-  expect(ok).toBe(true);
-  expect(window.getSelection()?.anchorOffset).toBe((block.textContent ?? '').length);
-});
+  expect(ok).toBe(true)
+  expect(window.getSelection()?.anchorOffset).toBe((block.textContent ?? '').length)
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -410,27 +413,27 @@ Expected: FAIL，因为当前实现先尝试 `focusByOffset()`，`focusByWbr()` 
 把 `src/utils/blockWriter/protyleCommitter.ts` 的恢复逻辑改成：
 
 ```ts
-let injectedWbr = false;
+let injectedWbr = false
 if (payload.caretRestorePlan?.policy === 'wbr') {
   const editable = targetElement.getAttribute('contenteditable') === 'true'
     ? targetElement
-    : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
+    : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null
   if (editable) {
-    const plannedCaretOffset = resolveWbrOffset(editable, payload.caretRestorePlan);
-    injectedWbr = injectWbrIntoEditable(editable, plannedCaretOffset);
+    const plannedCaretOffset = resolveWbrOffset(editable, payload.caretRestorePlan)
+    injectedWbr = injectWbrIntoEditable(editable, plannedCaretOffset)
   }
 }
 
 protyle.transaction(
   [{ id: payload.targetBlockId, data: targetElement.outerHTML, action: 'update' }],
   [{ id: payload.targetBlockId, data: oldHTML, action: 'update' }],
-);
+)
 
 if (payload.caretRestorePlan?.policy === 'wbr') {
-  const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle);
-  const restoredByWbr = injectedWbr ? focusByWbr(liveTargetElement) : false;
+  const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle)
+  const restoredByWbr = injectedWbr ? focusByWbr(liveTargetElement) : false
   if (!restoredByWbr) {
-    focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
+    focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset)
   }
 }
 ```
@@ -464,6 +467,7 @@ git commit -m "fix(block-writer): make slash caret restore wbr-first"
 ### Task 4: 压薄 `index.ts`，让 insert / update 共用同一套执行骨架
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/index.ts`
 - Modify: `src/utils/blockWriter/mutationPlanner.ts`
 - Modify: `test/blockWriter/index.test.ts`
@@ -479,11 +483,11 @@ it('routes insertBlockAfter through the shared execution shape', async () => {
     type: 'replaceMarkdown',
     markdown: '新块内容\n{: id="new-1"}',
     preserveIAL: false,
-  });
+  })
 
-  expect(result).toBe(true);
-  expect(insertBlock).toHaveBeenCalledOnce();
-});
+  expect(result).toBe(true)
+  expect(insertBlock).toHaveBeenCalledOnce()
+})
 ```
 
 在 `test/blockWriter/mutationPlanner.test.ts` 增加单 insert 断言：
@@ -499,15 +503,15 @@ it('builds a single insert plan for insertAfter intents', async () => {
       preserveIAL: false,
     },
     resultMode: 'boolean',
-  });
+  })
 
-  expect(plannerResult.plans).toHaveLength(1);
+  expect(plannerResult.plans).toHaveLength(1)
   expect(plannerResult.plans[0]).toMatchObject({
     kind: 'insertAfter',
     anchorBlockId: 'block-1',
     commitKind: 'api-insert',
-  });
-});
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -526,28 +530,28 @@ Expected: FAIL，因为 `insertBlockAfter()` 仍走 `executeIntent()` 特殊分�
 
 ```ts
 async function executeMutationIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
-  const plannerResult = await buildMutationPlans(intent);
-  return executePlans(plannerResult.plans);
+  const plannerResult = await buildMutationPlans(intent)
+  return executePlans(plannerResult.plans)
 }
 
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
-  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
-  return (await executeMutationIntent(intent)) === true;
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' })
+  return (await executeMutationIntent(intent)) === true
 }
 
 export async function insertBlockAfterWithResult(
   previousBlockId: string,
   patch: InsertableBlockPatch,
 ): Promise<IResdoOperations[] | null> {
-  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
-  const result = await executeMutationIntent(intent);
-  return Array.isArray(result) ? result : null;
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' })
+  const result = await executeMutationIntent(intent)
+  return Array.isArray(result) ? result : null
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const intent = normalizeUpdateIntent(context, patches);
-  const result = await executeMutationIntent(intent);
-  return result === true;
+  const intent = normalizeUpdateIntent(context, patches)
+  const result = await executeMutationIntent(intent)
+  return result === true
 }
 ```
 
@@ -575,6 +579,7 @@ git commit -m "refactor(block-writer): unify insert and update execution flow"
 ### Task 5: 清理 legacy transport / resolver 文件并把测试迁到新模块
 
 **Files:**
+
 - Delete: `src/utils/blockWriter/apiTransport.ts`
 - Delete: `src/utils/blockWriter/protyleTransport.ts`
 - Delete: `src/utils/blockWriter/blockTargetResolver.ts`
@@ -590,13 +595,13 @@ git commit -m "refactor(block-writer): unify insert and update execution flow"
 
 ```ts
 // test/blockWriter/apiTransport.test.ts -> test/blockWriter/apiCommitter.test.ts
-import { commitViaApi } from '@/utils/blockWriter/apiCommitter';
-
-// test/blockWriter/blockTargetResolver.test.ts -> test/blockWriter/targetResolver.test.ts
-import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver';
+import { commitViaApi } from '@/utils/blockWriter/apiCommitter'
 
 // test/blockWriter/protyleTransport.test.ts -> test/blockWriter/protyleCommitter.test.ts
-import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter';
+import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter'
+
+// test/blockWriter/blockTargetResolver.test.ts -> test/blockWriter/targetResolver.test.ts
+import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver'
 ```
 
 把旧目标解析断言改成新 plan 断言：
@@ -606,13 +611,13 @@ const plan = await resolveMutationTarget({
   kind: 'update',
   context: { blockId: 'child-1' },
   patches: [{ type: 'setStatus', status: 'completed' }],
-});
+})
 
 expect(plan).toMatchObject({
   kind: 'update',
   targetBlockId: 'parent-1',
   targetKind: 'task-list-item',
-});
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -654,11 +659,11 @@ it('writes setStatus via API as DOM-first update', async () => {
     preferredDataType: 'dom',
     domHtml: '<div data-node-id="task-1"></div>',
     fallbackMarkdown: '* [x] 任务\n{: id="task-1"}',
-  });
+  })
 
-  expect(result).toBe(true);
-  expect(updateBlock).toHaveBeenCalledWith('dom', '<div data-node-id="task-1"></div>', 'task-1');
-});
+  expect(result).toBe(true)
+  expect(updateBlock).toHaveBeenCalledWith('dom', '<div data-node-id="task-1"></div>', 'task-1')
+})
 ```
 
 - [ ] **Step 4: 重新跑迁移后的测试矩阵**
@@ -684,6 +689,7 @@ git commit -m "refactor(block-writer): remove legacy transport and resolver file
 ### Task 6: 补齐 spec 对齐回归测试
 
 **Files:**
+
 - Modify: `test/blockWriter/updateRenderer.test.ts`
 - Modify: `test/blockWriter/protyleCommitter.test.ts`
 - Modify: `test/blockWriter/index.test.ts`
@@ -715,35 +721,35 @@ it('appends a new priority marker after existing date and time markers', () => {
       sourceBlockId: 'block-1',
       currentMarkdown: '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00\n{: id="block-1"}',
     },
-  );
+  )
 
-  expect(payload.nextMarkdown).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱\n{: id="block-1"}');
-});
+  expect(payload.nextMarkdown).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱\n{: id="block-1"}')
+})
 ```
 
 在 `test/utils/slashCommands.itemValidation.test.ts` 增加 slash-in-marker 校验：
 
 ```ts
 it('treats marker-interrupted slash text as a valid item during priority validation', async () => {
-  const node = document.createElement('div');
-  node.setAttribute('data-node-id', 'block-item');
-  node.appendChild(document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0'));
+  const node = document.createElement('div')
+  node.setAttribute('data-node-id', 'block-item')
+  node.appendChild(document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0'))
 
-  setCaretToCommandEnd(node, '/yxj');
+  setCaretToCommandEnd(node, '/yxj')
   setActiveSlashRangeForTest({
     blockId: 'block-item',
     blockElement: node,
     range: window.getSelection()!.getRangeAt(0),
     slashStartOffset: node.textContent!.indexOf('/yxj'),
-  });
+  })
 
-  const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
-  handler({} as any, node);
-  await Promise.resolve();
-  await Promise.resolve();
+  const handler = getActionHandler('setPriority', {} as any, ['/yxj'])
+  handler({} as any, node)
+  await Promise.resolve()
+  await Promise.resolve()
 
-  expect(showMessage).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
-});
+  expect(showMessage).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error')
+})
 ```
 
 再保留 `/wc` 回归：
@@ -755,7 +761,7 @@ expect(writeBlock).toHaveBeenCalledWith(
     { type: 'removeSlashCommand' },
     { type: 'setStatus', status: 'completed' },
   ],
-);
+)
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -774,7 +780,7 @@ Expected: 至少一项 FAIL，直到 marker 顺序、slash-in-marker、`/wc` 任
 
 ```ts
 // updateRenderer.ts
-const renderablePatches = plan.patches.filter(patch => patch.type !== 'removeSlashCommand');
+const renderablePatches = plan.patches.filter(patch => patch.type !== 'removeSlashCommand')
 
 // normalizePatchSequence.ts
 const PATCH_ORDER: Record<BlockPatch['type'], number> = {
@@ -791,7 +797,7 @@ const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   setHabitDefinition: 100,
   setHabitRecord: 110,
   replaceMarkdown: 120,
-};
+}
 ```
 
 重点要求：
@@ -845,4 +851,3 @@ git commit -m "test(block-writer): add spec alignment regressions"
 4. `prepareUpdatePayload`
 5. `commitViaProtyle`
 6. `commitViaApi`
-

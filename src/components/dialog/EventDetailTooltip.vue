@@ -30,7 +30,11 @@
       >
         <template #header>
           <span class="card-label">{{ t('todo').task }}</span>
-          <span v-if="level" class="task-level-badge" :class="'level-' + level.toLowerCase()">
+          <span
+            v-if="level"
+            class="task-level-badge"
+            :class="`level-${level.toLowerCase()}`"
+          >
             {{ level }}
           </span>
         </template>
@@ -53,7 +57,10 @@
       >
         <template #header>
           <span class="card-label">{{ t('todo').item }}</span>
-          <span class="status-tag" :class="statusInfo.class">{{ statusInfo.text }}</span>
+          <span
+            class="status-tag"
+            :class="statusInfo.class"
+          >{{ statusInfo.text }}</span>
         </template>
 
         <!-- 元数据行 -->
@@ -63,11 +70,17 @@
               <span class="meta-icon">📅</span>
               <span class="meta-text">{{ timeDisplay }}</span>
             </span>
-            <span v-if="duration" class="meta-item">
+            <span
+              v-if="duration"
+              class="meta-item"
+            >
               <span class="meta-icon">⏱️</span>
               <span class="meta-text">{{ duration }}</span>
             </span>
-            <span v-if="focusTotalTimeDisplay" class="meta-item">
+            <span
+              v-if="focusTotalTimeDisplay"
+              class="meta-item"
+            >
               <span class="meta-icon">🍅</span>
               <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
             </span>
@@ -75,7 +88,10 @@
         </div>
 
         <!-- 事项内容 -->
-        <div v-if="itemContent" class="item-content-row">
+        <div
+          v-if="itemContent"
+          class="item-content-row"
+        >
           <span class="card-text">{{ itemContent }}</span>
         </div>
 
@@ -90,49 +106,63 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import Card from '@/components/common/Card.vue';
-import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
-import { t } from '@/i18n';
-import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
-import { formatFocusDuration, calculateTotalFocusMinutes } from '@/utils/dialog';
-import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
-import { useSettingsStore } from '@/stores';
-import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import type { Link, PomodoroRecord, ItemDateTimeInfo } from '@/types/models';
+import type {
+  ItemDateTimeInfo,
+  Link,
+  PomodoroRecord,
+} from '@/types/models'
+import { computed } from 'vue'
+import Card from '@/components/common/Card.vue'
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+import {
+  getDateRangeStatus,
+  getTimeRangeStatus,
+} from '@/utils/dateRangeUtils'
+import {
+  calculateDuration,
+  formatDateLabel,
+  formatTimeRange,
+} from '@/utils/dateUtils'
+import dayjs from '@/utils/dayjs'
+import {
+  calculateTotalFocusMinutes,
+  formatFocusDuration,
+} from '@/utils/dialog'
+import { optimizeDateTimeExpressions } from '@/utils/fileUtils'
 
 interface Props {
   // 项目
-  project?: string;
-  projectLinks?: Link[];
+  project?: string
+  projectLinks?: Link[]
 
   // 任务
-  task?: string;
-  level?: string;
-  taskLinks?: Link[];
+  task?: string
+  level?: string
+  taskLinks?: Link[]
 
   // 事项
-  item?: string;
-  itemContent?: string;
-  itemStatus?: string;
-  itemLinks?: Link[];
+  item?: string
+  itemContent?: string
+  itemStatus?: string
+  itemLinks?: Link[]
 
   // 时间
-  date?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  allDay?: boolean;
+  date?: string
+  startDateTime?: string
+  endDateTime?: string
+  allDay?: boolean
 
   // 日期范围
-  dateRangeStart?: string;
-  dateRangeEnd?: string;
+  dateRangeStart?: string
+  dateRangeEnd?: string
 
   // 番茄钟
-  pomodoros?: PomodoroRecord[];
+  pomodoros?: PomodoroRecord[]
 
   // 多日期
-  siblingItems?: ItemDateTimeInfo[];
+  siblingItems?: ItemDateTimeInfo[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -152,24 +182,28 @@ const props = withDefaults(defineProps<Props>(), {
   dateRangeStart: '',
   dateRangeEnd: '',
   pomodoros: () => [],
-  siblingItems: () => []
-});
+  siblingItems: () => [],
+})
 
-const settingsStore = useSettingsStore();
+const settingsStore = useSettingsStore()
 
 // 时间显示
 const timeDisplay = computed(() => {
   if (props.siblingItems?.length) {
-    const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
-      { date: props.date || dayjs().format('YYYY-MM-DD'), startDateTime: props.startDateTime || undefined, endDateTime: props.endDateTime || undefined },
+    const allItems: Array<{ date: string, startDateTime?: string, endDateTime?: string }> = [
+      {
+        date: props.date || dayjs().format('YYYY-MM-DD'),
+        startDateTime: props.startDateTime || undefined,
+        endDateTime: props.endDateTime || undefined,
+      },
       ...props.siblingItems,
-    ];
-    return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '');
+    ]
+    return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '')
   }
-  const dateLabel = formatDateLabel(props.date || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
-  const timeRange = formatTimeRange(props.startDateTime, props.endDateTime);
-  return `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
-});
+  const dateLabel = formatDateLabel(props.date || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow)
+  const timeRange = formatTimeRange(props.startDateTime, props.endDateTime)
+  return `${dateLabel}${timeRange ? ` · ${timeRange}` : ''}`
+})
 
 // 时长计算
 const duration = computed(() => {
@@ -178,64 +212,87 @@ const duration = computed(() => {
       props.startDateTime,
       props.endDateTime,
       settingsStore.lunchBreakStart,
-      settingsStore.lunchBreakEnd
-    );
+      settingsStore.lunchBreakEnd,
+    )
   }
-  return '';
-});
+  return ''
+})
 
 // 过滤番茄钟记录 - 按日期
 function filterPomodorosByDate(pomodoros: PomodoroRecord[] | undefined, date: string): PomodoroRecord[] {
-  if (!pomodoros) return [];
-  return pomodoros.filter(p => p.date === date);
+  if (!pomodoros) return []
+  return pomodoros.filter((p) => p.date === date)
 }
 
 // 专注总时间
 const focusTotalTimeDisplay = computed(() => {
   // 只统计当前日期的番茄钟
-  const pomodorosToCount = filterPomodorosByDate(props.pomodoros, props.date || '');
-  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
-  return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
-});
+  const pomodorosToCount = filterPomodorosByDate(props.pomodoros, props.date || '')
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount)
+  return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : ''
+})
 
 // 事项状态
 const itemStatus = computed(() => {
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const status = props.itemStatus;
+  const todayStr = dayjs().format('YYYY-MM-DD')
+  const status = props.itemStatus
 
-  if (status === 'completed') return 'completed';
-  if (status === 'abandoned') return 'abandoned';
+  if (status === 'completed') return 'completed'
+  if (status === 'abandoned') return 'abandoned'
 
   if (props.dateRangeStart && props.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(
-      { dateRangeStart: props.dateRangeStart, dateRangeEnd: props.dateRangeEnd, date: props.date } as any,
-      todayStr
-    );
-    const effectiveDate = props.dateRangeEnd ?? props.date;
-    return rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending');
+      {
+        dateRangeStart: props.dateRangeStart,
+        dateRangeEnd: props.dateRangeEnd,
+        date: props.date,
+      } as any,
+      todayStr,
+    )
+    const effectiveDate = props.dateRangeEnd ?? props.date
+    return rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending')
   } else if (props.date) {
     const timeStatus = getTimeRangeStatus(
-      { date: props.date, startDateTime: props.startDateTime, endDateTime: props.endDateTime } as any,
-      dayjs().format('YYYY-MM-DD HH:mm:ss')
-    );
-    if (timeStatus) return timeStatus;
-    return props.date < todayStr ? 'expired' : status || 'pending';
+      {
+        date: props.date,
+        startDateTime: props.startDateTime,
+        endDateTime: props.endDateTime,
+      } as any,
+      dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    )
+    if (timeStatus) return timeStatus
+    return props.date < todayStr ? 'expired' : status || 'pending'
   }
 
-  return status || 'pending';
-});
+  return status || 'pending'
+})
 
 // 状态信息
 const statusInfo = computed(() => {
-  const statusMap: Record<string, { text: string; class: string }> = {
-    'pending': { text: t('todo').pending, class: 'pending' },
-    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
-    'completed': { text: t('todo').completed, class: 'completed' },
-    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
-    'expired': { text: t('todo').expired, class: 'expired' }
-  };
-  return statusMap[itemStatus.value] || statusMap['pending'];
-});
+  const statusMap: Record<string, { text: string, class: string }> = {
+    pending: {
+      text: t('todo').pending,
+      class: 'pending',
+    },
+    in_progress: {
+      text: t('todo').inProgress,
+      class: 'in-progress',
+    },
+    completed: {
+      text: t('todo').completed,
+      class: 'completed',
+    },
+    abandoned: {
+      text: t('todo').abandoned,
+      class: 'abandoned',
+    },
+    expired: {
+      text: t('todo').expired,
+      class: 'expired',
+    },
+  }
+  return statusMap[itemStatus.value] || statusMap.pending
+})
 </script>
 
 <style lang="scss" scoped>

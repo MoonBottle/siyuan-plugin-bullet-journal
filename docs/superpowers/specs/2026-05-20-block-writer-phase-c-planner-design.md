@@ -138,7 +138,7 @@ interface MutationPatchCapability {
   unit: MutationPatchUnit
   targetBlockId?: string
   targetKind?: 'paragraph' | 'task-list-item' | 'block'
-  sourceBlockId?: string           // 实现扩展：date patch 可能需要从不同块加载 source
+  sourceBlockId?: string // 实现扩展：date patch 可能需要从不同块加载 source
   sourceKind: 'protyle-dom' | 'api-kramdown'
   commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
   preferredCaretPolicy?: 'none' | 'wbr'

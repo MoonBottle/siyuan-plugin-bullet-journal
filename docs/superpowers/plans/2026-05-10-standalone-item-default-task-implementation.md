@@ -13,6 +13,7 @@
 ## File Map
 
 **Modify**
+
 - `src/types/models.ts` — add a runtime-only synthetic default task marker to `Task`
 - `src/parser/core.ts` — create/reuse the synthetic default task and attach standalone items to it
 - `src/parser/markdownParser.ts` — widen empty-directory SQL discovery for standalone-item documents
@@ -23,9 +24,11 @@
 - `docs/user-guide/data-format.md` — document standalone items and default-task behavior
 
 **Verify Existing Behavior**
+
 - `src/services/recurringService.ts` — likely no code change, but validate current insert-point logic against standalone items
 
 **Test**
+
 - `test/parser/core.test.ts`
 - `test/services/recurringService.test.ts`
 - `test/mcp/filterItems.test.ts`
@@ -35,6 +38,7 @@
 ### Task 1: Add the Synthetic Default Task Type Surface
 
 **Files:**
+
 - Modify: `src/types/models.ts`
 
 - [ ] **Step 1: Add the failing type use in parser tests**
@@ -42,7 +46,7 @@
 Append a minimal assertion target in `test/parser/core.test.ts` that will require the new field:
 
 ```ts
-expect(project!.tasks[0].isSyntheticDefault).toBe(true);
+expect(project!.tasks[0].isSyntheticDefault).toBe(true)
 ```
 
 Place it inside the first new standalone-item parser test you add in Task 2 so TypeScript fails before implementation.
@@ -59,19 +63,19 @@ Update `src/types/models.ts` inside `export interface Task`:
 
 ```ts
 export interface Task {
-  id: string;
-  name: string;
-  level: 'L1' | 'L2' | 'L3';
-  date?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  links?: Link[];
-  items: Item[];
-  lineNumber: number;
-  docId?: string;
-  blockId?: string;
-  pomodoros?: PomodoroRecord[];
-  isSyntheticDefault?: boolean;
+  id: string
+  name: string
+  level: 'L1' | 'L2' | 'L3'
+  date?: string
+  startDateTime?: string
+  endDateTime?: string
+  links?: Link[]
+  items: Item[]
+  lineNumber: number
+  docId?: string
+  blockId?: string
+  pomodoros?: PomodoroRecord[]
+  isSyntheticDefault?: boolean
 }
 ```
 
@@ -91,6 +95,7 @@ git commit -m "feat(parser): mark synthetic default tasks"
 ### Task 2: Teach the Core Parser to Keep Standalone Items
 
 **Files:**
+
 - Modify: `src/parser/core.ts`
 - Modify: `test/parser/core.test.ts`
 
@@ -104,22 +109,22 @@ describe('parseKramdown 独立事项解析', () => {
     const kramdown = `## 每日记录
 {: id="doc-block" type="doc" }
 整理日报 @2026-05-09
-{: id="item-1" updated="20260509100000" }`;
+{: id="item-1" updated="20260509100000" }`
 
-    const project = parseKramdown(kramdown, 'standalone-doc');
+    const project = parseKramdown(kramdown, 'standalone-doc')
 
-    expect(project).not.toBeNull();
-    expect(project!.tasks).toHaveLength(1);
-    expect(project!.tasks[0].name).toBe('默认任务');
-    expect(project!.tasks[0].isSyntheticDefault).toBe(true);
-    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project).not.toBeNull()
+    expect(project!.tasks).toHaveLength(1)
+    expect(project!.tasks[0].name).toBe('默认任务')
+    expect(project!.tasks[0].isSyntheticDefault).toBe(true)
+    expect(project!.tasks[0].items).toHaveLength(1)
     expect(project!.tasks[0].items[0]).toMatchObject({
       content: '整理日报',
       date: '2026-05-09',
       docId: 'standalone-doc',
       blockId: 'item-1',
-    });
-  });
+    })
+  })
 
   it('显式任务与独立事项混排时应分别归属原任务与默认任务', () => {
     const kramdown = `## 项目
@@ -129,15 +134,15 @@ describe('parseKramdown 独立事项解析', () => {
 开发登录模块 #任务#
 {: id="task-1" updated="20260509100100" }
 编码实现 @2026-05-10
-{: id="item-2" updated="20260509100200" }`;
+{: id="item-2" updated="20260509100200" }`
 
-    const project = parseKramdown(kramdown, 'mixed-doc');
+    const project = parseKramdown(kramdown, 'mixed-doc')
 
-    expect(project).not.toBeNull();
-    expect(project!.tasks).toHaveLength(2);
-    expect(project!.tasks.find(task => task.isSyntheticDefault)?.items[0].content).toBe('会前准备');
-    expect(project!.tasks.find(task => task.name === '开发登录模块')?.items[0].content).toBe('编码实现');
-  });
+    expect(project).not.toBeNull()
+    expect(project!.tasks).toHaveLength(2)
+    expect(project!.tasks.find(task => task.isSyntheticDefault)?.items[0].content).toBe('会前准备')
+    expect(project!.tasks.find(task => task.name === '开发登录模块')?.items[0].content).toBe('编码实现')
+  })
 
   it('独立事项下方链接与番茄钟仍归属该事项', () => {
     const kramdown = `## 每日记录
@@ -147,16 +152,16 @@ describe('parseKramdown 独立事项解析', () => {
 [会议纪要](https://example.com/notes)
 {: id="link-1" updated="20260509100001" }
 🍅2026-05-09 09:00:00\\~09:25:00
-{: id="pomodoro-1" updated="20260509100002" }`;
+{: id="pomodoro-1" updated="20260509100002" }`
 
-    const project = parseKramdown(kramdown, 'link-doc');
-    const item = project!.tasks[0].items[0];
+    const project = parseKramdown(kramdown, 'link-doc')
+    const item = project!.tasks[0].items[0]
 
-    expect(item.links?.map(link => link.url)).toContain('https://example.com/notes');
-    expect(item.pomodoros).toHaveLength(1);
-    expect(item.lastBlockId).toBe('pomodoro-1');
-  });
-});
+    expect(item.links?.map(link => link.url)).toContain('https://example.com/notes')
+    expect(item.pomodoros).toHaveLength(1)
+    expect(item.lastBlockId).toBe('pomodoro-1')
+  })
+})
 ```
 
 - [ ] **Step 2: Run the parser tests to capture the current failure**
@@ -175,47 +180,47 @@ Make the parser changes in three pieces:
 function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
   return {
     id: `task-default-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      name: '默认任务',
+    name: '默认任务',
     level: 'L1',
     items: [],
     lineNumber,
     docId,
     pomodoros: [],
     isSyntheticDefault: true,
-  };
+  }
 }
 ```
 
 2. Add parser state next to `currentTask`:
 
 ```ts
-let syntheticDefaultTask: Task | null = null;
+const syntheticDefaultTask: Task | null = null
 ```
 
 3. Replace the current item-only-under-task gate with standalone support. Refactor:
 
 ```ts
-const isDatedNonTaskLine = (content.includes('@') || content.includes('📅')) && !hasTaskTag;
+const isDatedNonTaskLine = (content.includes('@') || content.includes('📅')) && !hasTaskTag
 
 if (isDatedNonTaskLine) {
-  const targetTask = currentTask ?? (syntheticDefaultTask ||= createSyntheticDefaultTask(lineNumber, docId));
-  hasSeenItemForCurrentTask = true;
+  const targetTask = currentTask ?? (syntheticDefaultTask ||= createSyntheticDefaultTask(lineNumber, docId))
+  hasSeenItemForCurrentTask = true
   // existing item link collection and item parsing logic
   // ...
   for (const item of items) {
-    item.docId = docId;
-    item.blockId = block.blockId;
-    item.lastBlockId = blocks[lastRelatedBlockIndex].blockId;
-    item.pomodoros = sharedPomodoros;
-    item.isTaskList = isTaskList;
-    item.listItemBlockId = listItemBlockId;
-    targetTask.items.push(item);
-    currentItem = item;
-    lastBlockType = 'item';
+    item.docId = docId
+    item.blockId = block.blockId
+    item.lastBlockId = blocks[lastRelatedBlockIndex].blockId
+    item.pomodoros = sharedPomodoros
+    item.isTaskList = isTaskList
+    item.listItemBlockId = listItemBlockId
+    targetTask.items.push(item)
+    currentItem = item
+    lastBlockType = 'item'
   }
 
   if (!currentTask && syntheticDefaultTask) {
-    currentTask = syntheticDefaultTask;
+    currentTask = syntheticDefaultTask
   }
 }
 ```
@@ -232,18 +237,18 @@ At the end of `parseKramdown`, keep one final flush path:
 
 ```ts
 if (currentTask) {
-  currentTask.docId = docId;
-  project.tasks.push(currentTask);
+  currentTask.docId = docId
+  project.tasks.push(currentTask)
 }
 ```
 
 Then make the null-return guard explicitly depend on real content:
 
 ```ts
-const hasTaskContent = project.tasks.some(task => task.items.length > 0 || Boolean(task.date));
+const hasTaskContent = project.tasks.some(task => task.items.length > 0 || Boolean(task.date))
 
 if (!hasTaskContent && project.pomodoros!.length === 0 && project.habits.length === 0) {
-  return null;
+  return null
 }
 ```
 
@@ -263,6 +268,7 @@ git commit -m "feat(parser): keep standalone items under default task"
 ### Task 3: Keep Standalone Documents Discoverable in Plugin and MCP Scans
 
 **Files:**
+
 - Modify: `src/parser/markdownParser.ts`
 - Modify: `src/mcp/dataLoader.ts`
 - Modify: `test/mcp/filterItems.test.ts`
@@ -285,20 +291,20 @@ it('全库扫描时应发现只有独立事项的文档', async () => {
 {: id="doc-block" type="doc" }
 整理日报 @2026-05-09
 {: id="item-1" updated="20260509100000" }`),
-  } as unknown as SiYuanClient;
+  } as unknown as SiYuanClient
 
   const result = await executeFilterItems(client, [], {
     startDate: '2026-05-09',
     endDate: '2026-05-09',
-  }, 'full');
+  }, 'full')
 
-  expect(result.items).toHaveLength(1);
+  expect(result.items).toHaveLength(1)
   expect(result.items[0]).toMatchObject({
     content: '整理日报',
     taskName: '默认任务',
     projectName: 'Daily Note',
-  });
-});
+  })
+})
 ```
 
 - [ ] **Step 2: Run the MCP test to verify discovery currently fails**
@@ -331,7 +337,7 @@ const sqlQuery = `
   )
   ORDER BY updated DESC
   LIMIT 1000
-`;
+`
 ```
 
 Keep the change limited to the empty-directory fallback path.
@@ -360,7 +366,7 @@ const SQL_GET_ALL_PROJECT_DOCS = `
   )
   ORDER BY updated DESC
   LIMIT 1000
-`;
+`
 ```
 
 Do not change MCP item flattening logic beyond that.
@@ -381,6 +387,7 @@ git commit -m "feat(scan): discover standalone item documents"
 ### Task 4: Verify Recurring Write-Back for Standalone Items
 
 **Files:**
+
 - Modify: `test/services/recurringService.test.ts`
 - Verify: `src/services/recurringService.ts`
 
@@ -390,7 +397,7 @@ Append this test to `test/services/recurringService.test.ts` in the `createNextO
 
 ```ts
 it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', async () => {
-  mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+  mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }])
 
   const item: Item = {
     id: '1',
@@ -410,9 +417,9 @@ it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', asyn
       lineNumber: 1,
       isSyntheticDefault: true,
     },
-  };
+  }
 
-  await createNextOccurrence({} as any, item);
+  await createNextOccurrence({} as any, item)
 
   expect(mockInsertBlock).toHaveBeenCalledWith(
     'markdown',
@@ -420,9 +427,9 @@ it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', asyn
     undefined,
     'pomodoro-block',
     undefined,
-  );
-  expect(mockInsertBlock.mock.calls[0][1]).toContain('📅2026-05-10');
-});
+  )
+  expect(mockInsertBlock.mock.calls[0][1]).toContain('📅2026-05-10')
+})
 ```
 
 - [ ] **Step 2: Run the recurrence test to confirm current behavior**
@@ -437,11 +444,11 @@ If the test fails, make the minimal fix by ensuring `buildNextOccurrenceBlock()`
 
 ```ts
 function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
-  const { reminder, repeatRule, endCondition } = item;
-  let content = stripRecurringMarkers(stripReminderMarker(item.content))
+  const { reminder, repeatRule, endCondition } = item
+  const content = stripRecurringMarkers(stripReminderMarker(item.content))
     .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .replace(/[✅❌✔️]/gu, '')
-    .trim();
+    .trim()
   // do not prepend any task-derived markdown here
   // ...
 }
@@ -465,6 +472,7 @@ git commit -m "test(recurring): cover standalone item write-back"
 ### Task 5: Update User Documentation for Standalone Items
 
 **Files:**
+
 - Modify: `docs/user-guide/data-format.md`
 
 - [ ] **Step 1: Add the failing doc checklist to your review notes**
@@ -484,7 +492,7 @@ Edit `docs/user-guide/data-format.md` in these places:
 1. In `### 3. 事项区`, change the location description from “任务下方的内容” to wording that includes both task children and direct document entries.
 2. Add a short subsection after the basic item syntax:
 
-```markdown
+````markdown
 ### 独立事项
 
 如果你只想快速记录待办，也可以不写任务头，直接输入带日期的事项：
@@ -494,8 +502,11 @@ Edit `docs/user-guide/data-format.md` in these places:
 复盘会议 @2026-05-09 18:00
 ```
 
+````
+
 这类事项会被插件自动归入一个内部默认任务（如“默认任务”），因此仍会正常出现在 Todo、日历、甘特图、提醒和重复事项功能中。
-```
+
+````
 
 3. In `## 任务与事项的关系`, add one paragraph clarifying that explicit tasks are recommended for project decomposition, while daily-note capture may use standalone items directly.
 
@@ -510,11 +521,12 @@ Expected: output shows the new standalone-item section and the updated relations
 ```bash
 git add docs/user-guide/data-format.md
 git commit -m "docs(user-guide): describe standalone items"
-```
+````
 
 ### Task 6: Final Verification Sweep
 
 **Files:**
+
 - Modify if needed: `docs/superpowers/plans/2026-05-10-standalone-item-default-task-implementation.md`
 
 - [ ] **Step 1: Run the focused regression commands**
@@ -564,6 +576,7 @@ If implementation differed from this plan, append a short note at the bottom of 
 ## Implementation Notes
 
 - [date] [what changed and why]
+
 ```
 
 Do not leave the section empty; only add it if deviations actually occurred.

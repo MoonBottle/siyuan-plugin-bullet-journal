@@ -1,12 +1,17 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" :class="overlayClass" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        :class="overlayClass"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div 
-            v-if="modelValue" 
+          <div
+            v-if="modelValue"
             ref="drawerRef"
-            class="item-detail-drawer" 
+            class="item-detail-drawer"
             :class="{ 'is-dragging': isDragging }"
             :style="drawerStyle"
             @click.stop
@@ -15,15 +20,20 @@
             @touchend="onTouchEnd"
           >
             <!-- Handle Bar -->
-            <div class="drawer-handle" @click="close">
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
-            
+
             <!-- Header -->
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('mobile.detail.item') || '事项详情' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('mobile.detail.item') || '事项详情' }}
+              </h3>
             </div>
-            
+
             <!-- Content -->
             <div
               v-if="item"
@@ -43,7 +53,10 @@
               />
               <!-- Item Content Card - 可编辑 -->
               <div class="content-card">
-                <div class="content-row editable" @click="handleEditContent">
+                <div
+                  class="content-row editable"
+                  @click="handleEditContent"
+                >
                   <span class="content-label">{{ t('mobile.detail.content') || '内容' }}</span>
                   <div class="content-value-wrapper">
                     <span class="content-value">{{ item.content }}</span>
@@ -51,36 +64,61 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Project & Task - 垂直居中优化 -->
-              <div v-if="item.project || item.task" class="info-card">
-                <div v-if="item.project" class="info-item" :class="{ readonly: disableNavigation }" @click="goToProject">
+              <div
+                v-if="item.project || item.task"
+                class="info-card"
+              >
+                <div
+                  v-if="item.project"
+                  class="info-item"
+                  :class="{ readonly: disableNavigation }"
+                  @click="goToProject"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconFolder"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.project') || '项目' }}</span>
                   </div>
                   <div class="info-right">
                     <span class="info-value">{{ item.project.name }}</span>
-                    <svg v-if="!disableNavigation" class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                    <svg
+                      v-if="!disableNavigation"
+                      class="arrow-icon"
+                    ><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div>
-                
-                <div v-if="item.task" class="info-item" :class="{ readonly: disableNavigation }" @click="goToTask">
+
+                <div
+                  v-if="item.task"
+                  class="info-item"
+                  :class="{ readonly: disableNavigation }"
+                  @click="goToTask"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconList"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.task') || '任务' }}</span>
                   </div>
                   <div class="info-right">
                     <span class="info-value">{{ item.task.name }}</span>
-                    <span v-if="item.task.level" class="level-badge">{{ item.task.level }}</span>
-                    <svg v-if="!disableNavigation" class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                    <span
+                      v-if="item.task.level"
+                      class="level-badge"
+                    >{{ item.task.level }}</span>
+                    <svg
+                      v-if="!disableNavigation"
+                      class="arrow-icon"
+                    ><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div>
               </div>
-              
+
               <!-- Date Info - 可编辑 -->
               <div class="info-card">
-                <div class="info-item editable" @click="handleEditDate">
+                <div
+                  class="info-item editable"
+                  @click="handleEditDate"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.date') || '日期' }}</span>
@@ -94,7 +132,10 @@
 
               <!-- Time Info - 可编辑 -->
               <div class="info-card">
-                <div class="info-item editable" @click="handleEditTime">
+                <div
+                  class="info-item editable"
+                  @click="handleEditTime"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.time') || '时间' }}</span>
@@ -105,7 +146,10 @@
                   </div>
                 </div>
 
-                <div v-if="duration" class="info-item readonly">
+                <div
+                  v-if="duration"
+                  class="info-item readonly"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.duration') || '时长' }}</span>
@@ -113,7 +157,10 @@
                   <span class="info-value">{{ duration }}</span>
                 </div>
 
-                <div v-if="focusTotalTime" class="info-item readonly">
+                <div
+                  v-if="focusTotalTime"
+                  class="info-item readonly"
+                >
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconHistory"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.focusTime') || '专注' }}</span>
@@ -124,24 +171,37 @@
 
               <!-- Priority - 独立可点击行 -->
               <div class="info-card">
-                <div class="info-item editable" @click="handleEditPriority">
+                <div
+                  class="info-item editable"
+                  @click="handleEditPriority"
+                >
                   <div class="info-left">
                     <svg class="info-icon priority-icon"><use xlink:href="#iconMark"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.priority') || '优先级' }}</span>
                   </div>
                   <div class="info-right">
-                    <span v-if="item.priority" class="priority-badge-inline" :class="item.priority">
+                    <span
+                      v-if="item.priority"
+                      class="priority-badge-inline"
+                      :class="item.priority"
+                    >
                       {{ getPriorityLabel(item.priority) }}
                     </span>
-                    <span v-else class="info-value-placeholder">{{ t('mobile.detail.setPriority') || '设置优先级' }}</span>
+                    <span
+                      v-else
+                      class="info-value-placeholder"
+                    >{{ t('mobile.detail.setPriority') || '设置优先级' }}</span>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div>
               </div>
-              
+
               <!-- Quick Actions -->
-              <div v-if="!isCompletedOrAbandoned" class="actions-card">
-                <button 
+              <div
+                v-if="!isCompletedOrAbandoned"
+                class="actions-card"
+              >
+                <button
                   class="action-item"
                   :class="{ active: hasReminder }"
                   @click="handleSetReminder"
@@ -152,8 +212,8 @@
                   <span class="action-text">{{ reminderText }}</span>
                   <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
                 </button>
-                
-                <button 
+
+                <button
                   v-if="canSetRecurring"
                   class="action-item"
                   :class="{ active: hasRecurring }"
@@ -166,13 +226,18 @@
                   <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
                 </button>
               </div>
-              
+
               <!-- Links -->
-              <div v-if="itemLinks.length > 0" class="info-card">
-                <div class="section-title">{{ t('mobile.detail.relatedLinks') || '相关链接' }}</div>
+              <div
+                v-if="itemLinks.length > 0"
+                class="info-card"
+              >
+                <div class="section-title">
+                  {{ t('mobile.detail.relatedLinks') || '相关链接' }}
+                </div>
                 <div class="links-list">
-                  <a 
-                    v-for="link in itemLinks" 
+                  <a
+                    v-for="link in itemLinks"
                     :key="link.url"
                     :href="link.url"
                     class="link-item"
@@ -182,19 +247,31 @@
                   </a>
                 </div>
               </div>
-              
+
               <!-- Pomodoro Records -->
-              <div v-if="pomodoroRecords.length > 0" class="info-card">
-                <div class="section-header" @click="togglePomodoroList">
+              <div
+                v-if="pomodoroRecords.length > 0"
+                class="info-card"
+              >
+                <div
+                  class="section-header"
+                  @click="togglePomodoroList"
+                >
                   <span class="section-title">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
                   <div class="section-right">
                     <span class="total-duration">{{ totalPomodoroDuration }}</span>
-                    <svg class="toggle-icon" :class="{ expanded: showPomodoroList }"><use xlink:href="#iconDown"></use></svg>
+                    <svg
+                      class="toggle-icon"
+                      :class="{ expanded: showPomodoroList }"
+                    ><use xlink:href="#iconDown"></use></svg>
                   </div>
                 </div>
-                <div v-show="showPomodoroList" class="pomodoro-list">
-                  <div 
-                    v-for="p in pomodoroRecords" 
+                <div
+                  v-show="showPomodoroList"
+                  class="pomodoro-list"
+                >
+                  <div
+                    v-for="p in pomodoroRecords"
                     :key="p.id"
                     class="pomodoro-item"
                   >
@@ -205,32 +282,48 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Bottom Action Bar -->
             <div class="drawer-footer">
               <!-- 放弃 -->
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn danger" @click="handleAbandon">
+              <button
+                v-if="!isCompletedOrAbandoned"
+                class="footer-btn danger"
+                @click="handleAbandon"
+              >
                 <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconClose"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.abandon') || '放弃' }}</span>
               </button>
               <!-- 迁移 -->
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="showMigrateMenu">
+              <button
+                v-if="!isCompletedOrAbandoned"
+                class="footer-btn"
+                @click="showMigrateMenu"
+              >
                 <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconForward"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.migrate') || '迁移' }}</span>
               </button>
               <!-- 专注 -->
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="handleStartPomodoro">
+              <button
+                v-if="!isCompletedOrAbandoned"
+                class="footer-btn"
+                @click="handleStartPomodoro"
+              >
                 <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconClock"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.pomodoro') || '专注' }}</span>
               </button>
               <!-- 完成 -->
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn primary" @click="handleComplete">
+              <button
+                v-if="!isCompletedOrAbandoned"
+                class="footer-btn primary"
+                @click="handleComplete"
+              >
                 <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconCheck"></use></svg>
                 </div>
@@ -241,7 +334,7 @@
         </Transition>
       </div>
     </Transition>
-    
+
     <!-- Abandon Confirm Drawer -->
     <MobileConfirmDrawer
       v-model="showAbandonConfirm"
@@ -253,11 +346,15 @@
       icon="iconClose"
       @confirm="handleConfirmAbandon"
     />
-    
+
     <!-- Migrate Menu Drawer -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showMigrateDrawer" class="migrate-overlay b3-dialog" @click="showMigrateDrawer = false">
+        <div
+          v-if="showMigrateDrawer"
+          class="migrate-overlay b3-dialog"
+          @click="showMigrateDrawer = false"
+        >
           <Transition name="slide-up">
             <div
               v-if="showMigrateDrawer"
@@ -265,20 +362,34 @@
               style="overscroll-behavior: contain; touch-action: pan-y;"
               @click.stop
             >
-              <div class="migrate-handle" @click="showMigrateDrawer = false">
+              <div
+                class="migrate-handle"
+                @click="showMigrateDrawer = false"
+              >
                 <div class="handle-bar"></div>
               </div>
-              <div class="migrate-title">{{ (t('mobile.action.migrate') || '迁移至') as string }}</div>
+              <div class="migrate-title">
+                {{ (t('mobile.action.migrate') || '迁移至') as string }}
+              </div>
               <div class="migrate-options">
-                <button class="migrate-option" @click="handleMigrateToToday">
+                <button
+                  class="migrate-option"
+                  @click="handleMigrateToToday"
+                >
                   <svg><use xlink:href="#iconForward"></use></svg>
                   <span>{{ (t('todo').today || '今天') as string }}</span>
                 </button>
-                <button class="migrate-option" @click="handleMigrateToTomorrow">
+                <button
+                  class="migrate-option"
+                  @click="handleMigrateToTomorrow"
+                >
                   <svg><use xlink:href="#iconForward"></use></svg>
                   <span>{{ (t('todo').tomorrow || '明天') as string }}</span>
                 </button>
-                <button class="migrate-option" @click="handleMigrateCustomDate">
+                <button
+                  class="migrate-option"
+                  @click="handleMigrateCustomDate"
+                >
                   <svg><use xlink:href="#iconCalendar"></use></svg>
                   <span>{{ (t('todo').chooseDate || '选择日期...') as string }}</span>
                 </button>
@@ -288,7 +399,7 @@
         </div>
       </Transition>
     </Teleport>
-    
+
     <!-- Time Setting Drawer -->
     <TimeSettingDrawer
       v-model="showTimeSettingDrawer"
@@ -300,7 +411,11 @@
 
     <!-- Content Edit Drawer -->
     <Transition name="fade">
-      <div v-if="showContentEdit" class="content-edit-overlay b3-dialog" @click="cancelEditContent">
+      <div
+        v-if="showContentEdit"
+        class="content-edit-overlay b3-dialog"
+        @click="cancelEditContent"
+      >
         <Transition name="slide-up">
           <div
             v-if="showContentEdit"
@@ -309,32 +424,46 @@
             @click.stop
           >
             <!-- Handle Bar -->
-            <div class="drawer-handle" @click="cancelEditContent">
+            <div
+              class="drawer-handle"
+              @click="cancelEditContent"
+            >
               <div class="handle-bar"></div>
             </div>
-            
+
             <!-- Header -->
             <div class="content-edit-header">
-              <h3 class="content-edit-title">{{ t('mobile.edit.content') || '编辑内容' }}</h3>
+              <h3 class="content-edit-title">
+                {{ t('mobile.edit.content') || '编辑内容' }}
+              </h3>
             </div>
-            
+
             <!-- Content -->
-            <div class="content-edit-body" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="content-edit-body"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <input
-                v-model="editingContent" 
+                v-model="editingContent"
                 type="text"
-                class="content-edit-input" 
+                class="content-edit-input"
                 :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
                 @keydown.enter.prevent="saveContent"
               />
             </div>
-            
+
             <!-- Footer -->
             <div class="content-edit-footer">
-              <button class="edit-action-btn cancel" @click="cancelEditContent">
+              <button
+                class="edit-action-btn cancel"
+                @click="cancelEditContent"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
-              <button class="edit-action-btn confirm" @click="saveContent">
+              <button
+                class="edit-action-btn confirm"
+                @click="saveContent"
+              >
                 {{ t('common.confirm') || '确定' }}
               </button>
             </div>
@@ -346,444 +475,477 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import dayjs from 'dayjs';
-import { t } from '@/i18n';
-import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
-import { useSettingsStore } from '@/stores';
-import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
-import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
-import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
-import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
-import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue';
-import { TimeSettingDrawer } from '@/mobile/components/time-picker';
+import type {
+  Item,
+  PomodoroRecord,
+  PriorityLevel,
+} from '@/types/models'
+import dayjs from 'dayjs'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue'
+import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue'
+import { TimeSettingDrawer } from '@/mobile/components/time-picker'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+} from '@/parser/recurringParser'
+import { useSettingsStore } from '@/stores'
+import { writeBlock } from '@/utils/blockWriter'
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
+import {
+  calculateDuration,
+  formatDateLabel,
+  formatTimeRange,
+} from '@/utils/dateUtils'
+import { formatReminderDisplay } from '@/utils/displayUtils'
+import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue'
 
 const props = defineProps<{
-  modelValue: boolean;
-  item: Item | null;
-  disableNavigation?: boolean;
-  overlayClass?: string;
-}>();
+  modelValue: boolean
+  item: Item | null
+  disableNavigation?: boolean
+  overlayClass?: string
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openProject': [projectId: string];
-  'openTask': [taskBlockId: string];
-  'openPomodoro': [item: Item];
-  'setReminder': [item: Item];
-  'setRecurring': [item: Item];
-  'refresh': [];
-}>();
+  'update:modelValue': [value: boolean]
+  'openProject': [projectId: string]
+  'openTask': [taskBlockId: string]
+  'openPomodoro': [item: Item]
+  'setReminder': [item: Item]
+  'setRecurring': [item: Item]
+  'refresh': []
+}>()
 
-const settingsStore = useSettingsStore();
-const showPomodoroList = ref(false);
+const settingsStore = useSettingsStore()
+const showPomodoroList = ref(false)
 
 // Content editing
-const showContentEdit = ref(false);
-const editingContent = ref('');
+const showContentEdit = ref(false)
+const editingContent = ref('')
 
 // Mobile pickers
-const showPriorityPicker = ref(false);
-const showDatePicker = ref(false);
-const showTimeSettingDrawer = ref(false);
+const showPriorityPicker = ref(false)
+const showDatePicker = ref(false)
+const showTimeSettingDrawer = ref(false)
 
 // Confirm drawers
-const showAbandonConfirm = ref(false);
+const showAbandonConfirm = ref(false)
 
 // Migrate menu
-const showMigrateDrawer = ref(false);
+const showMigrateDrawer = ref(false)
 
 // 拖拽关闭相关
-const drawerRef = ref<HTMLElement | null>(null);
-const isDragging = ref(false);
-const startY = ref(0);
-const currentY = ref(0);
-const translateY = ref(0);
+const drawerRef = ref<HTMLElement | null>(null)
+const isDragging = ref(false)
+const startY = ref(0)
+const currentY = ref(0)
+const translateY = ref(0)
 
 const drawerStyle = computed(() => {
-  if (!isDragging.value && translateY.value === 0) return {};
+  if (!isDragging.value && translateY.value === 0) return {}
   return {
     transform: `translateY(${translateY.value}px)`,
-    transition: isDragging.value ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
-  };
-});
+    transition: isDragging.value ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+  }
+})
 
 const onTouchStart = (e: TouchEvent) => {
   // 只在抽屉顶部区域（把手和标题）启用拖拽
-  const target = e.target as HTMLElement;
-  const drawer = drawerRef.value;
-  if (!drawer) return;
-  
+  const target = e.target as HTMLElement
+  const drawer = drawerRef.value
+  if (!drawer) return
+
   // 检查是否点击/触摸在把手或头部区域
-  const handle = drawer.querySelector('.drawer-handle');
-  const header = drawer.querySelector('.drawer-header');
-  const isHandle = handle?.contains(target);
-  const isHeader = header?.contains(target);
-  
-  if (!isHandle && !isHeader) return;
-  
-  startY.value = e.touches[0].clientY;
-  currentY.value = startY.value;
-  isDragging.value = true;
-};
+  const handle = drawer.querySelector('.drawer-handle')
+  const header = drawer.querySelector('.drawer-header')
+  const isHandle = handle?.contains(target)
+  const isHeader = header?.contains(target)
+
+  if (!isHandle && !isHeader) return
+
+  startY.value = e.touches[0].clientY
+  currentY.value = startY.value
+  isDragging.value = true
+}
 
 const onTouchMove = (e: TouchEvent) => {
-  if (!isDragging.value) return;
-  
-  currentY.value = e.touches[0].clientY;
-  const diff = currentY.value - startY.value;
-  
+  if (!isDragging.value) return
+
+  currentY.value = e.touches[0].clientY
+  const diff = currentY.value - startY.value
+
   // 只允许向下拖动
   if (diff > 0) {
-    translateY.value = diff;
+    translateY.value = diff
   }
-};
+}
 
 const onTouchEnd = () => {
-  if (!isDragging.value) return;
-  
-  isDragging.value = false;
-  const diff = currentY.value - startY.value;
-  
+  if (!isDragging.value) return
+
+  isDragging.value = false
+  const diff = currentY.value - startY.value
+
   // 如果拖动超过 100px 或者速度较快，关闭抽屉
   if (diff > 100) {
-    close();
+    close()
   } else {
     // 否则回弹
-    translateY.value = 0;
+    translateY.value = 0
   }
-};
+}
 
 // 关闭时重置位置
 watch(() => props.modelValue, (val) => {
   if (!val) {
-    translateY.value = 0;
+    translateY.value = 0
   }
-});
+})
 
-const isCompletedOrAbandoned = computed(() => 
-  props.item?.status === 'completed' || props.item?.status === 'abandoned'
-);
+const isCompletedOrAbandoned = computed(() =>
+  props.item?.status === 'completed' || props.item?.status === 'abandoned',
+)
 
-const canSetRecurring = computed(() => !props.item?.siblingItems?.length);
+const canSetRecurring = computed(() => !props.item?.siblingItems?.length)
 
-const hasReminder = computed(() => props.item?.reminder?.enabled);
+const hasReminder = computed(() => props.item?.reminder?.enabled)
 
-const hasRecurring = computed(() => !!props.item?.repeatRule);
+const hasRecurring = computed(() => !!props.item?.repeatRule)
 
 const reminderText = computed(() => {
-  if (!hasReminder.value) return t('mobile.detail.setReminder') || '设置提醒';
-  return formatReminderDisplay(props.item!.reminder, t);
-});
+  if (!hasReminder.value) return t('mobile.detail.setReminder') || '设置提醒'
+  return formatReminderDisplay(props.item!.reminder, t)
+})
 
 const recurringText = computed(() => {
-  if (!hasRecurring.value) return t('mobile.detail.setRecurring') || '设置重复';
-  const rule = generateRepeatRuleMarker(props.item!.repeatRule!, { includeEmoji: false });
-  const end = generateEndConditionMarker(props.item!.endCondition);
-  return end ? `${rule} ${end}` : rule;
-});
+  if (!hasRecurring.value) return t('mobile.detail.setRecurring') || '设置重复'
+  const rule = generateRepeatRuleMarker(props.item!.repeatRule!, { includeEmoji: false })
+  const end = generateEndConditionMarker(props.item!.endCondition)
+  return end ? `${rule} ${end}` : rule
+})
 
 // 仅显示日期
 const formatDateDisplay = computed(() => {
-  if (!props.item) return '';
-  const todoTranslations = t('todo') as Record<string, string>;
+  if (!props.item) return ''
+  const todoTranslations = t('todo') as Record<string, string>
   return formatDateLabel(
     props.item.date,
     todoTranslations.today || '今天',
-    todoTranslations.tomorrow || '明天'
-  );
-});
+    todoTranslations.tomorrow || '明天',
+  )
+})
 
 // 仅显示时间
 const formatTimeOnlyDisplay = computed(() => {
-  if (!props.item) return t('mobile.detail.noTime') || '未设置';
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-  return timeRange || (t('mobile.detail.allDay') || '全天');
-});
+  if (!props.item) return t('mobile.detail.noTime') || '未设置'
+  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
+  return timeRange || (t('mobile.detail.allDay') || '全天')
+})
 
 // 兼容旧代码：完整时间显示（日期+时间）
 const formatTimeDisplay = computed(() => {
-  if (!props.item) return '';
-  const todoTranslations = t('todo') as Record<string, string>;
+  if (!props.item) return ''
+  const todoTranslations = t('todo') as Record<string, string>
   const dateLabel = formatDateLabel(
     props.item.date,
     todoTranslations.today || '今天',
-    todoTranslations.tomorrow || '明天'
-  );
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-  return timeRange ? `${dateLabel} ${timeRange}` : dateLabel;
-});
+    todoTranslations.tomorrow || '明天',
+  )
+  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
+  return timeRange ? `${dateLabel} ${timeRange}` : dateLabel
+})
 
 const duration = computed(() => {
-  if (!props.item?.startDateTime || !props.item?.endDateTime) return '';
+  if (!props.item?.startDateTime || !props.item?.endDateTime) return ''
   return calculateDuration(
     props.item.startDateTime,
     props.item.endDateTime,
     settingsStore.lunchBreakStart,
-    settingsStore.lunchBreakEnd
-  );
-});
+    settingsStore.lunchBreakEnd,
+  )
+})
 
 const focusTotalTime = computed(() => {
-  if (!props.item?.pomodoros?.length) return '';
+  if (!props.item?.pomodoros?.length) return ''
   const totalMinutes = props.item.pomodoros.reduce((sum, p) => {
-    if (!p.startTime) return sum;
-    const start = new Date(p.startTime);
-    const end = p.endTime ? new Date(p.endTime) : new Date();
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return sum;
-    return sum + (end.getTime() - start.getTime()) / 60000;
-  }, 0);
-  if (totalMinutes <= 0) return '';
-  if (totalMinutes < 60) return `${Math.round(totalMinutes)}分钟`;
-  return `${Math.floor(totalMinutes / 60)}小时${Math.round(totalMinutes % 60)}分钟`;
-});
+    if (!p.startTime) return sum
+    const start = new Date(p.startTime)
+    const end = p.endTime ? new Date(p.endTime) : new Date()
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return sum
+    return sum + (end.getTime() - start.getTime()) / 60000
+  }, 0)
+  if (totalMinutes <= 0) return ''
+  if (totalMinutes < 60) return `${Math.round(totalMinutes)}分钟`
+  return `${Math.floor(totalMinutes / 60)}小时${Math.round(totalMinutes % 60)}分钟`
+})
 
-const pomodoroRecords = computed(() => props.item?.pomodoros || []);
+const pomodoroRecords = computed(() => props.item?.pomodoros || [])
 
 // 计算番茄钟总时长
 const totalPomodoroDuration = computed(() => {
   const total = pomodoroRecords.value.reduce((sum, p) => {
     // Parse as number, fallback to calculating from time strings
-    let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0);
+    let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0)
     // If no duration field, calculate from start/end time
     if (!minutes && p.startTime && p.endTime) {
-      const startParts = p.startTime.split(':').map(Number);
-      const endParts = p.endTime.split(':').map(Number);
+      const startParts = p.startTime.split(':').map(Number)
+      const endParts = p.endTime.split(':').map(Number)
       if (startParts.length >= 2 && endParts.length >= 2) {
-        const startMins = startParts[0] * 60 + startParts[1];
-        const endMins = endParts[0] * 60 + endParts[1];
-        minutes = endMins - startMins;
+        const startMins = startParts[0] * 60 + startParts[1]
+        const endMins = endParts[0] * 60 + endParts[1]
+        minutes = endMins - startMins
       }
     }
-    return sum + minutes;
-  }, 0);
-  if (total < 60) return `${total}分钟`;
-  const hours = Math.floor(total / 60);
-  const mins = total % 60;
-  return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
-});
+    return sum + minutes
+  }, 0)
+  if (total < 60) return `${total}分钟`
+  const hours = Math.floor(total / 60)
+  const mins = total % 60
+  return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`
+})
 
-const itemLinks = computed(() => props.item?.links || []);
+const itemLinks = computed(() => props.item?.links || [])
 
-const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.label || priority;
+const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.label || priority
 
 const goToProject = () => {
-  if (props.disableNavigation || !props.item?.project?.id) return;
-  emit('openProject', props.item.project.id);
-  close();
-};
+  if (props.disableNavigation || !props.item?.project?.id) return
+  emit('openProject', props.item.project.id)
+  close()
+}
 
 const goToTask = () => {
-  if (props.disableNavigation || !props.item?.task?.blockId) return;
-  emit('openTask', props.item.task.blockId);
-  close();
-};
+  if (props.disableNavigation || !props.item?.task?.blockId) return
+  emit('openTask', props.item.task.blockId)
+  close()
+}
 
 const togglePomodoroList = () => {
-  showPomodoroList.value = !showPomodoroList.value;
-};
+  showPomodoroList.value = !showPomodoroList.value
+}
 
 const formatPomodoroTime = (p: PomodoroRecord): string => {
-  if (!p.startTime) return '--:--';
+  if (!p.startTime) return '--:--'
   // startTime/endTime format is "HH:mm:ss"
-  const startParts = p.startTime.split(':');
-  const endParts = p.endTime ? p.endTime.split(':') : null;
-  if (startParts.length < 2) return '--:--';
-  const startHour = startParts[0].padStart(2, '0');
-  const startMin = startParts[1].padStart(2, '0');
-  const endStr = endParts ? `${endParts[0].padStart(2, '0')}:${endParts[1].padStart(2, '0')}` : 'now';
-  return `${startHour}:${startMin}-${endStr}`;
-};
+  const startParts = p.startTime.split(':')
+  const endParts = p.endTime ? p.endTime.split(':') : null
+  if (startParts.length < 2) return '--:--'
+  const startHour = startParts[0].padStart(2, '0')
+  const startMin = startParts[1].padStart(2, '0')
+  const endStr = endParts ? `${endParts[0].padStart(2, '0')}:${endParts[1].padStart(2, '0')}` : 'now'
+  return `${startHour}:${startMin}-${endStr}`
+}
 
 const formatPomodoroDuration = (p: PomodoroRecord): string => {
   // Use actualDurationMinutes or durationMinutes if available
-  let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0);
+  let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0)
   // Fallback: calculate from startTime and endTime
   if (!minutes && p.startTime && p.endTime) {
-    const startParts = p.startTime.split(':').map(Number);
-    const endParts = p.endTime.split(':').map(Number);
+    const startParts = p.startTime.split(':').map(Number)
+    const endParts = p.endTime.split(':').map(Number)
     if (startParts.length >= 2 && endParts.length >= 2) {
-      const startMins = startParts[0] * 60 + startParts[1];
-      const endMins = endParts[0] * 60 + endParts[1];
-      minutes = endMins - startMins;
+      const startMins = startParts[0] * 60 + startParts[1]
+      const endMins = endParts[0] * 60 + endParts[1]
+      minutes = endMins - startMins
     }
   }
-  return `${minutes}分钟`;
-};
+  return `${minutes}分钟`
+}
 
 const handleLinkClick = (url: string) => {
   if (url.startsWith('siyuan://')) {
-    close();
+    close()
   }
-};
+}
 
 const handleComplete = async () => {
-  if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
-  close();
-};
+  if (!props.item?.blockId) return
+  await writeBlock({
+    blockId: props.item.blockId,
+    listItemBlockId: props.item.listItemBlockId,
+  }, {
+    type: 'setStatus',
+    status: 'completed',
+  })
+  close()
+}
 
 const handleAbandon = () => {
-  if (!props.item?.blockId) return;
-  showAbandonConfirm.value = true;
-};
+  if (!props.item?.blockId) return
+  showAbandonConfirm.value = true
+}
 
 const handleConfirmAbandon = async () => {
-  if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
-  close();
-};
+  if (!props.item?.blockId) return
+  await writeBlock({
+    blockId: props.item.blockId,
+    listItemBlockId: props.item.listItemBlockId,
+  }, {
+    type: 'setStatus',
+    status: 'abandoned',
+  })
+  close()
+}
 
 // 迁移菜单选择
 const showMigrateMenu = () => {
-  if (!props.item) return;
-  showMigrateDrawer.value = true;
-};
+  if (!props.item) return
+  showMigrateDrawer.value = true
+}
 
 // 迁移到自定义日期
 const handleMigrateCustomDate = () => {
-  showMigrateDrawer.value = false;
+  showMigrateDrawer.value = false
   setTimeout(() => {
-    showDatePicker.value = true;
-  }, 200);
-};
+    showDatePicker.value = true
+  }, 200)
+}
 
 // 迁移到今天
 const handleMigrateToToday = async () => {
-  if (!props.item?.blockId) return;
-  showMigrateDrawer.value = false;
-  
-  const todayStr = dayjs().format('YYYY-MM-DD');
+  if (!props.item?.blockId) return
+  showMigrateDrawer.value = false
+
+  const todayStr = dayjs().format('YYYY-MM-DD')
 
   await writeBlock(
     { blockId: props.item.blockId },
     buildDatePatchFromItem(props.item, todayStr, { includeCurrentItemInSiblings: true }),
-  );
-  
-  close();
-};
+  )
+
+  close()
+}
 
 // 迁移到明天
 const handleMigrateToTomorrow = async () => {
-  if (!props.item?.blockId) return;
-  showMigrateDrawer.value = false;
-  
-  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  if (!props.item?.blockId) return
+  showMigrateDrawer.value = false
+
+  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
 
   await writeBlock(
     { blockId: props.item.blockId },
     buildDatePatchFromItem(props.item, tomorrowStr, { includeCurrentItemInSiblings: true }),
-  );
-  
-  close();
-};
+  )
+
+  close()
+}
 
 const handleStartPomodoro = () => {
-  if (!props.item) return;
-  emit('openPomodoro', props.item);
-  close();
-};
+  if (!props.item) return
+  emit('openPomodoro', props.item)
+  close()
+}
 
 const handleOpenCalendar = () => {
-  close();
-};
+  close()
+}
 
 const handleSetReminder = () => {
-  if (!props.item) return;
-  emit('setReminder', props.item);
-};
+  if (!props.item) return
+  emit('setReminder', props.item)
+}
 
 const handleSetRecurring = () => {
-  if (!props.item) return;
-  emit('setRecurring', props.item);
-};
+  if (!props.item) return
+  emit('setRecurring', props.item)
+}
 
 // Edit content handlers
 const handleEditContent = () => {
-  if (!props.item) return;
-  editingContent.value = props.item.content;
-  showContentEdit.value = true;
-};
+  if (!props.item) return
+  editingContent.value = props.item.content
+  showContentEdit.value = true
+}
 
 const cancelEditContent = () => {
-  showContentEdit.value = false;
-  editingContent.value = '';
-};
+  showContentEdit.value = false
+  editingContent.value = ''
+}
 
 const saveContent = async () => {
-  if (!props.item?.blockId || !editingContent.value.trim()) return;
-  
+  if (!props.item?.blockId || !editingContent.value.trim()) return
+
   try {
     const success = await writeBlock(
       { blockId: props.item.blockId },
-      { type: 'setContent', newItemContent: editingContent.value.trim() },
-    );
-    
+      {
+        type: 'setContent',
+        newItemContent: editingContent.value.trim(),
+      },
+    )
+
     if (success) {
-      emit('refresh');
-      cancelEditContent();
+      emit('refresh')
+      cancelEditContent()
     }
   } catch (error) {
-    console.error('[MobileItemDetail] Failed to update content:', error);
+    console.error('[MobileItemDetail] Failed to update content:', error)
   }
-};
+}
 
 // Edit date/time handlers
 const handleEditDate = () => {
-  showDatePicker.value = true;
-};
+  showDatePicker.value = true
+}
 
 const handleEditTime = () => {
-  showTimeSettingDrawer.value = true;
-};
+  showTimeSettingDrawer.value = true
+}
 
 const onDateChange = async (newDate: string) => {
-  if (!props.item || newDate === props.item.date) return;
-  
+  if (!props.item || newDate === props.item.date) return
+
   try {
     const success = await writeBlock(
       { blockId: props.item.blockId },
       buildDatePatchFromItem(props.item, newDate, { includeCurrentItemInSiblings: true }),
-    );
-    
+    )
+
     if (success) {
-      emit('refresh');
+      emit('refresh')
     }
   } catch (error) {
-    console.error('[MobileItemDetail] Failed to update date:', error);
+    console.error('[MobileItemDetail] Failed to update date:', error)
   }
-};
+}
 
 // Edit priority handler
 const handleEditPriority = () => {
-  showPriorityPicker.value = true;
-};
+  showPriorityPicker.value = true
+}
 
 const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
-  if (!props.item || newPriority === props.item.priority) return;
-  
+  if (!props.item || newPriority === props.item.priority) return
+
   try {
     const success = await writeBlock(
       { blockId: props.item.blockId },
-      { type: 'setPriority', priority: newPriority },
-    );
-    
+      {
+        type: 'setPriority',
+        priority: newPriority,
+      },
+    )
+
     if (success) {
-      emit('refresh');
+      emit('refresh')
     }
   } catch (error) {
-    console.error('[MobileItemDetail] Failed to update priority:', error);
+    console.error('[MobileItemDetail] Failed to update priority:', error)
   }
-};
+}
 
 // 处理时间设置保存
-const onTimeSettingSave = async (payload: { isAllDay: boolean; startTime?: string; endTime?: string }) => {
-  if (!props.item) return;
-  
+const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: string, endTime?: string }) => {
+  if (!props.item) return
+
   try {
     const success = await writeBlock(
       { blockId: props.item.blockId },
@@ -793,19 +955,19 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean; startTime?: strin
         endTime: payload.endTime,
         allDay: payload.isAllDay,
       }),
-    );
-    
+    )
+
     if (success) {
-      emit('refresh');
+      emit('refresh')
     }
   } catch (error) {
-    console.error('[MobileItemDetail] Failed to update time:', error);
+    console.error('[MobileItemDetail] Failed to update time:', error)
   }
-};
+}
 
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -834,7 +996,7 @@ const close = () => {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
   will-change: transform;
-  
+
   &.is-dragging {
     user-select: none;
   }
@@ -846,7 +1008,7 @@ const close = () => {
   padding: 8px;
   cursor: grab;
   touch-action: pan-y;
-  
+
   &:active {
     cursor: grabbing;
   }
@@ -865,7 +1027,7 @@ const close = () => {
   text-align: center;
   cursor: grab;
   touch-action: pan-y;
-  
+
   &:active {
     cursor: grabbing;
   }
@@ -900,29 +1062,29 @@ const close = () => {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    
+
     &.editable {
       cursor: pointer;
-      
+
       &:active {
         opacity: 0.7;
       }
     }
   }
-  
+
   .content-label {
     font-size: 13px;
     color: var(--b3-theme-on-surface);
     opacity: 0.8;
   }
-  
+
   .content-value-wrapper {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
   }
-  
+
   .content-value {
     font-size: 18px;
     font-weight: 500;
@@ -931,7 +1093,7 @@ const close = () => {
     word-break: break-word;
     flex: 1;
   }
-  
+
   .edit-icon {
     width: 18px;
     height: 18px;
@@ -950,23 +1112,23 @@ const close = () => {
   padding: 6px 0;
   cursor: pointer;
   transition: opacity 0.2s;
-  
+
   &:hover {
     opacity: 0.8;
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
-  
+
   &.readonly {
     cursor: default;
-    
+
     &:hover {
       opacity: 1;
     }
   }
-  
+
   &.editable {
     .arrow-icon {
       opacity: 0.4;
@@ -1027,7 +1189,7 @@ const close = () => {
   fill: var(--b3-theme-on-surface);
   opacity: 0;
   flex-shrink: 0;
-  
+
   .info-item.editable &,
   .info-item:not(.readonly) & {
     opacity: 0.4;
@@ -1054,17 +1216,17 @@ const close = () => {
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
-  
+
   &.high {
     background: rgba(239, 68, 68, 0.15);
     color: #dc2626;
   }
-  
+
   &.medium {
     background: rgba(234, 88, 12, 0.15);
     color: #ea580c;
   }
-  
+
   &.low {
     background: rgba(107, 114, 128, 0.15);
     color: #4b5563;
@@ -1087,7 +1249,7 @@ const close = () => {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  
+
   .section-title {
     margin-bottom: 0;
   }
@@ -1099,7 +1261,7 @@ const close = () => {
   fill: var(--b3-theme-on-surface);
   opacity: 0.5;
   transition: transform 0.2s;
-  
+
   &.expanded {
     transform: rotate(180deg);
   }
@@ -1115,15 +1277,15 @@ const close = () => {
   background: transparent;
   cursor: pointer;
   transition: opacity 0.2s;
-  
+
   &:hover {
     opacity: 0.7;
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
-  
+
   &.active {
     .action-text {
       color: var(--b3-theme-primary);
@@ -1138,7 +1300,7 @@ const close = () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -1183,7 +1345,7 @@ const close = () => {
   font-size: 13px;
   text-decoration: none;
   transition: background 0.2s;
-  
+
   &:hover {
     background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.12);
   }
@@ -1217,7 +1379,7 @@ const close = () => {
   gap: 12px;
   padding: 10px 0;
   font-size: 13px;
-  
+
   &:not(:last-child) {
     border-bottom: 1px dashed var(--b3-border-color);
   }
@@ -1260,15 +1422,15 @@ const close = () => {
   font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     opacity: 0.7;
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   // 统一图标容器
   .footer-icon-wrapper {
     width: 32px;
@@ -1279,40 +1441,40 @@ const close = () => {
     background: var(--b3-theme-surface);
     border-radius: 8px;
     transition: all 0.2s;
-    
+
     svg {
       width: 18px;
       height: 18px;
       fill: var(--b3-theme-on-surface);
     }
   }
-  
+
   // 悬停效果
   &:hover .footer-icon-wrapper {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   // 主要操作（完成）- 轻微强调
   &.primary {
     color: var(--b3-theme-primary);
-    
+
     .footer-icon-wrapper {
       background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
-      
+
       svg {
         fill: var(--b3-theme-primary);
       }
     }
-    
+
     &:hover .footer-icon-wrapper {
       background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.15);
     }
   }
-  
+
   // 放弃 - 轻微警告色
   &.danger {
     color: #ef4444;
-    
+
     .footer-icon-wrapper svg {
       fill: #ef4444;
     }
@@ -1370,7 +1532,7 @@ const close = () => {
   font-size: 16px;
   outline: none;
   box-sizing: border-box;
-  
+
   &:focus {
     border-color: var(--b3-theme-primary);
     box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
@@ -1392,25 +1554,25 @@ const close = () => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &.cancel {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
-    
+
     &:hover {
       background: var(--b3-theme-surface-lighter);
     }
   }
-  
+
   &.confirm {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
-    
+
     &:hover {
       opacity: 0.9;
     }
   }
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -1445,7 +1607,7 @@ const close = () => {
   justify-content: center;
   padding: 8px 0 16px;
   cursor: pointer;
-  
+
   .handle-bar {
     width: 40px;
     height: 4px;
@@ -1483,13 +1645,13 @@ const close = () => {
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   svg {
     width: 20px;
     height: 20px;
     fill: var(--b3-theme-primary);
   }
-  
+
   &:active {
     transform: scale(0.98);
     background: var(--b3-theme-surface-lighter);

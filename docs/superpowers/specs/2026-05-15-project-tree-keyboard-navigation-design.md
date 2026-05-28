@@ -18,21 +18,23 @@ ProjectTab 的中栏（ProjectTreePane）展示项目下的任务树结构，用
 
 ```typescript
 interface ProjectTaskTreeNode {
-  task: Task;
-  items: Item[];
-  children: ProjectTaskTreeNode[];
-  depth: number;
-  orphaned: boolean;
+  task: Task
+  items: Item[]
+  children: ProjectTaskTreeNode[]
+  depth: number
+  orphaned: boolean
 }
 ```
 
 ### 选中状态管理
 
 选中状态集中在 `ProjectView.vue`：
+
 - `selectedTaskId` — 当前选中任务 ID
 - `selectedItemId` — 当前选中事项 ID
 
 选中事件流：
+
 ```
 ProjectTreeNode.vue 点击 → $emit('select-task'/'select-item')
   → ProjectTreePane.vue 透传
@@ -49,6 +51,7 @@ ProjectTreeNode.vue 点击 → $emit('select-task'/'select-item')
 ### 方案概述
 
 在 `ProjectTreePane.vue` 中实现键盘导航：
+
 1. 将树结构扁平化为可见节点列表
 2. 监听键盘上下方向键事件
 3. 计算当前选中节点在列表中的位置
@@ -62,53 +65,57 @@ ProjectTreeNode.vue 点击 → $emit('select-task'/'select-item')
 // 将树扁平化为可见节点列表
 const visibleNodes = computed(() => {
   const result: Array<{
-    type: 'task' | 'item';
-    id: string;
-    parentTaskId?: string;
-  }> = [];
+    type: 'task' | 'item'
+    id: string
+    parentTaskId?: string
+  }> = []
 
   function traverse(nodes: ProjectTaskTreeNode[]) {
     for (const node of nodes) {
-      result.push({ type: 'task', id: node.task.id });
+      result.push({ type: 'task', id: node.task.id })
       if (expandedTaskIds.value.has(node.task.id)) {
         for (const item of node.items) {
-          result.push({ type: 'item', id: item.id, parentTaskId: node.task.id });
+          result.push({ type: 'item', id: item.id, parentTaskId: node.task.id })
         }
-        traverse(node.children);
+        traverse(node.children)
       }
     }
   }
 
-  traverse(props.nodes);
-  return result;
-});
+  traverse(props.nodes)
+  return result
+})
 ```
 
 #### 2. 键盘事件处理
 
 ```typescript
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
+    return
 
-  const currentIndex = visibleNodes.value.findIndex(node => {
-    if (node.type === 'task') return node.id === props.selectedTaskId;
-    return node.id === props.selectedItemId;
-  });
+  const currentIndex = visibleNodes.value.findIndex((node) => {
+    if (node.type === 'task')
+      return node.id === props.selectedTaskId
+    return node.id === props.selectedItemId
+  })
 
-  if (currentIndex === -1) return;
+  if (currentIndex === -1)
+    return
 
   const nextIndex = event.key === 'ArrowUp'
     ? Math.max(0, currentIndex - 1)
-    : Math.min(visibleNodes.value.length - 1, currentIndex + 1);
+    : Math.min(visibleNodes.value.length - 1, currentIndex + 1)
 
-  const next = visibleNodes.value[nextIndex];
+  const next = visibleNodes.value[nextIndex]
   if (next.type === 'task') {
-    emit('select-task', next.id);
-  } else {
-    emit('select-item', next.id);
+    emit('select-task', next.id)
+  }
+  else {
+    emit('select-item', next.id)
   }
 
-  event.preventDefault();
+  event.preventDefault()
 }
 ```
 
@@ -137,9 +144,9 @@ function handleKeydown(event: KeyboardEvent) {
 
 ## 变更文件
 
-| 文件 | 变更类型 | 说明 |
-|------|----------|------|
-| `src/components/project/ProjectTreePane.vue` | 修改 | 添加键盘导航逻辑和焦点管理 |
+| 文件                                         | 变更类型 | 说明                       |
+| -------------------------------------------- | -------- | -------------------------- |
+| `src/components/project/ProjectTreePane.vue` | 修改     | 添加键盘导航逻辑和焦点管理 |
 
 ## 验收标准
 

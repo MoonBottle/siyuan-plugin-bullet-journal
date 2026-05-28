@@ -13,6 +13,7 @@
 ## File Structure
 
 **Create**
+
 - `src/types/quadrant.ts` - quadrant config and evaluator types
 - `src/services/quadrantConfigService.ts` - file-backed load/save/reset helpers for `quadrant-config.json`
 - `src/stores/quadrantConfigStore.ts` - reactive quadrant config state shared by tab and workbench
@@ -22,6 +23,7 @@
 - `test/utils/quadrantEvaluator.test.ts` - evaluator tests
 
 **Modify**
+
 - `src/utils/quadrant.ts` - default config constants and legacy workbench key mapping
 - `src/tabs/QuadrantTab.vue` - switch from fixed definitions to config-driven rendering and dialog entry
 - `src/types/workbench.ts` - move widget quadrant IDs from `high|medium|low|none` to `q1|q2|q3|q4`
@@ -36,6 +38,7 @@
 ### Task 1: Define quadrant config types and defaults
 
 **Files:**
+
 - Create: `src/types/quadrant.ts`
 - Modify: `src/utils/quadrant.ts`
 - Test: `test/utils/quadrantEvaluator.test.ts`
@@ -43,13 +46,13 @@
 - [ ] **Step 1: Write the failing type-oriented evaluator test using the new IDs**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { DEFAULT_QUADRANT_CONFIG } from '@/utils/quadrant';
-import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_QUADRANT_CONFIG } from '@/utils/quadrant'
+import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator'
 
 describe('assignItemsToQuadrants', () => {
   it('uses q1-q4 default panel ids', () => {
-    const result = assignItemsToQuadrants([], DEFAULT_QUADRANT_CONFIG.panels);
+    const result = assignItemsToQuadrants([], DEFAULT_QUADRANT_CONFIG.panels)
 
     expect(result).toEqual({
       q1: [],
@@ -57,9 +60,9 @@ describe('assignItemsToQuadrants', () => {
       q3: [],
       q4: [],
       unassigned: [],
-    });
-  });
-});
+    })
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -71,31 +74,31 @@ Expected: FAIL with module resolution errors for `@/utils/quadrantEvaluator` or 
 - [ ] **Step 3: Add quadrant config types**
 
 ```ts
-export type QuadrantPanelId = 'q1' | 'q2' | 'q3' | 'q4';
-export type QuadrantPriorityValue = 'high' | 'medium' | 'low' | 'none';
-export type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'undated';
+export type QuadrantPanelId = 'q1' | 'q2' | 'q3' | 'q4'
+export type QuadrantPriorityValue = 'high' | 'medium' | 'low' | 'none'
+export type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'undated'
 
 export interface QuadrantRuleChain {
-  priority?: QuadrantPriorityValue[];
-  date?: QuadrantDateValue[];
+  priority?: QuadrantPriorityValue[]
+  date?: QuadrantDateValue[]
 }
 
 export interface QuadrantPanelConfig {
-  id: QuadrantPanelId;
-  title: string;
-  rules: QuadrantRuleChain;
+  id: QuadrantPanelId
+  title: string
+  rules: QuadrantRuleChain
 }
 
 export interface QuadrantConfigFile {
-  version: 1;
-  panels: QuadrantPanelConfig[];
+  version: 1
+  panels: QuadrantPanelConfig[]
 }
 ```
 
 - [ ] **Step 4: Replace fixed priority definitions with default config helpers**
 
 ```ts
-import type { QuadrantConfigFile, QuadrantPanelId } from '@/types/quadrant';
+import type { QuadrantConfigFile, QuadrantPanelId } from '@/types/quadrant'
 
 export const DEFAULT_QUADRANT_CONFIG: QuadrantConfigFile = {
   version: 1,
@@ -105,17 +108,20 @@ export const DEFAULT_QUADRANT_CONFIG: QuadrantConfigFile = {
     { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
     { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
   ],
-};
+}
 
 export function getDefaultQuadrantPanel(id: QuadrantPanelId) {
-  return DEFAULT_QUADRANT_CONFIG.panels.find(panel => panel.id === id)!;
+  return DEFAULT_QUADRANT_CONFIG.panels.find(panel => panel.id === id)!
 }
 
 export function mapLegacyWorkbenchQuadrantKey(key?: string): QuadrantPanelId {
-  if (key === 'medium') return 'q2';
-  if (key === 'low') return 'q3';
-  if (key === 'none') return 'q4';
-  return 'q1';
+  if (key === 'medium')
+    return 'q2'
+  if (key === 'low')
+    return 'q3'
+  if (key === 'none')
+    return 'q4'
+  return 'q1'
 }
 ```
 
@@ -135,16 +141,17 @@ git commit -m "refactor(quadrant): define config types and defaults"
 ### Task 2: Build the pure evaluator with unique assignment
 
 **Files:**
+
 - Create: `src/utils/quadrantEvaluator.ts`
 - Test: `test/utils/quadrantEvaluator.test.ts`
 
 - [ ] **Step 1: Write failing evaluator tests for priority/date matching and first-hit assignment**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { assignItemsToQuadrants, getQuadrantDateBucket, matchesQuadrantPanel } from '@/utils/quadrantEvaluator';
-import type { Item } from '@/types/models';
-import type { QuadrantPanelConfig } from '@/types/quadrant';
+import type { Item } from '@/types/models'
+import type { QuadrantPanelConfig } from '@/types/quadrant'
+import { describe, expect, it } from 'vitest'
+import { assignItemsToQuadrants, getQuadrantDateBucket, matchesQuadrantPanel } from '@/utils/quadrantEvaluator'
 
 function mkItem(partial: Partial<Item>): Item {
   return {
@@ -158,7 +165,7 @@ function mkItem(partial: Partial<Item>): Item {
     priority: partial.priority,
     startDateTime: partial.startDateTime,
     ...partial,
-  } as Item;
+  } as Item
 }
 
 describe('quadrantEvaluator', () => {
@@ -167,18 +174,18 @@ describe('quadrantEvaluator', () => {
       id: 'q1',
       title: 'Important & urgent',
       rules: { priority: ['high'], date: ['today'] },
-    };
+    }
 
-    expect(matchesQuadrantPanel(mkItem({ priority: 'high', date: '2026-05-11' }), panel, '2026-05-11')).toBe(true);
-    expect(matchesQuadrantPanel(mkItem({ priority: 'high', date: '2026-05-12' }), panel, '2026-05-11')).toBe(false);
-  });
+    expect(matchesQuadrantPanel(mkItem({ priority: 'high', date: '2026-05-11' }), panel, '2026-05-11')).toBe(true)
+    expect(matchesQuadrantPanel(mkItem({ priority: 'high', date: '2026-05-12' }), panel, '2026-05-11')).toBe(false)
+  })
 
   it('classifies overdue/today/tomorrow/undated buckets', () => {
-    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-10', status: 'pending' }), '2026-05-11')).toBe('overdue');
-    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-11' }), '2026-05-11')).toBe('today');
-    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-12' }), '2026-05-11')).toBe('tomorrow');
-    expect(getQuadrantDateBucket(mkItem({}), '2026-05-11')).toBe('undated');
-  });
+    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-10', status: 'pending' }), '2026-05-11')).toBe('overdue')
+    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-11' }), '2026-05-11')).toBe('today')
+    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-12' }), '2026-05-11')).toBe('tomorrow')
+    expect(getQuadrantDateBucket(mkItem({}), '2026-05-11')).toBe('undated')
+  })
 
   it('assigns each item to the first matching panel only', () => {
     const panels: QuadrantPanelConfig[] = [
@@ -186,19 +193,19 @@ describe('quadrantEvaluator', () => {
       { id: 'q2', title: 'Q2', rules: { priority: ['high', 'medium'] } },
       { id: 'q3', title: 'Q3', rules: { priority: ['low'] } },
       { id: 'q4', title: 'Q4', rules: { priority: ['none'] } },
-    ];
+    ]
 
     const result = assignItemsToQuadrants([
       mkItem({ id: 'a', blockId: 'a', priority: 'high' }),
       mkItem({ id: 'b', blockId: 'b', priority: 'medium' }),
       mkItem({ id: 'c', blockId: 'c' }),
-    ], panels, '2026-05-11');
+    ], panels, '2026-05-11')
 
-    expect(result.q1.map(item => item.id)).toEqual(['a']);
-    expect(result.q2.map(item => item.id)).toEqual(['b']);
-    expect(result.q4.map(item => item.id)).toEqual(['c']);
-  });
-});
+    expect(result.q1.map(item => item.id)).toEqual(['a'])
+    expect(result.q2.map(item => item.id)).toEqual(['b'])
+    expect(result.q4.map(item => item.id)).toEqual(['c'])
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -210,68 +217,68 @@ Expected: FAIL because evaluator functions are not implemented.
 - [ ] **Step 3: Implement the pure evaluator**
 
 ```ts
-import dayjs from 'dayjs';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
 import type {
   QuadrantConfigFile,
   QuadrantDateValue,
   QuadrantPanelConfig,
   QuadrantPanelId,
-} from '@/types/quadrant';
+} from '@/types/quadrant'
+import dayjs from 'dayjs'
 
 export interface QuadrantAssignmentResult {
-  q1: Item[];
-  q2: Item[];
-  q3: Item[];
-  q4: Item[];
-  unassigned: Item[];
+  q1: Item[]
+  q2: Item[]
+  q3: Item[]
+  q4: Item[]
+  unassigned: Item[]
 }
 
 export function getQuadrantDateBucket(item: Item, today: string): QuadrantDateValue {
   if (!item.date)
-    return 'undated';
+    return 'undated'
 
-  const itemDate = dayjs(item.date);
-  const base = dayjs(today);
+  const itemDate = dayjs(item.date)
+  const base = dayjs(today)
 
   if (item.status !== 'completed' && itemDate.isBefore(base, 'day'))
-    return 'overdue';
+    return 'overdue'
   if (itemDate.isSame(base, 'day'))
-    return 'today';
+    return 'today'
   if (itemDate.isSame(base.add(1, 'day'), 'day'))
-    return 'tomorrow';
-  return 'undated';
+    return 'tomorrow'
+  return 'undated'
 }
 
 export function matchesQuadrantPanel(item: Item, panel: QuadrantPanelConfig, today: string): boolean {
-  const priority = item.priority ?? 'none';
+  const priority = item.priority ?? 'none'
   if (panel.rules.priority?.length && !panel.rules.priority.includes(priority))
-    return false;
+    return false
 
-  const dateBucket = getQuadrantDateBucket(item, today);
+  const dateBucket = getQuadrantDateBucket(item, today)
   if (panel.rules.date?.length && !panel.rules.date.includes(dateBucket))
-    return false;
+    return false
 
-  return true;
+  return true
 }
 
 export function createEmptyQuadrantAssignment(): QuadrantAssignmentResult {
-  return { q1: [], q2: [], q3: [], q4: [], unassigned: [] };
+  return { q1: [], q2: [], q3: [], q4: [], unassigned: [] }
 }
 
 export function assignItemsToQuadrants(items: Item[], panels: QuadrantPanelConfig[], today = dayjs().format('YYYY-MM-DD')): QuadrantAssignmentResult {
-  const result = createEmptyQuadrantAssignment();
+  const result = createEmptyQuadrantAssignment()
 
   items.forEach((item) => {
-    const match = panels.find(panel => matchesQuadrantPanel(item, panel, today));
+    const match = panels.find(panel => matchesQuadrantPanel(item, panel, today))
     if (!match) {
-      result.unassigned.push(item);
-      return;
+      result.unassigned.push(item)
+      return
     }
-    result[match.id].push(item);
-  });
+    result[match.id].push(item)
+  })
 
-  return result;
+  return result
 }
 ```
 
@@ -291,6 +298,7 @@ git commit -m "feat(quadrant): add config-driven evaluator"
 ### Task 3: Add file-backed quadrant config persistence
 
 **Files:**
+
 - Create: `src/services/quadrantConfigService.ts`
 - Test: `test/services/quadrantConfigService.test.ts`
 - Modify: `src/utils/quadrant.ts`
@@ -298,51 +306,51 @@ git commit -m "feat(quadrant): add config-driven evaluator"
 - [ ] **Step 1: Write failing persistence tests**
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_QUADRANT_CONFIG } from '@/utils/quadrant';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_QUADRANT_CONFIG } from '@/utils/quadrant'
 
-const mockLoadData = vi.fn();
-const mockSaveData = vi.fn();
+const mockLoadData = vi.fn()
+const mockSaveData = vi.fn()
 
 vi.mock('@/main', () => ({
   usePlugin: () => ({
     loadData: mockLoadData,
     saveData: mockSaveData,
   }),
-}));
+}))
 
 describe('quadrantConfigService', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('returns defaults when the config file does not exist', async () => {
-    mockLoadData.mockResolvedValueOnce('');
-    const { loadQuadrantConfig } = await import('@/services/quadrantConfigService');
+    mockLoadData.mockResolvedValueOnce('')
+    const { loadQuadrantConfig } = await import('@/services/quadrantConfigService')
 
-    await expect(loadQuadrantConfig()).resolves.toEqual(DEFAULT_QUADRANT_CONFIG);
-  });
+    await expect(loadQuadrantConfig()).resolves.toEqual(DEFAULT_QUADRANT_CONFIG)
+  })
 
   it('normalizes incomplete panel arrays', async () => {
     mockLoadData.mockResolvedValueOnce(JSON.stringify({
       version: 1,
       panels: [{ id: 'q1', title: 'Mine', rules: { priority: ['high'] } }],
-    }));
-    const { loadQuadrantConfig } = await import('@/services/quadrantConfigService');
-    const config = await loadQuadrantConfig();
+    }))
+    const { loadQuadrantConfig } = await import('@/services/quadrantConfigService')
+    const config = await loadQuadrantConfig()
 
-    expect(config.panels).toHaveLength(4);
-    expect(config.panels[0].title).toBe('Mine');
-    expect(config.panels[3].id).toBe('q4');
-  });
+    expect(config.panels).toHaveLength(4)
+    expect(config.panels[0].title).toBe('Mine')
+    expect(config.panels[3].id).toBe('q4')
+  })
 
   it('resets the whole file to defaults', async () => {
-    const { resetQuadrantConfig } = await import('@/services/quadrantConfigService');
-    await resetQuadrantConfig();
+    const { resetQuadrantConfig } = await import('@/services/quadrantConfigService')
+    await resetQuadrantConfig()
 
-    expect(mockSaveData).toHaveBeenCalledWith('quadrant-config.json', JSON.stringify(DEFAULT_QUADRANT_CONFIG, null, 2));
-  });
-});
+    expect(mockSaveData).toHaveBeenCalledWith('quadrant-config.json', JSON.stringify(DEFAULT_QUADRANT_CONFIG, null, 2))
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -354,14 +362,14 @@ Expected: FAIL because the service module does not exist.
 - [ ] **Step 3: Implement the config service**
 
 ```ts
-import { usePlugin } from '@/main';
-import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant';
-import { DEFAULT_QUADRANT_CONFIG, getDefaultQuadrantPanel } from '@/utils/quadrant';
+import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant'
+import { usePlugin } from '@/main'
+import { DEFAULT_QUADRANT_CONFIG, getDefaultQuadrantPanel } from '@/utils/quadrant'
 
-const QUADRANT_CONFIG_FILENAME = 'quadrant-config.json';
+const QUADRANT_CONFIG_FILENAME = 'quadrant-config.json'
 
 function normalizePanel(panelId: QuadrantPanelId, panel?: Partial<QuadrantPanelConfig>): QuadrantPanelConfig {
-  const fallback = getDefaultQuadrantPanel(panelId);
+  const fallback = getDefaultQuadrantPanel(panelId)
   return {
     id: panelId,
     title: typeof panel?.title === 'string' && panel.title.trim() ? panel.title : fallback.title,
@@ -369,43 +377,43 @@ function normalizePanel(panelId: QuadrantPanelId, panel?: Partial<QuadrantPanelC
       priority: Array.isArray(panel?.rules?.priority) ? panel.rules.priority : fallback.rules.priority,
       date: Array.isArray(panel?.rules?.date) ? panel.rules.date : fallback.rules.date,
     },
-  };
+  }
 }
 
 export function normalizeQuadrantConfig(raw: unknown): QuadrantConfigFile {
-  const file = raw as Partial<QuadrantConfigFile> | null | undefined;
-  const panels = Array.isArray(file?.panels) ? file.panels : [];
+  const file = raw as Partial<QuadrantConfigFile> | null | undefined
+  const panels = Array.isArray(file?.panels) ? file.panels : []
   return {
     version: 1,
-    panels: ['q1', 'q2', 'q3', 'q4'].map((id) =>
+    panels: ['q1', 'q2', 'q3', 'q4'].map(id =>
       normalizePanel(id as QuadrantPanelId, panels.find(panel => panel?.id === id)),
     ),
-  };
+  }
 }
 
 export async function loadQuadrantConfig(): Promise<QuadrantConfigFile> {
-  const plugin = usePlugin() as any;
-  const raw = await plugin?.loadData?.(QUADRANT_CONFIG_FILENAME);
+  const plugin = usePlugin() as any
+  const raw = await plugin?.loadData?.(QUADRANT_CONFIG_FILENAME)
   if (!raw)
-    return DEFAULT_QUADRANT_CONFIG;
+    return DEFAULT_QUADRANT_CONFIG
 
   try {
-    return normalizeQuadrantConfig(JSON.parse(raw));
+    return normalizeQuadrantConfig(JSON.parse(raw))
   }
   catch {
-    return DEFAULT_QUADRANT_CONFIG;
+    return DEFAULT_QUADRANT_CONFIG
   }
 }
 
 export async function saveQuadrantConfig(config: QuadrantConfigFile) {
-  const plugin = usePlugin() as any;
-  const normalized = normalizeQuadrantConfig(config);
-  await plugin?.saveData?.(QUADRANT_CONFIG_FILENAME, JSON.stringify(normalized, null, 2));
-  return normalized;
+  const plugin = usePlugin() as any
+  const normalized = normalizeQuadrantConfig(config)
+  await plugin?.saveData?.(QUADRANT_CONFIG_FILENAME, JSON.stringify(normalized, null, 2))
+  return normalized
 }
 
 export async function resetQuadrantConfig() {
-  return saveQuadrantConfig(DEFAULT_QUADRANT_CONFIG);
+  return saveQuadrantConfig(DEFAULT_QUADRANT_CONFIG)
 }
 ```
 
@@ -425,6 +433,7 @@ git commit -m "feat(quadrant): add config persistence service"
 ### Task 4: Add a dedicated quadrant config store and adapt the tab
 
 **Files:**
+
 - Create: `src/stores/quadrantConfigStore.ts`
 - Modify: `src/tabs/QuadrantTab.vue`
 - Test: `test/tabs/QuadrantTab.test.ts`
@@ -442,27 +451,27 @@ const mockQuadrantConfigStore = {
   loadConfig: vi.fn(),
   savePanel: vi.fn(),
   resetAll: vi.fn(),
-};
+}
 
 vi.mock('@/stores/quadrantConfigStore', () => ({
   useQuadrantConfigStore: () => mockQuadrantConfigStore,
-}));
+}))
 
 it('renders panel titles from quadrant config and disables drag', async () => {
-  const mounted = await mountQuadrantTab();
-  await nextTick();
+  const mounted = await mountQuadrantTab()
+  await nextTick()
 
   expect(Array.from(mounted.container.querySelectorAll('.quadrant-panel__title')).map(node => node.textContent)).toEqual([
     'My Q1',
     'My Q2',
     'My Q3',
     'My Q4',
-  ]);
+  ])
 
   expect(todoSidebarProps).toHaveBeenNthCalledWith(1, expect.objectContaining({
     enableDrag: false,
-  }));
-});
+  }))
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -474,9 +483,9 @@ Expected: FAIL because `QuadrantTab.vue` still renders `t(quadrant.titleKey)` an
 - [ ] **Step 3: Implement the quadrant config store**
 
 ```ts
-import { defineStore } from 'pinia';
-import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant';
-import { loadQuadrantConfig, resetQuadrantConfig, saveQuadrantConfig } from '@/services/quadrantConfigService';
+import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant'
+import { defineStore } from 'pinia'
+import { loadQuadrantConfig, resetQuadrantConfig, saveQuadrantConfig } from '@/services/quadrantConfigService'
 
 export const useQuadrantConfigStore = defineStore('quadrantConfig', {
   state: () => ({
@@ -488,51 +497,54 @@ export const useQuadrantConfigStore = defineStore('quadrantConfig', {
   },
   actions: {
     async loadConfig() {
-      this.config = await loadQuadrantConfig();
-      this.loaded = true;
+      this.config = await loadQuadrantConfig()
+      this.loaded = true
     },
     async savePanel(panelId: QuadrantPanelId, nextPanel: QuadrantPanelConfig) {
-      const base = this.config ?? await loadQuadrantConfig();
+      const base = this.config ?? await loadQuadrantConfig()
       const nextConfig = {
         ...base,
         panels: base.panels.map(panel => panel.id === panelId ? nextPanel : panel),
-      };
-      this.config = await saveQuadrantConfig(nextConfig);
+      }
+      this.config = await saveQuadrantConfig(nextConfig)
     },
     async resetAll() {
-      this.config = await resetQuadrantConfig();
+      this.config = await resetQuadrantConfig()
     },
   },
-});
+})
 ```
 
 - [ ] **Step 4: Update `QuadrantTab.vue` to consume config store panels**
 
 ```ts
-const quadrantConfigStore = useQuadrantConfigStore();
+const quadrantConfigStore = useQuadrantConfigStore()
 
-const quadrants = computed(() => quadrantConfigStore.panels);
+const quadrants = computed(() => quadrantConfigStore.panels)
 const quadrantAssignments = computed(() => {
   const items = projectStore.getFilteredAndSortedItems({
     groupId: selectedGroup.value,
     searchQuery: searchQuery.value,
-  });
-  return assignItemsToQuadrants(items, quadrants.value);
-});
+  })
+  return assignItemsToQuadrants(items, quadrants.value)
+})
 
-const panelCounts = computed(() => quadrants.value.map(panel => quadrantAssignments.value[panel.id].length));
-const dragEnabled = computed(() => false);
+const panelCounts = computed(() => quadrants.value.map(panel => quadrantAssignments.value[panel.id].length))
+const dragEnabled = computed(() => false)
 
 onMounted(async () => {
-  await quadrantConfigStore.loadConfig();
+  await quadrantConfigStore.loadConfig()
   // existing setup...
-});
+})
 ```
 
 And in the template:
 
 ```vue
-<h2 class="quadrant-panel__title">{{ quadrant.title }}</h2>
+<h2 class="quadrant-panel__title">
+{{ quadrant.title }}
+</h2>
+
 <TodoSidebar
   :enable-drag="dragEnabled"
   :items="quadrantAssignments[quadrant.id]"
@@ -557,6 +569,7 @@ git commit -m "feat(quadrant): drive tab from shared config store"
 ### Task 5: Build the edit dialog with global reset
 
 **Files:**
+
 - Create: `src/components/quadrant/QuadrantRuleDialog.vue`
 - Modify: `src/tabs/QuadrantTab.vue`
 - Test: `test/tabs/QuadrantTab.test.ts`
@@ -565,40 +578,40 @@ git commit -m "feat(quadrant): drive tab from shared config store"
 
 ```ts
 it('opens the edit dialog for a panel and saves panel changes', async () => {
-  const mounted = await mountQuadrantTab();
+  const mounted = await mountQuadrantTab()
   await nextTick();
 
   (mounted.container.querySelector('[data-testid="quadrant-edit-button-q1"]') as HTMLElement)
-    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  const titleInput = document.querySelector('[data-testid="quadrant-rule-title-input"]') as HTMLInputElement;
-  titleInput.value = 'Custom Q1';
+  const titleInput = document.querySelector('[data-testid="quadrant-rule-title-input"]') as HTMLInputElement
+  titleInput.value = 'Custom Q1'
   titleInput.dispatchEvent(new Event('input'));
 
   (document.querySelector('[data-testid="quadrant-rule-save"]') as HTMLElement)
-    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   expect(mockQuadrantConfigStore.savePanel).toHaveBeenCalledWith('q1', expect.objectContaining({
     title: 'Custom Q1',
-  }));
-});
+  }))
+})
 
 it('resets all four panels from the dialog footer', async () => {
-  const mounted = await mountQuadrantTab();
+  const mounted = await mountQuadrantTab()
   await nextTick();
 
   (mounted.container.querySelector('[data-testid="quadrant-edit-button-q2"]') as HTMLElement)
-    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }))
   await nextTick();
 
   (document.querySelector('[data-testid="quadrant-rule-reset-defaults"]') as HTMLElement)
-    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mockQuadrantConfigStore.resetAll).toHaveBeenCalledTimes(1);
-});
+  expect(mockQuadrantConfigStore.resetAll).toHaveBeenCalledTimes(1)
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -616,7 +629,7 @@ Expected: FAIL because there is no dialog or edit button.
       v-model="draft.title"
       data-testid="quadrant-rule-title-input"
       class="b3-text-field"
-    />
+    >
 
     <fieldset>
       <legend>{{ t('todo.priority.setPriority') }}</legend>
@@ -634,8 +647,12 @@ Expected: FAIL because there is no dialog or edit button.
       </label>
     </fieldset>
 
-    <button data-testid="quadrant-rule-reset-defaults" @click="$emit('reset-defaults')">{{ t('common').reset }}</button>
-    <button data-testid="quadrant-rule-save" @click="$emit('save', draft)">{{ t('common').save }}</button>
+    <button data-testid="quadrant-rule-reset-defaults" @click="$emit('reset-defaults')">
+      {{ t('common').reset }}
+    </button>
+    <button data-testid="quadrant-rule-save" @click="$emit('save', draft)">
+      {{ t('common').save }}
+    </button>
   </div>
 </template>
 ```
@@ -643,20 +660,20 @@ Expected: FAIL because there is no dialog or edit button.
 - [ ] **Step 4: Wire the dialog into `QuadrantTab.vue`**
 
 ```ts
-const editingPanel = ref<QuadrantPanelConfig | null>(null);
+const editingPanel = ref<QuadrantPanelConfig | null>(null)
 
 function openQuadrantEditor(panel: QuadrantPanelConfig) {
-  editingPanel.value = JSON.parse(JSON.stringify(panel));
+  editingPanel.value = JSON.parse(JSON.stringify(panel))
 }
 
 async function handleQuadrantSave(panel: QuadrantPanelConfig) {
-  await quadrantConfigStore.savePanel(panel.id, panel);
-  editingPanel.value = null;
+  await quadrantConfigStore.savePanel(panel.id, panel)
+  editingPanel.value = null
 }
 
 async function handleQuadrantResetDefaults() {
-  await quadrantConfigStore.resetAll();
-  editingPanel.value = null;
+  await quadrantConfigStore.resetAll()
+  editingPanel.value = null
 }
 ```
 
@@ -696,6 +713,7 @@ git commit -m "feat(quadrant): add panel rule editor dialog"
 ### Task 6: Adapt workbench widgets and finalize integration tests
 
 **Files:**
+
 - Modify: `src/types/workbench.ts`
 - Modify: `src/components/workbench/widgets/QuadrantSummaryWidget.vue`
 - Modify: `src/components/workbench/dialogs/QuadrantWidgetConfigDialog.vue`
@@ -712,7 +730,7 @@ it('renders the configured panel title in the summary widget', async () => {
     type: 'quadrantSummary',
     layout: { x: 0, y: 0, w: 3, h: 4 },
     config: { quadrant: 'q2', groupId: '' },
-  };
+  }
 
   const mounted = await mountQuadrantSummaryWidget(widget, {
     panels: [
@@ -721,18 +739,18 @@ it('renders the configured panel title in the summary widget', async () => {
       { id: 'q3', title: 'Q3', rules: { priority: ['low'] } },
       { id: 'q4', title: 'Q4', rules: { priority: ['none'] } },
     ],
-  });
+  })
 
-  expect(mounted.container.textContent).toContain('Follow-up');
-});
+  expect(mounted.container.textContent).toContain('Follow-up')
+})
 
 it('maps legacy workbench keys to q1-q4 in the config dialog', async () => {
   const mounted = await mountQuadrantWidgetConfigDialog({
     initialConfig: { quadrant: 'high', groupId: '' },
-  });
+  })
 
-  expect((mounted.container.querySelector('[data-testid=\"quadrant-widget-select\"]') as HTMLSelectElement).value).toBe('q1');
-});
+  expect((mounted.container.querySelector('[data-testid=\"quadrant-widget-select\"]') as HTMLSelectElement).value).toBe('q1')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -744,7 +762,7 @@ Expected: FAIL because workbench still uses legacy keys and fixed definitions.
 - [ ] **Step 3: Update workbench types, registry, and dialog**
 
 ```ts
-export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4';
+export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4'
 ```
 
 ```ts
@@ -754,30 +772,32 @@ createDefaultConfig: (): WorkbenchQuadrantWidgetConfig => ({
 ```
 
 ```ts
-const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant));
+const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant))
 const quadrantOptions = computed(() => quadrantConfigStore.panels.map(panel => ({
   value: panel.id,
   label: `${panel.id.toUpperCase()} ${panel.title}`,
-})));
+})))
 ```
 
 - [ ] **Step 4: Update `QuadrantSummaryWidget.vue` to use the shared config and evaluator**
 
 ```ts
-const quadrantConfigStore = useQuadrantConfigStore();
-const quadrantId = computed(() => mapLegacyWorkbenchQuadrantKey(quadrantConfig.value.quadrant));
-const panel = computed(() => quadrantConfigStore.panels.find(item => item.id === quadrantId.value));
+const quadrantConfigStore = useQuadrantConfigStore()
+const quadrantId = computed(() => mapLegacyWorkbenchQuadrantKey(quadrantConfig.value.quadrant))
+const panel = computed(() => quadrantConfigStore.panels.find(item => item.id === quadrantId.value))
 const assignments = computed(() => assignItemsToQuadrants(
   projectStore.getFilteredAndSortedItems({ groupId: quadrantConfig.value.groupId ?? '' }),
   quadrantConfigStore.panels,
-));
-const items = computed(() => panel.value ? assignments.value[panel.value.id] : []);
+))
+const items = computed(() => panel.value ? assignments.value[panel.value.id] : [])
 ```
 
 And in the template:
 
 ```vue
-<span>{{ panel?.title }}</span>
+<span>
+{{ panel?.title }}
+</span>
 ```
 
 - [ ] **Step 5: Run the focused workbench and tab tests**
@@ -823,4 +843,3 @@ No spec gaps remain.
 - Stable panel IDs are consistently `q1` through `q4`.
 - Config store API uses `loadConfig`, `savePanel`, and `resetAll` consistently across tasks.
 - The persistence file name is consistently `quadrant-config.json`.
-

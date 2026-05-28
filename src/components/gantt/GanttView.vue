@@ -1,7 +1,13 @@
 <template>
   <div class="gantt-view">
-    <div class="gantt-wrapper" :class="{ 'gantt-ready': ganttReady }">
-      <div ref="ganttEl" class="gantt-inner"></div>
+    <div
+      class="gantt-wrapper"
+      :class="{ 'gantt-ready': ganttReady }"
+    >
+      <div
+        ref="ganttEl"
+        class="gantt-inner"
+      ></div>
     </div>
     <div
       ref="eventTooltipEl"
@@ -13,76 +19,103 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
-import { gantt } from 'dhtmlx-gantt';
-import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import type { Project, CalendarEvent } from '@/types/models';
-import { DataConverter } from '@/utils/dataConverter';
-import { getCurrentLocale, t } from '@/i18n';
-import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
-import { computeTooltipPosition } from '@/utils/tooltipPosition';
-import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
-import { createApp } from 'vue';
-import type { Item } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
+import type {
+  CalendarEvent,
+  Item,
+  Project,
+} from '@/types/models'
+
+import { gantt } from 'dhtmlx-gantt'
+import {
+  computed,
+  createApp,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
+import {
+  getCurrentLocale,
+  t,
+} from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import { writeBlock } from '@/utils/blockWriter'
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
+import {
+  createItemMenu,
+  showContextMenu,
+} from '@/utils/contextMenu'
+import { DataConverter } from '@/utils/dataConverter'
+import dayjs from '@/utils/dayjs'
+import {
+  buildEventDetailContent,
+  createDialog,
+  showDatePickerDialog,
+  showEventDetailModal,
+} from '@/utils/dialog'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { computeTooltipPosition } from '@/utils/tooltipPosition'
+import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 
 interface Props {
-  projects: Project[];
-  showItems?: boolean;
-  startDate?: string;
-  endDate?: string;
-  viewMode?: 'day' | 'week' | 'month';
+  projects: Project[]
+  showItems?: boolean
+  startDate?: string
+  endDate?: string
+  viewMode?: 'day' | 'week' | 'month'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showItems: false,
   startDate: '',
   endDate: '',
-  viewMode: 'day'
-});
+  viewMode: 'day',
+})
 
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
-const pomodoroStore = usePomodoroStore();
-const plugin = usePlugin() as any;
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
+const pomodoroStore = usePomodoroStore()
+const plugin = usePlugin() as any
 
-const ganttEl = ref<HTMLElement | null>(null);
+const ganttEl = ref<HTMLElement | null>(null)
 
-let ganttInitialized = false;
-let resizeObserver: ResizeObserver | null = null;
-let onTaskClickId: string | number | null = null;
-let onContextMenuId: string | number | null = null;
-const ganttReady = ref(false);
+let ganttInitialized = false
+let resizeObserver: ResizeObserver | null = null
+let onTaskClickId: string | number | null = null
+let onContextMenuId: string | number | null = null
+const ganttReady = ref(false)
 
-const GANTT_TOOLTIP_HOVER_DELAY = 300;
+const GANTT_TOOLTIP_HOVER_DELAY = 300
 
-const eventTooltipEl = ref<HTMLElement | null>(null);
-const eventTooltipVisible = ref(false);
-const eventTooltipStyle = ref<{ left?: string; top?: string }>({});
-let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null;
+const eventTooltipEl = ref<HTMLElement | null>(null)
+const eventTooltipVisible = ref(false)
+const eventTooltipStyle = ref<{ left?: string, top?: string }>({})
+let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null
 
 const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
   if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer);
-    eventTooltipTimer = null;
+    clearTimeout(eventTooltipTimer)
+    eventTooltipTimer = null
   }
   eventTooltipTimer = setTimeout(() => {
-    eventTooltipTimer = null;
-    const taskId = gantt.locate(e);
-    if (taskId == null || !gantt.isTaskExists(taskId)) return;
-    const task = gantt.getTask(taskId);
-    if (!task?.extendedProps?.item) return;
+    eventTooltipTimer = null
+    const taskId = gantt.locate(e)
+    if (taskId == null || !gantt.isTaskExists(taskId)) return
+    const task = gantt.getTask(taskId)
+    if (!task?.extendedProps?.item) return
 
-    const props = task.extendedProps;
-    const start = props.originalStartDateTime || props.date || '';
-    const end = props.originalEndDateTime || props.originalStartDateTime || props.date || '';
-    const allDay = !props.originalStartDateTime;
+    const props = task.extendedProps
+    const start = props.originalStartDateTime || props.date || ''
+    const end = props.originalEndDateTime || props.originalStartDateTime || props.date || ''
+    const allDay = !props.originalStartDateTime
 
     const eventData: CalendarEvent = {
       id: String(task.id),
@@ -109,79 +142,79 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
         siblingItems: props.siblingItems,
         dateRangeStart: props.dateRangeStart,
         dateRangeEnd: props.dateRangeEnd,
-        pomodoros: props.pomodoros
-      }
-    };
+        pomodoros: props.pomodoros,
+      },
+    }
 
-    const html = buildEventDetailContent(eventData);
+    const html = buildEventDetailContent(eventData)
     if (eventTooltipEl.value) {
-      eventTooltipEl.value.innerHTML = html;
+      eventTooltipEl.value.innerHTML = html
       nextTick(() => {
         if (eventTooltipEl.value) {
-          const rect = anchorEl.getBoundingClientRect();
-          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4);
-          eventTooltipVisible.value = true;
+          const rect = anchorEl.getBoundingClientRect()
+          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4)
+          eventTooltipVisible.value = true
         }
-      });
+      })
     }
-  }, GANTT_TOOLTIP_HOVER_DELAY);
-};
+  }, GANTT_TOOLTIP_HOVER_DELAY)
+}
 
 const hideGanttEventTooltip = () => {
   if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer);
-    eventTooltipTimer = null;
+    clearTimeout(eventTooltipTimer)
+    eventTooltipTimer = null
   }
-  eventTooltipVisible.value = false;
-};
+  eventTooltipVisible.value = false
+}
 
 const handleGanttTooltipMouseOver = (e: MouseEvent) => {
-  const target = e.target as HTMLElement;
-  const bar = target.closest('.gantt_task_line');
-  const rightsideText = target.closest('.gantt-rightside-text');
-  const anchor = bar || rightsideText;
+  const target = e.target as HTMLElement
+  const bar = target.closest('.gantt_task_line')
+  const rightsideText = target.closest('.gantt-rightside-text')
+  const anchor = bar || rightsideText
   if (anchor) {
-    showGanttEventTooltip(e, anchor as HTMLElement);
+    showGanttEventTooltip(e, anchor as HTMLElement)
   } else {
-    hideGanttEventTooltip();
+    hideGanttEventTooltip()
   }
-};
+}
 
 const handleGanttTooltipMouseOut = (e: MouseEvent) => {
-  const related = e.relatedTarget as HTMLElement;
-  if (related?.closest('.gantt-event-tooltip') || related?.closest('.gantt_task_line') || related?.closest('.gantt-rightside-text')) return;
-  hideGanttEventTooltip();
-};
+  const related = e.relatedTarget as HTMLElement
+  if (related?.closest('.gantt-event-tooltip') || related?.closest('.gantt_task_line') || related?.closest('.gantt-rightside-text')) return
+  hideGanttEventTooltip()
+}
 
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
-    height: 'auto'
-  });
+    height: 'auto',
+  })
 
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
   if (mountEl) {
     const app = createApp(PomodoroTimerDialog, {
       closeDialog: () => {
-        dialog.destroy();
+        dialog.destroy()
       },
       preselectedBlockId: item.blockId,
-      hideItemList: true
-    });
-    app.mount(mountEl);
+      hideItemList: true,
+    })
+    app.mount(mountEl)
   }
-};
+}
 
 const handleGanttTaskClick = (id: string | number) => {
-  const task = gantt.getTask(id);
-  if (!task?.extendedProps?.item) return;
+  const task = gantt.getTask(id)
+  if (!task?.extendedProps?.item) return
 
-  const props = task.extendedProps;
-  const start = props.originalStartDateTime || props.date || '';
-  const end = props.originalEndDateTime || props.originalStartDateTime || props.date || '';
-  const allDay = !props.originalStartDateTime;
+  const props = task.extendedProps
+  const start = props.originalStartDateTime || props.date || ''
+  const end = props.originalEndDateTime || props.originalStartDateTime || props.date || ''
+  const allDay = !props.originalStartDateTime
 
   const eventData: CalendarEvent = {
     id: String(task.id),
@@ -208,17 +241,17 @@ const handleGanttTaskClick = (id: string | number) => {
       siblingItems: props.siblingItems,
       dateRangeStart: props.dateRangeStart,
       dateRangeEnd: props.dateRangeEnd,
-      pomodoros: props.pomodoros
-    }
-  };
-  showEventDetailModal(eventData);
-};
+      pomodoros: props.pomodoros,
+    },
+  }
+  showEventDetailModal(eventData)
+}
 
 const handleGanttContextMenu = (taskId: string | number, _linkId: string | number, event: MouseEvent) => {
-  const task = gantt.getTask(taskId);
-  if (!task?.extendedProps?.item) return true;
+  const task = gantt.getTask(taskId)
+  if (!task?.extendedProps?.item) return true
 
-  const props = task.extendedProps;
+  const props = task.extendedProps
   const item = {
     id: String(task.id),
     content: props.item ?? task.text,
@@ -232,79 +265,91 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     endDateTime: props.originalEndDateTime,
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
-  };
+  }
 
   const menuOptions = createItemMenu(
     item,
     {
       onComplete: async () => {
-        if (!item.blockId) return;
-        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
+        if (!item.blockId) return
+        const success = await writeBlock({
+          blockId: item.blockId,
+          listItemBlockId: item.listItemBlockId,
+        }, {
+          type: 'setStatus',
+          status: 'completed',
+        })
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
           await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:complete',
-          });
+          })
         }
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
-        if (!item.blockId) return;
-        const todayStr = dayjs().format('YYYY-MM-DD');
+        if (!item.blockId) return
+        const todayStr = dayjs().format('YYYY-MM-DD')
         await writeBlock(
           { blockId: item.blockId },
           buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
-        );
+        )
         if (plugin) {
           await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:migrate-today',
-          });
+          })
         }
       },
       onMigrateTomorrow: async () => {
-        if (!item.blockId) return;
-        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+        if (!item.blockId) return
+        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
         await writeBlock(
           { blockId: item.blockId },
           buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
-        );
+        )
         if (plugin) {
           await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:migrate-tomorrow',
-          });
+          })
         }
       },
       onMigrateCustom: async () => {
-        if (!item.blockId) return;
+        if (!item.blockId) return
         showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
           await writeBlock(
             { blockId: item.blockId },
             buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
-          );
+          )
           if (plugin) {
             await plugin.requestRefresh?.({
               type: 'full',
               reason: 'gantt-view:migrate-custom',
-            });
+            })
           }
-        });
+        })
       },
       onAbandon: async () => {
-        if (!item.blockId) return;
-        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
+        if (!item.blockId) return
+        const success = await writeBlock({
+          blockId: item.blockId,
+          listItemBlockId: item.listItemBlockId,
+        }, {
+          type: 'setStatus',
+          status: 'abandoned',
+        })
         if (success && plugin) {
           await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:abandon',
-          });
+          })
         }
       },
       onOpenDoc: () => {
         if (item.docId && item.lineNumber) {
-          openDocumentAtLine(item.docId, item.lineNumber);
+          openDocumentAtLine(item.docId, item.lineNumber)
         }
       },
       onShowDetail: () => {
@@ -317,37 +362,43 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
             ...props,
             hasItems: props.hasItems ?? true,
             docId: props.docId ?? '',
-            lineNumber: props.lineNumber ?? 0
-          }
-        };
-        showEventDetailModal(eventData);
-      }
+            lineNumber: props.lineNumber ?? 0,
+          },
+        }
+        showEventDetailModal(eventData)
+      },
     },
-    { showCalendarMenu: false, isFocusing: pomodoroStore.isFocusing }
-  );
+    {
+      showCalendarMenu: false,
+      isFocusing: pomodoroStore.isFocusing,
+    },
+  )
 
-  menuOptions.x = event.clientX;
-  menuOptions.y = event.clientY;
-  showContextMenu(menuOptions);
-  return false;
-};
+  menuOptions.x = event.clientX
+  menuOptions.y = event.clientY
+  showContextMenu(menuOptions)
+  return false
+}
 
 const ganttData = computed(() => {
   const dateFilter = props.startDate || props.endDate
-    ? { start: props.startDate, end: props.endDate }
-    : undefined;
-  return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter);
-});
+    ? {
+        start: props.startDate,
+        end: props.endDate,
+      }
+    : undefined
+  return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter)
+})
 
 onMounted(() => {
-  if (!ganttEl.value) return;
+  if (!ganttEl.value) return
 
   // 动态加载 dhtmlx-gantt 样式
-  loadGanttStyles();
+  loadGanttStyles()
 
   // 配置 Gantt
-  gantt.config.date_format = '%Y-%m-%d %H:%i';
-  gantt.config.xml_date = '%Y-%m-%d %H:%i';
+  gantt.config.date_format = '%Y-%m-%d %H:%i'
+  gantt.config.xml_date = '%Y-%m-%d %H:%i'
   gantt.config.columns = [
     {
       name: 'text',
@@ -355,55 +406,65 @@ onMounted(() => {
       width: '*',
       tree: true,
       template: (task) => {
-        const text = task.text ?? '';
-        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`;
-      }
+        const text = task.text ?? ''
+        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`
+      },
     },
-    { name: 'start_date', label: t('gantt').startTime, align: 'center', width: 100 },
-    { name: 'end_date', label: t('gantt').endTime, align: 'center', width: 100 }
-  ];
-  gantt.config.open_tree_initially = true;
-  gantt.config.bar_height = 28;
-  gantt.config.row_height = 36;
-  gantt.config.drag_resize = false;
-  gantt.config.drag_move = false;
-  gantt.config.drag_progress = false;
-  gantt.config.drag_links = false;
+    {
+      name: 'start_date',
+      label: t('gantt').startTime,
+      align: 'center',
+      width: 100,
+    },
+    {
+      name: 'end_date',
+      label: t('gantt').endTime,
+      align: 'center',
+      width: 100,
+    },
+  ]
+  gantt.config.open_tree_initially = true
+  gantt.config.bar_height = 28
+  gantt.config.row_height = 36
+  gantt.config.drag_resize = false
+  gantt.config.drag_move = false
+  gantt.config.drag_progress = false
+  gantt.config.drag_links = false
 
   // 注释掉双击功能：禁用双击打开任务详情
-  gantt.config.details_on_dblclick = false;
+  gantt.config.details_on_dblclick = false
 
   // 自定义任务条样式 - 项目/任务/事项区分
-  gantt.templates.task_class = function(_start, _end, task) {
-    if (task.extendedProps?.isMultiDate) return 'gantt-multidate-item';
-    if (task.type === 'project') return 'gantt-project';
-    if (String(task.id).startsWith('item-')) return 'gantt-item';
-    return 'gantt-task';
-  };
+  gantt.templates.task_class = function (_start, _end, task) {
+    if (task.extendedProps?.isMultiDate) return 'gantt-multidate-item'
+    if (task.type === 'project') return 'gantt-project'
+    if (String(task.id).startsWith('item-')) return 'gantt-item'
+    return 'gantt-task'
+  }
 
   // 自定义任务文本 - 项目/任务/事项对应文字颜色
-  gantt.templates.task_text = function(start, end, task) {
+  gantt.templates.task_text = function (start, end, task) {
     if (task.extendedProps?.isMultiDate && task.extendedProps?.segments?.length) {
-      const totalDuration = end.getTime() - start.getTime();
-      if (totalDuration <= 0) return '';
-      const text = task.text ?? '';
-      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`;
+      const totalDuration = end.getTime() - start.getTime()
+      if (totalDuration <= 0) return ''
+      const text = task.text ?? ''
+      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`
       for (const seg of task.extendedProps.segments) {
-        const left = ((seg.startTs - start.getTime()) / totalDuration) * 100;
-        const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left;
-        html += `<div class="gantt-segment-bar" style="left:${left}%;width:${Math.max(width, 0.5)}%"></div>`;
+        const left = ((seg.startTs - start.getTime()) / totalDuration) * 100
+        const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left
+        html += `<div class="gantt-segment-bar" style="left:${left}%;width:${Math.max(width, 0.5)}%"></div>`
       }
-      return html;
+      return html
     }
-    const text = task.text ?? '';
-    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const text = task.text ?? ''
+    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const textColor = task.type === 'project'
       ? 'var(--b3-theme-on-secondary)'
       : String(task.id).startsWith('item-')
         ? 'var(--b3-theme-on-success)'
-        : 'var(--b3-theme-on-primary)';
+        : 'var(--b3-theme-on-primary)'
     return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
       color: ${textColor};
       font-weight: 500;
@@ -413,74 +474,74 @@ onMounted(() => {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    ">${text}</span>`;
-  };
+    ">${text}</span>`
+  }
 
   // 短条（≤1 天）在右侧显示文字，避免条内文字不可见
   // 日/周视图：短文字（如「ddd」「测试」）条内可读，不重复显示；月视图：条极短，一律右侧显示
-  const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000;
-  const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6;
-  gantt.templates.rightside_text = function(start, end, task) {
-    const text = task.text ?? '';
-    const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
-    if (duration > SHORT_BAR_THRESHOLD_MS || !text) return '';
-    if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
-    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000
+  const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6
+  gantt.templates.rightside_text = function (start, end, task) {
+    const text = task.text ?? ''
+    const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0)
+    if (duration > SHORT_BAR_THRESHOLD_MS || !text) return ''
+    if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return ''
+    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
       color: var(--b3-theme-on-background);
       font-size: 12px;
       white-space: nowrap;
       margin-left: 4px;
-    ">${text}</span>`;
-  };
+    ">${text}</span>`
+  }
 
   // 本地化 - 根据插件语言设置
-  gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en');
+  gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en')
 
   // 设置初始视图模式
-  setScaleConfig(props.viewMode);
+  setScaleConfig(props.viewMode)
 
-  gantt.init(ganttEl.value);
-  ganttInitialized = true;
+  gantt.init(ganttEl.value)
+  ganttInitialized = true
 
   // 先解绑再绑定，防止 Tab 切换时 destroy 未触发 onUnmounted 导致 handler 累积（点击一次弹多个框）
   if (onTaskClickId !== null) {
-    gantt.detachEvent(String(onTaskClickId));
-    onTaskClickId = null;
+    gantt.detachEvent(String(onTaskClickId))
+    onTaskClickId = null
   }
   onTaskClickId = gantt.attachEvent('onTaskClick', (id, e) => {
     // 仅点击右侧任务条时展示详情，左侧任务列表区域不触发
-    const target = e?.target as HTMLElement | undefined;
-    if (!target?.closest('.gantt_task_line')) return true;
-    handleGanttTaskClick(id);
-    return true;
-  });
+    const target = e?.target as HTMLElement | undefined
+    if (!target?.closest('.gantt_task_line')) return true
+    handleGanttTaskClick(id)
+    return true
+  })
   if (onContextMenuId !== null) {
-    gantt.detachEvent(String(onContextMenuId));
-    onContextMenuId = null;
+    gantt.detachEvent(String(onContextMenuId))
+    onContextMenuId = null
   }
   onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
-    return handleGanttContextMenu(taskId, linkId, event as MouseEvent);
-  });
+    return handleGanttContextMenu(taskId, linkId, event as MouseEvent)
+  })
 
-  ganttEl.value.addEventListener('mouseover', handleGanttTooltipMouseOver);
-  ganttEl.value.addEventListener('mouseout', handleGanttTooltipMouseOut);
+  ganttEl.value.addEventListener('mouseover', handleGanttTooltipMouseOver)
+  ganttEl.value.addEventListener('mouseout', handleGanttTooltipMouseOut)
 
   // 设置容器高度
-  setGanttHeight();
+  setGanttHeight()
 
   // 添加 resize 监听
-  window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', handleResize)
 
   // ResizeObserver 监听容器尺寸变化（与 CalendarView 一致，解决数据变动后空白）
   resizeObserver = new ResizeObserver(() => {
-    setGanttHeight();
-  });
-  resizeObserver.observe(ganttEl.value);
+    setGanttHeight()
+  })
+  resizeObserver.observe(ganttEl.value)
 
-  updateGantt();
-  ganttReady.value = true;
-});
+  updateGantt()
+  ganttReady.value = true
+})
 
 // 设置甘特图容器高度
 const setGanttHeight = () => {
@@ -488,21 +549,21 @@ const setGanttHeight = () => {
     // gantt-inner 已经通过 CSS 设置为 100% 高度
     // 只需要通知 gantt 重新计算尺寸
     if (ganttInitialized) {
-      gantt.setSizes();
+      gantt.setSizes()
     }
   }
-};
+}
 
 // resize 处理函数
 const handleResize = () => {
-  setGanttHeight();
-};
+  setGanttHeight()
+}
 
 // 动态加载甘特图主题样式
 const loadGanttStyles = () => {
   // 添加思源主题覆盖样式
-  const style = document.createElement('style');
-  style.id = 'dhtmlx-gantt-theme-styles';
+  const style = document.createElement('style')
+  style.id = 'dhtmlx-gantt-theme-styles'
   style.textContent = `
     /* 思源主题覆盖 */
     .gantt_container {
@@ -607,88 +668,108 @@ const loadGanttStyles = () => {
       z-index: 1;
       pointer-events: none;
     }
-  `;
-  document.head.appendChild(style);
-};
+  `
+  document.head.appendChild(style)
+}
 
 // 设置视图模式
 const setScaleConfig = (mode: 'day' | 'week' | 'month') => {
   switch (mode) {
     case 'day':
       gantt.config.scales = [
-        { unit: 'day', step: 1, format: '%d %M' }
-      ];
-      gantt.config.scale_height = 27;
-      break;
+        {
+          unit: 'day',
+          step: 1,
+          format: '%d %M',
+        },
+      ]
+      gantt.config.scale_height = 27
+      break
     case 'week':
       gantt.config.scales = [
-        { unit: 'week', step: 1, format: t('gantt').weekFormat },
-        { unit: 'day', step: 1, format: '%d' }
-      ];
-      gantt.config.scale_height = 50;
-      break;
+        {
+          unit: 'week',
+          step: 1,
+          format: t('gantt').weekFormat,
+        },
+        {
+          unit: 'day',
+          step: 1,
+          format: '%d',
+        },
+      ]
+      gantt.config.scale_height = 50
+      break
     case 'month':
       gantt.config.scales = [
-        { unit: 'month', step: 1, format: t('gantt').monthFormat },
-        { unit: 'week', step: 1, format: t('gantt').weekFormat }
-      ];
-      gantt.config.scale_height = 50;
-      break;
+        {
+          unit: 'month',
+          step: 1,
+          format: t('gantt').monthFormat,
+        },
+        {
+          unit: 'week',
+          step: 1,
+          format: t('gantt').weekFormat,
+        },
+      ]
+      gantt.config.scale_height = 50
+      break
   }
-};
+}
 
 onUnmounted(() => {
-  ganttReady.value = false;
+  ganttReady.value = false
   if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
   if (onTaskClickId !== null) {
-    gantt.detachEvent(String(onTaskClickId));
-    onTaskClickId = null;
+    gantt.detachEvent(String(onTaskClickId))
+    onTaskClickId = null
   }
   if (onContextMenuId !== null) {
-    gantt.detachEvent(String(onContextMenuId));
-    onContextMenuId = null;
+    gantt.detachEvent(String(onContextMenuId))
+    onContextMenuId = null
   }
   if (ganttEl.value) {
-    ganttEl.value.removeEventListener('mouseover', handleGanttTooltipMouseOver);
-    ganttEl.value.removeEventListener('mouseout', handleGanttTooltipMouseOut);
+    ganttEl.value.removeEventListener('mouseover', handleGanttTooltipMouseOver)
+    ganttEl.value.removeEventListener('mouseout', handleGanttTooltipMouseOut)
   }
   if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer);
-    eventTooltipTimer = null;
+    clearTimeout(eventTooltipTimer)
+    eventTooltipTimer = null
   }
   if (ganttInitialized) {
-    gantt.clearAll();
+    gantt.clearAll()
   }
   // 清理样式
-  const style = document.getElementById('dhtmlx-gantt-theme-styles');
+  const style = document.getElementById('dhtmlx-gantt-theme-styles')
   if (style) {
-    style.remove();
+    style.remove()
   }
   // 移除 resize 监听
-  window.removeEventListener('resize', handleResize);
-});
+  window.removeEventListener('resize', handleResize)
+})
 
 watch([ganttData, () => props.showItems, () => props.startDate, () => props.endDate], () => {
-  nextTick(() => updateGantt());
-}, { flush: 'post' });
+  nextTick(() => updateGantt())
+}, { flush: 'post' })
 
 watch(() => props.viewMode, (newMode) => {
   if (ganttInitialized) {
-    setScaleConfig(newMode);
-    gantt.render();
+    setScaleConfig(newMode)
+    gantt.render()
   }
-});
+})
 
 const updateGantt = () => {
-  if (!ganttInitialized) return;
-  gantt.clearAll();
-  gantt.parse({ data: ganttData.value });
-  gantt.render();
-  gantt.setSizes();
-};
+  if (!ganttInitialized) return
+  gantt.clearAll()
+  gantt.parse({ data: ganttData.value })
+  gantt.render()
+  gantt.setSizes()
+}
 </script>
 
 <style lang="scss">

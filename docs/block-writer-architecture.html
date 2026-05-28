@@ -1,553 +1,628 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Block Writer Architecture</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #f5f7fb;
-      --panel: #ffffff;
-      --text: #18212f;
-      --muted: #5f6b7a;
-      --line: #d6deea;
-      --blue: #2563eb;
-      --blue-soft: #dbeafe;
-      --green: #0f766e;
-      --green-soft: #ccfbf1;
-      --orange: #b45309;
-      --orange-soft: #ffedd5;
-      --red: #b91c1c;
-      --red-soft: #fee2e2;
-      --purple: #7c3aed;
-      --purple-soft: #ede9fe;
-      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    .wrap {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 32px 24px 56px;
-    }
-
-    h1, h2, h3, p, ul, ol, pre {
-      margin: 0;
-    }
-
-    .hero,
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-    }
-
-    .hero {
-      padding: 24px 28px;
-      margin-bottom: 24px;
-    }
-
-    .hero h1 {
-      font-size: 30px;
-      margin-bottom: 10px;
-    }
-
-    .hero p {
-      color: var(--muted);
-      max-width: 1100px;
-    }
-
-    .chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid transparent;
-    }
-
-    .chip.blue { background: var(--blue-soft); color: var(--blue); border-color: #bfdbfe; }
-    .chip.green { background: var(--green-soft); color: var(--green); border-color: #99f6e4; }
-    .chip.orange { background: var(--orange-soft); color: var(--orange); border-color: #fed7aa; }
-    .chip.purple { background: var(--purple-soft); color: var(--purple); border-color: #ddd6fe; }
-    .chip.red { background: var(--red-soft); color: var(--red); border-color: #fecaca; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1.6fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    .panel {
-      padding: 20px;
-    }
-
-    .panel h2 {
-      font-size: 19px;
-      margin-bottom: 14px;
-    }
-
-    .panel h3 {
-      font-size: 15px;
-      margin-bottom: 8px;
-    }
-
-    .panel + .panel,
-    .section + .section {
-      margin-top: 24px;
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    .list {
-      padding-left: 18px;
-      margin-top: 10px;
-    }
-
-    .list li + li {
-      margin-top: 7px;
-    }
-
-    .code,
-    code,
-    pre {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    code {
-      background: #eff3f8;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 12px;
-    }
-
-    pre {
-      padding: 14px 16px;
-      border-radius: 10px;
-      background: #0f172a;
-      color: #e2e8f0;
-      overflow-x: auto;
-      font-size: 12px;
-      line-height: 1.6;
-      margin-top: 10px;
-    }
-
-    .diagram {
-      width: 100%;
-      height: auto;
-      display: block;
-      border-radius: 12px;
-      border: 1px solid #d9e4f0;
-      background: linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
-    }
-
-    .note {
-      margin-top: 12px;
-      border-left: 4px solid var(--blue);
-      background: #f8fbff;
-      color: var(--muted);
-      padding: 12px 14px;
-      border-radius: 8px;
-    }
-
-    .matrix {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 13px;
-    }
-
-    .matrix th,
-    .matrix td {
-      border: 1px solid var(--line);
-      padding: 10px 12px;
-      vertical-align: top;
-      text-align: left;
-    }
-
-    .matrix th {
-      background: #f8fbff;
-      font-weight: 700;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 16px;
-      background: #fbfdff;
-    }
-
-    .card h3 {
-      margin-bottom: 6px;
-    }
-
-    .stack {
-      margin-top: 10px;
-      padding-left: 18px;
-    }
-
-    .stack li + li {
-      margin-top: 6px;
-    }
-
-    .priority {
-      display: inline-block;
-      min-width: 38px;
-      text-align: center;
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-right: 8px;
-    }
-
-    .p0 { background: var(--red-soft); color: var(--red); }
-    .p1 { background: var(--orange-soft); color: var(--orange); }
-    .p2 { background: var(--blue-soft); color: var(--blue); }
-
-    .footer {
-      margin-top: 24px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    @media (max-width: 1180px) {
-      .grid,
-      .cards {
-        grid-template-columns: 1fr;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Block Writer Architecture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #18212f;
+        --muted: #5f6b7a;
+        --line: #d6deea;
+        --blue: #2563eb;
+        --blue-soft: #dbeafe;
+        --green: #0f766e;
+        --green-soft: #ccfbf1;
+        --orange: #b45309;
+        --orange-soft: #ffedd5;
+        --red: #b91c1c;
+        --red-soft: #fee2e2;
+        --purple: #7c3aed;
+        --purple-soft: #ede9fe;
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
       }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <section class="hero">
-      <h1>Block Writer 当前架构图</h1>
-      <p>
-        这份文档梳理 <code>src/utils/blockWriter</code> 当前的入口路由、实际写入链路、典型调用栈，以及后续重构最值得动的点。
-        结论先行：现在的 <code>blockWriter</code> 已经不是单一 writer，而是一个“按 patch 组合和上下文动态分流”的 dispatcher，
-        其中 <code>date</code>、<code>slash + status</code>、<code>Protyle DOM</code>、<code>API/kramdown</code> 四类实现并存。
-      </p>
-      <div class="chips">
-        <span class="chip blue">入口: writeBlock()</span>
-        <span class="chip green">DOM/Transaction 路径</span>
-        <span class="chip orange">Kramdown/API 路径</span>
-        <span class="chip purple">组合 patch 特判</span>
-        <span class="chip red">重复逻辑开始增多</span>
-      </div>
-    </section>
 
-    <div class="grid">
-      <div>
-        <section class="panel section">
-          <h2>总体路由图</h2>
-          <svg class="diagram" viewBox="0 0 1280 880" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="block writer 架构总览">
-            <defs>
-              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-                <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
-              </marker>
-              <style>
-                .t{font: 13px sans-serif; fill:#18212f}
-                .s{font: 12px sans-serif; fill:#556274}
-                .box{stroke:#cbd5e1; stroke-width:1.2}
-                .line{stroke:#64748b; stroke-width:1.6; fill:none; marker-end:url(#arrow)}
-                .dash{stroke:#94a3b8; stroke-width:1.4; fill:none; stroke-dasharray:6 5; marker-end:url(#arrow)}
-              </style>
-            </defs>
+      * {
+        box-sizing: border-box;
+      }
 
-            <rect x="28" y="28" width="250" height="214" rx="14" fill="#eff6ff" class="box"/>
-            <text x="46" y="58" class="t">调用方</text>
-            <rect x="46" y="78" width="214" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="102" class="t">slashCommands.ts</text>
-            <rect x="46" y="128" width="214" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="152" class="t">日期 / 日历入口</text>
-            <rect x="46" y="178" width="214" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="202" class="t">习惯打卡 / 归档</text>
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
 
-            <rect x="334" y="28" width="290" height="214" rx="14" fill="#f5f3ff" class="box"/>
-            <text x="352" y="58" class="t">index.ts / writeBlock()</text>
-            <rect x="352" y="78" width="254" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="366" y="102" class="t">识别 patchArray 形态</text>
-            <rect x="352" y="128" width="254" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="366" y="152" class="t">优先匹配组合路径</text>
-            <rect x="352" y="178" width="254" height="38" rx="8" fill="#fff" class="box"/>
-            <text x="366" y="202" class="t">Protyle 失败后再落 API</text>
+      .wrap {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 32px 24px 56px;
+      }
 
-            <rect x="680" y="28" width="572" height="214" rx="14" fill="#f0fdf4" class="box"/>
-            <text x="698" y="58" class="t">专用分支</text>
-            <rect x="698" y="78" width="250" height="42" rx="8" fill="#fff" class="box"/>
-            <text x="712" y="104" class="t">writeStatusWithSlashCleanup()</text>
-            <text x="712" y="118" class="s">removeSlash + setStatus</text>
-            <rect x="978" y="78" width="250" height="42" rx="8" fill="#fff" class="box"/>
-            <text x="992" y="104" class="t">writeDatePatchWithSlashCleanup()</text>
-            <text x="992" y="118" class="s">removeSlash + addDate</text>
-            <rect x="698" y="144" width="250" height="42" rx="8" fill="#fff" class="box"/>
-            <text x="712" y="170" class="t">writeDatePatch()</text>
-            <text x="712" y="184" class="s">addDate 专门入口</text>
-            <rect x="978" y="144" width="250" height="42" rx="8" fill="#fff" class="box"/>
-            <text x="992" y="170" class="t">writeViaProtyle()</text>
-            <text x="992" y="184" class="s">removeSlash / status / habit</text>
+      h1,
+      h2,
+      h3,
+      p,
+      ul,
+      ol,
+      pre {
+        margin: 0;
+      }
 
-            <rect x="28" y="304" width="390" height="248" rx="14" fill="#ecfeff" class="box"/>
-            <text x="46" y="334" class="t">DOM / transaction 层</text>
-            <rect x="46" y="356" width="354" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="381" class="t">renderMarkdownIntoBlockEditable()</text>
-            <rect x="46" y="408" width="354" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="433" class="t">blockElementToMarkdownContent()</text>
-            <rect x="46" y="460" width="354" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="485" class="t">deleteSlashRangeText() / getActiveSlashRange()</text>
-            <rect x="46" y="512" width="354" height="24" rx="8" fill="#fff" class="box"/>
-            <text x="60" y="529" class="t">protyle.transaction(...)</text>
+      .hero,
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
 
-            <rect x="462" y="304" width="370" height="248" rx="14" fill="#fff7ed" class="box"/>
-            <text x="480" y="334" class="t">Kramdown 变换层</text>
-            <rect x="480" y="356" width="334" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="494" y="381" class="t">splitKramdownBlock() / rebuildKramdownBlock()</text>
-            <rect x="480" y="408" width="334" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="494" y="433" class="t">applyBlockPatch() / applyBlockPatches()</text>
-            <rect x="480" y="460" width="334" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="494" y="485" class="t">itemLineMarkers / parser helpers</text>
-            <rect x="480" y="512" width="334" height="24" rx="8" fill="#fff" class="box"/>
-            <text x="494" y="529" class="t">processLineText(ALL_SLASH_COMMAND_FILTERS)</text>
+      .hero {
+        padding: 24px 28px;
+        margin-bottom: 24px;
+      }
 
-            <rect x="876" y="304" width="376" height="248" rx="14" fill="#fef2f2" class="box"/>
-            <text x="894" y="334" class="t">API / 持久化层</text>
-            <rect x="894" y="356" width="340" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="908" y="381" class="t">resolveApiBlockTarget()</text>
-            <rect x="894" y="408" width="340" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="908" y="433" class="t">markdownToBlockDOM()</text>
-            <rect x="894" y="460" width="340" height="40" rx="8" fill="#fff" class="box"/>
-            <text x="908" y="485" class="t">updateBlock('dom' | 'markdown')</text>
-            <rect x="894" y="512" width="340" height="24" rx="8" fill="#fff" class="box"/>
-            <text x="908" y="529" class="t">insertBlock(...)</text>
+      .hero h1 {
+        font-size: 30px;
+        margin-bottom: 10px;
+      }
 
-            <rect x="190" y="614" width="390" height="186" rx="14" fill="#ffffff" class="box"/>
-            <text x="208" y="644" class="t">当前的事实</text>
-            <text x="208" y="674" class="s">1. 路由规则主要写在 writeBlock() 的 if/else 中。</text>
-            <text x="208" y="702" class="s">2. status 和 date 已经各自长出 slash-cleanup 专用 writer。</text>
-            <text x="208" y="730" class="s">3. DOM 事务提交、updated attr、range 定位有重复实现。</text>
-            <text x="208" y="758" class="s">4. API 路径仍然会做 markdown -&gt; DOM 的二次序列化。</text>
+      .hero p {
+        color: var(--muted);
+        max-width: 1100px;
+      }
 
-            <rect x="678" y="614" width="390" height="186" rx="14" fill="#ffffff" class="box"/>
-            <text x="696" y="644" class="t">设计张力</text>
-            <text x="696" y="674" class="s">1. 同一个 patch，既可能走 DOM，又可能走 API。</text>
-            <text x="696" y="702" class="s">2. slash 相关场景要求 selection/range，天然依赖 Protyle。</text>
-            <text x="696" y="730" class="s">3. task list 的真实写入目标有时是 paragraph，有时是 list item。</text>
-            <text x="696" y="758" class="s">4. datePatchWriter 已经兼顾解析、决策、写入三种职责。</text>
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
 
-            <path class="line" d="M278 136 L334 136"/>
-            <path class="line" d="M624 96 L698 99"/>
-            <path class="line" d="M624 156 L698 165"/>
-            <path class="line" d="M624 206 L978 165"/>
-            <path class="line" d="M823 120 L823 304"/>
-            <path class="line" d="M1103 120 L1064 304"/>
-            <path class="line" d="M823 186 L647 304"/>
-            <path class="line" d="M1103 186 L1103 304"/>
-            <path class="dash" d="M334 220 L1020 460"/>
-            <path class="dash" d="M647 500 L876 500"/>
-          </svg>
-          <div class="note">
-            <strong>一句话总结：</strong>
-            <code>writeBlock()</code> 现在承担了“策略分发器”的角色，但策略本身仍然散落在
-            <code>datePatchWriter.ts</code>、<code>statusPatchWriter.ts</code>、<code>protyleTransport.ts</code>、
-            <code>markdownWriter.ts</code> 和 <code>apiTransport.ts</code> 里。
-          </div>
-        </section>
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid transparent;
+      }
 
-        <section class="panel section">
-          <h2>模块职责表</h2>
-          <table class="matrix">
-            <thead>
-              <tr>
-                <th>模块</th>
-                <th>当前职责</th>
-                <th>观察</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>index.ts</code></td>
-                <td>统一入口，按 patch 组合和上下文分流。</td>
-                <td>核心路由规则集中在这里，但形式已经是累加式 if/else。</td>
-              </tr>
-              <tr>
-                <td><code>protyleTransport.ts</code></td>
-                <td>处理适合 DOM 局部编辑的 patch，直接提交 transaction。</td>
-                <td>适合细粒度 patch，但对组合 patch 没有统一批处理模型。</td>
-              </tr>
-              <tr>
-                <td><code>statusPatchWriter.ts</code></td>
-                <td>处理 <code>removeSlashCommand + setStatus</code> 的组合写入。</td>
-                <td>已经复制了 range 定位、DOM 草稿、updated attr、transaction 提交逻辑。</td>
-              </tr>
-              <tr>
-                <td><code>datePatchWriter.ts</code></td>
-                <td>处理 <code>addDate</code>，兼顾 source 解析、markdown 生成、writer fallback。</td>
-                <td>职责最重，也是目前最像“子系统”的模块。</td>
-              </tr>
-              <tr>
-                <td><code>markdownWriter.ts</code></td>
-                <td>把完整 markdown 渲染回当前 block，必要时降级到 API。</td>
-                <td>和 <code>statusPatchWriter</code> / <code>protyleTransport</code> 都有 transaction 提交重复。</td>
-              </tr>
-              <tr>
-                <td><code>apiTransport.ts</code></td>
-                <td>API 写入与插入，依赖 resolver 和 markdown -&gt; DOM 序列化。</td>
-                <td>简单直接，但不知道 slash / selection / 当前 DOM 状态。</td>
-              </tr>
-              <tr>
-                <td><code>blockTargetResolver.ts</code></td>
-                <td>解析 status patch 应该落到 paragraph 还是 task list item。</td>
-                <td><code>replaceMode</code> 已暴露但当前基本未发挥作用。</td>
-              </tr>
-              <tr>
-                <td><code>kramdownModifier.ts</code></td>
-                <td>纯 markdown patch 引擎。</td>
-                <td>这是目前最干净、最容易抽离测试的层。</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
+      .chip.blue {
+        background: var(--blue-soft);
+        color: var(--blue);
+        border-color: #bfdbfe;
+      }
+      .chip.green {
+        background: var(--green-soft);
+        color: var(--green);
+        border-color: #99f6e4;
+      }
+      .chip.orange {
+        background: var(--orange-soft);
+        color: var(--orange);
+        border-color: #fed7aa;
+      }
+      .chip.purple {
+        background: var(--purple-soft);
+        color: var(--purple);
+        border-color: #ddd6fe;
+      }
+      .chip.red {
+        background: var(--red-soft);
+        color: var(--red);
+        border-color: #fecaca;
+      }
 
-        <section class="panel section">
-          <h2>当前路由矩阵</h2>
-          <table class="matrix">
-            <thead>
-              <tr>
-                <th>输入</th>
-                <th>优先路径</th>
-                <th>失败后的后备路径</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>[removeSlashCommand, setStatus]</code></td>
-                <td><code>writeStatusWithSlashCleanup()</code></td>
-                <td>先 <code>writeViaProtyle(removeSlash)</code>，再等待 transaction flush，最后递归 <code>writeBlock(setStatus)</code></td>
-              </tr>
-              <tr>
-                <td><code>[removeSlashCommand, addDate]</code></td>
-                <td><code>writeDatePatchWithSlashCleanup()</code></td>
-                <td>先删 slash，再等待 flush，最后走 <code>writeDatePatch()</code></td>
-              </tr>
-              <tr>
-                <td>单独 <code>addDate</code></td>
-                <td><code>writeDatePatch()</code></td>
-                <td>由 <code>createProtyleMarkdownWriter()</code> 决定 inline 或 API</td>
-              </tr>
-              <tr>
-                <td>有 <code>protyle + nodeElement</code> 的普通 patch</td>
-                <td><code>writeViaProtyle()</code></td>
-                <td>若不是 slash-only 场景，则继续落到 <code>writeViaApi()</code></td>
-              </tr>
-              <tr>
-                <td>没有 Protyle 上下文</td>
-                <td><code>writeViaApi()</code></td>
-                <td>无</td>
-              </tr>
-              <tr>
-                <td><code>insertBlockAfter*</code></td>
-                <td><code>insertViaApi()</code></td>
-                <td>无</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      </div>
+      .grid {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
 
-      <div>
-        <section class="panel section">
-          <h2>关键调用栈</h2>
-          <div class="cards">
-            <div class="card">
-              <h3><code>/fq</code> 非任务块</h3>
-              <p class="muted">现在已经收敛为单次批量写入。</p>
-              <ol class="stack">
-                <li><code>slashCommands.ts</code> 组装 <code>writeContext</code></li>
-                <li><code>writeBlock([removeSlashCommand, setStatus])</code></li>
-                <li><code>writeStatusWithSlashCleanup()</code></li>
-                <li>克隆当前 DOM，按 slash range 删除 <code>/fq</code></li>
-                <li><code>blockElementToMarkdownContent()</code> 取草稿 markdown</li>
-                <li><code>applyBlockPatch(setStatus)</code> 生成新 markdown</li>
-                <li><code>renderMarkdownIntoBlockEditable()</code> 回写当前块</li>
-                <li><code>protyle.transaction(update, undo)</code></li>
-              </ol>
+      .panel {
+        padding: 20px;
+      }
+
+      .panel h2 {
+        font-size: 19px;
+        margin-bottom: 14px;
+      }
+
+      .panel h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      .panel + .panel,
+      .section + .section {
+        margin-top: 24px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .list {
+        padding-left: 18px;
+        margin-top: 10px;
+      }
+
+      .list li + li {
+        margin-top: 7px;
+      }
+
+      .code,
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      code {
+        background: #eff3f8;
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 12px;
+      }
+
+      pre {
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #e2e8f0;
+        overflow-x: auto;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: 10px;
+      }
+
+      .diagram {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 12px;
+        border: 1px solid #d9e4f0;
+        background: linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
+      }
+
+      .note {
+        margin-top: 12px;
+        border-left: 4px solid var(--blue);
+        background: #f8fbff;
+        color: var(--muted);
+        padding: 12px 14px;
+        border-radius: 8px;
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 13px;
+      }
+
+      .matrix th,
+      .matrix td {
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        vertical-align: top;
+        text-align: left;
+      }
+
+      .matrix th {
+        background: #f8fbff;
+        font-weight: 700;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px;
+        background: #fbfdff;
+      }
+
+      .card h3 {
+        margin-bottom: 6px;
+      }
+
+      .stack {
+        margin-top: 10px;
+        padding-left: 18px;
+      }
+
+      .stack li + li {
+        margin-top: 6px;
+      }
+
+      .priority {
+        display: inline-block;
+        min-width: 38px;
+        text-align: center;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-right: 8px;
+      }
+
+      .p0 {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .p1 {
+        background: var(--orange-soft);
+        color: var(--orange);
+      }
+      .p2 {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 1180px) {
+        .grid,
+        .cards {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="hero">
+        <h1>Block Writer 当前架构图</h1>
+        <p>
+          这份文档梳理
+          <code>src/utils/blockWriter</code> 当前的入口路由、实际写入链路、典型调用栈，以及后续重构最值得动的点。
+          结论先行：现在的 <code>blockWriter</code> 已经不是单一 writer，而是一个“按 patch 组合和上下文动态分流”的
+          dispatcher， 其中 <code>date</code>、<code>slash + status</code>、<code>Protyle DOM</code>、<code
+            >API/kramdown</code
+          >
+          四类实现并存。
+        </p>
+        <div class="chips">
+          <span class="chip blue">入口: writeBlock()</span>
+          <span class="chip green">DOM/Transaction 路径</span>
+          <span class="chip orange">Kramdown/API 路径</span>
+          <span class="chip purple">组合 patch 特判</span>
+          <span class="chip red">重复逻辑开始增多</span>
+        </div>
+      </section>
+
+      <div class="grid">
+        <div>
+          <section class="panel section">
+            <h2>总体路由图</h2>
+            <svg
+              class="diagram"
+              viewBox="0 0 1280 880"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="block writer 架构总览"
+            >
+              <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#64748b" />
+                </marker>
+                <style>
+                  .t {
+                    font: 13px sans-serif;
+                    fill: #18212f;
+                  }
+                  .s {
+                    font: 12px sans-serif;
+                    fill: #556274;
+                  }
+                  .box {
+                    stroke: #cbd5e1;
+                    stroke-width: 1.2;
+                  }
+                  .line {
+                    stroke: #64748b;
+                    stroke-width: 1.6;
+                    fill: none;
+                    marker-end: url(#arrow);
+                  }
+                  .dash {
+                    stroke: #94a3b8;
+                    stroke-width: 1.4;
+                    fill: none;
+                    stroke-dasharray: 6 5;
+                    marker-end: url(#arrow);
+                  }
+                </style>
+              </defs>
+
+              <rect x="28" y="28" width="250" height="214" rx="14" fill="#eff6ff" class="box" />
+              <text x="46" y="58" class="t">调用方</text>
+              <rect x="46" y="78" width="214" height="38" rx="8" fill="#fff" class="box" />
+              <text x="60" y="102" class="t">slashCommands.ts</text>
+              <rect x="46" y="128" width="214" height="38" rx="8" fill="#fff" class="box" />
+              <text x="60" y="152" class="t">日期 / 日历入口</text>
+              <rect x="46" y="178" width="214" height="38" rx="8" fill="#fff" class="box" />
+              <text x="60" y="202" class="t">习惯打卡 / 归档</text>
+
+              <rect x="334" y="28" width="290" height="214" rx="14" fill="#f5f3ff" class="box" />
+              <text x="352" y="58" class="t">index.ts / writeBlock()</text>
+              <rect x="352" y="78" width="254" height="38" rx="8" fill="#fff" class="box" />
+              <text x="366" y="102" class="t">识别 patchArray 形态</text>
+              <rect x="352" y="128" width="254" height="38" rx="8" fill="#fff" class="box" />
+              <text x="366" y="152" class="t">优先匹配组合路径</text>
+              <rect x="352" y="178" width="254" height="38" rx="8" fill="#fff" class="box" />
+              <text x="366" y="202" class="t">Protyle 失败后再落 API</text>
+
+              <rect x="680" y="28" width="572" height="214" rx="14" fill="#f0fdf4" class="box" />
+              <text x="698" y="58" class="t">专用分支</text>
+              <rect x="698" y="78" width="250" height="42" rx="8" fill="#fff" class="box" />
+              <text x="712" y="104" class="t">writeStatusWithSlashCleanup()</text>
+              <text x="712" y="118" class="s">removeSlash + setStatus</text>
+              <rect x="978" y="78" width="250" height="42" rx="8" fill="#fff" class="box" />
+              <text x="992" y="104" class="t">writeDatePatchWithSlashCleanup()</text>
+              <text x="992" y="118" class="s">removeSlash + addDate</text>
+              <rect x="698" y="144" width="250" height="42" rx="8" fill="#fff" class="box" />
+              <text x="712" y="170" class="t">writeDatePatch()</text>
+              <text x="712" y="184" class="s">addDate 专门入口</text>
+              <rect x="978" y="144" width="250" height="42" rx="8" fill="#fff" class="box" />
+              <text x="992" y="170" class="t">writeViaProtyle()</text>
+              <text x="992" y="184" class="s">removeSlash / status / habit</text>
+
+              <rect x="28" y="304" width="390" height="248" rx="14" fill="#ecfeff" class="box" />
+              <text x="46" y="334" class="t">DOM / transaction 层</text>
+              <rect x="46" y="356" width="354" height="40" rx="8" fill="#fff" class="box" />
+              <text x="60" y="381" class="t">renderMarkdownIntoBlockEditable()</text>
+              <rect x="46" y="408" width="354" height="40" rx="8" fill="#fff" class="box" />
+              <text x="60" y="433" class="t">blockElementToMarkdownContent()</text>
+              <rect x="46" y="460" width="354" height="40" rx="8" fill="#fff" class="box" />
+              <text x="60" y="485" class="t">deleteSlashRangeText() / getActiveSlashRange()</text>
+              <rect x="46" y="512" width="354" height="24" rx="8" fill="#fff" class="box" />
+              <text x="60" y="529" class="t">protyle.transaction(...)</text>
+
+              <rect x="462" y="304" width="370" height="248" rx="14" fill="#fff7ed" class="box" />
+              <text x="480" y="334" class="t">Kramdown 变换层</text>
+              <rect x="480" y="356" width="334" height="40" rx="8" fill="#fff" class="box" />
+              <text x="494" y="381" class="t">splitKramdownBlock() / rebuildKramdownBlock()</text>
+              <rect x="480" y="408" width="334" height="40" rx="8" fill="#fff" class="box" />
+              <text x="494" y="433" class="t">applyBlockPatch() / applyBlockPatches()</text>
+              <rect x="480" y="460" width="334" height="40" rx="8" fill="#fff" class="box" />
+              <text x="494" y="485" class="t">itemLineMarkers / parser helpers</text>
+              <rect x="480" y="512" width="334" height="24" rx="8" fill="#fff" class="box" />
+              <text x="494" y="529" class="t">processLineText(ALL_SLASH_COMMAND_FILTERS)</text>
+
+              <rect x="876" y="304" width="376" height="248" rx="14" fill="#fef2f2" class="box" />
+              <text x="894" y="334" class="t">API / 持久化层</text>
+              <rect x="894" y="356" width="340" height="40" rx="8" fill="#fff" class="box" />
+              <text x="908" y="381" class="t">resolveApiBlockTarget()</text>
+              <rect x="894" y="408" width="340" height="40" rx="8" fill="#fff" class="box" />
+              <text x="908" y="433" class="t">markdownToBlockDOM()</text>
+              <rect x="894" y="460" width="340" height="40" rx="8" fill="#fff" class="box" />
+              <text x="908" y="485" class="t">updateBlock('dom' | 'markdown')</text>
+              <rect x="894" y="512" width="340" height="24" rx="8" fill="#fff" class="box" />
+              <text x="908" y="529" class="t">insertBlock(...)</text>
+
+              <rect x="190" y="614" width="390" height="186" rx="14" fill="#ffffff" class="box" />
+              <text x="208" y="644" class="t">当前的事实</text>
+              <text x="208" y="674" class="s">1. 路由规则主要写在 writeBlock() 的 if/else 中。</text>
+              <text x="208" y="702" class="s">2. status 和 date 已经各自长出 slash-cleanup 专用 writer。</text>
+              <text x="208" y="730" class="s">3. DOM 事务提交、updated attr、range 定位有重复实现。</text>
+              <text x="208" y="758" class="s">4. API 路径仍然会做 markdown -&gt; DOM 的二次序列化。</text>
+
+              <rect x="678" y="614" width="390" height="186" rx="14" fill="#ffffff" class="box" />
+              <text x="696" y="644" class="t">设计张力</text>
+              <text x="696" y="674" class="s">1. 同一个 patch，既可能走 DOM，又可能走 API。</text>
+              <text x="696" y="702" class="s">2. slash 相关场景要求 selection/range，天然依赖 Protyle。</text>
+              <text x="696" y="730" class="s">3. task list 的真实写入目标有时是 paragraph，有时是 list item。</text>
+              <text x="696" y="758" class="s">4. datePatchWriter 已经兼顾解析、决策、写入三种职责。</text>
+
+              <path class="line" d="M278 136 L334 136" />
+              <path class="line" d="M624 96 L698 99" />
+              <path class="line" d="M624 156 L698 165" />
+              <path class="line" d="M624 206 L978 165" />
+              <path class="line" d="M823 120 L823 304" />
+              <path class="line" d="M1103 120 L1064 304" />
+              <path class="line" d="M823 186 L647 304" />
+              <path class="line" d="M1103 186 L1103 304" />
+              <path class="dash" d="M334 220 L1020 460" />
+              <path class="dash" d="M647 500 L876 500" />
+            </svg>
+            <div class="note">
+              <strong>一句话总结：</strong>
+              <code>writeBlock()</code> 现在承担了“策略分发器”的角色，但策略本身仍然散落在
+              <code>datePatchWriter.ts</code>、<code>statusPatchWriter.ts</code>、<code>protyleTransport.ts</code>、
+              <code>markdownWriter.ts</code> 和 <code>apiTransport.ts</code> 里。
             </div>
+          </section>
 
-            <div class="card">
-              <h3><code>/fq</code> 任务列表块</h3>
-              <p class="muted">和上面同链，但提交目标变成 list item。</p>
-              <ol class="stack">
-                <li><code>slashCommands.ts</code> 带上 <code>listItemBlockId</code></li>
-                <li><code>writeBlock([removeSlashCommand, setStatus])</code></li>
-                <li><code>writeStatusWithSlashCleanup()</code></li>
-                <li>定位外层 <code>NodeListItem</code> 作为 targetElement</li>
-                <li>删除 slash，生成草稿 markdown</li>
-                <li><code>applyBlockPatch()</code> 为任务行补 <code>❌</code></li>
-                <li>回写 list item DOM</li>
-                <li>按 <code>listItemBlockId</code> 提交单次 transaction</li>
-              </ol>
+          <section class="panel section">
+            <h2>模块职责表</h2>
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>模块</th>
+                  <th>当前职责</th>
+                  <th>观察</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>index.ts</code></td>
+                  <td>统一入口，按 patch 组合和上下文分流。</td>
+                  <td>核心路由规则集中在这里，但形式已经是累加式 if/else。</td>
+                </tr>
+                <tr>
+                  <td><code>protyleTransport.ts</code></td>
+                  <td>处理适合 DOM 局部编辑的 patch，直接提交 transaction。</td>
+                  <td>适合细粒度 patch，但对组合 patch 没有统一批处理模型。</td>
+                </tr>
+                <tr>
+                  <td><code>statusPatchWriter.ts</code></td>
+                  <td>处理 <code>removeSlashCommand + setStatus</code> 的组合写入。</td>
+                  <td>已经复制了 range 定位、DOM 草稿、updated attr、transaction 提交逻辑。</td>
+                </tr>
+                <tr>
+                  <td><code>datePatchWriter.ts</code></td>
+                  <td>处理 <code>addDate</code>，兼顾 source 解析、markdown 生成、writer fallback。</td>
+                  <td>职责最重，也是目前最像“子系统”的模块。</td>
+                </tr>
+                <tr>
+                  <td><code>markdownWriter.ts</code></td>
+                  <td>把完整 markdown 渲染回当前 block，必要时降级到 API。</td>
+                  <td>和 <code>statusPatchWriter</code> / <code>protyleTransport</code> 都有 transaction 提交重复。</td>
+                </tr>
+                <tr>
+                  <td><code>apiTransport.ts</code></td>
+                  <td>API 写入与插入，依赖 resolver 和 markdown -&gt; DOM 序列化。</td>
+                  <td>简单直接，但不知道 slash / selection / 当前 DOM 状态。</td>
+                </tr>
+                <tr>
+                  <td><code>blockTargetResolver.ts</code></td>
+                  <td>解析 status patch 应该落到 paragraph 还是 task list item。</td>
+                  <td><code>replaceMode</code> 已暴露但当前基本未发挥作用。</td>
+                </tr>
+                <tr>
+                  <td><code>kramdownModifier.ts</code></td>
+                  <td>纯 markdown patch 引擎。</td>
+                  <td>这是目前最干净、最容易抽离测试的层。</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel section">
+            <h2>当前路由矩阵</h2>
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>输入</th>
+                  <th>优先路径</th>
+                  <th>失败后的后备路径</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>[removeSlashCommand, setStatus]</code></td>
+                  <td><code>writeStatusWithSlashCleanup()</code></td>
+                  <td>
+                    先 <code>writeViaProtyle(removeSlash)</code>，再等待 transaction flush，最后递归
+                    <code>writeBlock(setStatus)</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>[removeSlashCommand, addDate]</code></td>
+                  <td><code>writeDatePatchWithSlashCleanup()</code></td>
+                  <td>先删 slash，再等待 flush，最后走 <code>writeDatePatch()</code></td>
+                </tr>
+                <tr>
+                  <td>单独 <code>addDate</code></td>
+                  <td><code>writeDatePatch()</code></td>
+                  <td>由 <code>createProtyleMarkdownWriter()</code> 决定 inline 或 API</td>
+                </tr>
+                <tr>
+                  <td>有 <code>protyle + nodeElement</code> 的普通 patch</td>
+                  <td><code>writeViaProtyle()</code></td>
+                  <td>若不是 slash-only 场景，则继续落到 <code>writeViaApi()</code></td>
+                </tr>
+                <tr>
+                  <td>没有 Protyle 上下文</td>
+                  <td><code>writeViaApi()</code></td>
+                  <td>无</td>
+                </tr>
+                <tr>
+                  <td><code>insertBlockAfter*</code></td>
+                  <td><code>insertViaApi()</code></td>
+                  <td>无</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div>
+          <section class="panel section">
+            <h2>关键调用栈</h2>
+            <div class="cards">
+              <div class="card">
+                <h3><code>/fq</code> 非任务块</h3>
+                <p class="muted">现在已经收敛为单次批量写入。</p>
+                <ol class="stack">
+                  <li><code>slashCommands.ts</code> 组装 <code>writeContext</code></li>
+                  <li><code>writeBlock([removeSlashCommand, setStatus])</code></li>
+                  <li><code>writeStatusWithSlashCleanup()</code></li>
+                  <li>克隆当前 DOM，按 slash range 删除 <code>/fq</code></li>
+                  <li><code>blockElementToMarkdownContent()</code> 取草稿 markdown</li>
+                  <li><code>applyBlockPatch(setStatus)</code> 生成新 markdown</li>
+                  <li><code>renderMarkdownIntoBlockEditable()</code> 回写当前块</li>
+                  <li><code>protyle.transaction(update, undo)</code></li>
+                </ol>
+              </div>
+
+              <div class="card">
+                <h3><code>/fq</code> 任务列表块</h3>
+                <p class="muted">和上面同链，但提交目标变成 list item。</p>
+                <ol class="stack">
+                  <li><code>slashCommands.ts</code> 带上 <code>listItemBlockId</code></li>
+                  <li><code>writeBlock([removeSlashCommand, setStatus])</code></li>
+                  <li><code>writeStatusWithSlashCleanup()</code></li>
+                  <li>定位外层 <code>NodeListItem</code> 作为 targetElement</li>
+                  <li>删除 slash，生成草稿 markdown</li>
+                  <li><code>applyBlockPatch()</code> 为任务行补 <code>❌</code></li>
+                  <li>回写 list item DOM</li>
+                  <li>按 <code>listItemBlockId</code> 提交单次 transaction</li>
+                </ol>
+              </div>
+
+              <div class="card">
+                <h3><code>/jt</code> 或 slash + 日期</h3>
+                <p class="muted">这是另一条组合分支。</p>
+                <ol class="stack">
+                  <li>slash handler 调 <code>writeBlock([removeSlashCommand, addDate])</code></li>
+                  <li><code>writeDatePatchWithSlashCleanup()</code></li>
+                  <li>先从当前 DOM 草稿里删 slash</li>
+                  <li><code>prepareDatePatchWriteFromSource()</code> 生成最终 markdown</li>
+                  <li><code>writeMarkdownToCurrentBlock()</code> 提交 transaction</li>
+                  <li>若无法同块完成，再回退到 <code>writeDatePatch()</code> / API</li>
+                </ol>
+              </div>
+
+              <div class="card">
+                <h3>普通状态写入</h3>
+                <p class="muted">不带 slash 的 status 仍然是双实现。</p>
+                <ol class="stack">
+                  <li><code>writeBlock(setStatus)</code></li>
+                  <li>若有 Protyle 上下文，先走 <code>writeViaProtyle()</code></li>
+                  <li>任务列表完成态可能直接 toggle checkbox DOM</li>
+                  <li>否则 <code>handleRenderedMarkdownPatchViaDOM()</code></li>
+                  <li>还不行就 <code>writeViaApi()</code></li>
+                  <li><code>resolveApiBlockTarget()</code> 决定目标 block</li>
+                  <li><code>applyBlockPatch()</code> + <code>updateBlock()</code></li>
+                </ol>
+              </div>
             </div>
+          </section>
 
-            <div class="card">
-              <h3><code>/jt</code> 或 slash + 日期</h3>
-              <p class="muted">这是另一条组合分支。</p>
-              <ol class="stack">
-                <li>slash handler 调 <code>writeBlock([removeSlashCommand, addDate])</code></li>
-                <li><code>writeDatePatchWithSlashCleanup()</code></li>
-                <li>先从当前 DOM 草稿里删 slash</li>
-                <li><code>prepareDatePatchWriteFromSource()</code> 生成最终 markdown</li>
-                <li><code>writeMarkdownToCurrentBlock()</code> 提交 transaction</li>
-                <li>若无法同块完成，再回退到 <code>writeDatePatch()</code> / API</li>
-              </ol>
-            </div>
-
-            <div class="card">
-              <h3>普通状态写入</h3>
-              <p class="muted">不带 slash 的 status 仍然是双实现。</p>
-              <ol class="stack">
-                <li><code>writeBlock(setStatus)</code></li>
-                <li>若有 Protyle 上下文，先走 <code>writeViaProtyle()</code></li>
-                <li>任务列表完成态可能直接 toggle checkbox DOM</li>
-                <li>否则 <code>handleRenderedMarkdownPatchViaDOM()</code></li>
-                <li>还不行就 <code>writeViaApi()</code></li>
-                <li><code>resolveApiBlockTarget()</code> 决定目标 block</li>
-                <li><code>applyBlockPatch()</code> + <code>updateBlock()</code></li>
-              </ol>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel section">
-          <h2>调用栈对照</h2>
-          <pre>slashCommands.ts
+          <section class="panel section">
+            <h2>调用栈对照</h2>
+            <pre>
+slashCommands.ts
   -> writeBlock(context, patches)
      -> [组合分支] writeStatusWithSlashCleanup()
         -> resolveSlashContext()
@@ -568,60 +643,109 @@ writeBlock(context, patch)
      -> getBlockKramdown()
      -> applyBlockPatch/applyBlockPatches()
      -> markdownToBlockDOM()
-     -> updateBlock()</pre>
-        </section>
+     -> updateBlock()</pre
+            >
+          </section>
 
-        <section class="panel section">
-          <h2>现在最明显的结构问题</h2>
-          <ul class="list">
-            <li><strong>路由决策和 patch 实现耦合太深。</strong> 新增一个组合 patch，往往要同时改 <code>writeBlock()</code>、某个专用 writer、对应 slash handler 和测试。</li>
-            <li><strong>DOM 事务提交逻辑重复。</strong> <code>formatUpdatedAttr()</code>、<code>transaction(do, undo)</code>、<code>oldHTML/newHTML</code> 比较在多个文件里出现。</li>
-            <li><strong>slash 上下文恢复逻辑重复。</strong> <code>resolveSlashContext()</code>、<code>getNodePath()</code>、<code>getNodeByPath()</code> 在 <code>datePatchWriter</code> 和 <code>statusPatchWriter</code> 里各有一份。</li>
-            <li><strong>datePatchWriter 过重。</strong> 它同时负责 block source 选择、日期表达式优化、跨父文档场景、同块 transaction 和 API fallback。</li>
-            <li><strong>调用方协议不一致。</strong> <code>/fq</code> 已经是批量组合写入，<code>/done</code> 仍然是“先 removeSlash，再 setStatus”的两阶段流程。</li>
-            <li><strong>API 路径对 DOM 结构认知不足。</strong> 它知道 markdown，却不知道当前编辑中的真实 DOM/selection 状态，遇到 slash 场景天然弱势。</li>
-          </ul>
-        </section>
+          <section class="panel section">
+            <h2>现在最明显的结构问题</h2>
+            <ul class="list">
+              <li>
+                <strong>路由决策和 patch 实现耦合太深。</strong> 新增一个组合 patch，往往要同时改
+                <code>writeBlock()</code>、某个专用 writer、对应 slash handler 和测试。
+              </li>
+              <li>
+                <strong>DOM 事务提交逻辑重复。</strong> <code>formatUpdatedAttr()</code>、<code
+                  >transaction(do, undo)</code
+                >、<code>oldHTML/newHTML</code> 比较在多个文件里出现。
+              </li>
+              <li>
+                <strong>slash 上下文恢复逻辑重复。</strong>
+                <code>resolveSlashContext()</code>、<code>getNodePath()</code>、<code>getNodeByPath()</code> 在
+                <code>datePatchWriter</code> 和 <code>statusPatchWriter</code> 里各有一份。
+              </li>
+              <li>
+                <strong>datePatchWriter 过重。</strong> 它同时负责 block source 选择、日期表达式优化、跨父文档场景、同块
+                transaction 和 API fallback。
+              </li>
+              <li>
+                <strong>调用方协议不一致。</strong> <code>/fq</code> 已经是批量组合写入，<code>/done</code> 仍然是“先
+                removeSlash，再 setStatus”的两阶段流程。
+              </li>
+              <li>
+                <strong>API 路径对 DOM 结构认知不足。</strong> 它知道 markdown，却不知道当前编辑中的真实 DOM/selection
+                状态，遇到 slash 场景天然弱势。
+              </li>
+            </ul>
+          </section>
 
-        <section class="panel section">
-          <h2>可优化方向</h2>
-          <ul class="list">
-            <li><span class="priority p0">P0</span><strong>抽出统一的 Protyle mutation session。</strong> 把 slash context、DOM 草稿、markdown 生成、updated attr、transaction commit 做成一个共享工具，替换 <code>statusPatchWriter</code>、<code>datePatchWriter</code>、<code>markdownWriter</code> 里的重复代码。</li>
-            <li><span class="priority p0">P0</span><strong>把 writeBlock 的组合分支改成策略注册表。</strong> 例如声明 <code>matches(context, patches)</code> 和 <code>execute(context, patches)</code>，避免继续堆 if/else。</li>
-            <li><span class="priority p1">P1</span><strong>统一 slash 命令的调用协议。</strong> <code>/done</code>、<code>/fq</code>、未来类似命令都应优先产出批量 patch，而不是在 handler 里自己拆步骤。</li>
-            <li><span class="priority p1">P1</span><strong>收敛 block target 语义。</strong> 现在 <code>listItemBlockId</code>、<code>resolveApiBlockTarget()</code>、<code>statusPatchWriter</code> 都在决定“真实写入目标”，应该归一到一层能力模型里。</li>
-            <li><span class="priority p1">P1</span><strong>拆分 datePatchWriter。</strong> 可以按 <code>source resolver</code>、<code>date expression transformer</code>、<code>writer adapter</code> 三部分拆开。</li>
-            <li><span class="priority p2">P2</span><strong>减少 API DOM 写入。</strong> 对 list item 或结构复杂块，优先选择 markdown 或 transaction，避免 <code>Md2BlockDOM()</code> 生成新结构带来的 id/undo 风险。</li>
-            <li><span class="priority p2">P2</span><strong>加显式 trace。</strong> 给每次写入打 route、targetBlockId、patchTypes、writerType，后续排查会快很多。</li>
-            <li><span class="priority p2">P2</span><strong>测试按“patch 组合 x block 类型 x transport”建矩阵。</strong> 现在已有定向回归，但还不是完整的可枚举矩阵。</li>
-          </ul>
-        </section>
+          <section class="panel section">
+            <h2>可优化方向</h2>
+            <ul class="list">
+              <li>
+                <span class="priority p0">P0</span><strong>抽出统一的 Protyle mutation session。</strong> 把 slash
+                context、DOM 草稿、markdown 生成、updated attr、transaction commit 做成一个共享工具，替换
+                <code>statusPatchWriter</code>、<code>datePatchWriter</code>、<code>markdownWriter</code> 里的重复代码。
+              </li>
+              <li>
+                <span class="priority p0">P0</span><strong>把 writeBlock 的组合分支改成策略注册表。</strong> 例如声明
+                <code>matches(context, patches)</code> 和 <code>execute(context, patches)</code>，避免继续堆 if/else。
+              </li>
+              <li>
+                <span class="priority p1">P1</span><strong>统一 slash 命令的调用协议。</strong>
+                <code>/done</code>、<code>/fq</code>、未来类似命令都应优先产出批量 patch，而不是在 handler
+                里自己拆步骤。
+              </li>
+              <li>
+                <span class="priority p1">P1</span><strong>收敛 block target 语义。</strong> 现在
+                <code>listItemBlockId</code>、<code>resolveApiBlockTarget()</code>、<code>statusPatchWriter</code>
+                都在决定“真实写入目标”，应该归一到一层能力模型里。
+              </li>
+              <li>
+                <span class="priority p1">P1</span><strong>拆分 datePatchWriter。</strong> 可以按
+                <code>source resolver</code>、<code>date expression transformer</code>、<code>writer adapter</code>
+                三部分拆开。
+              </li>
+              <li>
+                <span class="priority p2">P2</span><strong>减少 API DOM 写入。</strong> 对 list item
+                或结构复杂块，优先选择 markdown 或 transaction，避免 <code>Md2BlockDOM()</code> 生成新结构带来的 id/undo
+                风险。
+              </li>
+              <li>
+                <span class="priority p2">P2</span><strong>加显式 trace。</strong> 给每次写入打
+                route、targetBlockId、patchTypes、writerType，后续排查会快很多。
+              </li>
+              <li>
+                <span class="priority p2">P2</span><strong>测试按“patch 组合 x block 类型 x transport”建矩阵。</strong>
+                现在已有定向回归，但还不是完整的可枚举矩阵。
+              </li>
+            </ul>
+          </section>
+        </div>
       </div>
+
+      <section class="panel section">
+        <h2>推荐的下一步重构顺序</h2>
+        <ol class="list">
+          <li>先提取 <code>protyleMutationSession</code>，消除 range 恢复、DOM 草稿和 transaction 提交的重复代码。</li>
+          <li>
+            再把 <code>writeBlock()</code> 的特判分支迁到注册表式策略层，让路由从 imperative if/else 变成 declarative
+            rules。
+          </li>
+          <li>随后统一 slash command 调用侧，让 <code>/done</code> 也升级到和 <code>/fq</code> 一样的批量写法。</li>
+          <li>最后拆 <code>datePatchWriter</code>，把当前最大的复杂度源头削成可单测的小模块。</li>
+        </ol>
+        <div class="note">
+          如果只做一件事，优先做第 1 步。因为它既能减少重复，也能为后续 status/date/slash 的所有组合路径提供统一底座。
+        </div>
+      </section>
+
+      <p class="footer">
+        文档对应当前工作区实现，核心文件包括：
+        <code>src/utils/blockWriter/index.ts</code>、 <code>apiTransport.ts</code>、 <code>protyleTransport.ts</code>、
+        <code>markdownWriter.ts</code>、 <code>datePatchWriter.ts</code>、 <code>statusPatchWriter.ts</code>、
+        <code>slashCommands.ts</code>。
+      </p>
     </div>
-
-    <section class="panel section">
-      <h2>推荐的下一步重构顺序</h2>
-      <ol class="list">
-        <li>先提取 <code>protyleMutationSession</code>，消除 range 恢复、DOM 草稿和 transaction 提交的重复代码。</li>
-        <li>再把 <code>writeBlock()</code> 的特判分支迁到注册表式策略层，让路由从 imperative if/else 变成 declarative rules。</li>
-        <li>随后统一 slash command 调用侧，让 <code>/done</code> 也升级到和 <code>/fq</code> 一样的批量写法。</li>
-        <li>最后拆 <code>datePatchWriter</code>，把当前最大的复杂度源头削成可单测的小模块。</li>
-      </ol>
-      <div class="note">
-        如果只做一件事，优先做第 1 步。因为它既能减少重复，也能为后续 status/date/slash 的所有组合路径提供统一底座。
-      </div>
-    </section>
-
-    <p class="footer">
-      文档对应当前工作区实现，核心文件包括：
-      <code>src/utils/blockWriter/index.ts</code>、
-      <code>apiTransport.ts</code>、
-      <code>protyleTransport.ts</code>、
-      <code>markdownWriter.ts</code>、
-      <code>datePatchWriter.ts</code>、
-      <code>statusPatchWriter.ts</code>、
-      <code>slashCommands.ts</code>。
-    </p>
-  </div>
-</body>
+  </body>
 </html>

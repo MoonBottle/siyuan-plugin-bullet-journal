@@ -5,14 +5,23 @@
         v-if="modelValue && task"
         class="task-detail-overlay b3-dialog"
       >
-        <div class="task-detail-fullscreen" style="overscroll-behavior: contain; touch-action: pan-y;">
+        <div
+          class="task-detail-fullscreen"
+          style="overscroll-behavior: contain; touch-action: pan-y;"
+        >
           <!-- Header -->
           <div class="detail-header">
-            <button class="back-btn" @click="close">
+            <button
+              class="back-btn"
+              @click="close"
+            >
               <svg><use xlink:href="#iconLeft"></use></svg>
             </button>
             <span class="header-title">{{ t('mobile.detail.task') || '任务详情' }}</span>
-            <button class="create-btn" @click="handleCreateItem">
+            <button
+              class="create-btn"
+              @click="handleCreateItem"
+            >
               <svg><use xlink:href="#iconAdd"></use></svg>
             </button>
           </div>
@@ -23,11 +32,16 @@
               <div class="task-icon">
                 <svg><use xlink:href="#iconList"></use></svg>
               </div>
-              <h2 class="task-name">{{ task.name }}</h2>
+              <h2 class="task-name">
+                {{ task.name }}
+              </h2>
             </div>
             <div class="task-meta-row">
               <span class="task-level-badge">{{ task.level }}</span>
-              <span v-if="projectName" class="project-name">{{ projectName }}</span>
+              <span
+                v-if="projectName"
+                class="project-name"
+              >{{ projectName }}</span>
             </div>
             <div class="task-stats">
               <div class="stat-item">
@@ -50,9 +64,15 @@
           </div>
 
           <!-- Items List Grouped by Status -->
-          <div class="items-container" style="overscroll-behavior: contain; touch-action: pan-y;">
+          <div
+            class="items-container"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+          >
             <!-- Pending Items -->
-            <div v-if="pendingItemsList.length > 0" class="status-section">
+            <div
+              v-if="pendingItemsList.length > 0"
+              class="status-section"
+            >
               <div class="status-header pending">
                 <div class="status-icon">
                   <svg><use xlink:href="#iconClock"></use></svg>
@@ -67,12 +87,20 @@
                   class="item-row"
                   @click="handleItemClick(item)"
                 >
-                  <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
+                  <div
+                    class="item-checkbox"
+                    @click.stop="toggleItemStatus(item)"
+                  >
                     <div class="checkbox-circle"></div>
                   </div>
                   <div class="item-content">
-                    <div class="item-text">{{ item.content }}</div>
-                    <div v-if="item.date" class="item-date">
+                    <div class="item-text">
+                      {{ item.content }}
+                    </div>
+                    <div
+                      v-if="item.date"
+                      class="item-date"
+                    >
                       {{ formatDate(item.date) }}
                     </div>
                   </div>
@@ -82,7 +110,10 @@
             </div>
 
             <!-- Completed Items -->
-            <div v-if="completedItemsList.length > 0" class="status-section">
+            <div
+              v-if="completedItemsList.length > 0"
+              class="status-section"
+            >
               <div class="status-header completed">
                 <div class="status-icon">
                   <svg><use xlink:href="#iconCheck"></use></svg>
@@ -97,14 +128,22 @@
                   class="item-row completed"
                   @click="handleItemClick(item)"
                 >
-                  <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
+                  <div
+                    class="item-checkbox"
+                    @click.stop="toggleItemStatus(item)"
+                  >
                     <div class="checkbox-circle checked">
                       <svg><use xlink:href="#iconCheck"></use></svg>
                     </div>
                   </div>
                   <div class="item-content">
-                    <div class="item-text">{{ item.content }}</div>
-                    <div v-if="item.date" class="item-date">
+                    <div class="item-text">
+                      {{ item.content }}
+                    </div>
+                    <div
+                      v-if="item.date"
+                      class="item-date"
+                    >
                       {{ formatDate(item.date) }}
                     </div>
                   </div>
@@ -114,7 +153,10 @@
             </div>
 
             <!-- Abandoned Items -->
-            <div v-if="abandonedItemsList.length > 0" class="status-section">
+            <div
+              v-if="abandonedItemsList.length > 0"
+              class="status-section"
+            >
               <div class="status-header abandoned">
                 <div class="status-icon">
                   <svg><use xlink:href="#iconBan"></use></svg>
@@ -135,8 +177,13 @@
                     </div>
                   </div>
                   <div class="item-content">
-                    <div class="item-text">{{ item.content }}</div>
-                    <div v-if="item.date" class="item-date">
+                    <div class="item-text">
+                      {{ item.content }}
+                    </div>
+                    <div
+                      v-if="item.date"
+                      class="item-date"
+                    >
                       {{ formatDate(item.date) }}
                     </div>
                   </div>
@@ -146,12 +193,18 @@
             </div>
 
             <!-- No Items -->
-            <div v-if="allItems.length === 0" class="empty-state">
+            <div
+              v-if="allItems.length === 0"
+              class="empty-state"
+            >
               <div class="empty-icon">
                 <svg><use xlink:href="#iconEdit"></use></svg>
               </div>
               <span class="empty-text">{{ t('mobile.task.noItems') || '暂无事项' }}</span>
-              <button class="empty-action" @click="handleCreateItem">
+              <button
+                class="empty-action"
+                @click="handleCreateItem"
+              >
                 {{ t('mobile.task.createItem') || '创建事项' }}
               </button>
             </div>
@@ -163,96 +216,100 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
-import type { Task, Item, ItemStatus } from '@/types/models';
+import type {
+  Item,
+  ItemStatus,
+  Task,
+} from '@/types/models'
+import { computed } from 'vue'
+import { t } from '@/i18n'
 
 const props = defineProps<{
-  modelValue: boolean;
-  task: Task | null;
-  projectName?: string;
-  projectId?: string;
-}>();
+  modelValue: boolean
+  task: Task | null
+  projectName?: string
+  projectId?: string
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openItem': [item: Item];
-  'createItem': [taskId: string, projectId?: string];
-  'toggleItem': [item: Item, newStatus: ItemStatus];
-}>();
+  'update:modelValue': [value: boolean]
+  'openItem': [item: Item]
+  'createItem': [taskId: string, projectId?: string]
+  'toggleItem': [item: Item, newStatus: ItemStatus]
+}>()
 
 // Computed: All items from task
-const allItems = computed(() => props.task?.items || []);
+const allItems = computed(() => props.task?.items || [])
 
 // Computed: Items grouped by status
 const pendingItemsList = computed(() =>
-  allItems.value.filter(item => item.status === 'pending')
-);
+  allItems.value.filter((item) => item.status === 'pending'),
+)
 
 const completedItemsList = computed(() =>
-  allItems.value.filter(item => item.status === 'completed')
-);
+  allItems.value.filter((item) => item.status === 'completed'),
+)
 
 const abandonedItemsList = computed(() =>
-  allItems.value.filter(item => item.status === 'abandoned')
-);
+  allItems.value.filter((item) => item.status === 'abandoned'),
+)
 
 // Computed: Task stats
-const totalItems = computed(() => allItems.value.length);
+const totalItems = computed(() => allItems.value.length)
 
 const completedItems = computed(() =>
-  allItems.value.filter(item => item.status === 'completed').length
-);
+  allItems.value.filter((item) => item.status === 'completed').length,
+)
 
 const pendingItems = computed(() =>
-  allItems.value.filter(item => item.status === 'pending').length
-);
+  allItems.value.filter((item) => item.status === 'pending').length,
+)
 
 const completionRate = computed(() => {
-  const total = totalItems.value;
-  if (total === 0) return 0;
-  return Math.round((completedItems.value / total) * 100);
-});
+  const total = totalItems.value
+  if (total === 0) return 0
+  return Math.round((completedItems.value / total) * 100)
+})
 
 // Format date for display
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const date = new Date(dateStr)
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
 
   if (dateStr === today.toISOString().split('T')[0]) {
-    return t('mobile.date.today') || '今天';
+    return t('mobile.date.today') || '今天'
   }
   if (dateStr === tomorrow.toISOString().split('T')[0]) {
-    return t('mobile.date.tomorrow') || '明天';
+    return t('mobile.date.tomorrow') || '明天'
   }
 
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+  return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
 // Handle item click
 const handleItemClick = (item: Item) => {
-  emit('openItem', item);
-};
+  emit('openItem', item)
+}
 
 // Toggle item status
 const toggleItemStatus = (item: Item) => {
-  const newStatus: ItemStatus = item.status === 'completed' ? 'pending' : 'completed';
-  emit('toggleItem', item, newStatus);
-};
+  const newStatus: ItemStatus = item.status === 'completed' ? 'pending' : 'completed'
+  emit('toggleItem', item, newStatus)
+}
 
 // Handle create item button click
 const handleCreateItem = () => {
   if (props.task?.id) {
-    emit('createItem', props.task.id, props.projectId);
+    emit('createItem', props.task.id, props.projectId)
   }
-};
+}
 
 // Close the drawer
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>

@@ -24,6 +24,7 @@
 ## Task 1: Lock Down `HabitListItem` Interaction Semantics
 
 **Files:**
+
 - Modify: `src/components/habit/HabitListItem.vue`
 - Create: `test/components/habit/HabitListItem.test.ts`
 
@@ -34,10 +35,10 @@ Create `test/components/habit/HabitListItem.test.ts` with explicit event expecta
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import HabitListItem from '@/components/habit/HabitListItem.vue';
-import type { Habit, HabitDayState, HabitPeriodState } from '@/types/models';
+import type { Habit, HabitDayState, HabitPeriodState } from '@/types/models'
+import { describe, expect, it } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import HabitListItem from '@/components/habit/HabitListItem.vue'
 
 function mountListItem(overrides: Partial<{ habit: Habit, dayState: HabitDayState, periodState: HabitPeriodState }> = {}) {
   const habit = {
@@ -50,28 +51,28 @@ function mountListItem(overrides: Partial<{ habit: Habit, dayState: HabitDayStat
     unit: '杯',
     frequency: { type: 'daily' },
     records: [],
-  } as Habit;
+  } as Habit
 
   const dayState = {
     date: '2026-04-30',
     isCompleted: false,
     currentValue: 0,
-  } as HabitDayState;
+  } as HabitDayState
 
   const periodState = {
     periodType: 'day',
     isCompleted: false,
-  } as HabitPeriodState;
+  } as HabitPeriodState
 
   const events = {
     openDoc: [] as Habit[],
     openCalendar: [] as Habit[],
     increment: [] as Habit[],
     checkIn: [] as Habit[],
-  };
+  }
 
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
   const app = createApp(HabitListItem, {
     habit,
@@ -82,62 +83,62 @@ function mountListItem(overrides: Partial<{ habit: Habit, dayState: HabitDayStat
     onOpenCalendar: (value: Habit) => events.openCalendar.push(value),
     onIncrement: (value: Habit) => events.increment.push(value),
     onCheckIn: (value: Habit) => events.checkIn.push(value),
-  });
+  })
 
-  app.mount(container);
+  app.mount(container)
 
   return {
     container,
     events,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 describe('HabitListItem', () => {
   it('clicking the main body emits open-doc only', async () => {
-    const mounted = mountListItem();
+    const mounted = mountListItem()
 
     mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(mounted.events.openDoc).toHaveLength(1);
-    expect(mounted.events.openCalendar).toHaveLength(0);
-    expect(mounted.events.increment).toHaveLength(0);
+    expect(mounted.events.openDoc).toHaveLength(1)
+    expect(mounted.events.openCalendar).toHaveLength(0)
+    expect(mounted.events.increment).toHaveLength(0)
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('clicking the calendar action emits open-calendar only', async () => {
-    const mounted = mountListItem();
+    const mounted = mountListItem()
 
     mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(mounted.events.openCalendar).toHaveLength(1);
-    expect(mounted.events.openDoc).toHaveLength(0);
+    expect(mounted.events.openCalendar).toHaveLength(1)
+    expect(mounted.events.openDoc).toHaveLength(0)
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('clicking the increment action emits increment only', async () => {
-    const mounted = mountListItem();
+    const mounted = mountListItem()
 
     mounted.container.querySelector('[data-testid="habit-list-item-increment"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(mounted.events.increment).toHaveLength(1);
-    expect(mounted.events.openDoc).toHaveLength(0);
-    expect(mounted.events.openCalendar).toHaveLength(0);
+    expect(mounted.events.increment).toHaveLength(1)
+    expect(mounted.events.openDoc).toHaveLength(0)
+    expect(mounted.events.openCalendar).toHaveLength(0)
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -153,9 +154,9 @@ Update `src/components/habit/HabitListItem.vue` so the main content and each act
 ```vue
 <template>
   <div
-    :class="['habit-list-item', {
+    class="habit-list-item" :class="[{
       'habit-list-item--completed': isCompleted,
-      'habit-list-item--count': habit.type === 'count'
+      'habit-list-item--count': habit.type === 'count',
     }]"
   >
     <div
@@ -172,12 +173,12 @@ Update `src/components/habit/HabitListItem.vue` so the main content and each act
         data-testid="habit-list-item-calendar"
         @click.stop="emit('open-calendar', habit)"
       >
-        <svg><use xlink:href="#iconCalendar"></use></svg>
+        <svg><use xlink:href="#iconCalendar" /></svg>
       </button>
 
       <button
         v-if="habit.type === 'binary'"
-        :class="['habit-check-btn', { 'habit-check-btn--done': dayState.isCompleted }]"
+        class="habit-check-btn" :class="[{ 'habit-check-btn--done': dayState.isCompleted }]"
         :disabled="dayState.isCompleted"
         data-testid="habit-list-item-check-in"
         @click.stop="emit('check-in', habit)"
@@ -203,11 +204,11 @@ Also update emits:
 
 ```ts
 const emit = defineEmits<{
-  'check-in': [habit: Habit];
-  'increment': [habit: Habit];
-  'open-doc': [habit: Habit];
-  'open-calendar': [habit: Habit];
-}>();
+  'check-in': [habit: Habit]
+  'increment': [habit: Habit]
+  'open-doc': [habit: Habit]
+  'open-calendar': [habit: Habit]
+}>()
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -226,6 +227,7 @@ git commit -m "feat(habit): split list item document and calendar actions"
 ## Task 2: Rewire `DesktopHabitDock` List and Detail Navigation
 
 **Files:**
+
 - Modify: `src/tabs/DesktopHabitDock.vue`
 - Test: `test/tabs/DesktopHabitDock.test.ts`
 
@@ -236,78 +238,78 @@ Create or extend `test/tabs/DesktopHabitDock.test.ts` with behavior around docum
 ```ts
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
-import { createApp, nextTick } from 'vue';
-import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue';
-import { openDocumentAtLine } from '@/utils/fileUtils';
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue'
+import { openDocumentAtLine } from '@/utils/fileUtils'
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
-}));
+}))
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
-}));
+}))
 
 function mountDock() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(DesktopHabitDock);
-  app.use(createPinia());
-  app.mount(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(DesktopHabitDock)
+  app.use(createPinia())
+  app.mount(container)
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 describe('DesktopHabitDock', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
   it('opening a list item document uses openDocumentAtLine', async () => {
-    const mounted = mountDock();
+    const mounted = mountDock()
 
     mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(openDocumentAtLine).toHaveBeenCalled();
-    mounted.unmount();
-  });
+    expect(openDocumentAtLine).toHaveBeenCalled()
+    mounted.unmount()
+  })
 
   it('clicking the calendar action enters detail mode', async () => {
-    const mounted = mountDock();
+    const mounted = mountDock()
 
     mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).not.toBeNull();
-    mounted.unmount();
-  });
+    expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).not.toBeNull()
+    mounted.unmount()
+  })
 
   it('detail header open-doc action opens the selected habit document', async () => {
-    const mounted = mountDock();
+    const mounted = mountDock()
 
     mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
     mounted.container.querySelector('[data-testid="habit-detail-open-doc"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
 
-    expect(openDocumentAtLine).toHaveBeenCalled();
-    mounted.unmount();
-  });
-});
+    expect(openDocumentAtLine).toHaveBeenCalled()
+    mounted.unmount()
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -323,7 +325,7 @@ Update `src/tabs/DesktopHabitDock.vue`:
 1. Import the existing utility:
 
 ```ts
-import { openDocumentAtLine } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils'
 ```
 
 2. Rewire list-item events:
@@ -352,17 +354,19 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
     :aria-label="t('habit').backToList"
     @click="selectedHabit = null"
   >
-    <svg><use xlink:href="#iconLeft"></use></svg>
+    <svg><use xlink:href="#iconLeft" /></svg>
   </button>
-  <div class="block__logo" data-testid="habit-detail-header">{{ selectedHabit.name }}</div>
-  <span class="fn__flex-1 fn__space"></span>
+  <div class="block__logo" data-testid="habit-detail-header">
+    {{ selectedHabit.name }}
+  </div>
+  <span class="fn__flex-1 fn__space" />
   <button
     class="block__icon"
     data-testid="habit-detail-open-doc"
     :aria-label="t('todo').openDoc"
     @click="handleOpenSelectedHabitDoc"
   >
-    <svg><use xlink:href="#iconFile"></use></svg>
+    <svg><use xlink:href="#iconFile" /></svg>
   </button>
 </template>
 ```
@@ -371,17 +375,19 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
 
 ```ts
 async function handleOpenHabitDoc(habit: Habit) {
-  if (!habit.docId) return;
-  await openDocumentAtLine(habit.docId, (habit as any).lineNumber, habit.blockId);
+  if (!habit.docId)
+    return
+  await openDocumentAtLine(habit.docId, (habit as any).lineNumber, habit.blockId)
 }
 
 async function handleOpenSelectedHabitDoc() {
-  if (!selectedHabit.value?.docId) return;
+  if (!selectedHabit.value?.docId)
+    return
   await openDocumentAtLine(
     selectedHabit.value.docId,
     (selectedHabit.value as any).lineNumber,
     selectedHabit.value.blockId,
-  );
+  )
 }
 ```
 
@@ -401,6 +407,7 @@ git commit -m "feat(habit): align pc dock navigation with todo list"
 ## Task 3: Regression Verification for Dock Actions
 
 **Files:**
+
 - Modify: `test/tabs/DesktopHabitDock.test.ts`
 - Test: `test/components/habit/HabitListItem.test.ts`
 
@@ -410,26 +417,26 @@ Extend tests so action buttons do not trigger the wrong navigation path:
 
 ```ts
 it('binary check-in action does not open the document', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
 
   mounted.container.querySelector('[data-testid="habit-list-item-check-in"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(openDocumentAtLine).not.toHaveBeenCalled();
-  mounted.unmount();
-});
+  expect(openDocumentAtLine).not.toHaveBeenCalled()
+  mounted.unmount()
+})
 
 it('increment action does not enter detail mode', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
 
   mounted.container.querySelector('[data-testid="habit-list-item-increment"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).toBeNull();
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).toBeNull()
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run targeted tests to verify current behavior**
@@ -470,4 +477,3 @@ git commit -m "test(habit): cover pc dock navigation regressions"
 - Type consistency:
   - Event names are consistently `open-doc` / `open-calendar`
   - Document navigation always uses `openDocumentAtLine`
-

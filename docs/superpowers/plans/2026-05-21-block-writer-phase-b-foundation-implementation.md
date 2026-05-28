@@ -34,38 +34,39 @@
 
 ## File Structure
 
-| 文件 | 职责 |
-|------|------|
-| `src/utils/blockWriter/intent.ts` | 统一公开入口语义，归一化 update / insert intent |
-| `src/utils/blockWriter/targetResolver.ts` | 统一真实目标解析：targetBlockId / sourceKind / commitKind / preferDataType |
-| `src/utils/blockWriter/sourceLoader.ts` | 统一加载当前 DOM / API kramdown / insert anchor 信息 |
-| `src/utils/blockWriter/caretController.ts` | 当前 Protyle 选区快照、`<wbr>` 主恢复、offset 兜底 |
-| `src/utils/blockWriter/updateRenderer.ts` | update 路径：`nextMarkdown`、`domHtml`、`caretRestorePlan` |
-| `src/utils/blockWriter/insertRenderer.ts` | insert 路径：`fallbackMarkdown`、`domHtml` |
-| `src/utils/blockWriter/apiCommitter.ts` | API update / insert 的 DOM-first 提交 |
-| `src/utils/blockWriter/protyleCommitter.ts` | 当前块 Protyle transaction 提交与光标恢复 |
-| `src/utils/blockWriter/index.ts` | 统一 orchestration 入口 |
-| `src/utils/blockWriter/types.ts` | B 阶段新类型：intent、resolved plan、loaded source、prepared payload、commit result |
-| `src/utils/blockWriter/apiTransport.ts` | 过渡 helper，逐步下沉到 `apiCommitter.ts` |
-| `src/utils/blockWriter/protyleTransport.ts` | 过渡 helper，逐步下沉到 `protyleCommitter.ts` |
-| `src/utils/blockWriter/markdownWriter.ts` | 过渡 helper，逐步拆到 source/render/commit |
-| `src/utils/blockWriter/datePatchWriter.ts` | 过渡 helper，只保留 date 语义 helper |
-| `src/utils/blockWriter/statusPatchWriter.ts` | 过渡 helper，只保留 status 语义 helper |
-| `test/blockWriter/intent.test.ts` | intent 归一化单测 |
-| `test/blockWriter/targetResolver.test.ts` | 目标解析单测 |
-| `test/blockWriter/sourceLoader.test.ts` | source loading 单测 |
-| `test/blockWriter/caretController.test.ts` | `wbr-first` / offset fallback 单测 |
-| `test/blockWriter/updateRenderer.test.ts` | update render 单测 |
-| `test/blockWriter/insertRenderer.test.ts` | insert render 单测 |
-| `test/blockWriter/apiCommitter.test.ts` | API committer 单测 |
-| `test/blockWriter/protyleCommitter.test.ts` | Protyle committer 单测 |
-| `test/blockWriter/index.test.ts` | orchestration 集成回归 |
+| 文件                                         | 职责                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `src/utils/blockWriter/intent.ts`            | 统一公开入口语义，归一化 update / insert intent                                     |
+| `src/utils/blockWriter/targetResolver.ts`    | 统一真实目标解析：targetBlockId / sourceKind / commitKind / preferDataType          |
+| `src/utils/blockWriter/sourceLoader.ts`      | 统一加载当前 DOM / API kramdown / insert anchor 信息                                |
+| `src/utils/blockWriter/caretController.ts`   | 当前 Protyle 选区快照、`<wbr>` 主恢复、offset 兜底                                  |
+| `src/utils/blockWriter/updateRenderer.ts`    | update 路径：`nextMarkdown`、`domHtml`、`caretRestorePlan`                          |
+| `src/utils/blockWriter/insertRenderer.ts`    | insert 路径：`fallbackMarkdown`、`domHtml`                                          |
+| `src/utils/blockWriter/apiCommitter.ts`      | API update / insert 的 DOM-first 提交                                               |
+| `src/utils/blockWriter/protyleCommitter.ts`  | 当前块 Protyle transaction 提交与光标恢复                                           |
+| `src/utils/blockWriter/index.ts`             | 统一 orchestration 入口                                                             |
+| `src/utils/blockWriter/types.ts`             | B 阶段新类型：intent、resolved plan、loaded source、prepared payload、commit result |
+| `src/utils/blockWriter/apiTransport.ts`      | 过渡 helper，逐步下沉到 `apiCommitter.ts`                                           |
+| `src/utils/blockWriter/protyleTransport.ts`  | 过渡 helper，逐步下沉到 `protyleCommitter.ts`                                       |
+| `src/utils/blockWriter/markdownWriter.ts`    | 过渡 helper，逐步拆到 source/render/commit                                          |
+| `src/utils/blockWriter/datePatchWriter.ts`   | 过渡 helper，只保留 date 语义 helper                                                |
+| `src/utils/blockWriter/statusPatchWriter.ts` | 过渡 helper，只保留 status 语义 helper                                              |
+| `test/blockWriter/intent.test.ts`            | intent 归一化单测                                                                   |
+| `test/blockWriter/targetResolver.test.ts`    | 目标解析单测                                                                        |
+| `test/blockWriter/sourceLoader.test.ts`      | source loading 单测                                                                 |
+| `test/blockWriter/caretController.test.ts`   | `wbr-first` / offset fallback 单测                                                  |
+| `test/blockWriter/updateRenderer.test.ts`    | update render 单测                                                                  |
+| `test/blockWriter/insertRenderer.test.ts`    | insert render 单测                                                                  |
+| `test/blockWriter/apiCommitter.test.ts`      | API committer 单测                                                                  |
+| `test/blockWriter/protyleCommitter.test.ts`  | Protyle committer 单测                                                              |
+| `test/blockWriter/index.test.ts`             | orchestration 集成回归                                                              |
 
 ---
 
 ### Task 1: 先把 C 阶段 planner 草稿从 runtime 路径里停掉，恢复 B 阶段基线
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/index.ts`
 - Modify: `test/blockWriter/index.test.ts`
 - Keep detached: `src/utils/blockWriter/mutationPlanner.ts`
@@ -86,11 +87,11 @@ Expected: 记录当前 worktree 基线；如果失败，先只修复当前 plann
 把 `src/utils/blockWriter/index.ts` 恢复到只依赖现有 transport / writer 的状态，至少满足下面的边界：
 
 ```ts
-import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
-import { normalizePatchSequence } from './normalizePatchSequence';
-import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
-import { writeViaProtyle } from './protyleTransport';
-import { writeStatusWithSlashCleanup } from './statusPatchWriter';
+import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport'
+import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter'
+import { normalizePatchSequence } from './normalizePatchSequence'
+import { writeViaProtyle } from './protyleTransport'
+import { writeStatusWithSlashCleanup } from './statusPatchWriter'
 
 // 不导入 mutationPlanner，不导入 planExecutor
 ```
@@ -113,12 +114,12 @@ it('writes batch patches via API', async () => {
       { type: 'setPriority', priority: 'high' },
       { type: 'setStatus', status: 'completed' },
     ],
-  );
+  )
 
-  expect(result).toBe(true);
-  const call = vi.mocked(updateBlock).mock.calls.at(-1)!;
-  expect(call[1]).toContain('🔥');
-});
+  expect(result).toBe(true)
+  const call = vi.mocked(updateBlock).mock.calls.at(-1)!
+  expect(call[1]).toContain('🔥')
+})
 
 it('uses a single protyle transaction for same-block multiline removeSlashCommand + addDate', async () => {
   const result = await writeBlock(
@@ -127,11 +128,11 @@ it('uses a single protyle transaction for same-block multiline removeSlashComman
       { type: 'removeSlashCommand' },
       { type: 'addDate', date: '2026-05-16', allDay: true },
     ],
-  );
+  )
 
-  expect(result).toBe(true);
-  expect(protyle.transaction).toHaveBeenCalledOnce();
-});
+  expect(result).toBe(true)
+  expect(protyle.transaction).toHaveBeenCalledOnce()
+})
 ```
 
 删掉仅服务 C 阶段 planner 的测试前提，不要求在这一任务里删除草稿文件。
@@ -158,6 +159,7 @@ git commit -m "refactor(block-writer): restore phase-b baseline entry"
 ### Task 2: 引入 `intent.ts`，统一 update / insert 的入口语义
 
 **Files:**
+
 - Create: `src/utils/blockWriter/intent.ts`
 - Modify: `src/utils/blockWriter/types.ts`
 - Create: `test/blockWriter/intent.test.ts`
@@ -168,25 +170,25 @@ git commit -m "refactor(block-writer): restore phase-b baseline entry"
 新建 `test/blockWriter/intent.test.ts`：
 
 ```ts
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   normalizeInsertIntent,
   normalizeUpdateIntent,
-} from '@/utils/blockWriter/intent';
+} from '@/utils/blockWriter/intent'
 
 describe('intent', () => {
   it('normalizes a single update patch into an update intent', () => {
     const intent = normalizeUpdateIntent(
       { blockId: 'block-1' },
       { type: 'setPriority', priority: 'high' },
-    );
+    )
 
     expect(intent).toEqual({
       kind: 'update',
       context: { blockId: 'block-1' },
       patches: [{ type: 'setPriority', priority: 'high' }],
-    });
-  });
+    })
+  })
 
   it('normalizes update batches with stable patch ordering', () => {
     const intent = normalizeUpdateIntent(
@@ -195,10 +197,10 @@ describe('intent', () => {
         { type: 'setPriority', priority: 'medium' },
         { type: 'addDate', date: '2026-05-21', allDay: true },
       ],
-    );
+    )
 
-    expect(intent.patches.map(patch => patch.type)).toEqual(['addDate', 'setPriority']);
-  });
+    expect(intent.patches.map(patch => patch.type)).toEqual(['addDate', 'setPriority'])
+  })
 
   it('normalizes insertAfter into an insert intent', () => {
     const intent = normalizeInsertIntent('block-1', {
@@ -211,12 +213,12 @@ describe('intent', () => {
         unit: '杯',
         frequency: { type: 'daily' },
       },
-    });
+    })
 
-    expect(intent.kind).toBe('insertAfter');
-    expect(intent.anchorBlockId).toBe('block-1');
-  });
-});
+    expect(intent.kind).toBe('insertAfter')
+    expect(intent.anchorBlockId).toBe('block-1')
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -234,51 +236,51 @@ Expected: FAIL because `intent.ts` 还不存在。
 在 `src/utils/blockWriter/types.ts` 增加：
 
 ```ts
-export type BlockMutationIntent =
+export type BlockMutationIntent
+  = | {
+    kind: 'update'
+    context: BlockWriteContext
+    patches: BlockPatch[]
+  }
   | {
-      kind: 'update';
-      context: BlockWriteContext;
-      patches: BlockPatch[];
-    }
-  | {
-      kind: 'insertAfter';
-      anchorBlockId: string;
-      patch: InsertableBlockPatch;
-      context?: Partial<BlockWriteContext>;
-      resultMode: 'boolean' | 'operations';
-    };
+    kind: 'insertAfter'
+    anchorBlockId: string
+    patch: InsertableBlockPatch
+    context?: Partial<BlockWriteContext>
+    resultMode: 'boolean' | 'operations'
+  }
 ```
 
 新增 `src/utils/blockWriter/intent.ts`：
 
 ```ts
-import { normalizePatchSequence } from './normalizePatchSequence';
 import type {
   BatchBlockPatch,
   BlockMutationIntent,
   BlockPatch,
   BlockWriteContext,
   InsertableBlockPatch,
-} from './types';
+} from './types'
+import { normalizePatchSequence } from './normalizePatchSequence'
 
 export function normalizeUpdateIntent(
   context: BlockWriteContext,
   patches: BlockPatch | BatchBlockPatch,
 ): Extract<BlockMutationIntent, { kind: 'update' }> {
-  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches]);
+  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches])
   return {
     kind: 'update',
     context,
     patches: patchArray,
-  };
+  }
 }
 
 export function normalizeInsertIntent(
   anchorBlockId: string,
   patch: InsertableBlockPatch,
   options?: {
-    context?: Partial<BlockWriteContext>;
-    resultMode?: 'boolean' | 'operations';
+    context?: Partial<BlockWriteContext>
+    resultMode?: 'boolean' | 'operations'
   },
 ): Extract<BlockMutationIntent, { kind: 'insertAfter' }> {
   return {
@@ -287,7 +289,7 @@ export function normalizeInsertIntent(
     patch,
     context: options?.context,
     resultMode: options?.resultMode ?? 'boolean',
-  };
+  }
 }
 ```
 
@@ -296,15 +298,15 @@ export function normalizeInsertIntent(
 此时 `index.ts` 只做第一层收口：
 
 ```ts
-const intent = normalizeUpdateIntent(context, patches);
+const intent = normalizeUpdateIntent(context, patches)
 // 后续任务再把 intent 继续传给 resolve/load/render/commit
 ```
 
 以及：
 
 ```ts
-const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
-const intentWithResult = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
+const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' })
+const intentWithResult = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' })
 ```
 
 - [ ] **Step 5: 跑通过验证**
@@ -329,6 +331,7 @@ git commit -m "feat(block-writer): add unified mutation intents"
 ### Task 3: 引入 `targetResolver.ts`，统一真实目标与提交能力解析
 
 **Files:**
+
 - Create: `src/utils/blockWriter/targetResolver.ts`
 - Modify: `src/utils/blockWriter/types.ts`
 - Create: `test/blockWriter/targetResolver.test.ts`
@@ -340,38 +343,38 @@ git commit -m "feat(block-writer): add unified mutation intents"
 
 ```ts
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getBlockByID } from '@/api'
+import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver'
 
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn(),
-}));
-
-import { getBlockByID } from '@/api';
-import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver';
+}))
 
 describe('targetResolver', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('resolves status updates on task paragraphs to the task-list item block', async () => {
     vi.mocked(getBlockByID)
       .mockResolvedValueOnce({ id: 'paragraph-1', parent_id: 'task-1', type: 'NodeParagraph' } as any)
-      .mockResolvedValueOnce({ id: 'task-1', type: 'NodeListItem', subtype: 't' } as any);
+      .mockResolvedValueOnce({ id: 'task-1', type: 'NodeListItem', subtype: 't' } as any)
 
     const result = await resolveMutationTarget({
       kind: 'update',
       context: { blockId: 'paragraph-1' },
       patches: [{ type: 'setStatus', status: 'completed' }],
-    });
+    })
 
-    expect(result.kind).toBe('update');
-    expect(result.targetBlockId).toBe('task-1');
-    expect(result.commitKind).toBe('api-update');
-  });
+    expect(result.kind).toBe('update')
+    expect(result.targetBlockId).toBe('task-1')
+    expect(result.commitKind).toBe('api-update')
+  })
 
   it('resolves current protyle updates to protyle-dom source when the edited block matches the target', async () => {
-    vi.mocked(getBlockByID).mockResolvedValue({ id: 'paragraph-1', type: 'NodeParagraph' } as any);
+    vi.mocked(getBlockByID).mockResolvedValue({ id: 'paragraph-1', type: 'NodeParagraph' } as any)
 
     const result = await resolveMutationTarget({
       kind: 'update',
@@ -383,12 +386,12 @@ describe('targetResolver', () => {
         }),
       } as any,
       patches: [{ type: 'setPriority', priority: 'high' }],
-    });
+    })
 
-    expect(result.kind).toBe('update');
-    expect(result.sourceKind).toBe('protyle-dom');
-    expect(result.commitKind).toBe('protyle-update');
-  });
+    expect(result.kind).toBe('update')
+    expect(result.sourceKind).toBe('protyle-dom')
+    expect(result.commitKind).toBe('protyle-update')
+  })
 
   it('resolves insert intents to api-insert with dom preferred', async () => {
     const result = await resolveMutationTarget({
@@ -406,13 +409,13 @@ describe('targetResolver', () => {
         },
       },
       resultMode: 'boolean',
-    });
+    })
 
-    expect(result.kind).toBe('insertAfter');
-    expect(result.commitKind).toBe('api-insert');
-    expect(result.preferDataType).toBe('dom');
-  });
-});
+    expect(result.kind).toBe('insertAfter')
+    expect(result.commitKind).toBe('api-insert')
+    expect(result.preferDataType).toBe('dom')
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -430,46 +433,46 @@ Expected: FAIL because `targetResolver.ts` 还不存在。
 在 `src/utils/blockWriter/types.ts` 增加：
 
 ```ts
-export type ResolvedMutationPlan =
+export type ResolvedMutationPlan
+  = | {
+    kind: 'update'
+    targetBlockId: string
+    targetKind: 'paragraph' | 'task-list-item' | 'block'
+    sourceKind: 'protyle-dom' | 'api-kramdown'
+    commitKind: 'protyle-update' | 'api-update'
+    preferDataType: 'dom'
+    fallbackDataType: 'markdown'
+    context: BlockWriteContext
+    patches: BlockPatch[]
+  }
   | {
-      kind: 'update';
-      targetBlockId: string;
-      targetKind: 'paragraph' | 'task-list-item' | 'block';
-      sourceKind: 'protyle-dom' | 'api-kramdown';
-      commitKind: 'protyle-update' | 'api-update';
-      preferDataType: 'dom';
-      fallbackDataType: 'markdown';
-      context: BlockWriteContext;
-      patches: BlockPatch[];
-    }
-  | {
-      kind: 'insertAfter';
-      anchorBlockId: string;
-      commitKind: 'api-insert';
-      preferDataType: 'dom';
-      fallbackDataType: 'markdown';
-      patch: InsertableBlockPatch;
-      context?: Partial<BlockWriteContext>;
-      resultMode: 'boolean' | 'operations';
-    };
+    kind: 'insertAfter'
+    anchorBlockId: string
+    commitKind: 'api-insert'
+    preferDataType: 'dom'
+    fallbackDataType: 'markdown'
+    patch: InsertableBlockPatch
+    context?: Partial<BlockWriteContext>
+    resultMode: 'boolean' | 'operations'
+  }
 ```
 
 新增 `src/utils/blockWriter/targetResolver.ts`，核心结构：
 
 ```ts
-import { getBlockByID } from '@/api';
-import type { BlockMutationIntent, ResolvedMutationPlan } from './types';
+import type { BlockMutationIntent, ResolvedMutationPlan } from './types'
+import { getBlockByID } from '@/api'
 
 function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, { kind: 'update' }>): string {
   if (intent.patches.some(patch => patch.type === 'setStatus')) {
-    return intent.context.listItemBlockId || intent.context.blockId;
+    return intent.context.listItemBlockId || intent.context.blockId
   }
-  return intent.context.blockId;
+  return intent.context.blockId
 }
 
 function canUseCurrentProtyleDom(intent: Extract<BlockMutationIntent, { kind: 'update' }>, targetBlockId: string): boolean {
-  const nodeBlockId = intent.context.nodeElement?.getAttribute?.('data-node-id');
-  return Boolean(intent.context.protyle && intent.context.nodeElement && nodeBlockId === targetBlockId);
+  const nodeBlockId = intent.context.nodeElement?.getAttribute?.('data-node-id')
+  return Boolean(intent.context.protyle && intent.context.nodeElement && nodeBlockId === targetBlockId)
 }
 
 export async function resolveMutationTarget(intent: BlockMutationIntent): Promise<ResolvedMutationPlan> {
@@ -483,11 +486,11 @@ export async function resolveMutationTarget(intent: BlockMutationIntent): Promis
       patch: intent.patch,
       context: intent.context,
       resultMode: intent.resultMode,
-    };
+    }
   }
 
-  const targetBlockId = resolveUpdateTargetBlockId(intent);
-  const block = await getBlockByID(targetBlockId);
+  const targetBlockId = resolveUpdateTargetBlockId(intent)
+  const block = await getBlockByID(targetBlockId)
   return {
     kind: 'update',
     targetBlockId,
@@ -498,7 +501,7 @@ export async function resolveMutationTarget(intent: BlockMutationIntent): Promis
     fallbackDataType: 'markdown',
     context: intent.context,
     patches: intent.patches,
-  };
+  }
 }
 ```
 
@@ -530,6 +533,7 @@ git commit -m "feat(block-writer): add unified mutation target resolver"
 ### Task 4: 引入 `sourceLoader.ts` 和 `caretController.ts`，统一 source 快照与 `wbr-first`
 
 **Files:**
+
 - Create: `src/utils/blockWriter/sourceLoader.ts`
 - Create: `src/utils/blockWriter/caretController.ts`
 - Modify: `src/utils/blockWriter/types.ts`
@@ -544,34 +548,34 @@ git commit -m "feat(block-writer): add unified mutation target resolver"
 
 ```ts
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getBlockKramdown } from '@/api'
+import { loadMutationSource } from '@/utils/blockWriter/sourceLoader'
 
 vi.mock('@/api', () => ({
   getBlockKramdown: vi.fn(),
-}));
-
-import { getBlockKramdown } from '@/api';
-import { loadMutationSource } from '@/utils/blockWriter/sourceLoader';
+}))
 
 describe('sourceLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    document.body.innerHTML = '';
-  });
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
+  })
 
   it('loads current block dom and caret snapshot for protyle updates', async () => {
-    const node = document.createElement('div');
-    node.setAttribute('data-node-id', 'block-1');
-    node.innerHTML = '<div contenteditable="true">任务 /jt</div>';
-    document.body.appendChild(node);
+    const node = document.createElement('div')
+    node.setAttribute('data-node-id', 'block-1')
+    node.innerHTML = '<div contenteditable="true">任务 /jt</div>'
+    document.body.appendChild(node)
 
-    const editable = node.querySelector('[contenteditable="true"]')!;
-    const textNode = editable.firstChild as Text;
-    const range = document.createRange();
-    range.setStart(textNode, textNode.textContent!.length);
-    range.collapse(true);
-    window.getSelection()?.removeAllRanges();
-    window.getSelection()?.addRange(range);
+    const editable = node.querySelector('[contenteditable="true"]')!
+    const textNode = editable.firstChild as Text
+    const range = document.createRange()
+    range.setStart(textNode, textNode.textContent!.length)
+    range.collapse(true)
+    window.getSelection()?.removeAllRanges()
+    window.getSelection()?.addRange(range)
 
     const source = await loadMutationSource({
       kind: 'update',
@@ -583,18 +587,18 @@ describe('sourceLoader', () => {
       fallbackDataType: 'markdown',
       context: { blockId: 'block-1', protyle: {}, nodeElement: node as any },
       patches: [{ type: 'removeSlashCommand' }],
-    });
+    })
 
-    expect(source.kind).toBe('update');
-    expect(source.targetElement).toBe(node);
-    expect(source.caretSnapshot?.policy).toBe('wbr-first');
-  });
+    expect(source.kind).toBe('update')
+    expect(source.targetElement).toBe(node)
+    expect(source.caretSnapshot?.policy).toBe('wbr-first')
+  })
 
   it('loads kramdown for api updates', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValue({
       id: 'block-1',
       kramdown: '任务\n{: id="block-1"}',
-    } as any);
+    } as any)
 
     const source = await loadMutationSource({
       kind: 'update',
@@ -606,55 +610,55 @@ describe('sourceLoader', () => {
       fallbackDataType: 'markdown',
       context: { blockId: 'block-1' },
       patches: [{ type: 'setPriority', priority: 'high' }],
-    });
+    })
 
-    expect(source.kind).toBe('update');
-    expect(source.currentMarkdown).toContain('任务');
-  });
-});
+    expect(source.kind).toBe('update')
+    expect(source.currentMarkdown).toContain('任务')
+  })
+})
 ```
 
 新建 `test/blockWriter/caretController.test.ts`：
 
 ```ts
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   captureCaretSnapshot,
   focusByWbr,
   injectWbrIntoEditable,
-} from '@/utils/blockWriter/caretController';
+} from '@/utils/blockWriter/caretController'
 
 describe('caretController', () => {
   it('captures a wbr-first snapshot for the current editable selection', () => {
-    const root = document.createElement('div');
-    root.setAttribute('data-node-id', 'block-1');
-    root.innerHTML = '<div contenteditable="true">任务 /jt</div>';
-    const editable = root.querySelector('[contenteditable="true"]')!;
-    document.body.appendChild(root);
+    const root = document.createElement('div')
+    root.setAttribute('data-node-id', 'block-1')
+    root.innerHTML = '<div contenteditable="true">任务 /jt</div>'
+    const editable = root.querySelector('[contenteditable="true"]')!
+    document.body.appendChild(root)
 
-    const textNode = editable.firstChild as Text;
-    const range = document.createRange();
-    range.setStart(textNode, textNode.textContent!.length);
-    range.collapse(true);
-    window.getSelection()?.removeAllRanges();
-    window.getSelection()?.addRange(range);
+    const textNode = editable.firstChild as Text
+    const range = document.createRange()
+    range.setStart(textNode, textNode.textContent!.length)
+    range.collapse(true)
+    window.getSelection()?.removeAllRanges()
+    window.getSelection()?.addRange(range)
 
-    const snapshot = captureCaretSnapshot(root as any);
+    const snapshot = captureCaretSnapshot(root as any)
 
-    expect(snapshot.policy).toBe('wbr-first');
-    expect(snapshot.containerBlockId).toBe('block-1');
-  });
+    expect(snapshot.policy).toBe('wbr-first')
+    expect(snapshot.containerBlockId).toBe('block-1')
+  })
 
   it('restores selection from a rendered wbr marker', () => {
-    const root = document.createElement('div');
-    root.innerHTML = '<div contenteditable="true">任务<wbr></div>';
-    document.body.appendChild(root);
+    const root = document.createElement('div')
+    root.innerHTML = '<div contenteditable="true">任务<wbr></div>'
+    document.body.appendChild(root)
 
-    const restored = focusByWbr(root);
-    expect(restored).toBe(true);
-  });
-});
+    const restored = focusByWbr(root)
+    expect(restored).toBe(true)
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -716,21 +720,21 @@ export function focusByOffset(nodeElement: HTMLElement, offset?: { start: number
 新增 `src/utils/blockWriter/sourceLoader.ts`，至少提供：
 
 ```ts
-import { getBlockKramdown } from '@/api';
-import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
-import { captureCaretSnapshot } from './caretController';
-import type { LoadedMutationSource, ResolvedMutationPlan } from './types';
+import type { LoadedMutationSource, ResolvedMutationPlan } from './types'
+import { getBlockKramdown } from '@/api'
+import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom'
+import { captureCaretSnapshot } from './caretController'
 
 export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<LoadedMutationSource> {
   if (plan.kind === 'insertAfter') {
     return {
       kind: 'insertAfter',
       anchorBlockId: plan.anchorBlockId,
-    };
+    }
   }
 
   if (plan.sourceKind === 'protyle-dom') {
-    const targetElement = plan.context.nodeElement!;
+    const targetElement = plan.context.nodeElement!
     return {
       kind: 'update',
       targetBlockId: plan.targetBlockId,
@@ -738,15 +742,15 @@ export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<Lo
       currentDomHtml: targetElement.outerHTML,
       targetElement,
       caretSnapshot: captureCaretSnapshot(targetElement),
-    };
+    }
   }
 
-  const result = await getBlockKramdown(plan.targetBlockId);
+  const result = await getBlockKramdown(plan.targetBlockId)
   return {
     kind: 'update',
     targetBlockId: plan.targetBlockId,
     currentMarkdown: result?.kramdown ?? '',
-  };
+  }
 }
 ```
 
@@ -772,6 +776,7 @@ git commit -m "feat(block-writer): add source loader and caret controller"
 ### Task 5: 引入 `updateRenderer.ts` / `insertRenderer.ts`，统一准备 DOM-first payload
 
 **Files:**
+
 - Create: `src/utils/blockWriter/updateRenderer.ts`
 - Create: `src/utils/blockWriter/insertRenderer.ts`
 - Modify: `src/utils/blockWriter/types.ts`
@@ -786,13 +791,13 @@ git commit -m "feat(block-writer): add source loader and caret controller"
 
 ```ts
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest'
+
+import { prepareUpdatePayload } from '@/utils/blockWriter/updateRenderer'
 
 vi.mock('@/utils/blockWriter/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
-}));
-
-import { prepareUpdatePayload } from '@/utils/blockWriter/updateRenderer';
+}))
 
 describe('updateRenderer', () => {
   it('prepares nextMarkdown and domHtml for api updates', () => {
@@ -813,12 +818,12 @@ describe('updateRenderer', () => {
         targetBlockId: 'block-1',
         currentMarkdown: '任务\n{: id="block-1"}',
       },
-    );
+    )
 
-    expect(payload.kind).toBe('update');
-    expect(payload.nextMarkdown).toContain('🔥');
-    expect(payload.domHtml).toContain('🔥');
-  });
+    expect(payload.kind).toBe('update')
+    expect(payload.nextMarkdown).toContain('🔥')
+    expect(payload.domHtml).toContain('🔥')
+  })
 
   it('marks slash cleanup payloads as wbr-restored updates', () => {
     const payload = prepareUpdatePayload(
@@ -841,23 +846,23 @@ describe('updateRenderer', () => {
         targetElement: document.createElement('div'),
         caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1' },
       },
-    );
+    )
 
-    expect(payload.caretRestorePlan?.policy).toBe('wbr');
-  });
-});
+    expect(payload.caretRestorePlan?.policy).toBe('wbr')
+  })
+})
 ```
 
 新建 `test/blockWriter/insertRenderer.test.ts`：
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest'
+
+import { prepareInsertPayload } from '@/utils/blockWriter/insertRenderer'
 
 vi.mock('@/utils/blockWriter/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
-}));
-
-import { prepareInsertPayload } from '@/utils/blockWriter/insertRenderer';
+}))
 
 describe('insertRenderer', () => {
   it('prepares domHtml and markdown for insert payloads', () => {
@@ -885,13 +890,13 @@ describe('insertRenderer', () => {
         kind: 'insertAfter',
         anchorBlockId: 'block-1',
       },
-    );
+    )
 
-    expect(payload.kind).toBe('insertAfter');
-    expect(payload.fallbackMarkdown).toContain('喝水');
-    expect(payload.domHtml).toContain('喝水');
-  });
-});
+    expect(payload.kind).toBe('insertAfter')
+    expect(payload.fallbackMarkdown).toContain('喝水')
+    expect(payload.domHtml).toContain('喝水')
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -910,40 +915,40 @@ Expected: FAIL because renderer 文件还不存在。
 
 ```ts
 export interface CaretRestorePlan {
-  policy: 'none' | 'wbr';
-  placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end';
+  policy: 'none' | 'wbr'
+  placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end'
 }
 
-export type PreparedMutationPayload =
+export type PreparedMutationPayload
+  = | {
+    kind: 'update'
+    targetBlockId: string
+    nextMarkdown: string
+    preferredDataType: 'dom'
+    domHtml?: string
+    fallbackMarkdown: string
+    oldDomHtml?: string
+    targetElement?: HTMLElement
+    caretRestorePlan?: CaretRestorePlan
+  }
   | {
-      kind: 'update';
-      targetBlockId: string;
-      nextMarkdown: string;
-      preferredDataType: 'dom';
-      domHtml?: string;
-      fallbackMarkdown: string;
-      oldDomHtml?: string;
-      targetElement?: HTMLElement;
-      caretRestorePlan?: CaretRestorePlan;
-    }
-  | {
-      kind: 'insertAfter';
-      anchorBlockId: string;
-      preferredDataType: 'dom';
-      domHtml?: string;
-      fallbackMarkdown: string;
-      resultMode: 'boolean' | 'operations';
-      caretRestorePlan?: CaretRestorePlan;
-    };
+    kind: 'insertAfter'
+    anchorBlockId: string
+    preferredDataType: 'dom'
+    domHtml?: string
+    fallbackMarkdown: string
+    resultMode: 'boolean' | 'operations'
+    caretRestorePlan?: CaretRestorePlan
+  }
 ```
 
 新增 `src/utils/blockWriter/updateRenderer.ts`：
 
 ```ts
-import { markdownToBlockDOM } from './domSerializer';
-import { applyBlockPatch, applyBlockPatches } from './kramdownModifier';
-import { splitKramdownBlock } from './kramdownBlocks';
-import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
+import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types'
+import { markdownToBlockDOM } from './domSerializer'
+import { splitKramdownBlock } from './kramdownBlocks'
+import { applyBlockPatch, applyBlockPatches } from './kramdownModifier'
 
 export function prepareUpdatePayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
@@ -951,7 +956,7 @@ export function prepareUpdatePayload(
 ): Extract<PreparedMutationPayload, { kind: 'update' }> {
   const nextMarkdown = plan.patches.length === 1
     ? applyBlockPatch(splitKramdownBlock(source.currentMarkdown), plan.patches[0])
-    : applyBlockPatches(splitKramdownBlock(source.currentMarkdown), plan.patches);
+    : applyBlockPatches(splitKramdownBlock(source.currentMarkdown), plan.patches)
 
   return {
     kind: 'update',
@@ -965,22 +970,22 @@ export function prepareUpdatePayload(
     caretRestorePlan: plan.patches.some(patch => patch.type === 'removeSlashCommand')
       ? { policy: 'wbr', placement: 'block-end' }
       : { policy: 'none' },
-  };
+  }
 }
 ```
 
 新增 `src/utils/blockWriter/insertRenderer.ts`：
 
 ```ts
-import { markdownToBlockDOM } from './domSerializer';
-import { renderInsertableBlockPatch } from './kramdownModifier';
-import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
+import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types'
+import { markdownToBlockDOM } from './domSerializer'
+import { renderInsertableBlockPatch } from './kramdownModifier'
 
 export function prepareInsertPayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'insertAfter' }>,
   _source: Extract<LoadedMutationSource, { kind: 'insertAfter' }>,
 ): Extract<PreparedMutationPayload, { kind: 'insertAfter' }> {
-  const fallbackMarkdown = renderInsertableBlockPatch(plan.patch);
+  const fallbackMarkdown = renderInsertableBlockPatch(plan.patch)
   return {
     kind: 'insertAfter',
     anchorBlockId: plan.anchorBlockId,
@@ -988,7 +993,7 @@ export function prepareInsertPayload(
     domHtml: markdownToBlockDOM(fallbackMarkdown) ?? undefined,
     fallbackMarkdown,
     resultMode: plan.resultMode,
-  };
+  }
 }
 ```
 
@@ -1014,6 +1019,7 @@ git commit -m "feat(block-writer): add update and insert renderers"
 ### Task 6: 引入 `apiCommitter.ts` / `protyleCommitter.ts`，统一 DOM-first commit
 
 **Files:**
+
 - Create: `src/utils/blockWriter/apiCommitter.ts`
 - Create: `src/utils/blockWriter/protyleCommitter.ts`
 - Create: `test/blockWriter/apiCommitter.test.ts`
@@ -1027,15 +1033,15 @@ git commit -m "feat(block-writer): add update and insert renderers"
 新建 `test/blockWriter/apiCommitter.test.ts`：
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest'
+
+import { insertBlock, updateBlock } from '@/api'
+import { commitViaApi } from '@/utils/blockWriter/apiCommitter'
 
 vi.mock('@/api', () => ({
   insertBlock: vi.fn().mockResolvedValue([]),
   updateBlock: vi.fn().mockResolvedValue([]),
-}));
-
-import { insertBlock, updateBlock } from '@/api';
-import { commitViaApi } from '@/utils/blockWriter/apiCommitter';
+}))
 
 describe('apiCommitter', () => {
   it('prefers dom payload for update commits', async () => {
@@ -1046,11 +1052,11 @@ describe('apiCommitter', () => {
       preferredDataType: 'dom',
       domHtml: '<div data-node-id="block-1">任务 🔥</div>',
       fallbackMarkdown: '任务 🔥\n{: id="block-1"}',
-    });
+    })
 
-    expect(ok).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith('dom', '<div data-node-id="block-1">任务 🔥</div>', 'block-1');
-  });
+    expect(ok).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith('dom', '<div data-node-id="block-1">任务 🔥</div>', 'block-1')
+  })
 
   it('prefers dom payload for insert commits and can return operations', async () => {
     const result = await commitViaApi({
@@ -1060,29 +1066,29 @@ describe('apiCommitter', () => {
       domHtml: '<div>喝水</div>',
       fallbackMarkdown: '喝水 🎯2026-05-21 8杯 🔄每天',
       resultMode: 'operations',
-    });
+    })
 
-    expect(Array.isArray(result)).toBe(true);
-    expect(insertBlock).toHaveBeenCalledWith('dom', '<div>喝水</div>', undefined, 'block-1', undefined);
-  });
-});
+    expect(Array.isArray(result)).toBe(true)
+    expect(insertBlock).toHaveBeenCalledWith('dom', '<div>喝水</div>', undefined, 'block-1', undefined)
+  })
+})
 ```
 
 新建 `test/blockWriter/protyleCommitter.test.ts`：
 
 ```ts
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
-import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter';
+import { describe, expect, it, vi } from 'vitest'
+import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter'
 
 describe('protyleCommitter', () => {
   it('commits current block dom through one transaction', async () => {
-    const node = document.createElement('div');
-    node.setAttribute('data-node-id', 'block-1');
-    node.innerHTML = '<div contenteditable="true">任务 /jt</div>';
-    document.body.appendChild(node);
+    const node = document.createElement('div')
+    node.setAttribute('data-node-id', 'block-1')
+    node.innerHTML = '<div contenteditable="true">任务 /jt</div>'
+    document.body.appendChild(node)
 
-    const protyle = { transaction: vi.fn() };
+    const protyle = { transaction: vi.fn() }
     const ok = await commitViaProtyle(
       { blockId: 'block-1', protyle, nodeElement: node },
       {
@@ -1096,12 +1102,12 @@ describe('protyleCommitter', () => {
         targetElement: node,
         caretRestorePlan: { policy: 'wbr', placement: 'after-inline' },
       },
-    );
+    )
 
-    expect(ok).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-  });
-});
+    expect(ok).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+  })
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -1119,21 +1125,21 @@ Expected: FAIL because committer 文件还不存在。
 新增 `src/utils/blockWriter/apiCommitter.ts`：
 
 ```ts
-import { insertBlock, updateBlock } from '@/api';
-import type { PreparedMutationPayload } from './types';
+import type { PreparedMutationPayload } from './types'
+import { insertBlock, updateBlock } from '@/api'
 
 export async function commitViaApi(payload: PreparedMutationPayload): Promise<boolean | IResdoOperations[] | null> {
   if (payload.kind === 'update') {
     const result = payload.domHtml
       ? await updateBlock('dom', payload.domHtml, payload.targetBlockId)
-      : await updateBlock('markdown', payload.fallbackMarkdown, payload.targetBlockId);
-    return Array.isArray(result);
+      : await updateBlock('markdown', payload.fallbackMarkdown, payload.targetBlockId)
+    return Array.isArray(result)
   }
 
   const result = payload.domHtml
     ? await insertBlock('dom', payload.domHtml, undefined, payload.anchorBlockId, undefined)
-    : await insertBlock('markdown', payload.fallbackMarkdown, undefined, payload.anchorBlockId, undefined);
-  return payload.resultMode === 'operations' ? result : Array.isArray(result);
+    : await insertBlock('markdown', payload.fallbackMarkdown, undefined, payload.anchorBlockId, undefined)
+  return payload.resultMode === 'operations' ? result : Array.isArray(result)
 }
 ```
 
@@ -1142,39 +1148,39 @@ export async function commitViaApi(payload: PreparedMutationPayload): Promise<bo
 新增 `src/utils/blockWriter/protyleCommitter.ts`：
 
 ```ts
-import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { focusByOffset, focusByWbr } from './caretController';
-import type { BlockWriteContext, PreparedMutationPayload } from './types';
+import type { BlockWriteContext, PreparedMutationPayload } from './types'
+import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom'
+import { focusByOffset, focusByWbr } from './caretController'
 
 function formatUpdatedAttr(date = new Date()): string {
-  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`
 }
 
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
 ): Promise<boolean> {
-  const { protyle, nodeElement, blockId } = context;
+  const { protyle, nodeElement, blockId } = context
   if (!protyle || !nodeElement || payload.targetBlockId !== blockId) {
-    return false;
+    return false
   }
 
-  const oldHTML = payload.oldDomHtml ?? nodeElement.outerHTML;
+  const oldHTML = payload.oldDomHtml ?? nodeElement.outerHTML
   if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, payload.nextMarkdown)) {
-    return false;
+    return false
   }
 
-  nodeElement.setAttribute('updated', formatUpdatedAttr());
+  nodeElement.setAttribute('updated', formatUpdatedAttr())
   protyle.transaction(
     [{ id: blockId, data: nodeElement.outerHTML, action: 'update' }],
     [{ id: blockId, data: oldHTML, action: 'update' }],
-  );
+  )
 
   if (payload.caretRestorePlan?.policy === 'wbr' && !focusByWbr(nodeElement)) {
-    focusByOffset(nodeElement);
+    focusByOffset(nodeElement)
   }
 
-  return true;
+  return true
 }
 ```
 
@@ -1206,6 +1212,7 @@ git commit -m "feat(block-writer): add dom-first committers"
 ### Task 7: 把 `index.ts` 收口成统一 orchestration 入口，并让旧 writer 降级为 helper
 
 **Files:**
+
 - Modify: `src/utils/blockWriter/index.ts`
 - Modify: `src/utils/blockWriter/markdownWriter.ts`
 - Modify: `src/utils/blockWriter/datePatchWriter.ts`
@@ -1223,14 +1230,14 @@ it('routes writeBlock through intent -> resolve -> load -> render -> commit', as
   const result = await writeBlock(
     { blockId: 'block123' },
     { type: 'setPriority', priority: 'high' },
-  );
+  )
 
-  expect(result).toBe(true);
-  expect(updateBlock).toHaveBeenCalled();
-});
+  expect(result).toBe(true)
+  expect(updateBlock).toHaveBeenCalled()
+})
 
 it('routes insertBlockAfterWithResult through the same pipeline and returns operations', async () => {
-  vi.mocked(insertBlock).mockResolvedValue([{ doOperations: [], undoOperations: [] }] as any);
+  vi.mocked(insertBlock).mockResolvedValue([{ doOperations: [], undoOperations: [] }] as any)
 
   const result = await insertBlockAfterWithResult('block123', {
     type: 'setHabitDefinition',
@@ -1242,10 +1249,10 @@ it('routes insertBlockAfterWithResult through the same pipeline and returns oper
       unit: '杯',
       frequency: { type: 'daily' },
     },
-  });
+  })
 
-  expect(Array.isArray(result)).toBe(true);
-});
+  expect(Array.isArray(result)).toBe(true)
+})
 ```
 
 - [ ] **Step 2: 跑失败验证**
@@ -1263,46 +1270,47 @@ Expected: FAIL because `index.ts` 还没有统一 orchestration。
 目标结构：
 
 ```ts
-import { normalizeInsertIntent, normalizeUpdateIntent } from './intent';
-import { resolveMutationTarget } from './targetResolver';
-import { loadMutationSource } from './sourceLoader';
-import { prepareInsertPayload } from './insertRenderer';
-import { prepareUpdatePayload } from './updateRenderer';
-import { commitViaApi } from './apiCommitter';
-import { commitViaProtyle } from './protyleCommitter';
+import { commitViaApi } from './apiCommitter'
+import { prepareInsertPayload } from './insertRenderer'
+import { normalizeInsertIntent, normalizeUpdateIntent } from './intent'
+import { commitViaProtyle } from './protyleCommitter'
+import { loadMutationSource } from './sourceLoader'
+import { resolveMutationTarget } from './targetResolver'
+import { prepareUpdatePayload } from './updateRenderer'
 
 async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
-  const plan = await resolveMutationTarget(intent);
-  const source = await loadMutationSource(plan);
+  const plan = await resolveMutationTarget(intent)
+  const source = await loadMutationSource(plan)
 
   if (plan.kind === 'insertAfter') {
-    const payload = prepareInsertPayload(plan, source);
-    return commitViaApi(payload);
+    const payload = prepareInsertPayload(plan, source)
+    return commitViaApi(payload)
   }
 
-  const payload = prepareUpdatePayload(plan, source);
+  const payload = prepareUpdatePayload(plan, source)
   if (plan.commitKind === 'protyle-update') {
-    const ok = await commitViaProtyle(plan.context, payload);
-    if (ok) return true;
+    const ok = await commitViaProtyle(plan.context, payload)
+    if (ok)
+      return true
   }
-  return commitViaApi(payload);
+  return commitViaApi(payload)
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const intent = normalizeUpdateIntent(context, patches);
-  const result = await executeIntent(intent);
-  return result === true;
+  const intent = normalizeUpdateIntent(context, patches)
+  const result = await executeIntent(intent)
+  return result === true
 }
 
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
-  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
-  return (await executeIntent(intent)) === true;
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' })
+  return (await executeIntent(intent)) === true
 }
 
 export async function insertBlockAfterWithResult(previousBlockId: string, patch: InsertableBlockPatch): Promise<IResdoOperations[] | null> {
-  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
-  const result = await executeIntent(intent);
-  return Array.isArray(result) ? result : null;
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' })
+  const result = await executeIntent(intent)
+  return Array.isArray(result) ? result : null
 }
 ```
 
@@ -1337,6 +1345,7 @@ git commit -m "refactor(block-writer): unify orchestration pipeline"
 ### Task 8: 跑 B 阶段回归矩阵，确认可以进入 C
 
 **Files:**
+
 - No code changes required.
 
 - [ ] **Step 1: 跑新增的 B 阶段模块测试**

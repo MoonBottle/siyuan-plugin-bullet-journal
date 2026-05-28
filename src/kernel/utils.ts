@@ -1,8 +1,8 @@
 export function formatDate(d: Date): string {
-  var year = d.getFullYear()
-  var month = String(d.getMonth() + 1).padStart(2, '0')
-  var day = String(d.getDate()).padStart(2, '0')
-  return year + '-' + month + '-' + day
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function calculateReminderTime(
@@ -14,7 +14,7 @@ export function calculateReminderTime(
   reminder: ReminderConfig,
 ): number {
   if (reminder.type === 'absolute') {
-    var baseTime = new Date(itemDate + 'T' + (reminder.time || '00:00') + ':00').getTime()
+    var baseTime = new Date(`${itemDate}T${reminder.time || '00:00'}:00`).getTime()
     if (reminder.alertMode && reminder.alertMode.type === 'before' && reminder.alertMode.minutes) {
       return baseTime - reminder.alertMode.minutes * 60000
     }
@@ -27,19 +27,19 @@ export function calculateReminderTime(
   if (reminder.relativeTo === 'end') {
     baseTime = endDateTime
       ? new Date(endDateTime).getTime()
-      : new Date(itemDate + 'T' + (endTime || '23:59') + ':00').getTime()
+      : new Date(`${itemDate}T${endTime || '23:59'}:00`).getTime()
   } else {
     baseTime = startDateTime
       ? new Date(startDateTime).getTime()
-      : new Date(itemDate + 'T' + (startTime || '00:00') + ':00').getTime()
+      : new Date(`${itemDate}T${startTime || '00:00'}:00`).getTime()
   }
   return baseTime - (reminder.offsetMinutes || 0) * 60000
 }
 
 export function renderTemplate(template: string, vars: Record<string, string>): string {
-  var result = template
-  for (var key in vars) {
-    result = result.replace(new RegExp('\\{\\{' + key + '\\}\\}', 'g'), vars[key])
+  let result = template
+  for (const key in vars) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), vars[key])
   }
   return result
 }

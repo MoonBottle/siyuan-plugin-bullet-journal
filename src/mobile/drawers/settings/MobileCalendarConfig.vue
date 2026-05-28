@@ -2,9 +2,13 @@
   <div class="ios-settings-content">
     <!-- Header -->
     <div class="ios-group-header">
-      <div class="header-icon">📅</div>
+      <div class="header-icon">
+        📅
+      </div>
       <div class="header-info">
-        <div class="header-title">{{ t('settings').calendar.title }}</div>
+        <div class="header-title">
+          {{ t('settings').calendar.title }}
+        </div>
       </div>
     </div>
 
@@ -12,40 +16,78 @@
     <div class="ios-group">
       <div class="ios-cell ios-cell-select">
         <div class="cell-content">
-          <div class="cell-title">{{ t('settings').calendar.defaultView }}</div>
+          <div class="cell-title">
+            {{ t('settings').calendar.defaultView }}
+          </div>
         </div>
         <div class="cell-accessory">
-          <select :value="calendarDefaultView" class="ios-select" @change="updateView">
-            <option value="dayGridMonth">{{ t('calendar').month }}</option>
-            <option value="timeGridWeek">{{ t('calendar').week }}</option>
-            <option value="timeGridDay">{{ t('calendar').day }}</option>
-            <option value="listWeek">{{ t('calendar').list }}</option>
+          <select
+            :value="calendarDefaultView"
+            class="ios-select"
+            @change="updateView"
+          >
+            <option value="dayGridMonth">
+              {{ t('calendar').month }}
+            </option>
+            <option value="timeGridWeek">
+              {{ t('calendar').week }}
+            </option>
+            <option value="timeGridDay">
+              {{ t('calendar').day }}
+            </option>
+            <option value="listWeek">
+              {{ t('calendar').list }}
+            </option>
           </select>
         </div>
       </div>
-      <div class="cell-footer">{{ t('settings').calendar.defaultViewDesc }}</div>
+      <div class="cell-footer">
+        {{ t('settings').calendar.defaultViewDesc }}
+      </div>
     </div>
 
     <!-- Pomodoro Display Group -->
     <div class="ios-group">
-      <div class="ios-cell" @click="toggleShowPomodoroBlocks">
+      <div
+        class="ios-cell"
+        @click="toggleShowPomodoroBlocks"
+      >
         <div class="cell-content">
-          <div class="cell-title">{{ t('settings').calendar.showPomodoroBlocks }}</div>
-          <div class="cell-subtitle">{{ t('settings').calendar.showPomodoroBlocksDesc }}</div>
+          <div class="cell-title">
+            {{ t('settings').calendar.showPomodoroBlocks }}
+          </div>
+          <div class="cell-subtitle">
+            {{ t('settings').calendar.showPomodoroBlocksDesc }}
+          </div>
         </div>
         <div class="cell-accessory">
-          <div class="ios-switch" :class="{ on: showPomodoroBlocks ?? true }" @click.stop>
+          <div
+            class="ios-switch"
+            :class="{ on: showPomodoroBlocks ?? true }"
+            @click.stop
+          >
             <div class="switch-thumb"></div>
           </div>
         </div>
       </div>
-      <div class="ios-cell" @click="toggleShowPomodoroTotal">
+      <div
+        class="ios-cell"
+        @click="toggleShowPomodoroTotal"
+      >
         <div class="cell-content">
-          <div class="cell-title">{{ t('settings').calendar.showPomodoroTotal }}</div>
-          <div class="cell-subtitle">{{ t('settings').calendar.showPomodoroTotalDesc }}</div>
+          <div class="cell-title">
+            {{ t('settings').calendar.showPomodoroTotal }}
+          </div>
+          <div class="cell-subtitle">
+            {{ t('settings').calendar.showPomodoroTotalDesc }}
+          </div>
         </div>
         <div class="cell-accessory">
-          <div class="ios-switch" :class="{ on: showPomodoroTotal ?? true }" @click.stop>
+          <div
+            class="ios-switch"
+            :class="{ on: showPomodoroTotal ?? true }"
+            @click.stop
+          >
             <div class="switch-thumb"></div>
           </div>
         </div>
@@ -55,31 +97,31 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
+import { t } from '@/i18n'
 
 defineProps<{
-  calendarDefaultView: string;
-  showPomodoroBlocks?: boolean;
-  showPomodoroTotal?: boolean;
-}>();
+  calendarDefaultView: string
+  showPomodoroBlocks?: boolean
+  showPomodoroTotal?: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:calendarDefaultView': [value: string];
-  'update:showPomodoroBlocks': [value: boolean];
-  'update:showPomodoroTotal': [value: boolean];
-}>();
+  'update:calendarDefaultView': [value: string]
+  'update:showPomodoroBlocks': [value: boolean]
+  'update:showPomodoroTotal': [value: boolean]
+}>()
 
 const updateView = (e: Event) => {
-  emit('update:calendarDefaultView', (e.target as HTMLSelectElement).value);
-};
+  emit('update:calendarDefaultView', (e.target as HTMLSelectElement).value)
+}
 
 const toggleShowPomodoroBlocks = () => {
-  emit('update:showPomodoroBlocks', !(showPomodoroBlocks ?? true));
-};
+  emit('update:showPomodoroBlocks', !(showPomodoroBlocks ?? true))
+}
 
 const toggleShowPomodoroTotal = () => {
-  emit('update:showPomodoroTotal', !(showPomodoroTotal ?? true));
-};
+  emit('update:showPomodoroTotal', !(showPomodoroTotal ?? true))
+}
 </script>
 
 <style lang="scss" scoped>
@@ -91,15 +133,15 @@ const toggleShowPomodoroTotal = () => {
   display: flex;
   gap: 12px;
   padding: 16px 0 20px;
-  
+
   .header-icon {
     font-size: 36px;
   }
-  
+
   .header-info {
     flex: 1;
   }
-  
+
   .header-title {
     font-size: 20px;
     font-weight: 600;
@@ -118,33 +160,33 @@ const toggleShowPomodoroTotal = () => {
   background: #fff;
   min-height: 44px;
   border-radius: 10px;
-  
+
   & + .ios-cell {
     margin-top: 8px;
   }
-  
+
   &:active {
     background: #f2f2f7;
   }
-  
+
   .cell-content {
     flex: 1;
     min-width: 0;
   }
-  
+
   .cell-title {
     font-size: 16px;
     color: #000;
     line-height: 22px;
   }
-  
+
   .cell-subtitle {
     font-size: 13px;
     color: #6c6c70;
     line-height: 18px;
     margin-top: 2px;
   }
-  
+
   .cell-accessory {
     display: flex;
     align-items: center;
@@ -168,15 +210,15 @@ const toggleShowPomodoroTotal = () => {
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &.on {
     background: #34c759;
-    
+
     .switch-thumb {
       transform: translateX(20px);
     }
   }
-  
+
   .switch-thumb {
     width: 27px;
     height: 27px;
@@ -200,7 +242,7 @@ const toggleShowPomodoroTotal = () => {
   text-align: right;
   direction: rtl;
   cursor: pointer;
-  
+
   &:focus {
     outline: none;
   }

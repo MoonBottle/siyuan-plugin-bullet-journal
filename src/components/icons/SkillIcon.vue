@@ -17,14 +17,14 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    width?: number | string;
-    height?: number | string;
+    width?: number | string
+    height?: number | string
   }>(),
   {
     width: 16,
     height: 16,
-  }
-);
+  },
+)
 </script>
 
 <style scoped>

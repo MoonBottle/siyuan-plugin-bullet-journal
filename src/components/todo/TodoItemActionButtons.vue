@@ -1,9 +1,14 @@
 <template>
-  <div v-if="showActions" class="todo-item-actions">
+  <div
+    v-if="showActions"
+    class="todo-item-actions"
+  >
     <button
       v-if="showReminder"
       class="action-btn"
-      :class="{ active: hasReminder, readonly: isReadonly }"
+      :class="{
+        active: hasReminder, readonly: isReadonly,
+      }"
       :disabled="isReadonly"
       :aria-label="reminderTooltip || reminderText"
       @mouseenter="handleShowTooltip($event, reminderTooltip || reminderText)"
@@ -19,7 +24,9 @@
     <button
       v-if="showRecurring"
       class="action-btn"
-      :class="{ active: hasRecurring, readonly: isReadonly }"
+      :class="{
+        active: hasRecurring, readonly: isReadonly,
+      }"
       :disabled="isReadonly"
       :aria-label="recurringTooltip || recurringText"
       @mouseenter="handleShowTooltip($event, recurringTooltip || recurringText)"
@@ -35,44 +42,50 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import {
+  computed,
+  onBeforeUnmount,
+} from 'vue'
+import {
+  hideIconTooltip,
+  showIconTooltip,
+} from '@/utils/dialog'
 
 const props = defineProps<{
-  hasReminder: boolean;
-  hasRecurring: boolean;
-  isReadonly: boolean;
-  showReminder: boolean;
-  showRecurring: boolean;
-  reminderText: string;
-  recurringText: string;
-  reminderTooltip?: string;
-  recurringTooltip?: string;
-}>();
+  hasReminder: boolean
+  hasRecurring: boolean
+  isReadonly: boolean
+  showReminder: boolean
+  showRecurring: boolean
+  reminderText: string
+  recurringText: string
+  reminderTooltip?: string
+  recurringTooltip?: string
+}>()
 
 defineEmits<{
-  'set-reminder': [];
-  'set-recurring': [];
-}>();
+  'set-reminder': []
+  'set-recurring': []
+}>()
 
-const showActions = computed(() => props.showReminder || props.showRecurring);
+const showActions = computed(() => props.showReminder || props.showRecurring)
 
 function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
   if (!text)
-    return;
-  const target = event.currentTarget;
+    return
+  const target = event.currentTarget
   if (!(target instanceof HTMLElement))
-    return;
-  showIconTooltip(target, text);
+    return
+  showIconTooltip(target, text)
 }
 
 function handleHideTooltip() {
-  hideIconTooltip();
+  hideIconTooltip()
 }
 
 onBeforeUnmount(() => {
-  hideIconTooltip();
-});
+  hideIconTooltip()
+})
 </script>
 
 <style lang="scss" scoped>

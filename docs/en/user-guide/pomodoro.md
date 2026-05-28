@@ -27,13 +27,13 @@ The sidebar will show the "Pomodoro Focus" panel.
 
 You can open the "Start Focus" modal from:
 
-| Entry | Action |
-|-------|--------|
+| Entry               | Action                         |
+| ------------------- | ------------------------------ |
 | Pomodoro Focus Dock | Click the play icon at the top |
-| Todo sidebar | Click "Start Focus" on an item |
-| Calendar view | Click "Start Focus" on an item |
-| Gantt chart | Click "Start Focus" on an item |
-| Item block in notes | Right-click → Start Focus |
+| Todo sidebar        | Click "Start Focus" on an item |
+| Calendar view       | Click "Start Focus" on an item |
+| Gantt chart         | Click "Start Focus" on an item |
+| Item block in notes | Right-click → Start Focus      |
 
 In the modal:
 

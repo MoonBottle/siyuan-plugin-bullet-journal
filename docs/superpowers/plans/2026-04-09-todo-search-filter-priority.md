@@ -12,29 +12,30 @@
 
 ## 文件结构
 
-| 文件 | 类型 | 职责 |
-|------|------|------|
-| `src/types/models.ts` | 修改 | 添加 PriorityLevel 类型和 Item.priority 字段 |
-| `src/parser/priorityParser.ts` | 创建 | 优先级解析、生成、排序工具函数 |
-| `src/parser/lineParser.ts` | 修改 | 集成优先级解析逻辑 |
-| `src/constants.ts` | 修改 | 添加 SET_PRIORITY 斜杠命令常量 |
-| `src/i18n/zh_CN.json` | 修改 | 添加优先级相关中文翻译 |
-| `src/i18n/en_US.json` | 修改 | 添加优先级相关英文翻译 |
-| `src/stores/projectStore.ts` | 修改 | 添加 getFilteredAndSortedItems getter |
-| `src/utils/dialog.ts` | 修改 | 添加 showPrioritySettingDialog 函数 |
-| `src/utils/contextMenu.ts` | 修改 | 右键菜单添加"设置优先级"子菜单 |
-| `src/utils/fileUtils.ts` | 修改 | 添加 updateBlockPriority API |
-| `src/utils/slashCommands.ts` | 修改 | 添加 /priority 斜杠命令处理 |
-| `src/components/dialog/PrioritySettingDialog.vue` | 创建 | 优先级选择弹框组件 |
-| `src/components/dialog/ItemDetailDialog.vue` | 修改 | 显示和编辑优先级 |
-| `src/components/todo/TodoSidebar.vue` | 修改 | 接收筛选参数，显示排序后的事项 |
-| `src/tabs/TodoDock.vue` | 修改 | 新增搜索框和筛选栏布局 |
+| 文件                                              | 类型 | 职责                                         |
+| ------------------------------------------------- | ---- | -------------------------------------------- |
+| `src/types/models.ts`                             | 修改 | 添加 PriorityLevel 类型和 Item.priority 字段 |
+| `src/parser/priorityParser.ts`                    | 创建 | 优先级解析、生成、排序工具函数               |
+| `src/parser/lineParser.ts`                        | 修改 | 集成优先级解析逻辑                           |
+| `src/constants.ts`                                | 修改 | 添加 SET_PRIORITY 斜杠命令常量               |
+| `src/i18n/zh_CN.json`                             | 修改 | 添加优先级相关中文翻译                       |
+| `src/i18n/en_US.json`                             | 修改 | 添加优先级相关英文翻译                       |
+| `src/stores/projectStore.ts`                      | 修改 | 添加 getFilteredAndSortedItems getter        |
+| `src/utils/dialog.ts`                             | 修改 | 添加 showPrioritySettingDialog 函数          |
+| `src/utils/contextMenu.ts`                        | 修改 | 右键菜单添加"设置优先级"子菜单               |
+| `src/utils/fileUtils.ts`                          | 修改 | 添加 updateBlockPriority API                 |
+| `src/utils/slashCommands.ts`                      | 修改 | 添加 /priority 斜杠命令处理                  |
+| `src/components/dialog/PrioritySettingDialog.vue` | 创建 | 优先级选择弹框组件                           |
+| `src/components/dialog/ItemDetailDialog.vue`      | 修改 | 显示和编辑优先级                             |
+| `src/components/todo/TodoSidebar.vue`             | 修改 | 接收筛选参数，显示排序后的事项               |
+| `src/tabs/TodoDock.vue`                           | 修改 | 新增搜索框和筛选栏布局                       |
 
 ---
 
 ## Task 1: 定义优先级类型和配置
 
 **Files:**
+
 - Modify: `src/types/models.ts:110-180`
 - Test: 通过后续解析器测试验证
 
@@ -44,7 +45,7 @@
 
 ```typescript
 // 优先级类型
-export type PriorityLevel = 'high' | 'medium' | 'low';
+export type PriorityLevel = 'high' | 'medium' | 'low'
 ```
 
 在 `Item` 接口中添加 priority 字段（约第 175 行，在 repeatRule 字段附近）：
@@ -70,6 +71,7 @@ git commit -m "types: 添加 PriorityLevel 类型和 Item.priority 字段"
 ## Task 2: 创建优先级解析器
 
 **Files:**
+
 - Create: `src/parser/priorityParser.ts`
 - Test: `src/parser/__tests__/priorityParser.test.ts`（如有测试目录）
 
@@ -81,20 +83,20 @@ git commit -m "types: 添加 PriorityLevel 类型和 Item.priority 字段"
  * 处理事项优先级的解析、生成和排序
  */
 
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
 
 /**
  * 优先级配置
  */
 export const PRIORITY_CONFIG: Record<PriorityLevel, {
-  emoji: string;
-  label: string;
-  sortOrder: number;
+  emoji: string
+  label: string
+  sortOrder: number
 }> = {
-  high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
+  high: { emoji: '🔥', label: '高优先级', sortOrder: 0 },
   medium: { emoji: '🌱', label: '中优先级', sortOrder: 1 },
-  low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
-};
+  low: { emoji: '🍃', label: '低优先级', sortOrder: 2 },
+}
 
 /**
  * 从行内容解析优先级
@@ -102,17 +104,20 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
  * @returns PriorityLevel 或 undefined
  */
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
-  if (line.includes('🔥')) return 'high';
-  if (line.includes('🌱')) return 'medium';
-  if (line.includes('🍃')) return 'low';
-  return undefined;
+  if (line.includes('🔥'))
+    return 'high'
+  if (line.includes('🌱'))
+    return 'medium'
+  if (line.includes('🍃'))
+    return 'low'
+  return undefined
 }
 
 /**
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌱🍃]/gu, '').trim();
+  return content.replace(/[🔥🌱🍃]/gu, '').trim()
 }
 
 /**
@@ -123,8 +128,8 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
     high: '🔥',
     medium: '🌱',
     low: '🍃',
-  };
-  return emojiMap[priority] || '';
+  }
+  return emojiMap[priority] || ''
 }
 
 /**
@@ -135,8 +140,8 @@ export function getPrioritySortOrder(priority?: PriorityLevel): number {
     high: 0,
     medium: 1,
     low: 2,
-  };
-  return priority !== undefined ? orderMap[priority] : 3;
+  }
+  return priority !== undefined ? orderMap[priority] : 3
 }
 
 /**
@@ -147,7 +152,7 @@ export function comparePriority(
   a?: PriorityLevel,
   b?: PriorityLevel
 ): number {
-  return getPrioritySortOrder(a) - getPrioritySortOrder(b);
+  return getPrioritySortOrder(a) - getPrioritySortOrder(b)
 }
 ```
 
@@ -163,6 +168,7 @@ git commit -m "feat(parser): 添加优先级解析器"
 ## Task 3: 在 lineParser 中集成优先级解析
 
 **Files:**
+
 - Modify: `src/parser/lineParser.ts:113-200`
 
 - [ ] **Step 1: 导入优先级解析函数**
@@ -170,7 +176,7 @@ git commit -m "feat(parser): 添加优先级解析器"
 在文件顶部导入：
 
 ```typescript
-import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
+import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser'
 ```
 
 - [ ] **Step 2: 在 parseItemLine 中解析优先级**
@@ -179,10 +185,10 @@ import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
 
 ```typescript
 // 解析提醒配置
-const reminder = parseReminderFromLine(line);
+const reminder = parseReminderFromLine(line)
 
 // 解析优先级
-const priority = parsePriorityFromLine(line);
+const priority = parsePriorityFromLine(line)
 ```
 
 - [ ] **Step 3: 在内容清理中移除优先级标记**
@@ -191,10 +197,10 @@ const priority = parsePriorityFromLine(line);
 
 ```typescript
 // 移除提醒标记
-content = stripReminderMarker(content);
+content = stripReminderMarker(content)
 
 // 移除优先级标记
-content = stripPriorityMarker(content);
+content = stripPriorityMarker(content)
 ```
 
 - [ ] **Step 4: 在创建 Item 时包含 priority**
@@ -218,8 +224,8 @@ items.push({
   reminder,
   repeatRule,
   endCondition,
-  priority,  // 新增
-});
+  priority, // 新增
+})
 ```
 
 - [ ] **Step 5: 提交**
@@ -234,6 +240,7 @@ git commit -m "feat(parser): 在 lineParser 中集成优先级解析"
 ## Task 4: 添加常量定义
 
 **Files:**
+
 - Modify: `src/constants.ts:20-42`
 
 - [ ] **Step 1: 添加 SET_PRIORITY 到斜杠命令 filters**
@@ -246,8 +253,8 @@ export const SLASH_COMMAND_FILTERS = {
   // ... 现有命令
   SET_RECURRING: ['/cf', '/recurring'],
   CREATE_SKILL: ['/cjskill', '/create-skill', '/skill'],
-  SET_PRIORITY: ['/yxj', '/priority'],  // 新增
-};
+  SET_PRIORITY: ['/yxj', '/priority'], // 新增
+}
 ```
 
 - [ ] **Step 2: 添加到 ALL_SLASH_COMMAND_FILTERS**
@@ -259,8 +266,8 @@ export const ALL_SLASH_COMMAND_FILTERS = [
   // ... 现有命令
   ...SLASH_COMMAND_FILTERS.SET_RECURRING,
   ...SLASH_COMMAND_FILTERS.CREATE_SKILL,
-  ...SLASH_COMMAND_FILTERS.SET_PRIORITY,  // 新增
-];
+  ...SLASH_COMMAND_FILTERS.SET_PRIORITY, // 新增
+]
 ```
 
 - [ ] **Step 3: 提交**
@@ -275,6 +282,7 @@ git commit -m "chore(constants): 添加 SET_PRIORITY 斜杠命令常量"
 ## Task 5: 添加国际化文案
 
 **Files:**
+
 - Modify: `src/i18n/zh_CN.json:87-135`
 - Modify: `src/i18n/en_US.json`
 
@@ -362,6 +370,7 @@ git commit -m "i18n: 添加优先级、搜索、日期筛选相关文案"
 ## Task 6: 在 projectStore 中添加筛选排序 getter
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts:190-260`
 
 - [ ] **Step 1: 导入优先级比较函数**
@@ -369,8 +378,8 @@ git commit -m "i18n: 添加优先级、搜索、日期筛选相关文案"
 在文件顶部导入：
 
 ```typescript
-import { comparePriority } from '@/parser/priorityParser';
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+import { comparePriority } from '@/parser/priorityParser'
 ```
 
 - [ ] **Step 2: 添加 getFilteredAndSortedItems getter**
@@ -379,57 +388,58 @@ import type { PriorityLevel } from '@/types/models';
 
 ```typescript
 // 按分组获取过滤和排序后的事项（支持搜索、日期筛选、优先级筛选）
-getFilteredAndSortedItems: (state) => (params: {
-  groupId: string;
-  searchQuery?: string;
-  dateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
+getFilteredAndSortedItems: state => (params: {
+  groupId: string
+  searchQuery?: string
+  dateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
 }) => {
   // 1. 获取基础事项列表（多日期去重）
   let items = computeDisplayItems(
     (state as any).items as Item[],
     state.currentDate,
     params.groupId
-  );
+  )
 
   // 2. 应用搜索过滤
   if (params.searchQuery?.trim()) {
-    const query = params.searchQuery.toLowerCase().trim();
-    items = items.filter(item => 
-      item.content.toLowerCase().includes(query) ||
-      item.project?.name.toLowerCase().includes(query) ||
-      item.task?.name.toLowerCase().includes(query)
-    );
+    const query = params.searchQuery.toLowerCase().trim()
+    items = items.filter(item =>
+      item.content.toLowerCase().includes(query)
+      || item.project?.name.toLowerCase().includes(query)
+      || item.task?.name.toLowerCase().includes(query)
+    )
   }
 
   // 3. 应用日期筛选
   if (params.dateRange) {
-    items = items.filter(item => 
-      item.date >= params.dateRange!.start && 
-      item.date <= params.dateRange!.end
-    );
+    items = items.filter(item =>
+      item.date >= params.dateRange!.start
+      && item.date <= params.dateRange!.end
+    )
   }
 
   // 4. 应用优先级筛选
   if (params.priorities && params.priorities.length > 0) {
-    items = items.filter(item => 
+    items = items.filter(item =>
       item.priority && params.priorities!.includes(item.priority)
-    );
+    )
   }
 
   // 5. 按优先级和时间排序
   items.sort((a, b) => {
     // 先按优先级排序（高→中→低→无）
-    const priorityDiff = comparePriority(a.priority, b.priority);
-    if (priorityDiff !== 0) return priorityDiff;
+    const priorityDiff = comparePriority(a.priority, b.priority)
+    if (priorityDiff !== 0)
+      return priorityDiff
 
     // 同优先级按时间排序（开始时间或日期）
-    const timeA = a.startDateTime || a.date;
-    const timeB = b.startDateTime || b.date;
-    return timeA.localeCompare(timeB);
-  });
+    const timeA = a.startDateTime || a.date
+    const timeB = b.startDateTime || b.date
+    return timeA.localeCompare(timeB)
+  })
 
-  return items;
+  return items
 }
 ```
 
@@ -445,26 +455,63 @@ git commit -m "feat(store): 添加 getFilteredAndSortedItems getter"
 ## Task 7: 添加优先级设置弹框
 
 **Files:**
+
 - Create: `src/components/dialog/PrioritySettingDialog.vue`
 - Modify: `src/utils/dialog.ts`
 
 - [ ] **Step 1: 创建 PrioritySettingDialog.vue**
 
 ```vue
+<script setup lang="ts">
+import type { PriorityLevel } from '@/types/models'
+import { ref } from 'vue'
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+
+const props = defineProps<{
+  initialPriority?: PriorityLevel
+}>()
+
+const emit = defineEmits<{
+  confirm: [priority: PriorityLevel | undefined]
+  cancel: []
+}>()
+
+const selectedPriority = ref<PriorityLevel | undefined>(props.initialPriority)
+
+const priorityOptions = [
+  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: PRIORITY_CONFIG.high.label },
+  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: PRIORITY_CONFIG.medium.label },
+  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: PRIORITY_CONFIG.low.label },
+]
+
+function selectPriority(priority: PriorityLevel | undefined) {
+  selectedPriority.value = priority
+}
+
+function confirm() {
+  emit('confirm', selectedPriority.value)
+}
+
+function cancel() {
+  emit('cancel')
+}
+</script>
+
 <template>
   <div class="priority-setting-dialog">
     <div class="priority-options">
       <button
         v-for="option in priorityOptions"
         :key="option.value"
-        :class="['priority-option', { active: selectedPriority === option.value }]"
+        class="priority-option" :class="[{ active: selectedPriority === option.value }]"
         @click="selectPriority(option.value)"
       >
         <span class="priority-emoji">{{ option.emoji }}</span>
         <span class="priority-label">{{ option.label }}</span>
       </button>
       <button
-        :class="['priority-option', { active: !selectedPriority }]"
+        class="priority-option" :class="[{ active: !selectedPriority }]"
         @click="selectPriority(undefined)"
       >
         <span class="priority-emoji">⚪</span>
@@ -481,42 +528,6 @@ git commit -m "feat(store): 添加 getFilteredAndSortedItems getter"
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-import type { PriorityLevel } from '@/types/models';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { t } from '@/i18n';
-
-const props = defineProps<{
-  initialPriority?: PriorityLevel;
-}>();
-
-const emit = defineEmits<{
-  confirm: [priority: PriorityLevel | undefined];
-  cancel: [];
-}>();
-
-const selectedPriority = ref<PriorityLevel | undefined>(props.initialPriority);
-
-const priorityOptions = [
-  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: PRIORITY_CONFIG.high.label },
-  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: PRIORITY_CONFIG.medium.label },
-  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: PRIORITY_CONFIG.low.label },
-];
-
-function selectPriority(priority: PriorityLevel | undefined) {
-  selectedPriority.value = priority;
-}
-
-function confirm() {
-  emit('confirm', selectedPriority.value);
-}
-
-function cancel() {
-  emit('cancel');
-}
-</script>
 
 <style lang="scss" scoped>
 .priority-setting-dialog {
@@ -574,8 +585,8 @@ function cancel() {
 在 `dialog.ts` 中添加：
 
 ```typescript
-import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue'
 
 /**
  * 显示优先级设置弹框
@@ -589,21 +600,21 @@ export function showPrioritySettingDialog(
     content: '<div id="priority-setting-dialog-mount"></div>',
     width: '280px',
     height: 'auto',
-  });
+  })
 
-  const mountEl = dialog.element.querySelector('#priority-setting-dialog-mount');
+  const mountEl = dialog.element.querySelector('#priority-setting-dialog-mount')
   if (mountEl) {
     const app = createApp(PrioritySettingDialog, {
       initialPriority,
       onConfirm: (priority: PriorityLevel | undefined) => {
-        onConfirm(priority);
-        dialog.destroy();
+        onConfirm(priority)
+        dialog.destroy()
       },
       onCancel: () => {
-        dialog.destroy();
+        dialog.destroy()
       },
-    });
-    app.mount(mountEl);
+    })
+    app.mount(mountEl)
   }
 }
 ```
@@ -620,14 +631,15 @@ git commit -m "feat(dialog): 添加优先级设置弹框"
 ## Task 8: 在右键菜单中添加优先级选项
 
 **Files:**
+
 - Modify: `src/utils/contextMenu.ts`
 
 - [ ] **Step 1: 导入优先级相关函数**
 
 ```typescript
-import { showPrioritySettingDialog } from './dialog';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { showPrioritySettingDialog } from './dialog'
 ```
 
 - [ ] **Step 2: 在 createItemMenu 中添加优先级子菜单**
@@ -658,13 +670,13 @@ const prioritySubmenu: IMenuItemOption[] = [
     label: `⚪ ${t('todo').priority.clear}`,
     click: () => handlers.onSetPriority?.(undefined),
   },
-];
+]
 
 menu.addItem({
   icon: 'iconFlag',
   label: t('todo').priority.setPriority,
   submenu: prioritySubmenu,
-});
+})
 ```
 
 - [ ] **Step 3: 在 handlers 类型中添加 onSetPriority**
@@ -672,7 +684,7 @@ menu.addItem({
 ```typescript
 export interface ItemMenuHandlers {
   // ... 现有 handlers
-  onSetPriority?: (priority: PriorityLevel | undefined) => void;
+  onSetPriority?: (priority: PriorityLevel | undefined) => void
 }
 ```
 
@@ -688,13 +700,14 @@ git commit -m "feat(contextMenu): 右键菜单添加优先级设置选项"
 ## Task 9: 添加更新优先级 API
 
 **Files:**
+
 - Modify: `src/utils/fileUtils.ts`
 
 - [ ] **Step 1: 导入优先级相关函数**
 
 ```typescript
-import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser';
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser'
 ```
 
 - [ ] **Step 2: 添加 updateBlockPriority 函数**
@@ -711,29 +724,30 @@ export async function updateBlockPriority(
   priority: PriorityLevel | undefined
 ): Promise<boolean> {
   try {
-    const block = await getBlockByID(blockId);
+    const block = await getBlockByID(blockId)
     if (!block) {
-      console.error('[Task Assistant] Block not found:', blockId);
-      return false;
+      console.error('[Task Assistant] Block not found:', blockId)
+      return false
     }
 
-    let content = block.content || block.markdown || '';
+    let content = block.content || block.markdown || ''
 
     // 移除现有优先级标记
-    content = stripPriorityMarker(content);
+    content = stripPriorityMarker(content)
 
     // 添加新优先级标记
     if (priority) {
-      const marker = generatePriorityMarker(priority);
-      content = content.trimEnd() + ' ' + marker;
+      const marker = generatePriorityMarker(priority)
+      content = `${content.trimEnd()} ${marker}`
     }
 
     // 更新块内容
-    const success = await updateBlock('markdown', content, blockId);
-    return success;
-  } catch (error) {
-    console.error('[Task Assistant] Failed to update priority:', error);
-    return false;
+    const success = await updateBlock('markdown', content, blockId)
+    return success
+  }
+  catch (error) {
+    console.error('[Task Assistant] Failed to update priority:', error)
+    return false
   }
 }
 ```
@@ -750,13 +764,14 @@ git commit -m "feat(fileUtils): 添加 updateBlockPriority API"
 ## Task 10: 添加斜杠命令处理
 
 **Files:**
+
 - Modify: `src/utils/slashCommands.ts`
 
 - [ ] **Step 1: 导入优先级相关函数**
 
 ```typescript
-import { showPrioritySettingDialog } from './dialog';
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+import { showPrioritySettingDialog } from './dialog'
 ```
 
 - [ ] **Step 2: 在 builtinCommands 中添加 SET_PRIORITY 命令**
@@ -792,25 +807,26 @@ case 'setPriority':
  * 为块设置优先级
  */
 async function setPriorityForBlock(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
   // 从块内容提取当前优先级
-  const blockContent = nodeElement.textContent || '';
-  const { parsePriorityFromLine } = await import('@/parser/priorityParser');
-  const currentPriority = parsePriorityFromLine(blockContent);
+  const blockContent = nodeElement.textContent || ''
+  const { parsePriorityFromLine } = await import('@/parser/priorityParser')
+  const currentPriority = parsePriorityFromLine(blockContent)
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
-    const success = await updateBlockPriority(blockId, priority);
+    const success = await updateBlockPriority(blockId, priority)
     if (success) {
-      showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');
-    } else {
-      showMessage('设置优先级失败', 2000, 'error');
+      showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info')
     }
-  });
+    else {
+      showMessage('设置优先级失败', 2000, 'error')
+    }
+  })
 }
 ```
 
@@ -822,8 +838,8 @@ const labels: Record<string, string> = {
   setReminder: 'Reminder',
   setRecurring: 'Recurring',
   createSkill: 'AI Skill',
-  setPriority: 'Priority',  // 新增
-};
+  setPriority: 'Priority', // 新增
+}
 ```
 
 - [ ] **Step 6: 提交**
@@ -838,47 +854,50 @@ git commit -m "feat(slashCommands): 添加 /priority 斜杠命令"
 ## Task 11: 改造 TodoDock 添加搜索和筛选栏
 
 **Files:**
+
 - Modify: `src/tabs/TodoDock.vue`
 
 - [ ] **Step 1: 添加响应式数据和导入**
 
 ```typescript
-import { ref, computed } from 'vue';
-import dayjs from 'dayjs';
-import type { PriorityLevel } from '@/types/models';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import type { PriorityLevel } from '@/types/models'
+import dayjs from 'dayjs'
+import { computed, ref } from 'vue'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
 
 // 搜索和筛选状态
-const searchQuery = ref('');
-const selectedPriorities = ref<PriorityLevel[]>([]);
-const showDateFilter = ref(false);
-const startDate = ref(dayjs().format('YYYY-MM-DD'));
-const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
+const searchQuery = ref('')
+const selectedPriorities = ref<PriorityLevel[]>([])
+const showDateFilter = ref(false)
+const startDate = ref(dayjs().format('YYYY-MM-DD'))
+const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'))
 
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
   { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
   { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
-];
+]
 
 const dateRange = computed(() => {
-  if (!showDateFilter.value) return null;
-  return { start: startDate.value, end: endDate.value };
-});
+  if (!showDateFilter.value)
+    return null
+  return { start: startDate.value, end: endDate.value }
+})
 
 function togglePriority(priority: PriorityLevel) {
-  const index = selectedPriorities.value.indexOf(priority);
+  const index = selectedPriorities.value.indexOf(priority)
   if (index > -1) {
-    selectedPriorities.value.splice(index, 1);
-  } else {
-    selectedPriorities.value.push(priority);
+    selectedPriorities.value.splice(index, 1)
+  }
+  else {
+    selectedPriorities.value.push(priority)
   }
 }
 
 function clearDateFilter() {
-  showDateFilter.value = false;
-  startDate.value = dayjs().format('YYYY-MM-DD');
-  endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+  showDateFilter.value = false
+  startDate.value = dayjs().format('YYYY-MM-DD')
+  endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD')
 }
 ```
 
@@ -892,9 +911,9 @@ function clearDateFilter() {
   <div class="search-row">
     <div class="search-box">
       <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-      <input 
-        v-model="searchQuery" 
-        type="text" 
+      <input
+        v-model="searchQuery"
+        type="text"
         :placeholder="t('todo').searchPlaceholder"
         class="search-input"
       />
@@ -912,11 +931,11 @@ function clearDateFilter() {
       :placeholder="t('settings').projectGroups.allGroups"
       class="group-select"
     />
-    
+
     <!-- 优先级快速筛选 -->
     <div class="priority-filter">
-      <button 
-        v-for="p in priorityOptions" 
+      <button
+        v-for="p in priorityOptions"
         :key="p.value"
         :class="['priority-btn', { active: selectedPriorities.includes(p.value) }]"
         :title="PRIORITY_CONFIG[p.value].label"
@@ -928,7 +947,7 @@ function clearDateFilter() {
 
     <!-- 日期筛选 -->
     <div class="date-filter">
-      <button 
+      <button
         class="date-filter-btn"
         :class="{ active: showDateFilter }"
         @click="showDateFilter = !showDateFilter"
@@ -952,7 +971,7 @@ function clearDateFilter() {
 - [ ] **Step 3: 更新 TodoSidebar 的 props 传递**
 
 ```vue
-<TodoSidebar 
+<TodoSidebar
   :group-id="selectedGroup"
   :search-query="searchQuery"
   :date-range="dateRange"
@@ -1011,7 +1030,9 @@ function clearDateFilter() {
         cursor: pointer;
         opacity: 0.4;
 
-        &:hover { opacity: 0.8; }
+        &:hover {
+          opacity: 0.8;
+        }
       }
     }
   }
@@ -1041,7 +1062,8 @@ function clearDateFilter() {
         opacity: 0.35;
         transition: all 0.2s;
 
-        &:hover, &.active {
+        &:hover,
+        &.active {
           opacity: 1;
           background: var(--b3-theme-primary-lightest);
         }
@@ -1090,6 +1112,7 @@ function clearDateFilter() {
     }
   }
 }
+
 ```
 
 - [ ] **Step 5: 提交**
@@ -1104,22 +1127,23 @@ git commit -m "feat(TodoDock): 添加搜索框和优先级/日期筛选栏"
 ## Task 12: 改造 TodoSidebar 支持筛选参数
 
 **Files:**
+
 - Modify: `src/components/todo/TodoSidebar.vue`
 
 - [ ] **Step 1: 添加 props 定义**
 
 ```typescript
 const props = withDefaults(defineProps<{
-  groupId?: string;
-  searchQuery?: string;
-  dateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
+  groupId?: string
+  searchQuery?: string
+  dateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
 }>(), {
   groupId: '',
   searchQuery: '',
   dateRange: null,
   priorities: () => [],
-});
+})
 ```
 
 - [ ] **Step 2: 修改事项获取逻辑**
@@ -1134,38 +1158,38 @@ const filteredItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
-  });
-});
+  })
+})
 
 // 今日待办事项
 const todayItems = computed(() => {
-  const todayStr = getTodayStr();
-  return filteredItems.value.filter(item => item.date === todayStr);
-});
+  const todayStr = getTodayStr()
+  return filteredItems.value.filter(item => item.date === todayStr)
+})
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
-  const tomorrowStr = getTomorrowStr();
-  return filteredItems.value.filter(item => item.date === tomorrowStr);
-});
+  const tomorrowStr = getTomorrowStr()
+  return filteredItems.value.filter(item => item.date === tomorrowStr)
+})
 
 // 未来待办事项
 const futureItems = computed(() => {
-  const todayStr = getTodayStr();
-  const tomorrowStr = getTomorrowStr();
-  return filteredItems.value.filter(item => 
+  const todayStr = getTodayStr()
+  const tomorrowStr = getTomorrowStr()
+  return filteredItems.value.filter(item =>
     item.date !== todayStr && item.date !== tomorrowStr
-  );
-});
+  )
+})
 
 // 过期事项
 const expiredItems = computed(() => {
-  const todayStr = getTodayStr();
-  return filteredItems.value.filter(item => {
-    const effectiveDate = getEffectiveDate(item);
-    return effectiveDate < todayStr;
-  });
-});
+  const todayStr = getTodayStr()
+  return filteredItems.value.filter((item) => {
+    const effectiveDate = getEffectiveDate(item)
+    return effectiveDate < todayStr
+  })
+})
 ```
 
 - [ ] **Step 3: 在事项内容中显示优先级 emoji**
@@ -1173,22 +1197,27 @@ const expiredItems = computed(() => {
 修改 `getStatusEmoji` 函数，在返回的 emoji 前添加优先级：
 
 ```typescript
-const getStatusEmoji = (item: Item): string => {
+function getStatusEmoji(item: Item): string {
   // 优先级 emoji
-  let priorityEmoji = '';
-  if (item.priority === 'high') priorityEmoji = '🔥 ';
-  else if (item.priority === 'medium') priorityEmoji = '🌱 ';
-  else if (item.priority === 'low') priorityEmoji = '🍃 ';
-  
+  let priorityEmoji = ''
+  if (item.priority === 'high')
+    priorityEmoji = '🔥 '
+  else if (item.priority === 'medium')
+    priorityEmoji = '🌱 '
+  else if (item.priority === 'low')
+    priorityEmoji = '🍃 '
+
   // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return priorityEmoji + '🍅 ';
+    return `${priorityEmoji}🍅 `
   }
-  if (item.status === 'completed') return priorityEmoji + '✅ ';
-  if (item.status === 'abandoned') return priorityEmoji + '❌ ';
+  if (item.status === 'completed')
+    return `${priorityEmoji}✅ `
+  if (item.status === 'abandoned')
+    return `${priorityEmoji}❌ `
   // ... 其他状态
-  return priorityEmoji + '⏳ ';
-};
+  return `${priorityEmoji}⏳ `
+}
 ```
 
 - [ ] **Step 4: 提交**
@@ -1203,14 +1232,15 @@ git commit -m "feat(TodoSidebar): 支持搜索、日期、优先级筛选参数"
 ## Task 13: 在 ItemDetailDialog 中显示和编辑优先级
 
 **Files:**
+
 - Modify: `src/components/dialog/ItemDetailDialog.vue`
 
 - [ ] **Step 1: 导入优先级相关函数**
 
 ```typescript
-import { PRIORITY_CONFIG, generatePriorityMarker } from '@/parser/priorityParser';
-import { showPrioritySettingDialog } from '@/utils/dialog';
-import { updateBlockPriority } from '@/utils/fileUtils';
+import { generatePriorityMarker, PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { showPrioritySettingDialog } from '@/utils/dialog'
+import { updateBlockPriority } from '@/utils/fileUtils'
 ```
 
 - [ ] **Step 2: 在模板中添加优先级显示和编辑**
@@ -1237,13 +1267,14 @@ import { updateBlockPriority } from '@/utils/fileUtils';
 ```typescript
 function editPriority() {
   showPrioritySettingDialog(props.item.priority, async (priority) => {
-    if (!props.item.blockId) return;
-    const success = await updateBlockPriority(props.item.blockId, priority);
+    if (!props.item.blockId)
+      return
+    const success = await updateBlockPriority(props.item.blockId, priority)
     if (success) {
       // 更新本地显示的优先级
-      props.item.priority = priority;
+      props.item.priority = priority
     }
-  });
+  })
 }
 ```
 
@@ -1280,6 +1311,7 @@ function editPriority() {
   color: var(--b3-theme-primary);
   cursor: pointer;
 }
+
 ```
 
 - [ ] **Step 5: 提交**

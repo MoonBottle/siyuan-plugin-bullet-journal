@@ -10,21 +10,21 @@ A project document is divided into three main areas, each parsing different type
 
 Location: Content before the task list
 
-| Element | Format | Description |
-|---------|--------|-------------|
-| Project Name | `## Project Name` | Document title |
-| Project Description | `> Project Description` | Project summary |
-| Project Links | `[Link Name](URL)` | Supports multiple links |
+| Element             | Format                  | Description             |
+| ------------------- | ----------------------- | ----------------------- |
+| Project Name        | `## Project Name`       | Document title          |
+| Project Description | `> Project Description` | Project summary         |
+| Project Links       | `[Link Name](URL)`      | Supports multiple links |
 
 ### 2. Task Area
 
 Location: Content containing `📋` marker
 
-| Element | Format | Description |
-|---------|--------|-------------|
-| Task Marker | `📋` | Identifies task line (supports `#task` / `#任务`) |
-| Hierarchy | `@L1/@L2/@L3` | L1 parent task, L2/L3 subtasks |
-| Task Links | `[Link Name](URL)` | Related docs or external links (separate line) |
+| Element     | Format             | Description                                       |
+| ----------- | ------------------ | ------------------------------------------------- |
+| Task Marker | `📋`               | Identifies task line (supports `#task` / `#任务`) |
+| Hierarchy   | `@L1/@L2/@L3`      | L1 parent task, L2/L3 subtasks                    |
+| Task Links  | `[Link Name](URL)` | Related docs or external links (separate line)    |
 
 > ⚠️ Note: Tasks do not have dates attached; dates belong to items
 
@@ -32,38 +32,38 @@ Location: Content containing `📋` marker
 
 Location: Content below tasks (contains `@` or `📅` but not `📋`)
 
-| Element | Format | Description |
-|---------|--------|-------------|
-| Work Item | Any text + `@Date` or `📅Date` | Item content |
-| Date | `@YYYY-MM-DD` or `📅YYYY-MM-DD` | Item date |
-| Time Range | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Item time range |
-| Multi-date | `@date1, date2~date3` | One item with multiple dates |
-| Item Links | `[Link Name](URL)` | Separate line under item (indent optional) |
+| Element    | Format                          | Description                                |
+| ---------- | ------------------------------- | ------------------------------------------ |
+| Work Item  | Any text + `@Date` or `📅Date`  | Item content                               |
+| Date       | `@YYYY-MM-DD` or `📅YYYY-MM-DD` | Item date                                  |
+| Time Range | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Item time range                            |
+| Multi-date | `@date1, date2~date3`           | One item with multiple dates               |
+| Item Links | `[Link Name](URL)`              | Separate line under item (indent optional) |
 
 ## Markers Reference
 
 ### Basic Markers
 
-| Marker | Format | Description |
-|--------|--------|-------------|
-| Project name | `## Project Name` | Document title |
-| Project description | `>` | Project summary |
-| Task marker | `📋` | Task line identifier (compatible with `#task` / `#任务`) |
-| Task hierarchy | `@L1/@L2/@L3` | `@L1` parent task, `@L2/L3` subtasks |
-| Date | `@YYYY-MM-DD` / `📅YYYY-MM-DD` | Date marker |
-| Time range | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Date with time |
-| Link | `[Name](URL)` | SiYuan internal links and external links |
+| Marker              | Format                                                             | Description                                              |
+| ------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| Project name        | `## Project Name`                                                  | Document title                                           |
+| Project description | `>`                                                                | Project summary                                          |
+| Task marker         | `📋`                                                               | Task line identifier (compatible with `#task` / `#任务`) |
+| Task hierarchy      | `@L1/@L2/@L3`                                                      | `@L1` parent task, `@L2/L3` subtasks                     |
+| Date                | `@YYYY-MM-DD` / `📅YYYY-MM-DD`                                     | Date marker                                              |
+| Time range          | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Date with time                                           |
+| Link                | `[Name](URL)`                                                      | SiYuan internal links and external links                 |
 
 ### Emoji Markers (Recommended)
 
 For improved readability, the plugin supports using Emoji instead of text markers:
 
-| Feature | Emoji Marker | Equivalent Text Marker |
-|---------|-------------|------------------------|
-| Task | `📋` | `#task` / `#任务` |
-| Date | `📅` | `@` |
-| Completed | `✅` | `#done` / `#已完成` |
-| Abandoned | `❌` | `#abandoned` / `#已放弃` |
+| Feature   | Emoji Marker | Equivalent Text Marker   |
+| --------- | ------------ | ------------------------ |
+| Task      | `📋`         | `#task` / `#任务`        |
+| Date      | `📅`         | `@`                      |
+| Completed | `✅`         | `#done` / `#已完成`      |
+| Abandoned | `❌`         | `#abandoned` / `#已放弃` |
 
 **Examples**:
 
@@ -75,17 +75,18 @@ Design homepage prototype 📅2026-03-09
 Complete homepage design 📅2026-03-10 ✅
 
 Abandon old approach 📅2026-03-08 ❌
+
 ```
 
 ## Status Tags
 
 Items can be marked with status tags, supporting Chinese, English, and Emoji:
 
-| Status | Chinese Tag | English Tag | Emoji Tag | Description |
-|--------|-------------|-------------|-----------|-------------|
-| Pending | None (default) | None (default) | None (default) | Normal display |
-| Completed | `#已完成` | `#done` | `✅` | Strikethrough |
-| Abandoned | `#已放弃` | `#abandoned` | `❌` | Strikethrough + gray |
+| Status    | Chinese Tag    | English Tag    | Emoji Tag      | Description          |
+| --------- | -------------- | -------------- | -------------- | -------------------- |
+| Pending   | None (default) | None (default) | None (default) | Normal display       |
+| Completed | `#已完成`      | `#done`        | `✅`           | Strikethrough        |
+| Abandoned | `#已放弃`      | `#abandoned`   | `❌`           | Strikethrough + gray |
 
 **Task list form**: Completion can also be maintained with task list (checkbox): use `[x]` or `[X]` at line start for completed, `[ ]` for pending. Can be used together with tags, e.g. `- [x] Item content @2026-03-10`.
 
@@ -95,11 +96,11 @@ Items can be marked with status tags, supporting Chinese, English, and Emoji:
 
 Set priority for items using Emoji markers:
 
-| Priority | Emoji Marker | Description |
-|----------|-------------|-------------|
-| High | `🔥` | Urgent and important |
-| Medium | `🌱` | Normal priority |
-| Low | `🍃` | Can be postponed |
+| Priority | Emoji Marker | Description          |
+| -------- | ------------ | -------------------- |
+| High     | `🔥`         | Urgent and important |
+| Medium   | `🌱`         | Normal priority      |
+| Low      | `🍃`         | Can be postponed     |
 
 **Examples**:
 
@@ -109,9 +110,11 @@ Fix critical production bug 📅2026-03-09 🔥
 Routine code review 📅2026-03-09 🌱
 
 Improve documentation formatting 📅2026-03-09 🍃
+
 ```
 
 **Interaction methods**:
+
 - **UI Panel**: Item detail → Set priority
 - **Context menu**: Right-click item → Set priority
 - **Slash command**: `/priority`
@@ -125,11 +128,11 @@ Set reminder times for items to receive system notifications at the specified ti
 
 Use `⏰` as the reminder marker:
 
-| Type | Chinese Format | English Format | Description |
-|------|----------------|----------------|-------------|
-| Absolute time | `⏰10:00` | `⏰10:00` | Remind at 10:00 on the specified date |
-| Relative to start | `⏰提前5分钟` | `⏰5 minutes before` | Remind before item start time |
-| Relative to end | `⏰结束前30分钟` | `⏰30 minutes before end` | Remind before item end time |
+| Type              | Chinese Format   | English Format            | Description                           |
+| ----------------- | ---------------- | ------------------------- | ------------------------------------- |
+| Absolute time     | `⏰10:00`        | `⏰10:00`                 | Remind at 10:00 on the specified date |
+| Relative to start | `⏰提前5分钟`    | `⏰5 minutes before`      | Remind before item start time         |
+| Relative to end   | `⏰结束前30分钟` | `⏰30 minutes before end` | Remind before item end time           |
 
 ### Examples
 
@@ -139,11 +142,13 @@ Weekly meeting 📅2026-03-17 ⏰14:00
 Weekly meeting 📅2026-03-17 14:00~16:00 ⏰提前10分钟
 
 Weekly meeting 📅2026-03-17 14:00~16:00 ⏰结束前10分钟
+
 ```
 
 **Relative reminder units**: Supports minutes, hours, days
 
 **Interaction methods**:
+
 - **UI Panel**: Item detail → Set reminder
 - **Context menu**: Right-click item → Set reminder
 - **Slash command**: `/reminder`
@@ -157,22 +162,22 @@ Set recurrence rules for items, useful for periodic tasks (e.g., weekly meetings
 
 Use `🔁` as the recurrence marker:
 
-| Chinese Format | English Format | Description |
-|----------------|----------------|-------------|
-| `🔁每天` | `🔁daily` | Repeat daily |
-| `🔁每周` | `🔁weekly` | Repeat weekly |
-| `🔁每周一三五` | `🔁weekly on Mon,Wed,Fri` | Repeat on specific weekdays |
-| `🔁每月` | `🔁monthly` | Repeat monthly (keep current day) |
-| `🔁每月15日` | `🔁monthly on day 15` | Repeat on fixed monthly date |
-| `🔁每年` | `🔁yearly` | Repeat yearly |
-| `🔁工作日` | `🔁workday` | Repeat on workdays (skip weekends) |
+| Chinese Format | English Format            | Description                        |
+| -------------- | ------------------------- | ---------------------------------- |
+| `🔁每天`       | `🔁daily`                 | Repeat daily                       |
+| `🔁每周`       | `🔁weekly`                | Repeat weekly                      |
+| `🔁每周一三五` | `🔁weekly on Mon,Wed,Fri` | Repeat on specific weekdays        |
+| `🔁每月`       | `🔁monthly`               | Repeat monthly (keep current day)  |
+| `🔁每月15日`   | `🔁monthly on day 15`     | Repeat on fixed monthly date       |
+| `🔁每年`       | `🔁yearly`                | Repeat yearly                      |
+| `🔁工作日`     | `🔁workday`               | Repeat on workdays (skip weekends) |
 
 ### End Condition Markers
 
-| Chinese Format | English Format | Description | Example |
-|----------------|----------------|-------------|---------|
-| `截止到YYYY-MM-DD` | `until YYYY-MM-DD` | End by date | `🔁每月 until 2026-12-31` |
-| `剩余N次` | `N times remaining` | End by count | `🔁daily 10 times remaining` |
+| Chinese Format     | English Format      | Description  | Example                      |
+| ------------------ | ------------------- | ------------ | ---------------------------- |
+| `截止到YYYY-MM-DD` | `until YYYY-MM-DD`  | End by date  | `🔁每月 until 2026-12-31`    |
+| `剩余N次`          | `N times remaining` | End by count | `🔁daily 10 times remaining` |
 
 ### Examples
 
@@ -184,6 +189,7 @@ Weekly meeting 📅2026-03-06 ⏰09:00 🔁每周 52 times remaining
 Daily vocab 📅2026-03-17 ⏰08:00 🔁每天 30 times remaining
 
 Daily report 📅2026-03-17 ⏰17:00 🔁workday
+
 ```
 
 ### Auto-create next occurrence
@@ -192,16 +198,21 @@ When marked as `#done` or `✅`, the system automatically creates the next occur
 
 ```markdown
 # Original item
+
 Weekly meeting 📅2026-03-17 🔁每周
 
 # After user adds ✅
+
 Weekly meeting 📅2026-03-17 🔁每周 ✅
 
 # System auto-creates (inserts new block at same level)
+
 Weekly meeting 📅2026-03-24 🔁每周
+
 ```
 
 **Interaction methods**:
+
 - **UI Panel**: Item detail → Set recurrence
 - **Context menu**: Right-click item → Set recurrence
 - **Slash command**: `/repeat`
@@ -254,6 +265,7 @@ Organize some materials @2026-03-06 09:00:00~09:30:00, 2026-03-10~03-12 14:00:00
 ```
 
 Meaning:
+
 - Mar 6, 09:00–09:30
 - Mar 10, 11, 12, each 14:00–15:00
 - Mar 15, 10:00–11:00
@@ -280,54 +292,59 @@ Type `/` in the editor to open the slash command panel for quick access to commo
 
 ### Item Marking Commands
 
-| Command | Trigger | Description |
-|---------|---------|-------------|
-| Mark as Today | `/today` | Add today's date `@YYYY-MM-DD` to current line |
-| Mark as Tomorrow | `/tomorrow` | Add tomorrow's date `@YYYY-MM-DD` to current line |
-| Select Date | `/date` | Open date picker for custom date |
-| Mark as Done | `/done` | Add completion mark `✅` or `#done` |
-| Mark as Abandoned | `/abandon` | Add abandon mark `❌` or `#abandoned` |
-| Mark as Task | `/task` | Add task mark `📋` |
-| Create/Edit Habit | `/habit` | Open habit create/edit dialog |
-| Check In | `/checkin` | Quick check-in current habit |
-| Set Reminder | `/reminder` | Open reminder settings dialog |
-| Set Recurring | `/recurring` | Open recurrence rule settings dialog |
-| Set Priority | `/priority` | Open priority settings dialog |
-| View Detail | `/detail` | Open item detail dialog |
+| Command           | Trigger      | Description                                       |
+| ----------------- | ------------ | ------------------------------------------------- |
+| Mark as Today     | `/today`     | Add today's date `@YYYY-MM-DD` to current line    |
+| Mark as Tomorrow  | `/tomorrow`  | Add tomorrow's date `@YYYY-MM-DD` to current line |
+| Select Date       | `/date`      | Open date picker for custom date                  |
+| Mark as Done      | `/done`      | Add completion mark `✅` or `#done`               |
+| Mark as Abandoned | `/abandon`   | Add abandon mark `❌` or `#abandoned`             |
+| Mark as Task      | `/task`      | Add task mark `📋`                                |
+| Create/Edit Habit | `/habit`     | Open habit create/edit dialog                     |
+| Check In          | `/checkin`   | Quick check-in current habit                      |
+| Set Reminder      | `/reminder`  | Open reminder settings dialog                     |
+| Set Recurring     | `/recurring` | Open recurrence rule settings dialog              |
+| Set Priority      | `/priority`  | Open priority settings dialog                     |
+| View Detail       | `/detail`    | Open item detail dialog                           |
 
 ### View Opening Commands
 
-| Command | Trigger | Description |
-|---------|---------|-------------|
-| Open Calendar | `/calendar` | Open calendar view, jump to item date |
-| Open Calendar Day | `/calendarday` | Open calendar day view |
-| Open Calendar Week | `/calendarweek` | Open calendar week view |
-| Open Calendar Month | `/calendarmonth` | Open calendar month view |
-| Open Calendar List | `/calendarlist` | Open calendar list view |
-| Open Gantt | `/gantt` | Open Gantt view, jump to item date |
-| Open Todo Dock | `/todo` | Open todo sidebar |
-| Open Habit Dock | `/habits` | Open habit check-in sidebar |
-| Start Focus | `/focus` | Open Pomodoro focus dialog |
+| Command             | Trigger          | Description                           |
+| ------------------- | ---------------- | ------------------------------------- |
+| Open Calendar       | `/calendar`      | Open calendar view, jump to item date |
+| Open Calendar Day   | `/calendarday`   | Open calendar day view                |
+| Open Calendar Week  | `/calendarweek`  | Open calendar week view               |
+| Open Calendar Month | `/calendarmonth` | Open calendar month view              |
+| Open Calendar List  | `/calendarlist`  | Open calendar list view               |
+| Open Gantt          | `/gantt`         | Open Gantt view, jump to item date    |
+| Open Todo Dock      | `/todo`          | Open todo sidebar                     |
+| Open Habit Dock     | `/habits`        | Open habit check-in sidebar           |
+| Start Focus         | `/focus`         | Open Pomodoro focus dialog            |
 
 ### Other Commands
 
-| Command | Trigger | Description |
-|---------|---------|-------------|
-| Set as Project Directory | `/projectdir` | Add current document's directory to scan paths |
-| Create AI Skill | `/create-skill`, `/skill` | Convert current document to AI skill |
+| Command                  | Trigger                   | Description                                    |
+| ------------------------ | ------------------------- | ---------------------------------------------- |
+| Set as Project Directory | `/projectdir`             | Add current document's directory to scan paths |
+| Create AI Skill          | `/create-skill`, `/skill` | Convert current document to AI skill           |
 
 ### Usage Examples
 
 ```markdown
 # Use slash commands for quick operations
+
 Complete frontend development /done
+
 # Result: Complete frontend development ✅
 
 Review English words /tomorrow
+
 # Result: Review English words 📅2026-03-11
 
 Weekly meeting /calendar
+
 # Result: Opens calendar view and jumps to meeting date
+
 ```
 
 > 💡 **Tip**: Slash commands are automatically removed after execution, leaving only the operation result.
@@ -347,6 +364,7 @@ Monthly report 📅2026-03-17 ⏰14:00 🔁每月 until 2026-12-31 🔥
 ```
 
 **Tolerance rules**:
+
 - **No strict order**: Parser uses regex matching, not position-dependent
 - **Mixed languages**: First valid marker is used, rest are ignored
 
@@ -368,15 +386,15 @@ Habits are at the same level as tasks, both being first-level concepts under a p
 
 ### Habit Markers
 
-| Element | Format | Description |
-|------|------|------|
-| Habit marker | `🎯` | Identifies this as a habit line (written after habit name) |
-| Start date | `🎯YYYY-MM-DD` | Habit start date (required) |
-| Stick to days | `Stick to N days` | Calendar days to persist (optional, indefinite if omitted) |
-| Target value+unit | `8 cups`, `5 km` | Target for count habits (optional) |
-| Reminder time | `⏰HH:mm` | Habit reminder time (optional) |
-| Frequency rule | `🔄daily` | Habit check-in frequency (required) |
-| Archive marker | `📦YYYY-MM-DD` | Habit archive date (optional) |
+| Element           | Format            | Description                                                |
+| ----------------- | ----------------- | ---------------------------------------------------------- |
+| Habit marker      | `🎯`              | Identifies this as a habit line (written after habit name) |
+| Start date        | `🎯YYYY-MM-DD`    | Habit start date (required)                                |
+| Stick to days     | `Stick to N days` | Calendar days to persist (optional, indefinite if omitted) |
+| Target value+unit | `8 cups`, `5 km`  | Target for count habits (optional)                         |
+| Reminder time     | `⏰HH:mm`         | Habit reminder time (optional)                             |
+| Frequency rule    | `🔄daily`         | Habit check-in frequency (required)                        |
+| Archive marker    | `📦YYYY-MM-DD`    | Habit archive date (optional)                              |
 
 ### Habit Types
 
@@ -386,6 +404,7 @@ Habits are at the same level as tasks, both being first-level concepts under a p
 Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
 
 Meditation 🎯2026-04-01 🔄daily
+
 ```
 
 **Count** (with target value+unit):
@@ -394,6 +413,7 @@ Meditation 🎯2026-04-01 🔄daily
 Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 
 Running 🎯2026-04-01 5 km 🔄daily
+
 ```
 
 ### Check-in Records
@@ -406,6 +426,7 @@ Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
 Wake up early 📅2026-04-06
 
 Wake up early 📅2026-04-07
+
 ```
 
 Count check-in records:
@@ -416,6 +437,7 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 Drink water 3/8 cups 📅2026-04-07
 
 Drink water 8/8 cups 📅2026-04-08
+
 ```
 
 > Count format is `current value/target value+unit`; target value is snapshot-copied from habit definition.
@@ -424,13 +446,13 @@ Drink water 8/8 cups 📅2026-04-08
 
 Use `🔄` as the habit frequency marker:
 
-| Chinese Format | English Format | Description |
-|----------|----------|------|
-| `🔄每天` | `🔄daily` | Check in daily |
-| `🔄每N天` | `🔄every N days` | Check in every N days |
-| `🔄每周` | `🔄weekly` | Check in once a week |
-| `🔄每周N天` | `🔄N days/week` | Check in N days a week |
-| `🔄每周一三五` | `🔄Mon,Wed,Fri` | Check in on specified weekdays |
+| Chinese Format | English Format   | Description                    |
+| -------------- | ---------------- | ------------------------------ |
+| `🔄每天`       | `🔄daily`        | Check in daily                 |
+| `🔄每N天`      | `🔄every N days` | Check in every N days          |
+| `🔄每周`       | `🔄weekly`       | Check in once a week           |
+| `🔄每周N天`    | `🔄N days/week`  | Check in N days a week         |
+| `🔄每周一三五` | `🔄Mon,Wed,Fri`  | Check in on specified weekdays |
 
 > **Difference from `🔁`**: `🔄` is the habit-specific frequency marker, while `🔁` is the item recurrence marker. Habit check-ins are user-triggered; the system does not auto-create records.
 
@@ -438,8 +460,8 @@ Use `🔄` as the habit frequency marker:
 
 Use `📦` to mark habit archive status:
 
-| Format | Description |
-|------|------|
+| Format         | Description                                                           |
+| -------------- | --------------------------------------------------------------------- |
 | `📦YYYY-MM-DD` | Habit is archived (optional, at the end of the habit definition line) |
 
 Archiving indicates the user has voluntarily deactivated the habit. Archived habits are hidden from the default active list by default, with reminders and check-ins stopped, while historical records and statistics are preserved.
@@ -469,6 +491,7 @@ Task (📋 @L1)           ← Task itself has no date
 ```
 
 **Design Rationale**:
+
 - A task represents a goal or deliverable
 - An item represents a specific action to achieve that goal
 - A task may take multiple days to complete, with different work items each day
@@ -491,6 +514,7 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 📋 Develop registration module @L1
 
 Write registration API 📅2026-04-02
+
 ```
 
 - When `🎯` is encountered, switch to **habit context**; `📅date` lines below are parsed as check-in records
@@ -503,6 +527,7 @@ Write registration API 📅2026-04-02
 ```markdown
 Item name @2026-02-25
 Item name 📅2026-02-25
+
 ```
 
 ### With Time Range
@@ -510,6 +535,7 @@ Item name 📅2026-02-25
 ```markdown
 Item name @2026-02-25 14:00:00~16:00:00
 Item name 📅2026-02-25 14:00:00~16:00:00
+
 ```
 
 > 💡 **Tip**: Time range affects task duration display in the Gantt chart. Lunch break time can be configured in settings.
@@ -564,6 +590,7 @@ Two types of links are supported:
 ```markdown
 [Requirements Doc](https://example.com/requirements)
 [Dev Gantt](https://gantt.example.com/project123)
+
 ```
 
 ### SiYuan Internal Links
@@ -591,14 +618,16 @@ Items can have multiple links; put links on separate lines under the item:
 Work item @2026-03-10
 [Requirements Doc](https://example.com)
 [Design Mockup](siyuan://blocks/202602...)
+
 ```
 
 Indent is optional:
 
 ```markdown
 Work item @2026-03-10
-  [Requirements Doc](https://example.com)
-  [Design Mockup](siyuan://blocks/202602...)
+[Requirements Doc](https://example.com)
+[Design Mockup](siyuan://blocks/202602...)
+
 ```
 
 > 💡 **Tip**: Item links are on their own line(s) under the item; indentation is optional. You can have multiple links in a row, one per line.
@@ -621,6 +650,7 @@ Requirements review @2026-02-20
 Coding @2026-02-21
 
 Testing @2026-02-22
+
 ```
 
 **Option 2**: Use a multi-date item and attach several dates to one item:
@@ -629,6 +659,7 @@ Testing @2026-02-22
 Develop login module 📋 @L1
 
 Development work @2026-02-20~2026-02-22
+
 ```
 
 ### Q: How do I mark a task as complete?
@@ -651,6 +682,7 @@ Requirements review @2026-03-06
 Coding @2026-03-10
 
 Testing @2026-03-15
+
 ```
 
 Choose based on how you track: if the same work repeats on several days, use a multi-date item; if each day has different work, use multiple single-date items.
@@ -675,12 +707,15 @@ Yes. The parser recognizes all supported marker formats, but it's recommended to
 
 ```markdown
 # Recommended: Consistent use of Emoji
+
 Homepage revamp 📋 @L1
 Design homepage 📅2026-03-09 🔥
 Complete design 📅2026-03-10 ✅
 
 # Or: Consistent use of text markers
+
 Homepage revamp #task @L1
 Design homepage @2026-03-09 #high-priority
 Complete design @2026-03-10 #done
+
 ```

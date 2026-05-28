@@ -12,15 +12,15 @@
 
 ### 2.2 功能规格
 
-| 功能 | 描述 | 状态 |
-|------|------|------|
-| 月视图 | 按月展示所有事项 | ✅ |
-| 周视图 | 按周展示事项时间线 | ✅ |
-| 日视图 | 单日详细视图 | ✅ |
-| 列表视图 | 列表形式展示事项 | ✅ |
-| 分组筛选 | 按项目分组筛选显示 | ✅ |
-| 点击跳转 | 点击事件跳转到笔记 | ✅ |
-| 日期导航 | 支持前后导航和今天按钮 | ✅ |
+| 功能     | 描述                   | 状态 |
+| -------- | ---------------------- | ---- |
+| 月视图   | 按月展示所有事项       | ✅   |
+| 周视图   | 按周展示事项时间线     | ✅   |
+| 日视图   | 单日详细视图           | ✅   |
+| 列表视图 | 列表形式展示事项       | ✅   |
+| 分组筛选 | 按项目分组筛选显示     | ✅   |
+| 点击跳转 | 点击事件跳转到笔记     | ✅   |
+| 日期导航 | 支持前后导航和今天按钮 | ✅   |
 
 ### 2.3 验收标准
 
@@ -59,7 +59,8 @@ DataConverter.projectsToCalendarEvents(projects: Project[]): CalendarEvent[]
 
 **使用组件**: FullCalendar
 
-**文件位置**: 
+**文件位置**:
+
 - `src/tabs/CalendarTab.vue`
 - `src/components/calendar/CalendarView.vue`
 
@@ -71,15 +72,15 @@ DataConverter.projectsToCalendarEvents(projects: Project[]): CalendarEvent[]
 
 ### 3.2 功能规格
 
-| 功能 | 描述 | 状态 |
-|------|------|------|
-| 任务展示 | 展示所有任务的时间线 | ✅ |
-| 层级展示 | 支持 L1/L2/L3 层级缩进 | ✅ |
-| 进度条 | 显示任务时间范围 | ✅ |
-| 展开/折叠 | 支持展开折叠任务 | ✅ |
-| 日期筛选 | 按日期范围筛选 | ✅ |
-| 事项模式 | 可选显示具体事项 | ✅ |
-| 分组筛选 | 按项目分组筛选 | ✅ |
+| 功能      | 描述                   | 状态 |
+| --------- | ---------------------- | ---- |
+| 任务展示  | 展示所有任务的时间线   | ✅   |
+| 层级展示  | 支持 L1/L2/L3 层级缩进 | ✅   |
+| 进度条    | 显示任务时间范围       | ✅   |
+| 展开/折叠 | 支持展开折叠任务       | ✅   |
+| 日期筛选  | 按日期范围筛选         | ✅   |
+| 事项模式  | 可选显示具体事项       | ✅   |
+| 分组筛选  | 按项目分组筛选         | ✅   |
 
 ### 3.3 验收标准
 
@@ -116,6 +117,7 @@ DataConverter.projectsToGanttTasks(
 **使用组件**: dhtmlx-gantt
 
 **文件位置**:
+
 - `src/tabs/GanttTab.vue`
 - `src/components/gantt/GanttView.vue`
 
@@ -127,15 +129,15 @@ DataConverter.projectsToGanttTasks(
 
 ### 4.2 功能规格
 
-| 功能 | 描述 | 状态 |
-|------|------|------|
-| 项目列表 | 展示所有项目 | ✅ |
-| 任务列表 | 展示项目下的任务 | ✅ |
-| 事项列表 | 展示任务下的事项 | ✅ |
-| 展开/折叠 | 支持展开折叠项目 | ✅ |
-| 分组筛选 | 按项目分组筛选 | ✅ |
-| 状态显示 | 显示事项状态 emoji | ✅ |
-| 点击跳转 | 点击跳转到笔记 | ✅ |
+| 功能      | 描述               | 状态 |
+| --------- | ------------------ | ---- |
+| 项目列表  | 展示所有项目       | ✅   |
+| 任务列表  | 展示项目下的任务   | ✅   |
+| 事项列表  | 展示任务下的事项   | ✅   |
+| 展开/折叠 | 支持展开折叠项目   | ✅   |
+| 分组筛选  | 按项目分组筛选     | ✅   |
+| 状态显示  | 显示事项状态 emoji | ✅   |
+| 点击跳转  | 点击跳转到笔记     | ✅   |
 
 ### 4.3 验收标准
 
@@ -149,6 +151,7 @@ DataConverter.projectsToGanttTasks(
 ### 4.4 技术实现
 
 **文件位置**:
+
 - `src/tabs/ProjectTab.vue`
 - `src/components/project/ProjectView.vue`
 
@@ -203,16 +206,16 @@ Project[]
 ```typescript
 // ProjectStore
 interface ProjectState {
-  projects: Project[];
-  items: Item[];
-  calendarEvents: CalendarEvent[];
-  loading: boolean;
-  refreshing: boolean;
-  refreshKey: number;
+  projects: Project[]
+  items: Item[]
+  calendarEvents: CalendarEvent[]
+  loading: boolean
+  refreshing: boolean
+  refreshKey: number
 }
 
 // Getters
-- getFilteredProjects(groupId)
+-getFilteredProjects(groupId)
 - getFilteredCalendarEvents(groupId)
 - getGanttTasks(showItems, dateFilter, groupId)
 ```

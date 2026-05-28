@@ -27,27 +27,28 @@
 
 ## File Structure
 
-| 文件 | 职责 |
-|------|------|
-| `src/utils/slashCommandItemResolver.ts` | 统一 slash 事项校验：candidate line 构造、`LineParser` 复用、store fallback |
-| `src/utils/slashCommands.ts` | 所有 item-only slash 命令统一接入新的校验 helper |
-| `src/utils/blockWriter/markerCluster.ts` | 解析 / 更新 / 重建 primary line marker cluster，保持已有顺序稳定 |
-| `src/utils/blockWriter/kramdownModifier.ts` | 基于 marker cluster 应用 `setPriority` / `addDate` / `setReminder` / `setRecurring` / `togglePinned` / `setFocusPlan` 等 patch |
-| `src/utils/blockWriter/normalizePatchSequence.ts` | 对混合 update patch 做最小顺序归一化 |
-| `src/utils/blockWriter/index.ts` | 在 `writeBlock()` 入口接入 patch 顺序归一化 |
-| `src/services/recurringService.ts` | 生成下一条 recurring occurrence 时继承源事项 marker 顺序，而不是按固定模板重拼 |
-| `test/utils/slashCommandItemResolver.test.ts` | candidate line / store fallback / 非事项误判回归 |
-| `test/utils/slashCommands.itemValidation.test.ts` | `/yxj` 等 item-only slash 命令的入口回归 |
-| `test/blockWriter/markerCluster.test.ts` | marker cluster 原位更新 / 追加 / 删除 / 规范化回归 |
-| `test/blockWriter/kramdownModifier.test.ts` | `kramdownModifier` 规则回归 |
-| `test/blockWriter/index.test.ts` | `writeBlock()` batch 顺序归一化回归 |
-| `test/services/recurringService.test.ts` | recurring next occurrence 保持源事项 marker 顺序的回归 |
+| 文件                                              | 职责                                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `src/utils/slashCommandItemResolver.ts`           | 统一 slash 事项校验：candidate line 构造、`LineParser` 复用、store fallback                                                    |
+| `src/utils/slashCommands.ts`                      | 所有 item-only slash 命令统一接入新的校验 helper                                                                               |
+| `src/utils/blockWriter/markerCluster.ts`          | 解析 / 更新 / 重建 primary line marker cluster，保持已有顺序稳定                                                               |
+| `src/utils/blockWriter/kramdownModifier.ts`       | 基于 marker cluster 应用 `setPriority` / `addDate` / `setReminder` / `setRecurring` / `togglePinned` / `setFocusPlan` 等 patch |
+| `src/utils/blockWriter/normalizePatchSequence.ts` | 对混合 update patch 做最小顺序归一化                                                                                           |
+| `src/utils/blockWriter/index.ts`                  | 在 `writeBlock()` 入口接入 patch 顺序归一化                                                                                    |
+| `src/services/recurringService.ts`                | 生成下一条 recurring occurrence 时继承源事项 marker 顺序，而不是按固定模板重拼                                                 |
+| `test/utils/slashCommandItemResolver.test.ts`     | candidate line / store fallback / 非事项误判回归                                                                               |
+| `test/utils/slashCommands.itemValidation.test.ts` | `/yxj` 等 item-only slash 命令的入口回归                                                                                       |
+| `test/blockWriter/markerCluster.test.ts`          | marker cluster 原位更新 / 追加 / 删除 / 规范化回归                                                                             |
+| `test/blockWriter/kramdownModifier.test.ts`       | `kramdownModifier` 规则回归                                                                                                    |
+| `test/blockWriter/index.test.ts`                  | `writeBlock()` batch 顺序归一化回归                                                                                            |
+| `test/services/recurringService.test.ts`          | recurring next occurrence 保持源事项 marker 顺序的回归                                                                         |
 
 ---
 
 ### Task 1: Add a Candidate Semantic Line Resolver for Slash Validation
 
 **Files:**
+
 - Create: `src/utils/slashCommandItemResolver.ts`
 - Test: `test/utils/slashCommandItemResolver.test.ts`
 
@@ -55,109 +56,109 @@
 
 ```ts
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver'
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
-}));
+}))
 
 vi.mock('@/stores', () => ({
   useProjectStore: vi.fn(() => ({
     getItemByBlockId: vi.fn(() => null),
   })),
-}));
-
-import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
+}))
 
 function mountParagraph(text: string, blockId = 'block-1') {
-  const node = document.createElement('div');
-  node.setAttribute('data-node-id', blockId);
-  node.setAttribute('data-type', 'NodeParagraph');
-  node.className = 'p';
-  const editable = document.createElement('div');
-  editable.setAttribute('contenteditable', 'true');
-  editable.textContent = text;
-  node.appendChild(editable);
-  document.body.appendChild(node);
-  return { node, editable, textNode: editable.firstChild as Text };
+  const node = document.createElement('div')
+  node.setAttribute('data-node-id', blockId)
+  node.setAttribute('data-type', 'NodeParagraph')
+  node.className = 'p'
+  const editable = document.createElement('div')
+  editable.setAttribute('contenteditable', 'true')
+  editable.textContent = text
+  node.appendChild(editable)
+  document.body.appendChild(node)
+  return { node, editable, textNode: editable.firstChild as Text }
 }
 
 function placeCursor(textNode: Text, offset: number) {
-  const range = document.createRange();
-  range.setStart(textNode, offset);
-  range.collapse(true);
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(range);
+  const range = document.createRange()
+  range.setStart(textNode, offset)
+  range.collapse(true)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
 }
 
 describe('resolveItemForSlashCommand', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
-  });
+    document.body.innerHTML = ''
+  })
 
   it('parses a valid item from a date-marker infix slash command', async () => {
-    const text = '评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00';
-    const { node, textNode } = mountParagraph(text);
-    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length);
+    const text = '评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00'
+    const { node, textNode } = mountParagraph(text)
+    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length)
 
     const item = await resolveItemForSlashCommand({
       blockId: 'block-1',
       nodeElement: node,
-    });
+    })
 
-    expect(item?.content).toBe('评审视觉稿');
-    expect(item?.date).toBe('2026-05-15');
-    expect(item?.siblingItems?.[0]?.date).toBe('2026-05-20');
-  });
+    expect(item?.content).toBe('评审视觉稿')
+    expect(item?.date).toBe('2026-05-15')
+    expect(item?.siblingItems?.[0]?.date).toBe('2026-05-20')
+  })
 
   it('parses a valid item from a time-marker infix slash command', async () => {
-    const text = '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0';
-    const { node, textNode } = mountParagraph(text);
-    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length);
+    const text = '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0'
+    const { node, textNode } = mountParagraph(text)
+    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length)
 
     const item = await resolveItemForSlashCommand({
       blockId: 'block-1',
       nodeElement: node,
-    });
+    })
 
-    expect(item?.content).toBe('评审视觉稿');
-    expect(item?.reminder?.type).toBe('absolute');
-    expect(item?.reminder?.time).toBe('14:00');
-  });
+    expect(item?.content).toBe('评审视觉稿')
+    expect(item?.reminder?.type).toBe('absolute')
+    expect(item?.reminder?.time).toBe('14:00')
+  })
 
   it('falls back to store lookup when there is no active slash context', async () => {
-    const { useProjectStore } = await import('@/stores');
+    const { useProjectStore } = await import('@/stores')
     vi.mocked(useProjectStore).mockReturnValue({
       getItemByBlockId: vi.fn(() => ({
         blockId: 'block-1',
         content: '来自 store 的事项',
         date: '2026-05-20',
       })),
-    } as any);
+    } as any)
 
-    const { node } = mountParagraph('普通事项文本');
+    const { node } = mountParagraph('普通事项文本')
 
     const item = await resolveItemForSlashCommand({
       blockId: 'block-1',
       nodeElement: node,
-    });
+    })
 
-    expect(item?.content).toBe('来自 store 的事项');
-  });
+    expect(item?.content).toBe('来自 store 的事项')
+  })
 
   it('returns null when both candidate line and store lookup fail', async () => {
-    const { node, textNode } = mountParagraph('普通文本 /yxj');
-    placeCursor(textNode, '普通文本 /yxj'.length);
+    const { node, textNode } = mountParagraph('普通文本 /yxj')
+    placeCursor(textNode, '普通文本 /yxj'.length)
 
     const item = await resolveItemForSlashCommand({
       blockId: 'block-1',
       nodeElement: node,
-    });
+    })
 
-    expect(item).toBeNull();
-  });
-});
+    expect(item).toBeNull()
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -169,84 +170,84 @@ Expected: FAIL because `@/utils/slashCommandItemResolver` does not exist.
 - [ ] **Step 3: Write the minimal implementation**
 
 ```ts
-import { LineParser } from '@/parser/lineParser';
-import type { Item } from '@/types/models';
-import { useProjectStore } from '@/stores';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/slashRange';
+import type { Item } from '@/types/models'
+import { LineParser } from '@/parser/lineParser'
+import { useProjectStore } from '@/stores'
+import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/slashRange'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 export interface ResolveSlashItemOptions {
-  blockId: string;
-  nodeElement?: HTMLElement | null;
+  blockId: string
+  nodeElement?: HTMLElement | null
 }
 
 function getNodePath(root: Node, target: Node): number[] | null {
-  const path: number[] = [];
-  let current: Node | null = target;
+  const path: number[] = []
+  let current: Node | null = target
 
   while (current && current !== root) {
-    const parent = current.parentNode;
+    const parent = current.parentNode
     if (!parent) {
-      return null;
+      return null
     }
-    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
-    current = parent;
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current))
+    current = parent
   }
 
-  return current === root ? path : null;
+  return current === root ? path : null
 }
 
 function getNodeByPath(root: Node, path: number[]): Node | null {
-  let current: Node | null = root;
+  let current: Node | null = root
   for (const index of path) {
-    current = current?.childNodes?.[index] ?? null;
+    current = current?.childNodes?.[index] ?? null
     if (!current) {
-      return null;
+      return null
     }
   }
-  return current;
+  return current
 }
 
 function buildCandidateSemanticLine(nodeElement: HTMLElement, slashRange: Range, slashStartOffset: number): string | null {
-  const editable = nodeElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
-  const root = editable ?? nodeElement;
-  const path = getNodePath(root, slashRange.startContainer);
+  const editable = nodeElement.querySelector('[contenteditable="true"]') as HTMLElement | null
+  const root = editable ?? nodeElement
+  const path = getNodePath(root, slashRange.startContainer)
   if (!path) {
-    return null;
+    return null
   }
 
-  const draftRoot = root.cloneNode(true) as HTMLElement;
-  const draftStartNode = getNodeByPath(draftRoot, path);
+  const draftRoot = root.cloneNode(true) as HTMLElement
+  const draftStartNode = getNodeByPath(draftRoot, path)
   if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
-    return null;
+    return null
   }
 
-  const draftRange = document.createRange();
-  draftRange.setStart(draftStartNode, slashRange.startOffset);
-  draftRange.collapse(true);
-  deleteSlashRangeText(draftRange, slashStartOffset);
+  const draftRange = document.createRange()
+  draftRange.setStart(draftStartNode, slashRange.startOffset)
+  draftRange.collapse(true)
+  deleteSlashRangeText(draftRange, slashStartOffset)
 
-  return draftRoot.textContent?.trim() ?? null;
+  return draftRoot.textContent?.trim() ?? null
 }
 
 function parseCandidateLine(candidateLine: string | null): Item | null {
   if (!candidateLine) {
-    return null;
+    return null
   }
-  return LineParser.parseItemLine(candidateLine, 0)[0] ?? null;
+  return LineParser.parseItemLine(candidateLine, 0)[0] ?? null
 }
 
 function lookupItemFromStore(blockId: string): Item | null {
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (!pinia) {
-    return null;
+    return null
   }
-  return useProjectStore(pinia).getItemByBlockId(blockId) ?? null;
+  return useProjectStore(pinia).getItemByBlockId(blockId) ?? null
 }
 
 export async function resolveItemForSlashCommand(options: ResolveSlashItemOptions): Promise<Item | null> {
-  const { blockId, nodeElement } = options;
-  const activeSlash = getActiveSlashRange();
+  const { blockId, nodeElement } = options
+  const activeSlash = getActiveSlashRange()
 
   if (
     nodeElement
@@ -255,13 +256,13 @@ export async function resolveItemForSlashCommand(options: ResolveSlashItemOption
   ) {
     const candidate = parseCandidateLine(
       buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset),
-    );
+    )
     if (candidate) {
-      return candidate;
+      return candidate
     }
   }
 
-  return lookupItemFromStore(blockId);
+  return lookupItemFromStore(blockId)
 }
 ```
 
@@ -283,6 +284,7 @@ git commit -m "feat(slash): resolve items from candidate semantic lines"
 ### Task 2: Route Item-Only Slash Commands Through the New Resolver
 
 **Files:**
+
 - Modify: `src/utils/slashCommands.ts`
 - Modify: `test/utils/slashCommands.itemValidation.test.ts`
 
@@ -290,64 +292,64 @@ git commit -m "feat(slash): resolve items from candidate semantic lines"
 
 ```ts
 it('/yxj 在日期 marker 中缀触发时仍应打开优先级弹框', async () => {
-  vi.mocked(extractItemFromBlock).mockResolvedValue(null);
-  const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
-  const node = document.createElement('div');
-  node.setAttribute('data-node-id', 'block-item');
-  const textNode = document.createTextNode('评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00');
-  node.appendChild(textNode);
-  document.body.appendChild(node);
+  vi.mocked(extractItemFromBlock).mockResolvedValue(null)
+  const handler = getActionHandler('setPriority', {} as any, ['/yxj'])
+  const node = document.createElement('div')
+  node.setAttribute('data-node-id', 'block-item')
+  const textNode = document.createTextNode('评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00')
+  node.appendChild(textNode)
+  document.body.appendChild(node)
 
-  const range = document.createRange();
-  range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length);
-  range.collapse(true);
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(range);
+  const range = document.createRange()
+  range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length)
+  range.collapse(true)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
 
   const protyle = {
     wysiwyg: { element: node },
     toolbar: { setInlineMark: vi.fn() },
     transaction: vi.fn(),
-  };
+  }
 
-  handler(protyle as any, node);
-  await Promise.resolve();
-  await Promise.resolve();
+  handler(protyle as any, node)
+  await Promise.resolve()
+  await Promise.resolve()
 
-  expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce();
-  expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
-});
+  expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce()
+  expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error')
+})
 
 it('/yxj 在时间 marker 中缀触发时仍应打开优先级弹框', async () => {
-  vi.mocked(extractItemFromBlock).mockResolvedValue(null);
-  const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
-  const node = document.createElement('div');
-  node.setAttribute('data-node-id', 'block-item');
-  const textNode = document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0');
-  node.appendChild(textNode);
-  document.body.appendChild(node);
+  vi.mocked(extractItemFromBlock).mockResolvedValue(null)
+  const handler = getActionHandler('setPriority', {} as any, ['/yxj'])
+  const node = document.createElement('div')
+  node.setAttribute('data-node-id', 'block-item')
+  const textNode = document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0')
+  node.appendChild(textNode)
+  document.body.appendChild(node)
 
-  const range = document.createRange();
-  range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length);
-  range.collapse(true);
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(range);
+  const range = document.createRange()
+  range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length)
+  range.collapse(true)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
 
   const protyle = {
     wysiwyg: { element: node },
     toolbar: { setInlineMark: vi.fn() },
     transaction: vi.fn(),
-  };
+  }
 
-  handler(protyle as any, node);
-  await Promise.resolve();
-  await Promise.resolve();
+  handler(protyle as any, node)
+  await Promise.resolve()
+  await Promise.resolve()
 
-  expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce();
-  expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
-});
+  expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce()
+  expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -359,57 +361,57 @@ Expected: FAIL because `slashCommands.ts` still trusts `extractItemFromBlock()` 
 - [ ] **Step 3: Wire the new resolver into `slashCommands.ts`**
 
 ```ts
-import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
+import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver'
 
 async function getValidatedItemFromNode(
   nodeElement: HTMLElement,
   protyle?: any,
 ): Promise<Item | null> {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return null;
+    showMessage('无法获取块ID', 2000, 'error')
+    return null
   }
 
   const item = await resolveItemForSlashCommand({
     blockId,
     nodeElement,
-  });
+  })
 
   if (!item) {
     if (protyle) {
-      void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+      void removeSlashCommandViaWriter(protyle, nodeElement, { blockId })
     }
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return null;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return null
   }
 
-  return item;
+  return item
 }
 
 async function setPriorityForBlock(nodeElement: HTMLElement, item?: Item) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
   const targetItem = item || await resolveItemForSlashCommand({
     blockId,
     nodeElement,
-  });
+  })
   if (!targetItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
-  const blockContent = nodeElement.textContent || targetItem.content || '';
-  const currentPriority = parsePriorityFromLine(blockContent);
+  const blockContent = nodeElement.textContent || targetItem.content || ''
+  const currentPriority = parsePriorityFromLine(blockContent)
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
-    const success = await writeBlock({ blockId }, { type: 'setPriority', priority });
-    showMessage(success ? (priority ? '优先级已设置' : '优先级已清除') : '设置优先级失败', 2000, success ? 'info' : 'error');
-  });
+    const success = await writeBlock({ blockId }, { type: 'setPriority', priority })
+    showMessage(success ? (priority ? '优先级已设置' : '优先级已清除') : '设置优先级失败', 2000, success ? 'info' : 'error')
+  })
 }
 ```
 
@@ -440,46 +442,47 @@ git commit -m "feat(slash): validate items from candidate semantic lines"
 ### Task 3: Add a Marker Cluster Primitive That Preserves Existing Order
 
 **Files:**
+
 - Create: `src/utils/blockWriter/markerCluster.ts`
 - Test: `test/blockWriter/markerCluster.test.ts`
 
 - [ ] **Step 1: Write the failing marker cluster tests**
 
 ```ts
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   normalizeMarkerLine,
   parseMarkerLine,
   removeMarker,
   upsertMarker,
-} from '@/utils/blockWriter/markerCluster';
+} from '@/utils/blockWriter/markerCluster'
 
 describe('markerCluster', () => {
   it('preserves existing date/time order when appending a new priority marker', () => {
-    const parsed = parseMarkerLine('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00');
-    const next = upsertMarker(parsed, 'priority', '🌱');
-    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱');
-  });
+    const parsed = parseMarkerLine('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00')
+    const next = upsertMarker(parsed, 'priority', '🌱')
+    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱')
+  })
 
   it('updates an existing date marker in place while allowing canonical normalization', () => {
-    const parsed = parseMarkerLine('评审视觉稿 @2026-05-15 🔥');
-    const next = upsertMarker(parsed, 'date', '📅2026-05-20');
-    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-20 🔥');
-  });
+    const parsed = parseMarkerLine('评审视觉稿 @2026-05-15 🔥')
+    const next = upsertMarker(parsed, 'date', '📅2026-05-20')
+    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-20 🔥')
+  })
 
   it('removes only the requested marker and keeps neighbors stable', () => {
-    const parsed = parseMarkerLine('评审视觉稿 📌 📅2026-05-15 ⏰14:00 🌱');
-    const next = removeMarker(parsed, 'pinned');
-    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-15 ⏰14:00 🌱');
-  });
+    const parsed = parseMarkerLine('评审视觉稿 📌 📅2026-05-15 ⏰14:00 🌱')
+    const next = removeMarker(parsed, 'pinned')
+    expect(normalizeMarkerLine(next)).toBe('评审视觉稿 📅2026-05-15 ⏰14:00 🌱')
+  })
 
   it('appends multiple new markers in the order they are applied', () => {
-    const parsed = parseMarkerLine('评审视觉稿');
-    const withDate = upsertMarker(parsed, 'date', '📅2026-05-15');
-    const withPriority = upsertMarker(withDate, 'priority', '🌱');
-    expect(normalizeMarkerLine(withPriority)).toBe('评审视觉稿 📅2026-05-15 🌱');
-  });
-});
+    const parsed = parseMarkerLine('评审视觉稿')
+    const withDate = upsertMarker(parsed, 'date', '📅2026-05-15')
+    const withPriority = upsertMarker(withDate, 'priority', '🌱')
+    expect(normalizeMarkerLine(withPriority)).toBe('评审视觉稿 📅2026-05-15 🌱')
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -491,28 +494,28 @@ Expected: FAIL because `@/utils/blockWriter/markerCluster` does not exist.
 - [ ] **Step 3: Implement the marker cluster primitive**
 
 ```ts
-export type MarkerKind =
-  | 'date'
-  | 'priority'
-  | 'status'
-  | 'pinned'
-  | 'focusPlan'
-  | 'reminder'
-  | 'recurring'
-  | 'endCondition'
-  | 'habitArchive';
+export type MarkerKind
+  = | 'date'
+    | 'priority'
+    | 'status'
+    | 'pinned'
+    | 'focusPlan'
+    | 'reminder'
+    | 'recurring'
+    | 'endCondition'
+    | 'habitArchive'
 
 export interface MarkerToken {
-  kind: MarkerKind;
-  raw: string;
+  kind: MarkerKind
+  raw: string
 }
 
 export interface ParsedMarkerLine {
-  content: string;
-  markers: MarkerToken[];
+  content: string
+  markers: MarkerToken[]
 }
 
-const MARKER_PATTERNS: Array<{ kind: MarkerKind; regex: RegExp }> = [
+const MARKER_PATTERNS: Array<{ kind: MarkerKind, regex: RegExp }> = [
   { kind: 'date', regex: /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}(?::\d{2})?(?:-\d{2}:\d{2}(?::\d{2})?)?)?/u },
   { kind: 'priority', regex: /[🔥🌱🍃]/u },
   { kind: 'status', regex: /(?:#已完成|#已放弃|#done|#abandoned|✅|❌)/u },
@@ -522,79 +525,79 @@ const MARKER_PATTERNS: Array<{ kind: MarkerKind; regex: RegExp }> = [
   { kind: 'recurring', regex: /🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/iu },
   { kind: 'endCondition', regex: /(?:截止到\d{4}-\d{2}-\d{2}|剩余\s*\d+\s*次|until\s+\d{4}-\d{2}-\d{2}|\d+\s*(?:times?\s*)?remaining)/iu },
   { kind: 'habitArchive', regex: /📦\d{4}-\d{2}-\d{2}/u },
-];
+]
 
 function detectMarkerKind(raw: string): MarkerKind | null {
   for (const candidate of MARKER_PATTERNS) {
-    candidate.regex.lastIndex = 0;
+    candidate.regex.lastIndex = 0
     if (candidate.regex.test(raw)) {
-      return candidate.kind;
+      return candidate.kind
     }
   }
-  return null;
+  return null
 }
 
 export function parseMarkerLine(line: string): ParsedMarkerLine {
-  const parts = line.trim().split(/\s+/);
-  const contentParts: string[] = [];
-  const markers: MarkerToken[] = [];
-  let inMarkers = false;
+  const parts = line.trim().split(/\s+/)
+  const contentParts: string[] = []
+  const markers: MarkerToken[] = []
+  let inMarkers = false
 
   for (const part of parts) {
-    const kind = detectMarkerKind(part);
+    const kind = detectMarkerKind(part)
     if (kind) {
-      inMarkers = true;
-      markers.push({ kind, raw: part.startsWith('@') ? part.replace('@', '📅') : part });
-      continue;
+      inMarkers = true
+      markers.push({ kind, raw: part.startsWith('@') ? part.replace('@', '📅') : part })
+      continue
     }
 
     if (inMarkers) {
-      const previous = markers.at(-1);
+      const previous = markers.at(-1)
       if (previous?.kind === 'date' && /^\d{2}:\d{2}(?::\d{2})?(?:-\d{2}:\d{2}(?::\d{2})?)?$/.test(part)) {
-        previous.raw = `${previous.raw} ${part}`;
-        continue;
+        previous.raw = `${previous.raw} ${part}`
+        continue
       }
     }
 
     if (inMarkers) {
-      contentParts.push(part);
-      continue;
+      contentParts.push(part)
+      continue
     }
 
-    contentParts.push(part);
+    contentParts.push(part)
   }
 
   return {
     content: contentParts.join(' ').trim(),
     markers,
-  };
+  }
 }
 
 export function upsertMarker(parsed: ParsedMarkerLine, kind: MarkerKind, raw?: string): ParsedMarkerLine {
-  const markers = [...parsed.markers];
-  const existingIndex = markers.findIndex(marker => marker.kind === kind);
+  const markers = [...parsed.markers]
+  const existingIndex = markers.findIndex(marker => marker.kind === kind)
 
   if (!raw) {
     return {
       ...parsed,
       markers: existingIndex >= 0 ? markers.filter((_, index) => index !== existingIndex) : markers,
-    };
+    }
   }
 
   if (existingIndex >= 0) {
-    markers[existingIndex] = { kind, raw };
-    return { ...parsed, markers };
+    markers[existingIndex] = { kind, raw }
+    return { ...parsed, markers }
   }
 
-  markers.push({ kind, raw });
-  return { ...parsed, markers };
+  markers.push({ kind, raw })
+  return { ...parsed, markers }
 }
 
 export function removeMarker(parsed: ParsedMarkerLine, kind: MarkerKind): ParsedMarkerLine {
   return {
     ...parsed,
     markers: parsed.markers.filter(marker => marker.kind !== kind),
-  };
+  }
 }
 
 export function normalizeMarkerLine(parsed: ParsedMarkerLine): string {
@@ -602,7 +605,7 @@ export function normalizeMarkerLine(parsed: ParsedMarkerLine): string {
     .filter(Boolean)
     .join(' ')
     .replace(/\s{2,}/g, ' ')
-    .trim();
+    .trim()
 }
 ```
 
@@ -624,6 +627,7 @@ git commit -m "feat(block-writer): add stable marker cluster parser"
 ### Task 4: Refactor `kramdownModifier` and Normalize Mixed Patch Order in `writeBlock()`
 
 **Files:**
+
 - Create: `src/utils/blockWriter/normalizePatchSequence.ts`
 - Modify: `src/utils/blockWriter/kramdownModifier.ts`
 - Modify: `src/utils/blockWriter/index.ts`
@@ -639,8 +643,8 @@ it('appends a new priority marker after existing date/time markers', () => {
     priority: 'medium',
   })).toBe(
     '任务 📅2026-05-14 ⏰14:00 🌱\n{: id="abc"}',
-  );
-});
+  )
+})
 
 it('keeps priority after an updated date marker when the original line already used @ syntax', () => {
   expect(applyBlockPatch(parts('任务 @2026-05-14 🌱\n{: id="abc"}'), {
@@ -648,26 +652,26 @@ it('keeps priority after an updated date marker when the original line already u
     date: '2026-05-16',
   })).toBe(
     '任务 📅2026-05-16 🌱\n{: id="abc"}',
-  );
-});
+  )
+})
 
 it('normalizes mixed update patch order before applying the batch', async () => {
   vi.mocked(getBlockKramdown).mockResolvedValue({
     id: 'abc',
     kramdown: '任务\n{: id="abc"}',
-  } as any);
+  } as any)
 
   await writeBlock({ blockId: 'block123' }, [
     { type: 'setPriority', priority: 'medium' },
     { type: 'addDate', date: '2026-05-16', allDay: true },
-  ]);
+  ])
 
   expect(updateBlock).toHaveBeenCalledWith(
     'markdown',
     '任务 📅2026-05-16 🌱\n{: id="abc"}',
     'block123',
-  );
-});
+  )
+})
 
 it('keeps removeSlashCommand first while normalizing later marker-producing patches', async () => {
   const result = await writeBlock(
@@ -677,10 +681,10 @@ it('keeps removeSlashCommand first while normalizing later marker-producing patc
       { type: 'setPriority', priority: 'medium' },
       { type: 'addDate', date: '2026-05-16', allDay: true },
     ],
-  );
+  )
 
-  expect(result).toBeTypeOf('boolean');
-});
+  expect(result).toBeTypeOf('boolean')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -693,7 +697,7 @@ Expected: FAIL because `setPriority()` still inserts before `📅`, and `writeBl
 
 ```ts
 // src/utils/blockWriter/normalizePatchSequence.ts
-import type { BlockPatch } from './types';
+import type { BlockPatch } from './types'
 
 const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   removeSlashCommand: 0,
@@ -709,76 +713,78 @@ const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   setHabitDefinition: 100,
   setHabitRecord: 110,
   replaceMarkdown: 120,
-};
+}
 
 export function normalizePatchSequence(patches: BlockPatch[]): BlockPatch[] {
   return patches
     .map((patch, index) => ({ patch, index }))
     .sort((a, b) => {
-      const orderDelta = PATCH_ORDER[a.patch.type] - PATCH_ORDER[b.patch.type];
-      return orderDelta !== 0 ? orderDelta : a.index - b.index;
+      const orderDelta = PATCH_ORDER[a.patch.type] - PATCH_ORDER[b.patch.type]
+      return orderDelta !== 0 ? orderDelta : a.index - b.index
     })
-    .map(entry => entry.patch);
+    .map(entry => entry.patch)
 }
 ```
 
 ```ts
 // src/utils/blockWriter/kramdownModifier.ts
-import { normalizeMarkerLine, parseMarkerLine, removeMarker, upsertMarker } from './markerCluster';
+import { normalizeMarkerLine, parseMarkerLine, removeMarker, upsertMarker } from './markerCluster'
 
 function applyPriority(line: string, priority: string | undefined): string {
-  const parsed = parseMarkerLine(stripPriorityMarker(line).trim());
+  const parsed = parseMarkerLine(stripPriorityMarker(line).trim())
   if (!priority) {
-    return normalizeMarkerLine(removeMarker(parsed, 'priority'));
+    return normalizeMarkerLine(removeMarker(parsed, 'priority'))
   }
-  return normalizeMarkerLine(upsertMarker(parsed, 'priority', generatePriorityMarker(priority as any)));
+  return normalizeMarkerLine(upsertMarker(parsed, 'priority', generatePriorityMarker(priority as any)))
 }
 
 function applyDate(line: string, patch: DatePatch): string {
-  const parsed = parseMarkerLine(line);
-  const startTime = patch.startTime ? ` ${patch.startTime}` : '';
-  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `-${patch.endTime}` : '';
-  const dateMarker = `📅${patch.date}${patch.allDay ? '' : `${startTime}${endTime}`}`;
-  return normalizeMarkerLine(upsertMarker(parsed, 'date', dateMarker));
+  const parsed = parseMarkerLine(line)
+  const startTime = patch.startTime ? ` ${patch.startTime}` : ''
+  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `-${patch.endTime}` : ''
+  const dateMarker = `📅${patch.date}${patch.allDay ? '' : `${startTime}${endTime}`}`
+  return normalizeMarkerLine(upsertMarker(parsed, 'date', dateMarker))
 }
 
 function applyReminder(line: string, patch: Extract<BlockPatch, { type: 'setReminder' }>): string {
-  const parsed = parseMarkerLine(stripReminderMarker(line).trim());
-  const marker = patch.reminder?.enabled ? generateReminderMarker(patch.reminder) : undefined;
+  const parsed = parseMarkerLine(stripReminderMarker(line).trim())
+  const marker = patch.reminder?.enabled ? generateReminderMarker(patch.reminder) : undefined
   return marker
     ? normalizeMarkerLine(upsertMarker(parsed, 'reminder', marker))
-    : normalizeMarkerLine(removeMarker(parsed, 'reminder'));
+    : normalizeMarkerLine(removeMarker(parsed, 'reminder'))
 }
 ```
 
 ```ts
 // src/utils/blockWriter/index.ts
-import { normalizePatchSequence } from './normalizePatchSequence';
+import { normalizePatchSequence } from './normalizePatchSequence'
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches]);
-  const payload = Array.isArray(patches) ? patchArray : patchArray[0];
+  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches])
+  const payload = Array.isArray(patches) ? patchArray : patchArray[0]
 
   const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
     ? patchArray[0]
-    : undefined;
-  const batchedAddDatePatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'addDate' }> => patch.type === 'addDate');
-  const batchedRemoveSlashPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'removeSlashCommand' }> => patch.type === 'removeSlashCommand');
-  const batchedStatusPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'setStatus' }> => patch.type === 'setStatus');
-  const hasStatusPatch = patchArray.some((patch) => patch.type === 'setStatus');
-  const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');
-  const statusTargetBlockId = context.listItemBlockId || context.blockId;
+    : undefined
+  const batchedAddDatePatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'addDate' }> => patch.type === 'addDate')
+  const batchedRemoveSlashPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'removeSlashCommand' }> => patch.type === 'removeSlashCommand')
+  const batchedStatusPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'setStatus' }> => patch.type === 'setStatus')
+  const hasStatusPatch = patchArray.some(patch => patch.type === 'setStatus')
+  const requiresProtyle = patchArray.some(patch => patch.type === 'removeSlashCommand')
+  const statusTargetBlockId = context.listItemBlockId || context.blockId
 
   if (addDatePatch) {
-    return writeDatePatch(context, addDatePatch);
+    return writeDatePatch(context, addDatePatch)
   }
 
   if (context.protyle && context.nodeElement) {
-    const ok = await writeViaProtyle(context, payload);
-    if (ok) return true;
+    const ok = await writeViaProtyle(context, payload)
+    if (ok)
+      return true
   }
-  if (requiresProtyle) return false;
-  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, payload);
+  if (requiresProtyle)
+    return false
+  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, payload)
 }
 ```
 
@@ -812,6 +818,7 @@ git commit -m "feat(block-writer): stabilize marker order for mixed update patch
 ### Task 5: Preserve Marker Order When Creating the Next Recurring Occurrence
 
 **Files:**
+
 - Modify: `src/services/recurringService.ts`
 - Modify: `test/services/recurringService.test.ts`
 
@@ -819,7 +826,7 @@ git commit -m "feat(block-writer): stabilize marker order for mixed update patch
 
 ```ts
 it('preserves marker order when creating the next workday occurrence after completion', async () => {
-  mockInsertBlockAfter.mockResolvedValue(true);
+  mockInsertBlockAfter.mockResolvedValue(true)
 
   const item: Item = {
     id: '1',
@@ -838,19 +845,19 @@ it('preserves marker order when creating the next workday occurrence after compl
     },
     startDateTime: '2026-05-18 17:00:00',
     endDateTime: '2026-05-18 18:00:00',
-  };
+  }
 
-  const result = await createNextOccurrence({} as any, item);
+  const result = await createNextOccurrence({} as any, item)
 
-  expect(result).toBe(true);
+  expect(result).toBe(true)
   expect(mockInsertBlockAfter).toHaveBeenCalledWith(
     'block123',
     {
       type: 'replaceMarkdown',
       markdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-19 17:00:00~18:00:00',
     },
-  );
-});
+  )
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -862,39 +869,39 @@ Expected: FAIL because `buildNextOccurrenceBlock()` currently assembles markdown
 - [ ] **Step 3: Refactor recurring occurrence generation to reuse source marker order**
 
 ```ts
-import { getBlockKramdown } from '@/api';
-import { applyBlockPatch } from '@/utils/blockWriter/kramdownModifier';
-import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
-import { extractTimePart } from '@/utils/blockWriter/itemPatches';
+import { getBlockKramdown } from '@/api'
+import { extractTimePart } from '@/utils/blockWriter/itemPatches'
+import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks'
+import { applyBlockPatch } from '@/utils/blockWriter/kramdownModifier'
 
 function decrementEndCondition(endCondition?: Item['endCondition']) {
   if (!endCondition) {
-    return undefined;
+    return undefined
   }
 
   if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
-    const nextCount = endCondition.maxCount - 1;
-    return nextCount > 0 ? { ...endCondition, maxCount: nextCount } : undefined;
+    const nextCount = endCondition.maxCount - 1
+    return nextCount > 0 ? { ...endCondition, maxCount: nextCount } : undefined
   }
 
-  return endCondition;
+  return endCondition
 }
 
 async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<string> {
   const raw = item.blockId
     ? (await getBlockKramdown(item.blockId))?.kramdown ?? null
-    : null;
+    : null
 
   if (!raw) {
-    throw new Error('buildNextOccurrenceBlock requires source kramdown to preserve marker order');
+    throw new Error('buildNextOccurrenceBlock requires source kramdown to preserve marker order')
   }
 
-  const nextEndCondition = decrementEndCondition(item.endCondition);
+  const nextEndCondition = decrementEndCondition(item.endCondition)
 
   let markdown = applyBlockPatch(
     splitKramdownBlock(raw),
     { type: 'setStatus', status: 'pending' },
-  );
+  )
 
   markdown = applyBlockPatch(
     splitKramdownBlock(markdown),
@@ -906,7 +913,7 @@ async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<s
       endTime: extractTimePart(item.endDateTime),
       allDay: !item.startDateTime && !item.endDateTime,
     },
-  );
+  )
 
   markdown = applyBlockPatch(
     splitKramdownBlock(markdown),
@@ -914,7 +921,7 @@ async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<s
       type: 'setReminder',
       reminder: item.reminder?.enabled ? item.reminder : undefined,
     },
-  );
+  )
 
   markdown = applyBlockPatch(
     splitKramdownBlock(markdown),
@@ -923,9 +930,9 @@ async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<s
       repeatRule: item.repeatRule,
       endCondition: nextEndCondition,
     },
-  );
+  )
 
-  return markdown;
+  return markdown
 }
 ```
 
@@ -949,6 +956,7 @@ git commit -m "feat(recurring): preserve marker order in next occurrences"
 ### Task 6: Run the Regression Sweep for the Slice
 
 **Files:**
+
 - No file changes required.
 
 - [ ] **Step 1: Run the slash-focused regression suite**

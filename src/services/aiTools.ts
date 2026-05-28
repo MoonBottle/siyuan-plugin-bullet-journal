@@ -2,7 +2,7 @@
  * AI 工具定义
  * 为 AI 提供查询任务数据的能力
  */
-import type { ToolDefinition } from '@/types/ai';
+import type { ToolDefinition } from '@/types/ai'
 
 /**
  * 查询分组列表工具
@@ -15,10 +15,10 @@ export const listGroupsTool: ToolDefinition = {
     parameters: {
       type: 'object',
       properties: {},
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 查询项目列表工具
@@ -33,13 +33,13 @@ export const listProjectsTool: ToolDefinition = {
       properties: {
         groupId: {
           type: 'string',
-          description: '分组 ID，来自 list_groups 返回的 id，不传则返回全部项目'
-        }
+          description: '分组 ID，来自 list_groups 返回的 id，不传则返回全部项目',
+        },
       },
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 筛选事项工具
@@ -54,35 +54,35 @@ export const filterItemsTool: ToolDefinition = {
       properties: {
         projectId: {
           type: 'string',
-          description: '项目文档 ID，来自 list_projects 返回的 id'
+          description: '项目文档 ID，来自 list_projects 返回的 id',
         },
         projectIds: {
           type: 'array',
           items: { type: 'string' },
-          description: '项目 ID 数组，多选时使用'
+          description: '项目 ID 数组，多选时使用',
         },
         groupId: {
           type: 'string',
-          description: '分组 ID，来自 list_groups 返回的 id'
+          description: '分组 ID，来自 list_groups 返回的 id',
         },
         startDate: {
           type: 'string',
-          description: '起始日期，格式 YYYY-MM-DD'
+          description: '起始日期，格式 YYYY-MM-DD',
         },
         endDate: {
           type: 'string',
-          description: '结束日期，格式 YYYY-MM-DD'
+          description: '结束日期，格式 YYYY-MM-DD',
         },
         status: {
           type: 'string',
           enum: ['pending', 'completed', 'abandoned'],
-          description: 'pending=待办, completed=已完成, abandoned=已放弃'
-        }
+          description: 'pending=待办, completed=已完成, abandoned=已放弃',
+        },
       },
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 获取番茄钟统计工具
@@ -98,25 +98,25 @@ export const getPomodoroStatsTool: ToolDefinition = {
         date: {
           type: 'string',
           enum: ['today'],
-          description: '设为 "today" 时查询今日统计'
+          description: '设为 "today" 时查询今日统计',
         },
         startDate: {
           type: 'string',
-          description: '起始日期，格式 YYYY-MM-DD'
+          description: '起始日期，格式 YYYY-MM-DD',
         },
         endDate: {
           type: 'string',
-          description: '结束日期，格式 YYYY-MM-DD'
+          description: '结束日期，格式 YYYY-MM-DD',
         },
         projectId: {
           type: 'string',
-          description: '项目 ID，来自 list_projects 返回的 id'
-        }
+          description: '项目 ID，来自 list_projects 返回的 id',
+        },
       },
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 获取番茄钟记录列表工具
@@ -132,25 +132,25 @@ export const getPomodoroRecordsTool: ToolDefinition = {
         date: {
           type: 'string',
           enum: ['today'],
-          description: '设为 "today" 时查询今日记录'
+          description: '设为 "today" 时查询今日记录',
         },
         startDate: {
           type: 'string',
-          description: '起始日期，格式 YYYY-MM-DD'
+          description: '起始日期，格式 YYYY-MM-DD',
         },
         endDate: {
           type: 'string',
-          description: '结束日期，格式 YYYY-MM-DD'
+          description: '结束日期，格式 YYYY-MM-DD',
         },
         projectId: {
           type: 'string',
-          description: '项目 ID，来自 list_projects 返回的 id'
-        }
+          description: '项目 ID，来自 list_projects 返回的 id',
+        },
       },
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 查询技能列表工具
@@ -163,10 +163,10 @@ export const listSkillsTool: ToolDefinition = {
     parameters: {
       type: 'object',
       properties: {},
-      required: []
-    }
-  }
-};
+      required: [],
+    },
+  },
+}
 
 /**
  * 获取技能详情工具
@@ -181,13 +181,13 @@ export const getSkillDetailTool: ToolDefinition = {
       properties: {
         name: {
           type: 'string',
-          description: '技能名称，来自 list_skills 返回的 name'
-        }
+          description: '技能名称，来自 list_skills 返回的 name',
+        },
       },
-      required: ['name']
-    }
-  }
-};
+      required: ['name'],
+    },
+  },
+}
 
 /**
  * 修改事项状态工具
@@ -202,18 +202,18 @@ export const updateItemStatusTool: ToolDefinition = {
       properties: {
         itemId: {
           type: 'string',
-          description: '事项 ID，来自 filter_items 返回的 id'
+          description: '事项 ID，来自 filter_items 返回的 id',
         },
         status: {
           type: 'string',
           enum: ['completed', 'abandoned', 'pending'],
-          description: '目标状态：completed=已完成, abandoned=已放弃, pending=恢复待办'
-        }
+          description: '目标状态：completed=已完成, abandoned=已放弃, pending=恢复待办',
+        },
       },
-      required: ['itemId', 'status']
-    }
-  }
-};
+      required: ['itemId', 'status'],
+    },
+  },
+}
 
 /**
  * 创建事项工具
@@ -228,29 +228,29 @@ export const createItemTool: ToolDefinition = {
       properties: {
         projectId: {
           type: 'string',
-          description: '项目 ID，来自 list_projects 返回的 id'
+          description: '项目 ID，来自 list_projects 返回的 id',
         },
         content: {
           type: 'string',
-          description: '事项内容'
+          description: '事项内容',
         },
         date: {
           type: 'string',
-          description: '日期，格式 YYYY-MM-DD'
+          description: '日期，格式 YYYY-MM-DD',
         },
         startTime: {
           type: 'string',
-          description: '开始时间，格式 HH:mm:ss（可选）'
+          description: '开始时间，格式 HH:mm:ss（可选）',
         },
         endTime: {
           type: 'string',
-          description: '结束时间，格式 HH:mm:ss（可选）'
-        }
+          description: '结束时间，格式 HH:mm:ss（可选）',
+        },
       },
-      required: ['projectId', 'content', 'date']
-    }
-  }
-};
+      required: ['projectId', 'content', 'date'],
+    },
+  },
+}
 
 /**
  * 修改事项工具
@@ -265,29 +265,29 @@ export const updateItemTool: ToolDefinition = {
       properties: {
         itemId: {
           type: 'string',
-          description: '事项 ID，来自 filter_items 返回的 id'
+          description: '事项 ID，来自 filter_items 返回的 id',
         },
         content: {
           type: 'string',
-          description: '新的事项内容（可选，不传则不修改内容）'
+          description: '新的事项内容（可选，不传则不修改内容）',
         },
         date: {
           type: 'string',
-          description: '新日期，格式 YYYY-MM-DD（可选）'
+          description: '新日期，格式 YYYY-MM-DD（可选）',
         },
         startTime: {
           type: 'string',
-          description: '新的开始时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
+          description: '新的开始时间，格式 HH:mm:ss（可选，传空字符串清除时间）',
         },
         endTime: {
           type: 'string',
-          description: '新的结束时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
-        }
+          description: '新的结束时间，格式 HH:mm:ss（可选，传空字符串清除时间）',
+        },
       },
-      required: ['itemId']
-    }
-  }
-};
+      required: ['itemId'],
+    },
+  },
+}
 
 /**
  * 删除事项工具
@@ -302,13 +302,13 @@ export const deleteItemTool: ToolDefinition = {
       properties: {
         itemId: {
           type: 'string',
-          description: '事项 ID，来自 filter_items 返回的 id'
-        }
+          description: '事项 ID，来自 filter_items 返回的 id',
+        },
       },
-      required: ['itemId']
-    }
-  }
-};
+      required: ['itemId'],
+    },
+  },
+}
 
 /**
  * 创建任务工具
@@ -323,22 +323,22 @@ export const createTaskTool: ToolDefinition = {
       properties: {
         projectId: {
           type: 'string',
-          description: '项目 ID，来自 list_projects 返回的 id'
+          description: '项目 ID，来自 list_projects 返回的 id',
         },
         name: {
           type: 'string',
-          description: '任务名称'
+          description: '任务名称',
         },
         level: {
           type: 'string',
           enum: ['L1', 'L2', 'L3'],
-          description: '任务层级，默认 L1'
-        }
+          description: '任务层级，默认 L1',
+        },
       },
-      required: ['projectId', 'name']
-    }
-  }
-};
+      required: ['projectId', 'name'],
+    },
+  },
+}
 
 /**
  * 创建项目工具
@@ -353,21 +353,21 @@ export const createProjectTool: ToolDefinition = {
       properties: {
         directoryId: {
           type: 'string',
-          description: '目录 ID（来自配置的目录列表，确定文档创建位置）。如果未配置项目目录则不需要传。'
+          description: '目录 ID（来自配置的目录列表，确定文档创建位置）。如果未配置项目目录则不需要传。',
         },
         name: {
           type: 'string',
-          description: '项目名称'
+          description: '项目名称',
         },
         description: {
           type: 'string',
-          description: '项目描述（可选）'
-        }
+          description: '项目描述（可选）',
+        },
       },
-      required: ['name']
-    }
-  }
-};
+      required: ['name'],
+    },
+  },
+}
 
 /**
  * 所有可用的工具列表
@@ -386,7 +386,7 @@ export const bulletJournalTools: ToolDefinition[] = [
   // deleteItemTool,
   // createTaskTool,
   // createProjectTool
-];
+]
 
 /**
  * 工具名称类型
@@ -404,4 +404,4 @@ export type ToolName =
   | 'update_item'
   | 'delete_item'
   | 'create_task'
-  | 'create_project';
+  | 'create_project'

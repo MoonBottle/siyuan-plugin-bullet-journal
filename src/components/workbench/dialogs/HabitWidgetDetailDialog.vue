@@ -26,29 +26,39 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue';
-import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
-import { t } from '@/i18n';
-import { useApp, usePlugin } from '@/main';
-import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
-import { eventBus, Events } from '@/utils/eventBus';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
+import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue'
+import {
+  onMounted,
+  onUnmounted,
+  watch,
+} from 'vue'
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 
 const props = defineProps<{
-  habitId: string;
-  groupId?: string;
-}>();
+  habitId: string
+  groupId?: string
+}>()
 
-const app = useApp();
-const plugin = usePlugin();
+const app = useApp()
+const plugin = usePlugin()
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
 const {
   selectedHabit,
@@ -63,26 +73,26 @@ const {
   resetHabitRecordForDate,
 } = useHabitWorkspace({
   groupId: () => props.groupId,
-});
+})
 
 function handleRecordPreviewClick(payload: HabitRecordLogPreviewPayload) {
   preview.showNow({
     blockId: payload.blockId,
     itemId: payload.blockId,
     anchorEl: payload.anchorEl,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
   if (!preview.isOpen.value) {
-    return;
+    return
   }
 
   if (nativePreview.containsTarget(event.target)) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 }
 
 function handleNativePreviewDestroyed({
@@ -90,19 +100,19 @@ function handleNativePreviewDestroyed({
   blockId,
   anchorEl,
 }: {
-  initiatedByController: boolean;
-  blockId: string;
-  anchorEl: HTMLElement;
+  initiatedByController: boolean
+  blockId: string
+  anchorEl: HTMLElement
 }) {
-  const activeBlockId = preview.activeBlockId.value;
-  const activeItemId = preview.activeItemId.value;
-  const activeAnchorEl = preview.anchorEl.value;
+  const activeBlockId = preview.activeBlockId.value
+  const activeItemId = preview.activeItemId.value
+  const activeAnchorEl = preview.anchorEl.value
 
   if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 
   if (
     initiatedByController
@@ -111,45 +121,45 @@ function handleNativePreviewDestroyed({
     || !activeAnchorEl
     || !anchorEl.matches(':hover')
   ) {
-    return;
+    return
   }
 
   preview.showNow({
     blockId: activeBlockId,
     itemId: activeItemId,
     anchorEl: activeAnchorEl,
-  });
+  })
 }
 
 const handleDataRefresh = async () => {
-  selectHabitById(props.habitId);
-};
+  selectHabitById(props.habitId)
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribeRefresh: (() => void) | null = null
 
 onMounted(() => {
-  selectHabitById(props.habitId);
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
+  selectHabitById(props.habitId)
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
 
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
 
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -159,12 +169,12 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: handleNativePreviewDestroyed,
-    });
+    })
   },
   {
     flush: 'post',
   },
-);
+)
 </script>
 
 <style scoped>

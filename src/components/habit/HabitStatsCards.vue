@@ -1,16 +1,28 @@
 <template>
   <div class="habit-stats-cards">
     <div class="habit-stats-card">
-      <div class="habit-stats-card__value">{{ stats?.monthlyCheckins ?? 0 }}</div>
-      <div class="habit-stats-card__label">{{ t('habit').monthlyCheckins }}</div>
+      <div class="habit-stats-card__value">
+        {{ stats?.monthlyCheckins ?? 0 }}
+      </div>
+      <div class="habit-stats-card__label">
+        {{ t('habit').monthlyCheckins }}
+      </div>
     </div>
     <div class="habit-stats-card">
-      <div class="habit-stats-card__value">{{ stats?.totalCheckins ?? 0 }}</div>
-      <div class="habit-stats-card__label">{{ t('habit').totalCheckins }}</div>
+      <div class="habit-stats-card__value">
+        {{ stats?.totalCheckins ?? 0 }}
+      </div>
+      <div class="habit-stats-card__label">
+        {{ t('habit').totalCheckins }}
+      </div>
     </div>
     <div class="habit-stats-card">
-      <div class="habit-stats-card__value">{{ percentFormatter.format((stats?.monthlyCompletionRate ?? 0)) }}</div>
-      <div class="habit-stats-card__label">{{ t('habit').monthlyCompletionRate }}</div>
+      <div class="habit-stats-card__value">
+        {{ percentFormatter.format((stats?.monthlyCompletionRate ?? 0)) }}
+      </div>
+      <div class="habit-stats-card__label">
+        {{ t('habit').monthlyCompletionRate }}
+      </div>
     </div>
     <div class="habit-stats-card">
       <div class="habit-stats-card__value">
@@ -18,23 +30,25 @@
         <span class="habit-stats-card__separator"> / </span>
         <span class="habit-stats-card__secondary">{{ stats?.longestStreak ?? 0 }}</span>
       </div>
-      <div class="habit-stats-card__label">{{ t('habit').currentStreak }} / {{ t('habit').longestStreak }}</div>
+      <div class="habit-stats-card__label">
+        {{ t('habit').currentStreak }} / {{ t('habit').longestStreak }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import type { HabitStats } from '@/types/models';
+import type { HabitStats } from '@/types/models'
+import { t } from '@/i18n'
 
 defineProps<{
-  stats?: HabitStats;
-}>();
+  stats?: HabitStats
+}>()
 
 const percentFormatter = new Intl.NumberFormat(undefined, {
   style: 'percent',
   maximumFractionDigits: 0,
-});
+})
 </script>
 
 <style scoped>

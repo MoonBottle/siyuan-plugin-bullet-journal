@@ -5,14 +5,23 @@
         v-if="modelValue && project"
         class="project-detail-overlay b3-dialog"
       >
-        <div class="project-detail-fullscreen" style="overscroll-behavior: contain; touch-action: pan-y;">
+        <div
+          class="project-detail-fullscreen"
+          style="overscroll-behavior: contain; touch-action: pan-y;"
+        >
           <!-- Header -->
           <div class="detail-header">
-            <button class="back-btn" @click="close">
+            <button
+              class="back-btn"
+              @click="close"
+            >
               <svg><use xlink:href="#iconLeft"></use></svg>
             </button>
             <span class="header-title">{{ t('mobile.detail.project') || '项目详情' }}</span>
-            <button class="create-btn" @click="handleCreateTask">
+            <button
+              class="create-btn"
+              @click="handleCreateTask"
+            >
               <svg><use xlink:href="#iconAdd"></use></svg>
             </button>
           </div>
@@ -23,9 +32,14 @@
               <div class="project-icon">
                 <svg><use xlink:href="#iconFolder"></use></svg>
               </div>
-              <h2 class="project-name">{{ project.name }}</h2>
+              <h2 class="project-name">
+                {{ project.name }}
+              </h2>
             </div>
-            <div v-if="project.description" class="project-description">
+            <div
+              v-if="project.description"
+              class="project-description"
+            >
               {{ project.description }}
             </div>
             <div class="project-stats">
@@ -49,9 +63,15 @@
           </div>
 
           <!-- Task List Grouped by Priority -->
-          <div class="tasks-container" style="overscroll-behavior: contain; touch-action: pan-y;">
+          <div
+            class="tasks-container"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+          >
             <!-- High Priority -->
-            <div v-if="highPriorityTasks.length > 0" class="priority-section">
+            <div
+              v-if="highPriorityTasks.length > 0"
+              class="priority-section"
+            >
               <div class="priority-header high">
                 <div class="priority-icon">
                   <svg><use xlink:href="#iconFire"></use></svg>
@@ -67,14 +87,19 @@
                   @click="handleTaskClick(task)"
                 >
                   <div class="task-info">
-                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-name">
+                      {{ task.name }}
+                    </div>
                     <div class="task-meta">
                       <span class="task-level">{{ task.level }}</span>
                       <span class="task-items-count">{{ getTaskItemsCount(task) }} 事项</span>
                     </div>
                   </div>
                   <div class="task-progress">
-                    <div class="progress-ring" :style="getProgressStyle(task)">
+                    <div
+                      class="progress-ring"
+                      :style="getProgressStyle(task)"
+                    >
                       <span class="progress-text">{{ getTaskProgress(task) }}%</span>
                     </div>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -84,7 +109,10 @@
             </div>
 
             <!-- Medium Priority -->
-            <div v-if="mediumPriorityTasks.length > 0" class="priority-section">
+            <div
+              v-if="mediumPriorityTasks.length > 0"
+              class="priority-section"
+            >
               <div class="priority-header medium">
                 <div class="priority-icon">
                   <svg><use xlink:href="#iconLeaf"></use></svg>
@@ -100,14 +128,19 @@
                   @click="handleTaskClick(task)"
                 >
                   <div class="task-info">
-                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-name">
+                      {{ task.name }}
+                    </div>
                     <div class="task-meta">
                       <span class="task-level">{{ task.level }}</span>
                       <span class="task-items-count">{{ getTaskItemsCount(task) }} 事项</span>
                     </div>
                   </div>
                   <div class="task-progress">
-                    <div class="progress-ring" :style="getProgressStyle(task)">
+                    <div
+                      class="progress-ring"
+                      :style="getProgressStyle(task)"
+                    >
                       <span class="progress-text">{{ getTaskProgress(task) }}%</span>
                     </div>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -117,7 +150,10 @@
             </div>
 
             <!-- Low Priority -->
-            <div v-if="lowPriorityTasks.length > 0" class="priority-section">
+            <div
+              v-if="lowPriorityTasks.length > 0"
+              class="priority-section"
+            >
               <div class="priority-header low">
                 <div class="priority-icon">
                   <svg><use xlink:href="#iconCoffee"></use></svg>
@@ -133,14 +169,19 @@
                   @click="handleTaskClick(task)"
                 >
                   <div class="task-info">
-                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-name">
+                      {{ task.name }}
+                    </div>
                     <div class="task-meta">
                       <span class="task-level">{{ task.level }}</span>
                       <span class="task-items-count">{{ getTaskItemsCount(task) }} 事项</span>
                     </div>
                   </div>
                   <div class="task-progress">
-                    <div class="progress-ring" :style="getProgressStyle(task)">
+                    <div
+                      class="progress-ring"
+                      :style="getProgressStyle(task)"
+                    >
                       <span class="progress-text">{{ getTaskProgress(task) }}%</span>
                     </div>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -150,7 +191,10 @@
             </div>
 
             <!-- No Priority -->
-            <div v-if="unprioritizedTasks.length > 0" class="priority-section">
+            <div
+              v-if="unprioritizedTasks.length > 0"
+              class="priority-section"
+            >
               <div class="priority-header none">
                 <div class="priority-icon">
                   <svg><use xlink:href="#iconList"></use></svg>
@@ -166,14 +210,19 @@
                   @click="handleTaskClick(task)"
                 >
                   <div class="task-info">
-                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-name">
+                      {{ task.name }}
+                    </div>
                     <div class="task-meta">
                       <span class="task-level">{{ task.level }}</span>
                       <span class="task-items-count">{{ getTaskItemsCount(task) }} 事项</span>
                     </div>
                   </div>
                   <div class="task-progress">
-                    <div class="progress-ring" :style="getProgressStyle(task)">
+                    <div
+                      class="progress-ring"
+                      :style="getProgressStyle(task)"
+                    >
                       <span class="progress-text">{{ getTaskProgress(task) }}%</span>
                     </div>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -183,12 +232,18 @@
             </div>
 
             <!-- No Tasks -->
-            <div v-if="allTasks.length === 0" class="empty-state">
+            <div
+              v-if="allTasks.length === 0"
+              class="empty-state"
+            >
               <div class="empty-icon">
                 <svg><use xlink:href="#iconList"></use></svg>
               </div>
               <span class="empty-text">{{ t('mobile.project.noTasks') || '暂无任务' }}</span>
-              <button class="empty-action" @click="handleCreateTask">
+              <button
+                class="empty-action"
+                @click="handleCreateTask"
+              >
                 {{ t('mobile.project.createTask') || '创建任务' }}
               </button>
             </div>
@@ -200,108 +255,111 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
-import type { Project, Task, PriorityLevel } from '@/types/models';
+import type {
+  PriorityLevel,
+  Project,
+  Task,
+} from '@/types/models'
+import { computed } from 'vue'
+import { t } from '@/i18n'
 
 const props = defineProps<{
-  modelValue: boolean;
-  project: Project | null;
-}>();
+  modelValue: boolean
+  project: Project | null
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openTask': [task: Task];
-  'createTask': [projectId: string];
-}>();
+  'update:modelValue': [value: boolean]
+  'openTask': [task: Task]
+  'createTask': [projectId: string]
+}>()
 
 // Computed: All tasks from project
-const allTasks = computed(() => props.project?.tasks || []);
+const allTasks = computed(() => props.project?.tasks || [])
 
 // Computed: Tasks grouped by priority
-const highPriorityTasks = computed(() => 
-  allTasks.value.filter(task => getTaskPriority(task) === 'high')
-);
+const highPriorityTasks = computed(() =>
+  allTasks.value.filter((task) => getTaskPriority(task) === 'high'),
+)
 
-const mediumPriorityTasks = computed(() => 
-  allTasks.value.filter(task => getTaskPriority(task) === 'medium')
-);
+const mediumPriorityTasks = computed(() =>
+  allTasks.value.filter((task) => getTaskPriority(task) === 'medium'),
+)
 
-const lowPriorityTasks = computed(() => 
-  allTasks.value.filter(task => getTaskPriority(task) === 'low')
-);
+const lowPriorityTasks = computed(() =>
+  allTasks.value.filter((task) => getTaskPriority(task) === 'low'),
+)
 
 const unprioritizedTasks = computed(() =>
-  allTasks.value.filter(task => getTaskPriority(task) === undefined)
-);
+  allTasks.value.filter((task) => getTaskPriority(task) === undefined),
+)
 
 // Computed: Project stats
-const totalTasks = computed(() => allTasks.value.length);
+const totalTasks = computed(() => allTasks.value.length)
 
-const totalItems = computed(() => 
-  allTasks.value.reduce((sum, task) => sum + task.items.length, 0)
-);
+const totalItems = computed(() =>
+  allTasks.value.reduce((sum, task) => sum + task.items.length, 0),
+)
 
-const completedItems = computed(() => 
-  allTasks.value.reduce((sum, task) => 
-    sum + task.items.filter(item => item.status === 'completed').length, 0
-  )
-);
+const completedItems = computed(() =>
+  allTasks.value.reduce((sum, task) =>
+    sum + task.items.filter((item) => item.status === 'completed').length, 0),
+)
 
 const completionRate = computed(() => {
-  const total = totalItems.value;
-  if (total === 0) return 0;
-  return Math.round((completedItems.value / total) * 100);
-});
+  const total = totalItems.value
+  if (total === 0) return 0
+  return Math.round((completedItems.value / total) * 100)
+})
 
 // Get task priority based on its items
 function getTaskPriority(task: Task): PriorityLevel | undefined {
   // Check if any item has a priority
   for (const item of task.items) {
-    if (item.priority) return item.priority;
+    if (item.priority) return item.priority
   }
-  return undefined;
+  return undefined
 }
 
 // Get number of items in a task
 function getTaskItemsCount(task: Task): number {
-  return task.items.length;
+  return task.items.length
 }
 
 // Get task completion progress
 function getTaskProgress(task: Task): number {
-  const total = task.items.length;
-  if (total === 0) return 0;
-  const completed = task.items.filter(item => item.status === 'completed').length;
-  return Math.round((completed / total) * 100);
+  const total = task.items.length
+  if (total === 0) return 0
+  const completed = task.items.filter((item) => item.status === 'completed').length
+  return Math.round((completed / total) * 100)
 }
 
 // Get progress ring style
 function getProgressStyle(task: Task) {
-  const progress = getTaskProgress(task);
-  const color = progress === 100 ? '#52c41a' : progress > 50 ? '#1890ff' : '#faad14';
-  
+  const progress = getTaskProgress(task)
+  const color = progress === 100 ? '#52c41a' : progress > 50 ? '#1890ff' : '#faad14'
+
   return {
-    background: `conic-gradient(${color} ${progress}%, var(--b3-border-color) 0)`
-  };
+    background: `conic-gradient(${color} ${progress}%, var(--b3-border-color) 0)`,
+  }
 }
 
 // Handle task click
 const handleTaskClick = (task: Task) => {
-  emit('openTask', task);
-};
+  emit('openTask', task)
+}
 
 // Handle create task button click
 const handleCreateTask = () => {
   if (props.project?.id) {
-    emit('createTask', props.project.id);
+    emit('createTask', props.project.id)
   }
-};
+}
 
 // Close the drawer
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>

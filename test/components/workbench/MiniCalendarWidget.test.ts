@@ -1,10 +1,24 @@
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import { createPinia, setActivePinia } from 'pinia';
-import { initI18n } from '@/i18n';
-import type { CalendarEvent } from '@/types/models';
+import type { CalendarEvent } from '@/types/models'
+import {
+  createPinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+} from 'vue'
+import { initI18n } from '@/i18n'
 
 const {
   mockGetFilteredCalendarEvents,
@@ -16,72 +30,80 @@ const {
   mockCalendarPrev: vi.fn(),
   mockCalendarNext: vi.fn(),
   mockCalendarToday: vi.fn(),
-}));
+}))
 
 vi.mock('@/components/calendar/CalendarView.vue', () => ({
   default: defineComponent({
     name: 'CalendarViewStub',
     props: ['events', 'initialView'],
     emits: ['navigated'],
-    setup(props, { emit, expose }) {
+    setup(props, {
+      emit,
+      expose,
+    }) {
       expose({
         prev: mockCalendarPrev,
         next: mockCalendarNext,
         today: mockCalendarToday,
         getTitle: () => 'May 2, 2026',
         getDate: () => new Date('2026-05-02T00:00:00'),
-      });
+      })
 
       return () => h('div', {
         'data-testid': 'calendar-view-stub',
         'data-event-count': String((props.events ?? []).length),
         'data-initial-view': props.initialView,
-        onClick: () => emit('navigated'),
-      });
+        "onClick": () => emit('navigated'),
+      })
     },
   }),
-}));
+}))
 
 vi.mock('@/components/workbench/widgets/useSafeProjectStore', () => ({
   useSafeProjectStore: () => ({
     getFilteredCalendarEvents: mockGetFilteredCalendarEvents,
   }),
-}));
+}))
 
 async function mountWidget(widgetConfig: Record<string, unknown>) {
-  const { default: MiniCalendarWidget } = await import('@/components/workbench/widgets/MiniCalendarWidget.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: MiniCalendarWidget } = await import('@/components/workbench/widgets/MiniCalendarWidget.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
   const app = createApp(MiniCalendarWidget, {
     widget: {
       id: 'widget-1',
       type: 'miniCalendar',
       title: 'Calendar',
-      layout: { x: 0, y: 0, w: 6, h: 4 },
+      layout: {
+        x: 0,
+        y: 0,
+        w: 6,
+        h: 4,
+      },
       config: widgetConfig,
     },
-  });
+  })
 
-  app.use(createPinia());
-  app.mount(container);
+  app.use(createPinia())
+  app.mount(container)
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('MiniCalendarWidget', () => {
+describe('miniCalendarWidget', () => {
   beforeEach(() => {
-    initI18n('en_US');
-    setActivePinia(createPinia());
-    document.body.innerHTML = '';
-    vi.clearAllMocks();
-  });
+    initI18n('en_US')
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    vi.clearAllMocks()
+  })
 
   it('renders CalendarView with filtered events and fixed day view', async () => {
     const events: CalendarEvent[] = [
@@ -109,21 +131,21 @@ describe('MiniCalendarWidget', () => {
           lineNumber: 2,
         },
       },
-    ];
-    mockGetFilteredCalendarEvents.mockReturnValue(events);
+    ]
+    mockGetFilteredCalendarEvents.mockReturnValue(events)
 
     const mounted = await mountWidget({
       groupId: 'group-a',
       view: 'timeGridDay',
-    });
+    })
 
-    expect(mockGetFilteredCalendarEvents).toHaveBeenCalledWith('group-a');
-    expect(mounted.container.querySelector('[data-testid="calendar-view-stub"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-event-count="2"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-initial-view="timeGridDay"]')).not.toBeNull();
+    expect(mockGetFilteredCalendarEvents).toHaveBeenCalledWith('group-a')
+    expect(mounted.container.querySelector('[data-testid="calendar-view-stub"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-event-count="2"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-initial-view="timeGridDay"]')).not.toBeNull()
 
-    mounted.unmount();
-  }, 10000);
+    mounted.unmount()
+  }, 10000)
 
   it('shows the day header and reuses calendar navigation controls in day view widgets', async () => {
     const events: CalendarEvent[] = [
@@ -140,29 +162,29 @@ describe('MiniCalendarWidget', () => {
           date: '2026-05-02',
         },
       },
-    ];
-    mockGetFilteredCalendarEvents.mockReturnValue(events);
+    ]
+    mockGetFilteredCalendarEvents.mockReturnValue(events)
 
     const mounted = await mountWidget({
       groupId: 'group-a',
       view: 'timeGridDay',
-    });
-    await new Promise(resolve => setTimeout(resolve, 120));
-    await nextTick();
+    })
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="workbench-mini-calendar-day-header"]')).not.toBeNull();
-    expect(mounted.container.textContent).toContain('May 2, 2026');
-    expect(mounted.container.textContent).toContain('Work Hours 2:00');
+    expect(mounted.container.querySelector('[data-testid="workbench-mini-calendar-day-header"]')).not.toBeNull()
+    expect(mounted.container.textContent).toContain('May 2, 2026')
+    expect(mounted.container.textContent).toContain('Work Hours 2:00')
 
     const buttons = mounted.container.querySelectorAll('.workbench-widget-mini-calendar__header .block__icon');
     (buttons[0] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
     (buttons[1] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    (buttons[2] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    (buttons[2] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    expect(mockCalendarPrev).toHaveBeenCalled();
-    expect(mockCalendarNext).toHaveBeenCalled();
-    expect(mockCalendarToday).toHaveBeenCalled();
+    expect(mockCalendarPrev).toHaveBeenCalled()
+    expect(mockCalendarNext).toHaveBeenCalled()
+    expect(mockCalendarToday).toHaveBeenCalled()
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

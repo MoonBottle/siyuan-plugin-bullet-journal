@@ -1,6 +1,6 @@
 <template>
   <SySettingsSection
-    :icon="'iconLink'"
+    icon="iconLink"
     :title="t('settings').webhook.title"
     :description="t('settings').webhook.description"
   >
@@ -16,12 +16,21 @@
       </SySettingItem>
     </SySettingItemList>
 
-    <div v-if="localWebhook.enabled" class="webhook-channel-list">
-      <div v-if="localWebhook.channels.length === 0" class="webhook-empty">
+    <div
+      v-if="localWebhook.enabled"
+      class="webhook-channel-list"
+    >
+      <div
+        v-if="localWebhook.channels.length === 0"
+        class="webhook-empty"
+      >
         {{ t('settings').webhook.emptyHint }}
       </div>
 
-      <div v-else class="custom-list">
+      <div
+        v-else
+        class="custom-list"
+      >
         <div
           v-for="channel in localWebhook.channels"
           :key="channel.id"
@@ -53,7 +62,7 @@
       </div>
 
       <SySettingsActionButton
-        :icon="'iconAdd'"
+        icon="iconAdd"
         :text="t('settings').webhook.addChannel"
         @click="addChannel"
       />
@@ -63,11 +72,19 @@
       v-if="showEditDialog"
       class="b3-dialog"
     >
-      <div class="b3-dialog__scrim" @click="closeDialog"></div>
+      <div
+        class="b3-dialog__scrim"
+        @click="closeDialog"
+      ></div>
       <div class="b3-dialog__container">
         <div class="b3-dialog__header">
-          <div class="b3-dialog__title">{{ t('settings').webhook.editChannel }}</div>
-          <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
+          <div class="b3-dialog__title">
+            {{ t('settings').webhook.editChannel }}
+          </div>
+          <svg
+            class="b3-dialog__close"
+            @click="closeDialog"
+          ><use xlink:href="#iconCloseRound"></use></svg>
         </div>
         <div class="b3-dialog__content">
           <WebhookChannelEditForm
@@ -76,10 +93,16 @@
           />
         </div>
         <div class="b3-dialog__action">
-          <button class="b3-button b3-button--cancel" @click="closeDialog">
+          <button
+            class="b3-button b3-button--cancel"
+            @click="closeDialog"
+          >
             {{ t('common').cancel }}
           </button>
-          <button class="b3-button b3-button--text form-save-btn" @click="saveFromDialog">
+          <button
+            class="b3-button b3-button--text form-save-btn"
+            @click="saveFromDialog"
+          >
             {{ t('common').save }}
           </button>
         </div>
@@ -89,16 +112,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { t } from '@/i18n'
-import type { WebhookConfig, WebhookChannel } from '@/settings/types'
-import SySettingsSection from '@/components/settings/SySettingsSection.vue'
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
-import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import type {
+  WebhookChannel,
+  WebhookConfig,
+} from '@/settings/types'
+import {
+  ref,
+  watch,
+} from 'vue'
 import SySettingsActionButton from '@/components/settings/SySettingsActionButton.vue'
+import SySettingsSection from '@/components/settings/SySettingsSection.vue'
 import WebhookChannelEditForm from '@/components/settings/WebhookChannelEditForm.vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
 
 const props = defineProps<{
   webhook?: WebhookConfig
@@ -111,7 +140,10 @@ const emit = defineEmits<{
 const localWebhook = ref<WebhookConfig>(
   props.webhook
     ? JSON.parse(JSON.stringify(props.webhook))
-    : { enabled: false, channels: [] },
+    : {
+        enabled: false,
+        channels: [],
+      },
 )
 
 const showEditDialog = ref(false)
@@ -170,7 +202,7 @@ function editChannel(channel: WebhookChannel) {
 function saveFromDialog() {
   if (!formRef.value) return
   const result = formRef.value.buildResult()
-  const idx = localWebhook.value.channels.findIndex(c => c.id === result.id)
+  const idx = localWebhook.value.channels.findIndex((c) => c.id === result.id)
   if (idx >= 0) {
     localWebhook.value.channels[idx] = result
   } else {
@@ -182,7 +214,7 @@ function saveFromDialog() {
 
 function deleteChannel(id: string) {
   if (!confirm(t('settings').webhook.deleteConfirm)) return
-  localWebhook.value.channels = localWebhook.value.channels.filter(c => c.id !== id)
+  localWebhook.value.channels = localWebhook.value.channels.filter((c) => c.id !== id)
   emitUpdate()
 }
 </script>

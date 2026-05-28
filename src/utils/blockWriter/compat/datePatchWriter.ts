@@ -7,28 +7,33 @@
  * DO NOT add new commit/write logic here. Use writeBlock() instead.
  */
 
-import { parseKramdownBlocks } from '@/parser/core';
-import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender';
-import { resolveDatePatchSource } from '@/utils/blockWriter/resolve/targetResolver';
-import type { DatePatchSource } from '@/utils/blockWriter/resolve/targetResolver';
-import type { DatePatch } from '@/utils/blockWriter/shared/types';
+import type { DatePatchSource } from '@/utils/blockWriter/resolve/targetResolver'
+import type { DatePatch } from '@/utils/blockWriter/shared/types'
+import { parseKramdownBlocks } from '@/parser/core'
+import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender'
+import { resolveDatePatchSource } from '@/utils/blockWriter/resolve/targetResolver'
 
 export interface PreparedDateWrite {
-  content: string;
-  targetBlockId: string;
+  content: string
+  targetBlockId: string
 }
 
 function resolveTargetBlockId(source: DatePatchSource, content: string): string {
-  const { originalBlockId, targetBlockId, targetItemBlockRaw, usedParentDocumentContext } = source;
-  let finalTargetBlockId = source.finalTargetBlockId ?? targetBlockId;
+  const {
+    originalBlockId,
+    targetBlockId,
+    targetItemBlockRaw,
+    usedParentDocumentContext,
+  } = source
+  let finalTargetBlockId = source.finalTargetBlockId ?? targetBlockId
   if (usedParentDocumentContext && targetItemBlockRaw) {
-    const updatedBlocks = parseKramdownBlocks(content);
-    const updatedItemBlock = updatedBlocks.find(candidate => candidate.blockId === originalBlockId);
+    const updatedBlocks = parseKramdownBlocks(content)
+    const updatedItemBlock = updatedBlocks.find((candidate) => candidate.blockId === originalBlockId)
     if (updatedItemBlock) {
-      finalTargetBlockId = source.finalTargetBlockId ?? originalBlockId;
+      finalTargetBlockId = source.finalTargetBlockId ?? originalBlockId
     }
   }
-  return finalTargetBlockId;
+  return finalTargetBlockId
 }
 
 /**
@@ -46,11 +51,14 @@ export function prepareDatePatchWriteFromSource(
     targetItemBlockRaw: source.targetItemBlockRaw,
     usedParentDocumentContext: source.usedParentDocumentContext,
     finalTargetBlockId: source.finalTargetBlockId ?? source.targetBlockId,
-  });
+  })
 
-  const targetBlockId = resolveTargetBlockId(source, content);
+  const targetBlockId = resolveTargetBlockId(source, content)
 
-  return { content, targetBlockId };
+  return {
+    content,
+    targetBlockId,
+  }
 }
 
 export async function prepareDatePatchWrite(
@@ -58,18 +66,18 @@ export async function prepareDatePatchWrite(
   patch: DatePatch,
 ): Promise<PreparedDateWrite | null> {
   if (!blockId) {
-    return null;
+    return null
   }
 
   try {
-    const source = await resolveDatePatchSource(blockId);
+    const source = await resolveDatePatchSource(blockId)
     if (!source) {
-      return null;
+      return null
     }
 
-    return prepareDatePatchWriteFromSource(source, patch);
+    return prepareDatePatchWriteFromSource(source, patch)
   } catch (error) {
-    console.error('[BlockWriter] Failed to prepare addDate patch:', error);
-    return null;
+    console.error('[BlockWriter] Failed to prepare addDate patch:', error)
+    return null
   }
 }

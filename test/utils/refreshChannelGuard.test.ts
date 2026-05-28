@@ -1,21 +1,26 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 
-type FakeMessageEvent = {
-  data?: any;
-};
+interface FakeMessageEvent {
+  data?: any
+}
 
 function createFakeChannel() {
   return {
     onmessage: null as null | ((event: FakeMessageEvent) => void),
     close: vi.fn(),
-  };
+  }
 }
 
 describe('createRefreshChannelGuard', () => {
   it('disposes the channel when it receives a plugin-unloading message for the same plugin instance', () => {
-    const fakeChannel = createFakeChannel();
-    const onRefresh = vi.fn();
+    const fakeChannel = createFakeChannel()
+    const onRefresh = vi.fn()
 
     const guard = createRefreshChannelGuard({
       channel: fakeChannel,
@@ -23,18 +28,23 @@ describe('createRefreshChannelGuard', () => {
       getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
       onRefresh,
       viewName: 'DesktopTodoDock',
-    });
+    })
 
-    fakeChannel.onmessage?.({ data: { type: 'PLUGIN_UNLOADING', pluginInstanceId: 'plugin-1' } });
+    fakeChannel.onmessage?.({
+      data: {
+        type: 'PLUGIN_UNLOADING',
+        pluginInstanceId: 'plugin-1',
+      },
+    })
 
-    expect(fakeChannel.close).toHaveBeenCalledTimes(1);
-    expect(guard.isDisposed()).toBe(true);
-    expect(onRefresh).not.toHaveBeenCalled();
-  });
+    expect(fakeChannel.close).toHaveBeenCalledTimes(1)
+    expect(guard.isDisposed()).toBe(true)
+    expect(onRefresh).not.toHaveBeenCalled()
+  })
 
   it('disposes the channel instead of refreshing when the current plugin instance no longer matches the captured plugin', () => {
-    const fakeChannel = createFakeChannel();
-    const onRefresh = vi.fn();
+    const fakeChannel = createFakeChannel()
+    const onRefresh = vi.fn()
 
     const guard = createRefreshChannelGuard({
       channel: fakeChannel,
@@ -42,18 +52,18 @@ describe('createRefreshChannelGuard', () => {
       getCurrentPlugin: () => ({ debugInstanceId: 'plugin-new' }),
       onRefresh,
       viewName: 'DesktopTodoDock',
-    });
+    })
 
-    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED' } });
+    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED' } })
 
-    expect(fakeChannel.close).toHaveBeenCalledTimes(1);
-    expect(guard.isDisposed()).toBe(true);
-    expect(onRefresh).not.toHaveBeenCalled();
-  });
+    expect(fakeChannel.close).toHaveBeenCalledTimes(1)
+    expect(guard.isDisposed()).toBe(true)
+    expect(onRefresh).not.toHaveBeenCalled()
+  })
 
   it('forwards refresh payload when the plugin instance is still current', () => {
-    const fakeChannel = createFakeChannel();
-    const onRefresh = vi.fn();
+    const fakeChannel = createFakeChannel()
+    const onRefresh = vi.fn()
 
     createRefreshChannelGuard({
       channel: fakeChannel,
@@ -61,17 +71,22 @@ describe('createRefreshChannelGuard', () => {
       getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
       onRefresh,
       viewName: 'DesktopTodoDock',
-    });
+    })
 
-    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED', scanMode: 'full' } });
+    fakeChannel.onmessage?.({
+      data: {
+        type: 'SETTINGS_CHANGED',
+        scanMode: 'full',
+      },
+    })
 
-    expect(fakeChannel.close).not.toHaveBeenCalled();
-    expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' });
-  });
+    expect(fakeChannel.close).not.toHaveBeenCalled()
+    expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' })
+  })
 
   it('forwards settings-changed payload when the plugin instance is still current', () => {
-    const fakeChannel = createFakeChannel();
-    const onRefresh = vi.fn();
+    const fakeChannel = createFakeChannel()
+    const onRefresh = vi.fn()
 
     createRefreshChannelGuard({
       channel: fakeChannel,
@@ -79,17 +94,22 @@ describe('createRefreshChannelGuard', () => {
       getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
       onRefresh,
       viewName: 'DesktopTodoDock',
-    });
+    })
 
-    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED', scanMode: 'full' } });
+    fakeChannel.onmessage?.({
+      data: {
+        type: 'SETTINGS_CHANGED',
+        scanMode: 'full',
+      },
+    })
 
-    expect(fakeChannel.close).not.toHaveBeenCalled();
-    expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' });
-  });
+    expect(fakeChannel.close).not.toHaveBeenCalled()
+    expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' })
+  })
 
   it('forwards data-refreshed notifications without payload as undefined', () => {
-    const fakeChannel = createFakeChannel();
-    const onRefresh = vi.fn();
+    const fakeChannel = createFakeChannel()
+    const onRefresh = vi.fn()
 
     createRefreshChannelGuard({
       channel: fakeChannel,
@@ -97,11 +117,11 @@ describe('createRefreshChannelGuard', () => {
       getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
       onRefresh,
       viewName: 'DesktopHabitDock',
-    });
+    })
 
-    fakeChannel.onmessage?.({ data: { type: 'DATA_REFRESHED' } });
+    fakeChannel.onmessage?.({ data: { type: 'DATA_REFRESHED' } })
 
-    expect(fakeChannel.close).not.toHaveBeenCalled();
-    expect(onRefresh).toHaveBeenCalledWith(undefined);
-  });
-});
+    expect(fakeChannel.close).not.toHaveBeenCalled()
+    expect(onRefresh).toHaveBeenCalledWith(undefined)
+  })
+})

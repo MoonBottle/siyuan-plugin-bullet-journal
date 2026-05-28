@@ -22,14 +22,14 @@
 
 ```typescript
 export interface WorkbenchEntry {
-  id: string;
-  type: 'dashboard' | 'view';
-  title: string;
-  icon: string;
-  order: number;
-  viewType?: WorkbenchViewType;
-  dashboardId?: string;
-  config?: Record<string, unknown>;  // 新增：视图配置（仅 type='view' 时有效）
+  id: string
+  type: 'dashboard' | 'view'
+  title: string
+  icon: string
+  order: number
+  viewType?: WorkbenchViewType
+  dashboardId?: string
+  config?: Record<string, unknown> // 新增：视图配置（仅 type='view' 时有效）
 }
 ```
 
@@ -37,57 +37,57 @@ export interface WorkbenchEntry {
 
 ```typescript
 export interface WorkbenchFocusReviewViewConfig {
-  groupId?: string;
+  groupId?: string
 }
 
 export interface WorkbenchProjectViewConfig {
-  groupId?: string;
+  groupId?: string
 }
 ```
 
 已有 widget 配置类型被视图直接复用：
 
-| 视图 | 配置类型 | 来源 |
-|------|---------|------|
-| Todo | `WorkbenchTodoListWidgetConfig` | 已有，`{ preset?: TodoViewPreset }` |
-| Habit | `WorkbenchHabitWeekWidgetConfig` | 已有，`{ groupId?, habitScope? }` |
-| Quadrant | `WorkbenchQuadrantWidgetConfig` | 已有，`{ groupId?, quadrant? }` |
-| PomodoroStats | `WorkbenchPomodoroStatsWidgetConfig` | 已有，`{ section? }` |
-| FocusReview | `WorkbenchFocusReviewViewConfig` | 新增，`{ groupId? }` |
-| Project | `WorkbenchProjectViewConfig` | 新增，`{ groupId? }` |
+| 视图          | 配置类型                             | 来源                                |
+| ------------- | ------------------------------------ | ----------------------------------- |
+| Todo          | `WorkbenchTodoListWidgetConfig`      | 已有，`{ preset?: TodoViewPreset }` |
+| Habit         | `WorkbenchHabitWeekWidgetConfig`     | 已有，`{ groupId?, habitScope? }`   |
+| Quadrant      | `WorkbenchQuadrantWidgetConfig`      | 已有，`{ groupId?, quadrant? }`     |
+| PomodoroStats | `WorkbenchPomodoroStatsWidgetConfig` | 已有，`{ section? }`                |
+| FocusReview   | `WorkbenchFocusReviewViewConfig`     | 新增，`{ groupId? }`                |
+| Project       | `WorkbenchProjectViewConfig`         | 新增，`{ groupId? }`                |
 
 ## 视图注册表
 
 新增 `src/workbench/viewRegistry.ts`：
 
 ```typescript
-export type WorkbenchViewDefinition = {
-  type: WorkbenchViewType;
-  createDefaultConfig: () => Record<string, unknown>;
-  openConfigDialog?: (context: WorkbenchViewConfigContext) => void;
-};
+export interface WorkbenchViewDefinition {
+  type: WorkbenchViewType
+  createDefaultConfig: () => Record<string, unknown>
+  openConfigDialog?: (context: WorkbenchViewConfigContext) => void
+}
 
-type WorkbenchViewConfigContext = {
-  entry: WorkbenchEntry;
-  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
-};
+interface WorkbenchViewConfigContext {
+  entry: WorkbenchEntry
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>
+}
 ```
 
 ### 注册条目
 
-| 视图 | `createDefaultConfig` | `openConfigDialog` |
-|------|----------------------|--------------------|
-| todo | `{ preset: {} }` | 复用 `openTodoWidgetConfigDialog` |
-| habit | `{ habitScope: 'active' }` | 复用 `openHabitWidgetConfigDialog` |
-| quadrant | `{ quadrant: 'q1' }` | 复用 `openQuadrantWidgetConfigDialog` |
-| pomodoroStats | `{ section: 'overview' }` | 复用 `openPomodoroWidgetConfigDialog` |
-| focusReview | `{}` | 新建简单弹窗（groupId 下拉） |
-| project | `{}` | 新建简单弹窗（groupId 下拉） |
+| 视图          | `createDefaultConfig`      | `openConfigDialog`                    |
+| ------------- | -------------------------- | ------------------------------------- |
+| todo          | `{ preset: {} }`           | 复用 `openTodoWidgetConfigDialog`     |
+| habit         | `{ habitScope: 'active' }` | 复用 `openHabitWidgetConfigDialog`    |
+| quadrant      | `{ quadrant: 'q1' }`       | 复用 `openQuadrantWidgetConfigDialog` |
+| pomodoroStats | `{ section: 'overview' }`  | 复用 `openPomodoroWidgetConfigDialog` |
+| focusReview   | `{}`                       | 新建简单弹窗（groupId 下拉）          |
+| project       | `{}`                       | 新建简单弹窗（groupId 下拉）          |
 
 导出函数：
 
 ```typescript
-export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDefinition;
+export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDefinition
 ```
 
 ## Store 变更
@@ -98,8 +98,8 @@ export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDef
 
 ```typescript
 async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEntry> {
-  const meta = getViewEntryDefinition(viewType);
-  const viewDef = getViewDefinition(viewType);
+  const meta = getViewEntryDefinition(viewType)
+  const viewDef = getViewDefinition(viewType)
   const entry: WorkbenchEntry = {
     id: createId('entry'),
     type: 'view',
@@ -108,11 +108,11 @@ async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEn
     order: entries.value.length,
     viewType,
     config: viewDef.createDefaultConfig(),
-  };
-  entries.value = [...entries.value, entry];
-  activeEntryId.value = entry.id;
-  await persist();
-  return entry;
+  }
+  entries.value = [...entries.value, entry]
+  activeEntryId.value = entry.id
+  await persist()
+  return entry
 }
 ```
 
@@ -125,8 +125,8 @@ async function updateViewConfig(
 ): Promise<void> {
   entries.value = entries.value.map(entry =>
     entry.id === entryId ? { ...entry, config } : entry
-  );
-  await persist();
+  )
+  await persist()
 }
 ```
 
@@ -136,13 +136,13 @@ async function updateViewConfig(
 
 ```typescript
 entries.value = normalizeOrders(
-  (settings.entries ?? []).map(entry => {
+  (settings.entries ?? []).map((entry) => {
     if (entry.type === 'view' && entry.viewType && !entry.config) {
-      return { ...entry, config: getViewDefinition(entry.viewType).createDefaultConfig() };
+      return { ...entry, config: getViewDefinition(entry.viewType).createDefaultConfig() }
     }
-    return entry;
+    return entry
   })
-);
+)
 ```
 
 ## 组件变更
@@ -158,9 +158,13 @@ entries.value = normalizeOrders(
 
 ```vue
 <DesktopTodoDock :enable-workbench-preview="true" :view-config="entry.config" />
+
 <QuadrantTab :embedded="true" :view-config="entry.config" />
+
 <PomodoroStatsTab :embedded="true" :view-config="entry.config" />
+
 <FocusReviewTab :embedded="true" :view-config="entry.config" />
+
 <ProjectTab :embedded="true" :view-config="entry.config" />
 ```
 
@@ -189,6 +193,7 @@ Todo/Habit/Quadrant/PomodoroStats 直接调用已有的 widget 配置弹窗：
 ### 新建简单弹窗
 
 FocusReview 和 Project 需要新建简单的配置弹窗，包含：
+
 - groupId 下拉选择（复用 settingsStore 中的分组列表）
 - 确认/取消按钮
 
@@ -225,11 +230,13 @@ FocusReview 和 Project 需要新建简单的配置弹窗，包含：
 ## 文件清单
 
 ### 新增文件
+
 - `src/workbench/viewRegistry.ts`
 - `src/workbench/focusReviewViewConfigDialog.ts`
 - `src/workbench/projectViewConfigDialog.ts`
 
 ### 修改文件
+
 - `src/types/workbench.ts` — 新增配置类型 + Entry.config
 - `src/stores/workbenchStore.ts` — createViewEntry 填默认配置 + updateViewConfig
 - `src/components/workbench/WorkbenchContentHost.vue` — 工具栏加"配置"按钮

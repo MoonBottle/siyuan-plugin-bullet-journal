@@ -3,6 +3,7 @@
 ## 背景
 
 当前 MCP 服务器（`src/mcp/server.ts`）以独立 Node.js 进程运行，通过 Stdio 传输与 AI 客户端通信。用户需要：
+
 1. 安装 Node.js 运行环境
 2. 手动获取并配置 `SIYUAN_TOKEN`
 3. 在 AI 客户端中配置 `command: "node"` 启动方式
@@ -43,13 +44,13 @@ projectStore (现有解析管线)
 ```typescript
 interface McpCache {
   version: 1
-  updatedAt: string           // ISO 8601
+  updatedAt: string // ISO 8601
   groups: Array<{
     id: string
     name: string
   }>
   projects: Array<{
-    id: string                // 文档 ID
+    id: string // 文档 ID
     name: string
     description?: string
     path: string
@@ -59,14 +60,14 @@ interface McpCache {
   items: Array<{
     id: string
     content: string
-    date: string              // YYYY-MM-DD
+    date: string // YYYY-MM-DD
     startDateTime?: string
     endDateTime?: string
     status: 'pending' | 'completed' | 'abandoned'
     projectName?: string
     taskName?: string
     projectId: string
-    links?: Array<{ name: string; url: string }>
+    links?: Array<{ name: string, url: string }>
     pomodoros?: Array<{
       date: string
       duration: number
@@ -90,6 +91,7 @@ export function writeMcpCache(): Promise<void>
 ```
 
 **写入时机**（在 projectStore 中调用）：
+
 - `loadProjects()` 完成后
 - `refresh()` 完成后（增量或全量）
 - 防抖 2 秒，避免频繁写入
@@ -97,6 +99,7 @@ export function writeMcpCache(): Promise<void>
 **写入方式**：通过思源 API `POST /api/file/putFile` 写入 petal storage 路径。
 
 **数据提取逻辑**：
+
 - `groups`：来自 settingsStore.groups
 - `projects`：遍历 projectStore.projects，映射为 `{ id, name, description, path, groupId, taskCount }`
 - `items`：遍历 projectStore.items（已扁平化），映射为 McpCache.items 格式
@@ -112,6 +115,7 @@ export function writeMcpCache(): Promise<void>
 #### 2.1 MCP 协议层
 
 实现 MCP Streamable HTTP 传输：
+
 - 接收 `POST /plugin/private/siyuan-plugin-bullet-journal/mcp` 请求
 - 解析 JSON-RPC 2.0 消息
 - 路由到对应 handler（`initialize`, `tools/list`, `tools/call`, `ping`）
@@ -125,23 +129,23 @@ export function writeMcpCache(): Promise<void>
 
 与现有 MCP 服务器相同的 5 个工具，但从缓存读取数据而非实时查询：
 
-| 工具 | 实现 |
-|------|------|
-| `list_groups` | 直接返回 cache.groups |
-| `list_projects` | 按 groupId 过滤 cache.projects |
-| `filter_items` | 多维度过滤 cache.items（projectId/projectIds/groupId/startDate/endDate/status） |
-| `get_pomodoro_stats` | 聚合 cache.items 中的 pomodoros |
-| `get_pomodoro_records` | 提取 cache.items 中的 pomodoros 列表 |
+| 工具                   | 实现                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `list_groups`          | 直接返回 cache.groups                                                           |
+| `list_projects`        | 按 groupId 过滤 cache.projects                                                  |
+| `filter_items`         | 多维度过滤 cache.items（projectId/projectIds/groupId/startDate/endDate/status） |
+| `get_pomodoro_stats`   | 聚合 cache.items 中的 pomodoros                                                 |
+| `get_pomodoro_records` | 提取 cache.items 中的 pomodoros 列表                                            |
 
 #### 2.4 生命周期
 
 ```javascript
-siyuan.plugin.lifecycle.onrunning = async function() {
+siyuan.plugin.lifecycle.onrunning = async function () {
   // 注册 SSE handler
-  siyuan.server.private.es.handler = async function(request) {
+  siyuan.server.private.es.handler = async function (request) {
     // MCP Streamable HTTP 处理
-  };
-};
+  }
+}
 ```
 
 ### 3. 设置界面更新 — `McpConfigSection.vue`
@@ -149,6 +153,7 @@ siyuan.plugin.lifecycle.onrunning = async function() {
 **变更**：在现有「复制 MCP 配置」按钮下方，新增一个「复制 HTTP MCP 配置」按钮。
 
 **UI 设计**：
+
 ```
 MCP 配置
 将任务数据暴露给 Cursor、Claude 等 AI 助手...
@@ -160,6 +165,7 @@ MCP 配置
 ```
 
 **HTTP MCP 配置内容**：
+
 ```json
 {
   "mcpServers": {
@@ -173,6 +179,7 @@ MCP 配置
 ### 4. i18n 更新
 
 `zh_CN.json` 新增：
+
 ```json
 "mcp": {
   "title": "MCP 配置",
@@ -186,6 +193,7 @@ MCP 配置
 ```
 
 `en_US.json` 新增：
+
 ```json
 "mcp": {
   "httpCopyButton": "Copy HTTP MCP Config (Experimental)",
@@ -204,6 +212,7 @@ MCP 配置
 #### vite.config.ts
 
 新增一个构建入口将 `src/mcp/kernel.ts` 编译为 `kernel.js`：
+
 - 输出格式：IIFE（立即执行函数）
 - Target：ES2018（goja 支持的 ES 子集）
 - 不打包任何 npm 依赖（dayjs 等）
@@ -217,24 +226,24 @@ MCP 配置
 
 ### 新增文件
 
-| 文件 | 说明 |
-|------|------|
-| `src/mcp/kernel.ts` | kernel.js 源码（MCP 协议层 + 缓存读取 + 过滤逻辑） |
-| `src/mcp/mcpCacheWriter.ts` | 前端缓存写入器 |
-| `vite.kernel.config.ts` | kernel.js 构建配置 |
+| 文件                        | 说明                                               |
+| --------------------------- | -------------------------------------------------- |
+| `src/mcp/kernel.ts`         | kernel.js 源码（MCP 协议层 + 缓存读取 + 过滤逻辑） |
+| `src/mcp/mcpCacheWriter.ts` | 前端缓存写入器                                     |
+| `vite.kernel.config.ts`     | kernel.js 构建配置                                 |
 
 ### 修改文件
 
-| 文件 | 变更 |
-|------|------|
-| `plugin.json` | 添加 `"kernels": ["all"]` |
-| `src/components/settings/McpConfigSection.vue` | 新增 HTTP MCP 复制按钮（实验性标记 + hover 提示） |
-| `src/mobile/drawers/settings/MobileMcpConfig.vue` | 移动端同步新增 HTTP MCP 复制按钮 |
-| `src/stores/projectStore.ts` | 数据加载/刷新完成后调用 `writeMcpCache()` |
-| `src/i18n/zh_CN.json` | 新增 HTTP MCP 相关 i18n 文本 |
-| `src/i18n/en_US.json` | 新增 HTTP MCP 相关 i18n 文本 |
-| `package.json` | 新增 kernel 构建脚本 |
-| `vite.config.ts` | 添加 kernel.js 静态文件 copy |
+| 文件                                              | 变更                                              |
+| ------------------------------------------------- | ------------------------------------------------- |
+| `plugin.json`                                     | 添加 `"kernels": ["all"]`                         |
+| `src/components/settings/McpConfigSection.vue`    | 新增 HTTP MCP 复制按钮（实验性标记 + hover 提示） |
+| `src/mobile/drawers/settings/MobileMcpConfig.vue` | 移动端同步新增 HTTP MCP 复制按钮                  |
+| `src/stores/projectStore.ts`                      | 数据加载/刷新完成后调用 `writeMcpCache()`         |
+| `src/i18n/zh_CN.json`                             | 新增 HTTP MCP 相关 i18n 文本                      |
+| `src/i18n/en_US.json`                             | 新增 HTTP MCP 相关 i18n 文本                      |
+| `package.json`                                    | 新增 kernel 构建脚本                              |
+| `vite.config.ts`                                  | 添加 kernel.js 静态文件 copy                      |
 
 ## 约束与风险
 

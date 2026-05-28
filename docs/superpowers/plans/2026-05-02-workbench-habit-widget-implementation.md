@@ -80,6 +80,7 @@
 ### Task 1: Add the workbench habit widget config model
 
 **Files:**
+
 - Modify: `src/types/workbench.ts`
 - Modify: `src/workbench/widgetRegistry.ts`
 - Test: `test/components/workbench/DashboardCanvas.test.ts`
@@ -90,8 +91,8 @@ Add a new `DashboardCanvas` test that mirrors the todo/calendar config tests but
 
 ```ts
 it('opens habit widget configure dialog and persists group config', async () => {
-  const store = useWorkbenchStore();
-  store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
+  const store = useWorkbenchStore()
+  store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any
   store.dashboards = [
     {
       id: 'dashboard-1',
@@ -108,7 +109,7 @@ it('opens habit widget configure dialog and persists group config', async () => 
         },
       ],
     },
-  ];
+  ]
 
   const mounted = await mountCanvas({
     id: 'entry-dashboard',
@@ -119,28 +120,28 @@ it('opens habit widget configure dialog and persists group config', async () => 
     dashboardId: 'dashboard-1',
   });
 
-  (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
   await nextTick();
-  (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
 
   expect(mockOpenHabitWidgetConfigDialog).toHaveBeenCalledWith({
     initialConfig: {
       groupId: 'group-a',
     },
     onConfirm: expect.any(Function),
-  });
+  })
 
-  const configureOptions = mockOpenHabitWidgetConfigDialog.mock.calls[0][0];
+  const configureOptions = mockOpenHabitWidgetConfigDialog.mock.calls[0][0]
   await configureOptions.onConfirm({
     groupId: 'group-b',
-  });
+  })
 
   expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
     groupId: 'group-b',
-  });
+  })
 
-  mounted.unmount();
-});
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -159,7 +160,7 @@ Update `src/types/workbench.ts`:
 
 ```ts
 export interface WorkbenchHabitWeekWidgetConfig {
-  groupId?: string;
+  groupId?: string
 }
 ```
 
@@ -172,8 +173,8 @@ import type {
   WorkbenchTodoListWidgetConfig,
   WorkbenchWidgetInstance,
   WorkbenchWidgetType,
-} from '@/types/workbench';
-import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
+} from '@/types/workbench'
+import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog'
 ```
 
 Replace the `habitWeek` definition with:
@@ -210,11 +211,11 @@ Update the dashboard-canvas test mock block:
 const { mockOpenCalendarWidgetConfigDialog, mockOpenHabitWidgetConfigDialog } = vi.hoisted(() => ({
   mockOpenCalendarWidgetConfigDialog: vi.fn(),
   mockOpenHabitWidgetConfigDialog: vi.fn(),
-}));
+}))
 
 vi.mock('@/workbench/habitWidgetConfigDialog', () => ({
   openHabitWidgetConfigDialog: mockOpenHabitWidgetConfigDialog,
-}));
+}))
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -239,6 +240,7 @@ git commit -m "feat(workbench): add habit widget config model"
 ### Task 2: Build the habit widget config dialog
 
 **Files:**
+
 - Create: `src/components/workbench/dialogs/HabitWidgetConfigDialog.vue`
 - Create: `src/workbench/habitWidgetConfigDialog.ts`
 - Test: `test/components/workbench/HabitWeekWidget.test.ts`
@@ -249,27 +251,27 @@ Add a dialog-focused unit test that mounts the dialog component directly and ver
 
 ```ts
 it('confirms the selected group as widget config', async () => {
-  const onConfirm = vi.fn();
-  const onCancel = vi.fn();
+  const onConfirm = vi.fn()
+  const onCancel = vi.fn()
   const mounted = await mountHabitWidgetConfigDialog({
     initialConfig: { groupId: 'group-a' },
     onConfirm,
     onCancel,
-  });
+  })
 
-  const select = mounted.container.querySelector('[data-testid="habit-widget-group-select"]') as HTMLSelectElement;
-  select.value = 'group-b';
-  select.dispatchEvent(new Event('change', { bubbles: true }));
+  const select = mounted.container.querySelector('[data-testid="habit-widget-group-select"]') as HTMLSelectElement
+  select.value = 'group-b'
+  select.dispatchEvent(new Event('change', { bubbles: true }))
   await nextTick();
 
-  (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click()
 
   expect(onConfirm).toHaveBeenCalledWith({
     groupId: 'group-b',
-  });
+  })
 
-  mounted.unmount();
-});
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -316,14 +318,14 @@ Create `src/components/workbench/dialogs/HabitWidgetConfigDialog.vue` with the s
 ```
 
 ```ts
-const settingsStore = useSettingsStore();
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
+const settingsStore = useSettingsStore()
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
 
 onMounted(() => {
   if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-});
+})
 
 const groupOptions = computed(() => [
   { value: '', label: t('settings').projectGroups.allGroups },
@@ -331,12 +333,12 @@ const groupOptions = computed(() => [
     value: group.id,
     label: group.name || t('settings').projectGroups.unnamed,
   })),
-]);
+])
 
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
-  });
+  })
 }
 ```
 
@@ -344,49 +346,51 @@ Create `src/workbench/habitWidgetConfigDialog.ts` by following `calendarWidgetCo
 
 ```ts
 export function openHabitWidgetConfigDialog(options: {
-  initialConfig: WorkbenchHabitWeekWidgetConfig;
-  onConfirm: (config: WorkbenchHabitWeekWidgetConfig) => void | Promise<void>;
+  initialConfig: WorkbenchHabitWeekWidgetConfig
+  onConfirm: (config: WorkbenchHabitWeekWidgetConfig) => void | Promise<void>
 }): Dialog {
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
-  let isConfirming = false;
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
+  let isConfirming = false
 
   const dialog = new Dialog({
     title: t('workbench').configure,
     content: '',
     width: '420px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   app = createApp(HabitWidgetConfigDialog, {
     initialConfig: options.initialConfig,
     onCancel: closeDialog,
     onConfirm: async (config: WorkbenchHabitWeekWidgetConfig) => {
-      if (isConfirming) return;
-      isConfirming = true;
+      if (isConfirming)
+        return
+      isConfirming = true
       try {
-        await options.onConfirm(config);
-        closeDialog();
-      } finally {
-        isConfirming = false;
+        await options.onConfirm(config)
+        closeDialog()
+      }
+      finally {
+        isConfirming = false
       }
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    app.use(pinia);
+    app.use(pinia)
   }
-  app.mount(mountEl);
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
-  return dialog;
+  app.mount(mountEl)
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
+  return dialog
 }
 ```
 
@@ -412,6 +416,7 @@ git commit -m "feat(workbench): add habit widget config dialog"
 ### Task 3: Extract the shared habit workspace composable
 
 **Files:**
+
 - Create: `src/composables/useHabitWorkspace.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 - Modify: `src/components/workbench/view/WorkbenchHabitView.vue`
@@ -426,13 +431,13 @@ it('filters habits by group and keeps the selected habit in sync after refresh',
   const habits = ref([
     createHabit({ blockId: 'habit-a', docId: 'doc-1', project: { groupId: 'group-a' } }),
     createHabit({ blockId: 'habit-b', docId: 'doc-2', project: { groupId: 'group-b' } }),
-  ]);
+  ])
 
   const refresh = vi.fn(async () => {
     habits.value = [
       createHabit({ blockId: 'habit-a', name: 'updated', docId: 'doc-1', project: { groupId: 'group-a' } }),
-    ];
-  });
+    ]
+  })
 
   const workspace = useHabitWorkspace({
     habits,
@@ -441,16 +446,16 @@ it('filters habits by group and keeps the selected habit in sync after refresh',
     selectedViewMonth: ref('2026-05'),
     groupId: ref('group-a'),
     refresh,
-  });
+  })
 
-  workspace.selectHabit(habits.value[0]);
+  workspace.selectHabit(habits.value[0])
 
-  expect(workspace.filteredHabits.value.map(habit => habit.blockId)).toEqual(['habit-a']);
+  expect(workspace.filteredHabits.value.map(habit => habit.blockId)).toEqual(['habit-a'])
 
-  await workspace.refreshHabits();
+  await workspace.refreshHabits()
 
-  expect(workspace.selectedHabit.value?.name).toBe('updated');
-});
+  expect(workspace.selectedHabit.value?.name).toBe('updated')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -469,70 +474,72 @@ Create `src/composables/useHabitWorkspace.ts` with a narrow, reusable surface:
 
 ```ts
 export function useHabitWorkspace(options: {
-  habits: Ref<Habit[]>;
-  currentDate: Ref<string>;
-  selectedDate: Ref<string>;
-  selectedViewMonth: Ref<string>;
-  groupId?: Ref<string>;
-  refresh: () => Promise<void>;
+  habits: Ref<Habit[]>
+  currentDate: Ref<string>
+  selectedDate: Ref<string>
+  selectedViewMonth: Ref<string>
+  groupId?: Ref<string>
+  refresh: () => Promise<void>
 }) {
-  const selectedHabit = ref<Habit | null>(null);
-  const selectedStatsCache = ref<HabitStats | null>(null);
+  const selectedHabit = ref<Habit | null>(null)
+  const selectedStatsCache = ref<HabitStats | null>(null)
 
   const filteredHabits = computed(() => {
-    const currentGroupId = options.groupId?.value ?? '';
+    const currentGroupId = options.groupId?.value ?? ''
     if (!currentGroupId) {
-      return options.habits.value;
+      return options.habits.value
     }
-    return options.habits.value.filter(habit => habit.project?.groupId === currentGroupId);
-  });
+    return options.habits.value.filter(habit => habit.project?.groupId === currentGroupId)
+  })
 
-  const habitStatsMap = computed(() => calculateAllHabitStats(filteredHabits.value, options.currentDate.value));
+  const habitStatsMap = computed(() => calculateAllHabitStats(filteredHabits.value, options.currentDate.value))
   const habitDayStateMap = computed(() => new Map(
     filteredHabits.value.map(habit => [habit.blockId, getHabitDayState(habit, options.selectedDate.value)]),
-  ));
+  ))
   const habitPeriodStateMap = computed(() => new Map(
     filteredHabits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, options.selectedDate.value)]),
-  ));
+  ))
   const selectedStats = computed(() => {
-    if (!selectedHabit.value) return null;
-    return calculateHabitStats(selectedHabit.value, options.currentDate.value, options.selectedViewMonth.value);
-  });
-  const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
+    if (!selectedHabit.value)
+      return null
+    return calculateHabitStats(selectedHabit.value, options.currentDate.value, options.selectedViewMonth.value)
+  })
+  const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value)
 
   watch(selectedStats, (value) => {
     if (value) {
-      selectedStatsCache.value = value;
+      selectedStatsCache.value = value
     }
-  }, { immediate: true });
+  }, { immediate: true })
 
   function syncSelectedHabit() {
-    if (!selectedHabit.value) return;
-    selectedHabit.value = filteredHabits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null;
+    if (!selectedHabit.value)
+      return
+    selectedHabit.value = filteredHabits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null
   }
 
   function selectHabit(habit: Habit) {
-    options.selectedViewMonth.value = options.currentDate.value.substring(0, 7);
-    selectedHabit.value = habit;
-    selectedStatsCache.value = calculateHabitStats(habit, options.currentDate.value, options.selectedViewMonth.value);
+    options.selectedViewMonth.value = options.currentDate.value.substring(0, 7)
+    selectedHabit.value = habit
+    selectedStatsCache.value = calculateHabitStats(habit, options.currentDate.value, options.selectedViewMonth.value)
   }
 
   async function refreshHabits() {
-    await options.refresh();
-    syncSelectedHabit();
+    await options.refresh()
+    syncSelectedHabit()
   }
 
   async function handleCheckIn(habit: Habit) {
-    const success = await checkIn(habit, options.selectedDate.value);
+    const success = await checkIn(habit, options.selectedDate.value)
     if (success && selectedHabit.value?.blockId === habit.blockId) {
-      syncSelectedHabit();
+      syncSelectedHabit()
     }
   }
 
   async function handleIncrement(habit: Habit) {
-    const success = await checkInCount(habit, options.selectedDate.value, 1);
+    const success = await checkInCount(habit, options.selectedDate.value, 1)
     if (success && selectedHabit.value?.blockId === habit.blockId) {
-      syncSelectedHabit();
+      syncSelectedHabit()
     }
   }
 
@@ -549,7 +556,7 @@ export function useHabitWorkspace(options: {
     handleCheckIn,
     handleIncrement,
     syncSelectedHabit,
-  };
+  }
 }
 ```
 
@@ -575,6 +582,7 @@ git commit -m "refactor(habit): extract shared workspace composable"
 ### Task 4: Extract the shared habit list/detail panes
 
 **Files:**
+
 - Create: `src/components/habit/HabitWorkspaceListPane.vue`
 - Create: `src/components/habit/HabitWorkspaceDetailPane.vue`
 - Modify: `src/components/workbench/view/WorkbenchHabitView.vue`
@@ -589,20 +597,20 @@ Add two focused expectations:
 ```ts
 it('renders the shared habit detail pane when a habit is selected', async () => {
   const mounted = await mountWorkbenchHabitView();
-  (mounted.container.querySelector('[data-testid="workbench-habit-item-habit-1"]') as HTMLButtonElement).click();
-  await nextTick();
-  expect(mounted.container.querySelector('[data-testid="habit-workspace-detail-pane"]')).not.toBeNull();
-});
+  (mounted.container.querySelector('[data-testid="workbench-habit-item-habit-1"]') as HTMLButtonElement).click()
+  await nextTick()
+  expect(mounted.container.querySelector('[data-testid="habit-workspace-detail-pane"]')).not.toBeNull()
+})
 ```
 
 ```ts
 it('keeps the desktop dock list/detail toggle behavior after shared pane extraction', async () => {
-  const mounted = await mountDesktopHabitDock();
+  const mounted = await mountDesktopHabitDock()
   expect(mounted.container.querySelector('[data-testid="habit-detail-content"]')).toBeNull();
-  (mounted.container.querySelector('[data-testid="habit-list-item-open-calendar-habit-1"]') as HTMLButtonElement).click();
-  await nextTick();
-  expect(mounted.container.querySelector('[data-testid="habit-detail-content"]')).not.toBeNull();
-});
+  (mounted.container.querySelector('[data-testid="habit-list-item-open-calendar-habit-1"]') as HTMLButtonElement).click()
+  await nextTick()
+  expect(mounted.container.querySelector('[data-testid="habit-detail-content"]')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -645,9 +653,15 @@ Create `src/components/habit/HabitWorkspaceListPane.vue`:
     </div>
 
     <div v-else class="habit-workspace-list-pane__empty">
-      <div class="habit-workspace-list-pane__empty-icon">🎯</div>
-      <div class="habit-workspace-list-pane__empty-title">{{ t('habit').noHabits }}</div>
-      <div class="habit-workspace-list-pane__empty-desc">{{ t('habit').noHabitsDesc }}</div>
+      <div class="habit-workspace-list-pane__empty-icon">
+        🎯
+      </div>
+      <div class="habit-workspace-list-pane__empty-title">
+        {{ t('habit').noHabits }}
+      </div>
+      <div class="habit-workspace-list-pane__empty-desc">
+        {{ t('habit').noHabitsDesc }}
+      </div>
     </div>
   </div>
 </template>
@@ -659,13 +673,15 @@ Create `src/components/habit/HabitWorkspaceDetailPane.vue`:
 <template>
   <div class="habit-workspace-detail-pane" data-testid="habit-workspace-detail-pane">
     <div class="habit-workspace-detail-pane__header">
-      <div class="habit-workspace-detail-pane__title">{{ habit.name }}</div>
+      <div class="habit-workspace-detail-pane__title">
+        {{ habit.name }}
+      </div>
       <div class="habit-workspace-detail-pane__actions">
         <button class="block__icon" data-testid="habit-workspace-refresh" :aria-label="t('common').refresh" @click="$emit('refresh')">
-          <svg><use xlink:href="#iconRefresh"></use></svg>
+          <svg><use xlink:href="#iconRefresh" /></svg>
         </button>
         <button class="block__icon" data-testid="habit-workspace-open-doc" :aria-label="t('todo').openDoc" @click="$emit('open-doc', habit)">
-          <svg><use xlink:href="#iconFile"></use></svg>
+          <svg><use xlink:href="#iconFile" /></svg>
         </button>
       </div>
     </div>
@@ -709,6 +725,7 @@ git commit -m "refactor(habit): share workspace list and detail panes"
 ### Task 5: Upgrade the habit widget surface to summary + list + grouping
 
 **Files:**
+
 - Modify: `src/components/workbench/widgets/HabitWeekWidget.vue`
 - Test: `test/components/workbench/HabitWeekWidget.test.ts`
 
@@ -720,22 +737,22 @@ Add tests for grouped rendering and empty state:
 it('renders week summary and filtered habit list from widget config', async () => {
   const mounted = await mountHabitWeekWidget({
     groupId: 'group-a',
-  });
+  })
 
-  expect(mounted.container.querySelector('[data-testid="habit-workspace-list-pane"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-a"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-b"]')).toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-workspace-list-pane"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-a"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-b"]')).toBeNull()
+})
 ```
 
 ```ts
 it('renders an empty state when the configured group has no habits', async () => {
   const mounted = await mountHabitWeekWidget({
     groupId: 'missing-group',
-  });
+  })
 
-  expect(mounted.container.querySelector('[data-testid="habit-workspace-empty"]')).not.toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-workspace-empty"]')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -771,14 +788,14 @@ Replace `src/components/workbench/widgets/HabitWeekWidget.vue` with a composable
 ```
 
 ```ts
-const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
-const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
-const calendarConfig = computed(() => (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig);
-const currentDate = computed(() => projectStore.currentDate);
-const habits = computed(() => projectStore.getHabits(''));
-const groupId = computed(() => calendarConfig.value.groupId ?? '');
+const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
+const selectedViewMonth = ref(dayjs().format('YYYY-MM'))
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
+const calendarConfig = computed(() => (props.widget?.config ?? {}) as WorkbenchHabitWeekWidgetConfig)
+const currentDate = computed(() => projectStore.currentDate)
+const habits = computed(() => projectStore.getHabits(''))
+const groupId = computed(() => calendarConfig.value.groupId ?? '')
 
 const workspace = useHabitWorkspace({
   habits,
@@ -787,10 +804,11 @@ const workspace = useHabitWorkspace({
   selectedViewMonth,
   groupId,
   refresh: async () => {
-    if (!plugin) return;
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    if (!plugin)
+      return
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories)
   },
-});
+})
 ```
 
 Expose `filteredHabits`, `habitStatsMap`, `habitDayStateMap`, `habitPeriodStateMap`, `handleCheckIn`, `handleIncrement`, `handleOpenDetail` from the composable-backed widget setup.
@@ -817,6 +835,7 @@ git commit -m "feat(workbench): render habit list inside habit widget"
 ### Task 6: Add the widget detail dialog host and wire click-to-open behavior
 
 **Files:**
+
 - Create: `src/workbench/habitWidgetDetailDialog.ts`
 - Modify: `src/components/workbench/widgets/HabitWeekWidget.vue`
 - Test: `test/components/workbench/HabitWeekWidget.test.ts`
@@ -831,12 +850,12 @@ it('opens a habit detail dialog when a habit is selected from the widget list', 
     groupId: 'group-a',
   });
 
-  (mounted.container.querySelector('[data-testid="habit-list-item-open-detail-habit-a"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="habit-list-item-open-detail-habit-a"]') as HTMLButtonElement).click()
 
   expect(mockOpenHabitWidgetDetailDialog).toHaveBeenCalledWith(expect.objectContaining({
     habit: expect.objectContaining({ blockId: 'habit-a' }),
-  }));
-});
+  }))
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -855,13 +874,13 @@ Create `src/workbench/habitWidgetDetailDialog.ts`:
 
 ```ts
 export function openHabitWidgetDetailDialog(options: {
-  habit: Habit;
-  currentDate: string;
-  selectedViewMonth: string;
-  onRefresh: () => Promise<void>;
+  habit: Habit
+  currentDate: string
+  selectedViewMonth: string
+  onRefresh: () => Promise<void>
 }) {
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
 
   const dialog = new Dialog({
     title: options.habit.name,
@@ -869,31 +888,32 @@ export function openHabitWidgetDetailDialog(options: {
     width: '760px',
     height: '80vh',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   app = createApp(HabitWorkspaceDetailPane, {
-    habit: options.habit,
-    stats: calculateHabitStats(options.habit, options.currentDate, options.selectedViewMonth),
-    currentDate: options.currentDate,
-    viewMonth: options.selectedViewMonth,
+    'habit': options.habit,
+    'stats': calculateHabitStats(options.habit, options.currentDate, options.selectedViewMonth),
+    'currentDate': options.currentDate,
+    'viewMonth': options.selectedViewMonth,
     'onUpdate:viewMonth': () => {},
-    onRefresh: options.onRefresh,
-    onOpenDoc: async (habit: Habit) => {
-      if (!habit.docId) return;
-      await openDocumentAtLine(habit.docId, undefined, habit.blockId);
+    'onRefresh': options.onRefresh,
+    'onOpenDoc': async (habit: Habit) => {
+      if (!habit.docId)
+        return
+      await openDocumentAtLine(habit.docId, undefined, habit.blockId)
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    app.use(pinia);
+    app.use(pinia)
   }
-  app.mount(mountEl);
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
-  return dialog;
+  app.mount(mountEl)
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
+  return dialog
 }
 ```
 
@@ -901,13 +921,13 @@ Wire `HabitWeekWidget.vue`:
 
 ```ts
 function handleOpenDetail(habit: Habit) {
-  selectedViewMonth.value = currentDate.value.substring(0, 7);
+  selectedViewMonth.value = currentDate.value.substring(0, 7)
   openHabitWidgetDetailDialog({
     habit,
     currentDate: currentDate.value,
     selectedViewMonth: selectedViewMonth.value,
     onRefresh: workspace.refreshHabits,
-  });
+  })
 }
 ```
 
@@ -933,6 +953,7 @@ git commit -m "feat(workbench): open habit widget detail in dialog"
 ### Task 7: Keep dialog detail content live after refresh and check-in
 
 **Files:**
+
 - Modify: `src/workbench/habitWidgetDetailDialog.ts`
 - Modify: `src/components/habit/HabitWorkspaceDetailPane.vue`
 - Test: `test/components/workbench/HabitWeekWidget.test.ts`
@@ -944,17 +965,17 @@ Add a test that simulates refresh after dialog open and expects the updated habi
 
 ```ts
 it('refreshes the open habit detail dialog content after widget actions', async () => {
-  const dialogState = createMockHabitDetailDialogState();
-  mockOpenHabitWidgetDetailDialog.mockImplementation(dialogState.open);
+  const dialogState = createMockHabitDetailDialogState()
+  mockOpenHabitWidgetDetailDialog.mockImplementation(dialogState.open)
 
   const mounted = await mountHabitWeekWidget({ groupId: 'group-a' });
-  (mounted.container.querySelector('[data-testid="habit-list-item-open-detail-habit-a"]') as HTMLButtonElement).click();
-  await nextTick();
+  (mounted.container.querySelector('[data-testid="habit-list-item-open-detail-habit-a"]') as HTMLButtonElement).click()
+  await nextTick()
 
-  await dialogState.refreshFromHost();
+  await dialogState.refreshFromHost()
 
-  expect(dialogState.lastRenderedHabit?.name).toBe('updated habit a');
-});
+  expect(dialogState.lastRenderedHabit?.name).toBe('updated habit a')
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -974,45 +995,46 @@ Refactor `src/workbench/habitWidgetDetailDialog.ts` to mount a tiny host compone
 ```ts
 const app = createApp(defineComponent({
   setup() {
-    const selectedViewMonth = ref(options.selectedViewMonth);
-    const habitRef = ref(options.habit);
-    const stats = computed(() => calculateHabitStats(habitRef.value, options.currentDate, selectedViewMonth.value));
+    const selectedViewMonth = ref(options.selectedViewMonth)
+    const habitRef = ref(options.habit)
+    const stats = computed(() => calculateHabitStats(habitRef.value, options.currentDate, selectedViewMonth.value))
 
     async function handleRefresh() {
-      await options.onRefresh();
-      const nextHabit = options.getHabitById(habitRef.value.blockId);
+      await options.onRefresh()
+      const nextHabit = options.getHabitById(habitRef.value.blockId)
       if (nextHabit) {
-        habitRef.value = nextHabit;
+        habitRef.value = nextHabit
       }
     }
 
     return () => h(HabitWorkspaceDetailPane, {
-      habit: habitRef.value,
-      stats: stats.value,
-      currentDate: options.currentDate,
-      viewMonth: selectedViewMonth.value,
+      'habit': habitRef.value,
+      'stats': stats.value,
+      'currentDate': options.currentDate,
+      'viewMonth': selectedViewMonth.value,
       'onUpdate:viewMonth': (value: string) => {
-        selectedViewMonth.value = value;
+        selectedViewMonth.value = value
       },
-      onRefresh: handleRefresh,
-      onOpenDoc: async (habit: Habit) => {
-        if (!habit.docId) return;
-        await openDocumentAtLine(habit.docId, undefined, habit.blockId);
+      'onRefresh': handleRefresh,
+      'onOpenDoc': async (habit: Habit) => {
+        if (!habit.docId)
+          return
+        await openDocumentAtLine(habit.docId, undefined, habit.blockId)
       },
-    });
+    })
   },
-}));
+}))
 ```
 
 Update the `openHabitWidgetDetailDialog` options contract:
 
 ```ts
 export function openHabitWidgetDetailDialog(options: {
-  habit: Habit;
-  currentDate: string;
-  selectedViewMonth: string;
-  onRefresh: () => Promise<void>;
-  getHabitById: (blockId: string) => Habit | undefined;
+  habit: Habit
+  currentDate: string
+  selectedViewMonth: string
+  onRefresh: () => Promise<void>
+  getHabitById: (blockId: string) => Habit | undefined
 })
 ```
 
@@ -1025,7 +1047,7 @@ openHabitWidgetDetailDialog({
   selectedViewMonth: selectedViewMonth.value,
   onRefresh: workspace.refreshHabits,
   getHabitById: blockId => workspace.filteredHabits.value.find(item => item.blockId === blockId),
-});
+})
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -1050,6 +1072,7 @@ git commit -m "fix(workbench): keep habit widget detail dialog in sync"
 ### Task 8: Final regression verification and cleanup
 
 **Files:**
+
 - Modify: `src/components/habit/HabitListItem.vue` (only if event naming cleanup is still needed)
 - Test: `test/components/workbench/HabitWeekWidget.test.ts`
 - Test: `test/components/workbench/DashboardCanvas.test.ts`
@@ -1064,19 +1087,19 @@ Ensure the suite explicitly covers:
 ```ts
 it('does not change the desktop dock back-to-list interaction', async () => {
   const mounted = await mountDesktopHabitDock();
-  (mounted.container.querySelector('[data-testid="habit-list-item-open-calendar-habit-1"]') as HTMLButtonElement).click();
+  (mounted.container.querySelector('[data-testid="habit-list-item-open-calendar-habit-1"]') as HTMLButtonElement).click()
   await nextTick();
-  (mounted.container.querySelector('[aria-label="返回列表"]') as HTMLButtonElement).click();
-  await nextTick();
-  expect(mounted.container.querySelector('[data-testid="habit-detail-content"]')).toBeNull();
-});
+  (mounted.container.querySelector('[aria-label="返回列表"]') as HTMLButtonElement).click()
+  await nextTick()
+  expect(mounted.container.querySelector('[data-testid="habit-detail-content"]')).toBeNull()
+})
 ```
 
 ```ts
 it('persists habit widget group config in the workbench store snapshot', async () => {
-  await store.updateWidgetConfig('dashboard-1', 'widget-1', { groupId: 'group-a' });
-  expect(store.dashboards[0].widgets[0].config).toEqual({ groupId: 'group-a' });
-});
+  await store.updateWidgetConfig('dashboard-1', 'widget-1', { groupId: 'group-a' })
+  expect(store.dashboards[0].widgets[0].config).toEqual({ groupId: 'group-a' })
+})
 ```
 
 - [ ] **Step 2: Run the targeted regression suite**

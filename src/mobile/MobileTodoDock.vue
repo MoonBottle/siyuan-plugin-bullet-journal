@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-import MobileMainShell from '@/mobile/MobileMainShell.vue';
+import MobileMainShell from '@/mobile/MobileMainShell.vue'
 </script>

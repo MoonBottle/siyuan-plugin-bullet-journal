@@ -10,7 +10,10 @@
       @click="handleTagBoxClick"
     >
       <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-      <div v-if="displaySelectedTags.length" class="selected-tag-chips">
+      <div
+        v-if="displaySelectedTags.length"
+        class="selected-tag-chips"
+      >
         <button
           v-for="tag in displaySelectedTags"
           :key="`selected-${tag}`"
@@ -31,18 +34,24 @@
         @input="handleTagQueryInput"
         @keydown="handleTagInputKeydown"
       />
-      <button v-if="tagQuery" class="clear-btn" @click.stop="$emit('update:tagQuery', '')">
+      <button
+        v-if="tagQuery"
+        class="clear-btn"
+        @click.stop="$emit('update:tagQuery', '')"
+      >
         <svg><use xlink:href="#iconClose"></use></svg>
       </button>
     </div>
 
-    <div v-if="showTagDropdown" class="tag-dropdown tag-options">
+    <div
+      v-if="showTagDropdown"
+      class="tag-dropdown tag-options"
+    >
       <button
         v-for="option in filteredTagOptions"
         :key="option.name"
+        class="tag-chip tag-option"
         :class="[
-          'tag-chip',
-          'tag-option',
           {
             'tag-chip--selected': isTagSelected(option.name),
             'tag-option--highlighted': highlightedTagName === option.name,
@@ -58,190 +67,195 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue'
 
-type TagOption = {
-  name: string;
-  count: number;
-};
+interface TagOption {
+  name: string
+  count: number
+}
 
 const props = withDefaults(defineProps<{
-  tagQuery?: string;
-  selectedTags?: string[];
-  tagOptions?: TagOption[];
-  placeholder?: string;
+  tagQuery?: string
+  selectedTags?: string[]
+  tagOptions?: TagOption[]
+  placeholder?: string
 }>(), {
   tagQuery: '',
   selectedTags: () => [],
   tagOptions: () => [],
   placeholder: '筛选标签',
-});
+})
 
 const emit = defineEmits<{
-  (event: 'update:tagQuery', value: string): void;
-  (event: 'update:selectedTags', value: string[]): void;
-}>();
+  (event: 'update:tagQuery', value: string): void
+  (event: 'update:selectedTags', value: string[]): void
+}>()
 
-const tagSearchRoot = ref<HTMLElement | null>(null);
-const tagSearchRow = ref<HTMLElement | null>(null);
-const tagSearchInput = ref<HTMLInputElement | null>(null);
-const isTagDropdownOpen = ref(false);
-const highlightedTagIndex = ref(-1);
+const tagSearchRoot = ref<HTMLElement | null>(null)
+const tagSearchRow = ref<HTMLElement | null>(null)
+const tagSearchInput = ref<HTMLInputElement | null>(null)
+const isTagDropdownOpen = ref(false)
+const highlightedTagIndex = ref(-1)
 
-const normalizedTagQuery = computed(() => normalizeTagQuery(props.tagQuery));
-const normalizedSelectedTags = computed(() => new Set(props.selectedTags.map(tag => normalizeSelectedTag(tag))));
+const normalizedTagQuery = computed(() => normalizeTagQuery(props.tagQuery))
+const normalizedSelectedTags = computed(() => new Set(props.selectedTags.map((tag) => normalizeSelectedTag(tag))))
 
 const displaySelectedTags = computed(() => {
-  const seen = new Set<string>();
+  const seen = new Set<string>()
 
   return props.selectedTags.filter((tag) => {
-    const normalizedTag = normalizeSelectedTag(tag);
+    const normalizedTag = normalizeSelectedTag(tag)
     if (!normalizedTag || seen.has(normalizedTag)) {
-      return false;
+      return false
     }
-    seen.add(normalizedTag);
-    return true;
-  });
-});
+    seen.add(normalizedTag)
+    return true
+  })
+})
 
 const tagInputPlaceholder = computed(() => {
-  return displaySelectedTags.value.length > 0 ? '' : props.placeholder;
-});
+  return displaySelectedTags.value.length > 0 ? '' : props.placeholder
+})
 
 const filteredTagOptions = computed(() => {
   if (!normalizedTagQuery.value) {
-    return props.tagOptions;
+    return props.tagOptions
   }
 
-  return props.tagOptions.filter(option =>
+  return props.tagOptions.filter((option) =>
     option.name.toLocaleLowerCase().includes(normalizedTagQuery.value),
-  );
-});
+  )
+})
 
-const showTagDropdown = computed(() => isTagDropdownOpen.value && filteredTagOptions.value.length > 0);
-const highlightedTagName = computed(() => filteredTagOptions.value[highlightedTagIndex.value]?.name ?? '');
+const showTagDropdown = computed(() => isTagDropdownOpen.value && filteredTagOptions.value.length > 0)
+const highlightedTagName = computed(() => filteredTagOptions.value[highlightedTagIndex.value]?.name ?? '')
 
 function normalizeTagQuery(query?: string) {
-  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase();
+  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase()
 }
 
 function normalizeSelectedTag(tag?: string) {
-  return (tag || '').toLocaleLowerCase();
+  return (tag || '').toLocaleLowerCase()
 }
 
 function openTagDropdown() {
-  isTagDropdownOpen.value = true;
+  isTagDropdownOpen.value = true
 }
 
 function closeTagDropdown() {
-  isTagDropdownOpen.value = false;
-  highlightedTagIndex.value = -1;
+  isTagDropdownOpen.value = false
+  highlightedTagIndex.value = -1
 }
 
 function isTagSelected(tag: string) {
-  return normalizedSelectedTags.value.has(normalizeSelectedTag(tag));
+  return normalizedSelectedTags.value.has(normalizeSelectedTag(tag))
 }
 
 function toggleTag(tag: string) {
-  const normalizedTargetTag = normalizeSelectedTag(tag);
-  const tagAlreadySelected = isTagSelected(tag);
+  const normalizedTargetTag = normalizeSelectedTag(tag)
+  const tagAlreadySelected = isTagSelected(tag)
   const nextTagsWithoutTarget = props.selectedTags.filter(
-    selectedTag => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
-  );
+    (selectedTag) => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
+  )
   const nextTags = tagAlreadySelected
     ? nextTagsWithoutTarget
-    : [...nextTagsWithoutTarget, tag];
+    : [...nextTagsWithoutTarget, tag]
 
-  emit('update:selectedTags', nextTags);
-  emit('update:tagQuery', '');
-  highlightedTagIndex.value = -1;
+  emit('update:selectedTags', nextTags)
+  emit('update:tagQuery', '')
+  highlightedTagIndex.value = -1
 }
 
 function removeTag(tag: string) {
-  if (!isTagSelected(tag)) return;
-  toggleTag(tag);
+  if (!isTagSelected(tag)) return
+  toggleTag(tag)
 }
 
 function handleTagQueryInput(event: Event) {
-  const target = event.target as HTMLInputElement | null;
-  if (!target) return;
-  highlightedTagIndex.value = -1;
-  emit('update:tagQuery', target.value);
+  const target = event.target as HTMLInputElement | null
+  if (!target) return
+  highlightedTagIndex.value = -1
+  emit('update:tagQuery', target.value)
 }
 
 function handleTagInputKeydown(event: KeyboardEvent) {
   if (event.key === 'Backspace' && !props.tagQuery && displaySelectedTags.value.length > 0) {
-    event.preventDefault();
-    const lastTag = displaySelectedTags.value[displaySelectedTags.value.length - 1];
+    event.preventDefault()
+    const lastTag = displaySelectedTags.value.at(-1)
     if (lastTag) {
-      removeTag(lastTag);
+      removeTag(lastTag)
     }
-    return;
+    return
   }
 
   if (event.key === 'Escape') {
-    closeTagDropdown();
-    return;
+    closeTagDropdown()
+    return
   }
 
   if (!filteredTagOptions.value.length) {
-    return;
+    return
   }
 
   if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    openTagDropdown();
+    event.preventDefault()
+    openTagDropdown()
     highlightedTagIndex.value = highlightedTagIndex.value < 0
       ? 0
-      : (highlightedTagIndex.value + 1) % filteredTagOptions.value.length;
-    return;
+      : (highlightedTagIndex.value + 1) % filteredTagOptions.value.length
+    return
   }
 
   if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    openTagDropdown();
+    event.preventDefault()
+    openTagDropdown()
     highlightedTagIndex.value = highlightedTagIndex.value < 0
       ? filteredTagOptions.value.length - 1
-      : (highlightedTagIndex.value - 1 + filteredTagOptions.value.length) % filteredTagOptions.value.length;
-    return;
+      : (highlightedTagIndex.value - 1 + filteredTagOptions.value.length) % filteredTagOptions.value.length
+    return
   }
 
   if (event.key === 'Enter') {
-    event.preventDefault();
+    event.preventDefault()
     const activeOption = highlightedTagIndex.value >= 0
       ? filteredTagOptions.value[highlightedTagIndex.value]
-      : filteredTagOptions.value[0];
+      : filteredTagOptions.value[0]
     if (activeOption) {
-      toggleTag(activeOption.name);
+      toggleTag(activeOption.name)
     }
   }
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  const target = event.target;
-  if (!(target instanceof Node)) return;
-  if (tagSearchRow.value?.contains(target)) return;
-  closeTagDropdown();
+  const target = event.target
+  if (!(target instanceof Node)) return
+  if (tagSearchRow.value?.contains(target)) return
+  closeTagDropdown()
 }
 
 function handleTagInputFocus() {
-  highlightedTagIndex.value = -1;
-  openTagDropdown();
+  highlightedTagIndex.value = -1
+  openTagDropdown()
 }
 
 function handleTagBoxClick() {
-  highlightedTagIndex.value = -1;
-  openTagDropdown();
-  tagSearchInput.value?.focus();
+  highlightedTagIndex.value = -1
+  openTagDropdown()
+  tagSearchInput.value?.focus()
 }
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown);
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
+})
 </script>
 
 <style scoped lang="scss">
@@ -297,7 +311,9 @@ onBeforeUnmount(() => {
     opacity: 0.4;
     color: var(--b3-theme-on-surface);
 
-    &:hover { opacity: 0.8; }
+    &:hover {
+      opacity: 0.8;
+    }
   }
 }
 

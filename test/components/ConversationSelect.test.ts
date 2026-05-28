@@ -1,35 +1,45 @@
 // @vitest-environment happy-dom
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import ConversationSelect from '@/components/ai/ConversationSelect.vue';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
+import ConversationSelect from '@/components/ai/ConversationSelect.vue'
 
 const mockAiStore = {
   getWeixinConversationStatus: vi.fn(),
-};
+}
 
 vi.mock('@/stores', () => ({
   useAIStore: vi.fn(() => mockAiStore),
-}));
+}))
 
-describe('ConversationSelect', () => {
+describe('conversationSelect', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    document.body.innerHTML = '';
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
     mockAiStore.getWeixinConversationStatus.mockReturnValue({
       status: 'active',
       label: '进行中',
       tone: 'positive',
-    });
-  });
+    })
+  })
 
   afterEach(() => {
-    document.body.innerHTML = '';
-  });
+    document.body.innerHTML = ''
+  })
 
   it('uses weixinUserId to derive weixin status badges', async () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
+    const container = document.createElement('div')
+    document.body.appendChild(container)
 
     const app = createApp(ConversationSelect, {
       conversations: [
@@ -42,22 +52,22 @@ describe('ConversationSelect', () => {
         },
       ],
       currentConversationId: 'conv-1',
-    });
+    })
 
-    app.mount(container);
+    app.mount(container)
 
-    const trigger = container.querySelector('.block__icon');
-    expect(trigger).not.toBeNull();
+    const trigger = container.querySelector('.block__icon')
+    expect(trigger).not.toBeNull()
 
-    trigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
-    await nextTick();
+    trigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+    await nextTick()
 
-    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalled();
-    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('wx-user-1');
-    expect(mockAiStore.getWeixinConversationStatus).not.toHaveBeenCalledWith('张三');
+    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalled()
+    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('wx-user-1')
+    expect(mockAiStore.getWeixinConversationStatus).not.toHaveBeenCalledWith('张三')
 
-    app.unmount();
-    container.remove();
-  });
-});
+    app.unmount()
+    container.remove()
+  })
+})

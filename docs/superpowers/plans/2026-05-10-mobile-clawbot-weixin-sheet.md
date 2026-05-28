@@ -14,20 +14,21 @@
 
 ## 文件结构
 
-| 文件 | 操作 | 职责 |
-|------|------|------|
-| `src/stores/aiStore.ts` | 修改 | 移除 `isClawBotAllowedOnCurrentFrontend` 移动端限制 |
-| `src/index.ts` | 修改 | 移除 `initClawBot` 中的 isMobile 跳过 |
-| `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 新建 | 底部 Sheet 组件（扫码登录、连接状态、用户列表） |
-| `src/mobile/panels/MobileAiPanel.vue` | 修改 | Header 新增微信按钮 + 集成 MobileWeixinSheet |
-| `test/stores/aiStore.clawbot.test.ts` | 修改 | 更新 3 个移动端限制测试 + 1 个过滤测试 |
-| `test/mobile/drawers/weixin/MobileWeixinSheet.test.ts` | 新建 | Sheet 组件单元测试 |
+| 文件                                                   | 操作 | 职责                                                |
+| ------------------------------------------------------ | ---- | --------------------------------------------------- |
+| `src/stores/aiStore.ts`                                | 修改 | 移除 `isClawBotAllowedOnCurrentFrontend` 移动端限制 |
+| `src/index.ts`                                         | 修改 | 移除 `initClawBot` 中的 isMobile 跳过               |
+| `src/mobile/drawers/weixin/MobileWeixinSheet.vue`      | 新建 | 底部 Sheet 组件（扫码登录、连接状态、用户列表）     |
+| `src/mobile/panels/MobileAiPanel.vue`                  | 修改 | Header 新增微信按钮 + 集成 MobileWeixinSheet        |
+| `test/stores/aiStore.clawbot.test.ts`                  | 修改 | 更新 3 个移动端限制测试 + 1 个过滤测试              |
+| `test/mobile/drawers/weixin/MobileWeixinSheet.test.ts` | 新建 | Sheet 组件单元测试                                  |
 
 ---
 
 ### 任务 1：解除 aiStore 移动端 ClawBot 限制
 
 **文件：**
+
 - 修改：`src/stores/aiStore.ts:368-370`
 
 - [ ] **步骤 1：修改 `isClawBotAllowedOnCurrentFrontend` 守卫**
@@ -36,7 +37,7 @@
 
 ```typescript
 function isClawBotAllowedOnCurrentFrontend() {
-  return !getPluginInstance()?.isMobile;
+  return !getPluginInstance()?.isMobile
 }
 ```
 
@@ -44,7 +45,7 @@ function isClawBotAllowedOnCurrentFrontend() {
 
 ```typescript
 function isClawBotAllowedOnCurrentFrontend() {
-  return true;
+  return true
 }
 ```
 
@@ -65,6 +66,7 @@ git commit -m "feat: remove mobile frontend restriction from ClawBot guard"
 ### 任务 2：更新 aiStore ClawBot 测试
 
 **文件：**
+
 - 修改：`test/stores/aiStore.clawbot.test.ts:309-402`
 
 - [ ] **步骤 1：更新 `does not initialize clawbot monitoring on mobile` 测试**
@@ -203,6 +205,7 @@ git commit -m "test: update clawbot tests to reflect mobile support"
 ### 任务 3：解除 index.ts 移动端 ClawBot 初始化跳过
 
 **文件：**
+
 - 修改：`src/index.ts:393-396`
 
 - [ ] **步骤 1：移除 initClawBot 中的 isMobile 判断**
@@ -261,11 +264,162 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
 ### 任务 4：创建 MobileWeixinSheet 组件
 
 **文件：**
+
 - 创建：`src/mobile/drawers/weixin/MobileWeixinSheet.vue`
 
 - [ ] **步骤 1：创建 MobileWeixinSheet.vue**
 
 ```vue
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useAIStore } from '@/stores'
+
+const props = defineProps<{
+  modelValue: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'switch-conversation': [conversationId: string]
+}>()
+
+const aiStore = useAIStore()
+
+const isLoading = ref(false)
+const isChecking = ref(false)
+const pollInterval = ref<number | null>(null)
+
+const loginStatus = computed(() => aiStore.clawBotLoginStatus)
+const isConnected = computed(() => aiStore.isClawBotConnected)
+const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl)
+const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage)
+const accountId = computed(() => aiStore.clawBotConfig.accountId)
+
+const statusText = computed(() => {
+  switch (loginStatus.value) {
+    case 'none':
+      return '点击"获取二维码"开始连接微信'
+    case 'pending':
+      return '等待扫码...'
+    case 'scaned':
+      return '已扫码，等待确认...'
+    case 'connected':
+      return '已连接'
+    case 'expired':
+      return '二维码已过期，请刷新'
+    case 'error':
+      return '连接出错'
+    default:
+      return '未知状态'
+  }
+})
+
+const connectedUsers = computed(() => {
+  const users: Array<{ id: string, name: string, conversationId: string, unread: number }> = []
+
+  const conversationMap = aiStore.weixinConversationMap || {}
+  const unreadMessages = aiStore.unreadWeixinMessages || {}
+
+  for (const userId of Object.keys(conversationMap)) {
+    const map = conversationMap[userId]
+    if (!map)
+      continue
+    const unread = unreadMessages[userId] || 0
+    users.push({
+      id: userId,
+      name: map.userName || `用户 ${userId.slice(0, 8)}`,
+      conversationId: map.conversationId,
+      unread,
+    })
+  }
+
+  users.sort((a, b) => {
+    const mapA = conversationMap[a.id]
+    const mapB = conversationMap[b.id]
+    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0)
+  })
+
+  return users
+})
+
+function close() {
+  emit('update:modelValue', false)
+}
+
+async function handleStartLogin() {
+  isLoading.value = true
+  try {
+    const result = await aiStore.startClawBotLogin()
+    if (result) {
+      startPolling()
+    }
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+async function handleRefreshQR() {
+  stopPolling()
+  await handleStartLogin()
+}
+
+async function handleCheckStatus() {
+  isChecking.value = true
+  try {
+    const success = await aiStore.pollClawBotLogin()
+    if (success) {
+      stopPolling()
+    }
+  }
+  finally {
+    isChecking.value = false
+  }
+}
+
+async function handleDisconnect() {
+  await aiStore.disconnectClawBot()
+  stopPolling()
+}
+
+function handleUserClick(conversationId: string) {
+  emit('switch-conversation', conversationId)
+  close()
+}
+
+function startPolling() {
+  stopPolling()
+  pollInterval.value = window.setInterval(async () => {
+    if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
+      const success = await aiStore.pollClawBotLogin()
+      if (success) {
+        stopPolling()
+      }
+    }
+    else {
+      stopPolling()
+    }
+  }, 3000) as unknown as number
+}
+
+function stopPolling() {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+  }
+}
+
+onMounted(() => {
+  if (loginStatus.value === 'pending') {
+    startPolling()
+  }
+})
+
+onUnmounted(() => {
+  stopPolling()
+})
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -273,13 +427,15 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
         <Transition name="slide-up">
           <div v-if="modelValue" class="weixin-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
 
             <div class="weixin-sheet__header">
-              <h3 class="weixin-sheet__title">微信 ClawBot 连接</h3>
+              <h3 class="weixin-sheet__title">
+                微信 ClawBot 连接
+              </h3>
               <button class="weixin-sheet__close" @click="close">
-                <svg><use xlink:href="#iconClose"></use></svg>
+                <svg><use xlink:href="#iconClose" /></svg>
               </button>
             </div>
 
@@ -287,15 +443,19 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
               <div v-if="!isConnected" class="weixin-sheet__status">
                 <div class="weixin-sheet__status-icon" :class="`is-${loginStatus}`">
                   <svg v-if="loginStatus === 'none' || loginStatus === 'error'">
-                    <use xlink:href="#iconWeixin"></use>
+                    <use xlink:href="#iconWeixin" />
                   </svg>
-                  <div v-else-if="loginStatus === 'pending'" class="weixin-sheet__spinner"></div>
+                  <div v-else-if="loginStatus === 'pending'" class="weixin-sheet__spinner" />
                   <svg v-else-if="loginStatus === 'scaned'" class="is-green">
-                    <use xlink:href="#iconCheck"></use>
+                    <use xlink:href="#iconCheck" />
                   </svg>
                 </div>
-                <div class="weixin-sheet__status-text">{{ statusText }}</div>
-                <div v-if="errorMessage" class="weixin-sheet__error">{{ errorMessage }}</div>
+                <div class="weixin-sheet__status-text">
+                  {{ statusText }}
+                </div>
+                <div v-if="errorMessage" class="weixin-sheet__error">
+                  {{ errorMessage }}
+                </div>
               </div>
 
               <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-sheet__qrcode">
@@ -304,9 +464,11 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
                     :src="qrcodeUrl"
                     sandbox="allow-same-origin allow-scripts"
                     scrolling="no"
-                  ></iframe>
+                  />
                 </div>
-                <p class="weixin-sheet__qrcode-hint">请使用微信扫描上方二维码</p>
+                <p class="weixin-sheet__qrcode-hint">
+                  请使用微信扫描上方二维码
+                </p>
                 <p class="weixin-sheet__qrcode-link">
                   如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
                 </p>
@@ -314,10 +476,14 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
 
               <div v-if="isConnected" class="weixin-sheet__connected">
                 <div class="weixin-sheet__success-icon">
-                  <svg><use xlink:href="#iconCheck"></use></svg>
+                  <svg><use xlink:href="#iconCheck" /></svg>
                 </div>
-                <div class="weixin-sheet__success-text">已连接到微信</div>
-                <div v-if="accountId" class="weixin-sheet__account">账号: {{ accountId }}</div>
+                <div class="weixin-sheet__success-text">
+                  已连接到微信
+                </div>
+                <div v-if="accountId" class="weixin-sheet__account">
+                  账号: {{ accountId }}
+                </div>
               </div>
 
               <div v-if="connectedUsers.length > 0" class="weixin-sheet__users">
@@ -383,152 +549,6 @@ git commit -m "feat: enable ClawBot initialization on mobile frontend"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useAIStore } from '@/stores';
-
-const props = defineProps<{
-  modelValue: boolean;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'switch-conversation': [conversationId: string];
-}>();
-
-const aiStore = useAIStore();
-
-const isLoading = ref(false);
-const isChecking = ref(false);
-const pollInterval = ref<number | null>(null);
-
-const loginStatus = computed(() => aiStore.clawBotLoginStatus);
-const isConnected = computed(() => aiStore.isClawBotConnected);
-const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
-const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
-const accountId = computed(() => aiStore.clawBotConfig.accountId);
-
-const statusText = computed(() => {
-  switch (loginStatus.value) {
-    case 'none':
-      return '点击"获取二维码"开始连接微信';
-    case 'pending':
-      return '等待扫码...';
-    case 'scaned':
-      return '已扫码，等待确认...';
-    case 'connected':
-      return '已连接';
-    case 'expired':
-      return '二维码已过期，请刷新';
-    case 'error':
-      return '连接出错';
-    default:
-      return '未知状态';
-  }
-});
-
-const connectedUsers = computed(() => {
-  const users: Array<{ id: string; name: string; conversationId: string; unread: number }> = [];
-
-  const conversationMap = aiStore.weixinConversationMap || {};
-  const unreadMessages = aiStore.unreadWeixinMessages || {};
-
-  for (const userId of Object.keys(conversationMap)) {
-    const map = conversationMap[userId];
-    if (!map) continue;
-    const unread = unreadMessages[userId] || 0;
-    users.push({
-      id: userId,
-      name: map.userName || `用户 ${userId.slice(0, 8)}`,
-      conversationId: map.conversationId,
-      unread,
-    });
-  }
-
-  users.sort((a, b) => {
-    const mapA = conversationMap[a.id];
-    const mapB = conversationMap[b.id];
-    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0);
-  });
-
-  return users;
-});
-
-function close() {
-  emit('update:modelValue', false);
-}
-
-async function handleStartLogin() {
-  isLoading.value = true;
-  try {
-    const result = await aiStore.startClawBotLogin();
-    if (result) {
-      startPolling();
-    }
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-async function handleRefreshQR() {
-  stopPolling();
-  await handleStartLogin();
-}
-
-async function handleCheckStatus() {
-  isChecking.value = true;
-  try {
-    const success = await aiStore.pollClawBotLogin();
-    if (success) {
-      stopPolling();
-    }
-  } finally {
-    isChecking.value = false;
-  }
-}
-
-async function handleDisconnect() {
-  await aiStore.disconnectClawBot();
-  stopPolling();
-}
-
-function handleUserClick(conversationId: string) {
-  emit('switch-conversation', conversationId);
-  close();
-}
-
-function startPolling() {
-  stopPolling();
-  pollInterval.value = window.setInterval(async () => {
-    if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
-      const success = await aiStore.pollClawBotLogin();
-      if (success) {
-        stopPolling();
-      }
-    } else {
-      stopPolling();
-    }
-  }, 3000) as unknown as number;
-}
-
-function stopPolling() {
-  if (pollInterval.value) {
-    clearInterval(pollInterval.value);
-    pollInterval.value = null;
-  }
-}
-
-onMounted(() => {
-  if (loginStatus.value === 'pending') {
-    startPolling();
-  }
-});
-
-onUnmounted(() => {
-  stopPolling();
-});
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -662,7 +682,9 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .weixin-sheet__status-text {
@@ -841,13 +863,23 @@ onUnmounted(() => {
   }
 }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
-.slide-up-enter-active, .slide-up-leave-active {
+.slide-up-enter-active,
+.slide-up-leave-active {
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
 </style>
 ```
 
@@ -868,6 +900,7 @@ git commit -m "feat: add MobileWeixinSheet bottom sheet component"
 ### 任务 5：集成 MobileWeixinSheet 到 MobileAiPanel
 
 **文件：**
+
 - 修改：`src/mobile/panels/MobileAiPanel.vue`
 
 - [ ] **步骤 1：添加 import 和状态**
@@ -875,20 +908,23 @@ git commit -m "feat: add MobileWeixinSheet bottom sheet component"
 在 `MobileAiPanel.vue` 的 `<script setup>` 中：
 
 添加 import：
+
 ```typescript
-import WeixinIcon from '@/components/icons/WeixinIcon.vue';
-import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue';
+import WeixinIcon from '@/components/icons/WeixinIcon.vue'
+import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue'
 ```
 
 添加 ref：
+
 ```typescript
-const showWeixinSheet = ref(false);
+const showWeixinSheet = ref(false)
 ```
 
 添加 computed：
+
 ```typescript
-const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
-const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
+const isClawBotConnected = computed(() => aiStore.isClawBotConnected)
+const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin)
 ```
 
 - [ ] **步骤 2：在 Header 中添加微信按钮**
@@ -927,11 +963,11 @@ const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
 
 ```typescript
 async function handleWeixinSwitch(conversationId: string) {
-  showWeixinSheet.value = false;
-  await aiStore.switchConversation(conversationId);
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.focusInput?.();
+  showWeixinSheet.value = false
+  await aiStore.switchConversation(conversationId)
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.focusInput?.()
 }
 ```
 
@@ -962,6 +998,7 @@ async function handleWeixinSwitch(conversationId: string) {
   border-radius: 50%;
   background: var(--b3-theme-error, #ef4444);
 }
+
 ```
 
 - [ ] **步骤 7：验证无 lint 错误**
@@ -981,22 +1018,23 @@ git commit -m "feat: integrate MobileWeixinSheet into MobileAiPanel header"
 ### 任务 6：创建 MobileWeixinSheet 测试
 
 **文件：**
+
 - 创建：`test/mobile/drawers/weixin/MobileWeixinSheet.test.ts`
 
 - [ ] **步骤 1：创建测试文件**
 
 ```typescript
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
-import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue';
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue'
 
 vi.mock('@/stores', () => {
-  let loginStatus = 'none';
-  let connected = false;
-  const config = { qrcodeUrl: '', errorMessage: '', accountId: '' };
-  const conversationMap: Record<string, any> = {};
-  const unreadMessages: Record<string, number> = {};
+  let loginStatus = 'none'
+  let connected = false
+  const config = { qrcodeUrl: '', errorMessage: '', accountId: '' }
+  const conversationMap: Record<string, any> = {}
+  const unreadMessages: Record<string, number> = {}
 
   return {
     useAIStore: () => ({
@@ -1006,23 +1044,23 @@ vi.mock('@/stores', () => {
       weixinConversationMap: conversationMap,
       unreadWeixinMessages: unreadMessages,
       startClawBotLogin: vi.fn(async () => {
-        loginStatus = 'pending';
-        config.qrcodeUrl = 'https://example.com/qr';
-        return { qrcodeUrl: config.qrcodeUrl, sessionKey: 'sk' };
+        loginStatus = 'pending'
+        config.qrcodeUrl = 'https://example.com/qr'
+        return { qrcodeUrl: config.qrcodeUrl, sessionKey: 'sk' }
       }),
       pollClawBotLogin: vi.fn(async () => {
-        loginStatus = 'connected';
-        connected = true;
-        return true;
+        loginStatus = 'connected'
+        connected = true
+        return true
       }),
       disconnectClawBot: vi.fn(async () => {
-        loginStatus = 'none';
-        connected = false;
+        loginStatus = 'none'
+        connected = false
       }),
       switchConversation: vi.fn(async () => {}),
     }),
-  };
-});
+  }
+})
 
 function mountSheet(modelValue = true) {
   return mount(MobileWeixinSheet, {
@@ -1037,88 +1075,88 @@ function mountSheet(modelValue = true) {
         },
       },
     },
-  });
+  })
 }
 
 describe('MobileWeixinSheet', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
 
   afterEach(() => {
-    vi.useRealTimers();
-  });
+    vi.useRealTimers()
+  })
 
   it('renders get qrcode button when not connected', () => {
-    const wrapper = mountSheet();
-    expect(wrapper.text()).toContain('获取二维码');
-  });
+    const wrapper = mountSheet()
+    expect(wrapper.text()).toContain('获取二维码')
+  })
 
   it('shows qrcode iframe when loginStatus is pending', async () => {
-    const wrapper = mountSheet();
-    const btn = wrapper.find('.weixin-sheet__btn--primary');
-    await btn.trigger('click');
-    await wrapper.vm.$nextTick();
+    const wrapper = mountSheet()
+    const btn = wrapper.find('.weixin-sheet__btn--primary')
+    await btn.trigger('click')
+    await wrapper.vm.$nextTick()
 
-    expect(wrapper.find('iframe').exists()).toBe(true);
-    expect(wrapper.text()).toContain('刷新二维码');
-    expect(wrapper.text()).toContain('我已扫码');
-  });
+    expect(wrapper.find('iframe').exists()).toBe(true)
+    expect(wrapper.text()).toContain('刷新二维码')
+    expect(wrapper.text()).toContain('我已扫码')
+  })
 
   it('shows connected state when connected', async () => {
-    const wrapper = mountSheet();
-    const btn = wrapper.find('.weixin-sheet__btn--primary');
-    await btn.trigger('click');
+    const wrapper = mountSheet()
+    const btn = wrapper.find('.weixin-sheet__btn--primary')
+    await btn.trigger('click')
 
-    const checkBtn = wrapper.findAll('.weixin-sheet__btn').find(b => b.text().includes('我已扫码'));
-    await checkBtn?.trigger('click');
-    await wrapper.vm.$nextTick();
+    const checkBtn = wrapper.findAll('.weixin-sheet__btn').find(b => b.text().includes('我已扫码'))
+    await checkBtn?.trigger('click')
+    await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('已连接到微信');
-    expect(wrapper.text()).toContain('断开连接');
-  });
+    expect(wrapper.text()).toContain('已连接到微信')
+    expect(wrapper.text()).toContain('断开连接')
+  })
 
   it('emits switch-conversation when user item is clicked', async () => {
-    const wrapper = mountSheet();
-    const store = (wrapper.vm as any).$options?.setup?.() || {};
+    const wrapper = mountSheet()
+    const store = (wrapper.vm as any).$options?.setup?.() || {}
 
     const aiStore = vi.mocked(await import('@/stores')).useAIStore();
     (aiStore as any).weixinConversationMap = {
-      'user1': {
+      user1: {
         userName: 'Test User',
         conversationId: 'conv-1',
         lastMessageAt: Date.now(),
       },
     };
-    (aiStore as any).unreadWeixinMessages = { user1: 2 };
+    (aiStore as any).unreadWeixinMessages = { user1: 2 }
 
-    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick()
 
-    const userItem = wrapper.find('.weixin-sheet__user-item');
+    const userItem = wrapper.find('.weixin-sheet__user-item')
     if (userItem.exists()) {
-      await userItem.trigger('click');
-      expect(wrapper.emitted('switch-conversation')).toBeTruthy();
-      expect(wrapper.emitted('switch-conversation')![0]).toEqual(['conv-1']);
+      await userItem.trigger('click')
+      expect(wrapper.emitted('switch-conversation')).toBeTruthy()
+      expect(wrapper.emitted('switch-conversation')![0]).toEqual(['conv-1'])
     }
-  });
+  })
 
   it('emits update:modelValue false when overlay is clicked', async () => {
-    const wrapper = mountSheet();
-    const overlay = wrapper.find('.drawer-overlay');
-    await overlay.trigger('click');
-    expect(wrapper.emitted('update:modelValue')).toBeTruthy();
-    expect(wrapper.emitted('update:modelValue')![0]).toEqual([false]);
-  });
+    const wrapper = mountSheet()
+    const overlay = wrapper.find('.drawer-overlay')
+    await overlay.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeTruthy()
+    expect(wrapper.emitted('update:modelValue')![0]).toEqual([false])
+  })
 
   it('stops polling on unmount', async () => {
-    const wrapper = mountSheet();
-    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-    wrapper.unmount();
-    expect(clearIntervalSpy).toHaveBeenCalled();
-  });
-});
+    const wrapper = mountSheet()
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
+    wrapper.unmount()
+    expect(clearIntervalSpy).toHaveBeenCalled()
+  })
+})
 ```
 
 - [ ] **步骤 2：运行测试验证**

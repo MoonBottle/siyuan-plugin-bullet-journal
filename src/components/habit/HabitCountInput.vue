@@ -23,36 +23,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {
+  ref,
+  watch,
+} from 'vue'
 
 const props = defineProps<{
-  currentValue: number;
-  target?: number;
-}>();
+  currentValue: number
+  target?: number
+}>()
 
 const emit = defineEmits<{
-  'change': [value: number];
-}>();
+  change: [value: number]
+}>()
 
-const draftValue = ref(String(props.currentValue));
+const draftValue = ref(String(props.currentValue))
 
 watch(() => props.currentValue, (value) => {
-  draftValue.value = String(value);
-});
+  draftValue.value = String(value)
+})
 
 function handleInput(event: Event) {
-  draftValue.value = (event.target as HTMLInputElement).value;
+  draftValue.value = (event.target as HTMLInputElement).value
 }
 
 function commitDraft() {
-  const nextValue = Number(draftValue.value);
+  const nextValue = Number(draftValue.value)
   if (!Number.isFinite(nextValue) || nextValue < 0 || !Number.isInteger(nextValue)) {
-    draftValue.value = String(props.currentValue);
-    return;
+    draftValue.value = String(props.currentValue)
+    return
   }
 
   if (nextValue !== props.currentValue) {
-    emit('change', nextValue);
+    emit('change', nextValue)
   }
 }
 </script>

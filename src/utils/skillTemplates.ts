@@ -3,10 +3,10 @@
  * 包含内置技能定义和技能文档生成
  */
 
-import type { BuiltinSkill } from '@/types/skill';
+import type { BuiltinSkill } from '@/types/skill'
 
 // 导入内置技能文件内容（Vite 会处理 .md 导入）
-import dailyReportContent from '@/builtin-skills/daily-report.md?raw';
+import dailyReportContent from '@/builtin-skills/daily-report.md?raw'
 
 /**
  * 内置日报技能
@@ -17,8 +17,8 @@ export const BUILTIN_DAILY_REPORT_SKILL: BuiltinSkill = {
   description: '根据今日任务完成情况自动生成日报，包括已完成事项、待办事项、番茄钟统计等',
   version: '1.0.0',
   author: 'System',
-  content: dailyReportContent
-};
+  content: dailyReportContent,
+}
 
 /**
  * 所有内置技能（以名称为索引）
@@ -26,20 +26,20 @@ export const BUILTIN_DAILY_REPORT_SKILL: BuiltinSkill = {
 export const BUILTIN_SKILLS: Record<string, BuiltinSkill> = {
   '日报生成': BUILTIN_DAILY_REPORT_SKILL,
   'daily-report': BUILTIN_DAILY_REPORT_SKILL,
-};
+}
 
 /**
  * 检查是否为内置技能
  */
 export function isBuiltinSkill(name: string): boolean {
-  return name in BUILTIN_SKILLS;
+  return name in BUILTIN_SKILLS
 }
 
 /**
  * 获取内置技能定义
  */
 export function getBuiltinSkill(name: string): BuiltinSkill | null {
-  return BUILTIN_SKILLS[name] || null;
+  return BUILTIN_SKILLS[name] || null
 }
 
 /**
@@ -47,12 +47,12 @@ export function getBuiltinSkill(name: string): BuiltinSkill | null {
  */
 export function getAllBuiltinSkills(): BuiltinSkill[] {
   // 去重，只返回中文名称的技能
-  const seen = new Set<string>();
-  return Object.values(BUILTIN_SKILLS).filter(skill => {
-    if (seen.has(skill.name)) return false;
-    seen.add(skill.name);
-    return true;
-  });
+  const seen = new Set<string>()
+  return Object.values(BUILTIN_SKILLS).filter((skill) => {
+    if (seen.has(skill.name)) return false
+    seen.add(skill.name)
+    return true
+  })
 }
 
 /**
@@ -71,7 +71,7 @@ export const DEFAULT_SKILL_TEMPLATE = `## 工作流程
 
 事项：xxx
 \`\`\`
-`;
+`
 
 /**
  * 生成技能文档内容（简化模板）
@@ -79,11 +79,11 @@ export const DEFAULT_SKILL_TEMPLATE = `## 工作流程
 export function generateSkillDocument(
   skillName: string,
   description: string,
-  _author: string
+  _author: string,
 ): string {
   return DEFAULT_SKILL_TEMPLATE
-    .replace(/{{skillName}}/g, skillName)
-    .replace(/{{description}}/g, description);
+    .replace(/\{\{skillName\}\}/g, skillName)
+    .replace(/\{\{description\}\}/g, description)
 }
 
 /**
@@ -94,11 +94,11 @@ export function generateSkillDocumentFromTemplate(
   _skillName: string,
   description: string,
   _author: string,
-  templateContent: string
+  templateContent: string,
 ): string {
   // 移除 frontmatter (---...---)
-  const contentWithoutFrontmatter = templateContent.replace(/^---\s*\n[\s\S]*?\n---\s*\n*/, '');
-  
+  const contentWithoutFrontmatter = templateContent.replace(/^---\s*\n[\s\S]*?\n---\s*/, '')
+
   // 替换描述占位符
-  return contentWithoutFrontmatter.replace(/{{description}}/g, description);
+  return contentWithoutFrontmatter.replace(/\{\{description\}\}/g, description)
 }

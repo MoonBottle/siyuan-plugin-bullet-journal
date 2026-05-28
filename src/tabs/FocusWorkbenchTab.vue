@@ -1,7 +1,15 @@
 <template>
-  <div class="focus-workbench-tab" :class="{ 'focus-workbench-tab--embedded': embedded }">
-    <div v-if="showHeader" class="focus-workbench-tab__header">
-      <h2 class="focus-workbench-tab__title">{{ t('focusWorkbench').title }}</h2>
+  <div
+    class="focus-workbench-tab"
+    :class="{ 'focus-workbench-tab--embedded': embedded }"
+  >
+    <div
+      v-if="showHeader"
+      class="focus-workbench-tab__header"
+    >
+      <h2 class="focus-workbench-tab__title">
+        {{ t('focusWorkbench').title }}
+      </h2>
       <span class="fn__flex-1 fn__space"></span>
       <button
         class="block__icon"
@@ -21,24 +29,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { t } from '@/i18n';
-import FocusWorkbenchView from '@/components/pomodoro/review/FocusWorkbenchView.vue';
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
+import {
+  computed,
+  ref,
+} from 'vue'
+import FocusWorkbenchView from '@/components/pomodoro/review/FocusWorkbenchView.vue'
+import { t } from '@/i18n'
 
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 
-const showHeader = computed(() => !props.embedded);
-const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusReviewViewConfig | undefined)?.groupId);
-const focusReviewViewRef = ref<InstanceType<typeof FocusWorkbenchView> | null>(null);
+const showHeader = computed(() => !props.embedded)
+const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusReviewViewConfig | undefined)?.groupId)
+const focusReviewViewRef = ref<InstanceType<typeof FocusWorkbenchView> | null>(null)
 
 function handleRefresh() {
-  focusReviewViewRef.value?.handleRefresh?.();
+  focusReviewViewRef.value?.handleRefresh?.()
 }
 </script>
 

@@ -23,21 +23,21 @@
 
 <script setup lang="ts">
 withDefaults(defineProps<{
-  modelValue: string;
-  placeholder: string;
-  clearLabel?: string;
-  testId?: string;
+  modelValue: string
+  placeholder: string
+  clearLabel?: string
+  testId?: string
 }>(), {
   clearLabel: 'Clear',
   testId: undefined,
-});
+})
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string): void;
-}>();
+  (event: 'update:modelValue', value: string): void
+}>()
 
 function handleInput(event: Event) {
-  emit('update:modelValue', (event.target as HTMLInputElement).value);
+  emit('update:modelValue', (event.target as HTMLInputElement).value)
 }
 </script>
 

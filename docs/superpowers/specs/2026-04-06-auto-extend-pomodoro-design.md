@@ -38,12 +38,12 @@
 
 ## 配置项
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `autoExtendEnabled` | `boolean` | `false` | 是否开启自动延迟 |
-| `autoExtendWaitSeconds` | `number` | `30` | 弹窗等待时间（秒） |
-| `autoExtendMinutes` | `number` | `5` | 每次延长分钟数 |
-| `autoExtendMaxCount` | `number` | `3` | 最大延迟次数 |
+| 字段                    | 类型      | 默认值  | 说明               |
+| ----------------------- | --------- | ------- | ------------------ |
+| `autoExtendEnabled`     | `boolean` | `false` | 是否开启自动延迟   |
+| `autoExtendWaitSeconds` | `number`  | `30`    | 弹窗等待时间（秒） |
+| `autoExtendMinutes`     | `number`  | `5`     | 每次延长分钟数     |
+| `autoExtendMaxCount`    | `number`  | `3`     | 最大延迟次数       |
 
 配置存储在 `PomodoroSettings` 中，默认关闭。
 
@@ -52,13 +52,16 @@
 ### Store 改动（pomodoroStore.ts）
 
 **新增状态：**
+
 - `autoExtendCount: number` — 当前已延迟次数（内存中，不持久化，startPomodoro 时重置）
 - `autoExtendTimeoutId: ReturnType<typeof setTimeout> | null` — 延迟定时器
 
 **`completePomodoro()` 改动：**
+
 - 在现有逻辑末尾：如果 `autoExtendEnabled` 且 `autoExtendCount < autoExtendMaxCount`，启动 `setTimeout`，等待 `autoExtendWaitSeconds` 秒后调用 `autoExtendPomodoro(plugin)`
 
 **新增 `autoExtendPomodoro(plugin)`：**
+
 1. 清除 autoExtendTimeoutId
 2. 调用 `loadPendingCompletion(plugin)` 加载 pending 数据
 3. 如果没有 pending 数据，直接返回
@@ -74,31 +77,37 @@
 9. `emit(POMODORO_AUTO_EXTENDED)`
 
 **新增 `cancelAutoExtend()`：**
+
 - 清除 setTimeout
 - 重置 autoExtendCount 为 0
 
 **重置时机：**
+
 - `startPomodoro()` 时重置 `autoExtendCount = 0`
 - `cancelAutoExtend()` 时重置
 
 ### 事件改动
 
 **新增事件：**
+
 - `POMODORO_AUTO_EXTENDED` — 通知弹窗关闭
 
 ### 弹窗改动
 
 **PomodoroCompleteDialog.vue：**
+
 - 新增 `skipAutoSave` ref（默认 false）
 - 监听 `POMODORO_AUTO_EXTENDED` 事件：设置 `skipAutoSave = true`，调用 `closeDialog()`
 - `onBeforeUnmount`：如果 `skipAutoSave` 为 true，跳过自动保存逻辑
 
 **dialog.ts（`showPomodoroCompleteDialog`）：**
+
 - 同样监听 `POMODORO_AUTO_EXTENDED`，关闭 SiYuan Dialog 实例
 
 ### 设置 UI
 
 在 `PomodoroConfigSection.vue` 中添加自动延迟配置区域（放在 `minFocusMinutes` 之后）：
+
 - 开关：是否开启自动延迟
 - 等待时间（秒）：数字输入，范围 10-300
 - 延长分钟数：数字输入，范围 1-60
@@ -107,6 +116,7 @@
 ### i18n
 
 新增以下 key（zh_CN / en_US）：
+
 - `autoExtend` — 自动延迟
 - `autoExtendDesc` — 说明文字
 - `autoExtendWaitSeconds` — 等待时间
@@ -127,13 +137,13 @@
 
 ## 影响范围
 
-| 文件 | 改动 |
-|------|------|
-| `src/stores/pomodoroStore.ts` | 新增 auto-extend 状态和方法，修改 completePomodoro |
-| `src/types/events.ts` | 新增 POMODORO_AUTO_EXTENDED 事件 |
-| `src/components/pomodoro/PomodoroCompleteDialog.vue` | 监听 auto-extend 事件，skipAutoSave |
-| `src/utils/dialog.ts` | showPomodoroCompleteDialog 监听 auto-extend 事件 |
-| `src/settings/types.ts` | 新增 4 个配置字段 |
-| `src/components/settings/PomodoroConfigSection.vue` | 新增配置 UI |
-| `src/i18n/zh_CN.json` | 新增翻译 key |
-| `src/i18n/en_US.json` | 新增翻译 key |
+| 文件                                                 | 改动                                               |
+| ---------------------------------------------------- | -------------------------------------------------- |
+| `src/stores/pomodoroStore.ts`                        | 新增 auto-extend 状态和方法，修改 completePomodoro |
+| `src/types/events.ts`                                | 新增 POMODORO_AUTO_EXTENDED 事件                   |
+| `src/components/pomodoro/PomodoroCompleteDialog.vue` | 监听 auto-extend 事件，skipAutoSave                |
+| `src/utils/dialog.ts`                                | showPomodoroCompleteDialog 监听 auto-extend 事件   |
+| `src/settings/types.ts`                              | 新增 4 个配置字段                                  |
+| `src/components/settings/PomodoroConfigSection.vue`  | 新增配置 UI                                        |
+| `src/i18n/zh_CN.json`                                | 新增翻译 key                                       |
+| `src/i18n/en_US.json`                                | 新增翻译 key                                       |

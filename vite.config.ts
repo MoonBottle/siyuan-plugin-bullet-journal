@@ -8,9 +8,9 @@ import {
   defineConfig,
   loadEnv,
 } from "vite"
+import removeConsole from "vite-plugin-remove-console"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import zipPack from "vite-plugin-zip-pack"
-import removeConsole from "vite-plugin-remove-console"
 
 const pluginInfo = require("./plugin.json")
 
@@ -48,7 +48,7 @@ export default defineConfig(({
     resolve: {
       alias: {
         "@": resolve(__dirname, "src"),
-        ...(!isWatch ? { "vconsole": resolve(__dirname, "src/mobile/utils/vconsole.stub.ts") } : {}),
+        ...(!isWatch ? { vconsole: resolve(__dirname, "src/mobile/utils/vconsole.stub.ts") } : {}),
       },
     },
 
@@ -93,8 +93,14 @@ export default defineConfig(({
           // 因此只要输出到工作空间插件目录，就必须同步复制最新的 MCP 构建产物。
           ...(siyuanWorkspacePath
             ? [
-                { src: "./dist/mcp-server.js", dest: "./" },
-                { src: "./dist/kernel.js", dest: "./" },
+                {
+                  src: "./dist/mcp-server.js",
+                  dest: "./",
+                },
+                {
+                  src: "./dist/kernel.js",
+                  dest: "./",
+                },
               ]
             : []),
           {
@@ -115,8 +121,8 @@ export default defineConfig(({
     define: {
       "process.env.DEV_MODE": `"${isWatch}"`,
       "process.env.NODE_ENV": JSON.stringify(isWatch ? 'development' : 'production'),
-      __VUE_OPTIONS_API__: true,
-      __VUE_PROD_DEVTOOLS__: isWatch,
+      "__VUE_OPTIONS_API__": true,
+      "__VUE_PROD_DEVTOOLS__": isWatch,
     },
 
     build: {

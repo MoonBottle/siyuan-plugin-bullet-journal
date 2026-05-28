@@ -4,15 +4,15 @@
  */
 
 class DirtyDocTracker {
-  private dirtyDocIds: Set<string> = new Set();
+  private dirtyDocIds: Set<string> = new Set()
 
   /**
    * 标记文档为脏（需要重新加载）
    * ws-main 事件触发时调用
    */
   markDirty(docIds: string[]): void {
-    docIds.forEach(id => this.dirtyDocIds.add(id));
-    console.log('[DirtyDocTracker] Marked dirty:', docIds);
+    docIds.forEach((id) => this.dirtyDocIds.add(id))
+    console.log('[DirtyDocTracker] Marked dirty:', docIds)
   }
 
   /**
@@ -20,13 +20,13 @@ class DirtyDocTracker {
    * projectStore.refresh 开始时调用
    */
   getDirtyDocs(): string[] {
-    return Array.from(this.dirtyDocIds);
+    return Array.from(this.dirtyDocIds)
   }
 
   consumeDirtyDocs(): string[] {
-    const docs = Array.from(this.dirtyDocIds);
-    this.dirtyDocIds.clear();
-    return docs;
+    const docs = Array.from(this.dirtyDocIds)
+    this.dirtyDocIds.clear()
+    return docs
   }
 
   /**
@@ -34,23 +34,23 @@ class DirtyDocTracker {
    * projectStore.refresh 完成后调用
    */
   clearDirty(docIds: string[]): void {
-    docIds.forEach(id => this.dirtyDocIds.delete(id));
+    docIds.forEach((id) => this.dirtyDocIds.delete(id))
   }
 
   /**
    * 是否有脏文档
    */
   hasDirtyDocs(): boolean {
-    return this.dirtyDocIds.size > 0;
+    return this.dirtyDocIds.size > 0
   }
 
   /**
    * 清空所有脏标记
    */
   clearAll(): void {
-    this.dirtyDocIds.clear();
+    this.dirtyDocIds.clear()
   }
 }
 
 // 导出单例，全局共享
-export const dirtyDocTracker = new DirtyDocTracker();
+export const dirtyDocTracker = new DirtyDocTracker()

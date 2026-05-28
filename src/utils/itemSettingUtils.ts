@@ -4,59 +4,65 @@
  */
 
 import type {
-  Item,
+  EndCondition,
   FocusPlan,
+  Item,
+  PriorityLevel,
   ReminderConfig,
   RepeatRule,
-  EndCondition,
-  PriorityLevel
-} from '@/types/models';
+} from '@/types/models'
+import type {
+  BlockPatch,
+  BlockWriteContext,
+} from '@/utils/blockWriter'
+import { generatePriorityMarker } from '@/parser/priorityParser'
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+} from '@/parser/recurringParser'
 import {
   generateReminderMarker,
-} from '@/parser/reminderParser';
+} from '@/parser/reminderParser'
+import { writeBlock } from '@/utils/blockWriter'
 import {
-  generateRepeatRuleMarker,
-  generateEndConditionMarker,
-} from '@/parser/recurringParser';
-import { generatePriorityMarker } from '@/parser/priorityParser';
-import { writeBlock } from '@/utils/blockWriter';
-import type { BlockPatch, BlockWriteContext } from '@/utils/blockWriter';
-import { eventBus, Events } from '@/utils/eventBus';
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
 
 /**
  * 构建设置项内容选项
  */
 export interface BuildItemContentOptions {
   /** 开始时间 (HH:mm) */
-  startTime?: string;
+  startTime?: string
   /** 结束时间 (HH:mm) */
-  endTime?: string;
+  endTime?: string
   /** 优先级 */
-  priority?: PriorityLevel;
+  priority?: PriorityLevel
   /** 提醒配置 */
-  reminder?: ReminderConfig;
+  reminder?: ReminderConfig
   /** 重复规则 */
-  repeatRule?: RepeatRule;
+  repeatRule?: RepeatRule
   /** 结束条件 */
-  endCondition?: EndCondition;
+  endCondition?: EndCondition
 }
 
 export interface ItemSettingWriteOptions {
-  writeContext?: BlockWriteContext;
+  writeContext?: BlockWriteContext
 }
 
 function buildWritePayload(
   patch: BlockPatch,
   _options?: ItemSettingWriteOptions,
 ): BlockPatch {
-  return patch;
+  return patch
 }
 
 function buildWriteContext(
   item: Item,
   options?: ItemSettingWriteOptions,
 ): BlockWriteContext {
-  return options?.writeContext ?? { blockId: item.blockId! };
+  return options?.writeContext ?? { blockId: item.blockId! }
 }
 
 function emitItemSettingMutation(
@@ -67,7 +73,7 @@ function emitItemSettingMutation(
     source: 'item-setting',
     kind,
     blockId,
-  });
+  })
 }
 
 /**
@@ -81,17 +87,20 @@ export async function updateItemWithReminder(
   options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
   const updated = await writeBlock(
     buildWriteContext(item, options),
-    buildWritePayload({ type: 'setReminder', reminder: config }, options),
-  );
+    buildWritePayload({
+      type: 'setReminder',
+      reminder: config,
+    }, options),
+  )
   if (!updated) {
-    throw new Error(`更新块内容失败 (${item.blockId})`);
+    throw new Error(`更新块内容失败 (${item.blockId})`)
   }
-  emitItemSettingMutation('reminder', item.blockId);
+  emitItemSettingMutation('reminder', item.blockId)
 }
 
 /**
@@ -107,32 +116,36 @@ export async function updateItemWithRecurring(
   options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
   const updated = await writeBlock(
     buildWriteContext(item, options),
-    buildWritePayload({ type: 'setRecurring', repeatRule, endCondition }, options),
-  );
+    buildWritePayload({
+      type: 'setRecurring',
+      repeatRule,
+      endCondition,
+    }, options),
+  )
   if (!updated) {
-    throw new Error(`更新块内容失败 (${item.blockId})`);
+    throw new Error(`更新块内容失败 (${item.blockId})`)
   }
-  emitItemSettingMutation('recurring', item.blockId);
+  emitItemSettingMutation('recurring', item.blockId)
 }
 
 export async function toggleItemPinned(item: Item): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
   const updated = await writeBlock(
     { blockId: item.blockId },
     { type: 'togglePinned' },
-  );
+  )
   if (!updated) {
-    throw new Error(`更新块内容失败 (${item.blockId})`);
+    throw new Error(`更新块内容失败 (${item.blockId})`)
   }
-  emitItemSettingMutation('pin', item.blockId);
+  emitItemSettingMutation('pin', item.blockId)
 }
 
 export async function updateItemWithFocusPlan(
@@ -141,32 +154,35 @@ export async function updateItemWithFocusPlan(
   options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
   const updated = await writeBlock(
     buildWriteContext(item, options),
-    buildWritePayload({ type: 'setFocusPlan', plan }, options),
-  );
+    buildWritePayload({
+      type: 'setFocusPlan',
+      plan,
+    }, options),
+  )
   if (!updated) {
-    throw new Error(`更新块内容失败 (${item.blockId})`);
+    throw new Error(`更新块内容失败 (${item.blockId})`)
   }
-  emitItemSettingMutation('focus-plan', item.blockId);
+  emitItemSettingMutation('focus-plan', item.blockId)
 }
 
 export async function clearItemFocusPlan(item: Item, options?: ItemSettingWriteOptions): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
   const updated = await writeBlock(
     buildWriteContext(item, options),
     buildWritePayload({ type: 'setFocusPlan' }, options),
-  );
+  )
   if (!updated) {
-    throw new Error(`更新块内容失败 (${item.blockId})`);
+    throw new Error(`更新块内容失败 (${item.blockId})`)
   }
-  emitItemSettingMutation('focus-plan', item.blockId);
+  emitItemSettingMutation('focus-plan', item.blockId)
 }
 
 /**
@@ -181,50 +197,57 @@ export async function clearItemFocusPlan(item: Item, options?: ItemSettingWriteO
 export function buildItemContent(
   baseContent: string,
   date: string,
-  options: BuildItemContentOptions = {}
+  options: BuildItemContentOptions = {},
 ): string {
-  const { startTime, endTime, priority, reminder, repeatRule, endCondition } = options;
+  const {
+    startTime,
+    endTime,
+    priority,
+    reminder,
+    repeatRule,
+    endCondition,
+  } = options
 
   // 构建日期部分（支持时间范围）
-  let datePart = `📅${date}`;
+  let datePart = `📅${date}`
   if (startTime && endTime) {
-    datePart = `📅${date} ${startTime}~${endTime}`;
+    datePart = `📅${date} ${startTime}~${endTime}`
   } else if (startTime) {
-    datePart = `📅${date} ${startTime}`;
+    datePart = `📅${date} ${startTime}`
   }
-  let content = `${baseContent} ${datePart}`;
+  let content = `${baseContent} ${datePart}`
 
   // 添加优先级标记
   if (priority) {
-    const priorityMarker = generatePriorityMarker(priority);
+    const priorityMarker = generatePriorityMarker(priority)
     if (priorityMarker) {
-      content = `${content} ${priorityMarker}`;
+      content = `${content} ${priorityMarker}`
     }
   }
 
   // 添加提醒标记
   if (reminder?.enabled) {
-    const reminderMarker = generateReminderMarker(reminder);
+    const reminderMarker = generateReminderMarker(reminder)
     if (reminderMarker) {
-      content = `${content} ${reminderMarker}`;
+      content = `${content} ${reminderMarker}`
     }
   }
 
   // 添加重复规则标记
   if (repeatRule) {
-    const repeatMarker = generateRepeatRuleMarker(repeatRule);
+    const repeatMarker = generateRepeatRuleMarker(repeatRule)
     if (repeatMarker) {
-      content = `${content} ${repeatMarker}`;
+      content = `${content} ${repeatMarker}`
     }
   }
 
   // 添加结束条件标记
   if (endCondition && endCondition.type !== 'never') {
-    const endMarker = generateEndConditionMarker(endCondition);
+    const endMarker = generateEndConditionMarker(endCondition)
     if (endMarker) {
-      content = `${content} ${endMarker}`;
+      content = `${content} ${endMarker}`
     }
   }
 
-  return content;
+  return content
 }

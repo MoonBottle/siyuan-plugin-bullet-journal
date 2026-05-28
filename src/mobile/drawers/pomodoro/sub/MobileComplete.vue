@@ -1,9 +1,18 @@
 <template>
   <div class="mobile-complete">
     <!-- 时长不足警告 -->
-    <div v-if="isDurationTooShort" class="duration-warning">
-      <svg class="warning-icon" viewBox="0 0 24 24">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" fill="currentColor"/>
+    <div
+      v-if="isDurationTooShort"
+      class="duration-warning"
+    >
+      <svg
+        class="warning-icon"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z"
+          fill="currentColor"
+        />
       </svg>
       <span class="warning-text">{{ durationWarningMessage }}</span>
     </div>
@@ -13,7 +22,10 @@
       <!-- 项目/任务/事项信息卡片 -->
       <div class="info-cards">
         <!-- 项目卡片 -->
-        <div v-if="pending?.projectName" class="info-card">
+        <div
+          v-if="pending?.projectName"
+          class="info-card"
+        >
           <div class="info-card-header">
             <span class="info-card-label">{{ t('todo').project }}</span>
           </div>
@@ -23,10 +35,17 @@
         </div>
 
         <!-- 任务卡片 -->
-        <div v-if="pending?.taskName" class="info-card">
+        <div
+          v-if="pending?.taskName"
+          class="info-card"
+        >
           <div class="info-card-header">
             <span class="info-card-label">{{ t('todo').task }}</span>
-            <span v-if="pending.taskLevel" class="task-level-badge" :class="'level-' + pending.taskLevel.toLowerCase()">
+            <span
+              v-if="pending.taskLevel"
+              class="task-level-badge"
+              :class="`level-${pending.taskLevel.toLowerCase()}`"
+            >
               {{ pending.taskLevel }}
             </span>
           </div>
@@ -76,10 +95,16 @@
 
     <!-- 底部按钮 -->
     <div class="complete-footer">
-      <button class="discard-btn" @click="handleDiscard">
+      <button
+        class="discard-btn"
+        @click="handleDiscard"
+      >
         {{ t('pomodoroComplete').discardRecord }}
       </button>
-      <button class="save-btn" @click="handleSave">
+      <button
+        class="save-btn"
+        @click="handleSave"
+      >
         {{ isDurationTooShort ? t('pomodoroComplete').confirmRecord : t('pomodoroComplete').save }}
       </button>
     </div>
@@ -87,118 +112,124 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { t } from '@/i18n';
-import { eventBus, Events } from '@/utils/eventBus';
-import type { PendingPomodoroCompletion } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { defaultPomodoroSettings } from '@/settings';
-import { removePendingCompletion } from '@/utils/pomodoroStorage';
+import type { PendingPomodoroCompletion } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { defaultPomodoroSettings } from '@/settings'
+import { usePomodoroStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { removePendingCompletion } from '@/utils/pomodoroStorage'
 
 const props = defineProps<{
-  pending: PendingPomodoroCompletion;
-}>();
+  pending: PendingPomodoroCompletion
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  save: [];
-}>();
+  close: []
+  save: []
+}>()
 
-const pomodoroStore = usePomodoroStore();
-const plugin = usePlugin() as any;
+const pomodoroStore = usePomodoroStore()
+const plugin = usePlugin() as any
 
 // 状态
-const description = ref('');
-const skipAutoSave = ref(false);
-const discarded = ref(false);
+const description = ref('')
+const skipAutoSave = ref(false)
+const discarded = ref(false)
 
 // 从设置读取最小专注时长
 const minFocusMinutes = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5
+})
 
 // 专注时长是否过短
 const isDurationTooShort = computed(() => {
-  const duration = props.pending?.durationMinutes || 0;
-  return duration < minFocusMinutes.value;
-});
+  const duration = props.pending?.durationMinutes || 0
+  return duration < minFocusMinutes.value
+})
 
 // 时长警告信息
 const durationWarningMessage = computed(() => {
-  return t('pomodoroComplete').durationTooShortMessage
-    .replace('{actual}', String(props.pending?.durationMinutes || 0))
-    .replace('{min}', String(minFocusMinutes.value));
-});
+  return t('pomodoroComplete').durationTooShortMessage.replace('{actual}', String(props.pending?.durationMinutes || 0)).replace('{min}', String(minFocusMinutes.value))
+})
 
 // 格式化的开始时间
 const formattedStartTime = computed(() => {
-  if (!props.pending?.startTime) return '--:--';
-  return dayjs(props.pending.startTime).format('HH:mm');
-});
+  if (!props.pending?.startTime) return '--:--'
+  return dayjs(props.pending.startTime).format('HH:mm')
+})
 
 // 格式化的结束时间
 const formattedEndTime = computed(() => {
-  if (!props.pending?.endTime) return '--:--';
-  return dayjs(props.pending.endTime).format('HH:mm');
-});
+  if (!props.pending?.endTime) return '--:--'
+  return dayjs(props.pending.endTime).format('HH:mm')
+})
 
 // 监听自动延迟事件
-let unsubscribeAutoExtend: (() => void) | null = null;
+let unsubscribeAutoExtend: (() => void) | null = null
 
 onMounted(() => {
   unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-    skipAutoSave.value = true;
-    emit('close');
-  });
-});
+    skipAutoSave.value = true
+    emit('close')
+  })
+})
 
 onUnmounted(async () => {
   // 清理自动延迟事件监听
   if (unsubscribeAutoExtend) {
-    unsubscribeAutoExtend();
+    unsubscribeAutoExtend()
   }
 
   // 自动延迟关闭时不保存
   if (skipAutoSave.value) {
-    return;
+    return
   }
   // 如果用户选择不记录，则不保存
   if (discarded.value) {
-    return;
+    return
   }
   // 正常情况：未保存且专注时长足够，自动保存
   if (props.pending && !isDurationTooShort.value) {
     await pomodoroStore.savePomodoroRecordFromPending(
       plugin,
       props.pending,
-      description.value
-    );
+      description.value,
+    )
   }
-});
+})
 
 // 保存记录
 async function handleSave() {
-  if (!plugin || !props.pending) return;
+  if (!plugin || !props.pending) return
   const success = await pomodoroStore.savePomodoroRecordFromPending(
     plugin,
     props.pending,
-    description.value
-  );
+    description.value,
+  )
   if (success) {
-    emit('save');
+    emit('save')
   }
 }
 
 // 废弃记录
 async function handleDiscard() {
-  discarded.value = true;
+  discarded.value = true
   if (plugin) {
-    await removePendingCompletion(plugin);
+    await removePendingCompletion(plugin)
   }
-  emit('close');
+  emit('close')
 }
 </script>
 
@@ -225,13 +256,13 @@ async function handleDiscard() {
   .warning-icon {
     width: 18px;
     height: 18px;
-    color: #FF9800;
+    color: #ff9800;
     flex-shrink: 0;
   }
 
   .warning-text {
     font-size: 13px;
-    color: #FF9800;
+    color: #ff9800;
     font-weight: 500;
     line-height: 1.4;
   }
@@ -300,17 +331,17 @@ async function handleDiscard() {
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
-    color: #4CAF50;
+    color: #4caf50;
   }
 
   &.level-l2 {
     background: rgba(255, 152, 0, 0.15);
-    color: #FF9800;
+    color: #ff9800;
   }
 
   &.level-l3 {
     background: rgba(33, 150, 243, 0.15);
-    color: #2196F3;
+    color: #2196f3;
   }
 }
 

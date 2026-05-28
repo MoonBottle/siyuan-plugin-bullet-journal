@@ -1,33 +1,47 @@
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import { createPinia, setActivePinia } from 'pinia';
-import { initI18n } from '@/i18n';
+import {
+  createPinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+} from 'vue'
+import { initI18n } from '@/i18n'
 
-const habitWorkspaceDetailPaneProps = vi.fn();
-const refreshHabits = vi.fn();
-const selectHabitById = vi.fn();
-const eventBusOn = vi.fn();
-const refreshUnsubscribe = vi.fn();
-const eventHandlers = new Map<string, () => void | Promise<void>>();
+const habitWorkspaceDetailPaneProps = vi.fn()
+const refreshHabits = vi.fn()
+const selectHabitById = vi.fn()
+const eventBusOn = vi.fn()
+const refreshUnsubscribe = vi.fn()
+const eventHandlers = new Map<string, () => void | Promise<void>>()
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
   useApp: vi.fn(() => ({})),
-}));
+}))
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: {
     on: eventBusOn.mockImplementation((event: string, handler: () => void | Promise<void>) => {
-      eventHandlers.set(event, handler);
-      return refreshUnsubscribe;
+      eventHandlers.set(event, handler)
+      return refreshUnsubscribe
     }),
   },
   Events: {
     DATA_REFRESHED: 'data:refreshed',
   },
-}));
+}))
 
 vi.mock('@/utils/nativeBlockPreview', () => ({
   createNativeBlockPreviewController: () => ({
@@ -36,7 +50,7 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
     containsTarget: vi.fn(() => false),
     isOpen: vi.fn(() => false),
   }),
-}));
+}))
 
 vi.mock('@/composables/useHabitWorkspace', () => ({
   useHabitWorkspace: () => ({
@@ -51,7 +65,7 @@ vi.mock('@/composables/useHabitWorkspace', () => ({
     openSelectedHabitDoc: vi.fn(),
     resetHabitRecordForDate: vi.fn(),
   }),
-}));
+}))
 
 vi.mock('@/components/habit/HabitWorkspaceDetailPane.vue', () => ({
   default: defineComponent({
@@ -62,68 +76,68 @@ vi.mock('@/components/habit/HabitWorkspaceDetailPane.vue', () => ({
         recordPreviewTriggerMode: props.recordPreviewTriggerMode,
         onRecordPreviewClick: props.onRecordPreviewClick,
         showHeader: props.showHeader,
-      });
-      return () => h('div', { 'data-testid': 'habit-workspace-detail-pane-stub' });
+      })
+      return () => h('div', { 'data-testid': 'habit-workspace-detail-pane-stub' })
     },
   }),
-}));
+}))
 
 async function mountDialog() {
-  const { default: HabitWidgetDetailDialog } = await import('@/components/workbench/dialogs/HabitWidgetDetailDialog.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: HabitWidgetDetailDialog } = await import('@/components/workbench/dialogs/HabitWidgetDetailDialog.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
   const app = createApp(HabitWidgetDetailDialog, {
     habitId: 'habit-1',
     groupId: 'group-1',
-  });
-  app.use(createPinia());
-  app.mount(container);
-  await nextTick();
+  })
+  app.use(createPinia())
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('HabitWidgetDetailDialog', () => {
+describe('habitWidgetDetailDialog', () => {
   beforeEach(() => {
-    initI18n('en_US');
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-    document.body.innerHTML = '';
-    eventHandlers.clear();
-  });
+    initI18n('en_US')
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
+    eventHandlers.clear()
+  })
 
   it('enables preview mode for habit record log interactions', async () => {
-    const mounted = await mountDialog();
+    const mounted = await mountDialog()
 
-    expect(mounted.container.querySelector('[data-testid="habit-workspace-detail-pane-stub"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-workspace-detail-pane-stub"]')).not.toBeNull()
     expect(habitWorkspaceDetailPaneProps).toHaveBeenCalledWith(expect.objectContaining({
       recordPreviewTriggerMode: 'preview',
       onRecordPreviewClick: expect.any(Function),
       showHeader: false,
-    }));
+    }))
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('reselects the dialog habit when data-refreshed events arrive', async () => {
-    const mounted = await mountDialog();
+    const mounted = await mountDialog()
 
-    expect(selectHabitById).toHaveBeenCalledWith('habit-1');
-    expect(eventBusOn).toHaveBeenCalledWith('data:refreshed', expect.any(Function));
-    selectHabitById.mockClear();
+    expect(selectHabitById).toHaveBeenCalledWith('habit-1')
+    expect(eventBusOn).toHaveBeenCalledWith('data:refreshed', expect.any(Function))
+    selectHabitById.mockClear()
 
-    await eventHandlers.get('data:refreshed')?.();
+    await eventHandlers.get('data:refreshed')?.()
 
-    expect(refreshHabits).not.toHaveBeenCalled();
-    expect(selectHabitById).toHaveBeenCalledWith('habit-1');
+    expect(refreshHabits).not.toHaveBeenCalled()
+    expect(selectHabitById).toHaveBeenCalledWith('habit-1')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

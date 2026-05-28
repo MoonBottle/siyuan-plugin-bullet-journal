@@ -1,21 +1,38 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div v-if="modelValue" class="mobile-reminder-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+          <div
+            v-if="modelValue"
+            class="mobile-reminder-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Handle Bar -->
-            <div class="drawer-handle" @click="close">
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
 
             <!-- Header -->
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('reminder.settingTitle') || '设置提醒' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('reminder.settingTitle') || '设置提醒' }}
+              </h3>
             </div>
 
             <!-- Content -->
-            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <ReminderSettingDialog
                 ref="reminderDialogRef"
                 :block-id="blockId || ''"
@@ -28,10 +45,16 @@
 
             <!-- Footer -->
             <div class="drawer-footer">
-              <button class="footer-btn cancel" @click="close">
+              <button
+                class="footer-btn cancel"
+                @click="close"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
-              <button class="footer-btn save" @click="handleSaveClick">
+              <button
+                class="footer-btn save"
+                @click="handleSaveClick"
+              >
                 {{ t('reminder.save') || '保存' }}
               </button>
             </div>
@@ -43,54 +66,60 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
-import { t } from '@/i18n';
-import { updateItemWithReminder } from '@/utils/itemSettingUtils';
-import type { ReminderConfig, Item } from '@/types/models';
+import type {
+  Item,
+  ReminderConfig,
+} from '@/types/models'
+import {
+  computed,
+  ref,
+} from 'vue'
+import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue'
+import { t } from '@/i18n'
+import { updateItemWithReminder } from '@/utils/itemSettingUtils'
 
-const reminderDialogRef = ref<InstanceType<typeof ReminderSettingDialog> | null>(null);
-
-interface Props {
-  modelValue: boolean;
-  blockId?: string;
-  initialConfig?: ReminderConfig;
-  item?: Item;
-}
-
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'save': [config: ReminderConfig];
-  'cancel': [];
-}>();
+  'update:modelValue': [value: boolean]
+  'save': [config: ReminderConfig]
+  'cancel': []
+}>()
 
-const hasItem = computed(() => !!props.item);
+const reminderDialogRef = ref<InstanceType<typeof ReminderSettingDialog> | null>(null)
+
+interface Props {
+  modelValue: boolean
+  blockId?: string
+  initialConfig?: ReminderConfig
+  item?: Item
+}
+
+const hasItem = computed(() => !!props.item)
 
 async function handleSave(config: ReminderConfig) {
   if (props.item) {
     try {
-      await updateItemWithReminder(props.item, config);
-      emit('save', config);
-      close();
+      await updateItemWithReminder(props.item, config)
+      emit('save', config)
+      close()
     } catch (error) {
-      console.error('[MobileReminderDrawer] Failed to save reminder:', error);
+      console.error('[MobileReminderDrawer] Failed to save reminder:', error)
     }
   } else {
-    emit('save', config);
-    close();
+    emit('save', config)
+    close()
   }
 }
 
 function handleSaveClick() {
   // 调用 Dialog 内部的 getConfig 方法
-  reminderDialogRef.value?.getConfig();
+  reminderDialogRef.value?.getConfig()
 }
 
 function close() {
-  emit('update:modelValue', false);
-  emit('cancel');
+  emit('update:modelValue', false)
+  emit('cancel')
 }
 </script>
 
@@ -174,25 +203,25 @@ function close() {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &.cancel {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
-    
+
     &:hover {
       background: var(--b3-theme-surface-lighter);
     }
   }
-  
+
   &.save {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
-    
+
     &:hover {
       opacity: 0.9;
     }
   }
-  
+
   &:active {
     transform: scale(0.98);
   }

@@ -1,5 +1,8 @@
 <template>
-  <div class="mobile-ai-history-page" data-testid="mobile-ai-history-page">
+  <div
+    class="mobile-ai-history-page"
+    data-testid="mobile-ai-history-page"
+  >
     <header class="mobile-ai-history-page__header">
       <button
         class="mobile-ai-history-page__icon-button"
@@ -9,7 +12,9 @@
       >
         返回
       </button>
-      <h2 class="mobile-ai-history-page__title">{{ t('aiChat').conversations }}</h2>
+      <h2 class="mobile-ai-history-page__title">
+        {{ t('aiChat').conversations }}
+      </h2>
       <button
         class="mobile-ai-history-page__icon-button"
         data-testid="mobile-ai-history-create"
@@ -20,14 +25,28 @@
       </button>
     </header>
 
-    <div v-if="isLoadingHistory" class="mobile-ai-history-page__state">
+    <div
+      v-if="isLoadingHistory"
+      class="mobile-ai-history-page__state"
+    >
       加载中...
     </div>
-    <div v-else-if="conversations.length === 0" class="mobile-ai-history-page__state">
+    <div
+      v-else-if="conversations.length === 0"
+      class="mobile-ai-history-page__state"
+    >
       <div>暂无对话</div>
-      <button type="button" @click="emit('create')">新建对话</button>
+      <button
+        type="button"
+        @click="emit('create')"
+      >
+        新建对话
+      </button>
     </div>
-    <div v-else class="mobile-ai-history-page__list">
+    <div
+      v-else
+      class="mobile-ai-history-page__list"
+    >
       <div
         v-for="conversation in conversations"
         :key="conversation.id"
@@ -55,21 +74,21 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import type { ConversationIndexItem } from '@/services/conversationStorageService';
+import type { ConversationIndexItem } from '@/services/conversationStorageService'
+import { t } from '@/i18n'
 
 defineProps<{
-  conversations: ConversationIndexItem[];
-  currentConversationId: string | null;
-  isLoadingHistory: boolean;
-}>();
+  conversations: ConversationIndexItem[]
+  currentConversationId: string | null
+  isLoadingHistory: boolean
+}>()
 
 const emit = defineEmits<{
-  back: [];
-  select: [conversationId: string];
-  delete: [conversationId: string];
-  create: [];
-}>();
+  back: []
+  select: [conversationId: string]
+  delete: [conversationId: string]
+  create: []
+}>()
 </script>
 
 <style lang="scss" scoped>

@@ -1,28 +1,37 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initI18n } from '@/i18n';
-import { persistCalendarEventChange } from '@/utils/calendarEventChange';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import { initI18n } from '@/i18n'
+import { persistCalendarEventChange } from '@/utils/calendarEventChange'
 
-const { mockShowMessage, mockWriteBlock } = vi.hoisted(() => ({
+const {
+  mockShowMessage,
+  mockWriteBlock,
+} = vi.hoisted(() => ({
   mockShowMessage: vi.fn(),
   mockWriteBlock: vi.fn(),
-}));
+}))
 
 vi.mock('@/utils/dialog', () => ({
   showMessage: mockShowMessage,
-}));
+}))
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
-}));
+}))
 
 describe('persistCalendarEventChange', () => {
   beforeEach(() => {
-    initI18n('zh_CN');
-    vi.clearAllMocks();
-  });
+    initI18n('zh_CN')
+    vi.clearAllMocks()
+  })
 
   it('persists moved timed events back to document blocks', async () => {
-    mockWriteBlock.mockResolvedValue(true);
+    mockWriteBlock.mockResolvedValue(true)
 
     const result = await persistCalendarEventChange({
       blockId: 'block-1',
@@ -40,9 +49,9 @@ describe('persistCalendarEventChange', () => {
         },
       ],
       status: 'pending',
-    }, 'move');
+    }, 'move')
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(mockWriteBlock).toHaveBeenCalledWith(
       { blockId: 'block-1' },
       {
@@ -67,17 +76,17 @@ describe('persistCalendarEventChange', () => {
         ],
         timePrecision: 'second',
       },
-    );
-    expect(mockShowMessage).toHaveBeenCalledTimes(1);
-  });
+    )
+    expect(mockShowMessage).toHaveBeenCalledTimes(1)
+  })
 
   it('shows an error when blockId is missing', async () => {
     const result = await persistCalendarEventChange({
       start: '2026-05-02T10:00:00',
-    }, 'resize');
+    }, 'resize')
 
-    expect(result).toBe(false);
-    expect(mockWriteBlock).not.toHaveBeenCalled();
-    expect(mockShowMessage).toHaveBeenCalledTimes(1);
-  });
-});
+    expect(result).toBe(false)
+    expect(mockWriteBlock).not.toHaveBeenCalled()
+    expect(mockShowMessage).toHaveBeenCalledTimes(1)
+  })
+})

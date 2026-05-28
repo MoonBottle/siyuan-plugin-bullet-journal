@@ -75,4 +75,4 @@ export const CHINA_WORKDAY_FALLBACK: ChinaWorkdayCalendarData = {
     '2026-09-20',
     '2026-10-10',
   ],
-};
+}

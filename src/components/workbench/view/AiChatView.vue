@@ -1,5 +1,8 @@
 <template>
-  <div class="ai-chat-view" data-testid="ai-chat-view">
+  <div
+    class="ai-chat-view"
+    data-testid="ai-chat-view"
+  >
     <aside class="ai-chat-view__sidebar">
       <div class="ai-chat-view__sidebar-header">
         <ProjectPaneSearchBox
@@ -27,9 +30,14 @@
           @click="handleSelect(conv.id)"
         >
           <div class="ai-chat-view__sidebar-item-body">
-            <div class="ai-chat-view__sidebar-item-title">{{ conv.title }}</div>
+            <div class="ai-chat-view__sidebar-item-title">
+              {{ conv.title }}
+            </div>
             <div class="ai-chat-view__sidebar-item-meta">
-              <span v-if="conv.source === 'weixin'" class="ai-chat-view__sidebar-item-tag">微信</span>
+              <span
+                v-if="conv.source === 'weixin'"
+                class="ai-chat-view__sidebar-item-tag"
+              >微信</span>
               <span class="ai-chat-view__sidebar-item-time">{{ formatTime(conv.updatedAt) }}</span>
             </div>
           </div>
@@ -41,10 +49,16 @@
             <svg><use xlink:href="#iconMore"></use></svg>
           </span>
         </div>
-        <div v-if="conversationsList.length === 0" class="ai-chat-view__sidebar-empty">
+        <div
+          v-if="conversationsList.length === 0"
+          class="ai-chat-view__sidebar-empty"
+        >
           {{ t('aiChat').noConversations ?? '暂无对话' }}
         </div>
-        <div v-else-if="filteredConversations.length === 0" class="ai-chat-view__sidebar-empty">
+        <div
+          v-else-if="filteredConversations.length === 0"
+          class="ai-chat-view__sidebar-empty"
+        >
           {{ t('common').noMatches ?? '无匹配结果' }}
         </div>
       </div>
@@ -56,66 +70,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/zh-cn';
-import { Menu } from 'siyuan';
+import type { ConversationIndexItem } from '@/services/conversationStorageService'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import { Menu } from 'siyuan'
+import {
+  computed,
+  onMounted,
+  ref,
+} from 'vue'
 
-import { useAIStore } from '@/stores';
-import type { ConversationIndexItem } from '@/services/conversationStorageService';
-import { t } from '@/i18n';
-import AiChatDock from '@/tabs/AiChatDock.vue';
-import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
-import { showInputDialog } from '@/utils/dialog';
-
-dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
+import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue'
+import { t } from '@/i18n'
+import { useAIStore } from '@/stores'
+import AiChatDock from '@/tabs/AiChatDock.vue'
+import { showInputDialog } from '@/utils/dialog'
+import 'dayjs/locale/zh-cn'
 
 defineProps<{
-  viewConfig?: Record<string, unknown>;
-}>();
+  viewConfig?: Record<string, unknown>
+}>()
+dayjs.extend(relativeTime)
+dayjs.locale('zh-cn')
 
-const aiStore = useAIStore();
+const aiStore = useAIStore()
 
-const searchQuery = ref('');
-const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
+const searchQuery = ref('')
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? [])
 
-const activeId = computed(() => aiStore.currentConversationId);
+const activeId = computed(() => aiStore.currentConversationId)
 
 const filteredConversations = computed(() => {
-  if (!searchQuery.value.trim()) return conversationsList.value;
-  const q = searchQuery.value.toLowerCase().trim();
+  if (!searchQuery.value.trim()) return conversationsList.value
+  const q = searchQuery.value.toLowerCase().trim()
   return conversationsList.value.filter(
-    conv => conv.title.toLowerCase().includes(q),
-  );
-});
+    (conv) => conv.title.toLowerCase().includes(q),
+  )
+})
 
 async function refreshConversationsList() {
-  await aiStore.refreshConversationsList();
+  await aiStore.refreshConversationsList()
 }
 
 function formatTime(timestamp?: number): string {
-  if (!timestamp) return '';
-  return dayjs(timestamp).fromNow();
+  if (!timestamp) return ''
+  return dayjs(timestamp).fromNow()
 }
 
 async function handleNew() {
-  aiStore.startNewConversationDraft();
+  aiStore.startNewConversationDraft()
 }
 
 async function handleSelect(id: string) {
-  if (id === activeId.value) return;
-  await aiStore.switchConversation(id);
+  if (id === activeId.value) return
+  await aiStore.switchConversation(id)
 }
 
 function handleItemMore(conversation: ConversationIndexItem, event: MouseEvent) {
-  event.stopPropagation();
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-  const rect = target.getBoundingClientRect();
+  event.stopPropagation()
+  const target = event.currentTarget as HTMLElement
+  if (!target) return
+  const rect = target.getBoundingClientRect()
 
-  const menu = new Menu('ai-chat-item-more-menu');
+  const menu = new Menu('ai-chat-item-more-menu')
   if (conversation.source !== 'weixin') {
     menu.addItem({
       icon: 'iconEdit',
@@ -127,34 +144,34 @@ function handleItemMore(conversation: ConversationIndexItem, event: MouseEvent) 
           conversation.title,
           async (nextTitle) => {
             if (!nextTitle || nextTitle === conversation.title) {
-              return;
+              return
             }
 
-            await aiStore.renameConversation(conversation.id, nextTitle);
-            await refreshConversationsList();
+            await aiStore.renameConversation(conversation.id, nextTitle)
+            await refreshConversationsList()
           },
-        );
+        )
       },
-    });
+    })
   }
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('aiChat').deleteConversation,
     click: async () => {
-      await aiStore.deleteConversation(conversation.id);
-      await refreshConversationsList();
+      await aiStore.deleteConversation(conversation.id)
+      await refreshConversationsList()
     },
-  });
+  })
   menu.open({
     x: rect.left,
     y: rect.bottom + 4,
     isLeft: true,
-  });
+  })
 }
 
 onMounted(async () => {
-  await refreshConversationsList();
-});
+  await refreshConversationsList()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -242,7 +259,9 @@ onMounted(async () => {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-background);
     cursor: pointer;
-    transition: border-color 0.15s, background-color 0.15s;
+    transition:
+      border-color 0.15s,
+      background-color 0.15s;
 
     &:hover {
       border-color: var(--b3-theme-primary);

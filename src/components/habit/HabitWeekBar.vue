@@ -4,14 +4,16 @@
       v-for="day in weekDays"
       :key="day.date"
       :data-testid="`habit-week-day-${day.date}`"
-      :class="['habit-week-bar__day', {
+      class="habit-week-bar__day"
+      :class="[{
         'habit-week-bar__day--today': day.date === currentDate,
-        'habit-week-bar__day--selected': day.date === modelValue
+        'habit-week-bar__day--selected': day.date === modelValue,
       }]"
       @click="emit('update:modelValue', day.date)"
     >
       <span
-        :class="['habit-week-bar__weekday', {
+        class="habit-week-bar__weekday"
+        :class="[{
           'habit-week-bar__weekday--today': day.date === currentDate,
           'habit-week-bar__weekday--selected': day.date === modelValue,
         }]"
@@ -19,7 +21,8 @@
         {{ day.weekday }}
       </span>
       <span
-        :class="['habit-week-bar__date', {
+        class="habit-week-bar__date"
+        :class="[{
           'habit-week-bar__date--today': day.date === currentDate,
           'habit-week-bar__date--selected': day.date === modelValue,
         }]"
@@ -41,7 +44,12 @@
           :data-progress="String(day.progress)"
           viewBox="0 0 24 24"
         >
-          <circle class="habit-week-bar__progress-track" cx="12" cy="12" r="8" />
+          <circle
+            class="habit-week-bar__progress-track"
+            cx="12"
+            cy="12"
+            r="8"
+          />
           <circle
             class="habit-week-bar__progress-value"
             cx="12"
@@ -50,120 +58,147 @@
             :stroke-dasharray="`${day.progress * progressCircumference} ${progressCircumference}`"
           />
         </svg>
-        <span v-else class="habit-week-bar__empty-dot"></span>
+        <span
+          v-else
+          class="habit-week-bar__empty-dot"
+        ></span>
       </span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
-import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
-import { isDateEligibleForHabit, isHabitActiveOnDate } from '@/domain/habit/habitPeriod';
-import type { Habit } from '@/types/models';
+import type { Habit } from '@/types/models'
+import { computed } from 'vue'
+import {
+  getHabitDayState,
+  getHabitPeriodState,
+} from '@/domain/habit/habitCompletion'
+import {
+  isDateEligibleForHabit,
+  isHabitActiveOnDate,
+} from '@/domain/habit/habitPeriod'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
 
 const props = defineProps<{
-  modelValue: string;
-  currentDate: string;
-  habits?: Habit[];
-}>();
+  modelValue: string
+  currentDate: string
+  habits?: Habit[]
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
-}>();
+  'update:modelValue': [value: string]
+}>()
 
-const weekDayLabels = computed(() => t('calendar').weekDays);
-const progressCircumference = 2 * Math.PI * 8;
+const weekDayLabels = computed(() => t('calendar').weekDays)
+const progressCircumference = 2 * Math.PI * 8
 
-type WeekDayStatus = 'completed' | 'partial' | 'none';
+type WeekDayStatus = 'completed' | 'partial' | 'none'
 
-function getDayProgress(date: string): { status: WeekDayStatus; progress: number } {
+function getDayProgress(date: string): { status: WeekDayStatus, progress: number } {
   if (!props.habits?.length) {
-    return { status: 'none', progress: 0 };
+    return {
+      status: 'none',
+      progress: 0,
+    }
   }
 
-  let totalProgress = 0;
-  let eligibleHabitCount = 0;
+  let totalProgress = 0
+  let eligibleHabitCount = 0
 
   for (const habit of props.habits) {
     if (!isHabitActiveOnDate(habit, date)) {
-      continue;
+      continue
     }
 
-    const frequencyType = habit.frequency?.type ?? 'daily';
+    const frequencyType = habit.frequency?.type ?? 'daily'
     const isDayScoped = frequencyType === 'daily'
       || frequencyType === 'every_n_days'
-      || frequencyType === 'weekly_days';
+      || frequencyType === 'weekly_days'
 
     if (isDayScoped && !isDateEligibleForHabit(habit, date)) {
-      continue;
+      continue
     }
 
-    eligibleHabitCount++;
+    eligibleHabitCount++
 
     if (isDayScoped) {
-      const dayState = getHabitDayState(habit, date);
+      const dayState = getHabitDayState(habit, date)
       if (dayState.isCompleted) {
-        totalProgress += 1;
-        continue;
+        totalProgress += 1
+        continue
       }
 
       if (habit.type === 'count' && dayState.hasRecord) {
-        const targetValue = habit.target ?? dayState.targetValue ?? 0;
+        const targetValue = habit.target ?? dayState.targetValue ?? 0
         if (targetValue > 0) {
-          totalProgress += Math.min((dayState.currentValue ?? 0) / targetValue, 1);
+          totalProgress += Math.min((dayState.currentValue ?? 0) / targetValue, 1)
         }
       }
 
-      continue;
+      continue
     }
 
-    const periodState = getHabitPeriodState(habit, date);
+    const periodState = getHabitPeriodState(habit, date)
     if (periodState.requiredCount <= 0) {
-      eligibleHabitCount--;
-      continue;
+      eligibleHabitCount--
+      continue
     }
 
-    totalProgress += Math.min(periodState.completedCount / periodState.requiredCount, 1);
+    totalProgress += Math.min(periodState.completedCount / periodState.requiredCount, 1)
   }
 
   if (eligibleHabitCount <= 0) {
-    return { status: 'none', progress: 0 };
+    return {
+      status: 'none',
+      progress: 0,
+    }
   }
 
-  const progress = Math.min(totalProgress / eligibleHabitCount, 1);
+  const progress = Math.min(totalProgress / eligibleHabitCount, 1)
 
   if (progress >= 1) {
-    return { status: 'completed', progress: 1 };
+    return {
+      status: 'completed',
+      progress: 1,
+    }
   }
 
   if (progress > 0) {
-    return { status: 'partial', progress };
+    return {
+      status: 'partial',
+      progress,
+    }
   }
 
-  return { status: 'none', progress: 0 };
+  return {
+    status: 'none',
+    progress: 0,
+  }
 }
 
 const weekDays = computed(() => {
-  const windowStart = dayjs(props.currentDate).subtract(6, 'day');
-  const days = [];
+  const windowStart = dayjs(props.currentDate).subtract(6, 'day')
+  const days = []
   for (let i = 0; i < 7; i++) {
-    const d = windowStart.add(i, 'day');
-    const weekdayIndex = d.day() === 0 ? 6 : d.day() - 1;
-    const date = d.format('YYYY-MM-DD');
-    const { status, progress } = getDayProgress(date);
+    const d = windowStart.add(i, 'day')
+    const weekdayIndex = d.day() === 0 ? 6 : d.day() - 1
+    const date = d.format('YYYY-MM-DD')
+    const {
+      status,
+      progress,
+    } = getDayProgress(date)
     days.push({
       date,
       weekday: weekDayLabels.value[weekdayIndex] || '',
       dayNum: d.format('D'),
       status,
       progress,
-    });
+    })
   }
-  return days;
-});
+  return days
+})
 </script>
 
 <style scoped>

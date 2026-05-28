@@ -1,8 +1,20 @@
 // @vitest-environment happy-dom
 
-import { createApp, defineComponent, h, nextTick, ref } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initI18n } from '@/i18n';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  ref,
+} from 'vue'
+import { initI18n } from '@/i18n'
 
 const {
   mockMenuAddItem,
@@ -41,7 +53,7 @@ const {
       weixinUserName: 'Wechat user',
     },
   ]),
-}));
+}))
 
 const mockConversationsList = ref([
   {
@@ -66,52 +78,52 @@ const mockConversationsList = ref([
     weixinUserId: 'wx-1',
     weixinUserName: 'Wechat user',
   },
-]);
+])
 
 const mockAiStore = {
   currentConversationId: 'conv-normal',
   get conversationsList() {
-    return mockConversationsList.value;
+    return mockConversationsList.value
   },
   getConversationsList: mockGetConversationsList,
   refreshConversationsList: vi.fn().mockImplementation(async () => {
-    mockConversationsList.value = await mockGetConversationsList();
+    mockConversationsList.value = await mockGetConversationsList()
   }),
   startNewConversationDraft: vi.fn(),
   createConversation: vi.fn().mockResolvedValue('conv-new'),
   switchConversation: vi.fn().mockResolvedValue(undefined),
   renameConversation: mockRenameConversation,
   deleteConversation: mockDeleteConversation,
-};
+}
 
 vi.mock('siyuan', () => ({
   Menu: class {
-    addItem = mockMenuAddItem;
-    open = mockMenuOpen;
+    addItem = mockMenuAddItem
+    open = mockMenuOpen
   },
-}));
+}))
 
 vi.mock('@/utils/dialog', () => ({
   showInputDialog: mockShowInputDialog,
-}));
+}))
 
 vi.mock('@/stores', () => ({
   useAIStore: vi.fn(() => mockAiStore),
-}));
+}))
 
 vi.mock('@/tabs/AiChatDock.vue', () => ({
   default: defineComponent({
     name: 'AiChatDockStub',
     setup() {
-      return () => h('div', { 'data-testid': 'ai-chat-dock-stub' });
+      return () => h('div', { 'data-testid': 'ai-chat-dock-stub' })
     },
   }),
-}));
+}))
 
-describe('AiChatView', () => {
+describe('aiChatView', () => {
   beforeEach(async () => {
-    initI18n('en_US');
-    vi.clearAllMocks();
+    initI18n('en_US')
+    vi.clearAllMocks()
     mockGetConversationsList.mockResolvedValue([
       {
         id: 'conv-normal',
@@ -135,88 +147,88 @@ describe('AiChatView', () => {
         weixinUserId: 'wx-1',
         weixinUserName: 'Wechat user',
       },
-    ]);
-    mockConversationsList.value = await mockGetConversationsList();
-  });
+    ])
+    mockConversationsList.value = await mockGetConversationsList()
+  })
 
   async function mountView() {
-    const { default: AiChatView } = await import('@/components/workbench/view/AiChatView.vue');
-    const container = document.createElement('div');
-    document.body.appendChild(container);
+    const { default: AiChatView } = await import('@/components/workbench/view/AiChatView.vue')
+    const container = document.createElement('div')
+    document.body.appendChild(container)
 
     const app = createApp(defineComponent({
       render() {
-        return h(AiChatView);
+        return h(AiChatView)
       },
-    }));
-    app.mount(container);
-    await nextTick();
-    await nextTick();
+    }))
+    app.mount(container)
+    await nextTick()
+    await nextTick()
 
     return {
       container,
       app,
       unmount() {
-        app.unmount();
-        container.remove();
+        app.unmount()
+        container.remove()
       },
-    };
+    }
   }
 
   it('offers rename for normal conversations and renames through input dialog', async () => {
-    const mounted = await mountView();
+    const mounted = await mountView()
     const actions = mounted.container.querySelectorAll('.ai-chat-view__sidebar-item-action');
 
-    (actions[0] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    (actions[0] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    expect(mockMenuAddItem).toHaveBeenCalledTimes(2);
+    expect(mockMenuAddItem).toHaveBeenCalledTimes(2)
     expect(mockMenuAddItem.mock.calls[0][0]).toMatchObject({
       icon: 'iconEdit',
       label: 'Rename',
-    });
+    })
 
-    await mockMenuAddItem.mock.calls[0][0].click();
+    await mockMenuAddItem.mock.calls[0][0].click()
 
     expect(mockShowInputDialog).toHaveBeenCalledWith(
       'Rename',
       'Enter a new name',
       'Daily report',
       expect.any(Function),
-    );
-    expect(mockRenameConversation).toHaveBeenCalledWith('conv-normal', 'Renamed conversation');
+    )
+    expect(mockRenameConversation).toHaveBeenCalledWith('conv-normal', 'Renamed conversation')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('does not offer rename for weixin conversations', async () => {
-    const mounted = await mountView();
+    const mounted = await mountView()
     const actions = mounted.container.querySelectorAll('.ai-chat-view__sidebar-item-action');
 
-    (actions[1] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    (actions[1] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    expect(mockMenuAddItem).toHaveBeenCalledTimes(1);
+    expect(mockMenuAddItem).toHaveBeenCalledTimes(1)
     expect(mockMenuAddItem.mock.calls[0][0]).toMatchObject({
       icon: 'iconTrashcan',
       label: 'Delete Conversation',
-    });
+    })
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('does not create a conversation immediately when clicking new', async () => {
     const mounted = await mountView();
 
     (mounted.container.querySelector('.ai-chat-view__sidebar-header-btn') as HTMLElement)
-      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
-    expect(mockAiStore.startNewConversationDraft).toHaveBeenCalledTimes(1);
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled()
+    expect(mockAiStore.startNewConversationDraft).toHaveBeenCalledTimes(1)
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('reacts to store conversation list updates after a new conversation is created', async () => {
-    const mounted = await mountView();
+    const mounted = await mountView()
 
     mockConversationsList.value = [
       {
@@ -230,11 +242,11 @@ describe('AiChatView', () => {
         source: 'manual',
       },
       ...mockConversationsList.value,
-    ];
-    await nextTick();
+    ]
+    await nextTick()
 
-    expect(mounted.container.textContent).toContain('What tasks are pending this week?');
+    expect(mounted.container.textContent).toContain('What tasks are pending this week?')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

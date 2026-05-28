@@ -1,3 +1,8 @@
+import type {
+  BlockMutationIntent,
+  DatePatchSourceContext,
+  ResolvedMutationPlan,
+} from '@/utils/blockWriter/shared/types'
 /**
  * 目标解析器：确定变更的实际目标块、数据来源和提交方式
  *
@@ -8,23 +13,25 @@
  * 日期标记可能位于父文档中而非当前块，需要向上查找包含日期的父块作为源，
  * 同时记录 originalBlockId → sourceBlockId 的映射关系。
  */
-import { getBlockByID, getBlockKramdown } from '@/api';
-import { parseKramdownBlocks } from '@/parser/core';
-import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
-import type { BlockMutationIntent, DatePatchSourceContext, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+import {
+  getBlockByID,
+  getBlockKramdown,
+} from '@/api'
+import { parseKramdownBlocks } from '@/parser/core'
+import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'
 
 /** 日期 patch 源解析结果 */
 export interface DatePatchSource {
-  originalBlockId: string;
-  kramdown: string;
-  targetBlockId: string;
-  targetItemBlockRaw: string | null;
-  usedParentDocumentContext: boolean;
-  finalTargetBlockId?: string;
+  originalBlockId: string
+  kramdown: string
+  targetBlockId: string
+  targetItemBlockRaw: string | null
+  usedParentDocumentContext: boolean
+  finalTargetBlockId?: string
 }
 
 function isListItemLine(line: string): boolean {
-  return /^\s*([-]|\d+\.)\s+/.test(line);
+  return /^\s*(-|\d+\.)\s+/.test(line)
 }
 
 /**
@@ -33,54 +40,54 @@ function isListItemLine(line: string): boolean {
  * 否则回退到当前块自身的 kramdown
  */
 export async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
-  let kramdown: string | null = null;
-  let targetBlockId = blockId;
-  let targetItemBlockRaw: string | null = null;
-  let usedParentDocumentContext = false;
-  const block = await getBlockByID(blockId);
+  let kramdown: string | null = null
+  let targetBlockId = blockId
+  let targetItemBlockRaw: string | null = null
+  let usedParentDocumentContext = false
+  const block = await getBlockByID(blockId)
 
   if (block?.parent_id) {
-    const parentResult = await getBlockKramdown(block.parent_id);
+    const parentResult = await getBlockKramdown(block.parent_id)
     if (parentResult?.kramdown) {
-      const blocks = parseKramdownBlocks(parentResult.kramdown);
-      const itemBlockIndex = blocks.findIndex(candidate => candidate.blockId === blockId);
-      const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null;
-      usedParentDocumentContext = blocks.length > 1;
+      const blocks = parseKramdownBlocks(parentResult.kramdown)
+      const itemBlockIndex = blocks.findIndex((candidate) => candidate.blockId === blockId)
+      const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null
+      usedParentDocumentContext = blocks.length > 1
       if (itemBlock) {
-        targetItemBlockRaw = itemBlock.raw;
+        targetItemBlockRaw = itemBlock.raw
       }
 
       const blocksToCheck = itemBlock
         ? (itemBlockIndex > 0 ? [itemBlock, blocks[itemBlockIndex - 1]] : [itemBlock])
-        : [];
+        : []
 
       for (const checkBlock of blocksToCheck) {
-        const linesToCheck = checkBlock.content.split('\n');
+        const linesToCheck = checkBlock.content.split('\n')
         for (const line of linesToCheck) {
-          const trimmed = line.trim();
+          const trimmed = line.trim()
           if (trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
-            continue;
+            continue
           }
-          const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅');
-          const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed);
+          const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅')
+          const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed)
           if (hasDateMarker && hasDateValue && (isTaskListFormat(trimmed) || isListItemLine(line))) {
-            kramdown = parentResult.kramdown;
-            targetBlockId = block.parent_id;
-            break;
+            kramdown = parentResult.kramdown
+            targetBlockId = block.parent_id
+            break
           }
         }
-        if (kramdown) break;
+        if (kramdown) break
       }
     }
   }
 
   if (!kramdown) {
-    const result = await getBlockKramdown(blockId);
+    const result = await getBlockKramdown(blockId)
     if (!result?.kramdown) {
-      console.error('[BlockWriter] Failed to get block kramdown for addDate patch');
-      return null;
+      console.error('[BlockWriter] Failed to get block kramdown for addDate patch')
+      return null
     }
-    kramdown = result.kramdown;
+    kramdown = result.kramdown
   }
 
   return {
@@ -89,68 +96,68 @@ export async function resolveDatePatchSource(blockId: string): Promise<DatePatch
     targetBlockId,
     targetItemBlockRaw,
     usedParentDocumentContext,
-  };
+  }
 }
 
 function subtypeOf(block: any): string | undefined {
-  return block?.subtype ?? block?.subType;
+  return block?.subtype ?? block?.subType
 }
 
 function parentIdOf(block: any): string | undefined {
-  return block?.parent_id ?? block?.parentId;
+  return block?.parent_id ?? block?.parentId
 }
 
 function isTaskListNode(block: any): boolean {
-  const type = block?.type;
-  return (type === 'NodeListItem' || type === 'i') && subtypeOf(block) === 't';
+  const type = block?.type
+  return (type === 'NodeListItem' || type === 'i') && subtypeOf(block) === 't'
 }
 
 /** 解析 update 意图的实际目标块 ID：日期 patch 取日期源，状态/优先级/内容 patch 向上查找任务列表祖先 */
 async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, { kind: 'update' }>): Promise<string> {
-  const datePatchSource = await resolveDateSourceContext(intent);
+  const datePatchSource = await resolveDateSourceContext(intent)
   if (datePatchSource) {
-    return datePatchSource.finalTargetBlockId;
+    return datePatchSource.finalTargetBlockId
   }
 
   const shouldResolveTaskListAncestor = intent.patches.some((patch) => {
-    return patch.type === 'setStatus' || patch.type === 'setPriority' || patch.type === 'setContent';
-  });
+    return patch.type === 'setStatus' || patch.type === 'setPriority' || patch.type === 'setContent'
+  })
 
   if (!shouldResolveTaskListAncestor) {
-    return intent.context.listItemBlockId || intent.context.blockId;
+    return intent.context.listItemBlockId || intent.context.blockId
   }
 
-  const startBlockId = intent.context.blockId;
-  let current = await getBlockByID(startBlockId);
-  const visited = new Set<string>();
+  const startBlockId = intent.context.blockId
+  let current = await getBlockByID(startBlockId)
+  const visited = new Set<string>()
 
   for (let depth = 0; current && depth < 8; depth += 1) {
     if (isTaskListNode(current)) {
-      return current.id;
+      return current.id
     }
 
-    const parentId = parentIdOf(current);
+    const parentId = parentIdOf(current)
     if (!parentId || visited.has(parentId)) {
-      break;
+      break
     }
-    visited.add(parentId);
-    current = await getBlockByID(parentId);
+    visited.add(parentId)
+    current = await getBlockByID(parentId)
   }
 
-  return intent.context.listItemBlockId || startBlockId;
+  return intent.context.listItemBlockId || startBlockId
 }
 
 /** 构建 DatePatchSourceContext：仅当意图包含 addDate patch 时才解析 */
 async function resolveDateSourceContext(
   intent: Extract<BlockMutationIntent, { kind: 'update' }>,
 ): Promise<DatePatchSourceContext | null> {
-  if (!intent.patches.some(patch => patch.type === 'addDate')) {
-    return null;
+  if (!intent.patches.some((patch) => patch.type === 'addDate')) {
+    return null
   }
 
-  const resolved = await resolveDatePatchSource(intent.context.blockId);
+  const resolved = await resolveDatePatchSource(intent.context.blockId)
   if (!resolved) {
-    return null;
+    return null
   }
 
   return {
@@ -162,17 +169,17 @@ async function resolveDateSourceContext(
     finalTargetBlockId: resolved.usedParentDocumentContext && resolved.targetItemBlockRaw
       ? resolved.originalBlockId
       : resolved.targetBlockId,
-  };
+  }
 }
 
 function resolveTargetKind(block: any): 'paragraph' | 'task-list-item' | 'block' {
   if (isTaskListNode(block)) {
-    return 'task-list-item';
+    return 'task-list-item'
   }
   if (block?.type === 'NodeParagraph' || block?.type === 'p') {
-    return 'paragraph';
+    return 'paragraph'
   }
-  return 'block';
+  return 'block'
 }
 
 /** 判断当前 protyle DOM 是否可用作数据源：需要 protyle 实例和匹配的 nodeElement */
@@ -181,16 +188,16 @@ function canUseCurrentProtyleDom(
   targetBlockId: string,
   sourceBlockId: string,
 ): boolean {
-  const nodeElement = intent.context.nodeElement;
+  const nodeElement = intent.context.nodeElement
   if (!intent.context.protyle || !nodeElement || sourceBlockId !== targetBlockId) {
-    return false;
+    return false
   }
 
   if (nodeElement.getAttribute?.('data-node-id') === targetBlockId) {
-    return true;
+    return true
   }
 
-  return Boolean(nodeElement.closest?.(`[data-node-id="${targetBlockId}"]`));
+  return Boolean(nodeElement.closest?.(`[data-node-id="${targetBlockId}"]`))
 }
 
 /** 目标解析主入口：根据意图类型和 patch 内容确定目标块、来源和提交方式 */
@@ -205,14 +212,14 @@ export async function resolveMutationTarget(intent: BlockMutationIntent): Promis
       patch: intent.patch,
       context: intent.context,
       resultMode: intent.resultMode,
-    };
+    }
   }
 
-  const datePatchSource = await resolveDateSourceContext(intent);
-  const targetBlockId = datePatchSource?.finalTargetBlockId ?? await resolveUpdateTargetBlockId(intent);
-  const block = await getBlockByID(targetBlockId);
-  const sourceBlockId = datePatchSource?.sourceBlockId ?? targetBlockId;
-  const useCurrentProtyle = canUseCurrentProtyleDom(intent, targetBlockId, sourceBlockId);
+  const datePatchSource = await resolveDateSourceContext(intent)
+  const targetBlockId = datePatchSource?.finalTargetBlockId ?? await resolveUpdateTargetBlockId(intent)
+  const block = await getBlockByID(targetBlockId)
+  const sourceBlockId = datePatchSource?.sourceBlockId ?? targetBlockId
+  const useCurrentProtyle = canUseCurrentProtyleDom(intent, targetBlockId, sourceBlockId)
 
   return {
     kind: 'update',
@@ -226,5 +233,5 @@ export async function resolveMutationTarget(intent: BlockMutationIntent): Promis
     context: intent.context,
     patches: intent.patches,
     datePatchSource: datePatchSource ?? undefined,
-  };
+  }
 }

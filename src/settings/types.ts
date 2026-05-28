@@ -1,5 +1,9 @@
-import type { AIProviderConfig } from '@/types/ai';
-import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
+import type { AIProviderConfig } from '@/types/ai'
+import type {
+  ProjectDirectory,
+  ProjectGroup,
+  ScanMode,
+} from '@/types/models'
 
 export type TodoSortField =
   | 'priority'
@@ -8,59 +12,59 @@ export type TodoSortField =
   | 'reminderTime'
   | 'project'
   | 'task'
-  | 'content';
+  | 'content'
 
-export type TodoSortDirection = 'asc' | 'desc';
-export type HabitCheckInTimePrecision = 'day' | 'minute' | 'second';
-export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both';
+export type TodoSortDirection = 'asc' | 'desc'
+export type HabitCheckInTimePrecision = 'day' | 'minute' | 'second'
+export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both'
 
 export interface TodoSortRule {
-  field: TodoSortField;
-  direction: TodoSortDirection;
+  field: TodoSortField
+  direction: TodoSortDirection
 }
 
 // TodoDock 设置
 export interface TodoDockSettings {
-  hideCompleted: boolean;
-  hideAbandoned: boolean;
-  showLinks: boolean;
-  showReminderAndRecurring: boolean;
-  sortRules: TodoSortRule[];
-  selectedGroup: string;
+  hideCompleted: boolean
+  hideAbandoned: boolean
+  showLinks: boolean
+  showReminderAndRecurring: boolean
+  sortRules: TodoSortRule[]
+  selectedGroup: string
 }
 
 // AI 聊天记录（单独存储）
 export interface AIChatHistory {
-  conversations: unknown[];
-  currentConversationId: string | null;
+  conversations: unknown[]
+  currentConversationId: string | null
 }
 
 // 番茄钟设置
 export interface PomodoroSettings {
-  enableStatusBar?: boolean;
-  enableStatusBarTimer?: boolean;
-  enableFloatingButton?: boolean;
-  floatingDisplayMode?: PomodoroFloatingDisplayMode;
-  recordMode: 'block' | 'attr';
-  attrPrefix?: string;
-  autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
-  minFocusMinutes?: number; // 最小专注时间（分钟），默认 5
-  autoExtendEnabled?: boolean; // 是否开启自动延迟，默认 false
-  autoExtendWaitSeconds?: number; // 弹窗等待时间（秒），默认 30
-  autoExtendMinutes?: number; // 每次延长分钟数，默认 5
-  autoExtendMaxCount?: number; // 最大延迟次数，默认 3
+  enableStatusBar?: boolean
+  enableStatusBarTimer?: boolean
+  enableFloatingButton?: boolean
+  floatingDisplayMode?: PomodoroFloatingDisplayMode
+  recordMode: 'block' | 'attr'
+  attrPrefix?: string
+  autoCompleteOnItemDone?: boolean // 事项完成时自动结束番茄钟，默认 true
+  minFocusMinutes?: number // 最小专注时间（分钟），默认 5
+  autoExtendEnabled?: boolean // 是否开启自动延迟，默认 false
+  autoExtendWaitSeconds?: number // 弹窗等待时间（秒），默认 30
+  autoExtendMinutes?: number // 每次延长分钟数，默认 5
+  autoExtendMaxCount?: number // 最大延迟次数，默认 3
 
   // 专注时长预设（4个），默认 [15, 25, 45, 60]
-  focusDurationPresets?: number[];
+  focusDurationPresets?: number[]
 
   // 默认专注时长，必须在 presets 中，默认 25
-  defaultFocusDuration?: number;
+  defaultFocusDuration?: number
 
   // 休息时长预设（3个），默认 [5, 10, 15]
-  breakDurationPresets?: number[];
+  breakDurationPresets?: number[]
 
   // 默认休息时长，必须在 presets 中，默认 5
-  defaultBreakDuration?: number;
+  defaultBreakDuration?: number
 }
 
 // 自定义斜杠命令配置
@@ -87,13 +91,13 @@ export type CustomSlashCommandAction =
   | 'createSkill'
   | 'setPriority'
   | 'createHabit'
-  | 'checkIn';
+  | 'checkIn'
 
 export interface CustomSlashCommand {
-  id: string;
-  name: string;
-  commands: string[];
-  action: CustomSlashCommandAction;
+  id: string
+  name: string
+  commands: string[]
+  action: CustomSlashCommandAction
 }
 
 export interface WebhookChannel {
@@ -118,34 +122,34 @@ export interface WebhookConfig {
 // 设置数据结构
 export interface SettingsData {
   // 扫描模式
-  scanMode: ScanMode;
-  
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  calendarDefaultView: string;
-  lunchBreakStart: string;
-  lunchBreakEnd: string;
-  habitCheckInTimePrecision?: HabitCheckInTimePrecision;
-  showPomodoroBlocks?: boolean;     // 日历日视图是否显示番茄钟时间块，默认 true
-  showPomodoroTotal?: boolean;      // 事项条是否显示专注总时长，默认 true
-  todoDock: TodoDockSettings;
+  scanMode: ScanMode
+
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
+  calendarDefaultView: string
+  lunchBreakStart: string
+  lunchBreakEnd: string
+  habitCheckInTimePrecision?: HabitCheckInTimePrecision
+  showPomodoroBlocks?: boolean // 日历日视图是否显示番茄钟时间块，默认 true
+  showPomodoroTotal?: boolean // 事项条是否显示专注总时长，默认 true
+  todoDock: TodoDockSettings
   focusWorkbench?: {
-    selectedGroup?: string;
-  };
+    selectedGroup?: string
+  }
   ai?: {
-    providers: AIProviderConfig[];
-    activeProviderId: string | null;
-    showToolCalls?: boolean;
+    providers: AIProviderConfig[]
+    activeProviderId: string | null
+    showToolCalls?: boolean
     clawbot?: {
-      enabled: boolean;
-      baseUrl: string;
-      cdnBaseUrl: string;
-    };
-  };
-  pomodoro?: PomodoroSettings;
-  customSlashCommands?: CustomSlashCommand[];
-  webhook?: WebhookConfig;
+      enabled: boolean
+      baseUrl: string
+      cdnBaseUrl: string
+    }
+  }
+  pomodoro?: PomodoroSettings
+  customSlashCommands?: CustomSlashCommand[]
+  webhook?: WebhookConfig
 }
 
 export const defaultPomodoroSettings: PomodoroSettings = {
@@ -173,17 +177,23 @@ export const defaultPomodoroSettings: PomodoroSettings = {
 
   // 默认休息时长，必须在 presets 中，默认 5
   defaultBreakDuration: 5,
-};
+}
 
 export const defaultTodoSortRules: TodoSortRule[] = [
-  { field: 'priority', direction: 'asc' },
-  { field: 'time', direction: 'asc' },
-];
+  {
+    field: 'priority',
+    direction: 'asc',
+  },
+  {
+    field: 'time',
+    direction: 'asc',
+  },
+]
 
 export const defaultSettings: SettingsData = {
   // 默认全空间扫描
   scanMode: 'full',
-  
+
   directories: [],
   groups: [],
   defaultGroup: '',
@@ -206,7 +216,7 @@ export const defaultSettings: SettingsData = {
   },
   ai: {
     providers: [],
-    activeProviderId: null
+    activeProviderId: null,
   },
   pomodoro: defaultPomodoroSettings,
   customSlashCommands: [],
@@ -214,9 +224,9 @@ export const defaultSettings: SettingsData = {
     enabled: false,
     channels: [],
   },
-};
+}
 
 export const defaultChatHistory: AIChatHistory = {
   conversations: [],
-  currentConversationId: null
-};
+  currentConversationId: null,
+}

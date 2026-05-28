@@ -10,12 +10,17 @@
             <SkillIcon class="sy-settings-section__icon" />
             <span class="sy-settings-section__title">{{ t('settings').aiSkills?.title ?? 'AI 技能配置' }}</span>
           </div>
-          <div class="sy-settings-section__description">{{ t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务' }}</div>
+          <div class="sy-settings-section__description">
+            {{ t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务' }}
+          </div>
         </div>
       </div>
     </template>
     <!-- 内置技能列表 -->
-    <div v-if="builtinSkills.length > 0" class="skill-section">
+    <div
+      v-if="builtinSkills.length > 0"
+      class="skill-section"
+    >
       <h4 class="skill-section-title">
         {{ t('settings').aiSkills?.builtinSkills ?? '内置技能' }}
         <span class="skill-section-hint">
@@ -23,9 +28,9 @@
         </span>
       </h4>
       <div class="custom-list">
-        <div 
-          v-for="skill in builtinSkills" 
-          :key="skill.id" 
+        <div
+          v-for="skill in builtinSkills"
+          :key="skill.id"
           class="custom-item builtin-skill"
         >
           <div class="custom-item-header">
@@ -37,8 +42,8 @@
               <span class="custom-item-desc">{{ skill.description }}</span>
             </div>
             <div class="custom-item-actions">
-              <SyButton 
-                icon="iconCopy" 
+              <SyButton
+                icon="iconCopy"
                 :text="t('settings').aiSkills?.customize ?? '自定义'"
                 :aria-label="t('settings').aiSkills?.customize ?? '自定义'"
                 @click="createOverrideSkill(skill)"
@@ -48,42 +53,55 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 用户自定义技能列表 -->
     <div class="skill-section">
       <h4 class="skill-section-title">
         {{ t('settings').aiSkills?.customSkills ?? '自定义技能' }}
       </h4>
-      <div v-if="userSkills.length === 0" class="skill-empty">
+      <div
+        v-if="userSkills.length === 0"
+        class="skill-empty"
+      >
         {{ t('settings').aiSkills?.emptySkills ?? '暂无自定义技能，点击下方按钮添加' }}
       </div>
-      <div v-else class="custom-list">
-        <div 
-          v-for="skill in userSkills" 
-          :key="skill.docId" 
-          :class="['custom-item', { 'is-override': skill.isOverride }]"
+      <div
+        v-else
+        class="custom-list"
+      >
+        <div
+          v-for="skill in userSkills"
+          :key="skill.docId"
+          class="custom-item"
+          :class="[{ 'is-override': skill.isOverride }]"
         >
           <div class="custom-item-header">
             <div class="custom-item-info">
               <span class="custom-item-name">
                 {{ skill.name }}
-                <span v-if="skill.isOverride" class="override-badge">
+                <span
+                  v-if="skill.isOverride"
+                  class="override-badge"
+                >
                   {{ t('common')?.overriding ?? '已覆盖' }}
                 </span>
-                <span v-else-if="!skill.enabled" class="disabled-badge">
+                <span
+                  v-else-if="!skill.enabled"
+                  class="disabled-badge"
+                >
                   {{ t('common')?.disabled ?? '已禁用' }}
                 </span>
               </span>
               <span class="custom-item-path">{{ skill.docPath }}</span>
             </div>
             <div class="custom-item-actions">
-              <SyButton 
-                icon="iconEdit" 
+              <SyButton
+                icon="iconEdit"
                 :aria-label="t('settings').aiSkills?.edit ?? '编辑'"
                 @click="editSkill(skill)"
               />
-              <SyButton 
-                icon="iconTrashcan" 
+              <SyButton
+                icon="iconTrashcan"
                 :aria-label="t('settings').aiSkills?.delete ?? '删除'"
                 @click="removeSkill(skill)"
               />
@@ -96,7 +114,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 添加技能按钮 -->
     <SySettingsActionButton
       icon="iconAdd"
@@ -104,116 +122,123 @@
       @click="showAddSkillDialog"
     />
   </SySettingsSection>
-  
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed, createApp } from 'vue';
-import { useSkillStore } from '@/stores/skillStore';
-import { getAllBuiltinSkills } from '@/utils/skillTemplates';
-import { t } from '@/i18n';
-import { showMessage } from 'siyuan';
-import { showConfirmDialog, createDialog } from '@/utils/dialog';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
-import type { SkillConfig } from '@/types/skill';
-import { useSkillService } from '@/services/skillService';
+import type { SkillConfig } from '@/types/skill'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  createApp,
+  ref,
+} from 'vue'
+import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue'
+import SkillIcon from '@/components/icons/SkillIcon.vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import { useSkillService } from '@/services/skillService'
+import { useSkillStore } from '@/stores/skillStore'
 
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingsActionButton from './SySettingsActionButton.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
-import SkillIcon from '@/components/icons/SkillIcon.vue';
+import {
+  createDialog,
+  showConfirmDialog,
+} from '@/utils/dialog'
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import { getAllBuiltinSkills } from '@/utils/skillTemplates'
+import SySettingsActionButton from './SySettingsActionButton.vue'
+import SySettingsSection from './SySettingsSection.vue'
 
 // 定义 props 和 emits
 const props = defineProps<{
-  dialog?: { destroy: () => void };
-}>();
+  dialog?: { destroy: () => void }
+}>()
 
 const emit = defineEmits<{
-  (e: 'editSkill', docId: string): void;
-  (e: 'close'): void;
-}>();
+  (e: 'editSkill', docId: string): void
+  (e: 'close'): void
+}>()
 
-const skillStore = useSkillStore();
+const skillStore = useSkillStore()
 
-const prefilledSkillName = ref('');
+const prefilledSkillName = ref('')
 
 // 内置技能列表
 const builtinSkills = computed(() => {
-  const userSkillNames = new Set(skillStore.skills.map(s => s.name));
+  const userSkillNames = new Set(skillStore.skills.map((s) => s.name))
   return getAllBuiltinSkills()
-    .filter(builtin => !userSkillNames.has(builtin.name))
-    .map(builtin => ({
+    .filter((builtin) => !userSkillNames.has(builtin.name))
+    .map((builtin) => ({
       id: builtin.id,
       name: builtin.name,
       description: builtin.description,
-      isBuiltin: true
-    }));
-});
+      isBuiltin: true,
+    }))
+})
 
 // 用户自定义技能列表
-const userSkills = computed(() => skillStore.skills);
+const userSkills = computed(() => skillStore.skills)
 
 // 打开创建技能弹框
 function openCreateSkillDialog(prefilledName: string = '') {
-  const container = document.createElement('div');
-  
+  const container = document.createElement('div')
+
   const dialog = createDialog({
     title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能文档',
     content: '',
     width: '480px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
-  
+      app.unmount()
+    },
+  })
+
   const app = createApp(CreateSkillDialog, {
     mode: 'new',
     prefilledName,
     onClose: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
     onCreated: (docId: string, _skillName?: string) => {
       // 打开创建的文档
-      emit('editSkill', docId);
+      emit('editSkill', docId)
       if (props.dialog) {
-        props.dialog.destroy();
+        props.dialog.destroy()
       }
-      emit('close');
-    }
-  });
-  
-  app.use(getSharedPinia());
-  app.mount(container);
-  
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+      emit('close')
+    },
+  })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 }
 
 // 显示添加技能对话框
 function showAddSkillDialog() {
-  openCreateSkillDialog('');
+  openCreateSkillDialog('')
 }
 
 // 编辑技能（触发事件让父组件处理）
 function editSkill(skill: SkillConfig) {
   if (!skill.docId) {
-    showMessage('无法获取文档ID', 2000, 'error');
-    return;
+    showMessage('无法获取文档ID', 2000, 'error')
+    return
   }
-  
+
   // 触发事件，让父组件打开文档
-  emit('editSkill', skill.docId);
-  
+  emit('editSkill', skill.docId)
+
   // 关闭弹框
   if (props.dialog) {
-    props.dialog.destroy();
+    props.dialog.destroy()
   }
-  emit('close');
+  emit('close')
 }
 
 // 删除技能
@@ -223,45 +248,45 @@ function removeSkill(skill: SkillConfig) {
     (t('settings').aiSkills?.confirmDeleteSkill ?? '确定要删除技能「{name}」吗？')
       .replace('{name}', skill.name),
     () => {
-      skillStore.removeSkill(skill.docId);
-      showMessage('技能已删除', 2000, 'info');
-    }
-  );
+      skillStore.removeSkill(skill.docId)
+      showMessage('技能已删除', 2000, 'info')
+    },
+  )
 }
 
 // 切换启用状态
 function toggleSkillEnabled(skillId: string, enabled: boolean) {
-  skillStore.toggleSkillEnabled(skillId, enabled);
+  skillStore.toggleSkillEnabled(skillId, enabled)
 }
 
 // 创建覆盖技能
-async function createOverrideSkill(skill: { name: string; description: string }) {
-  const skillService = useSkillService();
-  
+async function createOverrideSkill(skill: { name: string, description: string }) {
+  const skillService = useSkillService()
+
   // 获取或创建任务助手笔记本
-  const notebook = await getOrCreateTaskAssistantNotebook();
+  const notebook = await getOrCreateTaskAssistantNotebook()
   if (!notebook) {
-    showMessage('没有可用的笔记本', 3000, 'error');
-    return;
+    showMessage('没有可用的笔记本', 3000, 'error')
+    return
   }
 
   const result = await skillService.createOverrideSkill(
     skill.name,
     notebook.id,
-    'AI技能'
-  );
+    'AI技能',
+  )
 
   if (result) {
-    showMessage(`已创建「${skill.name}」的自定义版本`, 3000, 'info');
+    showMessage(`已创建「${skill.name}」的自定义版本`, 3000, 'info')
   }
 }
 
 // 技能创建成功回调
 async function onSkillCreated(skillId: string) {
-  showDialog.value = false;
+  showDialog.value = false
   // 打开创建的文档
   if (skillId) {
-    await openDocument(skillId);
+    await openDocument(skillId)
   }
 }
 </script>

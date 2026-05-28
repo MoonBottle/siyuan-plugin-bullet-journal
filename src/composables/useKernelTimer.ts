@@ -1,6 +1,9 @@
-import { ref } from 'vue'
-import { Events, eventBus } from '@/utils/eventBus'
 import type { Plugin } from 'siyuan'
+import { ref } from 'vue'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
 
 export const kernelAvailable = ref(false)
 
@@ -11,29 +14,28 @@ let onDateChanged: KernelNotificationHandler | null = null
 let onStateChange: ((e: any) => void) | null = null
 
 export function initKernelConnection(plugin: Plugin): void {
+  const kernel = plugin.kernel!
   onTimerExpired = (params: any) => {
-    console.log('[KernelTimer] received timer-expired: type=' + params.type + ' id=' + params.id)
+    console.log(`[KernelTimer] received timer-expired: type=${params.type} id=${params.id}`)
     eventBus.emit(Events.KERNEL_NOTIFICATION, params)
   }
   onDateChanged = (params: any) => {
-    console.log('[KernelTimer] received date-changed: date=' + params.date)
+    console.log(`[KernelTimer] received date-changed: date=${params.date}`)
     eventBus.emit(Events.KERNEL_DATE_CHANGED, params)
   }
 
-  plugin.kernel.rpc.bind('timer-expired', onTimerExpired)
-  plugin.kernel.rpc.bind('date-changed', onDateChanged)
+  kernel.rpc.bind('timer-expired', onTimerExpired)
+  kernel.rpc.bind('date-changed', onDateChanged)
 
-  if (plugin.kernel.state.code === 2) {
+  if (kernel.state.code === 2) {
     kernelAvailable.value = true
     console.log('[KernelTimer] kernel already running: true')
   }
 
-  onStateChange = (e: CustomEvent<{ code: number; description: string }>) => {
-    const state = e.detail
-    console.log('[KernelTimer] received kernel-plugin-state-change: state=', state, e)
+  onStateChange = (state: { code: number, description: string }) => {
     const available = state.code === 2
     kernelAvailable.value = available
-    console.log('[KernelTimer] kernel state changed: code=' + state.code + ' description=' + state.description + ' available=' + available)
+    console.log(`[KernelTimer] kernel state changed: code=${state.code} description=${state.description} available=${available}`)
   }
   plugin.eventBus.on('kernel-plugin-state-change', onStateChange)
 
@@ -41,12 +43,13 @@ export function initKernelConnection(plugin: Plugin): void {
 }
 
 export function destroyKernelConnection(plugin: Plugin): void {
+  const kernel = plugin.kernel!
   if (onTimerExpired) {
-    plugin.kernel.rpc.unbind('timer-expired', onTimerExpired)
+    kernel.rpc.unbind('timer-expired', onTimerExpired)
     onTimerExpired = null
   }
   if (onDateChanged) {
-    plugin.kernel.rpc.unbind('date-changed', onDateChanged)
+    kernel.rpc.unbind('date-changed', onDateChanged)
     onDateChanged = null
   }
   if (onStateChange) {

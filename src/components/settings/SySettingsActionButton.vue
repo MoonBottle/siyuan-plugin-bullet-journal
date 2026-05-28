@@ -4,7 +4,10 @@
     class="sy-settings-action-btn b3-button b3-button--outline fn__flex-center"
     @click="$emit('click', $event)"
   >
-    <svg v-if="icon" class="sy-settings-action-btn__icon">
+    <svg
+      v-if="icon"
+      class="sy-settings-action-btn__icon"
+    >
       <use :xlink:href="`#${icon}`"></use>
     </svg>
     <span>{{ text }}</span>
@@ -13,11 +16,11 @@
 
 <script setup lang="ts">
 defineProps<{
-  icon?: string;
-  text: string;
+  icon?: string
+  text: string
 }>()
 defineEmits<{
-  click: [event: MouseEvent];
+  click: [event: MouseEvent]
 }>()
 </script>
 

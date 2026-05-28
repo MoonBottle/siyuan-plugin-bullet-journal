@@ -13,7 +13,7 @@
 `scheduler.ts:136` 的 `initScheduler()` 没有防护：
 
 ```typescript
-checkInterval = setInterval(checkTimers, 1000)  // 无防护！
+checkInterval = setInterval(checkTimers, 1000) // 无防护！
 ```
 
 如果 `onrunning` 被调用 N 次（插件热重载、工作区切换等），就创建 N 个 `setInterval`，而 `checkInterval` 变量只保存最后一个引用，前 N-1 个全部泄漏。
@@ -45,7 +45,7 @@ if (!entry.notified && now >= entry.endTime) {  // ← 检查 entry.notified
 `pomodoro.ts:handleRegisterTimers` 直接透传前端数据，不补充 `notified` 字段：
 
 ```typescript
-registerTimers(params.entries)  // entries 没有 notified → undefined
+registerTimers(params.entries) // entries 没有 notified → undefined
 ```
 
 对比 `handleRegisterTimer`（单条）会手动设 `notified: false`。
@@ -171,7 +171,7 @@ if (!notifiedTimerIds.has(entry.id) && entry.endTime <= now) {
 
 ```typescript
 export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
-  for (var i = 0; i < params.entries.length; i++) {
+  for (let i = 0; i < params.entries.length; i++) {
     if (params.entries[i].notified === undefined) {
       params.entries[i].notified = false
     }
@@ -187,10 +187,13 @@ export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
 
 ```typescript
 export function handleFsNotify(event: { type: string, detail: any }): void {
-  if (event.type !== 'fs-notify') return
-  var path = event.detail.path.replace(/\\/g, '/')
-  if (path.endsWith('.tmp')) return
-  if (path === 'timer-registry.json') return  // 新增
+  if (event.type !== 'fs-notify')
+    return
+  const path = event.detail.path.replace(/\\/g, '/')
+  if (path.endsWith('.tmp'))
+    return
+  if (path === 'timer-registry.json')
+    return // 新增
   // ... 原有逻辑 ...
 }
 ```
@@ -223,12 +226,12 @@ private rebuildSchedule(): void {
 ```typescript
 this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
   if (available) {
-    this.setupKernelListeners();
-    this.clearAllJobs();
+    this.setupKernelListeners()
+    this.clearAllJobs()
     // 不再调用 rebuildSchedule()
     // kernel-data.json 由 projectStore 维护，kernel 通过 fs-notify 自行重建
   }
-});
+})
 ```
 
 ### 5. 不需要修改的文件

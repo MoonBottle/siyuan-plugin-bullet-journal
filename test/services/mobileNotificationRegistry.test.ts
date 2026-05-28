@@ -1,28 +1,34 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import {
   clearMobileNotificationRegistry,
   loadMobileNotificationRegistry,
   removeMobileNotificationRegistryEntry,
   saveMobileNotificationRegistryEntry,
-} from '@/services/mobileNotificationRegistry';
+} from '@/services/mobileNotificationRegistry'
 
 describe('mobileNotificationRegistry', () => {
   beforeEach(() => {
-    const storage = new Map<string, string>();
+    const storage = new Map<string, string>()
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => storage.get(key) ?? null,
       setItem: (key: string, value: string) => {
-        storage.set(key, value);
+        storage.set(key, value)
       },
       removeItem: (key: string) => {
-        storage.delete(key);
+        storage.delete(key)
       },
       clear: () => {
-        storage.clear();
+        storage.clear()
       },
-    });
-    localStorage.clear();
-  });
+    })
+    localStorage.clear()
+  })
 
   it('persists entries keyed by entryKey', () => {
     const saved = saveMobileNotificationRegistryEntry({
@@ -34,13 +40,13 @@ describe('mobileNotificationRegistry', () => {
       kind: 'reminder',
       status: 'scheduled',
       updatedAt: '2026-05-06T10:00:00.000Z',
-    });
+    })
 
-    const registry = loadMobileNotificationRegistry();
+    const registry = loadMobileNotificationRegistry()
 
-    expect(saved).toBe(true);
-    expect(registry['task-1|2026-05-06|1000']?.notificationId).toBe(15);
-  });
+    expect(saved).toBe(true)
+    expect(registry['task-1|2026-05-06|1000']?.notificationId).toBe(15)
+  })
 
   it('drops malformed entries during load', () => {
     localStorage.setItem('task-assistant-mobile-notification-registry', JSON.stringify({
@@ -88,11 +94,11 @@ describe('mobileNotificationRegistry', () => {
         status: 'scheduled',
         updatedAt: '2026-05-06T10:00:00.000Z',
       },
-    }));
+    }))
 
-    const registry = loadMobileNotificationRegistry();
+    const registry = loadMobileNotificationRegistry()
 
-    expect(Object.keys(registry)).toEqual(['good']);
+    expect(Object.keys(registry)).toEqual(['good'])
     expect(localStorage.getItem('task-assistant-mobile-notification-registry')).toBe(JSON.stringify({
       good: {
         entryKey: 'good',
@@ -104,11 +110,11 @@ describe('mobileNotificationRegistry', () => {
         status: 'scheduled',
         updatedAt: '2026-05-06T10:00:00.000Z',
       },
-    }));
-  });
+    }))
+  })
 
   it('invalid save returns failure and does not persist', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const saved = saveMobileNotificationRegistryEntry({
       entryKey: 'bad-save',
@@ -119,15 +125,15 @@ describe('mobileNotificationRegistry', () => {
       kind: 'reminder',
       status: 'scheduled',
       updatedAt: '2026-05-06T10:00:00.000Z',
-    });
+    })
 
-    expect(saved).toBe(false);
-    expect(loadMobileNotificationRegistry()).toEqual({});
-    expect(localStorage.getItem('task-assistant-mobile-notification-registry')).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(saved).toBe(false)
+    expect(loadMobileNotificationRegistry()).toEqual({})
+    expect(localStorage.getItem('task-assistant-mobile-notification-registry')).toBeNull()
+    expect(warnSpy).toHaveBeenCalled()
 
-    warnSpy.mockRestore();
-  });
+    warnSpy.mockRestore()
+  })
 
   it('removes a single entry without touching others', () => {
     saveMobileNotificationRegistryEntry({
@@ -139,7 +145,7 @@ describe('mobileNotificationRegistry', () => {
       kind: 'reminder',
       status: 'scheduled',
       updatedAt: 'x',
-    });
+    })
     saveMobileNotificationRegistryEntry({
       entryKey: 'b',
       notificationId: 2,
@@ -149,15 +155,15 @@ describe('mobileNotificationRegistry', () => {
       kind: 'habit',
       status: 'scheduled',
       updatedAt: 'y',
-    });
+    })
 
-    removeMobileNotificationRegistryEntry('a');
+    removeMobileNotificationRegistryEntry('a')
 
-    const registry = loadMobileNotificationRegistry();
+    const registry = loadMobileNotificationRegistry()
 
-    expect(registry.a).toBeUndefined();
-    expect(registry.b?.notificationId).toBe(2);
-  });
+    expect(registry.a).toBeUndefined()
+    expect(registry.b?.notificationId).toBe(2)
+  })
 
   it('clears the registry', () => {
     saveMobileNotificationRegistryEntry({
@@ -169,10 +175,10 @@ describe('mobileNotificationRegistry', () => {
       kind: 'pomodoro-focus-end',
       status: 'scheduled',
       updatedAt: 'x',
-    });
+    })
 
-    clearMobileNotificationRegistry();
+    clearMobileNotificationRegistry()
 
-    expect(loadMobileNotificationRegistry()).toEqual({});
-  });
-});
+    expect(loadMobileNotificationRegistry()).toEqual({})
+  })
+})

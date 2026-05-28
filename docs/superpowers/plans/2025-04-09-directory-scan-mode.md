@@ -14,26 +14,27 @@
 
 ## 文件变更清单
 
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `src/types/models.ts` | 修改 | 添加 `ScanMode` 类型 |
-| `src/utils/directoryUtils.ts` | 新建 | `matchGroupId` 路径匹配工具函数 |
-| `src/utils/__tests__/directoryUtils.test.ts` | 新建 | `matchGroupId` 单元测试 |
-| `src/settings.ts` | 修改 | `SettingsData` 添加 `scanMode` 字段 |
-| `src/stores/settingsStore.ts` | 修改 | 添加 `scanMode` 状态，更新读写方法 |
-| `src/parser/markdownParser.ts` | 修改 | 构造函数接收 `scanMode`，解析逻辑分支 |
-| `src/stores/projectStore.ts` | 修改 | `loadProjects` 接收 `scanMode`，全扫描时匹配分组 |
-| `src/components/settings/DirectoryConfigSection.vue` | 修改 | 添加扫描模式选择 UI |
-| `src/components/settings/SettingsDialog.vue` | 修改 | 传递 `scanMode` 到目录配置组件 |
-| `src/index.ts` | 修改 | 启动时传递 `scanMode` |
-| `src/i18n/zh.ts` | 修改 | 添加扫描模式中文翻译 |
-| `src/i18n/en.ts` | 修改 | 添加扫描模式英文翻译 |
+| 文件                                                 | 操作 | 说明                                             |
+| ---------------------------------------------------- | ---- | ------------------------------------------------ |
+| `src/types/models.ts`                                | 修改 | 添加 `ScanMode` 类型                             |
+| `src/utils/directoryUtils.ts`                        | 新建 | `matchGroupId` 路径匹配工具函数                  |
+| `src/utils/__tests__/directoryUtils.test.ts`         | 新建 | `matchGroupId` 单元测试                          |
+| `src/settings.ts`                                    | 修改 | `SettingsData` 添加 `scanMode` 字段              |
+| `src/stores/settingsStore.ts`                        | 修改 | 添加 `scanMode` 状态，更新读写方法               |
+| `src/parser/markdownParser.ts`                       | 修改 | 构造函数接收 `scanMode`，解析逻辑分支            |
+| `src/stores/projectStore.ts`                         | 修改 | `loadProjects` 接收 `scanMode`，全扫描时匹配分组 |
+| `src/components/settings/DirectoryConfigSection.vue` | 修改 | 添加扫描模式选择 UI                              |
+| `src/components/settings/SettingsDialog.vue`         | 修改 | 传递 `scanMode` 到目录配置组件                   |
+| `src/index.ts`                                       | 修改 | 启动时传递 `scanMode`                            |
+| `src/i18n/zh.ts`                                     | 修改 | 添加扫描模式中文翻译                             |
+| `src/i18n/en.ts`                                     | 修改 | 添加扫描模式英文翻译                             |
 
 ---
 
 ## Task 1: 添加 ScanMode 类型定义
 
 **Files:**
+
 - Modify: `src/types/models.ts:180-186` (ProjectGroup 定义后)
 
 **Context:** 在 `ProjectGroup` 接口后添加 `ScanMode` 类型定义
@@ -44,7 +45,7 @@
 // src/types/models.ts - 在 ProjectGroup 后添加
 
 // 扫描模式
-export type ScanMode = 'full' | 'directories';
+export type ScanMode = 'full' | 'directories'
 ```
 
 - [ ] **Step 2: 验证类型导出**
@@ -63,6 +64,7 @@ git commit -m "feat: add ScanMode type definition"
 ## Task 2: 创建 matchGroupId 工具函数及测试
 
 **Files:**
+
 - Create: `src/utils/directoryUtils.ts`
 - Create: `src/utils/__tests__/directoryUtils.test.ts`
 
@@ -72,12 +74,12 @@ git commit -m "feat: add ScanMode type definition"
 
 ```typescript
 // src/utils/directoryUtils.ts
-import type { ProjectDirectory } from '@/types/models';
+import type { ProjectDirectory } from '@/types/models'
 
 /**
  * 根据文档路径匹配目录配置，返回对应的分组 ID
  * 使用最长路径优先匹配策略
- * 
+ *
  * @param docPath 文档路径（如 "工作/项目/重要/A项目"）
  * @param directories 目录配置列表
  * @returns 匹配的分组 ID，未匹配返回 undefined
@@ -86,27 +88,27 @@ export function matchGroupId(
   docPath: string,
   directories: ProjectDirectory[]
 ): string | undefined {
-  const enabledDirs = directories.filter(d => d.enabled);
-  
+  const enabledDirs = directories.filter(d => d.enabled)
+
   if (enabledDirs.length === 0) {
-    return undefined;
+    return undefined
   }
-  
+
   // 按路径长度降序排序，确保最长路径优先匹配
-  const sortedDirs = [...enabledDirs].sort((a, b) => b.path.length - a.path.length);
-  
-  const matched = sortedDirs.find(d => docPath.startsWith(d.path));
-  return matched?.groupId;
+  const sortedDirs = [...enabledDirs].sort((a, b) => b.path.length - a.path.length)
+
+  const matched = sortedDirs.find(d => docPath.startsWith(d.path))
+  return matched?.groupId
 }
 ```
 
 - [ ] **Step 2: 创建单元测试文件**
 
 ```typescript
+import type { ProjectDirectory } from '@/types/models'
 // src/utils/__tests__/directoryUtils.test.ts
-import { describe, it, expect } from 'vitest';
-import { matchGroupId } from '../directoryUtils';
-import type { ProjectDirectory } from '@/types/models';
+import { describe, expect, it } from 'vitest'
+import { matchGroupId } from '../directoryUtils'
 
 describe('matchGroupId', () => {
   const createDir = (path: string, groupId: string, enabled = true): ProjectDirectory => ({
@@ -114,58 +116,58 @@ describe('matchGroupId', () => {
     path,
     enabled,
     groupId
-  });
+  })
 
   it('should return undefined when no directories provided', () => {
-    const result = matchGroupId('工作/项目A', []);
-    expect(result).toBeUndefined();
-  });
+    const result = matchGroupId('工作/项目A', [])
+    expect(result).toBeUndefined()
+  })
 
   it('should return undefined when no directories enabled', () => {
-    const dirs = [createDir('工作', 'group1', false)];
-    const result = matchGroupId('工作/项目A', dirs);
-    expect(result).toBeUndefined();
-  });
+    const dirs = [createDir('工作', 'group1', false)]
+    const result = matchGroupId('工作/项目A', dirs)
+    expect(result).toBeUndefined()
+  })
 
   it('should match exact path', () => {
-    const dirs = [createDir('工作', 'work-group')];
-    const result = matchGroupId('工作/项目A', dirs);
-    expect(result).toBe('work-group');
-  });
+    const dirs = [createDir('工作', 'work-group')]
+    const result = matchGroupId('工作/项目A', dirs)
+    expect(result).toBe('work-group')
+  })
 
   it('should return undefined when path does not match', () => {
-    const dirs = [createDir('工作', 'work-group')];
-    const result = matchGroupId('个人/日记', dirs);
-    expect(result).toBeUndefined();
-  });
+    const dirs = [createDir('工作', 'work-group')]
+    const result = matchGroupId('个人/日记', dirs)
+    expect(result).toBeUndefined()
+  })
 
   it('should use longest path first matching', () => {
     const dirs = [
       createDir('工作', 'work-group'),
       createDir('工作/重要', 'important-group')
-    ];
+    ]
     // 应该匹配最长路径 "工作/重要"
-    const result = matchGroupId('工作/重要/项目A', dirs);
-    expect(result).toBe('important-group');
-  });
+    const result = matchGroupId('工作/重要/项目A', dirs)
+    expect(result).toBe('important-group')
+  })
 
   it('should match multiple levels', () => {
     const dirs = [
       createDir('工作', 'work'),
       createDir('学习', 'study'),
       createDir('个人', 'personal')
-    ];
-    expect(matchGroupId('工作/2024/项目', dirs)).toBe('work');
-    expect(matchGroupId('学习/前端/React', dirs)).toBe('study');
-    expect(matchGroupId('个人/健康/运动', dirs)).toBe('personal');
-  });
+    ]
+    expect(matchGroupId('工作/2024/项目', dirs)).toBe('work')
+    expect(matchGroupId('学习/前端/React', dirs)).toBe('study')
+    expect(matchGroupId('个人/健康/运动', dirs)).toBe('personal')
+  })
 
   it('should handle empty groupId', () => {
-    const dirs = [{ id: 'dir1', path: '工作', enabled: true }];
-    const result = matchGroupId('工作/项目A', dirs);
-    expect(result).toBeUndefined();
-  });
-});
+    const dirs = [{ id: 'dir1', path: '工作', enabled: true }]
+    const result = matchGroupId('工作/项目A', dirs)
+    expect(result).toBeUndefined()
+  })
+})
 ```
 
 - [ ] **Step 3: 运行测试确保通过**
@@ -188,6 +190,7 @@ git commit -m "feat: add matchGroupId utility with longest-path-first matching"
 ## Task 3: Settings 数据模型添加 scanMode
 
 **Files:**
+
 - Modify: `src/settings.ts`
 
 **Context:** 在 `SettingsData` 接口和 `defaultSettings` 中添加 `scanMode`
@@ -198,9 +201,9 @@ git commit -m "feat: add matchGroupId utility with longest-path-first matching"
 // src/settings.ts - 找到 SettingsData 接口，添加 scanMode 字段
 export interface SettingsData {
   // ... 现有字段
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
   // ... 其他字段
 }
 ```
@@ -211,28 +214,28 @@ export interface SettingsData {
 // src/settings.ts - SettingsData 接口
 export interface SettingsData {
   // 新增：扫描模式
-  scanMode: ScanMode;
-  
+  scanMode: ScanMode
+
   // 现有字段
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  calendarDefaultView: string;
-  lunchBreakStart: string;
-  lunchBreakEnd: string;
-  showPomodoroBlocks: boolean;
-  showPomodoroTotal: boolean;
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
+  calendarDefaultView: string
+  lunchBreakStart: string
+  lunchBreakEnd: string
+  showPomodoroBlocks: boolean
+  showPomodoroTotal: boolean
   todoDock: {
-    hideCompleted: boolean;
-    hideAbandoned: boolean;
-  };
+    hideCompleted: boolean
+    hideAbandoned: boolean
+  }
   ai: {
-    providers: AIProviderConfig[];
-    activeProviderId: string | null;
-    showToolCalls?: boolean;
-  };
-  pomodoro: PomodoroSettings;
-  customSlashCommands: SlashCommandConfig[];
+    providers: AIProviderConfig[]
+    activeProviderId: string | null
+    showToolCalls?: boolean
+  }
+  pomodoro: PomodoroSettings
+  customSlashCommands: SlashCommandConfig[]
 }
 ```
 
@@ -243,7 +246,7 @@ export interface SettingsData {
 export const defaultSettings: SettingsData = {
   // 新增：默认全空间扫描
   scanMode: 'full',
-  
+
   // 现有默认值
   directories: [],
   groups: [],
@@ -264,7 +267,7 @@ export const defaultSettings: SettingsData = {
   },
   pomodoro: defaultPomodoroSettings,
   customSlashCommands: []
-};
+}
 ```
 
 - [ ] **Step 4: Commit**
@@ -279,6 +282,7 @@ git commit -m "feat: add scanMode to SettingsData with default 'full'"
 ## Task 4: SettingsStore 添加 scanMode 状态
 
 **Files:**
+
 - Modify: `src/stores/settingsStore.ts`
 
 **Context:** 添加 `scanMode` 到 state、getters 和 actions
@@ -290,7 +294,7 @@ git commit -m "feat: add scanMode to SettingsData with default 'full'"
 state: () => ({
   // 新增：扫描模式，默认全空间扫描
   scanMode: 'full' as ScanMode,
-  
+
   // 现有状态
   directories: [] as ProjectDirectory[],
   groups: [] as ProjectGroup[],
@@ -315,7 +319,7 @@ state: () => ({
 getters: {
   // 新增：判断当前是否为目录扫描模式
   isDirectoryScanMode: (state) => state.scanMode === 'directories',
-  
+
   // 现有 getters
   enabledDirectories: (state) => {
     return state.directories.filter(d => d.enabled);
@@ -334,10 +338,10 @@ loadFromPlugin() {
   if (plugin && plugin.getSettings) {
     const settings = plugin.getSettings();
     console.log('[Bullet Journal] getSettings returned:', settings);
-    
+
     // 新增：scanMode（默认 'full'）
     this.scanMode = settings.scanMode || 'full';
-    
+
     // 现有加载逻辑
     this.directories = settings.directories || [];
     this.groups = settings.groups || [];
@@ -349,7 +353,7 @@ loadFromPlugin() {
     this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
     this.todoDock = settings.todoDock || { hideCompleted: false, hideAbandoned: false };
     this.loaded = true;
-    
+
     console.log('[Bullet Journal] loadFromPlugin completed, scanMode:', this.scanMode);
   }
 },
@@ -365,7 +369,7 @@ saveToPlugin() {
     plugin.updateSettings({
       // 新增：保存 scanMode
       scanMode: this.scanMode,
-      
+
       // 现有配置
       directories: this.directories,
       groups: this.groups,
@@ -393,6 +397,7 @@ git commit -m "feat: add scanMode state to settingsStore"
 ## Task 5: MarkdownParser 支持 scanMode
 
 **Files:**
+
 - Modify: `src/parser/markdownParser.ts`
 
 **Context:** 构造函数接收 `scanMode`，解析逻辑根据模式分支处理
@@ -401,7 +406,7 @@ git commit -m "feat: add scanMode state to settingsStore"
 
 ```typescript
 // src/parser/markdownParser.ts - 导入部分
-import type { Project, Item, ProjectDirectory, PomodoroRecord, ScanMode } from '@/types/models';
+import type { Item, PomodoroRecord, Project, ProjectDirectory, ScanMode } from '@/types/models'
 ```
 
 - [ ] **Step 2: 修改构造函数**
@@ -409,12 +414,12 @@ import type { Project, Item, ProjectDirectory, PomodoroRecord, ScanMode } from '
 ```typescript
 // src/parser/markdownParser.ts - MarkdownParser 类
 export class MarkdownParser {
-  private directories: ProjectDirectory[];
-  private scanMode: ScanMode;
+  private directories: ProjectDirectory[]
+  private scanMode: ScanMode
 
   constructor(directories: ProjectDirectory[], scanMode: ScanMode = 'directories') {
-    this.directories = directories?.filter(d => d.enabled) || [];
-    this.scanMode = scanMode;
+    this.directories = directories?.filter(d => d.enabled) || []
+    this.scanMode = scanMode
   }
   // ...
 }
@@ -494,6 +499,7 @@ git commit -m "feat: MarkdownParser support scanMode parameter"
 ## Task 6: ProjectStore 集成 scanMode 和分组匹配
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts`
 
 **Context:** `loadProjects` 接收 `scanMode`，全扫描时调用 `matchGroupId`
@@ -501,9 +507,9 @@ git commit -m "feat: MarkdownParser support scanMode parameter"
 - [ ] **Step 1: 导入依赖**
 
 ```typescript
+import type { ScanMode } from '@/types/models'
 // src/stores/projectStore.ts - 导入部分
-import { matchGroupId } from '@/utils/directoryUtils';
-import type { ScanMode } from '@/types/models';
+import { matchGroupId } from '@/utils/directoryUtils'
 ```
 
 - [ ] **Step 2: 修改 loadProjects 方法签名和实现**
@@ -513,23 +519,23 @@ import type { ScanMode } from '@/types/models';
 /**
  * 加载项目数据（首次加载，显示加载状态）
  * 流式更新：每解析完一个项目就立即显示
- * 
+ *
  * @param _plugin 插件实例
  * @param scanMode 扫描模式
  * @param directories 目录配置（用于分组匹配）
  */
 async loadProjects(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
   if (this.loading) return;
-  
+
   const enabledDirs = directories.filter(d => d.enabled);
   console.log('[Task Assistant] Loading projects, scanMode:', scanMode, 'enabledDirs:', enabledDirs.length);
-  
+
   this.loading = true;
 
   try {
     // 清空现有数据，避免重复
     this.projects = [];
-    
+
     // 创建 parser，传入 scanMode
     const parser = new MarkdownParser(enabledDirs, scanMode);
 
@@ -563,7 +569,7 @@ async loadProjects(_plugin: any, scanMode: ScanMode, directories: ProjectDirecto
 /**
  * 刷新数据（后台刷新，不显示加载状态）
  * 支持定向刷新：只更新变更的项目
- * 
+ *
  * @param _plugin 插件实例
  * @param directories 目录配置
  * @param scanMode 扫描模式
@@ -645,7 +651,7 @@ private async refreshDirtyDocs(
       const existingProject = this.projects.find(p => p.id === docId);
       let groupId = existingProject?.groupId;
       let path = existingProject?.path;
-      
+
       // 如果没有 path，从思源查询
       if (!path) {
         try {
@@ -691,6 +697,7 @@ git commit -m "feat: ProjectStore integrate scanMode and group matching"
 ## Task 7: 目录配置组件添加扫描模式 UI
 
 **Files:**
+
 - Modify: `src/components/settings/DirectoryConfigSection.vue`
 
 **Context:** 添加扫描模式选择 UI，使用单选按钮组
@@ -699,7 +706,7 @@ git commit -m "feat: ProjectStore integrate scanMode and group matching"
 
 ```typescript
 // src/components/settings/DirectoryConfigSection.vue - script setup
-import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
+import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models'
 ```
 
 - [ ] **Step 2: 更新 props 和 emits**
@@ -707,17 +714,17 @@ import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
 ```typescript
 // src/components/settings/DirectoryConfigSection.vue - script setup
 const props = defineProps<{
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  scanMode: ScanMode;  // 新增
-}>();
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
+  scanMode: ScanMode // 新增
+}>()
 
 const emit = defineEmits<{
-  'update:directories': [value: ProjectDirectory[]];
-  'update:defaultGroup': [value: string];
-  'update:scanMode': [value: ScanMode];  // 新增
-}>();
+  'update:directories': [value: ProjectDirectory[]]
+  'update:defaultGroup': [value: string]
+  'update:scanMode': [value: ScanMode] // 新增
+}>()
 ```
 
 - [ ] **Step 3: 在模板中添加扫描模式选择**
@@ -726,30 +733,31 @@ const emit = defineEmits<{
 <!-- src/components/settings/DirectoryConfigSection.vue - template -->
 <template>
   <SySettingsSection icon="iconFolder" :title="t('settings').dirConfig.title" :description="t('settings').dirConfig.description">
-    
     <!-- 新增：扫描模式选择 -->
     <div class="scan-mode-section">
-      <div class="scan-mode-label">{{ t('settings').scanMode.label }}</div>
+      <div class="scan-mode-label">
+        {{ t('settings').scanMode.label }}
+      </div>
       <div class="scan-mode-options">
         <label class="scan-mode-option" :class="{ active: scanMode === 'full' }">
-          <input 
-            type="radio" 
+          <input
+            type="radio"
             :checked="scanMode === 'full'"
             @change="$emit('update:scanMode', 'full')"
-          />
+          >
           <span class="option-icon">🌐</span>
           <span class="option-content">
             <strong>{{ t('settings').scanMode.full.label }}</strong>
             <small>{{ t('settings').scanMode.full.description }}</small>
           </span>
         </label>
-        
+
         <label class="scan-mode-option" :class="{ active: scanMode === 'directories' }">
-          <input 
-            type="radio" 
+          <input
+            type="radio"
             :checked="scanMode === 'directories'"
             @change="$emit('update:scanMode', 'directories')"
-          />
+          >
           <span class="option-icon">📁</span>
           <span class="option-content">
             <strong>{{ t('settings').scanMode.directories.label }}</strong>
@@ -757,19 +765,19 @@ const emit = defineEmits<{
           </span>
         </label>
       </div>
-      
+
       <!-- 提示信息 -->
       <div v-if="scanMode === 'full' && directories.length > 0" class="scan-mode-hint">
         <span class="hint-icon">💡</span>
         <span>{{ t('settings').scanMode.fullWithDirectoriesHint }}</span>
       </div>
     </div>
-    
+
     <!-- 目录配置列表 -->
     <div class="sy-directory-list">
       <!-- ... 原有目录列表代码 ... -->
     </div>
-    
+
     <SySettingsActionButton icon="iconAdd" :text="t('settings').projectDirectories.addButton" @click="addDir" />
   </SySettingsSection>
 </template>
@@ -821,7 +829,7 @@ const emit = defineEmits<{
   background: var(--b3-theme-primary-light);
 }
 
-.scan-mode-option input[type="radio"] {
+.scan-mode-option input[type='radio'] {
   margin-top: 2px;
 }
 
@@ -876,6 +884,7 @@ git commit -m "feat: add scan mode selection UI to DirectoryConfigSection"
 ## Task 8: SettingsDialog 传递 scanMode
 
 **Files:**
+
 - Modify: `src/components/settings/SettingsDialog.vue`
 
 **Context:** 在 SettingsDialog 中管理 scanMode 状态并传递给 DirectoryConfigSection
@@ -894,7 +903,8 @@ git commit -m "feat: add scan mode selection UI to DirectoryConfigSection"
 <DirectoryConfigSection
   v-model:directories="settings.directories"
   v-model:defaultGroup="settings.defaultGroup"
-  v-model:scanMode="settings.scanMode"  <!-- 新增 -->
+  v-model:scanMode="settings.scanMode"  <!-- 新增 --
+>
   :groups="settings.groups"
 />
 ```
@@ -911,6 +921,7 @@ git commit -m "feat: pass scanMode to DirectoryConfigSection in SettingsDialog"
 ## Task 9: index.ts 启动时传递 scanMode
 
 **Files:**
+
 - Modify: `src/index.ts`
 
 **Context:** 在插件启动时获取 `scanMode` 并传递给 `loadProjects`
@@ -926,17 +937,17 @@ async onload() {
   const settings = this.getSettings();
   const scanMode = settings.scanMode || 'full';  // 新增：获取 scanMode
   const enabledDirs = settings.directories.filter(d => d.enabled);
-  
+
   console.log('[Task Assistant] Init loadProjects check:', {
     scanMode,
     directoriesCount: settings.directories.length,
     enabledDirsCount: enabledDirs.length,
     enabledDirs: enabledDirs.map(d => d.path)
   });
-  
+
   console.log('[Task Assistant] Starting initial loadProjects...');
   const projectStore = useProjectStore(pinia);
-  
+
   // 修改：传递 scanMode
   projectStore.loadProjects(this, scanMode, settings.directories).then(async () => {
     console.log('[Task Assistant] Initial loadProjects completed');
@@ -955,11 +966,11 @@ async onload() {
 
 ```typescript
 // 找到类似这样的调用，添加 scanMode 参数
-await projectStore.refresh(this, this.getEnabledDirectories(), settings.scanMode);
+await projectStore.refresh(this, this.getEnabledDirectories(), settings.scanMode)
 
 // 如果 settings 不可用，从 getSettings() 获取
-const settings = this.getSettings();
-await projectStore.refresh(this, settings.directories, settings.scanMode);
+const settings = this.getSettings()
+await projectStore.refresh(this, settings.directories, settings.scanMode)
 ```
 
 - [ ] **Step 3: Commit**
@@ -974,6 +985,7 @@ git commit -m "feat: pass scanMode when loading projects on plugin init"
 ## Task 10: 添加国际化翻译
 
 **Files:**
+
 - Modify: `src/i18n/zh.ts`
 - Modify: `src/i18n/en.ts`
 
@@ -986,7 +998,7 @@ git commit -m "feat: pass scanMode when loading projects on plugin init"
 {
   settings: {
     // ... 现有翻译
-    
+
     // 新增：扫描模式
     scanMode: {
       label: '扫描范围',
@@ -1011,7 +1023,7 @@ git commit -m "feat: pass scanMode when loading projects on plugin init"
 {
   settings: {
     // ... existing translations
-    
+
     // Add: scan mode
     scanMode: {
       label: 'Scan Scope',
@@ -1041,6 +1053,7 @@ git commit -m "feat: add i18n translations for scan mode"
 ## Task 11: 集成测试
 
 **Files:**
+
 - Manual testing in Siyuan Note environment
 
 **Context:** 在思源笔记环境中测试完整功能
@@ -1099,20 +1112,20 @@ git commit --allow-empty -m "test: manual testing completed"
 
 ### 所有变更文件
 
-| 文件 | 操作 | 状态 |
-|------|------|------|
-| `src/types/models.ts` | 添加 `ScanMode` 类型 | ⬜ |
-| `src/utils/directoryUtils.ts` | 新建 `matchGroupId` | ⬜ |
-| `src/utils/__tests__/directoryUtils.test.ts` | 新建单元测试 | ⬜ |
-| `src/settings.ts` | 添加 `scanMode` 字段 | ⬜ |
-| `src/stores/settingsStore.ts` | 添加 `scanMode` 状态 | ⬜ |
-| `src/parser/markdownParser.ts` | 支持 `scanMode` | ⬜ |
-| `src/stores/projectStore.ts` | 集成 `scanMode` | ⬜ |
-| `src/components/settings/DirectoryConfigSection.vue` | 添加扫描模式 UI | ⬜ |
-| `src/components/settings/SettingsDialog.vue` | 传递 `scanMode` | ⬜ |
-| `src/index.ts` | 启动时传递 `scanMode` | ⬜ |
-| `src/i18n/zh.ts` | 中文翻译 | ⬜ |
-| `src/i18n/en.ts` | 英文翻译 | ⬜ |
+| 文件                                                 | 操作                  | 状态 |
+| ---------------------------------------------------- | --------------------- | ---- |
+| `src/types/models.ts`                                | 添加 `ScanMode` 类型  | ⬜   |
+| `src/utils/directoryUtils.ts`                        | 新建 `matchGroupId`   | ⬜   |
+| `src/utils/__tests__/directoryUtils.test.ts`         | 新建单元测试          | ⬜   |
+| `src/settings.ts`                                    | 添加 `scanMode` 字段  | ⬜   |
+| `src/stores/settingsStore.ts`                        | 添加 `scanMode` 状态  | ⬜   |
+| `src/parser/markdownParser.ts`                       | 支持 `scanMode`       | ⬜   |
+| `src/stores/projectStore.ts`                         | 集成 `scanMode`       | ⬜   |
+| `src/components/settings/DirectoryConfigSection.vue` | 添加扫描模式 UI       | ⬜   |
+| `src/components/settings/SettingsDialog.vue`         | 传递 `scanMode`       | ⬜   |
+| `src/index.ts`                                       | 启动时传递 `scanMode` | ⬜   |
+| `src/i18n/zh.ts`                                     | 中文翻译              | ⬜   |
+| `src/i18n/en.ts`                                     | 英文翻译              | ⬜   |
 
 ### 关键设计决策
 

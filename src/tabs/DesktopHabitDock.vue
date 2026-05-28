@@ -14,7 +14,12 @@
             @mouseleave="hideIconTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
-        <div class="block__logo" data-testid="habit-detail-header">{{ selectedHabit.name }}</div>
+        <div
+          class="block__logo"
+          data-testid="habit-detail-header"
+        >
+          {{ selectedHabit.name }}
+        </div>
         <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
@@ -62,7 +67,12 @@
             @mouseleave="hideIconTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
-        <div class="block__logo" data-testid="habit-archived-header">{{ t('habit').archivedList }}</div>
+        <div
+          class="block__logo"
+          data-testid="habit-archived-header"
+        >
+          {{ t('habit').archivedList }}
+        </div>
         <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
@@ -77,7 +87,10 @@
         </button>
       </template>
       <template v-else>
-        <div class="block__logo" data-testid="habit-list-header">
+        <div
+          class="block__logo"
+          data-testid="habit-list-header"
+        >
           {{ t('habit').title }}
         </div>
         <span class="fn__flex-1 fn__space"></span>
@@ -157,18 +170,32 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
-import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
-import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
-import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
-import { t } from '@/i18n';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
+import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation'
+import {
+  onMounted,
+  onUnmounted,
+} from 'vue'
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue'
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue'
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  hideIconTooltip,
+  showIconTooltip,
+} from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { consumePendingHabitDockTarget } from '@/utils/habitDockNavigation'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 
-const plugin = usePlugin();
+const plugin = usePlugin()
 const {
   listMode,
   selectedDate,
@@ -195,92 +222,92 @@ const {
   resetHabitRecordForDate,
   archiveSelectedHabit,
   unarchiveSelectedHabit,
-} = useHabitWorkspace();
+} = useHabitWorkspace()
 
 async function handleOpenSelectedHabitDoc() {
-  hideIconTooltip();
-  await openSelectedHabitDoc();
+  hideIconTooltip()
+  await openSelectedHabitDoc()
 }
 
 async function handleToggleArchiveSelectedHabit() {
-  hideIconTooltip();
+  hideIconTooltip()
   if (selectedHabit.value?.archivedAt) {
-    await unarchiveSelectedHabit();
-    return;
+    await unarchiveSelectedHabit()
+    return
   }
 
-  await archiveSelectedHabit();
+  await archiveSelectedHabit()
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  return selectHabitById(target.habitId, target.date || currentDate.value);
+  return selectHabitById(target.habitId, target.date || currentDate.value)
 }
 
 function handleBackToList() {
-  hideIconTooltip();
-  clearSelectedHabit();
+  hideIconTooltip()
+  clearSelectedHabit()
 }
 
 function handleShowArchivedHabits() {
-  hideIconTooltip();
-  showArchivedHabits();
+  hideIconTooltip()
+  showArchivedHabits()
 }
 
 function handleBackToActiveList() {
-  hideIconTooltip();
-  showActiveHabits();
+  hideIconTooltip()
+  showActiveHabits()
 }
 
 const handleDataRefresh = async () => {
   if (selectedHabit.value) {
-    selectHabitById(selectedHabit.value.blockId, selectedDate.value);
+    selectHabitById(selectedHabit.value.blockId, selectedDate.value)
   }
-};
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let unsubscribeHabitNavigate: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let unsubscribeHabitNavigate: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
-  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
+  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation)
 
-  const pendingTarget = consumePendingHabitDockTarget();
+  const pendingTarget = consumePendingHabitDockTarget()
   if (pendingTarget) {
-    applyHabitDockNavigation(pendingTarget);
+    applyHabitDockNavigation(pendingTarget)
   }
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
       onRefresh: () => handleDataRefresh(),
       viewName: 'DesktopHabitDock',
-    });
+    })
   } catch {
     // ignore
   }
-});
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (unsubscribeHabitNavigate) {
-    unsubscribeHabitNavigate();
+    unsubscribeHabitNavigate()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 </script>
 
 <style scoped>
@@ -313,5 +340,4 @@ onUnmounted(() => {
 .block__icons .block__icon {
   opacity: 1;
 }
-
 </style>

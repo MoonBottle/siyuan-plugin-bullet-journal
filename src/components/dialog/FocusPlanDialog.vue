@@ -2,14 +2,16 @@
   <div class="focus-plan-dialog">
     <div class="mode-options">
       <button
-        :class="['mode-option', { active: selectedType === 'pomodoro' }]"
+        class="mode-option"
+        :class="[{ active: selectedType === 'pomodoro' }]"
         @click="selectedType = 'pomodoro'"
       >
         <span class="mode-icon">🍅</span>
         <span>{{ t('focusPlan').pomodoroMode }}</span>
       </button>
       <button
-        :class="['mode-option', { active: selectedType === 'duration' }]"
+        class="mode-option"
+        :class="[{ active: selectedType === 'duration' }]"
         @click="selectedType = 'duration'"
       >
         <span class="mode-icon">⏳</span>
@@ -36,13 +38,22 @@
     </div>
 
     <div class="dialog-actions">
-      <button class="b3-button b3-button--cancel" @click="emit('cancel')">
+      <button
+        class="b3-button b3-button--cancel"
+        @click="emit('cancel')"
+      >
         {{ t('common').cancel }}
       </button>
-      <button class="b3-button" @click="emit('save', undefined)">
+      <button
+        class="b3-button"
+        @click="emit('save', undefined)"
+      >
         {{ t('focusPlan').clear }}
       </button>
-      <button class="b3-button b3-button--text" @click="handleSave">
+      <button
+        class="b3-button b3-button--text"
+        @click="handleSave"
+      >
         {{ t('common').confirm }}
       </button>
     </div>
@@ -50,37 +61,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { FocusPlan } from '@/types/models';
-import { formatFocusPlanMarker } from '@/parser/focusPlanParser';
-import { t } from '@/i18n';
+import type { FocusPlan } from '@/types/models'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { formatFocusPlanMarker } from '@/parser/focusPlanParser'
 
 const props = defineProps<{
-  initialPlan?: FocusPlan;
-}>();
+  initialPlan?: FocusPlan
+}>()
 
 const emit = defineEmits<{
-  save: [plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined];
-  cancel: [];
-}>();
+  save: [plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined]
+  cancel: []
+}>()
 
-const selectedType = ref<FocusPlan['type']>(props.initialPlan?.type ?? 'pomodoro');
-const rawValue = ref<number>(props.initialPlan?.rawValue ?? (props.initialPlan?.type === 'duration' ? 25 : 1));
+const selectedType = ref<FocusPlan['type']>(props.initialPlan?.type ?? 'pomodoro')
+const rawValue = ref<number>(props.initialPlan?.rawValue ?? (props.initialPlan?.type === 'duration' ? 25 : 1))
 
 const previewText = computed(() => {
-  const safeValue = Math.max(1, Math.floor(Number(rawValue.value) || 0));
+  const safeValue = Math.max(1, Math.floor(Number(rawValue.value) || 0))
   return formatFocusPlanMarker({
     type: selectedType.value,
     rawValue: safeValue,
-  });
-});
+  })
+})
 
 function handleSave() {
-  const normalizedValue = Math.max(1, Math.floor(Number(rawValue.value) || 0));
+  const normalizedValue = Math.max(1, Math.floor(Number(rawValue.value) || 0))
   emit('save', {
     type: selectedType.value,
     rawValue: normalizedValue,
-  });
+  })
 }
 </script>
 

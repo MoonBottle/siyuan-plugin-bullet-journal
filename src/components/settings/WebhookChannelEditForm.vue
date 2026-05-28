@@ -34,19 +34,19 @@
     <div class="form-row fn__flex">
       <span class="form-label">{{ t('settings').webhook.subscribeEvents }}</span>
       <div class="form-input event-checkboxes">
-      <label
-        v-for="evt in eventOptions"
-        :key="evt.value"
-        class="event-checkbox"
-      >
-        <input
-          type="checkbox"
-          :value="evt.value"
-          :checked="channel.events.includes(evt.value)"
-          @change="toggleEvent(evt.value)"
-        />
-        <span>{{ evt.label }}</span>
-      </label>
+        <label
+          v-for="evt in eventOptions"
+          :key="evt.value"
+          class="event-checkbox"
+        >
+          <input
+            type="checkbox"
+            :value="evt.value"
+            :checked="channel.events.includes(evt.value)"
+            @change="toggleEvent(evt.value)"
+          />
+          <span>{{ evt.label }}</span>
+        </label>
       </div>
     </div>
 
@@ -87,19 +87,28 @@
         <svg style="width:14px;height:14px;margin-right:4px"><use xlink:href="#iconUpload"></use></svg>
         {{ testSending ? '...' : t('settings').webhook.testButton }}
       </button>
-      <span v-if="testResult === 'success'" class="test-result test-success">{{ t('settings').webhook.testSuccess }}</span>
-      <span v-if="testResult === 'failed'" class="test-result test-failed">{{ t('settings').webhook.testFailed }}</span>
+      <span
+        v-if="testResult === 'success'"
+        class="test-result test-success"
+      >{{ t('settings').webhook.testSuccess }}</span>
+      <span
+        v-if="testResult === 'failed'"
+        class="test-result test-failed"
+      >{{ t('settings').webhook.testFailed }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { showMessage } from 'siyuan'
-import { t } from '@/i18n'
-import { forwardProxy } from '@/api'
 import type { WebhookChannel } from '@/settings/types'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { forwardProxy } from '@/api'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
 
 const props = defineProps<{
   channel: WebhookChannel
@@ -111,22 +120,52 @@ const testSending = ref(false)
 const testResult = ref<'success' | 'failed' | ''>('')
 
 const typeOptions = computed(() => [
-  { label: t('settings').webhook.typeDingtalk, value: 'dingtalk' },
-  { label: t('settings').webhook.typeFeishu, value: 'feishu' },
-  { label: t('settings').webhook.typeWecom, value: 'wecom' },
-  { label: t('settings').webhook.typeCustom, value: 'custom' },
+  {
+    label: t('settings').webhook.typeDingtalk,
+    value: 'dingtalk',
+  },
+  {
+    label: t('settings').webhook.typeFeishu,
+    value: 'feishu',
+  },
+  {
+    label: t('settings').webhook.typeWecom,
+    value: 'wecom',
+  },
+  {
+    label: t('settings').webhook.typeCustom,
+    value: 'custom',
+  },
 ])
 
 const eventOptions = computed(() => [
-  { label: t('settings').webhook.eventReminder, value: 'reminder' as const },
-  { label: t('settings').webhook.eventPomodoro, value: 'pomodoro' as const },
-  { label: t('settings').webhook.eventBreak, value: 'break' as const },
-  { label: t('settings').webhook.eventHabit, value: 'habit' as const },
+  {
+    label: t('settings').webhook.eventReminder,
+    value: 'reminder' as const,
+  },
+  {
+    label: t('settings').webhook.eventPomodoro,
+    value: 'pomodoro' as const,
+  },
+  {
+    label: t('settings').webhook.eventBreak,
+    value: 'break' as const,
+  },
+  {
+    label: t('settings').webhook.eventHabit,
+    value: 'habit' as const,
+  },
 ])
 
 const methodOptions = [
-  { label: 'POST', value: 'POST' },
-  { label: 'GET', value: 'GET' },
+  {
+    label: 'POST',
+    value: 'POST',
+  },
+  {
+    label: 'GET',
+    value: 'GET',
+  },
 ]
 
 function toggleEvent(evt: 'reminder' | 'pomodoro' | 'break' | 'habit') {
@@ -159,14 +198,20 @@ function buildTestPayload(): { payload: string, headers: any[] } {
     const headers = props.channel.customTemplate?.headers
       ? Object.entries(props.channel.customTemplate.headers).map(([k, v]) => ({ [k]: v }))
       : [{ 'Content-Type': 'application/json' }]
-    return { payload: template, headers }
+    return {
+      payload: template,
+      headers,
+    }
   }
 
   if (props.channel.type === 'dingtalk') {
     return {
       payload: JSON.stringify({
         msgtype: 'markdown',
-        markdown: { title, text: `### ${title}\n> ${body}` },
+        markdown: {
+          title,
+          text: `### ${title}\n> ${body}`,
+        },
       }),
       headers: [{ 'Content-Type': 'application/json' }],
     }
@@ -177,8 +222,16 @@ function buildTestPayload(): { payload: string, headers: any[] } {
       payload: JSON.stringify({
         msg_type: 'interactive',
         card: {
-          header: { title: { tag: 'plain_text', content: title } },
-          elements: [{ tag: 'markdown', content: body }],
+          header: {
+            title: {
+              tag: 'plain_text',
+              content: title,
+            },
+          },
+          elements: [{
+            tag: 'markdown',
+            content: body,
+          }],
         },
       }),
       headers: [{ 'Content-Type': 'application/json' }],
@@ -195,7 +248,10 @@ function buildTestPayload(): { payload: string, headers: any[] } {
     }
   }
 
-  return { payload: '{}', headers: [{ 'Content-Type': 'application/json' }] }
+  return {
+    payload: '{}',
+    headers: [{ 'Content-Type': 'application/json' }],
+  }
 }
 
 async function sendTestMessage() {
@@ -208,7 +264,10 @@ async function sendTestMessage() {
   testResult.value = ''
 
   try {
-    const { payload, headers } = buildTestPayload()
+    const {
+      payload,
+      headers,
+    } = buildTestPayload()
     const method = props.channel.type === 'custom'
       ? (customMethod.value || 'POST')
       : 'POST'

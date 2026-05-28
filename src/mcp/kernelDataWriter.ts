@@ -1,5 +1,10 @@
+import type {
+  Habit,
+  Item,
+  Project,
+  ProjectGroup,
+} from '@/types/models'
 import { putFile } from '@/api'
-import type { Project, Item, ProjectGroup, Habit } from '@/types/models'
 
 export interface KernelData {
   version: 2
@@ -87,8 +92,11 @@ export async function writeKernelData(
   const data: KernelData = {
     version: 2,
     updatedAt: new Date().toISOString(),
-    groups: groups.map(g => ({ id: g.id, name: g.name })),
-    projects: projects.map(p => ({
+    groups: groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+    })),
+    projects: projects.map((p) => ({
       id: p.id,
       name: p.name,
       description: p.description,
@@ -96,7 +104,7 @@ export async function writeKernelData(
       groupId: p.groupId,
       taskCount: p.tasks.length,
     })),
-    items: items.map(i => ({
+    items: items.map((i) => ({
       id: i.id,
       blockId: i.blockId,
       content: i.content,
@@ -108,7 +116,7 @@ export async function writeKernelData(
       taskName: i.task?.name,
       projectId: i.project?.id ?? i.docId,
       links: i.links,
-      pomodoros: (i.pomodoros ?? []).map(p => ({
+      pomodoros: (i.pomodoros ?? []).map((p) => ({
         id: p.id,
         date: p.date,
         startTime: p.startTime,
@@ -121,7 +129,7 @@ export async function writeKernelData(
       startTime: extractTime(i.startDateTime),
       endTime: extractTime(i.endDateTime),
     })),
-    habits: habits.map(h => ({
+    habits: habits.map((h) => ({
       id: h.blockId,
       name: h.name,
       type: h.type,

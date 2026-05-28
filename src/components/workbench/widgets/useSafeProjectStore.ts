@@ -1,6 +1,6 @@
-import { getActivePinia } from 'pinia';
-import { useProjectStore } from '@/stores/projectStore';
+import { getActivePinia } from 'pinia'
+import { useProjectStore } from '@/stores/projectStore'
 
 export function useSafeProjectStore() {
-  return getActivePinia() ? useProjectStore() : null;
+  return getActivePinia() ? useProjectStore() : null
 }

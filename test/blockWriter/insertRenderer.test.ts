@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+
+import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer'
 
 vi.mock('@/utils/blockWriter/render/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
-}));
-
-import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer';
+}))
 
 describe('insertRenderer', () => {
   it('prepares domHtml and markdown for insert payloads', () => {
@@ -33,10 +38,10 @@ describe('insertRenderer', () => {
         kind: 'insertAfter',
         anchorBlockId: 'block-1',
       },
-    );
+    )
 
-    expect(payload.kind).toBe('insertAfter');
-    expect(payload.fallbackMarkdown).toContain('喝水');
-    expect(payload.domHtml).toContain('喝水');
-  });
-});
+    expect(payload.kind).toBe('insertAfter')
+    expect(payload.fallbackMarkdown).toContain('喝水')
+    expect(payload.domHtml).toContain('喝水')
+  })
+})

@@ -1,11 +1,17 @@
 <template>
-  <div class="workbench-dashboard-canvas" data-testid="workbench-dashboard-canvas">
+  <div
+    class="workbench-dashboard-canvas"
+    data-testid="workbench-dashboard-canvas"
+  >
     <div
       v-if="!dashboard || widgets.length === 0"
       class="workbench-dashboard-canvas__empty"
       data-testid="workbench-dashboard-empty"
     >
-      <div class="workbench-dashboard-canvas__empty-title" data-testid="workbench-dashboard-placeholder">
+      <div
+        class="workbench-dashboard-canvas__empty-title"
+        data-testid="workbench-dashboard-placeholder"
+      >
         {{ t('workbench').dashboardEmptyTitle }}
       </div>
       <div class="workbench-dashboard-canvas__empty-desc">
@@ -23,8 +29,8 @@
 
     <GridLayout
       v-else
-      class="workbench-dashboard-canvas__layout"
       v-model:layout="liveLayout"
+      class="workbench-dashboard-canvas__layout"
       :col-num="WORKBENCH_GRID_COLUMNS"
       :row-height="WORKBENCH_GRID_ROW_HEIGHT"
       :margin="WORKBENCH_GRID_MARGIN"
@@ -48,9 +54,9 @@
         :min-h="getWidgetDefinition(item.widget.type).minSize.h"
         :max-w="WORKBENCH_GRID_COLUMNS"
         :i="item.id"
-        :drag-allow-from="'.workbench-widget-card__drag'"
-        :drag-ignore-from="'.workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select'"
-        :resize-ignore-from="'.workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select'"
+        drag-allow-from=".workbench-widget-card__drag"
+        drag-ignore-from=".workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select"
+        resize-ignore-from=".workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select"
         :data-testid="`workbench-widget-grid-item-${item.id}`"
       >
         <WorkbenchWidgetCard
@@ -74,41 +80,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
-import { GridItem, GridLayout } from 'grid-layout-plus';
-import type { Layout } from 'grid-layout-plus';
-import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue';
-import MiniCalendarWidget from '@/components/workbench/widgets/MiniCalendarWidget.vue';
-import PomodoroStatsWidget from '@/components/workbench/widgets/PomodoroStatsWidget.vue';
-import QuadrantSummaryWidget from '@/components/workbench/widgets/QuadrantSummaryWidget.vue';
-import TodoListWidget from '@/components/workbench/widgets/TodoListWidget.vue';
-import HabitWeekWidget from '@/components/workbench/widgets/HabitWeekWidget.vue';
-import DatePickerWidget from '@/components/workbench/widgets/DatePickerWidget.vue';
-import { t } from '@/i18n';
-import { useWorkbenchStore } from '@/stores';
-import type { Component } from 'vue';
-import type { WorkbenchDashboard, WorkbenchEntry, WorkbenchWidgetInstance, WorkbenchWidgetType } from '@/types/workbench';
-import { showConfirmDialog, showInputDialog } from '@/utils/dialog';
+import type { Layout } from 'grid-layout-plus'
+import type { Component } from 'vue'
+import type {
+  WorkbenchDashboard,
+  WorkbenchEntry,
+  WorkbenchWidgetInstance,
+  WorkbenchWidgetType,
+} from '@/types/workbench'
+import {
+  GridItem,
+  GridLayout,
+} from 'grid-layout-plus'
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
+import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue'
+import DatePickerWidget from '@/components/workbench/widgets/DatePickerWidget.vue'
+import HabitWeekWidget from '@/components/workbench/widgets/HabitWeekWidget.vue'
+import MiniCalendarWidget from '@/components/workbench/widgets/MiniCalendarWidget.vue'
+import PomodoroStatsWidget from '@/components/workbench/widgets/PomodoroStatsWidget.vue'
+import QuadrantSummaryWidget from '@/components/workbench/widgets/QuadrantSummaryWidget.vue'
+import TodoListWidget from '@/components/workbench/widgets/TodoListWidget.vue'
+import { t } from '@/i18n'
+import { useWorkbenchStore } from '@/stores'
+import {
+  showConfirmDialog,
+  showInputDialog,
+} from '@/utils/dialog'
 import {
   areWidgetLayoutsEqual,
   normalizeWidgetLayout,
   WORKBENCH_GRID_COLUMNS,
   WORKBENCH_GRID_MARGIN,
   WORKBENCH_GRID_ROW_HEIGHT,
-} from '@/workbench/grid';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
+} from '@/workbench/grid'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
 
 const props = defineProps<{
-  entry: WorkbenchEntry;
-}>();
+  entry: WorkbenchEntry
+}>()
 
 const emit = defineEmits<{
-  (event: 'request-add-widget'): void;
-}>();
+  (event: 'request-add-widget'): void
+}>()
 
 function resolveWorkbenchStore() {
   try {
-    return useWorkbenchStore();
+    return useWorkbenchStore()
   }
   catch {
     return {
@@ -117,30 +139,30 @@ function resolveWorkbenchStore() {
       renameWidget: async () => {},
       updateWidgetLayouts: async () => {},
       updateWidgetConfig: async () => {},
-    };
+    }
   }
 }
 
-const workbenchStore = resolveWorkbenchStore();
+const workbenchStore = resolveWorkbenchStore()
 
 const dashboard = computed(() => {
   if (props.entry.type !== 'dashboard' || !props.entry.dashboardId) {
-    return null;
+    return null
   }
 
-  return workbenchStore.dashboards.find(item => item.id === props.entry.dashboardId) ?? null;
-});
+  return workbenchStore.dashboards.find((item) => item.id === props.entry.dashboardId) ?? null
+})
 
-const widgets = computed(() => dashboard.value?.widgets ?? []);
-const widgetMap = computed(() => new Map(widgets.value.map(widget => [widget.id, widget])));
-const widgetTitleMeta = reactive<Record<string, string>>({});
-const liveLayout = ref<Layout>([]);
+const widgets = computed(() => dashboard.value?.widgets ?? [])
+const widgetMap = computed(() => new Map(widgets.value.map((widget) => [widget.id, widget])))
+const widgetTitleMeta = reactive<Record<string, string>>({})
+const liveLayout = ref<Layout>([])
 const renderedWidgets = computed(() => {
   return liveLayout.value
     .map((item) => {
-      const widget = widgetMap.value.get(String(item.i));
+      const widget = widgetMap.value.get(String(item.i))
       if (!widget) {
-        return null;
+        return null
       }
 
       return {
@@ -152,10 +174,10 @@ const renderedWidgets = computed(() => {
           w: item.w,
           h: item.h,
         },
-      };
+      }
     })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
-});
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+})
 
 const widgetComponents: Record<WorkbenchWidgetType, Component> = {
   todoList: TodoListWidget,
@@ -164,23 +186,23 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
   miniCalendar: MiniCalendarWidget,
   pomodoroStats: PomodoroStatsWidget,
   datePicker: DatePickerWidget,
-};
+}
 
 function normalizeLayout(widget: WorkbenchWidgetInstance) {
-  return normalizeWidgetLayout(widget.layout);
+  return normalizeWidgetLayout(widget.layout)
 }
 
 function handleWidgetTitleMetaChange(widgetId: string, value?: string) {
   if (!value) {
-    delete widgetTitleMeta[widgetId];
-    return;
+    delete widgetTitleMeta[widgetId]
+    return
   }
 
-  widgetTitleMeta[widgetId] = value;
+  widgetTitleMeta[widgetId] = value
 }
 
 function toLayoutModel(widget: WorkbenchWidgetInstance) {
-  const layout = normalizeLayout(widget);
+  const layout = normalizeLayout(widget)
 
   return {
     i: widget.id,
@@ -188,132 +210,131 @@ function toLayoutModel(widget: WorkbenchWidgetInstance) {
     y: layout.y,
     w: layout.w,
     h: layout.h,
-  };
+  }
 }
 
 watch(
   widgets,
   (nextWidgets) => {
-    liveLayout.value = [...nextWidgets]
-      .map(toLayoutModel)
+    liveLayout.value = Array.from(nextWidgets, toLayoutModel)
       .sort((left, right) => {
         if (left.y !== right.y) {
-          return left.y - right.y;
+          return left.y - right.y
         }
 
-        return left.x - right.x;
-      });
+        return left.x - right.x
+      })
   },
   {
     immediate: true,
     deep: true,
   },
-);
+)
 
 function handleLayoutModelUpdate(layout: Layout) {
-  liveLayout.value = layout.map(item => ({
+  liveLayout.value = layout.map((item) => ({
     i: String(item.i),
     x: item.x,
     y: item.y,
     w: item.w,
     h: item.h,
-  }));
+  }))
 }
 
 async function handleLayoutUpdated(layout: Layout) {
   if (!dashboard.value) {
-    return;
+    return
   }
 
   const currentLayoutMap = new Map(
-    dashboard.value.widgets.map(widget => [widget.id, normalizeLayout(widget)]),
-  );
-  const nextLayouts = layout.map(item => ({
+    dashboard.value.widgets.map((widget) => [widget.id, normalizeLayout(widget)]),
+  )
+  const nextLayouts = layout.map((item) => ({
     id: String(item.i),
     x: item.x,
     y: item.y,
     w: item.w,
     h: item.h,
-  }));
+  }))
   const hasChanged = nextLayouts.some((item) => {
-    const current = currentLayoutMap.get(item.id);
+    const current = currentLayoutMap.get(item.id)
     if (!current) {
-      return true;
+      return true
     }
 
-    return !areWidgetLayoutsEqual(current, item);
-  });
+    return !areWidgetLayoutsEqual(current, item)
+  })
 
   if (!hasChanged) {
-    return;
+    return
   }
 
-  await workbenchStore.updateWidgetLayouts(dashboard.value.id, nextLayouts);
+  await workbenchStore.updateWidgetLayouts(dashboard.value.id, nextLayouts)
 }
 
 function handleRenameWidget(widgetId: string) {
   if (!dashboard.value) {
-    return;
+    return
   }
 
-  const widget = dashboard.value.widgets.find(item => item.id === widgetId);
+  const widget = dashboard.value.widgets.find((item) => item.id === widgetId)
   if (!widget) {
-    return;
+    return
   }
 
-  const currentTitle = widget.title || getWidgetDefinition(widget.type).name;
+  const currentTitle = widget.title || getWidgetDefinition(widget.type).name
   showInputDialog(
     t('workbench').rename,
     t('workbench').widgetRenamePrompt,
     currentTitle,
     async (nextTitle) => {
       if (!nextTitle || nextTitle === currentTitle) {
-        return;
+        return
       }
 
-      await workbenchStore.renameWidget(dashboard.value!.id, widgetId, nextTitle);
+      await workbenchStore.renameWidget(dashboard.value!.id, widgetId, nextTitle)
     },
-  );
+  )
 }
 
 function handleConfigureWidget(widgetId: string) {
   if (!dashboard.value) {
-    return;
+    return
   }
 
-  const widget = dashboard.value.widgets.find(item => item.id === widgetId);
+  const widget = dashboard.value.widgets.find((item) => item.id === widgetId)
   if (!widget) {
-    return;
+    return
   }
 
-  const definition = getWidgetDefinition(widget.type);
+  const definition = getWidgetDefinition(widget.type)
   definition.openConfigDialog?.({
     widget,
     onUpdateConfig: async (config) => {
-      await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
+      await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config)
     },
     dashboardWidgets: dashboard.value?.widgets ?? [],
-  });
+  })
 }
 
 function handleDeleteWidget(widgetId: string) {
   if (!dashboard.value) {
-    return;
+    return
   }
 
-  const widget = dashboard.value.widgets.find(item => item.id === widgetId);
+  const widget = dashboard.value.widgets.find((item) => item.id === widgetId)
   if (!widget) {
-    return;
+    return
   }
 
-  const currentTitle = widget.title || getWidgetDefinition(widget.type).name;
+  const currentTitle = widget.title || getWidgetDefinition(widget.type).name
   showConfirmDialog(
     t('workbench').delete,
     t('workbench').widgetDeleteConfirm.replace('{name}', currentTitle),
     async () => {
-      await workbenchStore.removeWidget(dashboard.value!.id, widgetId);
+      await workbenchStore.removeWidget(dashboard.value!.id, widgetId)
     },
-  );
+  )
 }
 </script>
 

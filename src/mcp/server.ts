@@ -3,65 +3,80 @@
  * 任务助手 MCP 服务器
  * 提供 list_groups、list_projects、filter_items、get_pomodoro_stats、get_pomodoro_records 工具
  */
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
-import { z } from 'zod';
-import { SiYuanClient } from './siyuan-client';
-import { loadSettings } from './dataLoader';
-import { executeListProjects } from './listProjects';
-import { executeFilterItems } from './filterItems';
-import { executeGetPomodoroStats, executeGetPomodoroRecords } from './pomodoro';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio'
+import { z } from 'zod'
+import { loadSettings } from './dataLoader'
+import { executeFilterItems } from './filterItems'
+import { executeListProjects } from './listProjects'
+import {
+  executeGetPomodoroRecords,
+  executeGetPomodoroStats,
+} from './pomodoro'
+import { SiYuanClient } from './siyuan-client'
 
 async function main() {
-  const token = process.env.SIYUAN_TOKEN;
+  const token = process.env.SIYUAN_TOKEN
   if (!token) {
-    console.error('[Task Assistant MCP] SIYUAN_TOKEN is required');
-    process.exit(1);
+    console.error('[Task Assistant MCP] SIYUAN_TOKEN is required')
+    process.exit(1)
   }
 
-  const apiUrl = process.env.SIYUAN_API_URL || 'http://127.0.0.1:6806';
-  const client = new SiYuanClient({ apiUrl, token });
+  const apiUrl = process.env.SIYUAN_API_URL || 'http://127.0.0.1:6806'
+  const client = new SiYuanClient({
+    apiUrl,
+    token,
+  })
 
-  console.error('[Task Assistant MCP] 服务已就绪');
+  console.error('[Task Assistant MCP] 服务已就绪')
 
   const server = new McpServer({
     name: 'sy-task-assistant',
-    version: '0.6.0'
-  });
+    version: '0.6.0',
+  })
 
   server.registerTool(
     'list_groups',
     {
       description: '查询任务助手中配置的所有分组。返回分组列表，每项含 id、name。id 可用于 filter_items 的 groupId 或 list_projects 的 groupId 参数进行过滤。无参数。',
-      inputSchema: z.object({})
+      inputSchema: z.object({}),
     },
     async () => {
-      const { groups } = await loadSettings(client);
+      const { groups } = await loadSettings(client)
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(groups || [], null, 2) }]
-      };
-    }
-  );
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(groups || [], null, 2),
+        }],
+      }
+    },
+  )
 
   server.registerTool(
     'list_projects',
     {
       description: '查询任务助手中的所有项目。返回项目列表，每项含 id、name、description、path、groupId、taskCount。id 可用于 filter_items 的 projectId 或 projectIds 参数。可选 groupId 过滤，值来自 list_groups 返回的 id。',
       inputSchema: z.object({
-        groupId: z.string().optional().describe('分组 ID，来自 list_groups 返回的 id，不传则返回全部项目')
-      })
+        groupId: z.string().optional().describe('分组 ID，来自 list_groups 返回的 id，不传则返回全部项目'),
+      }),
     },
     async (args) => {
-      console.error('[Task Assistant MCP] list_projects called with args:', args);
-      const { directories, scanMode } = await loadSettings(client);
-      console.error('[Task Assistant MCP] list_projects using scanMode:', scanMode);
-      const result = await executeListProjects(client, directories || [], args, scanMode);
-      console.error('[Task Assistant MCP] list_projects returned', result.projects.length, 'projects');
+      console.error('[Task Assistant MCP] list_projects called with args:', args)
+      const {
+        directories,
+        scanMode,
+      } = await loadSettings(client)
+      console.error('[Task Assistant MCP] list_projects using scanMode:', scanMode)
+      const result = await executeListProjects(client, directories || [], args, scanMode)
+      console.error('[Task Assistant MCP] list_projects returned', result.projects.length, 'projects')
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
-      };
-    }
-  );
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      }
+    },
+  )
 
   server.registerTool(
     'filter_items',
@@ -73,21 +88,26 @@ async function main() {
         groupId: z.string().optional().describe('分组 ID，来自 list_groups 返回的 id'),
         startDate: z.string().optional().describe('起始日期，格式 YYYY-MM-DD'),
         endDate: z.string().optional().describe('结束日期，格式 YYYY-MM-DD'),
-        status: z.enum(['pending', 'completed', 'abandoned']).optional()
-          .describe('pending=待办, completed=已完成, abandoned=已放弃')
-      })
+        status: z.enum(['pending', 'completed', 'abandoned']).optional().describe('pending=待办, completed=已完成, abandoned=已放弃'),
+      }),
     },
     async (args) => {
-      console.error('[Task Assistant MCP] filter_items called with args:', args);
-      const { directories, scanMode } = await loadSettings(client);
-      console.error('[Task Assistant MCP] filter_items using scanMode:', scanMode);
-      const result = await executeFilterItems(client, directories || [], args, scanMode);
-      console.error('[Task Assistant MCP] filter_items returned', result.items.length, 'items');
+      console.error('[Task Assistant MCP] filter_items called with args:', args)
+      const {
+        directories,
+        scanMode,
+      } = await loadSettings(client)
+      console.error('[Task Assistant MCP] filter_items using scanMode:', scanMode)
+      const result = await executeFilterItems(client, directories || [], args, scanMode)
+      console.error('[Task Assistant MCP] filter_items returned', result.items.length, 'items')
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
-      };
-    }
-  );
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      }
+    },
+  )
 
   server.registerTool(
     'get_pomodoro_stats',
@@ -97,16 +117,19 @@ async function main() {
         date: z.enum(['today']).optional().describe('设为 "today" 时查询今日统计'),
         startDate: z.string().optional().describe('起始日期，格式 YYYY-MM-DD'),
         endDate: z.string().optional().describe('结束日期，格式 YYYY-MM-DD'),
-        projectId: z.string().optional().describe('项目 ID，来自 list_projects 返回的 id')
-      })
+        projectId: z.string().optional().describe('项目 ID，来自 list_projects 返回的 id'),
+      }),
     },
     async (args) => {
-      const result = await executeGetPomodoroStats(client, args);
+      const result = await executeGetPomodoroStats(client, args)
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
-      };
-    }
-  );
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      }
+    },
+  )
 
   server.registerTool(
     'get_pomodoro_records',
@@ -116,22 +139,25 @@ async function main() {
         date: z.enum(['today']).optional().describe('设为 "today" 时查询今日记录'),
         startDate: z.string().optional().describe('起始日期，格式 YYYY-MM-DD'),
         endDate: z.string().optional().describe('结束日期，格式 YYYY-MM-DD'),
-        projectId: z.string().optional().describe('项目 ID，来自 list_projects 返回的 id')
-      })
+        projectId: z.string().optional().describe('项目 ID，来自 list_projects 返回的 id'),
+      }),
     },
     async (args) => {
-      const result = await executeGetPomodoroRecords(client, args);
+      const result = await executeGetPomodoroRecords(client, args)
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
-      };
-    }
-  );
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      }
+    },
+  )
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
 }
 
 main().catch((err) => {
-  console.error('[Task Assistant MCP] Fatal error:', err);
-  process.exit(1);
-});
+  console.error('[Task Assistant MCP] Fatal error:', err)
+  process.exit(1)
+})

@@ -14,31 +14,32 @@
 
 ### 新增文件
 
-| 文件 | 职责 |
-|------|------|
+| 文件                        | 职责                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------- |
 | `src/mcp/mcpCacheWriter.ts` | 从 projectStore 提取数据，序列化为 McpCache 格式，通过思源 API 写入 petal storage |
-| `src/mcp/kernel.ts` | kernel.js 源码：MCP JSON-RPC 协议层 + SSE handler + 缓存读取 + 5 个工具的过滤逻辑 |
-| `vite.kernel.config.ts` | kernel.js 构建配置：IIFE 输出、ES2018 target、零 npm 依赖 |
-| `test/mcp/kernel.test.ts` | kernel.ts 中纯函数逻辑的单元测试 |
+| `src/mcp/kernel.ts`         | kernel.js 源码：MCP JSON-RPC 协议层 + SSE handler + 缓存读取 + 5 个工具的过滤逻辑 |
+| `vite.kernel.config.ts`     | kernel.js 构建配置：IIFE 输出、ES2018 target、零 npm 依赖                         |
+| `test/mcp/kernel.test.ts`   | kernel.ts 中纯函数逻辑的单元测试                                                  |
 
 ### 修改文件
 
-| 文件 | 变更 |
-|------|------|
-| `plugin.json` | 添加 `"kernels": ["all"]` |
-| `src/stores/projectStore.ts` | loadProjects/refresh 完成后调用 writeMcpCache（防抖） |
-| `src/components/settings/McpConfigSection.vue` | 新增 HTTP MCP 复制按钮（实验性 + hover 提示） |
-| `src/mobile/drawers/settings/MobileMcpConfig.vue` | 移动端同步新增 HTTP MCP 复制按钮 |
-| `src/i18n/zh_CN.json` | 新增 HTTP MCP 相关 i18n 文本 |
-| `src/i18n/en_US.json` | 新增 HTTP MCP 相关 i18n 文本 |
-| `package.json` | 新增 kernel 构建脚本 |
-| `vite.config.ts` | viteStaticCopy 添加 kernel.js copy |
+| 文件                                              | 变更                                                  |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| `plugin.json`                                     | 添加 `"kernels": ["all"]`                             |
+| `src/stores/projectStore.ts`                      | loadProjects/refresh 完成后调用 writeMcpCache（防抖） |
+| `src/components/settings/McpConfigSection.vue`    | 新增 HTTP MCP 复制按钮（实验性 + hover 提示）         |
+| `src/mobile/drawers/settings/MobileMcpConfig.vue` | 移动端同步新增 HTTP MCP 复制按钮                      |
+| `src/i18n/zh_CN.json`                             | 新增 HTTP MCP 相关 i18n 文本                          |
+| `src/i18n/en_US.json`                             | 新增 HTTP MCP 相关 i18n 文本                          |
+| `package.json`                                    | 新增 kernel 构建脚本                                  |
+| `vite.config.ts`                                  | viteStaticCopy 添加 kernel.js copy                    |
 
 ---
 
 ## 任务 1：更新 plugin.json 和 package.json
 
 **文件：**
+
 - 修改：`plugin.json:1-28`
 - 修改：`package.json:10-18`
 
@@ -76,6 +77,7 @@ git commit -m "feat(mcp): add kernel plugin build infrastructure"
 ## 任务 2：创建前端缓存写入器
 
 **文件：**
+
 - 创建：`src/mcp/mcpCacheWriter.ts`
 
 - [ ] **步骤 1：创建 mcpCacheWriter.ts**
@@ -83,46 +85,46 @@ git commit -m "feat(mcp): add kernel plugin build infrastructure"
 创建 `src/mcp/mcpCacheWriter.ts`，导出 `writeMcpCache` 函数和 `McpCache` 类型：
 
 ```typescript
-import { putFile } from '@/api';
-import type { Project, Item } from '@/types/models';
-import type { ProjectGroup } from '@/settings/types';
+import type { ProjectGroup } from '@/settings/types'
+import type { Item, Project } from '@/types/models'
+import { putFile } from '@/api'
 
 export interface McpCache {
-  version: 1;
-  updatedAt: string;
-  groups: Array<{ id: string; name: string }>;
+  version: 1
+  updatedAt: string
+  groups: Array<{ id: string, name: string }>
   projects: Array<{
-    id: string;
-    name: string;
-    description: string | undefined;
-    path: string;
-    groupId: string | undefined;
-    taskCount: number;
-  }>;
+    id: string
+    name: string
+    description: string | undefined
+    path: string
+    groupId: string | undefined
+    taskCount: number
+  }>
   items: Array<{
-    id: string;
-    content: string;
-    date: string;
-    startDateTime: string | undefined;
-    endDateTime: string | undefined;
-    status: string;
-    projectName: string | undefined;
-    taskName: string | undefined;
-    projectId: string;
-    links: Array<{ name: string; url: string }> | undefined;
+    id: string
+    content: string
+    date: string
+    startDateTime: string | undefined
+    endDateTime: string | undefined
+    status: string
+    projectName: string | undefined
+    taskName: string | undefined
+    projectId: string
+    links: Array<{ name: string, url: string }> | undefined
     pomodoros: Array<{
-      id: string;
-      date: string;
-      startTime: string;
-      endTime: string | undefined;
-      durationMinutes: number;
-      actualDurationMinutes: number | undefined;
-      description: string | undefined;
-    }>;
-  }>;
+      id: string
+      date: string
+      startTime: string
+      endTime: string | undefined
+      durationMinutes: number
+      actualDurationMinutes: number | undefined
+      description: string | undefined
+    }>
+  }>
 }
 
-const CACHE_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/mcp-cache.json';
+const CACHE_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/mcp-cache.json'
 
 export async function writeMcpCache(
   projects: Project[],
@@ -162,10 +164,10 @@ export async function writeMcpCache(
         description: p.description,
       })),
     })),
-  };
+  }
 
-  const blob = new Blob([JSON.stringify(cache)], { type: 'application/json' });
-  await putFile(CACHE_PATH, false, blob);
+  const blob = new Blob([JSON.stringify(cache)], { type: 'application/json' })
+  await putFile(CACHE_PATH, false, blob)
 }
 ```
 
@@ -181,6 +183,7 @@ git commit -m "feat(mcp): add MCP cache writer for kernel plugin"
 ## 任务 3：在 projectStore 中集成缓存写入
 
 **文件：**
+
 - 修改：`src/stores/projectStore.ts:771-873`
 
 - [ ] **步骤 1：在 projectStore.ts 顶部添加导入**
@@ -188,7 +191,7 @@ git commit -m "feat(mcp): add MCP cache writer for kernel plugin"
 在现有的 import 区域（约 L248 附近，`import { useSettingsStore }` 之后）添加：
 
 ```typescript
-import { writeMcpCache } from '@/mcp/mcpCacheWriter';
+import { writeMcpCache } from '@/mcp/mcpCacheWriter'
 ```
 
 - [ ] **步骤 2：添加防抖写入辅助函数**
@@ -196,18 +199,19 @@ import { writeMcpCache } from '@/mcp/mcpCacheWriter';
 在 `useProjectStore` 定义之前（`export const useProjectStore` 之前），添加防抖工具：
 
 ```typescript
-let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
+let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedWriteMcpCache(
   projects: Project[],
   items: Item[],
-  groups: Array<{ id: string; name: string }>
+  groups: Array<{ id: string, name: string }>
 ) {
-  if (mcpCacheTimer) clearTimeout(mcpCacheTimer);
+  if (mcpCacheTimer)
+    clearTimeout(mcpCacheTimer)
   mcpCacheTimer = setTimeout(() => {
     writeMcpCache(projects, items, groups).catch((err) => {
-      console.error('[Task Assistant] Failed to write MCP cache:', err);
-    });
-  }, 2000);
+      console.error('[Task Assistant] Failed to write MCP cache:', err)
+    })
+  }, 2000)
 }
 ```
 
@@ -218,8 +222,8 @@ function debouncedWriteMcpCache(
 在 `loadProjects` 方法的 `eventBus.emit(Events.DATA_REFRESHED, ...)` 之后（约 L794）添加：
 
 ```typescript
-    const settingsStore = useSettingsStore();
-    debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+const settingsStore = useSettingsStore()
+debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups)
 ```
 
 - [ ] **步骤 4：在 refresh 方法中插入缓存写入**
@@ -227,8 +231,8 @@ function debouncedWriteMcpCache(
 在 `refresh` 方法的 `eventBus.emit(Events.DATA_REFRESHED, ...)` 之后（约 L856）添加同样的代码：
 
 ```typescript
-    const settingsStore = useSettingsStore();
-    debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+const settingsStore = useSettingsStore()
+debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups)
 ```
 
 - [ ] **步骤 5：运行 lint 验证**
@@ -248,13 +252,14 @@ git commit -m "feat(mcp): integrate cache writing into projectStore lifecycle"
 ## 任务 4：创建 kernel.js 构建配置
 
 **文件：**
+
 - 创建：`vite.kernel.config.ts`
 
 - [ ] **步骤 1：创建 vite.kernel.config.ts**
 
 ```typescript
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { resolve } from 'node:path'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   resolve: {
@@ -279,10 +284,11 @@ export default defineConfig({
     target: 'es2018',
     minify: false,
   },
-});
+})
 ```
 
 关键设计决策：
+
 - `formats: ['iife']` — kernel.js 作为立即执行函数，不使用 import/export
 - `target: 'es2018'` — goja 运行时支持的 ES 子集
 - `emptyOutDir: false` — 不清空 dist（与插件、MCP 服务器共享）
@@ -313,11 +319,13 @@ git commit -m "feat(mcp): add kernel.js build configuration"
 ## 任务 5：创建 kernel.ts — MCP 协议层和工具实现
 
 **文件：**
+
 - 创建：`src/mcp/kernel.ts`
 
 这是最核心的任务。kernel.ts 将编译为 kernel.js，在思源内核的 QuickJS 运行时中执行。
 
 **关键约束**：
+
 - 不能使用任何 npm 依赖（无 dayjs、无 MCP SDK）
 - 使用 `globalThis.siyuan.*` API（由内核注入）
 - goja 支持 ES2018（Promise、async/await、解构、模板字符串），不支持可选链 `?.` 和空值合并 `??`
@@ -330,82 +338,82 @@ git commit -m "feat(mcp): add kernel.js build configuration"
 ```typescript
 declare const siyuan: {
   plugin: {
-    name: string;
-    version: string;
-    displayName: string;
-    platform: string;
+    name: string
+    version: string
+    displayName: string
+    platform: string
     lifecycle: {
-      onload: (() => Promise<void>) | null;
-      onloaded: (() => Promise<void>) | null;
-      onrunning: (() => Promise<void>) | null;
-      onunload: (() => Promise<void>) | null;
-    };
-  };
+      onload: (() => Promise<void>) | null
+      onloaded: (() => Promise<void>) | null
+      onrunning: (() => Promise<void>) | null
+      onunload: (() => Promise<void>) | null
+    }
+  }
   logger: {
-    info: (...args: any[]) => Promise<void>;
-    error: (...args: any[]) => Promise<void>;
-  };
+    info: (...args: any[]) => Promise<void>
+    error: (...args: any[]) => Promise<void>
+  }
   storage: {
     get: (path: string) => Promise<{
-      text: () => Promise<string>;
-      json: () => Promise<any>;
-    }>;
-    put: (path: string, content: string) => Promise<void>;
-  };
+      text: () => Promise<string>
+      json: () => Promise<any>
+    }>
+    put: (path: string, content: string) => Promise<void>
+  }
   server: {
     private: {
       es: {
-        handler: ((req: SseRequest) => Promise<void>) | null;
-      };
+        handler: ((req: SseRequest) => Promise<void>) | null
+      }
       http: {
-        handler: ((req: HttpRequest) => Promise<HttpResponse>) | null;
-      };
-    };
-  };
-};
+        handler: ((req: HttpRequest) => Promise<HttpResponse>) | null
+      }
+    }
+  }
+}
 
 interface SseRequest {
   url: {
-    host: string;
-    pathname: string;
-    query: Record<string, string[]>;
-  };
+    host: string
+    pathname: string
+    query: Record<string, string[]>
+  }
   request: {
-    method: string;
-    headers: Record<string, string[]>;
+    method: string
+    headers: Record<string, string[]>
     body: {
-      data: { text: () => Promise<string>; json: () => Promise<any> } | undefined;
-    };
-  };
+      data: { text: () => Promise<string>, json: () => Promise<any> } | undefined
+    }
+  }
   port: {
-    onopen: ((e: { type: string }) => void) | null;
-    onclose: ((e: { type: string }) => void) | null;
-    send: (name: string, message: any) => void;
-    close: () => void;
-  };
+    onopen: ((e: { type: string }) => void) | null
+    onclose: ((e: { type: string }) => void) | null
+    send: (name: string, message: any) => void
+    close: () => void
+  }
 }
 
 interface HttpRequest {
   url: {
-    host: string;
-    pathname: string;
-    query: Record<string, string[]>;
-  };
+    host: string
+    pathname: string
+    query: Record<string, string[]>
+  }
   request: {
-    method: string;
-    headers: Record<string, string[]>;
+    method: string
+    headers: Record<string, string[]>
     body: {
-      data: { text: () => Promise<string>; json: () => Promise<any> } | undefined;
-    };
-  };
+      data: { text: () => Promise<string>, json: () => Promise<any> } | undefined
+    }
+  }
 }
 
 interface HttpResponse {
-  statusCode: number;
-  headers?: Record<string, string[]>;
+  statusCode: number
+  headers?: Record<string, string[]>
   body?: {
-    raw?: { contentType: string; data: string };
-  };
+    raw?: { contentType: string, data: string }
+  }
 }
 ```
 
@@ -414,67 +422,68 @@ interface HttpResponse {
 继续在同一个文件中添加核心逻辑。由于 kernel.ts 不使用 import/export（IIFE 模式），所有代码都在文件作用域内：
 
 ```typescript
-const MCP_CACHE_PATH = 'mcp-cache.json';
-const SERVER_NAME = 'sy-task-assistant';
-const SERVER_VERSION = '1.0.0';
+const MCP_CACHE_PATH = 'mcp-cache.json'
+const SERVER_NAME = 'sy-task-assistant'
+const SERVER_VERSION = '1.0.0'
 
 interface McpCache {
-  version: number;
-  updatedAt: string;
-  groups: Array<{ id: string; name: string }>;
+  version: number
+  updatedAt: string
+  groups: Array<{ id: string, name: string }>
   projects: Array<{
-    id: string;
-    name: string;
-    description: string | undefined;
-    path: string;
-    groupId: string | undefined;
-    taskCount: number;
-  }>;
+    id: string
+    name: string
+    description: string | undefined
+    path: string
+    groupId: string | undefined
+    taskCount: number
+  }>
   items: Array<{
-    id: string;
-    content: string;
-    date: string;
-    startDateTime: string | undefined;
-    endDateTime: string | undefined;
-    status: string;
-    projectName: string | undefined;
-    taskName: string | undefined;
-    projectId: string;
-    links: Array<{ name: string; url: string }> | undefined;
+    id: string
+    content: string
+    date: string
+    startDateTime: string | undefined
+    endDateTime: string | undefined
+    status: string
+    projectName: string | undefined
+    taskName: string | undefined
+    projectId: string
+    links: Array<{ name: string, url: string }> | undefined
     pomodoros: Array<{
-      id: string;
-      date: string;
-      startTime: string;
-      endTime: string | undefined;
-      durationMinutes: number;
-      actualDurationMinutes: number | undefined;
-      description: string | undefined;
-    }>;
-  }>;
+      id: string
+      date: string
+      startTime: string
+      endTime: string | undefined
+      durationMinutes: number
+      actualDurationMinutes: number | undefined
+      description: string | undefined
+    }>
+  }>
 }
 
-let cachedData: McpCache | null = null;
+let cachedData: McpCache | null = null
 
 async function loadCache(): Promise<McpCache> {
   try {
-    const file = await siyuan.storage.get(MCP_CACHE_PATH);
-    const text = await file.text();
-    const data = JSON.parse(text) as McpCache;
-    cachedData = data;
-    return data;
-  } catch (e) {
+    const file = await siyuan.storage.get(MCP_CACHE_PATH)
+    const text = await file.text()
+    const data = JSON.parse(text) as McpCache
+    cachedData = data
+    return data
+  }
+  catch (e) {
     throw new Error(
       'MCP 缓存不可用。请先打开思源笔记并确保任务助手插件已加载。'
-    );
+    )
   }
 }
 
 function makeJsonRpcResult(id: any, result: any) {
-  return { jsonrpc: '2.0', id: id, result: result };
+  return { jsonrpc: '2.0', id, result }
 }
 
 function makeJsonRpcError(id: any, code: number, message: string) {
-  return { jsonrpc: '2.0', id: id, error: { code: code, message: message } };
+  return { jsonrpc: '2.0', id, error: { code, message } }
 }
 
 const TOOLS = [
@@ -546,57 +555,59 @@ const TOOLS = [
       required: [],
     },
   },
-];
+]
 
 function toolListGroups(_args: any, cache: McpCache) {
-  return { groups: cache.groups || [] };
+  return { groups: cache.groups || [] }
 }
 
 function toolListProjects(args: any, cache: McpCache) {
   const filtered = args.groupId
-    ? cache.projects.filter(function(p) { return p.groupId === args.groupId; })
-    : cache.projects;
-  return { projects: filtered };
+    ? cache.projects.filter((p) => { return p.groupId === args.groupId })
+    : cache.projects
+  return { projects: filtered }
 }
 
 function toolFilterItems(args: any, cache: McpCache) {
-  let items = cache.items || [];
+  let items = cache.items || []
 
   if (args.projectId) {
-    items = items.filter(function(i) { return i.projectId === args.projectId; });
-  } else if (args.projectIds && args.projectIds.length > 0) {
-    const set = new Set(args.projectIds);
-    items = items.filter(function(i) { return set.has(i.projectId); });
-  } else if (args.groupId) {
+    items = items.filter((i) => { return i.projectId === args.projectId })
+  }
+  else if (args.projectIds && args.projectIds.length > 0) {
+    const set = new Set(args.projectIds)
+    items = items.filter((i) => { return set.has(i.projectId) })
+  }
+  else if (args.groupId) {
     const projectIds = new Set(
       cache.projects
-        .filter(function(p) { return p.groupId === args.groupId; })
-        .map(function(p) { return p.id; })
-    );
-    items = items.filter(function(i) { return projectIds.has(i.projectId); });
+        .filter((p) => { return p.groupId === args.groupId })
+        .map((p) => { return p.id })
+    )
+    items = items.filter((i) => { return projectIds.has(i.projectId) })
   }
 
   if (args.startDate) {
-    items = items.filter(function(i) { return i.date >= args.startDate; });
+    items = items.filter((i) => { return i.date >= args.startDate })
   }
   if (args.endDate) {
-    items = items.filter(function(i) { return i.date <= args.endDate; });
+    items = items.filter((i) => { return i.date <= args.endDate })
   }
   if (args.status) {
-    items = items.filter(function(i) { return i.status === args.status; });
+    items = items.filter((i) => { return i.status === args.status })
   }
 
-  return { items: items };
+  return { items }
 }
 
 function collectPomodoros(cache: McpCache) {
-  const pomodoros: Array<any> = [];
-  const seen = new Set<string>();
+  const pomodoros: Array<any> = []
+  const seen = new Set<string>()
   for (const item of cache.items) {
     if (item.pomodoros) {
       for (const p of item.pomodoros) {
         if (!seen.has(p.id)) {
-          seen.add(p.id);
+          seen.add(p.id)
           pomodoros.push({
             id: p.id,
             date: p.date,
@@ -607,82 +618,82 @@ function collectPomodoros(cache: McpCache) {
             description: p.description,
             itemContent: item.content,
             projectName: item.projectName,
-          });
+          })
         }
       }
     }
   }
-  return pomodoros;
+  return pomodoros
 }
 
 function filterPomodoros(pomodoros: any[], args: any) {
-  let filtered = pomodoros;
-  const todayDate = new Date().toISOString().slice(0, 10);
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  let filtered = pomodoros
+  const todayDate = new Date().toISOString().slice(0, 10)
+  let startDate = args.startDate
+  let endDate = args.endDate
 
   if (args.date === 'today') {
-    startDate = todayDate;
-    endDate = todayDate;
+    startDate = todayDate
+    endDate = todayDate
   }
   if (startDate) {
-    filtered = filtered.filter(function(p) { return p.date >= startDate; });
+    filtered = filtered.filter((p) => { return p.date >= startDate })
   }
   if (endDate) {
-    filtered = filtered.filter(function(p) { return p.date <= endDate; });
+    filtered = filtered.filter((p) => { return p.date <= endDate })
   }
   if (args.projectId) {
-    filtered = filtered.filter(function(p) { return p.projectId === args.projectId; });
+    filtered = filtered.filter((p) => { return p.projectId === args.projectId })
   }
-  return filtered;
+  return filtered
 }
 
 function toolGetPomodoroStats(args: any, cache: McpCache) {
-  const pomodoros = filterPomodoros(collectPomodoros(cache), args);
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const pomodoros = filterPomodoros(collectPomodoros(cache), args)
+  const todayDate = new Date().toISOString().slice(0, 10)
 
-  let todayCount = 0;
-  let todayMinutes = 0;
+  let todayCount = 0
+  let todayMinutes = 0
   for (const p of pomodoros) {
     if (p.date === todayDate) {
-      todayCount++;
-      todayMinutes += p.actualDurationMinutes || p.durationMinutes;
+      todayCount++
+      todayMinutes += p.actualDurationMinutes || p.durationMinutes
     }
   }
 
-  let totalMinutes = 0;
+  let totalMinutes = 0
   for (const p of pomodoros) {
-    totalMinutes += p.actualDurationMinutes || p.durationMinutes;
+    totalMinutes += p.actualDurationMinutes || p.durationMinutes
   }
 
   const result: any = {
-    todayCount: todayCount,
-    todayMinutes: todayMinutes,
+    todayCount,
+    todayMinutes,
     totalCount: pomodoros.length,
-    totalMinutes: totalMinutes,
-  };
+    totalMinutes,
+  }
 
-  const today = new Date().toISOString().slice(0, 10);
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  const today = new Date().toISOString().slice(0, 10)
+  let startDate = args.startDate
+  let endDate = args.endDate
   if (args.date === 'today') {
-    startDate = today;
-    endDate = today;
+    startDate = today
+    endDate = today
   }
   if (startDate && endDate) {
-    result.dateRange = { startDate: startDate, endDate: endDate };
+    result.dateRange = { startDate, endDate }
   }
   if (args.projectId) {
-    result.projectId = args.projectId;
+    result.projectId = args.projectId
   }
 
-  return result;
+  return result
 }
 
 function toolGetPomodoroRecords(args: any, cache: McpCache) {
-  const pomodoros = filterPomodoros(collectPomodoros(cache), args);
+  const pomodoros = filterPomodoros(collectPomodoros(cache), args)
 
-  const records = pomodoros.map(function(p) {
+  const records = pomodoros.map((p) => {
     return {
       id: p.id,
       date: p.date,
@@ -693,59 +704,60 @@ function toolGetPomodoroRecords(args: any, cache: McpCache) {
       itemContent: p.itemContent,
       projectName: p.projectName,
       description: p.description,
-    };
-  });
+    }
+  })
 
-  records.sort(function(a, b) {
-    const dc = a.date.localeCompare(b.date);
-    return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
-  });
+  records.sort((a, b) => {
+    const dc = a.date.localeCompare(b.date)
+    return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime)
+  })
 
-  return { records: records };
+  return { records }
 }
 
 async function handleToolCall(name: string, args: any, id: any) {
-  let cache: McpCache;
+  let cache: McpCache
   try {
-    cache = await loadCache();
-  } catch (e: any) {
-    return makeJsonRpcError(id, -32000, e.message || String(e));
+    cache = await loadCache()
+  }
+  catch (e: any) {
+    return makeJsonRpcError(id, -32000, e.message || String(e))
   }
 
-  let result: any;
+  let result: any
   switch (name) {
     case 'list_groups':
-      result = toolListGroups(args, cache);
-      break;
+      result = toolListGroups(args, cache)
+      break
     case 'list_projects':
-      result = toolListProjects(args, cache);
-      break;
+      result = toolListProjects(args, cache)
+      break
     case 'filter_items':
-      result = toolFilterItems(args, cache);
-      break;
+      result = toolFilterItems(args, cache)
+      break
     case 'get_pomodoro_stats':
-      result = toolGetPomodoroStats(args, cache);
-      break;
+      result = toolGetPomodoroStats(args, cache)
+      break
     case 'get_pomodoro_records':
-      result = toolGetPomodoroRecords(args, cache);
-      break;
+      result = toolGetPomodoroRecords(args, cache)
+      break
     default:
-      return makeJsonRpcError(id, -32601, 'Method not found: ' + name);
+      return makeJsonRpcError(id, -32601, `Method not found: ${name}`)
   }
 
   return makeJsonRpcResult(id, {
     content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-  });
+  })
 }
 
 async function handleJsonRpc(message: any): Promise<any> {
   if (!message || message.jsonrpc !== '2.0') {
-    return makeJsonRpcError(null, -32600, 'Invalid Request');
+    return makeJsonRpcError(null, -32600, 'Invalid Request')
   }
 
-  const id = message.id;
-  const method = message.method;
-  const params = message.params || {};
+  const id = message.id
+  const method = message.method
+  const params = message.params || {}
 
   switch (method) {
     case 'initialize':
@@ -753,105 +765,109 @@ async function handleJsonRpc(message: any): Promise<any> {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-      });
+      })
 
     case 'notifications/initialized':
-      return undefined;
+      return undefined
 
     case 'ping':
-      return makeJsonRpcResult(id, {});
+      return makeJsonRpcResult(id, {})
 
     case 'tools/list':
-      return makeJsonRpcResult(id, { tools: TOOLS });
+      return makeJsonRpcResult(id, { tools: TOOLS })
 
     case 'tools/call':
-      return handleToolCall(params.name, params.arguments || {}, id);
+      return handleToolCall(params.name, params.arguments || {}, id)
 
     default:
-      return makeJsonRpcError(id, -32601, 'Method not found: ' + method);
+      return makeJsonRpcError(id, -32601, `Method not found: ${method}`)
   }
 }
 
 async function handleSseRequest(req: SseRequest) {
-  const bodyData = req.request.body.data;
+  const bodyData = req.request.body.data
   if (!bodyData) {
-    req.port.close();
-    return;
+    req.port.close()
+    return
   }
 
-  let message: any;
+  let message: any
   try {
-    message = await bodyData.json();
-  } catch (e) {
-    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')));
-    req.port.close();
-    return;
+    message = await bodyData.json()
+  }
+  catch (e) {
+    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')))
+    req.port.close()
+    return
   }
 
-  const response = await handleJsonRpc(message);
+  const response = await handleJsonRpc(message)
 
   if (response !== undefined) {
-    req.port.send('message', JSON.stringify(response));
+    req.port.send('message', JSON.stringify(response))
   }
 
-  req.port.close();
+  req.port.close()
 }
 
 siyuan.plugin.lifecycle.onrunning = async function () {
-  await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE handler');
+  await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE handler')
 
   siyuan.server.private.es.handler = async function (req: SseRequest) {
     try {
       if (req.port.onopen) {
-        req.port.onopen({ type: 'open' });
+        req.port.onopen({ type: 'open' })
       }
-      await handleSseRequest(req);
-    } catch (e: any) {
-      await siyuan.logger.error('[MCP Kernel Plugin] SSE handler error:', e.message || String(e));
-      try {
-        req.port.close();
-      } catch (_) {}
+      await handleSseRequest(req)
     }
-  };
+    catch (e: any) {
+      await siyuan.logger.error('[MCP Kernel Plugin] SSE handler error:', e.message || String(e))
+      try {
+        req.port.close()
+      }
+      catch (_) {}
+    }
+  }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
-    const bodyData = req.request.body.data;
+    const bodyData = req.request.body.data
     if (!bodyData) {
       return {
         statusCode: 400,
         body: { raw: { contentType: 'application/json', data: '{"error":"no body"}' } },
-      };
+      }
     }
 
-    let message: any;
+    let message: any
     try {
-      message = await bodyData.json();
-    } catch (e) {
+      message = await bodyData.json()
+    }
+    catch (e) {
       return {
         statusCode: 400,
         body: { raw: { contentType: 'application/json', data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}' } },
-      };
+      }
     }
 
-    const response = await handleJsonRpc(message);
+    const response = await handleJsonRpc(message)
 
     if (response === undefined) {
-      return { statusCode: 202, headers: {} };
+      return { statusCode: 202, headers: {} }
     }
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': ['application/json'] },
       body: { raw: { contentType: 'application/json', data: JSON.stringify(response) } },
-    };
-  };
+    }
+  }
 
-  await siyuan.logger.info('[MCP Kernel Plugin] SSE and HTTP handlers registered');
-};
+  await siyuan.logger.info('[MCP Kernel Plugin] SSE and HTTP handlers registered')
+}
 
 siyuan.plugin.lifecycle.onunload = async function () {
-  await siyuan.logger.info('[MCP Kernel Plugin] Unloading');
-};
+  await siyuan.logger.info('[MCP Kernel Plugin] Unloading')
+}
 ```
 
 - [ ] **步骤 3：运行构建验证**
@@ -876,6 +892,7 @@ git commit -m "feat(mcp): add kernel.js MCP server implementation"
 ## 任务 6：创建 kernel.ts 单元测试
 
 **文件：**
+
 - 创建：`test/mcp/kernel.test.ts`
 
 - [ ] **步骤 1：编写 kernel 工具函数的单元测试**
@@ -886,98 +903,100 @@ git commit -m "feat(mcp): add kernel.js MCP server implementation"
 
 ```typescript
 export interface McpCacheGroup {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 export interface McpCacheProject {
-  id: string;
-  name: string;
-  description: string | undefined;
-  path: string;
-  groupId: string | undefined;
-  taskCount: number;
+  id: string
+  name: string
+  description: string | undefined
+  path: string
+  groupId: string | undefined
+  taskCount: number
 }
 
 export interface McpCacheItem {
-  id: string;
-  content: string;
-  date: string;
-  startDateTime: string | undefined;
-  endDateTime: string | undefined;
-  status: string;
-  projectName: string | undefined;
-  taskName: string | undefined;
-  projectId: string;
-  links: Array<{ name: string; url: string }> | undefined;
+  id: string
+  content: string
+  date: string
+  startDateTime: string | undefined
+  endDateTime: string | undefined
+  status: string
+  projectName: string | undefined
+  taskName: string | undefined
+  projectId: string
+  links: Array<{ name: string, url: string }> | undefined
   pomodoros: Array<{
-    id: string;
-    date: string;
-    startTime: string;
-    endTime: string | undefined;
-    durationMinutes: number;
-    actualDurationMinutes: number | undefined;
-    description: string | undefined;
-  }>;
+    id: string
+    date: string
+    startTime: string
+    endTime: string | undefined
+    durationMinutes: number
+    actualDurationMinutes: number | undefined
+    description: string | undefined
+  }>
 }
 
 export interface McpCache {
-  version: number;
-  updatedAt: string;
-  groups: McpCacheGroup[];
-  projects: McpCacheProject[];
-  items: McpCacheItem[];
+  version: number
+  updatedAt: string
+  groups: McpCacheGroup[]
+  projects: McpCacheProject[]
+  items: McpCacheItem[]
 }
 
 export function toolListGroups(_args: any, cache: McpCache) {
-  return { groups: cache.groups || [] };
+  return { groups: cache.groups || [] }
 }
 
 export function toolListProjects(args: any, cache: McpCache) {
   const filtered = args.groupId
-    ? cache.projects.filter(function(p) { return p.groupId === args.groupId; })
-    : cache.projects;
-  return { projects: filtered };
+    ? cache.projects.filter((p) => { return p.groupId === args.groupId })
+    : cache.projects
+  return { projects: filtered }
 }
 
 export function toolFilterItems(args: any, cache: McpCache) {
-  let items = cache.items || [];
+  let items = cache.items || []
 
   if (args.projectId) {
-    items = items.filter(function(i) { return i.projectId === args.projectId; });
-  } else if (args.projectIds && args.projectIds.length > 0) {
-    const set = new Set(args.projectIds);
-    items = items.filter(function(i) { return set.has(i.projectId); });
-  } else if (args.groupId) {
+    items = items.filter((i) => { return i.projectId === args.projectId })
+  }
+  else if (args.projectIds && args.projectIds.length > 0) {
+    const set = new Set(args.projectIds)
+    items = items.filter((i) => { return set.has(i.projectId) })
+  }
+  else if (args.groupId) {
     const projectIds = new Set(
       cache.projects
-        .filter(function(p) { return p.groupId === args.groupId; })
-        .map(function(p) { return p.id; })
-    );
-    items = items.filter(function(i) { return projectIds.has(i.projectId); });
+        .filter((p) => { return p.groupId === args.groupId })
+        .map((p) => { return p.id })
+    )
+    items = items.filter((i) => { return projectIds.has(i.projectId) })
   }
 
   if (args.startDate) {
-    items = items.filter(function(i) { return i.date >= args.startDate; });
+    items = items.filter((i) => { return i.date >= args.startDate })
   }
   if (args.endDate) {
-    items = items.filter(function(i) { return i.date <= args.endDate; });
+    items = items.filter((i) => { return i.date <= args.endDate })
   }
   if (args.status) {
-    items = items.filter(function(i) { return i.status === args.status; });
+    items = items.filter((i) => { return i.status === args.status })
   }
 
-  return { items: items };
+  return { items }
 }
 
 export function collectPomodoros(cache: McpCache) {
-  const pomodoros: Array<any> = [];
-  const seen = new Set<string>();
+  const pomodoros: Array<any> = []
+  const seen = new Set<string>()
   for (const item of cache.items) {
     if (item.pomodoros) {
       for (const p of item.pomodoros) {
         if (!seen.has(p.id)) {
-          seen.add(p.id);
+          seen.add(p.id)
           pomodoros.push({
             id: p.id,
             date: p.date,
@@ -989,49 +1008,50 @@ export function collectPomodoros(cache: McpCache) {
             itemContent: item.content,
             projectName: item.projectName,
             projectId: item.projectId,
-          });
+          })
         }
       }
     }
   }
-  return pomodoros;
+  return pomodoros
 }
 
 export function filterPomodoros(pomodoros: any[], args: any) {
-  let filtered = pomodoros;
-  const todayDate = new Date().toISOString().slice(0, 10);
-  let startDate = args.startDate;
-  let endDate = args.endDate;
+  let filtered = pomodoros
+  const todayDate = new Date().toISOString().slice(0, 10)
+  let startDate = args.startDate
+  let endDate = args.endDate
 
   if (args.date === 'today') {
-    startDate = todayDate;
-    endDate = todayDate;
+    startDate = todayDate
+    endDate = todayDate
   }
   if (startDate) {
-    filtered = filtered.filter(function(p) { return p.date >= startDate; });
+    filtered = filtered.filter((p) => { return p.date >= startDate })
   }
   if (endDate) {
-    filtered = filtered.filter(function(p) { return p.date <= endDate; });
+    filtered = filtered.filter((p) => { return p.date <= endDate })
   }
   if (args.projectId) {
-    filtered = filtered.filter(function(p) { return p.projectId === args.projectId; });
+    filtered = filtered.filter((p) => { return p.projectId === args.projectId })
   }
-  return filtered;
+  return filtered
 }
 ```
 
 - [ ] **步骤 2：编写测试文件 `test/mcp/kernelTools.test.ts`**
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import type { McpCache } from '@/mcp/kernelTools'
+import { describe, expect, it } from 'vitest'
 import {
-  toolListGroups,
-  toolListProjects,
-  toolFilterItems,
   collectPomodoros,
   filterPomodoros,
-  type McpCache,
-} from '@/mcp/kernelTools';
+
+  toolFilterItems,
+  toolListGroups,
+  toolListProjects
+} from '@/mcp/kernelTools'
 
 function makeCache(overrides?: Partial<McpCache>): McpCache {
   return {
@@ -1047,134 +1067,154 @@ function makeCache(overrides?: Partial<McpCache>): McpCache {
     ],
     items: [
       {
-        id: 'i1', content: '任务1', date: '2026-05-11', startDateTime: undefined,
-        endDateTime: undefined, status: 'pending', projectName: '项目A',
-        taskName: undefined, projectId: 'p1', links: undefined,
+        id: 'i1',
+        content: '任务1',
+        date: '2026-05-11',
+        startDateTime: undefined,
+        endDateTime: undefined,
+        status: 'pending',
+        projectName: '项目A',
+        taskName: undefined,
+        projectId: 'p1',
+        links: undefined,
         pomodoros: [
-          { id: 'pom1', date: '2026-05-11', startTime: '09:00:00', endTime: '09:25:00',
-            durationMinutes: 25, actualDurationMinutes: undefined, description: undefined },
+          { id: 'pom1', date: '2026-05-11', startTime: '09:00:00', endTime: '09:25:00', durationMinutes: 25, actualDurationMinutes: undefined, description: undefined },
         ],
       },
       {
-        id: 'i2', content: '任务2', date: '2026-05-10', startDateTime: undefined,
-        endDateTime: undefined, status: 'completed', projectName: '项目A',
-        taskName: undefined, projectId: 'p1', links: undefined, pomodoros: [],
+        id: 'i2',
+        content: '任务2',
+        date: '2026-05-10',
+        startDateTime: undefined,
+        endDateTime: undefined,
+        status: 'completed',
+        projectName: '项目A',
+        taskName: undefined,
+        projectId: 'p1',
+        links: undefined,
+        pomodoros: [],
       },
       {
-        id: 'i3', content: '任务3', date: '2026-05-11', startDateTime: undefined,
-        endDateTime: undefined, status: 'pending', projectName: '项目B',
-        taskName: undefined, projectId: 'p2', links: undefined,
+        id: 'i3',
+        content: '任务3',
+        date: '2026-05-11',
+        startDateTime: undefined,
+        endDateTime: undefined,
+        status: 'pending',
+        projectName: '项目B',
+        taskName: undefined,
+        projectId: 'p2',
+        links: undefined,
         pomodoros: [
-          { id: 'pom2', date: '2026-05-11', startTime: '14:00:00', endTime: '14:25:00',
-            durationMinutes: 25, actualDurationMinutes: 20, description: undefined },
+          { id: 'pom2', date: '2026-05-11', startTime: '14:00:00', endTime: '14:25:00', durationMinutes: 25, actualDurationMinutes: 20, description: undefined },
         ],
       },
     ],
     ...overrides,
-  };
+  }
 }
 
 describe('kernelTools', () => {
   describe('toolListGroups', () => {
     it('returns all groups', () => {
-      const cache = makeCache();
-      const result = toolListGroups({}, cache);
-      expect(result.groups).toHaveLength(2);
-      expect(result.groups[0].name).toBe('工作');
-    });
-  });
+      const cache = makeCache()
+      const result = toolListGroups({}, cache)
+      expect(result.groups).toHaveLength(2)
+      expect(result.groups[0].name).toBe('工作')
+    })
+  })
 
   describe('toolListProjects', () => {
     it('returns all projects without filter', () => {
-      const cache = makeCache();
-      const result = toolListProjects({}, cache);
-      expect(result.projects).toHaveLength(2);
-    });
+      const cache = makeCache()
+      const result = toolListProjects({}, cache)
+      expect(result.projects).toHaveLength(2)
+    })
 
     it('filters by groupId', () => {
-      const cache = makeCache();
-      const result = toolListProjects({ groupId: 'g1' }, cache);
-      expect(result.projects).toHaveLength(1);
-      expect(result.projects[0].name).toBe('项目A');
-    });
-  });
+      const cache = makeCache()
+      const result = toolListProjects({ groupId: 'g1' }, cache)
+      expect(result.projects).toHaveLength(1)
+      expect(result.projects[0].name).toBe('项目A')
+    })
+  })
 
   describe('toolFilterItems', () => {
     it('returns all items without filter', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({}, cache);
-      expect(result.items).toHaveLength(3);
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({}, cache)
+      expect(result.items).toHaveLength(3)
+    })
 
     it('filters by projectId', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ projectId: 'p1' }, cache);
-      expect(result.items).toHaveLength(2);
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({ projectId: 'p1' }, cache)
+      expect(result.items).toHaveLength(2)
+    })
 
     it('filters by projectIds array', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ projectIds: ['p1', 'p2'] }, cache);
-      expect(result.items).toHaveLength(3);
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({ projectIds: ['p1', 'p2'] }, cache)
+      expect(result.items).toHaveLength(3)
+    })
 
     it('filters by groupId', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ groupId: 'g1' }, cache);
-      expect(result.items).toHaveLength(2);
-      expect(result.items.every(function(i) { return i.projectId === 'p1'; })).toBe(true);
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({ groupId: 'g1' }, cache)
+      expect(result.items).toHaveLength(2)
+      expect(result.items.every((i) => { return i.projectId === 'p1' })).toBe(true)
+    })
 
     it('filters by date range', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ startDate: '2026-05-11', endDate: '2026-05-11' }, cache);
-      expect(result.items).toHaveLength(2);
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({ startDate: '2026-05-11', endDate: '2026-05-11' }, cache)
+      expect(result.items).toHaveLength(2)
+    })
 
     it('filters by status', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ status: 'completed' }, cache);
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].id).toBe('i2');
-    });
+      const cache = makeCache()
+      const result = toolFilterItems({ status: 'completed' }, cache)
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0].id).toBe('i2')
+    })
 
     it('combines multiple filters', () => {
-      const cache = makeCache();
-      const result = toolFilterItems({ projectId: 'p1', status: 'pending' }, cache);
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].id).toBe('i1');
-    });
-  });
+      const cache = makeCache()
+      const result = toolFilterItems({ projectId: 'p1', status: 'pending' }, cache)
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0].id).toBe('i1')
+    })
+  })
 
   describe('collectPomodoros', () => {
     it('collects pomodoros from all items with dedup', () => {
-      const cache = makeCache();
-      const result = collectPomodoros(cache);
-      expect(result).toHaveLength(2);
-    });
-  });
+      const cache = makeCache()
+      const result = collectPomodoros(cache)
+      expect(result).toHaveLength(2)
+    })
+  })
 
   describe('filterPomodoros', () => {
     it('filters by date range', () => {
       const pomodoros = [
         { id: '1', date: '2026-05-10', startTime: '09:00:00', projectId: 'p1' },
         { id: '2', date: '2026-05-11', startTime: '10:00:00', projectId: 'p1' },
-      ];
-      const result = filterPomodoros(pomodoros, { startDate: '2026-05-11', endDate: '2026-05-11' });
-      expect(result).toHaveLength(1);
-    });
+      ]
+      const result = filterPomodoros(pomodoros, { startDate: '2026-05-11', endDate: '2026-05-11' })
+      expect(result).toHaveLength(1)
+    })
 
     it('filters by today', () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10)
       const pomodoros = [
         { id: '1', date: today, startTime: '09:00:00', projectId: 'p1' },
         { id: '2', date: '2020-01-01', startTime: '10:00:00', projectId: 'p1' },
-      ];
-      const result = filterPomodoros(pomodoros, { date: 'today' });
-      expect(result).toHaveLength(1);
-    });
-  });
-});
+      ]
+      const result = filterPomodoros(pomodoros, { date: 'today' })
+      expect(result).toHaveLength(1)
+    })
+  })
+})
 ```
 
 - [ ] **步骤 3：运行测试验证通过**
@@ -1187,12 +1227,17 @@ describe('kernelTools', () => {
 修改 `src/mcp/kernel.ts`，将内联的工具函数替换为从 `kernelTools.ts` 导入：
 
 在文件顶部添加：
+
 ```typescript
+import type { McpCache } from './kernelTools'
 import {
-  toolListGroups, toolListProjects, toolFilterItems,
-  collectPomodoros, filterPomodoros,
-  type McpCache,
-} from './kernelTools';
+  collectPomodoros,
+  filterPomodoros,
+
+  toolFilterItems,
+  toolListGroups,
+  toolListProjects
+} from './kernelTools'
 ```
 
 删除 kernel.ts 中重复定义的 `McpCache` 接口、`toolListGroups`、`toolListProjects`、`toolFilterItems`、`collectPomodoros`、`filterPomodoros` 函数。
@@ -1219,6 +1264,7 @@ git commit -m "feat(mcp): extract kernel tool logic with tests"
 ## 任务 7：更新 i18n 文本
 
 **文件：**
+
 - 修改：`src/i18n/zh_CN.json:303-310`
 - 修改：`src/i18n/en_US.json:303-310`
 
@@ -1276,6 +1322,7 @@ git commit -m "feat(mcp): add HTTP MCP i18n texts"
 ## 任务 8：更新设置界面 — 桌面端和移动端
 
 **文件：**
+
 - 修改：`src/components/settings/McpConfigSection.vue`
 - 修改：`src/mobile/drawers/settings/MobileMcpConfig.vue`
 
@@ -1310,14 +1357,15 @@ async function copyHttpMcpConfig() {
         url: 'http://127.0.0.1:6806/plugin/private/siyuan-plugin-bullet-journal/mcp',
       },
     },
-  };
+  }
 
-  const configStr = JSON.stringify(mcpConfig, null, 2);
+  const configStr = JSON.stringify(mcpConfig, null, 2)
   try {
-    await navigator.clipboard.writeText(configStr);
-    showMessage((t('settings') as any).mcp?.httpCopySuccess ?? 'HTTP MCP 配置已复制到剪贴板', 3000, 'info');
-  } catch (err) {
-    showMessage((t('settings') as any).mcp?.httpCopyFailed ?? '复制失败，请手动复制', 3000, 'error');
+    await navigator.clipboard.writeText(configStr)
+    showMessage((t('settings') as any).mcp?.httpCopySuccess ?? 'HTTP MCP 配置已复制到剪贴板', 3000, 'info')
+  }
+  catch (err) {
+    showMessage((t('settings') as any).mcp?.httpCopyFailed ?? '复制失败，请手动复制', 3000, 'error')
   }
 }
 ```
@@ -1329,6 +1377,7 @@ async function copyHttpMcpConfig() {
   background: #5856d6;
   margin-top: 12px;
 }
+
 ```
 
 - [ ] **步骤 2：更新 MobileMcpConfig.vue**
@@ -1352,6 +1401,7 @@ git commit -m "feat(mcp): add HTTP MCP config copy button in settings UI"
 ## 任务 9：全量构建验证和最终提交
 
 **文件：**
+
 - 无新增修改
 
 - [ ] **步骤 1：运行全量构建**

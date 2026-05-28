@@ -23,8 +23,7 @@
         v-for="day in weekDayLabels"
         :key="day"
         class="date-picker-month-grid__weekday"
-        >{{ day }}</span
-      >
+      >{{ day }}</span>
     </div>
 
     <div class="date-picker-month-grid__days">
@@ -98,10 +97,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { getCurrentLocale, t } from '@/i18n';
-import type { DatePickerDailySummary } from './datePickerUtils';
+import type { DatePickerDailySummary } from './datePickerUtils'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import {
+  getCurrentLocale,
+  t,
+} from '@/i18n'
+import dayjs from '@/utils/dayjs'
 import {
   emptySummary,
   getCellMarkerLabel,
@@ -110,88 +116,88 @@ import {
   hasMarker,
   hasOverdue,
   hasPending,
-} from './datePickerUtils';
+} from './datePickerUtils'
 
-type CalendarCell = {
-  date: string;
-  dayNum: number;
-  summary: DatePickerDailySummary;
-};
+interface CalendarCell {
+  date: string
+  dayNum: number
+  summary: DatePickerDailySummary
+}
 
 const props = defineProps<{
-  selectedDate: string;
-  rangeStart: string;
-  rangeEnd: string;
-  getSummaryByDate: (date: string) => DatePickerDailySummary;
-}>();
+  selectedDate: string
+  rangeStart: string
+  rangeEnd: string
+  getSummaryByDate: (date: string) => DatePickerDailySummary
+}>()
 
 const emit = defineEmits<{
-  'date-click': [date: string, event: MouseEvent];
-}>();
+  'date-click': [date: string, event: MouseEvent]
+}>()
 
-const today = dayjs().format('YYYY-MM-DD');
-const viewMonth = ref(props.selectedDate.slice(0, 7));
+const today = dayjs().format('YYYY-MM-DD')
+const viewMonth = ref(props.selectedDate.slice(0, 7))
 
 watch(
   () => props.selectedDate,
   (value) => {
-    const nextMonth = value.slice(0, 7);
+    const nextMonth = value.slice(0, 7)
     if (nextMonth !== viewMonth.value) {
-      viewMonth.value = nextMonth;
+      viewMonth.value = nextMonth
     }
   },
-);
+)
 
-const weekDayLabels = computed(() => t('calendar').weekDays);
+const weekDayLabels = computed(() => t('calendar').weekDays)
 const title = computed(() => {
-  const d = dayjs(`${viewMonth.value}-01`);
-  const locale = getCurrentLocale();
-  return locale.startsWith('en') ? d.format('MMMM YYYY') : d.format('YYYY年M月');
-});
+  const d = dayjs(`${viewMonth.value}-01`)
+  const locale = getCurrentLocale()
+  return locale.startsWith('en') ? d.format('MMMM YYYY') : d.format('YYYY年M月')
+})
 
 const calendarCells = computed(() => {
-  const firstDay = dayjs(`${viewMonth.value}-01`);
-  let startDow: number = firstDay.day();
-  if (startDow === 0) startDow = 7;
-  const offset = startDow - 1;
-  const daysInMonth = firstDay.daysInMonth();
-  const cells: CalendarCell[] = [];
+  const firstDay = dayjs(`${viewMonth.value}-01`)
+  let startDow: number = firstDay.day()
+  if (startDow === 0) startDow = 7
+  const offset = startDow - 1
+  const daysInMonth = firstDay.daysInMonth()
+  const cells: CalendarCell[] = []
 
   for (let i = 0; i < offset; i += 1) {
     cells.push({
       date: '',
       dayNum: 0,
       summary: emptySummary(),
-    });
+    })
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = `${viewMonth.value}-${String(day).padStart(2, '0')}`;
+    const date = `${viewMonth.value}-${String(day).padStart(2, '0')}`
     cells.push({
       date,
       dayNum: day,
       summary: props.getSummaryByDate(date) ?? emptySummary(),
-    });
+    })
   }
 
-  return cells;
-});
+  return cells
+})
 
 function prevMonth() {
   viewMonth.value = dayjs(`${viewMonth.value}-01`)
     .subtract(1, 'month')
-    .format('YYYY-MM');
+    .format('YYYY-MM')
 }
 
 function nextMonth() {
   viewMonth.value = dayjs(`${viewMonth.value}-01`)
     .add(1, 'month')
-    .format('YYYY-MM');
+    .format('YYYY-MM')
 }
 
 function isInRange(date: string): boolean {
-  if (!props.rangeStart || !props.rangeEnd || !date) return false;
-  return date >= props.rangeStart && date <= props.rangeEnd;
+  if (!props.rangeStart || !props.rangeEnd || !date) return false
+  return date >= props.rangeStart && date <= props.rangeEnd
 }
 </script>
 
@@ -286,9 +292,7 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-month-grid__cell--in-range:not(
-  .date-picker-month-grid__cell--selected
-) {
+.date-picker-month-grid__cell--in-range:not(.date-picker-month-grid__cell--selected) {
   background: var(--b3-theme-surface-lighter);
 }
 
@@ -298,20 +302,15 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-month-grid__cell--overdue:not(
-  .date-picker-month-grid__cell--selected
-) {
+.date-picker-month-grid__cell--overdue:not(.date-picker-month-grid__cell--selected) {
   background: rgba(210, 63, 49, 0.08);
 }
 
-.date-picker-month-grid__cell--completed:not(
-  .date-picker-month-grid__cell--selected
-) {
+.date-picker-month-grid__cell--completed:not(.date-picker-month-grid__cell--selected) {
   background: var(--b3-theme-surface);
 }
 
-.date-picker-month-grid__cell--pending
-  .date-picker-month-grid__day-num {
+.date-picker-month-grid__cell--pending .date-picker-month-grid__day-num {
   font-weight: 600;
 }
 

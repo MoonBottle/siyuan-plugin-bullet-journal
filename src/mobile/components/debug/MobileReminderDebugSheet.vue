@@ -1,9 +1,18 @@
 <template>
   <Teleport to="body">
     <Transition name="debug-sheet-fade">
-      <div v-if="modelValue" class="mobile-reminder-debug-root b3-dialog">
-        <div class="mobile-reminder-debug-overlay" @click="close">
-          <section class="mobile-reminder-debug-sheet" @click.stop>
+      <div
+        v-if="modelValue"
+        class="mobile-reminder-debug-root b3-dialog"
+      >
+        <div
+          class="mobile-reminder-debug-overlay"
+          @click="close"
+        >
+          <section
+            class="mobile-reminder-debug-sheet"
+            @click.stop
+          >
             <header class="mobile-reminder-debug-sheet__header">
               <div>
                 <h3 class="mobile-reminder-debug-sheet__title">
@@ -52,8 +61,12 @@
                         {{ formatDateTime(entry.scheduledAt) }}
                       </span>
                     </div>
-                    <div class="mobile-reminder-debug-sheet__card-title">{{ entry.title }}</div>
-                    <div class="mobile-reminder-debug-sheet__card-body">{{ entry.body }}</div>
+                    <div class="mobile-reminder-debug-sheet__card-title">
+                      {{ entry.title }}
+                    </div>
+                    <div class="mobile-reminder-debug-sheet__card-body">
+                      {{ entry.body }}
+                    </div>
                     <dl class="mobile-reminder-debug-sheet__fields">
                       <div>
                         <dt>entryKey</dt>
@@ -83,7 +96,10 @@
                   </article>
                 </div>
 
-                <div v-else class="mobile-reminder-debug-sheet__empty">
+                <div
+                  v-else
+                  class="mobile-reminder-debug-sheet__empty"
+                >
                   {{ t('mobile.debug.reminder.emptyComputed') || '当前没有未来 24 小时内的提醒计划' }}
                 </div>
               </section>
@@ -132,7 +148,10 @@
                   </article>
                 </div>
 
-                <div v-else class="mobile-reminder-debug-sheet__empty">
+                <div
+                  v-else
+                  class="mobile-reminder-debug-sheet__empty"
+                >
                   {{ t('mobile.debug.reminder.emptyRegistry') || '当前没有额外保留的原生预约记录' }}
                 </div>
               </section>
@@ -145,27 +164,27 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import type { MobileNotificationDebugSnapshot } from '@/services/mobileNotificationScheduler';
+import type { MobileNotificationDebugSnapshot } from '@/services/mobileNotificationScheduler'
+import { t } from '@/i18n'
 
 defineProps<{
-  modelValue: boolean;
-  snapshot: MobileNotificationDebugSnapshot | null;
-}>();
+  modelValue: boolean
+  snapshot: MobileNotificationDebugSnapshot | null
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-}>();
+  'update:modelValue': [value: boolean]
+}>()
 
 function close() {
-  emit('update:modelValue', false);
+  emit('update:modelValue', false)
 }
 
 function formatDateTime(timestamp?: number | null): string {
   if (!timestamp)
-    return '--';
+    return '--'
 
-  return new Date(timestamp).toLocaleString();
+  return new Date(timestamp).toLocaleString()
 }
 </script>
 

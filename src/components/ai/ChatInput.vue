@@ -14,49 +14,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import {
+  nextTick,
+  ref,
+} from 'vue'
 
 const props = defineProps<{
-  modelValue?: string;
-  placeholder?: string;
-  disabled?: boolean;
-}>();
+  modelValue?: string
+  placeholder?: string
+  disabled?: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
-  send: [content: string];
-}>();
+  'update:modelValue': [value: string]
+  "send": [content: string]
+}>()
 
-const textareaRef = ref<HTMLTextAreaElement>();
+const textareaRef = ref<HTMLTextAreaElement>()
 
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault();
-    emit('send', props.modelValue?.trim() || '');
+    event.preventDefault()
+    emit('send', props.modelValue?.trim() || '')
   }
 }
 
 function handleInput(event: Event) {
-  const target = event.target as HTMLTextAreaElement;
-  emit('update:modelValue', target.value);
+  const target = event.target as HTMLTextAreaElement
+  emit('update:modelValue', target.value)
 
   // 自动调整高度
   nextTick(() => {
-    const textarea = textareaRef.value;
+    const textarea = textareaRef.value
     if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`
     }
-  });
+  })
 }
 
 function focus() {
-  textareaRef.value?.focus();
+  textareaRef.value?.focus()
 }
 
 defineExpose({
-  focus
-});
+  focus,
+})
 </script>
 
 <style lang="scss" scoped>

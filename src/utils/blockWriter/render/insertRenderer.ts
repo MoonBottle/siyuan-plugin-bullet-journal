@@ -1,3 +1,8 @@
+import type {
+  LoadedMutationSource,
+  PreparedMutationPayload,
+  ResolvedMutationPlan,
+} from '@/utils/blockWriter/shared/types'
 /**
  * 插入渲染器：将 InsertableBlockPatch 渲染为可提交的载荷
  *
@@ -9,14 +14,13 @@
  * 导致新块与已有块 ID 冲突（dataType="dom" 时合法 ID 不会被自动替换）。
  * 移除 IAL 后，Lute 会自动为每个块生成新的合法 id 和 updated。
  */
-import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
-import { renderInsertableBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
-import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
-import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
+import { renderInsertableBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks'
 
 function stripIALFromMarkdown(markdown: string): string {
-  const parts = splitKramdownBlock(markdown);
-  return parts.contentLines.join('\n');
+  const parts = splitKramdownBlock(markdown)
+  return parts.contentLines.join('\n')
 }
 
 /** 准备插入载荷：将 patch 渲染为 markdown 和 DOM HTML */
@@ -24,8 +28,8 @@ export function prepareInsertPayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'insertAfter' }>,
   _source: Extract<LoadedMutationSource, { kind: 'insertAfter' }>,
 ): Extract<PreparedMutationPayload, { kind: 'insertAfter' }> {
-  const fallbackMarkdown = renderInsertableBlockPatch(plan.patch);
-  const cleanMarkdown = stripIALFromMarkdown(fallbackMarkdown);
+  const fallbackMarkdown = renderInsertableBlockPatch(plan.patch)
+  const cleanMarkdown = stripIALFromMarkdown(fallbackMarkdown)
   return {
     kind: 'insertAfter',
     anchorBlockId: plan.anchorBlockId,
@@ -33,5 +37,5 @@ export function prepareInsertPayload(
     domHtml: markdownToBlockDOM(cleanMarkdown) ?? undefined,
     fallbackMarkdown,
     resultMode: plan.resultMode,
-  };
+  }
 }

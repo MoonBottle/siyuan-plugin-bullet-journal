@@ -38,10 +38,10 @@ The Workbench is a desktop-only integrated workspace that combines Dashboard, Ha
 
 ## Access
 
-| Method | Action |
-|--------|--------|
+| Method              | Action                                           |
+| ------------------- | ------------------------------------------------ |
 | Right-click top bar | Right-click on empty area of top bar → Workbench |
-| Dropdown menu | Click plugin icon in top bar → Workbench |
+| Dropdown menu       | Click plugin icon in top bar → Workbench         |
 
 > **Note**: The Workbench is a desktop-only feature. Mobile is not supported.
 
@@ -62,13 +62,13 @@ The left sidebar of the Workbench is 240px wide, divided into two areas:
 
 "+ New View" button with 5 creation options:
 
-| Option | Description |
-|--------|-------------|
-| **New Dashboard** | Create a customizable widget canvas |
-| **Todo View** | Embed the todo list |
-| **Habit View** | Habit workspace |
-| **Quadrant View** | Important/Urgent quadrant matrix |
-| **Focus Stats View** | Pomodoro statistics |
+| Option               | Description                         |
+| -------------------- | ----------------------------------- |
+| **New Dashboard**    | Create a customizable widget canvas |
+| **Todo View**        | Embed the todo list                 |
+| **Habit View**       | Habit workspace                     |
+| **Quadrant View**    | Important/Urgent quadrant matrix    |
+| **Focus Stats View** | Pomodoro statistics                 |
 
 ---
 
@@ -80,13 +80,13 @@ The Dashboard is a customizable widget canvas using a 12-column grid layout (row
 
 Click the "Add Widget" button in the dashboard's top-right corner, then select the widget type:
 
-| Widget | Icon | Description | Configurable |
-|--------|------|-------------|--------------|
-| **Todo List** | `iconList` | Filtered todo list by preset | Todo preset |
-| **Quadrant Summary** | `iconLayout` | Task summary by group and quadrant | Group + Quadrant |
-| **Habit Week** | `iconCheck` | Weekly habit check-in progress overview | Group + Scope (active/archived) |
-| **Mini Calendar** | `iconCalendar` | Compact monthly calendar for item distribution | Group |
-| **Focus Stats** | `iconClock` | Pomodoro statistics card | Section selection |
+| Widget               | Icon           | Description                                    | Configurable                    |
+| -------------------- | -------------- | ---------------------------------------------- | ------------------------------- |
+| **Todo List**        | `iconList`     | Filtered todo list by preset                   | Todo preset                     |
+| **Quadrant Summary** | `iconLayout`   | Task summary by group and quadrant             | Group + Quadrant                |
+| **Habit Week**       | `iconCheck`    | Weekly habit check-in progress overview        | Group + Scope (active/archived) |
+| **Mini Calendar**    | `iconCalendar` | Compact monthly calendar for item distribution | Group                           |
+| **Focus Stats**      | `iconClock`    | Pomodoro statistics card                       | Section selection               |
 
 ### Widget Operations
 
@@ -227,10 +227,10 @@ No. All widget positions, sizes, and configurations are automatically saved to `
 
 Both share the same data source, but differ in presentation:
 
-| Feature | Todo Dock | Workbench Todo View |
-|---------|-----------|---------------------|
-| Display area | Sidebar (narrow) | Main area (wide) |
-| Best for | Quick glance | Extended focus |
+| Feature       | Todo Dock        | Workbench Todo View                       |
+| ------------- | ---------------- | ----------------------------------------- |
+| Display area  | Sidebar (narrow) | Main area (wide)                          |
+| Best for      | Quick glance     | Extended focus                            |
 | Composability | Standalone panel | Can be combined with Habit/Quadrant, etc. |
 
 ### Q: What's the difference between Habit View and Habit Check-in Dock?

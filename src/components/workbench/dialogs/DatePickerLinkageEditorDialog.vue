@@ -19,7 +19,10 @@
             <span>{{ widget.title || getWidgetTypeName(widget.type) }}</span>
           </label>
         </div>
-        <div v-if="filteredWidgets.length === 0" class="linkage-editor-dialog__empty">
+        <div
+          v-if="filteredWidgets.length === 0"
+          class="linkage-editor-dialog__empty"
+        >
           {{ t('datePicker').emptyLinkage }}
         </div>
       </div>
@@ -35,7 +38,11 @@
     </div>
 
     <template #footer>
-      <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
+      <button
+        class="b3-button b3-button--cancel"
+        type="button"
+        @click="onCancel"
+      >
         {{ t('common').cancel }}
       </button>
       <button
@@ -51,44 +58,54 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-import type { WorkbenchWidgetInstance, WidgetLinkageRule, LinkableWidgetType } from '@/types/workbench';
+import type {
+  LinkableWidgetType,
+  WidgetLinkageRule,
+  WorkbenchWidgetInstance,
+} from '@/types/workbench'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
+import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue'
 
 const props = defineProps<{
-  editingRule?: WidgetLinkageRule | null;
-  availableWidgets: WorkbenchWidgetInstance[];
-  onConfirm: (rule: WidgetLinkageRule) => void;
-  onCancel: () => void;
-}>();
+  editingRule?: WidgetLinkageRule | null
+  availableWidgets: WorkbenchWidgetInstance[]
+  onConfirm: (rule: WidgetLinkageRule) => void
+  onCancel: () => void
+}>()
 
-const selectedTargetId = ref(props.editingRule?.targetWidgetId ?? '');
+const selectedTargetId = ref(props.editingRule?.targetWidgetId ?? '')
 
 const filteredWidgets = computed(() =>
   props.availableWidgets.filter((w) =>
     (['todoList'] as string[]).includes(w.type),
   ),
-);
+)
 
 function getWidgetTypeName(type: string): string {
   try {
-    return getWidgetDefinition(type as any).name;
+    return getWidgetDefinition(type as any).name
   }
   catch {
-    return type;
+    return type
   }
 }
 
 function handleConfirm() {
-  if (!selectedTargetId.value) return;
+  if (!selectedTargetId.value) return
   props.onConfirm({
     id: props.editingRule?.id ?? crypto.randomUUID(),
     targetWidgetId: selectedTargetId.value,
     targetType: 'todoList' as LinkableWidgetType,
-    fieldMapping: { sourceField: 'dateRange', targetProperty: 'dateRange' },
-  });
+    fieldMapping: {
+      sourceField: 'dateRange',
+      targetProperty: 'dateRange',
+    },
+  })
 }
 </script>
 

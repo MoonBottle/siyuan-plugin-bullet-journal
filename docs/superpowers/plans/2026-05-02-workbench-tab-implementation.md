@@ -97,6 +97,7 @@
 ### Task 1: Define Workbench Types and Persistence Helper
 
 **Files:**
+
 - Create: `src/types/workbench.ts`
 - Create: `src/utils/workbenchStorage.ts`
 - Create: `test/utils/workbenchStorage.test.ts`
@@ -104,45 +105,45 @@
 - [ ] **Step 1: Write the failing persistence helper tests**
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const plugin = {
   loadData: vi.fn(),
   saveData: vi.fn(),
-};
+}
 
 describe('workbenchStorage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('loads default workbench settings when workbench.json is missing', async () => {
-    plugin.loadData.mockResolvedValueOnce(null);
-    const { loadWorkbenchSettings } = await import('@/utils/workbenchStorage');
+    plugin.loadData.mockResolvedValueOnce(null)
+    const { loadWorkbenchSettings } = await import('@/utils/workbenchStorage')
 
-    const result = await loadWorkbenchSettings(plugin as any);
+    const result = await loadWorkbenchSettings(plugin as any)
 
-    expect(plugin.loadData).toHaveBeenCalledWith('workbench.json');
+    expect(plugin.loadData).toHaveBeenCalledWith('workbench.json')
     expect(result).toEqual({
       entries: [],
       dashboards: [],
       activeEntryId: null,
-    });
-  });
+    })
+  })
 
   it('saves workbench settings to workbench.json', async () => {
-    const { saveWorkbenchSettings } = await import('@/utils/workbenchStorage');
+    const { saveWorkbenchSettings } = await import('@/utils/workbenchStorage')
     const settings = {
       entries: [{ id: 'e1', type: 'view', title: 'Todo', icon: 'iconList', order: 0, viewType: 'todo' }],
       dashboards: [],
       activeEntryId: 'e1',
-    };
+    }
 
-    await saveWorkbenchSettings(plugin as any, settings as any);
+    await saveWorkbenchSettings(plugin as any, settings as any)
 
-    expect(plugin.saveData).toHaveBeenCalledWith('workbench.json', settings);
-  });
-});
+    expect(plugin.saveData).toHaveBeenCalledWith('workbench.json', settings)
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -153,92 +154,92 @@ Expected: FAIL with module not found for `@/utils/workbenchStorage`
 - [ ] **Step 3: Write the type definitions**
 
 ```ts
-export type WorkbenchViewType =
-  | 'calendar'
-  | 'gantt'
-  | 'quadrant'
-  | 'project'
-  | 'todo'
-  | 'habit'
-  | 'pomodoroStats';
+export type WorkbenchViewType
+  = | 'calendar'
+    | 'gantt'
+    | 'quadrant'
+    | 'project'
+    | 'todo'
+    | 'habit'
+    | 'pomodoroStats'
 
-export type WorkbenchEntry = {
-  id: string;
-  type: 'dashboard' | 'view';
-  title: string;
-  icon: string;
-  order: number;
-  viewType?: WorkbenchViewType;
-  dashboardId?: string;
-};
+export interface WorkbenchEntry {
+  id: string
+  type: 'dashboard' | 'view'
+  title: string
+  icon: string
+  order: number
+  viewType?: WorkbenchViewType
+  dashboardId?: string
+}
 
-export type WorkbenchWidgetType =
-  | 'todoList'
-  | 'quadrantSummary'
-  | 'habitWeek'
-  | 'miniCalendar'
-  | 'pomodoroStats';
+export type WorkbenchWidgetType
+  = | 'todoList'
+    | 'quadrantSummary'
+    | 'habitWeek'
+    | 'miniCalendar'
+    | 'pomodoroStats'
 
-export type WorkbenchWidgetInstance = {
-  id: string;
-  type: WorkbenchWidgetType;
-  title?: string;
+export interface WorkbenchWidgetInstance {
+  id: string
+  type: WorkbenchWidgetType
+  title?: string
   layout: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  };
-  config: Record<string, unknown>;
-};
+    x: number
+    y: number
+    w: number
+    h: number
+  }
+  config: Record<string, unknown>
+}
 
-export type WorkbenchDashboard = {
-  id: string;
-  title: string;
-  widgets: WorkbenchWidgetInstance[];
-};
+export interface WorkbenchDashboard {
+  id: string
+  title: string
+  widgets: WorkbenchWidgetInstance[]
+}
 
-export type WorkbenchSettings = {
-  entries: WorkbenchEntry[];
-  dashboards: WorkbenchDashboard[];
-  activeEntryId: string | null;
-};
+export interface WorkbenchSettings {
+  entries: WorkbenchEntry[]
+  dashboards: WorkbenchDashboard[]
+  activeEntryId: string | null
+}
 ```
 
 - [ ] **Step 4: Write the minimal storage helper**
 
 ```ts
-import type { WorkbenchSettings } from '@/types/workbench';
+import type { WorkbenchSettings } from '@/types/workbench'
 
-const WORKBENCH_FILE = 'workbench.json';
+const WORKBENCH_FILE = 'workbench.json'
 
 export function createEmptyWorkbenchSettings(): WorkbenchSettings {
   return {
     entries: [],
     dashboards: [],
     activeEntryId: null,
-  };
+  }
 }
 
 export async function loadWorkbenchSettings(plugin: {
-  loadData: (storageName: string) => Promise<any>;
+  loadData: (storageName: string) => Promise<any>
 }): Promise<WorkbenchSettings> {
-  const data = await plugin.loadData(WORKBENCH_FILE);
+  const data = await plugin.loadData(WORKBENCH_FILE)
   if (!data || typeof data !== 'object') {
-    return createEmptyWorkbenchSettings();
+    return createEmptyWorkbenchSettings()
   }
 
   return {
     entries: Array.isArray(data.entries) ? data.entries : [],
     dashboards: Array.isArray(data.dashboards) ? data.dashboards : [],
     activeEntryId: typeof data.activeEntryId === 'string' ? data.activeEntryId : null,
-  };
+  }
 }
 
 export async function saveWorkbenchSettings(plugin: {
-  saveData: (storageName: string, content: any) => Promise<void>;
+  saveData: (storageName: string, content: any) => Promise<void>
 }, settings: WorkbenchSettings): Promise<void> {
-  await plugin.saveData(WORKBENCH_FILE, settings);
+  await plugin.saveData(WORKBENCH_FILE, settings)
 }
 ```
 
@@ -259,6 +260,7 @@ git commit -m "feat(workbench): add workbench persistence primitives"
 ### Task 2: Add `workbenchStore` with Entry and Dashboard CRUD
 
 **Files:**
+
 - Create: `src/stores/workbenchStore.ts`
 - Create: `test/stores/workbenchStore.test.ts`
 - Reference: `src/stores/settingsStore.ts`
@@ -267,11 +269,11 @@ git commit -m "feat(workbench): add workbench persistence primitives"
 - [ ] **Step 1: Write the failing store tests**
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const loadWorkbenchSettings = vi.fn();
-const saveWorkbenchSettings = vi.fn();
+const loadWorkbenchSettings = vi.fn()
+const saveWorkbenchSettings = vi.fn()
 
 vi.mock('@/utils/workbenchStorage', () => ({
   createEmptyWorkbenchSettings: () => ({
@@ -281,68 +283,68 @@ vi.mock('@/utils/workbenchStorage', () => ({
   }),
   loadWorkbenchSettings: (...args: any[]) => loadWorkbenchSettings(...args),
   saveWorkbenchSettings: (...args: any[]) => saveWorkbenchSettings(...args),
-}));
+}))
 
 describe('workbenchStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
   it('loads persisted workbench settings and exposes active entry', async () => {
     loadWorkbenchSettings.mockResolvedValueOnce({
       entries: [{ id: 'todo-view', type: 'view', title: 'Todo', icon: 'iconList', order: 0, viewType: 'todo' }],
       dashboards: [],
       activeEntryId: 'todo-view',
-    });
+    })
 
-    const { useWorkbenchStore } = await import('@/stores/workbenchStore');
-    const store = useWorkbenchStore();
+    const { useWorkbenchStore } = await import('@/stores/workbenchStore')
+    const store = useWorkbenchStore()
 
-    await store.load({ loadData: vi.fn() } as any);
+    await store.load({ loadData: vi.fn() } as any)
 
-    expect(store.entries).toHaveLength(1);
-    expect(store.activeEntry?.id).toBe('todo-view');
-  });
+    expect(store.entries).toHaveLength(1)
+    expect(store.activeEntry?.id).toBe('todo-view')
+  })
 
   it('creates a dashboard entry and dashboard together', async () => {
-    const { useWorkbenchStore } = await import('@/stores/workbenchStore');
-    const store = useWorkbenchStore();
+    const { useWorkbenchStore } = await import('@/stores/workbenchStore')
+    const store = useWorkbenchStore()
 
-    store.createDashboardEntry('本周概览');
+    store.createDashboardEntry('本周概览')
 
-    expect(store.entries[0]?.type).toBe('dashboard');
-    expect(store.dashboards[0]?.title).toBe('本周概览');
-    expect(store.activeEntryId).toBe(store.entries[0]?.id);
-  });
+    expect(store.entries[0]?.type).toBe('dashboard')
+    expect(store.dashboards[0]?.title).toBe('本周概览')
+    expect(store.activeEntryId).toBe(store.entries[0]?.id)
+  })
 
   it('creates a view entry for todo', async () => {
-    const { useWorkbenchStore } = await import('@/stores/workbenchStore');
-    const store = useWorkbenchStore();
+    const { useWorkbenchStore } = await import('@/stores/workbenchStore')
+    const store = useWorkbenchStore()
 
-    store.createViewEntry('todo');
+    store.createViewEntry('todo')
 
     expect(store.entries[0]).toEqual(expect.objectContaining({
       type: 'view',
       viewType: 'todo',
       icon: 'iconList',
-    }));
-  });
+    }))
+  })
 
   it('persists after rename and delete operations', async () => {
-    const { useWorkbenchStore } = await import('@/stores/workbenchStore');
-    const plugin = { saveData: vi.fn() };
-    const store = useWorkbenchStore();
-    store.bindPlugin(plugin as any);
-    store.createDashboardEntry('本周概览');
+    const { useWorkbenchStore } = await import('@/stores/workbenchStore')
+    const plugin = { saveData: vi.fn() }
+    const store = useWorkbenchStore()
+    store.bindPlugin(plugin as any)
+    store.createDashboardEntry('本周概览')
 
-    const id = store.entries[0].id;
-    await store.renameEntry(id, '新的名称');
-    await store.deleteEntry(id);
+    const id = store.entries[0].id
+    await store.renameEntry(id, '新的名称')
+    await store.deleteEntry(id)
 
-    expect(saveWorkbenchSettings).toHaveBeenCalledTimes(3);
-  });
-});
+    expect(saveWorkbenchSettings).toHaveBeenCalledTimes(3)
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -353,13 +355,13 @@ Expected: FAIL with module not found for `@/stores/workbenchStore`
 - [ ] **Step 3: Write the minimal store implementation**
 
 ```ts
-import { computed, ref } from 'vue';
-import { defineStore } from 'pinia';
-import type { WorkbenchDashboard, WorkbenchEntry, WorkbenchSettings, WorkbenchViewType } from '@/types/workbench';
-import { createEmptyWorkbenchSettings, loadWorkbenchSettings, saveWorkbenchSettings } from '@/utils/workbenchStorage';
+import type { WorkbenchDashboard, WorkbenchEntry, WorkbenchSettings, WorkbenchViewType } from '@/types/workbench'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { createEmptyWorkbenchSettings, loadWorkbenchSettings, saveWorkbenchSettings } from '@/utils/workbenchStorage'
 
 function createId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function getViewMeta(viewType: WorkbenchViewType) {
@@ -371,48 +373,49 @@ function getViewMeta(viewType: WorkbenchViewType) {
     calendar: { title: 'Calendar', icon: 'iconCalendar' },
     gantt: { title: 'Gantt', icon: 'iconGraph' },
     project: { title: 'Project', icon: 'iconFolder' },
-  } satisfies Record<WorkbenchViewType, { title: string; icon: string }>;
-  return meta[viewType];
+  } satisfies Record<WorkbenchViewType, { title: string, icon: string }>
+  return meta[viewType]
 }
 
 export const useWorkbenchStore = defineStore('workbench', () => {
-  const entries = ref<WorkbenchEntry[]>([]);
-  const dashboards = ref<WorkbenchDashboard[]>([]);
-  const activeEntryId = ref<string | null>(null);
-  const pluginRef = ref<any>(null);
+  const entries = ref<WorkbenchEntry[]>([])
+  const dashboards = ref<WorkbenchDashboard[]>([])
+  const activeEntryId = ref<string | null>(null)
+  const pluginRef = ref<any>(null)
 
-  const activeEntry = computed(() => entries.value.find(entry => entry.id === activeEntryId.value) ?? null);
+  const activeEntry = computed(() => entries.value.find(entry => entry.id === activeEntryId.value) ?? null)
 
   async function persist() {
-    if (!pluginRef.value) return;
+    if (!pluginRef.value)
+      return
     const settings: WorkbenchSettings = {
       entries: entries.value,
       dashboards: dashboards.value,
       activeEntryId: activeEntryId.value,
-    };
-    await saveWorkbenchSettings(pluginRef.value, settings);
+    }
+    await saveWorkbenchSettings(pluginRef.value, settings)
   }
 
   function bindPlugin(plugin: any) {
-    pluginRef.value = plugin;
+    pluginRef.value = plugin
   }
 
   async function load(plugin: any) {
-    bindPlugin(plugin);
-    const settings = await loadWorkbenchSettings(plugin);
-    entries.value = settings.entries;
-    dashboards.value = settings.dashboards;
-    activeEntryId.value = settings.activeEntryId;
+    bindPlugin(plugin)
+    const settings = await loadWorkbenchSettings(plugin)
+    entries.value = settings.entries
+    dashboards.value = settings.dashboards
+    activeEntryId.value = settings.activeEntryId
   }
 
   function createDashboardEntry(title: string) {
-    const dashboardId = createId('dashboard');
-    const entryId = createId('entry');
+    const dashboardId = createId('dashboard')
+    const entryId = createId('entry')
     dashboards.value.push({
       id: dashboardId,
       title,
       widgets: [],
-    });
+    })
     entries.value.push({
       id: entryId,
       type: 'dashboard',
@@ -420,14 +423,14 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       icon: 'iconLayout',
       order: entries.value.length,
       dashboardId,
-    });
-    activeEntryId.value = entryId;
-    void persist();
+    })
+    activeEntryId.value = entryId
+    void persist()
   }
 
   function createViewEntry(viewType: WorkbenchViewType) {
-    const meta = getViewMeta(viewType);
-    const entryId = createId('entry');
+    const meta = getViewMeta(viewType)
+    const entryId = createId('entry')
     entries.value.push({
       id: entryId,
       type: 'view',
@@ -435,36 +438,39 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       icon: meta.icon,
       order: entries.value.length,
       viewType,
-    });
-    activeEntryId.value = entryId;
-    void persist();
+    })
+    activeEntryId.value = entryId
+    void persist()
   }
 
   async function renameEntry(id: string, title: string) {
-    const entry = entries.value.find(item => item.id === id);
-    if (!entry) return;
-    entry.title = title;
+    const entry = entries.value.find(item => item.id === id)
+    if (!entry)
+      return
+    entry.title = title
     if (entry.type === 'dashboard' && entry.dashboardId) {
-      const dashboard = dashboards.value.find(item => item.id === entry.dashboardId);
-      if (dashboard) dashboard.title = title;
+      const dashboard = dashboards.value.find(item => item.id === entry.dashboardId)
+      if (dashboard)
+        dashboard.title = title
     }
-    await persist();
+    await persist()
   }
 
   async function deleteEntry(id: string) {
-    const index = entries.value.findIndex(item => item.id === id);
-    if (index < 0) return;
-    const [entry] = entries.value.splice(index, 1);
+    const index = entries.value.findIndex(item => item.id === id)
+    if (index < 0)
+      return
+    const [entry] = entries.value.splice(index, 1)
     if (entry.type === 'dashboard' && entry.dashboardId) {
-      dashboards.value = dashboards.value.filter(item => item.id !== entry.dashboardId);
+      dashboards.value = dashboards.value.filter(item => item.id !== entry.dashboardId)
     }
-    activeEntryId.value = entries.value[0]?.id ?? null;
-    await persist();
+    activeEntryId.value = entries.value[0]?.id ?? null
+    await persist()
   }
 
   function setActiveEntry(id: string) {
-    activeEntryId.value = id;
-    void persist();
+    activeEntryId.value = id
+    void persist()
   }
 
   return {
@@ -479,8 +485,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     renameEntry,
     deleteEntry,
     setActiveEntry,
-  };
-});
+  }
+})
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -500,6 +506,7 @@ git commit -m "feat(workbench): add store for workbench entries and dashboards"
 ### Task 3: Register the Top-Level Workbench Tab and i18n Labels
 
 **Files:**
+
 - Modify: `src/constants.ts`
 - Modify: `src/index.ts`
 - Modify: `src/i18n/zh_CN.json`
@@ -509,14 +516,14 @@ git commit -m "feat(workbench): add store for workbench entries and dashboards"
 - [ ] **Step 1: Write the failing tab registration tests**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { TAB_TYPES } from '@/constants';
+import { describe, expect, it } from 'vitest'
+import { TAB_TYPES } from '@/constants'
 
 describe('TAB_TYPES', () => {
   it('exposes workbench tab type', () => {
-    expect(TAB_TYPES.WORKBENCH).toBe('bullet-journal-workbench');
-  });
-});
+    expect(TAB_TYPES.WORKBENCH).toBe('bullet-journal-workbench')
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -535,12 +542,12 @@ export const TAB_TYPES = {
   PROJECT: 'bullet-journal-project',
   POMODORO_STATS: 'bullet-journal-pomodoro-stats',
   WORKBENCH: 'bullet-journal-workbench',
-};
+}
 ```
 
 ```ts
 // src/index.ts imports
-import WorkbenchTab from '@/tabs/WorkbenchTab.vue';
+import WorkbenchTab from '@/tabs/WorkbenchTab.vue'
 
 // inside registerTabs()
 if (!this.isMobile) {
@@ -548,19 +555,19 @@ if (!this.isMobile) {
     type: TAB_TYPES.WORKBENCH,
     init() {
       try {
-        const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(WorkbenchTab);
-        app.use(pinia);
-        app.mount(this.element);
+        const pinia = getSharedPinia() ?? createPinia()
+        const app = createApp(WorkbenchTab)
+        app.use(pinia)
+        app.mount(this.element)
       }
       catch (error) {
-        console.error('[Task Assistant] Failed to mount WorkbenchTab:', error);
+        console.error('[Task Assistant] Failed to mount WorkbenchTab:', error)
       }
     },
     destroy() {
-      this.element.innerHTML = '';
+      this.element.innerHTML = ''
     },
-  });
+  })
 }
 ```
 
@@ -599,12 +606,14 @@ menu.addItem({
 - [ ] **Step 4: Add a placeholder WorkbenchTab component**
 
 ```vue
-<template>
-  <div class="workbench-tab">Workbench</div>
-</template>
-
 <script setup lang="ts">
 </script>
+
+<template>
+  <div class="workbench-tab">
+    Workbench
+  </div>
+</template>
 ```
 
 - [ ] **Step 5: Run test to verify it passes**
@@ -624,6 +633,7 @@ git commit -m "feat(workbench): register top-level workbench tab"
 ### Task 4: Build the Workbench Shell, Sidebar, and Content Host
 
 **Files:**
+
 - Modify: `src/tabs/WorkbenchTab.vue`
 - Create: `src/components/workbench/WorkbenchSidebar.vue`
 - Create: `src/components/workbench/WorkbenchContentHost.vue`
@@ -634,22 +644,22 @@ git commit -m "feat(workbench): register top-level workbench tab"
 
 ```ts
 it('renders the left sidebar and right content host', async () => {
-  const mounted = await mountWorkbenchTab();
+  const mounted = await mountWorkbenchTab()
 
-  expect(mounted.querySelector('[data-testid="workbench-sidebar"]')).not.toBeNull();
-  expect(mounted.querySelector('[data-testid="workbench-content-host"]')).not.toBeNull();
-});
+  expect(mounted.querySelector('[data-testid="workbench-sidebar"]')).not.toBeNull()
+  expect(mounted.querySelector('[data-testid="workbench-content-host"]')).not.toBeNull()
+})
 
 it('creates dashboard and view entries from sidebar actions', async () => {
-  const mounted = await mountWorkbenchTab();
+  const mounted = await mountWorkbenchTab()
 
-  mounted.querySelector('[data-testid="workbench-new-dashboard"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  mounted.querySelector('[data-testid="workbench-new-view-todo"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  mounted.querySelector('[data-testid="workbench-new-dashboard"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  mounted.querySelector('[data-testid="workbench-new-view-todo"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-  await Promise.resolve();
+  await Promise.resolve()
 
-  expect(mounted.querySelectorAll('[data-testid="workbench-entry"]').length).toBe(2);
-});
+  expect(mounted.querySelectorAll('[data-testid="workbench-entry"]').length).toBe(2)
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -661,6 +671,31 @@ Expected: FAIL because placeholder component does not render the shell
 
 ```vue
 <!-- src/tabs/WorkbenchTab.vue -->
+<script setup lang="ts">
+import type { WorkbenchViewType } from '@/types/workbench'
+import { onMounted } from 'vue'
+import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue'
+import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { useWorkbenchStore } from '@/stores/workbenchStore'
+
+const plugin = usePlugin() as any
+const workbenchStore = useWorkbenchStore()
+
+onMounted(async () => {
+  await workbenchStore.load(plugin)
+})
+
+function handleCreateDashboard() {
+  workbenchStore.createDashboardEntry(t('workbench').newDashboard)
+}
+
+function handleCreateView(viewType: WorkbenchViewType) {
+  workbenchStore.createViewEntry(viewType)
+}
+</script>
+
 <template>
   <div class="workbench-tab" data-testid="workbench-tab">
     <WorkbenchSidebar
@@ -673,31 +708,6 @@ Expected: FAIL because placeholder component does not render the shell
     <WorkbenchContentHost :entry="workbenchStore.activeEntry" />
   </div>
 </template>
-
-<script setup lang="ts">
-import { onMounted } from 'vue';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
-import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
-import { useWorkbenchStore } from '@/stores/workbenchStore';
-import type { WorkbenchViewType } from '@/types/workbench';
-
-const plugin = usePlugin() as any;
-const workbenchStore = useWorkbenchStore();
-
-onMounted(async () => {
-  await workbenchStore.load(plugin);
-});
-
-function handleCreateDashboard() {
-  workbenchStore.createDashboardEntry(t('workbench').newDashboard);
-}
-
-function handleCreateView(viewType: WorkbenchViewType) {
-  workbenchStore.createViewEntry(viewType);
-}
-</script>
 ```
 
 ```vue
@@ -705,7 +715,7 @@ function handleCreateView(viewType: WorkbenchViewType) {
 <template>
   <aside class="workbench-sidebar" data-testid="workbench-sidebar">
     <div class="workbench-sidebar__search">
-      <input type="text" :placeholder="t('common').search" />
+      <input type="text" :placeholder="t('common').search">
     </div>
     <div class="workbench-sidebar__entries">
       <button
@@ -719,8 +729,12 @@ function handleCreateView(viewType: WorkbenchViewType) {
       </button>
     </div>
     <div class="workbench-sidebar__footer">
-      <button data-testid="workbench-new-dashboard" @click="$emit('create-dashboard')">{{ t('workbench').newDashboard }}</button>
-      <button data-testid="workbench-new-view-todo" @click="$emit('create-view', 'todo')">{{ t('workbench').newView }} Todo</button>
+      <button data-testid="workbench-new-dashboard" @click="$emit('create-dashboard')">
+        {{ t('workbench').newDashboard }}
+      </button>
+      <button data-testid="workbench-new-view-todo" @click="$emit('create-view', 'todo')">
+        {{ t('workbench').newView }} Todo
+      </button>
     </div>
   </aside>
 </template>
@@ -730,8 +744,12 @@ function handleCreateView(viewType: WorkbenchViewType) {
 <!-- src/components/workbench/WorkbenchContentHost.vue -->
 <template>
   <section class="workbench-content-host" data-testid="workbench-content-host">
-    <div v-if="!entry">Empty Workbench</div>
-    <div v-else>{{ entry.title }}</div>
+    <div v-if="!entry">
+      Empty Workbench
+    </div>
+    <div v-else>
+      {{ entry.title }}
+    </div>
   </section>
 </template>
 ```
@@ -753,6 +771,7 @@ git commit -m "feat(workbench): add two-column workbench shell"
 ### Task 5: Implement `WorkbenchViewHost` for Supported View Entries
 
 **Files:**
+
 - Create: `src/components/workbench/view/WorkbenchViewHost.vue`
 - Modify: `src/components/workbench/WorkbenchContentHost.vue`
 - Create: `test/components/workbench/WorkbenchViewHost.test.ts`
@@ -763,7 +782,7 @@ git commit -m "feat(workbench): add two-column workbench shell"
 
 ```ts
 it('renders todo workbench view when entry.viewType is todo', async () => {
-  const { mountViewHost } = await import('./helpers');
+  const { mountViewHost } = await import('./helpers')
   const mounted = await mountViewHost({
     id: 'todo-view',
     type: 'view',
@@ -771,13 +790,13 @@ it('renders todo workbench view when entry.viewType is todo', async () => {
     icon: 'iconList',
     order: 0,
     viewType: 'todo',
-  });
+  })
 
-  expect(mounted.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
-});
+  expect(mounted.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull()
+})
 
 it('renders quadrant workbench view when entry.viewType is quadrant', async () => {
-  const { mountViewHost } = await import('./helpers');
+  const { mountViewHost } = await import('./helpers')
   const mounted = await mountViewHost({
     id: 'quadrant-view',
     type: 'view',
@@ -785,10 +804,10 @@ it('renders quadrant workbench view when entry.viewType is quadrant', async () =
     icon: 'iconLayout',
     order: 0,
     viewType: 'quadrant',
-  });
+  })
 
-  expect(mounted.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull();
-});
+  expect(mounted.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -799,27 +818,29 @@ Expected: FAIL because `WorkbenchViewHost.vue` does not exist
 - [ ] **Step 3: Implement minimal workbench view host**
 
 ```vue
+<script setup lang="ts">
+import type { WorkbenchEntry } from '@/types/workbench'
+import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue'
+import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue'
+import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue'
+import QuadrantTab from '@/tabs/QuadrantTab.vue'
+
+defineProps<{
+  entry: WorkbenchEntry & { type: 'view' }
+}>()
+</script>
+
 <template>
   <div class="workbench-view-host" data-testid="workbench-view-host">
     <DesktopTodoDock v-if="entry.viewType === 'todo'" data-testid="workbench-view-todo" />
     <DesktopHabitDock v-else-if="entry.viewType === 'habit'" data-testid="workbench-view-habit" />
     <QuadrantTab v-else-if="entry.viewType === 'quadrant'" data-testid="workbench-view-quadrant" />
     <PomodoroStatsTab v-else-if="entry.viewType === 'pomodoroStats'" data-testid="workbench-view-pomodoro" />
-    <div v-else data-testid="workbench-view-unsupported">Unsupported</div>
+    <div v-else data-testid="workbench-view-unsupported">
+      Unsupported
+    </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
-import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue';
-import QuadrantTab from '@/tabs/QuadrantTab.vue';
-import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
-import type { WorkbenchEntry } from '@/types/workbench';
-
-defineProps<{
-  entry: WorkbenchEntry & { type: 'view' };
-}>();
-</script>
 ```
 
 - [ ] **Step 4: Wire `WorkbenchContentHost` to route by entry type**
@@ -827,7 +848,9 @@ defineProps<{
 ```vue
 <template>
   <section class="workbench-content-host" data-testid="workbench-content-host">
-    <div v-if="!entry" data-testid="workbench-empty">Empty Workbench</div>
+    <div v-if="!entry" data-testid="workbench-empty">
+      Empty Workbench
+    </div>
     <DashboardCanvas v-else-if="entry.type === 'dashboard'" :entry="entry" />
     <WorkbenchViewHost v-else :entry="entry" />
   </section>
@@ -851,6 +874,7 @@ git commit -m "feat(workbench): add host for supported workbench views"
 ### Task 6: Add Widget Registry, Widget Card, and Dashboard Canvas
 
 **Files:**
+
 - Create: `src/components/workbench/dashboard/DashboardCanvas.vue`
 - Create: `src/components/workbench/dashboard/WorkbenchWidgetCard.vue`
 - Create: `src/components/workbench/widgets/widgetRegistry.ts`
@@ -881,10 +905,10 @@ it('renders widgets for the selected dashboard entry', async () => {
         config: {},
       }],
     }],
-  });
+  })
 
-  expect(mounted.querySelector('[data-testid="workbench-widget-card"]')).not.toBeNull();
-});
+  expect(mounted.querySelector('[data-testid="workbench-widget-card"]')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -902,11 +926,15 @@ export const widgetRegistry = {
   habitWeek: { type: 'habitWeek', name: 'Habit Week', icon: 'iconCheck', defaultSize: { w: 4, h: 3 }, createDefaultConfig: () => ({}) },
   miniCalendar: { type: 'miniCalendar', name: 'Mini Calendar', icon: 'iconCalendar', defaultSize: { w: 4, h: 3 }, createDefaultConfig: () => ({}) },
   pomodoroStats: { type: 'pomodoroStats', name: 'Pomodoro Stats', icon: 'iconClock', defaultSize: { w: 4, h: 3 }, createDefaultConfig: () => ({}) },
-} as const;
+} as const
 ```
 
 ```vue
 <!-- src/components/workbench/dashboard/WorkbenchWidgetCard.vue -->
+<script setup lang="ts">
+defineProps<{ title: string }>()
+</script>
+
 <template>
   <article class="workbench-widget-card" data-testid="workbench-widget-card">
     <header class="workbench-widget-card__header">
@@ -918,23 +946,23 @@ export const widgetRegistry = {
     </div>
   </article>
 </template>
-
-<script setup lang="ts">
-defineProps<{ title: string }>();
-</script>
 ```
 
 ```vue
 <!-- src/components/workbench/dashboard/DashboardCanvas.vue -->
 <template>
   <div class="dashboard-canvas" data-testid="dashboard-canvas">
-    <div v-if="!dashboard" data-testid="dashboard-empty">Empty Dashboard</div>
+    <div v-if="!dashboard" data-testid="dashboard-empty">
+      Empty Dashboard
+    </div>
     <WorkbenchWidgetCard
       v-for="widget in dashboard?.widgets ?? []"
       :key="widget.id"
       :title="widget.title || widget.type"
     >
-      <div :data-testid="`widget-${widget.type}`">{{ widget.type }}</div>
+      <div :data-testid="`widget-${widget.type}`">
+        {{ widget.type }}
+      </div>
     </WorkbenchWidgetCard>
   </div>
 </template>
@@ -944,9 +972,10 @@ defineProps<{ title: string }>();
 
 ```ts
 function addWidget(dashboardId: string, type: WorkbenchWidgetType) {
-  const dashboard = dashboards.value.find(item => item.id === dashboardId);
-  if (!dashboard) return;
-  const definition = widgetRegistry[type];
+  const dashboard = dashboards.value.find(item => item.id === dashboardId)
+  if (!dashboard)
+    return
+  const definition = widgetRegistry[type]
   dashboard.widgets.push({
     id: createId('widget'),
     type,
@@ -958,8 +987,8 @@ function addWidget(dashboardId: string, type: WorkbenchWidgetType) {
       h: definition.defaultSize.h,
     },
     config: definition.createDefaultConfig(),
-  });
-  void persist();
+  })
+  void persist()
 }
 ```
 
@@ -980,6 +1009,7 @@ git commit -m "feat(workbench): add dashboard canvas and widget registry"
 ### Task 7: Implement First-Pass Widget Components and Add-Widget Flow
 
 **Files:**
+
 - Create: `src/components/workbench/widgets/TodoListWidget.vue`
 - Create: `src/components/workbench/widgets/QuadrantSummaryWidget.vue`
 - Create: `src/components/workbench/widgets/HabitWeekWidget.vue`
@@ -993,16 +1023,16 @@ git commit -m "feat(workbench): add dashboard canvas and widget registry"
 
 ```ts
 it('adds a todoList widget to the active dashboard from the workbench toolbar', async () => {
-  const mounted = await mountWorkbenchTabWithDashboard();
+  const mounted = await mountWorkbenchTabWithDashboard()
 
   mounted.querySelector('[data-testid="workbench-add-widget-todoList"]')?.dispatchEvent(
     new MouseEvent('click', { bubbles: true }),
-  );
+  )
 
-  await Promise.resolve();
+  await Promise.resolve()
 
-  expect(mounted.querySelector('[data-testid="widget-todoList"]')).not.toBeNull();
-});
+  expect(mounted.querySelector('[data-testid="widget-todoList"]')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1013,23 +1043,43 @@ Expected: FAIL because no add-widget flow exists yet
 - [ ] **Step 3: Implement widget component shells**
 
 ```vue
-<template><div data-testid="widget-todoList">Todo Widget</div></template>
+<template>
+  <div data-testid="widget-todoList">
+    Todo Widget
+  </div>
+</template>
 ```
 
 ```vue
-<template><div data-testid="widget-quadrantSummary">Quadrant Widget</div></template>
+<template>
+  <div data-testid="widget-quadrantSummary">
+    Quadrant Widget
+  </div>
+</template>
 ```
 
 ```vue
-<template><div data-testid="widget-habitWeek">Habit Widget</div></template>
+<template>
+  <div data-testid="widget-habitWeek">
+    Habit Widget
+  </div>
+</template>
 ```
 
 ```vue
-<template><div data-testid="widget-miniCalendar">Calendar Widget</div></template>
+<template>
+  <div data-testid="widget-miniCalendar">
+    Calendar Widget
+  </div>
+</template>
 ```
 
 ```vue
-<template><div data-testid="widget-pomodoroStats">Pomodoro Widget</div></template>
+<template>
+  <div data-testid="widget-pomodoroStats">
+    Pomodoro Widget
+  </div>
+</template>
 ```
 
 - [ ] **Step 4: Wire the toolbar and dashboard rendering**
@@ -1047,18 +1097,23 @@ Expected: FAIL because no add-widget flow exists yet
 
 ```ts
 function handleAddWidget(type: WorkbenchWidgetType) {
-  const entry = workbenchStore.activeEntry;
-  if (!entry || entry.type !== 'dashboard' || !entry.dashboardId) return;
-  workbenchStore.addWidget(entry.dashboardId, type);
+  const entry = workbenchStore.activeEntry
+  if (!entry || entry.type !== 'dashboard' || !entry.dashboardId)
+    return
+  workbenchStore.addWidget(entry.dashboardId, type)
 }
 ```
 
 ```vue
 <!-- DashboardCanvas slot switch -->
 <TodoListWidget v-if="widget.type === 'todoList'" />
+
 <QuadrantSummaryWidget v-else-if="widget.type === 'quadrantSummary'" />
+
 <HabitWeekWidget v-else-if="widget.type === 'habitWeek'" />
+
 <MiniCalendarWidget v-else-if="widget.type === 'miniCalendar'" />
+
 <PomodoroStatsWidget v-else-if="widget.type === 'pomodoroStats'" />
 ```
 
@@ -1079,6 +1134,7 @@ git commit -m "feat(workbench): add initial widget components and creation flow"
 ### Task 8: Add Widget Layout Updates and Persistence Verification
 
 **Files:**
+
 - Modify: `src/stores/workbenchStore.ts`
 - Modify: `src/components/workbench/dashboard/DashboardCanvas.vue`
 - Modify: `test/stores/workbenchStore.test.ts`
@@ -1088,20 +1144,20 @@ git commit -m "feat(workbench): add initial widget components and creation flow"
 
 ```ts
 it('updates widget layout and persists the dashboard', async () => {
-  const { useWorkbenchStore } = await import('@/stores/workbenchStore');
-  const plugin = { saveData: vi.fn() };
-  const store = useWorkbenchStore();
-  store.bindPlugin(plugin as any);
-  store.createDashboardEntry('本周概览');
-  const dashboardId = store.dashboards[0].id;
-  store.addWidget(dashboardId, 'todoList');
-  const widgetId = store.dashboards[0].widgets[0].id;
+  const { useWorkbenchStore } = await import('@/stores/workbenchStore')
+  const plugin = { saveData: vi.fn() }
+  const store = useWorkbenchStore()
+  store.bindPlugin(plugin as any)
+  store.createDashboardEntry('本周概览')
+  const dashboardId = store.dashboards[0].id
+  store.addWidget(dashboardId, 'todoList')
+  const widgetId = store.dashboards[0].widgets[0].id
 
-  await store.updateWidgetLayout(dashboardId, widgetId, { x: 2, y: 1, w: 6, h: 4 });
+  await store.updateWidgetLayout(dashboardId, widgetId, { x: 2, y: 1, w: 6, h: 4 })
 
-  expect(store.dashboards[0].widgets[0].layout).toEqual({ x: 2, y: 1, w: 6, h: 4 });
-  expect(saveWorkbenchSettings).toHaveBeenCalled();
-});
+  expect(store.dashboards[0].widgets[0].layout).toEqual({ x: 2, y: 1, w: 6, h: 4 })
+  expect(saveWorkbenchSettings).toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1115,13 +1171,14 @@ Expected: FAIL because `updateWidgetLayout` does not exist
 async function updateWidgetLayout(
   dashboardId: string,
   widgetId: string,
-  layout: { x: number; y: number; w: number; h: number },
+  layout: { x: number, y: number, w: number, h: number },
 ) {
-  const dashboard = dashboards.value.find(item => item.id === dashboardId);
-  const widget = dashboard?.widgets.find(item => item.id === widgetId);
-  if (!widget) return;
-  widget.layout = layout;
-  await persist();
+  const dashboard = dashboards.value.find(item => item.id === dashboardId)
+  const widget = dashboard?.widgets.find(item => item.id === widgetId)
+  if (!widget)
+    return
+  widget.layout = layout
+  await persist()
 }
 ```
 
@@ -1152,6 +1209,7 @@ git commit -m "feat(workbench): persist widget layout updates"
 ### Task 9: Full Verification Sweep
 
 **Files:**
+
 - Verify only
 
 - [ ] **Step 1: Run focused workbench tests**

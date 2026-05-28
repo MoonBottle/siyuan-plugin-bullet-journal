@@ -3,7 +3,11 @@
  * 将提醒和重复规则配置格式化为人类可读的字符串
  */
 
-import type { ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
+import type {
+  EndCondition,
+  ReminderConfig,
+  RepeatRule,
+} from '@/types/models'
 
 /**
  * 格式化偏移量为可读字符串
@@ -13,24 +17,24 @@ import type { ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
  */
 function formatOffsetMinutes(
   offsetMinutes: number,
-  t: (key: string, params?: Record<string, string>) => string
+  t: (key: string, params?: Record<string, string>) => string,
 ): string {
-  const absOffset = Math.abs(offsetMinutes);
-  
+  const absOffset = Math.abs(offsetMinutes)
+
   // 天
   if (absOffset % (24 * 60) === 0) {
-    const days = absOffset / (24 * 60);
-    return t('reminder.days', { count: String(days) });
+    const days = absOffset / (24 * 60)
+    return t('reminder.days', { count: String(days) })
   }
-  
+
   // 小时
   if (absOffset % 60 === 0) {
-    const hours = absOffset / 60;
-    return t('reminder.hours', { count: String(hours) });
+    const hours = absOffset / 60
+    return t('reminder.hours', { count: String(hours) })
   }
-  
+
   // 分钟
-  return t('reminder.minutes', { count: String(absOffset) });
+  return t('reminder.minutes', { count: String(absOffset) })
 }
 
 /**
@@ -38,7 +42,7 @@ function formatOffsetMinutes(
  * @param reminder 提醒配置
  * @param t 翻译函数
  * @returns 格式化后的提醒显示字符串
- * 
+ *
  * 示例：
  * - 绝对时间："09:00"
  * - 相对开始："提前5分钟"
@@ -46,27 +50,27 @@ function formatOffsetMinutes(
  */
 export function formatReminderDisplay(
   reminder: ReminderConfig | undefined,
-  t: (key: string, params?: Record<string, string>) => string
+  t: (key: string, params?: Record<string, string>) => string,
 ): string {
-  if (!reminder?.enabled) return '';
+  if (!reminder?.enabled) return ''
 
   // 绝对时间
   if (reminder.type === 'absolute' && reminder.time) {
-    return reminder.time;
+    return reminder.time
   }
 
   // 相对时间
   if (reminder.type === 'relative') {
-    const offset = reminder.offsetMinutes || 0;
-    const timeStr = formatOffsetMinutes(offset, t);
+    const offset = reminder.offsetMinutes || 0
+    const timeStr = formatOffsetMinutes(offset, t)
 
     if (reminder.relativeTo === 'end') {
-      return t('reminder.beforeEndTime', { time: timeStr });
+      return t('reminder.beforeEndTime', { time: timeStr })
     }
-    return t('reminder.beforeTime', { time: timeStr });
+    return t('reminder.beforeTime', { time: timeStr })
   }
 
-  return '';
+  return ''
 }
 
 /**
@@ -77,22 +81,22 @@ export function formatReminderDisplay(
  */
 function getBaseRuleText(
   rule: RepeatRule,
-  t: (key: string, params?: Record<string, string>) => string
+  t: (key: string, params?: Record<string, string>) => string,
 ): string {
   // 获取基础类型文本
   const typeMap: Record<string, string> = {
-    'daily': t('recurring.daily'),
-    'weekly': t('recurring.weekly'),
-    'monthly': t('recurring.monthly'),
-    'yearly': t('recurring.yearly'),
-    'workday': t('recurring.workday')
-  };
+    daily: t('recurring.daily'),
+    weekly: t('recurring.weekly'),
+    monthly: t('recurring.monthly'),
+    yearly: t('recurring.yearly'),
+    workday: t('recurring.workday'),
+  }
 
-  let text = typeMap[rule.type] || rule.type;
+  let text = typeMap[rule.type] || rule.type
 
   // 每月指定日期
   if (rule.type === 'monthly' && rule.dayOfMonth !== undefined) {
-    text += rule.dayOfMonth + '日';
+    text += `${rule.dayOfMonth}日`
   }
 
   // 每周指定周几
@@ -104,15 +108,15 @@ function getBaseRuleText(
       t('recurring.wednesday'),
       t('recurring.thursday'),
       t('recurring.friday'),
-      t('recurring.saturday')
-    ];
-    const dayNames = rule.daysOfWeek.map(d => weekDays[d]).filter(Boolean);
+      t('recurring.saturday'),
+    ]
+    const dayNames = rule.daysOfWeek.map((d) => weekDays[d]).filter(Boolean)
     if (dayNames.length > 0) {
-      text += dayNames.join('、');
+      text += dayNames.join('、')
     }
   }
 
-  return text;
+  return text
 }
 
 /**
@@ -121,7 +125,7 @@ function getBaseRuleText(
  * @param endCondition 结束条件
  * @param t 翻译函数
  * @returns 格式化后的重复规则显示字符串
- * 
+ *
  * 示例：
  * - 基础规则："每月3日"
  * - 带结束日期："每月3日，截止到2026-05-31"
@@ -130,28 +134,28 @@ function getBaseRuleText(
 export function formatRepeatRuleDisplay(
   rule: RepeatRule | undefined,
   endCondition: EndCondition | undefined,
-  t: (key: string, params?: Record<string, string>) => string
+  t: (key: string, params?: Record<string, string>) => string,
 ): string {
-  if (!rule) return '';
+  if (!rule) return ''
 
   // 获取基础规则文本
-  const ruleText = getBaseRuleText(rule, t);
+  const ruleText = getBaseRuleText(rule, t)
 
   // 添加结束条件
   if (endCondition) {
     if (endCondition.type === 'date' && endCondition.endDate) {
       return t('recurring.withEndDate', {
         rule: ruleText,
-        date: endCondition.endDate
-      });
+        date: endCondition.endDate,
+      })
     }
     if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
       return t('recurring.withRemainingCount', {
         rule: ruleText,
-        count: String(endCondition.maxCount)
-      });
+        count: String(endCondition.maxCount),
+      })
     }
   }
 
-  return ruleText;
+  return ruleText
 }

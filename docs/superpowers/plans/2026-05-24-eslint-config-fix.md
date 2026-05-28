@@ -12,25 +12,26 @@
 
 ## 文件结构
 
-| 文件 | 操作 | 职责 |
-|------|------|------|
-| `src/utils/eslint/i18n-validate-keys.mjs` | 创建 | 自定义 ESLint 插件，校验 i18n key |
-| `eslint.config.mjs` | 修改 | 移除 perfectionist 导入，注册 i18n 插件 |
-| `package.json` | 修改 | 添加 lint / lint:fix 脚本 |
+| 文件                                      | 操作 | 职责                                    |
+| ----------------------------------------- | ---- | --------------------------------------- |
+| `src/utils/eslint/i18n-validate-keys.mjs` | 创建 | 自定义 ESLint 插件，校验 i18n key       |
+| `eslint.config.mjs`                       | 修改 | 移除 perfectionist 导入，注册 i18n 插件 |
+| `package.json`                            | 修改 | 添加 lint / lint:fix 脚本               |
 
 ---
 
 ### 任务 1：创建 i18n-validate-keys.mjs 插件
 
 **文件：**
+
 - 创建：`src/utils/eslint/i18n-validate-keys.mjs`
 
 - [ ] **步骤 1：创建插件文件**
 
 ```js
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -44,7 +45,8 @@ function hasKey(obj, keyPath) {
   for (const key of keys) {
     if (current && typeof current === 'object' && key in current) {
       current = current[key]
-    } else {
+    }
+    else {
       return false
     }
   }
@@ -61,7 +63,7 @@ export default {
           description: 'Validate i18n translation keys exist in zh_CN.json',
         },
         messages: {
-          missingKey: "i18n key '{{key}}' does not exist in zh_CN.json",
+          missingKey: 'i18n key \'{{key}}\' does not exist in zh_CN.json',
         },
       },
       create(context) {
@@ -79,12 +81,16 @@ export default {
             }
           },
           CallExpression(node) {
-            if (node.callee.type !== 'Identifier') return
-            if (!tImportNames.has(node.callee.name)) return
-            if (node.arguments.length === 0) return
+            if (node.callee.type !== 'Identifier')
+              return
+            if (!tImportNames.has(node.callee.name))
+              return
+            if (node.arguments.length === 0)
+              return
 
             const firstArg = node.arguments[0]
-            if (firstArg.type !== 'Literal' || typeof firstArg.value !== 'string') return
+            if (firstArg.type !== 'Literal' || typeof firstArg.value !== 'string')
+              return
 
             const key = firstArg.value
             if (!hasKey(zhCN, key)) {
@@ -119,6 +125,7 @@ git commit -m "feat: add i18n validate-keys ESLint plugin"
 ### 任务 2：修复 eslint.config.mjs
 
 **文件：**
+
 - 修改：`eslint.config.mjs`
 
 - [ ] **步骤 1：修改配置文件**
@@ -277,6 +284,7 @@ git commit -m "fix: remove unused perfectionist import, register i18n plugin in 
 ### 任务 3：添加 lint 脚本
 
 **文件：**
+
 - 修改：`package.json`
 
 - [ ] **步骤 1：在 scripts 中添加 lint 和 lint:fix**

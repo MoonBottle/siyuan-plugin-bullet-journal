@@ -69,49 +69,50 @@
 ## Task 1: Make Full Refresh Atomic
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts`
 - Create: `test/stores/projectStore.refreshFlow.test.ts`
 
 - [ ] **Step 1: Write the failing store test for atomic full refresh**
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
-import { useProjectStore } from '@/stores/projectStore';
-import { MarkdownParser } from '@/parser/markdownParser';
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MarkdownParser } from '@/parser/markdownParser'
+import { useProjectStore } from '@/stores/projectStore'
 
 vi.mock('@/parser/markdownParser', () => ({
   MarkdownParser: vi.fn(),
-}));
+}))
 
 describe('projectStore full refresh application', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-  });
+    setActivePinia(createPinia())
+  })
 
   it('keeps previous projects visible until full refresh completes', async () => {
-    const store = useProjectStore();
+    const store = useProjectStore()
     store.projects = [
       { id: 'old-doc', name: 'Old', path: '/old', tasks: [], habits: [] } as any,
-    ];
+    ]
 
-    let onProjectReady: ((project: any) => void) | null = null;
+    let onProjectReady: ((project: any) => void) | null = null
     vi.mocked(MarkdownParser).mockImplementation(() => ({
       parseAllProjectsWithCallback: vi.fn(async (_plugin, cb) => {
-        onProjectReady = cb;
-        await Promise.resolve();
-        cb({ id: 'new-doc', name: 'New', path: '/new', tasks: [], habits: [] });
+        onProjectReady = cb
+        await Promise.resolve()
+        cb({ id: 'new-doc', name: 'New', path: '/new', tasks: [], habits: [] })
       }),
-    }) as any);
+    }) as any)
 
-    const refreshPromise = store.refreshFull({} as any, 'full', []);
-    expect(store.projects.map(project => project.id)).toEqual(['old-doc']);
+    const refreshPromise = store.refreshFull({} as any, 'full', [])
+    expect(store.projects.map(project => project.id)).toEqual(['old-doc'])
 
-    await refreshPromise;
-    expect(store.projects.map(project => project.id)).toEqual(['new-doc']);
-    expect(onProjectReady).not.toBeNull();
-  });
-});
+    await refreshPromise
+    expect(store.projects.map(project => project.id)).toEqual(['new-doc'])
+    expect(onProjectReady).not.toBeNull()
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -173,10 +174,10 @@ In `refreshDirtyDocs()`:
 
 ```ts
 if (project) {
-  this.updateProjectsIncrementally([project]);
+  this.updateProjectsIncrementally([project])
 }
 else {
-  this.removeProjectsByIds([docId]);
+  this.removeProjectsByIds([docId])
 }
 ```
 
@@ -196,6 +197,7 @@ git commit -m "fix(refresh): apply full refresh atomically"
 ## Task 2: Add a Real Refresh Queue
 
 **Files:**
+
 - Create: `src/services/refreshCoordinator.ts`
 - Create: `test/services/refreshCoordinator.test.ts`
 - Modify: `src/utils/dirtyDocTracker.ts`
@@ -204,55 +206,55 @@ git commit -m "fix(refresh): apply full refresh atomically"
 - [ ] **Step 1: Write the failing coordinator queue tests**
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
-import { createRefreshCoordinator } from '@/services/refreshCoordinator';
+import { describe, expect, it, vi } from 'vitest'
+import { createRefreshCoordinator } from '@/services/refreshCoordinator'
 
 describe('refreshCoordinator', () => {
   it('reruns refresh after a second request arrives during an in-flight refresh', async () => {
-    const calls: string[] = [];
-    let releaseFirstRun!: () => void;
+    const calls: string[] = []
+    let releaseFirstRun!: () => void
 
     const coordinator = createRefreshCoordinator({
       runFullRefresh: vi.fn(async () => {
-        calls.push('full');
+        calls.push('full')
         await new Promise<void>((resolve) => {
-          releaseFirstRun = resolve;
-        });
+          releaseFirstRun = resolve
+        })
       }),
       runDirectedRefresh: vi.fn(async () => {
-        calls.push('directed');
+        calls.push('directed')
       }),
       applySettingsOnly: vi.fn(),
       emitRefreshCompleted: vi.fn(),
-    });
+    })
 
-    const first = coordinator.request({ type: 'directed', docIds: ['doc-1'] });
-    const second = coordinator.request({ type: 'directed', docIds: ['doc-2'] });
+    const first = coordinator.request({ type: 'directed', docIds: ['doc-1'] })
+    const second = coordinator.request({ type: 'directed', docIds: ['doc-2'] })
 
-    releaseFirstRun();
-    await Promise.all([first, second]);
+    releaseFirstRun()
+    await Promise.all([first, second])
 
-    expect(calls).toEqual(['directed', 'directed']);
-  });
+    expect(calls).toEqual(['directed', 'directed'])
+  })
 
   it('escalates to full refresh when any queued request requires full', async () => {
-    const runFullRefresh = vi.fn(async () => {});
-    const runDirectedRefresh = vi.fn(async () => {});
+    const runFullRefresh = vi.fn(async () => {})
+    const runDirectedRefresh = vi.fn(async () => {})
 
     const coordinator = createRefreshCoordinator({
       runFullRefresh,
       runDirectedRefresh,
       applySettingsOnly: vi.fn(),
       emitRefreshCompleted: vi.fn(),
-    });
+    })
 
-    await coordinator.request({ type: 'directed', docIds: ['doc-1'] });
-    await coordinator.request({ type: 'full', reason: 'moveDoc' });
+    await coordinator.request({ type: 'directed', docIds: ['doc-1'] })
+    await coordinator.request({ type: 'full', reason: 'moveDoc' })
 
-    expect(runFullRefresh).toHaveBeenCalled();
-    expect(runDirectedRefresh).toHaveBeenCalledTimes(1);
-  });
-});
+    expect(runFullRefresh).toHaveBeenCalled()
+    expect(runDirectedRefresh).toHaveBeenCalledTimes(1)
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -266,85 +268,86 @@ Expected: FAIL because `refreshCoordinator.ts` does not exist yet.
 Create `src/services/refreshCoordinator.ts`:
 
 ```ts
-export type RefreshRequest =
-  | { type: 'settings-only'; payload?: Record<string, unknown> }
-  | { type: 'directed'; docIds: string[]; reason?: string }
-  | { type: 'full'; reason: string };
+export type RefreshRequest
+  = | { type: 'settings-only', payload?: Record<string, unknown> }
+    | { type: 'directed', docIds: string[], reason?: string }
+    | { type: 'full', reason: string }
 
-type RefreshCoordinatorOptions = {
-  runFullRefresh: () => Promise<void>;
-  runDirectedRefresh: (docIds: string[]) => Promise<void>;
-  applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void;
-  emitRefreshCompleted: () => void;
-};
+interface RefreshCoordinatorOptions {
+  runFullRefresh: () => Promise<void>
+  runDirectedRefresh: (docIds: string[]) => Promise<void>
+  applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void
+  emitRefreshCompleted: () => void
+}
 
 export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
-  let running = false;
-  let pendingFull = false;
-  let pendingSettingsPayload: Record<string, unknown> | undefined;
-  const pendingDocIds = new Set<string>();
+  let running = false
+  let pendingFull = false
+  let pendingSettingsPayload: Record<string, unknown> | undefined
+  const pendingDocIds = new Set<string>()
 
   const consumePending = () => {
     const snapshot = {
       full: pendingFull,
       payload: pendingSettingsPayload,
       docIds: [...pendingDocIds],
-    };
-    pendingFull = false;
-    pendingSettingsPayload = undefined;
-    pendingDocIds.clear();
-    return snapshot;
-  };
+    }
+    pendingFull = false
+    pendingSettingsPayload = undefined
+    pendingDocIds.clear()
+    return snapshot
+  }
 
   const mergeRequest = (request: RefreshRequest) => {
     if (request.type === 'full') {
-      pendingFull = true;
-      return;
+      pendingFull = true
+      return
     }
 
     if (request.type === 'settings-only') {
       pendingSettingsPayload = {
         ...(pendingSettingsPayload ?? {}),
         ...(request.payload ?? {}),
-      };
-      return;
+      }
+      return
     }
 
-    request.docIds.forEach(docId => pendingDocIds.add(docId));
-  };
+    request.docIds.forEach(docId => pendingDocIds.add(docId))
+  }
 
   const drain = async () => {
-    if (running) return;
-    running = true;
+    if (running)
+      return
+    running = true
 
     try {
       while (pendingFull || pendingDocIds.size > 0 || pendingSettingsPayload) {
-        const snapshot = consumePending();
+        const snapshot = consumePending()
 
         if (snapshot.full) {
-          await options.runFullRefresh();
+          await options.runFullRefresh()
         }
         else if (snapshot.docIds.length > 0) {
-          await options.runDirectedRefresh(snapshot.docIds);
+          await options.runDirectedRefresh(snapshot.docIds)
         }
         else {
-          await options.applySettingsOnly(snapshot.payload);
+          await options.applySettingsOnly(snapshot.payload)
         }
 
-        options.emitRefreshCompleted();
+        options.emitRefreshCompleted()
       }
     }
     finally {
-      running = false;
+      running = false
     }
-  };
+  }
 
   return {
     request: async (request: RefreshRequest) => {
-      mergeRequest(request);
-      await drain();
+      mergeRequest(request)
+      await drain()
     },
-  };
+  }
 }
 ```
 
@@ -382,6 +385,7 @@ git commit -m "feat(refresh): add queued refresh coordinator"
 ## Task 3: Route Plugin Events Through the Coordinator
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Modify: `test/index.localDataMutation.test.ts`
 
@@ -391,20 +395,20 @@ Replace the current regex assertion with coordinator-based routing checks:
 
 ```ts
 it('registers LOCAL_DATA_MUTATED and routes it through refresh coordinator requests', () => {
-  const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+  const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
   expect(indexSource).toMatch(
-    /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*refreshCoordinator\?\.request\(\{\s*type:\s*['"]directed['"]/s,
-  );
-});
+    /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*refreshCoordinator\?\.request\(\{\s*type:\s*['"]directed['"]/,
+  )
+})
 
 it('keeps reminder scheduling only after DATA_REFRESHED', () => {
-  const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+  const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
   expect(indexSource).toMatch(
-    /this\.registerAppEventListener\(\s*Events\.DATA_REFRESHED,\s*\(\)\s*=>\s*\{[\s\S]*reminderService\.scheduleRebuild\(\);[\s\S]*\}\s*\)/s,
-  );
-});
+    /this\.registerAppEventListener\(\s*Events\.DATA_REFRESHED,\s*\(\)\s*=>\s*\{[\s\S]*reminderService\.scheduleRebuild\(\);[\s\S]*\}\s*\)/,
+  )
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -426,24 +430,24 @@ Initialize it after Pinia/store setup:
 ```ts
 this.refreshCoordinator = createRefreshCoordinator({
   runFullRefresh: async () => {
-    await projectStore.refreshFull(this, settings.scanMode || 'full', settings.directories.filter(d => d.enabled));
+    await projectStore.refreshFull(this, settings.scanMode || 'full', settings.directories.filter(d => d.enabled))
   },
   runDirectedRefresh: async (docIds) => {
-    dirtyDocTracker.markDirty(docIds);
+    dirtyDocTracker.markDirty(docIds)
     await projectStore.refreshDirtyDocs(
       this,
       settings.scanMode || 'full',
       settings.directories,
       docIds,
-    );
+    )
   },
   applySettingsOnly: async () => {
     // no-op here; views patch their settings store
   },
   emitRefreshCompleted: () => {
-    eventBus.emit(Events.DATA_REFRESHED, { plugin: this, items: projectStore.items });
+    eventBus.emit(Events.DATA_REFRESHED, { plugin: this, items: projectStore.items })
   },
-});
+})
 ```
 
 Add a small helper:
@@ -460,24 +464,24 @@ Examples:
 
 ```ts
 this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, (payload?: { blockId?: string }) => {
-  const docIds = payload?.blockId ? [payload.blockId] : [];
-  void this.requestRefresh({ type: 'directed', docIds, reason: 'local-mutation' });
-});
+  const docIds = payload?.blockId ? [payload.blockId] : []
+  void this.requestRefresh({ type: 'directed', docIds, reason: 'local-mutation' })
+})
 ```
 
 ```ts
 if (fullRefreshCmds.includes(data.cmd)) {
-  void this.requestRefresh({ type: 'full', reason: data.cmd });
-  return;
+  void this.requestRefresh({ type: 'full', reason: data.cmd })
 }
+
 ```
 
 ```ts
 if (rootIDs.length > 0) {
-  void this.requestRefresh({ type: 'directed', docIds: rootIDs, reason: data.cmd });
+  void this.requestRefresh({ type: 'directed', docIds: rootIDs, reason: data.cmd })
 }
 else {
-  void this.requestRefresh({ type: 'full', reason: `${data.cmd}:missing-rootIDs` });
+  void this.requestRefresh({ type: 'full', reason: `${data.cmd}:missing-rootIDs` })
 }
 ```
 
@@ -499,6 +503,7 @@ git commit -m "refactor(refresh): route plugin refresh events through coordinato
 ## Task 4: Remove View-Owned Refresh Execution
 
 **Files:**
+
 - Modify: `src/tabs/CalendarTab.vue`
 - Modify: `src/tabs/DesktopTodoDock.vue`
 - Modify: `src/tabs/GanttTab.vue`
@@ -522,35 +527,35 @@ Use `src/tabs/CalendarTab.vue` as the template.
 Replace:
 
 ```ts
-const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+async function handleDataRefresh(payload?: Record<string, unknown>) {
   // patch settings
-  await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-};
+  await nextTick()
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories)
+}
 ```
 
 With:
 
 ```ts
-const handleDataRefresh = async (payload?: Record<string, unknown>) => {
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
-  const patch: Record<string, unknown> = {};
+async function handleDataRefresh(payload?: Record<string, unknown>) {
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode']
+  const patch: Record<string, unknown> = {}
 
   for (const key of storeKeys) {
     if (payload?.[key] !== undefined) {
-      patch[key] = payload[key];
+      patch[key] = payload[key]
     }
   }
 
   if (Object.keys(patch).length > 0) {
-    settingsStore.$patch(patch);
+    settingsStore.$patch(patch)
   }
   else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
 
-  await nextTick();
-};
+  await nextTick()
+}
 ```
 
 - [ ] **Step 2: Update manual refresh buttons to request, not execute**
@@ -558,10 +563,11 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 For each view:
 
 ```ts
-const handleRefresh = async () => {
-  if (!plugin) return;
-  eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'full', reason: 'manual-view-refresh' });
-};
+async function handleRefresh() {
+  if (!plugin)
+    return
+  eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'full', reason: 'manual-view-refresh' })
+}
 ```
 
 For BroadcastChannel listeners, keep payload patching but remove direct refresh execution:
@@ -576,16 +582,16 @@ Checklist:
 
 ```ts
 // remove direct calls like:
-await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories)
 
 // keep:
-unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh)
 ```
 
 Where a workflow truly needs an immediate data pull after an explicit user action, replace it with:
 
 ```ts
-eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'directed', docIds: [docId], reason: 'habit-action' });
+eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'directed', docIds: [docId], reason: 'habit-action' })
 ```
 
 - [ ] **Step 4: Run the affected UI-focused tests**
@@ -604,6 +610,7 @@ git commit -m "refactor(refresh): remove view-owned refresh execution"
 ## Task 5: Finalize Request Types and Regression Coverage
 
 **Files:**
+
 - Modify: `src/utils/eventBus.ts`
 - Modify: `src/index.ts`
 - Modify: `src/services/refreshCoordinator.ts`
@@ -616,10 +623,10 @@ git commit -m "refactor(refresh): remove view-owned refresh execution"
 In `src/utils/eventBus.ts`:
 
 ```ts
-export type RefreshRequestPayload =
-  | { type: 'settings-only'; payload?: Record<string, unknown> }
-  | { type: 'directed'; docIds: string[]; reason?: string }
-  | { type: 'full'; reason: string };
+export type RefreshRequestPayload
+  = | { type: 'settings-only', payload?: Record<string, unknown> }
+    | { type: 'directed', docIds: string[], reason?: string }
+    | { type: 'full', reason: string }
 ```
 
 Use that type in `index.ts`:
@@ -636,26 +643,26 @@ Extend `test/services/refreshCoordinator.test.ts`:
 
 ```ts
 it('applies settings-only payloads without running project refresh', async () => {
-  const applySettingsOnly = vi.fn(async () => {});
-  const runFullRefresh = vi.fn(async () => {});
-  const runDirectedRefresh = vi.fn(async () => {});
+  const applySettingsOnly = vi.fn(async () => {})
+  const runFullRefresh = vi.fn(async () => {})
+  const runDirectedRefresh = vi.fn(async () => {})
 
   const coordinator = createRefreshCoordinator({
     runFullRefresh,
     runDirectedRefresh,
     applySettingsOnly,
     emitRefreshCompleted: vi.fn(),
-  });
+  })
 
   await coordinator.request({
     type: 'settings-only',
     payload: { calendarDefaultView: 'timeGridWeek' },
-  });
+  })
 
-  expect(applySettingsOnly).toHaveBeenCalledWith({ calendarDefaultView: 'timeGridWeek' });
-  expect(runFullRefresh).not.toHaveBeenCalled();
-  expect(runDirectedRefresh).not.toHaveBeenCalled();
-});
+  expect(applySettingsOnly).toHaveBeenCalledWith({ calendarDefaultView: 'timeGridWeek' })
+  expect(runFullRefresh).not.toHaveBeenCalled()
+  expect(runDirectedRefresh).not.toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 3: Run the targeted regression suite**

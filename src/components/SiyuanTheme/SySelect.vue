@@ -1,9 +1,14 @@
 <template>
-  <div class="sy-select" v-click-outside="closeDropdown">
+  <div
+    v-click-outside="closeDropdown"
+    class="sy-select"
+  >
     <button
       ref="triggerRef"
       class="sy-select__trigger"
-      :class="{ 'is-open': isOpen, 'is-disabled': disabled }"
+      :class="{
+        'is-open': isOpen, 'is-disabled': disabled,
+      }"
       :disabled="disabled"
       @click="toggleDropdown"
     >
@@ -39,130 +44,141 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue'
 
 export interface SySelectOption {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 interface Props {
-  modelValue: string;
-  options: SySelectOption[];
-  placeholder?: string;
-  disabled?: boolean;
-  placement?: 'top' | 'bottom';
+  modelValue: string
+  options: SySelectOption[]
+  placeholder?: string
+  disabled?: boolean
+  placement?: 'top' | 'bottom'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择',
   disabled: false,
-  placement: 'bottom'
-});
+  placement: 'bottom',
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
-  change: [value: string];
-}>();
+  'update:modelValue': [value: string]
+  "change": [value: string]
+}>()
 
-const isOpen = ref(false);
-const menuRef = ref<HTMLElement>();
-const triggerRef = ref<HTMLElement>();
-const menuStyle = ref<Record<string, string>>({});
+const isOpen = ref(false)
+const menuRef = ref<HTMLElement>()
+const triggerRef = ref<HTMLElement>()
+const menuStyle = ref<Record<string, string>>({})
 
 function getOptionLabel(option: SySelectOption): string {
-  return option.label || '';
+  return option.label || ''
 }
 
 function getOptionValue(option: SySelectOption): string {
-  return option.value || '';
+  return option.value || ''
 }
 
 function isOptionActive(option: SySelectOption): boolean {
-  return getOptionValue(option) === props.modelValue;
+  return getOptionValue(option) === props.modelValue
 }
 
 const displayLabel = computed(() => {
-  const selected = props.options.find(opt => isOptionActive(opt));
-  return selected ? getOptionLabel(selected) : props.placeholder;
-});
+  const selected = props.options.find((opt) => isOptionActive(opt))
+  return selected ? getOptionLabel(selected) : props.placeholder
+})
 
 async function toggleDropdown() {
-  if (props.disabled) return;
-  isOpen.value = !isOpen.value;
+  if (props.disabled) return
+  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    await nextTick();
-    updateMenuPosition();
+    await nextTick()
+    updateMenuPosition()
   }
 }
 
 function closeDropdown() {
-  isOpen.value = false;
+  isOpen.value = false
 }
 
 function selectOption(option: SySelectOption) {
-  const value = getOptionValue(option);
-  emit('update:modelValue', value);
-  emit('change', value);
-  isOpen.value = false;
+  const value = getOptionValue(option)
+  emit('update:modelValue', value)
+  emit('change', value)
+  isOpen.value = false
 }
 
 function getElementViewportRect(element: HTMLElement): DOMRect {
-  return element.getBoundingClientRect();
+  return element.getBoundingClientRect()
 }
 
 function calculateMenuPosition(
   triggerRect: DOMRect,
   menuHeight: number,
-  menuWidth: number
-): { top: number; left: number } {
-  const gap = 4;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+  menuWidth: number,
+): { top: number, left: number } {
+  const gap = 4
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
 
-  let top: number;
-  let placement = props.placement;
+  let top: number
+  const placement = props.placement
 
   if (placement === 'top') {
-    top = triggerRect.top - menuHeight - gap;
+    top = triggerRect.top - menuHeight - gap
     if (top < 0) {
-      top = triggerRect.bottom + gap;
+      top = triggerRect.bottom + gap
     }
   } else {
-    top = triggerRect.bottom + gap;
+    top = triggerRect.bottom + gap
     if (top + menuHeight > viewportHeight) {
-      top = triggerRect.top - menuHeight - gap;
+      top = triggerRect.top - menuHeight - gap
     }
   }
 
-  if (top < 0) top = gap;
+  if (top < 0) top = gap
   if (top + menuHeight > viewportHeight) {
-    top = Math.max(gap, viewportHeight - menuHeight - gap);
+    top = Math.max(gap, viewportHeight - menuHeight - gap)
   }
 
-  let left = triggerRect.left;
+  let left = triggerRect.left
   if (left + menuWidth > viewportWidth) {
-    left = Math.max(gap, viewportWidth - menuWidth - gap);
+    left = Math.max(gap, viewportWidth - menuWidth - gap)
   }
-  if (left < 0) left = gap;
+  if (left < 0) left = gap
 
-  return { top, left };
+  return {
+    top,
+    left,
+  }
 }
 
 function updateMenuPosition() {
-  const trigger = triggerRef.value;
-  const menu = menuRef.value;
-  if (!trigger) return;
+  const trigger = triggerRef.value
+  const menu = menuRef.value
+  if (!trigger) return
 
-  const triggerRect = getElementViewportRect(trigger);
-  let menuHeight = 200;
+  const triggerRect = getElementViewportRect(trigger)
+  let menuHeight = 200
   if (menu) {
-    const menuRect = menu.getBoundingClientRect();
-    menuHeight = Math.min(menuRect.height || 200, 200);
+    const menuRect = menu.getBoundingClientRect()
+    menuHeight = Math.min(menuRect.height || 200, 200)
   }
 
-  const menuWidth = Math.max(triggerRect.width, 160);
-  const { top, left } = calculateMenuPosition(triggerRect, menuHeight, menuWidth);
+  const menuWidth = Math.max(triggerRect.width, 160)
+  const {
+    top,
+    left,
+  } = calculateMenuPosition(triggerRect, menuHeight, menuWidth)
 
   menuStyle.value = {
     position: 'fixed',
@@ -170,81 +186,87 @@ function updateMenuPosition() {
     left: `${left}px`,
     width: `${menuWidth}px`,
     maxHeight: '200px',
-    zIndex: '9999'
-  };
+    zIndex: '9999',
+  }
 }
 
-let resizeObserver: ResizeObserver | null = null;
-let scrollListeners: { element: Element; listener: EventListener }[] = [];
+let resizeObserver: ResizeObserver | null = null
+let scrollListeners: { element: Element, listener: EventListener }[] = []
 
 function getScrollableAncestors(element: HTMLElement): Element[] {
-  const ancestors: Element[] = [];
-  let current = element.parentElement;
+  const ancestors: Element[] = []
+  let current = element.parentElement
 
   while (current) {
-    const style = window.getComputedStyle(current);
-    const overflow = style.overflow + style.overflowX + style.overflowY;
+    const style = window.getComputedStyle(current)
+    const overflow = style.overflow + style.overflowX + style.overflowY
     if (overflow.includes('auto') || overflow.includes('scroll')) {
-      ancestors.push(current);
+      ancestors.push(current)
     }
-    current = current.parentElement;
+    current = current.parentElement
   }
-  ancestors.push(document);
-  return ancestors;
+  ancestors.push(document)
+  return ancestors
 }
 
 function addScrollListeners() {
-  const trigger = triggerRef.value;
-  if (!trigger) return;
-  const scrollableAncestors = getScrollableAncestors(trigger);
-  scrollableAncestors.forEach(ancestor => {
-    const listener = () => updateMenuPosition();
-    ancestor.addEventListener('scroll', listener, true);
-    scrollListeners.push({ element: ancestor, listener });
-  });
+  const trigger = triggerRef.value
+  if (!trigger) return
+  const scrollableAncestors = getScrollableAncestors(trigger)
+  scrollableAncestors.forEach((ancestor) => {
+    const listener = () => updateMenuPosition()
+    ancestor.addEventListener('scroll', listener, true)
+    scrollListeners.push({
+      element: ancestor,
+      listener,
+    })
+  })
 }
 
 function removeScrollListeners() {
-  scrollListeners.forEach(({ element, listener }) => {
-    element.removeEventListener('scroll', listener, true);
-  });
-  scrollListeners = [];
+  scrollListeners.forEach(({
+    element,
+    listener,
+  }) => {
+    element.removeEventListener('scroll', listener, true)
+  })
+  scrollListeners = []
 }
 
 watch(isOpen, (open) => {
   if (open) {
     if (typeof ResizeObserver !== 'undefined' && !resizeObserver) {
-      resizeObserver = new ResizeObserver(() => updateMenuPosition());
-      resizeObserver.observe(document.body);
+      resizeObserver = new ResizeObserver(() => updateMenuPosition())
+      resizeObserver.observe(document.body)
     } else {
-      window.addEventListener('resize', updateMenuPosition);
+      window.addEventListener('resize', updateMenuPosition)
     }
-    addScrollListeners();
+    addScrollListeners()
   } else {
     if (resizeObserver) {
-      resizeObserver.disconnect();
-      resizeObserver = null;
+      resizeObserver.disconnect()
+      resizeObserver = null
     }
-    window.removeEventListener('resize', updateMenuPosition);
-    removeScrollListeners();
+    window.removeEventListener('resize', updateMenuPosition)
+    removeScrollListeners()
   }
-});
+})
 
 const vClickOutside = {
   mounted(el: HTMLElement, binding: any) {
     (el as any)._clickOutside = (event: Event) => {
       if (!(el === event.target || el.contains(event.target as Node))) {
-        binding.value();
+        binding.value()
       }
-    };
-    document.addEventListener('click', (el as any)._clickOutside, true);
+    }
+    document.addEventListener('click', (el as any)._clickOutside, true)
   },
   unmounted(el: HTMLElement) {
     if ((el as any)._clickOutside) {
-      document.removeEventListener('click', (el as any)._clickOutside, true);
+      document.removeEventListener('click', (el as any)._clickOutside, true)
     }
-  }
-};
+  },
+}
 </script>
 
 <style lang="scss" scoped>
@@ -315,7 +337,9 @@ const vClickOutside = {
     background: var(--b3-theme-surface);
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 4px;
     min-width: 100px;
   }

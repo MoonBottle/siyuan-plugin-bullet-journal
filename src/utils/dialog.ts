@@ -2,269 +2,296 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
-import type { Plugin } from 'siyuan';
-import { Dialog, getFrontend } from 'siyuan';
-import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency, FocusPlan } from '@/types/models';
-import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
-import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
-import SettingsDialog from '@/components/settings/SettingsDialog.vue';
-import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue';
-import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
-import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
-import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
-import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
-import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
-import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue';
-import FocusPlanItemPickerDialog from '@/components/dialog/FocusPlanItemPickerDialog.vue';
-import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
-import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { t } from '@/i18n';
-import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
-import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
-import { openDocumentAtLine } from './fileUtils';
-import { useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { TAB_TYPES } from '@/constants';
-import dayjs from './dayjs';
-import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
-import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMarkers } from '@/parser/recurringParser';
-import { skipCurrentOccurrence } from '@/services/recurringService';
-import * as siyuanAPI from '@/api';
-import { removePendingCompletion } from '@/utils/pomodoroStorage';
-import { type ItemSettingWriteOptions, updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
-import { buildFocusPlanCandidateSections } from './focusPlanWorkbench';
-import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave';
+import type { Plugin } from 'siyuan'
+import type { ItemSettingWriteOptions } from './itemSettingUtils'
+import type {
+  CalendarEvent,
+  EndCondition,
+  FocusPlan,
+  HabitFrequency,
+  Item,
+  PendingPomodoroCompletion,
+  PomodoroRecord,
+  PriorityLevel,
+  ReminderConfig,
+  RepeatRule,
+} from '@/types/models'
+import {
+  Dialog,
+  getFrontend,
+} from 'siyuan'
+import { createApp } from 'vue'
+import * as siyuanAPI from '@/api'
+import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
+import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue'
+import FocusPlanItemPickerDialog from '@/components/dialog/FocusPlanItemPickerDialog.vue'
+import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue'
+import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue'
+import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue'
+import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue'
+import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue'
+import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue'
+import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue'
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
+import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue'
+import SettingsDialog from '@/components/settings/SettingsDialog.vue'
+import { TAB_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue'
+
+
+
+
+import { skipCurrentOccurrence } from '@/services/recurringService'
+import { removePendingCompletion } from '@/utils/pomodoroStorage'
+import { getSharedPinia } from '@/utils/sharedPinia'
+
+
+
+
+import dayjs from './dayjs'
+import { openDocumentAtLine } from './fileUtils'
+import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave'
+import { buildFocusPlanCandidateSections } from './focusPlanWorkbench'
+import {
+  updateItemWithRecurring,
+  updateItemWithReminder,
+} from './itemSettingUtils'
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
-const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
+const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
 
 /** 链接名称最大显示长度，超出则截断并 hover 显示全部 */
-const LINK_NAME_MAX_LEN = 12;
+const LINK_NAME_MAX_LEN = 12
 
 /** 自定义 tooltip 挂载到 body，不受弹框 overflow 影响 */
-export const SY_LINK_TOOLTIP_ID = 'sy-dialog-link-tooltip';
-export const SY_ICON_TOOLTIP_ID = 'sy-icon-tooltip';
+export const SY_LINK_TOOLTIP_ID = 'sy-dialog-link-tooltip'
+export const SY_ICON_TOOLTIP_ID = 'sy-icon-tooltip'
 
-let activeIconTooltipTrigger: HTMLElement | null = null;
-let activeIconTooltipCleanup: (() => void) | null = null;
-let activeIconTooltipObserver: MutationObserver | null = null;
+let activeIconTooltipTrigger: HTMLElement | null = null
+let activeIconTooltipCleanup: (() => void) | null = null
+let activeIconTooltipObserver: MutationObserver | null = null
 
 function clearIconTooltipTracking(): void {
-  activeIconTooltipCleanup?.();
-  activeIconTooltipCleanup = null;
-  activeIconTooltipObserver?.disconnect();
-  activeIconTooltipObserver = null;
-  activeIconTooltipTrigger = null;
+  activeIconTooltipCleanup?.()
+  activeIconTooltipCleanup = null
+  activeIconTooltipObserver?.disconnect()
+  activeIconTooltipObserver = null
+  activeIconTooltipTrigger = null
 }
 
 function watchIconTooltipTrigger(trigger: HTMLElement): void {
   if (typeof window === 'undefined' || typeof document === 'undefined')
-    return;
+    return
 
   const hideOnInteraction = () => {
-    hideIconTooltip();
-  };
+    hideIconTooltip()
+  }
 
   const hideWhenDocumentHidden = () => {
     if (document.hidden) {
-      hideIconTooltip();
+      hideIconTooltip()
     }
-  };
+  }
 
-  document.addEventListener('pointerdown', hideOnInteraction, true);
-  window.addEventListener('blur', hideOnInteraction);
-  window.addEventListener('resize', hideOnInteraction);
-  window.addEventListener('scroll', hideOnInteraction, true);
-  document.addEventListener('visibilitychange', hideWhenDocumentHidden);
+  document.addEventListener('pointerdown', hideOnInteraction, true)
+  window.addEventListener('blur', hideOnInteraction)
+  window.addEventListener('resize', hideOnInteraction)
+  window.addEventListener('scroll', hideOnInteraction, true)
+  document.addEventListener('visibilitychange', hideWhenDocumentHidden)
 
   activeIconTooltipCleanup = () => {
-    document.removeEventListener('pointerdown', hideOnInteraction, true);
-    window.removeEventListener('blur', hideOnInteraction);
-    window.removeEventListener('resize', hideOnInteraction);
-    window.removeEventListener('scroll', hideOnInteraction, true);
-    document.removeEventListener('visibilitychange', hideWhenDocumentHidden);
-  };
+    document.removeEventListener('pointerdown', hideOnInteraction, true)
+    window.removeEventListener('blur', hideOnInteraction)
+    window.removeEventListener('resize', hideOnInteraction)
+    window.removeEventListener('scroll', hideOnInteraction, true)
+    document.removeEventListener('visibilitychange', hideWhenDocumentHidden)
+  }
 
   if (typeof MutationObserver !== 'undefined' && document.body) {
     activeIconTooltipObserver = new MutationObserver(() => {
       if (activeIconTooltipTrigger !== trigger)
-        return;
+        return
       if (!trigger.isConnected) {
-        hideIconTooltip();
+        hideIconTooltip()
       }
-    });
+    })
     activeIconTooltipObserver.observe(document.body, {
       childList: true,
       subtree: true,
-    });
+    })
   }
 }
 
 /** 供 Vue 等组件使用：格式化链接显示，返回截断后的 display 和可选的 fullText（用于 tooltip） */
-export function formatLinkForDisplay(name: string): { display: string; fullText?: string } {
+export function formatLinkForDisplay(name: string): { display: string, fullText?: string } {
   if (!name || name.length <= LINK_NAME_MAX_LEN) {
-    return { display: name };
+    return { display: name }
   }
-  return { display: name.slice(0, LINK_NAME_MAX_LEN) + '...', fullText: name };
+  return {
+    display: `${name.slice(0, LINK_NAME_MAX_LEN)}...`,
+    fullText: name,
+  }
 }
 
 /** 供 Vue 等组件使用：显示链接 tooltip */
 export function showLinkTooltip(el: HTMLElement, fullText: string): void {
-  let tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+  let tip = document.getElementById(SY_LINK_TOOLTIP_ID)
   if (!tip) {
-    tip = document.createElement('div');
-    tip.id = SY_LINK_TOOLTIP_ID;
-    tip.className = 'sy-dialog-link-tooltip';
-    document.body.appendChild(tip);
+    tip = document.createElement('div')
+    tip.id = SY_LINK_TOOLTIP_ID
+    tip.className = 'sy-dialog-link-tooltip'
+    document.body.appendChild(tip)
   }
-  tip.textContent = fullText;
-  const rect = el.getBoundingClientRect();
-  const margin = 8;
-  const left = rect.left + rect.width / 2;
-  tip.style.left = `${left}px`;
-  tip.style.top = `${rect.top - 4}px`;
-  tip.style.transform = 'translate(-50%, -100%)';
-  tip.classList.add('visible');
+  tip.textContent = fullText
+  const rect = el.getBoundingClientRect()
+  const margin = 8
+  const left = rect.left + rect.width / 2
+  tip.style.left = `${left}px`
+  tip.style.top = `${rect.top - 4}px`
+  tip.style.transform = 'translate(-50%, -100%)'
+  tip.classList.add('visible')
   requestAnimationFrame(() => {
-    const tipRect = tip!.getBoundingClientRect();
+    const tipRect = tip!.getBoundingClientRect()
     // 确保 tooltip 不会超出视口右边界
     if (tipRect.right > window.innerWidth - margin) {
-      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
+      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
     }
     // 确保 tooltip 不会超出视口左边界
     if (tipRect.left < margin) {
-      tip!.style.left = `${tipRect.width / 2 + margin}px`;
+      tip!.style.left = `${tipRect.width / 2 + margin}px`
     }
-  });
+  })
 }
 
 /** 供 Vue 等组件使用：隐藏链接 tooltip */
 export function hideLinkTooltip(): void {
-  const tip = document.getElementById(SY_LINK_TOOLTIP_ID);
-  if (tip) tip.classList.remove('visible');
+  const tip = document.getElementById(SY_LINK_TOOLTIP_ID)
+  if (tip) tip.classList.remove('visible')
 }
 
 /** 供 SyButton 等图标按钮使用：显示 tooltip（挂载 body，不被 overflow 裁剪） */
 export function showIconTooltip(el: HTMLElement, text: string): void {
-  if (!text || typeof document === 'undefined') return;
-  clearIconTooltipTracking();
-  let tip = document.getElementById(SY_ICON_TOOLTIP_ID);
+  if (!text || typeof document === 'undefined') return
+  clearIconTooltipTracking()
+  let tip = document.getElementById(SY_ICON_TOOLTIP_ID)
   if (!tip) {
-    tip = document.createElement('div');
-    tip.id = SY_ICON_TOOLTIP_ID;
-    tip.className = 'sy-icon-tooltip';
-    document.body.appendChild(tip);
+    tip = document.createElement('div')
+    tip.id = SY_ICON_TOOLTIP_ID
+    tip.className = 'sy-icon-tooltip'
+    document.body.appendChild(tip)
   }
-  tip.textContent = text;
-  const rect = el.getBoundingClientRect();
-  const margin = 8;
-  const left = rect.left + rect.width / 2;
-  tip.style.left = `${left}px`;
-  tip.style.top = `${rect.top - 4}px`;
-  tip.style.transform = 'translate(-50%, -100%)';
-  tip.classList.add('visible');
-  activeIconTooltipTrigger = el;
-  watchIconTooltipTrigger(el);
+  tip.textContent = text
+  const rect = el.getBoundingClientRect()
+  const margin = 8
+  const left = rect.left + rect.width / 2
+  tip.style.left = `${left}px`
+  tip.style.top = `${rect.top - 4}px`
+  tip.style.transform = 'translate(-50%, -100%)'
+  tip.classList.add('visible')
+  activeIconTooltipTrigger = el
+  watchIconTooltipTrigger(el)
   requestAnimationFrame(() => {
-    const tipRect = tip!.getBoundingClientRect();
+    const tipRect = tip!.getBoundingClientRect()
     // 确保 tooltip 不会超出视口右边界
     if (tipRect.right > window.innerWidth - margin) {
-      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
+      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
     }
     // 确保 tooltip 不会超出视口左边界
     if (tipRect.left < margin) {
-      tip!.style.left = `${tipRect.width / 2 + margin}px`;
+      tip!.style.left = `${tipRect.width / 2 + margin}px`
     }
-  });
+  })
 }
 
 /** 供 SyButton 等图标按钮使用：隐藏 tooltip */
 export function hideIconTooltip(): void {
-  clearIconTooltipTracking();
-  if (typeof document === 'undefined') return;
-  const tip = document.getElementById(SY_ICON_TOOLTIP_ID);
-  if (tip) tip.classList.remove('visible');
+  clearIconTooltipTracking()
+  if (typeof document === 'undefined') return
+  const tip = document.getElementById(SY_ICON_TOOLTIP_ID)
+  if (tip) tip.classList.remove('visible')
 }
 
 function focusDialogInitialElement(dialogElement: HTMLElement): void {
   const focusableEl
     = dialogElement.querySelector('[data-initial-focus]') as HTMLElement | null
-      ?? dialogElement.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement | null;
+      ?? dialogElement.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement | null
 
   if (focusableEl) {
-    focusableEl.focus();
+    focusableEl.focus()
   }
 }
 
-function formatLinkDisplay(name: string): { display: string; tooltipAttr: string } {
-  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+function formatLinkDisplay(name: string): { display: string, tooltipAttr: string } {
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
   if (!name || name.length <= LINK_NAME_MAX_LEN) {
-    return { display: escapeHtml(name), tooltipAttr: '' };
+    return {
+      display: escapeHtml(name),
+      tooltipAttr: '',
+    }
   }
-  const escaped = escapeHtml(name);
+  const escaped = escapeHtml(name)
   return {
-    display: escapeHtml(name.slice(0, LINK_NAME_MAX_LEN)) + '...',
-    tooltipAttr: ` data-sy-tooltip="${escaped}"`
-  };
+    display: `${escapeHtml(name.slice(0, LINK_NAME_MAX_LEN))}...`,
+    tooltipAttr: ` data-sy-tooltip="${escaped}"`,
+  }
 }
 
 function bindLinkTooltips(element: HTMLElement): void {
-  element.querySelectorAll('[data-sy-tooltip]').forEach(el => {
-    const fullText = (el as HTMLElement).dataset.syTooltip;
-    if (!fullText) return;
+  element.querySelectorAll('[data-sy-tooltip]').forEach((el) => {
+    const fullText = (el as HTMLElement).dataset.syTooltip
+    if (!fullText) return
 
     const showTooltip = () => {
-      let tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+      let tip = document.getElementById(SY_LINK_TOOLTIP_ID)
       if (!tip) {
-        tip = document.createElement('div');
-        tip.id = SY_LINK_TOOLTIP_ID;
-        tip.className = 'sy-dialog-link-tooltip';
-        document.body.appendChild(tip);
+        tip = document.createElement('div')
+        tip.id = SY_LINK_TOOLTIP_ID
+        tip.className = 'sy-dialog-link-tooltip'
+        document.body.appendChild(tip)
       }
-      tip.textContent = fullText;
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      const margin = 8;
-      let left = rect.left + rect.width / 2;
-      tip.style.left = `${left}px`;
-      tip.style.top = `${rect.top - 4}px`;
-      tip.style.transform = 'translate(-50%, -100%)';
-      tip.classList.add('visible');
+      tip.textContent = fullText
+      const rect = (el as HTMLElement).getBoundingClientRect()
+      const margin = 8
+      const left = rect.left + rect.width / 2
+      tip.style.left = `${left}px`
+      tip.style.top = `${rect.top - 4}px`
+      tip.style.transform = 'translate(-50%, -100%)'
+      tip.classList.add('visible')
       // 显示后根据实际宽度调整位置，避免超出视口（tip 使用 translate(-50%) 居中）
       requestAnimationFrame(() => {
-        const tipRect = tip.getBoundingClientRect();
+        const tipRect = tip.getBoundingClientRect()
         if (tipRect.right > window.innerWidth - margin) {
-          tip.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
+          tip.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
         } else if (tipRect.left < margin) {
-          tip.style.left = `${tipRect.width / 2 + margin}px`;
+          tip.style.left = `${tipRect.width / 2 + margin}px`
         }
-      });
-    };
+      })
+    }
 
     const hideTooltip = () => {
-      const tip = document.getElementById(SY_LINK_TOOLTIP_ID);
-      if (tip) tip.classList.remove('visible');
-    };
+      const tip = document.getElementById(SY_LINK_TOOLTIP_ID)
+      if (tip) tip.classList.remove('visible')
+    }
 
-    el.addEventListener('mouseenter', showTooltip);
-    el.addEventListener('mouseleave', hideTooltip);
-  });
+    el.addEventListener('mouseenter', showTooltip)
+    el.addEventListener('mouseleave', hideTooltip)
+  })
 }
 
 // 对勾图标 SVG
-const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`
 
 /**
  * 弹框配置
  */
 export interface DialogOptions {
-  title?: string;
-  width?: string;
-  height?: string;
-  content: string;
-  destroyCallback?: () => void;
+  title?: string
+  width?: string
+  height?: string
+  content: string
+  destroyCallback?: () => void
 }
 
 /**
@@ -277,16 +304,16 @@ export function createDialog(options: DialogOptions): Dialog {
     width: options.width || '520px',
     height: options.height || 'auto',
     destroyCallback: options.destroyCallback,
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
  * 关闭弹框
  */
 export function closeDialog(dialog: Dialog): void {
-  dialog.destroy();
+  dialog.destroy()
 }
 
 /**
@@ -298,137 +325,143 @@ function createInfoRow(label: string, value: string, valueClass: string = ''): s
       <span class="sy-dialog-label">${label}</span>
       <span class="sy-dialog-value ${valueClass}">${value}</span>
     </div>
-  `;
+  `
 }
 
 /**
  * 生成链接列表 HTML
  */
-function createLinksRow(label: string, links: Array<{ name: string; url: string }>): string {
-  if (!links || links.length === 0) return '';
+function createLinksRow(label: string, links: Array<{ name: string, url: string }>): string {
+  if (!links || links.length === 0) return ''
 
-  const linksHtml = links.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link"${tooltipAttr}>${display}</a>`;
-  }).join('');
+  const linksHtml = links.map((link) => {
+    const {
+      display,
+      tooltipAttr,
+    } = formatLinkDisplay(link.name)
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link"${tooltipAttr}>${display}</a>`
+  }).join('')
 
   return `
     <div class="sy-dialog-info-row">
       <span class="sy-dialog-label">${label}</span>
       <div class="sy-dialog-links">${linksHtml}</div>
     </div>
-  `;
+  `
 }
 
 /**
  * 计算专注总时长（分钟）
  */
 export function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
-  console.log('[calculateTotalFocusMinutes] pomodoros:', pomodoros);
-  if (!pomodoros?.length) return 0;
-  return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+  console.log('[calculateTotalFocusMinutes] pomodoros:', pomodoros)
+  if (!pomodoros?.length) return 0
+  return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0)
 }
 
 /**
  * 格式化专注时长为可读字符串（国际化）
  */
 export function formatFocusDuration(minutes: number): string {
-  const mins = t('common').minutes ?? 'min';
-  const hrs = t('common').hours ?? 'h';
-  if (minutes < 60) return `${minutes}${mins}`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}${hrs} ${m}${mins}` : `${h}${hrs}`;
+  const mins = t('common').minutes ?? 'min'
+  const hrs = t('common').hours ?? 'h'
+  if (minutes < 60) return `${minutes}${mins}`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}${hrs} ${m}${mins}` : `${h}${hrs}`
 }
 
 /**
  * 生成按钮 HTML
  */
-function createButtons(buttons: Array<{ text: string; class: string; action: string }>): string {
-  return buttons.map(btn =>
-    `<button class="b3-button ${btn.class}" data-action="${btn.action}">${btn.text}</button>`
-  ).join('');
+function createButtons(buttons: Array<{ text: string, class: string, action: string }>): string {
+  return buttons.map((btn) =>
+    `<button class="b3-button ${btn.class}" data-action="${btn.action}">${btn.text}</button>`,
+  ).join('')
 }
 
 /**
  * 显示事项详情弹框
  */
 export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean, plugin?: Plugin | null }): Dialog {
-  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
-  const showAllDates = options?.showAllDates ?? false;
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
+  const showAllDates = options?.showAllDates ?? false
 
   // 创建容器元素
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   // 创建 Vue 应用
   const app = createApp(ItemDetailDialog, {
     item,
     showAllDates,
     onClose: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
     onOpenDoc: async () => {
-      if (!plugin) return;
-      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId);
-      dialog.destroy();
+      if (!plugin) return
+      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId)
+      dialog.destroy()
     },
     onOpenCalendar: (date: string) => {
-      console.log('[Task Assistant] dialog open-calendar', date);
+      console.log('[Task Assistant] dialog open-calendar', date)
       if (plugin && (plugin as any).openCustomTab) {
-        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date });
+        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date })
       }
-      dialog.destroy();
+      dialog.destroy()
     },
     onSetReminder: () => {
-      dialog.destroy();
-      showReminderSettingDialog(item);
+      dialog.destroy()
+      showReminderSettingDialog(item)
     },
     onSetRecurring: () => {
-      dialog.destroy();
-      showRecurringSettingDialog(item);
+      dialog.destroy()
+      showRecurringSettingDialog(item)
     },
     onSkipOccurrence: () => {
-      dialog.destroy();
-      void skipCurrentOccurrence(plugin, item);
-    }
-  });
+      dialog.destroy()
+      void skipCurrentOccurrence(plugin, item)
+    },
+  })
 
   // 挂载应用
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
     content: '',
     width: '520px',
     destroyCallback: () => {
-      app.unmount();
-      hideLinkTooltip();
+      app.unmount()
+      hideLinkTooltip()
     },
-  });
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   requestAnimationFrame(() => {
-    focusDialogInitialElement(dialog.element);
-  });
+    focusDialogInitialElement(dialog.element)
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
  * 生成链接分组 HTML
  */
-function createLinkGroup(title: string, links: Array<{ name: string; url: string }>): string {
-  if (!links || links.length === 0) return '';
+function createLinkGroup(title: string, links: Array<{ name: string, url: string }>): string {
+  if (!links || links.length === 0) return ''
 
-  const linksHtml = links.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
+  const linksHtml = links.map((link) => {
+    const {
+      display,
+      tooltipAttr,
+    } = formatLinkDisplay(link.name)
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`
+  }).join('')
 
   return `
     <div class="sy-dialog-link-group">
@@ -437,11 +470,11 @@ function createLinkGroup(title: string, links: Array<{ name: string; url: string
         ${linksHtml}
       </div>
     </div>
-  `;
+  `
 }
 
 /** 当前打开的事项详情弹框，用于单例守卫（防止重复点击创建多个） */
-let lastEventDetailDialog: Dialog | null = null;
+let lastEventDetailDialog: Dialog | null = null
 
 /**
  * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
@@ -450,24 +483,24 @@ let lastEventDetailDialog: Dialog | null = null;
  */
 export function buildEventDetailContent(
   event: CalendarEvent,
-  options?: { preview?: boolean }
+  options?: { preview?: boolean },
 ): string {
-  const preview = options?.preview ?? false;
-  const props = event.extendedProps;
+  const preview = options?.preview ?? false
+  const props = event.extendedProps
 
-  const start = event.start;
-  const end = event.end;
-  const allDay = event.allDay;
+  const start = event.start
+  const end = event.end
+  const allDay = event.allDay
   const rawDate = props.date
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
-    || (start ? dayjs(start).format('YYYY-MM-DD') : '');
+    || (start ? dayjs(start).format('YYYY-MM-DD') : '')
 
   // 优先使用 originalStartDateTime/originalEndDateTime（日历事件可能被转为 ISO，原格式更可靠）
-  const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''));
-  const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''));
+  const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''))
+  const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''))
 
   // 创建容器元素
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   // 创建 Vue 应用
   const app = createApp(EventDetailTooltip, {
@@ -483,25 +516,25 @@ export function buildEventDetailContent(
     date: rawDate,
     startDateTime: startForTime,
     endDateTime: endForTime,
-    allDay: allDay,
+    allDay,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
     pomodoros: props.pomodoros || [],
     siblingItems: props.siblingItems || [],
-    preview: preview
-  });
+    preview,
+  })
 
   // 挂载应用
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   // 获取渲染后的 HTML
-  const html = container.innerHTML;
+  const html = container.innerHTML
 
   // 卸载应用（因为这只是获取 HTML，实际事件处理由调用方负责）
-  app.unmount();
+  app.unmount()
 
-  return html;
+  return html
 }
 
 /**
@@ -509,23 +542,23 @@ export function buildEventDetailContent(
  */
 export function showEventDetailModal(
   event: CalendarEvent,
-  options?: { plugin?: Plugin | null }
+  options?: { plugin?: Plugin | null },
 ): Dialog {
-  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
-  const props = event.extendedProps;
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
+  const props = event.extendedProps
   const rawDate = props.date
     || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
-    || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '');
-  const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
+    || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '')
+  const dateStr = rawDate || dayjs().format('YYYY-MM-DD')
 
   // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
   if (lastEventDetailDialog) {
-    lastEventDetailDialog.destroy();
-    lastEventDetailDialog = null;
+    lastEventDetailDialog.destroy()
+    lastEventDetailDialog = null
   }
 
   // 创建容器元素
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   // 构建 Item 对象
   const item: Item = {
@@ -537,8 +570,19 @@ export function showEventDetailModal(
     docId: props.docId,
     lineNumber: props.lineNumber,
     blockId: props.blockId,
-    project: props.project ? { name: props.project, links: props.projectLinks || [] } : undefined,
-    task: props.task ? { name: props.task, level: props.level, links: props.taskLinks || [] } : undefined,
+    project: props.project
+      ? {
+          name: props.project,
+          links: props.projectLinks || [],
+        }
+      : undefined,
+    task: props.task
+      ? {
+          name: props.task,
+          level: props.level,
+          links: props.taskLinks || [],
+        }
+      : undefined,
     links: props.itemLinks || [],
     pomodoros: props.pomodoros || [],
     startDateTime: props.originalStartDateTime,
@@ -549,45 +593,45 @@ export function showEventDetailModal(
     reminder: props.reminder,
     repeatRule: props.repeatRule,
     endCondition: props.endCondition,
-  };
+  }
 
   // 创建 Vue 应用
-  const hasSiblingItems = !!(props.siblingItems?.length);
+  const hasSiblingItems = !!(props.siblingItems?.length)
 
   const app = createApp(ItemDetailDialog, {
     item,
     showAllDates: hasSiblingItems,
     onClose: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
     onOpenDoc: async () => {
-      if (!plugin) return;
-      await openDocumentAtLine(plugin, props.docId, props.lineNumber, props.blockId);
-      dialog.destroy();
+      if (!plugin) return
+      await openDocumentAtLine(plugin, props.docId, props.lineNumber, props.blockId)
+      dialog.destroy()
     },
     onOpenCalendar: () => {
       if (plugin && (plugin as any).openCustomTab) {
-        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
+        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr })
       }
-      dialog.destroy();
+      dialog.destroy()
     },
     onSetReminder: () => {
-      dialog.destroy();
-      showReminderSettingDialog(item);
+      dialog.destroy()
+      showReminderSettingDialog(item)
     },
     onSetRecurring: () => {
-      dialog.destroy();
-      showRecurringSettingDialog(item);
+      dialog.destroy()
+      showRecurringSettingDialog(item)
     },
     onSkipOccurrence: () => {
-      dialog.destroy();
-      void skipCurrentOccurrence(plugin, item);
+      dialog.destroy()
+      void skipCurrentOccurrence(plugin, item)
     },
-  });
+  })
 
   // 挂载应用
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
@@ -595,24 +639,24 @@ export function showEventDetailModal(
     width: '520px',
     destroyCallback: () => {
       if (lastEventDetailDialog === dialog) {
-        lastEventDetailDialog = null;
+        lastEventDetailDialog = null
       }
-      app.unmount();
-      hideLinkTooltip();
+      app.unmount()
+      hideLinkTooltip()
     },
-  });
-  lastEventDetailDialog = dialog;
+  })
+  lastEventDetailDialog = dialog
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   requestAnimationFrame(() => {
-    focusDialogInitialElement(dialog.element);
-  });
+    focusDialogInitialElement(dialog.element)
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
@@ -622,51 +666,59 @@ export function showConfirmDialog(
   title: string,
   message: string,
   onConfirm?: () => void,
-  onCancel?: () => void
+  onCancel?: () => void,
 ): Dialog {
-  let content = '<div class="sy-dialog-content">';
-  content += `<div class="sy-dialog-message">${message}</div>`;
+  let content = '<div class="sy-dialog-content">'
+  content += `<div class="sy-dialog-message">${message}</div>`
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: t('common').cancel, class: 'b3-button--cancel', action: 'cancel' },
-        { text: t('common').confirm, class: 'b3-button--text', action: 'confirm' },
+        {
+          text: t('common').cancel,
+          class: 'b3-button--cancel',
+          action: 'cancel',
+        },
+        {
+          text: t('common').confirm,
+          class: 'b3-button--text',
+          action: 'confirm',
+        },
       ])}
     </div>
-  `;
-  content += '</div>';
+  `
+  content += '</div>'
 
   const dialog = createDialog({
     title,
     content,
     width: '400px',
-  });
+  })
 
   // 绑定按钮事件
-  const element = dialog.element;
-  element.querySelectorAll('[data-action]').forEach(btn => {
+  const element = dialog.element
+  element.querySelectorAll('[data-action]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      const action = (e.currentTarget as HTMLElement).dataset.action;
+      const action = (e.currentTarget as HTMLElement).dataset.action
 
       if (action === 'confirm') {
-        onConfirm?.();
-        dialog.destroy();
+        onConfirm?.()
+        dialog.destroy()
       } else if (action === 'cancel') {
-        onCancel?.();
-        dialog.destroy();
+        onCancel?.()
+        dialog.destroy()
       }
-    });
-  });
+    })
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
  * 显示提示消息
  */
 export function showMessage(text: string, type: 'info' | 'error' = 'info'): void {
-  const { showMessage: siyuanShowMessage } = require('siyuan');
-  siyuanShowMessage(text, 3000, type);
+  const { showMessage: siyuanShowMessage } = require('siyuan')
+  siyuanShowMessage(text, 3000, type)
 }
 
 /**
@@ -678,64 +730,64 @@ export function showMessage(text: string, type: 'info' | 'error' = 'info'): void
  */
 export async function showPomodoroCompleteDialog(
   pending: PendingPomodoroCompletion,
-  pinia?: ReturnType<typeof import('pinia').createPinia>
+  pinia?: ReturnType<typeof import('pinia').createPinia>,
 ): Promise<Dialog | null> {
   // 校验 block 有效性：如果关联的块已不存在（文档被删除），静默清理不弹框
   try {
-    const block = await siyuanAPI.getBlockByID(pending.blockId);
+    const block = await siyuanAPI.getBlockByID(pending.blockId)
     if (!block) {
-      console.log(`[Dialog] Block ${pending.blockId} not found, skipping pomodoro complete dialog`);
+      console.log(`[Dialog] Block ${pending.blockId} not found, skipping pomodoro complete dialog`)
       // 删除待完成记录并提示用户
-      const plugin = usePlugin();
+      const plugin = usePlugin()
       if (plugin) {
-        await removePendingCompletion(plugin);
+        await removePendingCompletion(plugin)
       }
-      showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
-      return null;
+      showMessage('关联事项已不存在，番茄钟记录已清理', 'info')
+      return null
     }
   } catch (error) {
     // API 调用失败，假设块不存在
-    console.log(`[Dialog] Failed to check block ${pending.blockId}, skipping dialog`);
-    const plugin = usePlugin();
+    console.log(`[Dialog] Failed to check block ${pending.blockId}, skipping dialog`)
+    const plugin = usePlugin()
     if (plugin) {
-      await removePendingCompletion(plugin);
+      await removePendingCompletion(plugin)
     }
-    showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
-    return null;
+    showMessage('关联事项已不存在，番茄钟记录已清理', 'info')
+    return null
   }
 
-  let dialogApp: any = null;
+  let dialogApp: any = null
   const dialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
     width: '600px',
     destroyCallback: () => {
       if (dialogApp) {
-        dialogApp.unmount();
-        dialogApp = null;
+        dialogApp.unmount()
+        dialogApp = null
       }
-    }
-  });
+    },
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   setTimeout(() => {
-    const mountEl = dialog.element?.querySelector('#pomodoro-complete-dialog-mount');
+    const mountEl = dialog.element?.querySelector('#pomodoro-complete-dialog-mount')
     if (mountEl) {
       dialogApp = createApp(PomodoroCompleteDialog, {
         pending,
-        closeDialog
-      });
+        closeDialog,
+      })
       if (pinia) {
-        dialogApp.use(pinia);
+        dialogApp.use(pinia)
       }
-      dialogApp.mount(mountEl);
+      dialogApp.mount(mountEl)
     }
-  }, 0);
+  }, 0)
 
-  return dialog;
+  return dialog
 }
 
 /**
@@ -745,7 +797,7 @@ export async function showPomodoroCompleteDialog(
 export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
   // 移动端使用抽屉式弹框
   if (isMobileDevice()) {
-    return showMobilePomodoroTimerDrawer(preselectedBlockId, initialGroupId);
+    return showMobilePomodoroTimerDrawer(preselectedBlockId, initialGroupId)
   }
 
   // 桌面端使用传统对话框
@@ -755,77 +807,80 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGrou
     width: '600px',
     destroyCallback: () => {
       if (timerDialogApp) {
-        timerDialogApp.unmount();
-        timerDialogApp = null;
+        timerDialogApp.unmount()
+        timerDialogApp = null
       }
-    }
-  });
+    },
+  })
 
-  let timerDialogApp: any = null;
+  let timerDialogApp: any = null
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   setTimeout(() => {
-    const mountEl = dialog.element?.querySelector('#pomodoro-timer-dialog-mount');
+    const mountEl = dialog.element?.querySelector('#pomodoro-timer-dialog-mount')
     if (mountEl) {
-      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog, initialGroupId });
-      timerDialogApp.mount(mountEl);
+      timerDialogApp = createApp(PomodoroTimerDialog, {
+        closeDialog,
+        initialGroupId,
+      })
+      timerDialogApp.mount(mountEl)
     }
-  }, 0);
+  }, 0)
 
-  return dialog;
+  return dialog
 }
 
 /**
  * 显示移动端专注计时抽屉
  */
 function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
-  const mountEl = document.createElement('div');
-  mountEl.id = 'mobile-pomodoro-timer-mount';
-  document.body.appendChild(mountEl);
+  const mountEl = document.createElement('div')
+  mountEl.id = 'mobile-pomodoro-timer-mount'
+  document.body.appendChild(mountEl)
 
-  let visible = true;
-  let drawerApp: any = null;
+  let visible = true
+  let drawerApp: any = null
 
   const closeDrawer = () => {
-    visible = false;
+    visible = false
     if (drawerApp) {
-      drawerApp.unmount();
-      drawerApp = null;
+      drawerApp.unmount()
+      drawerApp = null
     }
     if (mountEl.parentNode) {
-      mountEl.parentNode.removeChild(mountEl);
+      mountEl.parentNode.removeChild(mountEl)
     }
-  };
+  }
 
   drawerApp = createApp(MobilePomodoroTimerDrawer, {
-    modelValue: visible,
+    "modelValue": visible,
     preselectedBlockId,
     initialGroupId,
     'onUpdate:modelValue': (val: boolean) => {
-      if (!val) closeDrawer();
+      if (!val) closeDrawer()
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    drawerApp.use(pinia);
+    drawerApp.use(pinia)
   }
-  drawerApp.mount(mountEl);
+  drawerApp.mount(mountEl)
 
   return {
     element: mountEl,
     destroy: closeDrawer,
-  } as Dialog;
+  } as Dialog
 }
 
 /**
  * 检测是否为移动端
  */
 function isMobileDevice(): boolean {
-  const frontend = getFrontend();
-  return frontend === 'mobile' || frontend === 'browser-mobile';
+  const frontend = getFrontend()
+  return frontend === 'mobile' || frontend === 'browser-mobile'
 }
 
 /**
@@ -834,11 +889,11 @@ function isMobileDevice(): boolean {
 export function showSettingsDialog(plugin: any): Dialog | null {
   // 移动端使用抽屉式设置面板
   if (isMobileDevice()) {
-    return showMobileSettingsDrawer(plugin);
+    return showMobileSettingsDrawer(plugin)
   }
-  
+
   // 桌面端使用传统对话框
-  let settingsDialogApp: any = null;
+  let settingsDialogApp: any = null
   const dialog = new Dialog({
     title: t('settings').title,
     content: '<div id="bullet-journal-settings-mount"></div>',
@@ -846,30 +901,33 @@ export function showSettingsDialog(plugin: any): Dialog | null {
     height: '70vh',
     destroyCallback: () => {
       if (settingsDialogApp) {
-        settingsDialogApp.unmount();
-        settingsDialogApp = null;
+        settingsDialogApp.unmount()
+        settingsDialogApp = null
       }
-      void plugin.loadSettings();
-    }
-  });
+      void plugin.loadSettings()
+    },
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   setTimeout(() => {
-    const mountEl = dialog.element?.querySelector('#bullet-journal-settings-mount');
+    const mountEl = dialog.element?.querySelector('#bullet-journal-settings-mount')
     if (mountEl) {
-      settingsDialogApp = createApp(SettingsDialog, { plugin, closeDialog });
-      const pinia = getSharedPinia();
+      settingsDialogApp = createApp(SettingsDialog, {
+        plugin,
+        closeDialog,
+      })
+      const pinia = getSharedPinia()
       if (pinia) {
-        settingsDialogApp.use(pinia);
+        settingsDialogApp.use(pinia)
       }
-      settingsDialogApp.mount(mountEl);
+      settingsDialogApp.mount(mountEl)
     }
-  }, 0);
+  }, 0)
 
-  return dialog;
+  return dialog
 }
 
 /**
@@ -877,120 +935,120 @@ export function showSettingsDialog(plugin: any): Dialog | null {
  */
 function showMobileSettingsDrawer(plugin: any): Dialog | null {
   // 创建挂载点
-  const mountEl = document.createElement('div');
-  mountEl.id = 'mobile-settings-drawer-mount';
-  document.body.appendChild(mountEl);
-  
-  let settingsApp: any = null;
-  let visible = true;
-  
+  const mountEl = document.createElement('div')
+  mountEl.id = 'mobile-settings-drawer-mount'
+  document.body.appendChild(mountEl)
+
+  let settingsApp: any = null
+  let visible = true
+
   const closeDrawer = () => {
-    visible = false;
+    visible = false
     if (settingsApp) {
-      settingsApp.unmount();
-      settingsApp = null;
+      settingsApp.unmount()
+      settingsApp = null
     }
     if (mountEl.parentNode) {
-      mountEl.parentNode.removeChild(mountEl);
+      mountEl.parentNode.removeChild(mountEl)
     }
-    void plugin.loadSettings();
-  };
-  
+    void plugin.loadSettings()
+  }
+
   const handleSave = async (settings: Record<string, any>) => {
     // 保存设置
     if (plugin.saveData) {
-      await plugin.saveData('settings.json', JSON.stringify(settings, null, 2));
+      await plugin.saveData('settings.json', JSON.stringify(settings, null, 2))
     }
-    showMessage(t('settings').saveSuccess || '设置已保存', 'info');
-    closeDrawer();
-  };
-  
+    showMessage(t('settings').saveSuccess || '设置已保存', 'info')
+    closeDrawer()
+  }
+
   // 加载当前设置
   const loadCurrentSettings = async () => {
-    let currentSettings = {};
+    let currentSettings = {}
     if (plugin.loadData) {
       try {
-        const data = await plugin.loadData('settings.json');
+        const data = await plugin.loadData('settings.json')
         if (data) {
-          currentSettings = typeof data === 'string' ? JSON.parse(data) : data;
+          currentSettings = typeof data === 'string' ? JSON.parse(data) : data
         }
       } catch (e) {
-        console.error('[Task Assistant] Failed to load settings:', e);
+        console.error('[Task Assistant] Failed to load settings:', e)
       }
     }
-    return currentSettings;
-  };
-  
+    return currentSettings
+  }
+
   loadCurrentSettings().then((initialSettings) => {
     settingsApp = createApp(MobileSettingsDrawer, {
-      modelValue: visible,
+      "modelValue": visible,
       initialSettings,
       'onUpdate:modelValue': (val: boolean) => {
-        if (!val) closeDrawer();
+        if (!val) closeDrawer()
       },
-      onSave: handleSave,
-    });
-    
-    const pinia = getSharedPinia();
+      "onSave": handleSave,
+    })
+
+    const pinia = getSharedPinia()
     if (pinia) {
-      settingsApp.use(pinia);
+      settingsApp.use(pinia)
     }
-    settingsApp.mount(mountEl);
-  });
-  
+    settingsApp.mount(mountEl)
+  })
+
   // 返回一个模拟的 Dialog 对象
   return {
     element: mountEl,
     destroy: closeDrawer,
-  } as Dialog;
+  } as Dialog
 }
 
 /**
  * 生成日历网格 HTML
  */
 function generateCalendarGrid(year: number, month: number, selectedDate?: string): string {
-  const firstDay = dayjs().year(year).month(month).date(1);
-  const daysInMonth = firstDay.daysInMonth();
+  const firstDay = dayjs().year(year).month(month).date(1)
+  const daysInMonth = firstDay.daysInMonth()
 
   // 周一开始：dayjs.day() 返回 0-6（周日开始），转换为周一开始
-  const startDayOfWeek = firstDay.day() === 0 ? 6 : firstDay.day() - 1;
+  const startDayOfWeek = firstDay.day() === 0 ? 6 : firstDay.day() - 1
 
-  const todayStr = dayjs().format('YYYY-MM-DD');
+  const todayStr = dayjs().format('YYYY-MM-DD')
 
-  let html = '<div class="date-picker-calendar">';
+  let html = '<div class="date-picker-calendar">'
 
   // 星期标题（周一开始）
-  const weekDays = (t('calendar') as any).weekDays ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  html += '<div class="date-picker-header">';
-  weekDays.forEach(day => {
-    html += `<span class="date-picker-weekday">${day}</span>`;
-  });
-  html += '</div>';
+  const weekDays = (t('calendar') as any).weekDays ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  html += '<div class="date-picker-header">'
+  weekDays.forEach((day) => {
+    html += `<span class="date-picker-weekday">${day}</span>`
+  })
+  html += '</div>'
 
   // 日期网格
-  html += '<div class="date-picker-grid">';
+  html += '<div class="date-picker-grid">'
 
   // 填充前面的空白
   for (let i = 0; i < startDayOfWeek; i++) {
-    html += '<span class="date-picker-day empty"></span>';
+    html += '<span class="date-picker-day empty"></span>'
   }
 
   // 填充日期
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = firstDay.date(day).format('YYYY-MM-DD');
-    const isToday = dateStr === todayStr;
-    const isSelected = dateStr === selectedDate;
+    const dateStr = firstDay.date(day).format('YYYY-MM-DD')
+    const isToday = dateStr === todayStr
+    const isSelected = dateStr === selectedDate
 
-    let classes = 'date-picker-day';
-    if (isToday) classes += ' today';
-    if (isSelected) classes += ' selected';
+    let classes = 'date-picker-day'
+    if (isToday) classes += ' today'
+    if (isSelected) classes += ' selected'
 
-    html += `<span class="${classes}" data-date="${dateStr}">${day}</span>`;
+    html += `<span class="${classes}" data-date="${dateStr}">${day}</span>`
   }
 
-  html += '</div></div>';
+  html += '</div></div>'
 
-  return html;
+  return html
 }
 
 /**
@@ -999,16 +1057,16 @@ function generateCalendarGrid(year: number, month: number, selectedDate?: string
 export function showDatePickerDialog(
   title: string,
   defaultDate: string,
-  onConfirm: (date: string) => void
+  onConfirm: (date: string) => void,
 ): Dialog {
-  const today = new Date();
-  let currentYear = today.getFullYear();
-  let currentMonth = today.getMonth();
-  let selectedDate = defaultDate || dayjs().format('YYYY-MM-DD');
-  
+  const today = new Date()
+  let currentYear = today.getFullYear()
+  let currentMonth = today.getMonth()
+  let selectedDate = defaultDate || dayjs().format('YYYY-MM-DD')
+
   const generateContent = () => {
-    let content = '<div class="sy-dialog-content date-picker-dialog">';
-    
+    let content = '<div class="sy-dialog-content date-picker-dialog">'
+
     // 月份导航
     content += `
       <div class="date-picker-nav">
@@ -1018,11 +1076,11 @@ export function showDatePickerDialog(
         <button class="b3-button b3-button--outline" data-action="next-month">›</button>
         <button class="b3-button b3-button--outline" data-action="next-year">»</button>
       </div>
-    `;
-    
+    `
+
     // 日历网格
-    content += generateCalendarGrid(currentYear, currentMonth, selectedDate);
-    
+    content += generateCalendarGrid(currentYear, currentMonth, selectedDate)
+
     // 按钮
     content += `
       <div class="sy-dialog-footer">
@@ -1030,95 +1088,95 @@ export function showDatePickerDialog(
         <button class="b3-button b3-button--cancel" data-action="cancel">${t('common').cancel}</button>
         <button class="b3-button b3-button--text" data-action="confirm">${t('common').confirm}</button>
       </div>
-    `;
-    
-    content += '</div>';
-    return content;
-  };
-  
+    `
+
+    content += '</div>'
+    return content
+  }
+
   const dialog = createDialog({
     title,
     content: generateContent(),
     width: '360px',
-  });
-  
+  })
+
   const updateContent = () => {
-    const contentEl = dialog.element.querySelector('.sy-dialog-content');
+    const contentEl = dialog.element.querySelector('.sy-dialog-content')
     if (contentEl) {
-      contentEl.outerHTML = generateContent();
-      bindEvents();
+      contentEl.outerHTML = generateContent()
+      bindEvents()
     }
-  };
-  
+  }
+
   const bindEvents = () => {
-    const element = dialog.element;
-    
+    const element = dialog.element
+
     // 导航按钮
-    element.querySelectorAll('[data-action]').forEach(btn => {
+    element.querySelectorAll('[data-action]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const action = (e.currentTarget as HTMLElement).dataset.action;
-        
+        const action = (e.currentTarget as HTMLElement).dataset.action
+
         switch (action) {
           case 'prev-year':
-            currentYear--;
-            updateContent();
-            break;
+            currentYear--
+            updateContent()
+            break
           case 'prev-month':
-            currentMonth--;
+            currentMonth--
             if (currentMonth < 0) {
-              currentMonth = 11;
-              currentYear--;
+              currentMonth = 11
+              currentYear--
             }
-            updateContent();
-            break;
+            updateContent()
+            break
           case 'next-month':
-            currentMonth++;
+            currentMonth++
             if (currentMonth > 11) {
-              currentMonth = 0;
-              currentYear++;
+              currentMonth = 0
+              currentYear++
             }
-            updateContent();
-            break;
+            updateContent()
+            break
           case 'next-year':
-            currentYear++;
-            updateContent();
-            break;
+            currentYear++
+            updateContent()
+            break
           case 'today':
-            selectedDate = dayjs().format('YYYY-MM-DD');
-            currentYear = dayjs().year();
-            currentMonth = dayjs().month();
-            updateContent();
-            break;
+            selectedDate = dayjs().format('YYYY-MM-DD')
+            currentYear = dayjs().year()
+            currentMonth = dayjs().month()
+            updateContent()
+            break
           case 'confirm':
-            onConfirm(selectedDate);
-            dialog.destroy();
-            break;
+            onConfirm(selectedDate)
+            dialog.destroy()
+            break
           case 'cancel':
-            dialog.destroy();
-            break;
+            dialog.destroy()
+            break
         }
-      });
-    });
-    
+      })
+    })
+
     // 日期选择
-    element.querySelectorAll('.date-picker-day:not(.empty)').forEach(dayEl => {
+    element.querySelectorAll('.date-picker-day:not(.empty)').forEach((dayEl) => {
       dayEl.addEventListener('click', (e) => {
-        const date = (e.currentTarget as HTMLElement).dataset.date;
+        const date = (e.currentTarget as HTMLElement).dataset.date
         if (date) {
-          selectedDate = date;
+          selectedDate = date
           // 更新选中状态
-          element.querySelectorAll('.date-picker-day').forEach(el => {
-            el.classList.remove('selected');
+          element.querySelectorAll('.date-picker-day').forEach((el) => {
+            el.classList.remove('selected')
           });
-          (e.currentTarget as HTMLElement).classList.add('selected');
+          (e.currentTarget as HTMLElement).classList.add('selected')
         }
-      });
-    });
-  };
-  
-  bindEvents();
-  
-  return dialog;
+      })
+    })
+  }
+
+  bindEvents()
+
+  return dialog
 }
 
 
@@ -1126,93 +1184,93 @@ export function showDatePickerDialog(
  * 显示提醒设置弹框
  */
 export function showReminderSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(ReminderSettingDialog, {
     blockId: item.blockId!,
     initialConfig: item.reminder,
     onSave: async (config: ReminderConfig) => {
-      await updateItemWithReminder(item, config, options);
-      dialog.destroy();
+      await updateItemWithReminder(item, config, options)
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
-    }
-  });
+      dialog.destroy()
+    },
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('reminder').settingTitle,
     content: '',
     width: '380px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
+      app.unmount()
+    },
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   // 自动聚焦到弹框内，使 ESC 键立即生效
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
  * 显示重复设置弹框
  */
 export function showRecurringSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(RecurringSettingDialog, {
     blockId: item.blockId!,
     initialRepeatRule: item.repeatRule,
     initialEndCondition: item.endCondition,
     onSave: async (repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) => {
-      await updateItemWithRecurring(item, repeatRule, endCondition, options);
-      dialog.destroy();
+      await updateItemWithRecurring(item, repeatRule, endCondition, options)
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
-    }
-  });
+      dialog.destroy()
+    },
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('recurring').settingTitle,
     content: '',
     width: '380px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
+      app.unmount()
+    },
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   // 自动聚焦到弹框内，使 ESC 键立即生效
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 
@@ -1222,132 +1280,132 @@ export function showRecurringSettingDialog(item: Item, options?: ItemSettingWrit
  */
 export function showPrioritySettingDialog(
   initialPriority: PriorityLevel | undefined,
-  onConfirm: (priority: PriorityLevel | undefined) => void
+  onConfirm: (priority: PriorityLevel | undefined) => void,
 ): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(PrioritySettingDialog, {
     initialPriority,
     onConfirm: (priority: PriorityLevel | undefined) => {
-      onConfirm(priority);
-      dialog.destroy();
+      onConfirm(priority)
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
-  });
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('todo').priority.setPriority,
     content: '',
     width: '280px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
+      app.unmount()
+    },
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   // 自动聚焦到弹框内，使 ESC 键立即生效
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 export function showFocusPlanDialog(item: Item, options?: ({ ensureDate?: string } & ItemSettingWriteOptions)): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(FocusPlanDialog, {
     initialPlan: item.focusPlan,
     onSave: async (plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined) => {
-      const saved = await saveFocusPlanWithOptionalDate(item, plan, options);
-      if (!saved) return;
-      dialog.destroy();
+      const saved = await saveFocusPlanWithOptionalDate(item, plan, options)
+      if (!saved) return
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
-  });
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('focusPlan').settingTitle,
     content: '',
     width: '340px',
     destroyCallback: () => {
-      app.unmount();
+      app.unmount()
     },
-  });
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('[data-initial-focus], button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('[data-initial-focus], button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 export function showFocusPlanItemPickerDialog(input: {
-  items: Item[];
-  selectedDate: string;
-  onSelected?: (item: Item) => void;
+  items: Item[]
+  selectedDate: string
+  onSelected?: (item: Item) => void
 }): Dialog {
   const sections = buildFocusPlanCandidateSections({
     items: input.items,
     selectedDate: input.selectedDate,
     today: dayjs().format('YYYY-MM-DD'),
-  });
+  })
 
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(FocusPlanItemPickerDialog, {
     sections,
     selectedDate: input.selectedDate,
     onSelect: (item: Item) => {
-      dialog.destroy();
-      input.onSelected?.(item);
-      showFocusPlanDialog(item, { ensureDate: input.selectedDate });
+      dialog.destroy()
+      input.onSelected?.(item)
+      showFocusPlanDialog(item, { ensureDate: input.selectedDate })
     },
-  });
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('focusPlan').settingTitle,
     content: '',
     width: '760px',
     destroyCallback: () => {
-      app.unmount();
+      app.unmount()
     },
-  });
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
-  return dialog;
+  return dialog
 }
 
 /**
@@ -1356,54 +1414,54 @@ export function showFocusPlanItemPickerDialog(input: {
 export function showHabitCreateDialog(
   onSave: (markdown: string) => void,
   initialData?: Partial<{
-    name: string;
-    startDate: string;
-    durationDays?: number;
-    type: 'binary' | 'count';
-    target?: number;
-    unit?: string;
-    reminder?: Pick<ReminderConfig, 'type' | 'time'>;
-    frequency?: HabitFrequency;
+    name: string
+    startDate: string
+    durationDays?: number
+    type: 'binary' | 'count'
+    target?: number
+    unit?: string
+    reminder?: Pick<ReminderConfig, 'type' | 'time'>
+    frequency?: HabitFrequency
   }>,
 ): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(HabitCreateDialog, {
     initialData,
     onSave: (markdown: string) => {
-      onSave(markdown);
-      dialog.destroy();
+      onSave(markdown)
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
-    }
-  });
+      dialog.destroy()
+    },
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('slash').createHabit || '创建习惯',
     content: '',
     width: '460px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
+      app.unmount()
+    },
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }
 
 /**
@@ -1416,8 +1474,8 @@ export function showInputDialog(
   onConfirm: (value: string) => void,
   onCancel?: () => void,
 ): Dialog {
-  let content = '<div class="sy-dialog-content">';
-  content += `<div class="sy-dialog-message">${message}</div>`;
+  let content = '<div class="sy-dialog-content">'
+  content += `<div class="sy-dialog-message">${message}</div>`
   content += `
     <div class="sy-dialog-input-wrap">
       <input
@@ -1427,100 +1485,108 @@ export function showInputDialog(
         value="${defaultValue.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"
       >
     </div>
-  `;
+  `
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: t('common').cancel, class: 'b3-button--cancel', action: 'cancel' },
-        { text: t('common').confirm, class: 'b3-button--text', action: 'confirm' },
+        {
+          text: t('common').cancel,
+          class: 'b3-button--cancel',
+          action: 'cancel',
+        },
+        {
+          text: t('common').confirm,
+          class: 'b3-button--text',
+          action: 'confirm',
+        },
       ])}
     </div>
-  `;
-  content += '</div>';
+  `
+  content += '</div>'
 
   const dialog = createDialog({
     title,
     content,
     width: '420px',
-  });
+  })
 
-  const element = dialog.element;
-  const inputEl = element.querySelector('[data-role="input"]') as HTMLInputElement | null;
+  const element = dialog.element
+  const inputEl = element.querySelector('[data-role="input"]') as HTMLInputElement | null
 
   const handleConfirm = () => {
-    const nextValue = inputEl?.value.trim() ?? '';
-    onConfirm(nextValue);
-    dialog.destroy();
-  };
+    const nextValue = inputEl?.value.trim() ?? ''
+    onConfirm(nextValue)
+    dialog.destroy()
+  }
 
-  element.querySelectorAll('[data-action]').forEach(btn => {
+  element.querySelectorAll('[data-action]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      const action = (e.currentTarget as HTMLElement).dataset.action;
+      const action = (e.currentTarget as HTMLElement).dataset.action
 
       if (action === 'confirm') {
-        handleConfirm();
+        handleConfirm()
       } else if (action === 'cancel') {
-        onCancel?.();
-        dialog.destroy();
+        onCancel?.()
+        dialog.destroy()
       }
-    });
-  });
+    })
+  })
 
   inputEl?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-      event.preventDefault();
-      handleConfirm();
+      event.preventDefault()
+      handleConfirm()
     }
-  });
+  })
 
   requestAnimationFrame(() => {
-    inputEl?.focus();
-    inputEl?.select();
-  });
+    inputEl?.focus()
+    inputEl?.select()
+  })
 
-  return dialog;
+  return dialog
 }
 
 export function showHabitRecordEditDialog(
   initialMarkdown: string,
   onSave: (markdown: string) => void,
 ): Dialog {
-  const container = document.createElement('div');
+  const container = document.createElement('div')
 
   const app = createApp(HabitRecordEditDialog, {
     initialMarkdown,
     onSave: (markdown: string) => {
-      onSave(markdown);
-      dialog.destroy();
+      onSave(markdown)
+      dialog.destroy()
     },
     onCancel: () => {
-      dialog.destroy();
+      dialog.destroy()
     },
-  });
+  })
 
-  app.use(getSharedPinia());
-  app.mount(container);
+  app.use(getSharedPinia())
+  app.mount(container)
 
   const dialog = new Dialog({
     title: t('habit').recordEditTitle,
     content: '',
     width: '520px',
     destroyCallback: () => {
-      app.unmount();
+      app.unmount()
     },
-  });
+  })
 
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('textarea, input, button, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('textarea, input, button, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  return dialog;
+  return dialog
 }

@@ -16,48 +16,48 @@
 
 ### 内核侧（新建 `src/kernel/`）
 
-| 文件 | 职责 |
-|------|------|
-| `src/kernel/index.ts` | 入口：生命周期管理、模块编排 |
-| `src/kernel/types.ts` | 共享类型：TimerEntry、WebhookConfig、KernelData、siyuan 全局对象声明 |
-| `src/kernel/rpc.ts` | RPC 方法注册（ping、registerTimer、cancelTimer 等） |
-| `src/kernel/scheduler.ts` | 统一调度器：1 秒轮询检查到期 + 零点检测 |
-| `src/kernel/reminder.ts` | 提醒调度器：fsnotify 驱动 + calculateReminderTime |
-| `src/kernel/pomodoro.ts` | 番茄钟/休息计时器 RPC 处理 |
-| `src/kernel/webhook.ts` | Webhook 通知分发器：钉钉/飞书/企微/自定义 |
-| `src/kernel/mcp.ts` | MCP 服务：从 src/mcp/kernel.ts 迁入 |
-| `src/kernel/mcpTools.ts` | MCP 工具逻辑：从 src/mcp/kernelTools.ts 迁入 |
-| `src/kernel/utils.ts` | 纯工具函数：formatDate、renderTemplate |
+| 文件                      | 职责                                                                 |
+| ------------------------- | -------------------------------------------------------------------- |
+| `src/kernel/index.ts`     | 入口：生命周期管理、模块编排                                         |
+| `src/kernel/types.ts`     | 共享类型：TimerEntry、WebhookConfig、KernelData、siyuan 全局对象声明 |
+| `src/kernel/rpc.ts`       | RPC 方法注册（ping、registerTimer、cancelTimer 等）                  |
+| `src/kernel/scheduler.ts` | 统一调度器：1 秒轮询检查到期 + 零点检测                              |
+| `src/kernel/reminder.ts`  | 提醒调度器：fsnotify 驱动 + calculateReminderTime                    |
+| `src/kernel/pomodoro.ts`  | 番茄钟/休息计时器 RPC 处理                                           |
+| `src/kernel/webhook.ts`   | Webhook 通知分发器：钉钉/飞书/企微/自定义                            |
+| `src/kernel/mcp.ts`       | MCP 服务：从 src/mcp/kernel.ts 迁入                                  |
+| `src/kernel/mcpTools.ts`  | MCP 工具逻辑：从 src/mcp/kernelTools.ts 迁入                         |
+| `src/kernel/utils.ts`     | 纯工具函数：formatDate、renderTemplate                               |
 
 ### 前端侧（修改/新增）
 
-| 文件 | 职责 |
-|------|------|
-| `src/composables/useKernelTimer.ts` | 新增：内核可用性检测 + JSON-RPC 2.0 客户端 + WebSocket 监听 |
-| `src/stores/pomodoroStore.ts` | 追加：RPC 注册/取消计时器 + 监听广播 |
-| `src/services/reminderService.ts` | 追加：内核可用时走 RPC，不可用时 fallback |
-| `src/stores/settingsStore.ts` | 追加：webhookConfig 字段 |
-| `src/utils/eventBus.ts` | 追加：KERNEL_NOTIFICATION / KERNEL_DATE_CHANGED 事件 |
-| `src/components/settings/SettingsDialog.vue` | 追加：Webhook Section |
-| `src/components/settings/WebhookConfigSection.vue` | 新增：Webhook 配置 UI |
-| `src/components/settings/WebhookChannelEditForm.vue` | 新增：Channel 编辑表单 |
-| `src/mcp/kernelDataWriter.ts` | 重构：从 mcpCacheWriter.ts 重命名，新增 reminder/habit 字段 |
-| `src/stores/projectStore.ts` | 追加：更新缓存写入调用 |
-| `src/i18n/zh_CN.json` | 追加：webhook 相关翻译 |
-| `src/i18n/en_US.json` | 追加：webhook 相关翻译 |
+| 文件                                                 | 职责                                                        |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| `src/composables/useKernelTimer.ts`                  | 新增：内核可用性检测 + JSON-RPC 2.0 客户端 + WebSocket 监听 |
+| `src/stores/pomodoroStore.ts`                        | 追加：RPC 注册/取消计时器 + 监听广播                        |
+| `src/services/reminderService.ts`                    | 追加：内核可用时走 RPC，不可用时 fallback                   |
+| `src/stores/settingsStore.ts`                        | 追加：webhookConfig 字段                                    |
+| `src/utils/eventBus.ts`                              | 追加：KERNEL_NOTIFICATION / KERNEL_DATE_CHANGED 事件        |
+| `src/components/settings/SettingsDialog.vue`         | 追加：Webhook Section                                       |
+| `src/components/settings/WebhookConfigSection.vue`   | 新增：Webhook 配置 UI                                       |
+| `src/components/settings/WebhookChannelEditForm.vue` | 新增：Channel 编辑表单                                      |
+| `src/mcp/kernelDataWriter.ts`                        | 重构：从 mcpCacheWriter.ts 重命名，新增 reminder/habit 字段 |
+| `src/stores/projectStore.ts`                         | 追加：更新缓存写入调用                                      |
+| `src/i18n/zh_CN.json`                                | 追加：webhook 相关翻译                                      |
+| `src/i18n/en_US.json`                                | 追加：webhook 相关翻译                                      |
 
 ### 构建配置
 
-| 文件 | 职责 |
-|------|------|
+| 文件                    | 职责                                 |
+| ----------------------- | ------------------------------------ |
 | `vite.kernel.config.ts` | 修改：入口改为 `src/kernel/index.ts` |
 
 ### 删除
 
-| 文件 | 说明 |
-|------|------|
-| `src/mcp/kernel.ts` | 功能迁移到 `src/kernel/` |
-| `src/mcp/kernelTools.ts` | 迁移到 `src/kernel/mcpTools.ts` |
+| 文件                        | 说明                                 |
+| --------------------------- | ------------------------------------ |
+| `src/mcp/kernel.ts`         | 功能迁移到 `src/kernel/`             |
+| `src/mcp/kernelTools.ts`    | 迁移到 `src/kernel/mcpTools.ts`      |
 | `src/mcp/mcpCacheWriter.ts` | 重构为 `src/mcp/kernelDataWriter.ts` |
 
 ---
@@ -65,6 +65,7 @@
 ## 任务 1：内核类型定义
 
 **文件：**
+
 - 创建：`src/kernel/types.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/types.ts`**
@@ -97,7 +98,7 @@ declare const siyuan: {
     error: (...args: any[]) => Promise<void>
   }
   storage: {
-    get: (path: string) => Promise<{ text: () => Promise<string>; json: () => Promise<any> }>
+    get: (path: string) => Promise<{ text: () => Promise<string>, json: () => Promise<any> }>
     put: (path: string, content: string) => Promise<void>
     remove: (path: string) => Promise<void>
     watcher: {
@@ -111,7 +112,7 @@ declare const siyuan: {
     broadcast: (method: string, params: any) => void
   }
   client: {
-    fetch: (path: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{
+    fetch: (path: string, init?: { method?: string, headers?: Record<string, string>, body?: string }) => Promise<{
       ok: boolean
       status: number
       headers: Record<string, string>
@@ -120,7 +121,7 @@ declare const siyuan: {
     }>
   }
   event: {
-    handler: ((event: { type: string; detail: any }) => void) | null
+    handler: ((event: { type: string, detail: any }) => void) | null
     emit: (topic: string, event: any) => void
   }
   server: {
@@ -200,7 +201,7 @@ interface KernelDataItem {
   projectName: string | undefined
   taskName: string | undefined
   projectId: string
-  links: Array<{ name: string; url: string }> | undefined
+  links: Array<{ name: string, url: string }> | undefined
   pomodoros: Array<{
     id: string
     date: string
@@ -246,16 +247,17 @@ git commit -m "feat(kernel): add type definitions for kernel timer and webhook"
 ## 任务 2：内核工具函数
 
 **文件：**
+
 - 创建：`src/kernel/utils.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/utils.ts`**
 
 ```typescript
 export function formatDate(d: Date): string {
-  var year = d.getFullYear()
-  var month = String(d.getMonth() + 1).padStart(2, '0')
-  var day = String(d.getDate()).padStart(2, '0')
-  return year + '-' + month + '-' + day
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function calculateReminderTime(
@@ -267,7 +269,7 @@ export function calculateReminderTime(
   reminder: ReminderConfig,
 ): number {
   if (reminder.type === 'absolute') {
-    var baseTime = new Date(itemDate + 'T' + (reminder.time || '00:00') + ':00').getTime()
+    var baseTime = new Date(`${itemDate}T${reminder.time || '00:00'}:00`).getTime()
     if (reminder.alertMode && reminder.alertMode.type === 'before' && reminder.alertMode.minutes) {
       return baseTime - reminder.alertMode.minutes * 60000
     }
@@ -280,19 +282,20 @@ export function calculateReminderTime(
   if (reminder.relativeTo === 'end') {
     baseTime = endDateTime
       ? new Date(endDateTime).getTime()
-      : new Date(itemDate + 'T' + (endTime || '23:59') + ':00').getTime()
-  } else {
+      : new Date(`${itemDate}T${endTime || '23:59'}:00`).getTime()
+  }
+  else {
     baseTime = startDateTime
       ? new Date(startDateTime).getTime()
-      : new Date(itemDate + 'T' + (startTime || '00:00') + ':00').getTime()
+      : new Date(`${itemDate}T${startTime || '00:00'}:00`).getTime()
   }
   return baseTime - (reminder.offsetMinutes || 0) * 60000
 }
 
 export function renderTemplate(template: string, vars: Record<string, string>): string {
-  var result = template
-  for (var key in vars) {
-    result = result.replace(new RegExp('\\{\\{' + key + '\\}\\}', 'g'), vars[key])
+  let result = template
+  for (const key in vars) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), vars[key])
   }
   return result
 }
@@ -310,6 +313,7 @@ git commit -m "feat(kernel): add utility functions for reminder time calculation
 ## 任务 3：内核调度器
 
 **文件：**
+
 - 创建：`src/kernel/scheduler.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/scheduler.ts`**
@@ -320,14 +324,14 @@ git commit -m "feat(kernel): add utility functions for reminder time calculation
 import type { TimerEntry } from './types'
 import { formatDate } from './utils'
 
-var timers = new Map<string, TimerEntry>()
-var checkInterval: ReturnType<typeof setInterval> | null = null
-var lastKnownDate = ''
-var persistTimer: ReturnType<typeof setTimeout> | null = null
-var isDirty = false
+const timers = new Map<string, TimerEntry>()
+let checkInterval: ReturnType<typeof setInterval> | null = null
+let lastKnownDate = ''
+let persistTimer: ReturnType<typeof setTimeout> | null = null
+let isDirty = false
 
-var MISSED_THRESHOLD_MS = 5 * 60 * 1000
-var PURGE_THRESHOLD_S = 24 * 60 * 60
+const MISSED_THRESHOLD_MS = 5 * 60 * 1000
+const PURGE_THRESHOLD_S = 24 * 60 * 60
 
 export function getTimers(): Map<string, TimerEntry> {
   return timers
@@ -335,25 +339,27 @@ export function getTimers(): Map<string, TimerEntry> {
 
 export async function loadTimerRegistry(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('timer-registry.json')
-    var data = await result.json()
+    const result = await siyuan.storage.get('timer-registry.json')
+    const data = await result.json()
     if (data && Array.isArray(data)) {
-      for (var i = 0; i < data.length; i++) {
-        var entry = data[i] as TimerEntry
+      for (let i = 0; i < data.length; i++) {
+        const entry = data[i] as TimerEntry
         if (entry.id && entry.endTime) {
           timers.set(entry.id, entry)
         }
       }
     }
-  } catch (e) {
-    await siyuan.logger.warn('[scheduler] failed to load timer registry: ' + String(e))
+  }
+  catch (e) {
+    await siyuan.logger.warn(`[scheduler] failed to load timer registry: ${String(e)}`)
   }
 }
 
 export async function persistTimerRegistry(): Promise<void> {
-  if (!isDirty) return
-  var entries: TimerEntry[] = []
-  timers.forEach(function (entry) {
+  if (!isDirty)
+    return
+  const entries: TimerEntry[] = []
+  timers.forEach((entry) => {
     if (entry.type === 'reminder' || entry.type === 'habit') {
       entries.push(entry)
     }
@@ -361,14 +367,16 @@ export async function persistTimerRegistry(): Promise<void> {
   try {
     await siyuan.storage.put('timer-registry.json', JSON.stringify(entries))
     isDirty = false
-  } catch (e) {
-    await siyuan.logger.warn('[scheduler] failed to persist timer registry: ' + String(e))
+  }
+  catch (e) {
+    await siyuan.logger.warn(`[scheduler] failed to persist timer registry: ${String(e)}`)
   }
 }
 
 function schedulePersist(): void {
-  if (persistTimer) clearTimeout(persistTimer)
-  persistTimer = setTimeout(function () {
+  if (persistTimer)
+    clearTimeout(persistTimer)
+  persistTimer = setTimeout(() => {
     void persistTimerRegistry()
   }, 5000)
   isDirty = true
@@ -380,7 +388,7 @@ export function registerTimer(entry: TimerEntry): void {
 }
 
 export function registerTimers(entries: TimerEntry[]): void {
-  for (var i = 0; i < entries.length; i++) {
+  for (let i = 0; i < entries.length; i++) {
     timers.set(entries[i].id, entries[i])
   }
   schedulePersist()
@@ -392,21 +400,21 @@ export function cancelTimer(id: string): void {
 }
 
 export function cancelTimersByType(type: string): void {
-  var toDelete: string[] = []
-  timers.forEach(function (entry, key) {
+  const toDelete: string[] = []
+  timers.forEach((entry, key) => {
     if (entry.type === type) {
       toDelete.push(key)
     }
   })
-  for (var i = 0; i < toDelete.length; i++) {
+  for (let i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
   schedulePersist()
 }
 
 export function getActiveTimers(type?: string): TimerEntry[] {
-  var result: TimerEntry[] = []
-  timers.forEach(function (entry) {
+  const result: TimerEntry[] = []
+  timers.forEach((entry) => {
     if (!type || entry.type === type) {
       result.push(entry)
     }
@@ -416,14 +424,15 @@ export function getActiveTimers(type?: string): TimerEntry[] {
 
 export function initScheduler(): void {
   lastKnownDate = formatDate(new Date())
-  var now = Date.now() / 1000
-  timers.forEach(function (entry) {
+  const now = Date.now() / 1000
+  timers.forEach((entry) => {
     if (!entry.notified && entry.endTime <= now) {
-      var diffMs = (now - entry.endTime) * 1000
+      const diffMs = (now - entry.endTime) * 1000
       if (diffMs <= MISSED_THRESHOLD_MS) {
         entry.notified = true
         dispatchNotification(entry)
-      } else {
+      }
+      else {
         entry.notified = true
       }
     }
@@ -440,26 +449,27 @@ export function stopScheduler(): void {
 }
 
 function checkTimers(): void {
-  var now = Date.now() / 1000
-  timers.forEach(function (entry) {
+  const now = Date.now() / 1000
+  timers.forEach((entry) => {
     if (!entry.notified && now >= entry.endTime) {
       entry.notified = true
       dispatchNotification(entry)
     }
   })
 
-  var toDelete: string[] = []
-  timers.forEach(function (entry, key) {
+  const toDelete: string[] = []
+  timers.forEach((entry, key) => {
     if (entry.notified && (now - entry.endTime) > PURGE_THRESHOLD_S) {
       toDelete.push(key)
     }
   })
-  for (var i = 0; i < toDelete.length; i++) {
+  for (let i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
-  if (toDelete.length > 0) schedulePersist()
+  if (toDelete.length > 0)
+    schedulePersist()
 
-  var today = formatDate(new Date())
+  const today = formatDate(new Date())
   if (today !== lastKnownDate) {
     lastKnownDate = today
     siyuan.rpc.broadcast('date-changed', { date: today })
@@ -492,6 +502,7 @@ git commit -m "feat(kernel): add timer registry and scheduler with midnight dete
 ## 任务 4：内核提醒调度器
 
 **文件：**
+
 - 创建：`src/kernel/reminder.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/reminder.ts`**
@@ -499,11 +510,11 @@ git commit -m "feat(kernel): add timer registry and scheduler with midnight dete
 实现 fsnotify 驱动的提醒扫描 + calculateReminderTime 批量注册：
 
 ```typescript
-import type { KernelData, KernelDataItem, KernelDataHabit, TimerEntry, ReminderConfig } from './types'
+import type { KernelData, KernelDataHabit, KernelDataItem, ReminderConfig, TimerEntry } from './types'
+import { cancelTimersByType, registerTimers } from './scheduler'
 import { calculateReminderTime } from './utils'
-import { registerTimers, cancelTimersByType } from './scheduler'
 
-var fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 export async function initReminderScheduler(): Promise<void> {
   await siyuan.storage.watcher.add('.')
@@ -512,23 +523,26 @@ export async function initReminderScheduler(): Promise<void> {
 
 export async function rebuildReminderSchedule(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('kernel-data.json')
-    var data: KernelData = await result.json()
-    if (!data) return
+    const result = await siyuan.storage.get('kernel-data.json')
+    const data: KernelData = await result.json()
+    if (!data)
+      return
 
     cancelTimersByType('reminder')
     cancelTimersByType('habit')
 
-    var entries: TimerEntry[] = []
-    var now = Date.now()
-    var futureWindowMs = 24 * 60 * 60 * 1000
+    const entries: TimerEntry[] = []
+    const now = Date.now()
+    const futureWindowMs = 24 * 60 * 60 * 1000
 
     if (data.items) {
-      for (var i = 0; i < data.items.length; i++) {
-        var item = data.items[i]
-        if (item.status === 'completed' || item.status === 'abandoned') continue
-        if (!item.reminder || !item.reminder.enabled) continue
-        var reminderTime = calculateReminderTime(
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i]
+        if (item.status === 'completed' || item.status === 'abandoned')
+          continue
+        if (!item.reminder || !item.reminder.enabled)
+          continue
+        const reminderTime = calculateReminderTime(
           item.date,
           item.startDateTime,
           item.endDateTime,
@@ -536,10 +550,12 @@ export async function rebuildReminderSchedule(): Promise<void> {
           item.endTime,
           item.reminder,
         )
-        if (reminderTime < now - 5 * 60 * 1000) continue
-        if (reminderTime > now + futureWindowMs) continue
+        if (reminderTime < now - 5 * 60 * 1000)
+          continue
+        if (reminderTime > now + futureWindowMs)
+          continue
         entries.push({
-          id: 'reminder-' + item.id + '-' + item.date + '-' + reminderTime,
+          id: `reminder-${item.id}-${item.date}-${reminderTime}`,
           type: 'reminder',
           endTime: Math.floor(reminderTime / 1000),
           metadata: {
@@ -554,10 +570,11 @@ export async function rebuildReminderSchedule(): Promise<void> {
     }
 
     if (data.habits) {
-      for (var j = 0; j < data.habits.length; j++) {
-        var habit = data.habits[j]
-        if (!habit.reminder || !habit.reminder.enabled) continue
-        var habitReminderTime = calculateReminderTime(
+      for (let j = 0; j < data.habits.length; j++) {
+        const habit = data.habits[j]
+        if (!habit.reminder || !habit.reminder.enabled)
+          continue
+        const habitReminderTime = calculateReminderTime(
           habit.targetDate,
           undefined,
           undefined,
@@ -565,10 +582,12 @@ export async function rebuildReminderSchedule(): Promise<void> {
           undefined,
           habit.reminder,
         )
-        if (habitReminderTime < now - 5 * 60 * 1000) continue
-        if (habitReminderTime > now + futureWindowMs) continue
+        if (habitReminderTime < now - 5 * 60 * 1000)
+          continue
+        if (habitReminderTime > now + futureWindowMs)
+          continue
         entries.push({
-          id: 'habit-' + habit.blockId + '-' + habit.targetDate + '-' + habitReminderTime,
+          id: `habit-${habit.blockId}-${habit.targetDate}-${habitReminderTime}`,
           type: 'habit',
           endTime: Math.floor(habitReminderTime / 1000),
           metadata: {
@@ -583,8 +602,9 @@ export async function rebuildReminderSchedule(): Promise<void> {
     if (entries.length > 0) {
       registerTimers(entries)
     }
-  } catch (e) {
-    await siyuan.logger.warn('[reminder] failed to rebuild schedule: ' + String(e))
+  }
+  catch (e) {
+    await siyuan.logger.warn(`[reminder] failed to rebuild schedule: ${String(e)}`)
   }
 }
 
@@ -592,11 +612,13 @@ export async function reloadWebhookConfig(): Promise<void> {
   // 由 webhook.ts 注入
 }
 
-export function handleFsNotify(event: { type: string; detail: any }): void {
-  if (event.type !== 'fs-notify') return
-  if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
-  fsNotifyDebounceTimer = setTimeout(function () {
-    var path = event.detail.path.replace(/\\/g, '/')
+export function handleFsNotify(event: { type: string, detail: any }): void {
+  if (event.type !== 'fs-notify')
+    return
+  if (fsNotifyDebounceTimer)
+    clearTimeout(fsNotifyDebounceTimer)
+  fsNotifyDebounceTimer = setTimeout(() => {
+    const path = event.detail.path.replace(/\\/g, '/')
     if (path === 'kernel-data.json') {
       void rebuildReminderSchedule()
     }
@@ -619,6 +641,7 @@ git commit -m "feat(kernel): add reminder scheduler with fsnotify-driven rebuild
 ## 任务 5：内核 Webhook 分发器
 
 **文件：**
+
 - 创建：`src/kernel/webhook.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/webhook.ts`**
@@ -626,21 +649,22 @@ git commit -m "feat(kernel): add reminder scheduler with fsnotify-driven rebuild
 实现钉钉/飞书/企微/自定义 payload 构建 + forwardProxy 发送 + 配置加载：
 
 ```typescript
-import type { WebhookConfig, WebhookChannel, TimerEntry } from './types'
-import { renderTemplate } from './utils'
+import type { TimerEntry, WebhookChannel, WebhookConfig } from './types'
 import { setRebuildReminderSchedule } from './reminder'
+import { renderTemplate } from './utils'
 
-var webhookConfig: WebhookConfig = { enabled: false, channels: [] }
+let webhookConfig: WebhookConfig = { enabled: false, channels: [] }
 
 export async function loadWebhookConfig(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('webhook-config.json')
-    var data: WebhookConfig = await result.json()
+    const result = await siyuan.storage.get('webhook-config.json')
+    const data: WebhookConfig = await result.json()
     if (data) {
       webhookConfig = data
     }
-  } catch (e) {
-    await siyuan.logger.warn('[webhook] failed to load config: ' + String(e))
+  }
+  catch (e) {
+    await siyuan.logger.warn(`[webhook] failed to load config: ${String(e)}`)
   }
 }
 
@@ -657,28 +681,37 @@ export function dispatchNotification(entry: TimerEntry): void {
   })
 
   if (webhookConfig.enabled) {
-    for (var i = 0; i < webhookConfig.channels.length; i++) {
-      var channel = webhookConfig.channels[i]
-      if (!channel.enabled) continue
-      if (channel.events.indexOf(entry.type) === -1) continue
+    for (let i = 0; i < webhookConfig.channels.length; i++) {
+      const channel = webhookConfig.channels[i]
+      if (!channel.enabled)
+        continue
+      if (!channel.events.includes(entry.type))
+        continue
       void sendWebhook(channel, entry)
     }
   }
 }
 
 function buildTitle(entry: TimerEntry): string {
-  if (entry.type === 'reminder') return '\u23F0 \u63D0\u9192'
-  if (entry.type === 'pomodoro') return '\uD83C\uDF45 \u756A\u8304\u949F\u5B8C\u6210'
-  if (entry.type === 'break') return '\u2615 \u4F11\u606F\u7ED3\u675F'
-  if (entry.type === 'habit') return '\uD83C\uDFAF \u4E60\u60EF\u63D0\u9192'
+  if (entry.type === 'reminder')
+    return '\u23F0 \u63D0\u9192'
+  if (entry.type === 'pomodoro')
+    return '\uD83C\uDF45 \u756A\u8304\u949F\u5B8C\u6210'
+  if (entry.type === 'break')
+    return '\u2615 \u4F11\u606F\u7ED3\u675F'
+  if (entry.type === 'habit')
+    return '\uD83C\uDFAF \u4E60\u60EF\u63D0\u9192'
   return '\u23F0 \u901A\u77E5'
 }
 
 function buildBody(entry: TimerEntry): string {
-  var parts: string[] = []
-  if (entry.metadata.projectName) parts.push(entry.metadata.projectName)
-  if (entry.metadata.taskName) parts.push(entry.metadata.taskName)
-  if (parts.length > 0) return parts.join(' > ') + '\n' + entry.metadata.content
+  const parts: string[] = []
+  if (entry.metadata.projectName)
+    parts.push(entry.metadata.projectName)
+  if (entry.metadata.taskName)
+    parts.push(entry.metadata.taskName)
+  if (parts.length > 0)
+    return `${parts.join(' > ')}\n${entry.metadata.content}`
   return entry.metadata.content
 }
 
@@ -695,13 +728,13 @@ function buildTemplateVars(entry: TimerEntry): Record<string, string> {
 }
 
 function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
-  var vars = buildTemplateVars(entry)
+  const vars = buildTemplateVars(entry)
   if (channelType === 'dingtalk') {
     return {
       msgtype: 'markdown',
       markdown: {
         title: vars.title,
-        text: '### ' + vars.title + '\n**' + vars.projectName + ' > ' + vars.taskName + '**\n> ' + vars.content,
+        text: `### ${vars.title}\n**${vars.projectName} > ${vars.taskName}**\n> ${vars.content}`,
       },
     }
   }
@@ -711,7 +744,7 @@ function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
       card: {
         header: { title: { tag: 'plain_text', content: vars.title } },
         elements: [
-          { tag: 'markdown', content: '**' + vars.projectName + ' > ' + vars.taskName + '**\n' + vars.content },
+          { tag: 'markdown', content: `**${vars.projectName} > ${vars.taskName}**\n${vars.content}` },
         ],
       },
     }
@@ -720,7 +753,7 @@ function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
     return {
       msgtype: 'markdown',
       markdown: {
-        content: '### ' + vars.title + '\n> **' + vars.projectName + ' > ' + vars.taskName + '**\n> ' + vars.content,
+        content: `### ${vars.title}\n> **${vars.projectName} > ${vars.taskName}**\n> ${vars.content}`,
       },
     }
   }
@@ -728,58 +761,62 @@ function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
 }
 
 async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<void> {
-  var payload: string
-  var headers: Record<string, string>
-  var method: string
+  let payload: string
+  let headers: Record<string, string>
+  let method: string
 
   if (channel.type === 'custom') {
-    var vars = buildTemplateVars(entry)
+    const vars = buildTemplateVars(entry)
     payload = renderTemplate(channel.customTemplate!.bodyTemplate, vars)
     headers = channel.customTemplate!.headers
     method = channel.customTemplate!.method || 'POST'
-  } else {
+  }
+  else {
     payload = JSON.stringify(buildPlatformPayload(channel.type, entry))
     headers = { 'Content-Type': 'application/json' }
     method = 'POST'
   }
 
-  var headerArray: Record<string, string>[] = []
-  for (var key in headers) {
-    var obj: Record<string, string> = {}
+  const headerArray: Record<string, string>[] = []
+  for (const key in headers) {
+    const obj: Record<string, string> = {}
     obj[key] = headers[key]
     headerArray.push(obj)
   }
 
   try {
-    var resp = await siyuan.client.fetch('/api/network/forwardProxy', {
+    const resp = await siyuan.client.fetch('/api/network/forwardProxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: channel.url,
-        method: method,
+        method,
         headers: headerArray,
-        payload: payload,
+        payload,
         timeout: 5000,
       }),
     })
 
     if (resp.ok) {
-      var result = await resp.json()
+      const result = await resp.json()
       if (result.code !== 0) {
-        await siyuan.logger.warn('[webhook] forwardProxy failed: code=' + result.code + ' msg=' + result.msg)
-      } else if (result.data && result.data.status >= 400) {
-        await siyuan.logger.warn('[webhook] target returned status=' + result.data.status)
+        await siyuan.logger.warn(`[webhook] forwardProxy failed: code=${result.code} msg=${result.msg}`)
       }
-    } else {
-      await siyuan.logger.warn('[webhook] siyuan.client.fetch failed: status=' + resp.status)
+      else if (result.data && result.data.status >= 400) {
+        await siyuan.logger.warn(`[webhook] target returned status=${result.data.status}`)
+      }
     }
-  } catch (e) {
-    await siyuan.logger.warn('[webhook] send failed: ' + String(e))
+    else {
+      await siyuan.logger.warn(`[webhook] siyuan.client.fetch failed: status=${resp.status}`)
+    }
+  }
+  catch (e) {
+    await siyuan.logger.warn(`[webhook] send failed: ${String(e)}`)
   }
 }
 
 export function initWebhook(): void {
-  setRebuildReminderSchedule(function () {
+  setRebuildReminderSchedule(() => {
     void (async function () {
       await loadWebhookConfig()
     })()
@@ -799,6 +836,7 @@ git commit -m "feat(kernel): add webhook notification dispatcher with dingtalk/f
 ## 任务 6：内核 RPC API
 
 **文件：**
+
 - 创建：`src/kernel/rpc.ts`
 - 创建：`src/kernel/pomodoro.ts`
 
@@ -806,10 +844,10 @@ git commit -m "feat(kernel): add webhook notification dispatcher with dingtalk/f
 
 ```typescript
 import type { TimerEntry } from './types'
-import { registerTimer, cancelTimer, getActiveTimers } from './scheduler'
+import { cancelTimer, getActiveTimers, registerTimer } from './scheduler'
 
-export function handleRegisterTimer(params: { id: string; type: string; endTime: number; metadata: any }): any {
-  var entry: TimerEntry = {
+export function handleRegisterTimer(params: { id: string, type: string, endTime: number, metadata: any }): any {
+  const entry: TimerEntry = {
     id: params.id,
     type: params.type as TimerEntry['type'],
     endTime: params.endTime,
@@ -831,7 +869,7 @@ export function handleCancelTimer(params: { id: string }): any {
 }
 
 export function handleCancelTimersByType(params: { type: string }): any {
-  var { cancelTimersByType: cancelByType } = require('./scheduler')
+  const { cancelTimersByType: cancelByType } = require('./scheduler')
   cancelByType(params.type)
   return { ok: true }
 }
@@ -848,10 +886,10 @@ export function handlePing(): any {
 注意：QuickJS/goja 不支持 `require()`，需要改为直接 import。修正：
 
 ```typescript
-import { registerTimer, cancelTimer, getActiveTimers, cancelTimersByType } from './scheduler'
+import { cancelTimer, cancelTimersByType, getActiveTimers, registerTimer } from './scheduler'
 
-export function handleRegisterTimer(params: { id: string; type: string; endTime: number; metadata: any }): any {
-  var entry: TimerEntry = {
+export function handleRegisterTimer(params: { id: string, type: string, endTime: number, metadata: any }): any {
+  const entry: TimerEntry = {
     id: params.id,
     type: params.type as TimerEntry['type'],
     endTime: params.endTime,
@@ -889,7 +927,7 @@ export function handlePing(): any {
 - [ ] **步骤 2：创建 `src/kernel/rpc.ts`**
 
 ```typescript
-import { handlePing, handleRegisterTimer, handleRegisterTimers, handleCancelTimer, handleCancelTimersByType, handleGetActiveTimers } from './pomodoro'
+import { handleCancelTimer, handleCancelTimersByType, handleGetActiveTimers, handlePing, handleRegisterTimer, handleRegisterTimers } from './pomodoro'
 
 export function initRpcApi(): void {
   siyuan.rpc.bind('ping', handlePing, '心跳检测')
@@ -913,6 +951,7 @@ git commit -m "feat(kernel): add RPC API for timer registration and management"
 ## 任务 7：MCP 服务迁移
 
 **文件：**
+
 - 创建：`src/kernel/mcpTools.ts`（从 `src/mcp/kernelTools.ts` 迁移）
 - 创建：`src/kernel/mcp.ts`（从 `src/mcp/kernel.ts` 重构）
 
@@ -936,19 +975,18 @@ git commit -m "feat(kernel): migrate MCP service from src/mcp/ to src/kernel/"
 ## 任务 8：内核入口
 
 **文件：**
+
 - 创建：`src/kernel/index.ts`
 - 修改：`vite.kernel.config.ts`
 
 - [ ] **步骤 1：创建 `src/kernel/index.ts`**
 
 ```typescript
-import { initScheduler, stopScheduler, loadTimerRegistry, persistTimerRegistry } from './scheduler'
-import { initReminderScheduler, handleFsNotify } from './reminder'
-import { initRpcApi } from './rpc'
 import { initMcpServer } from './mcp'
-import { dispatchNotification, loadWebhookConfig, initWebhook } from './webhook'
-import { setDispatchNotification, setRebuildReminderSchedule } from './scheduler'
-import { rebuildReminderSchedule, setReloadWebhookConfig } from './reminder'
+import { handleFsNotify, initReminderScheduler, rebuildReminderSchedule, setReloadWebhookConfig } from './reminder'
+import { initRpcApi } from './rpc'
+import { initScheduler, loadTimerRegistry, persistTimerRegistry, setDispatchNotification, setRebuildReminderSchedule, stopScheduler } from './scheduler'
+import { dispatchNotification, initWebhook, loadWebhookConfig } from './webhook'
 
 siyuan.plugin.lifecycle.onrunning = async function () {
   await siyuan.logger.info('[kernel] initializing...')
@@ -966,7 +1004,7 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   initRpcApi()
   initMcpServer()
 
-  siyuan.event.handler = function (event: { type: string; detail: any }) {
+  siyuan.event.handler = function (event: { type: string, detail: any }) {
     handleFsNotify(event)
   }
 
@@ -996,8 +1034,8 @@ siyuan.plugin.lifecycle.onunload = async function () {
 将入口从 `src/mcp/kernel.ts` 改为 `src/kernel/index.ts`：
 
 ```typescript
-import { defineConfig } from 'vite'
 import { resolve } from 'node:path'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   resolve: {
@@ -1042,6 +1080,7 @@ git commit -m "feat(kernel): add kernel entry point and update build config"
 ## 任务 9：前端数据缓存重构
 
 **文件：**
+
 - 重构：`src/mcp/mcpCacheWriter.ts` → `src/mcp/kernelDataWriter.ts`
 - 修改：`src/stores/projectStore.ts`
 
@@ -1078,6 +1117,7 @@ git commit -m "refactor: rename mcpCacheWriter to kernelDataWriter with reminder
 ## 任务 10：前端 useKernelTimer composable
 
 **文件：**
+
 - 创建：`src/composables/useKernelTimer.ts`
 - 修改：`src/utils/eventBus.ts`
 
@@ -1096,7 +1136,7 @@ KERNEL_DATE_CHANGED = 'kernel:date-changed'
 
 ```typescript
 import { ref } from 'vue'
-import { Events, eventBus } from '@/utils/eventBus'
+import { eventBus, Events } from '@/utils/eventBus'
 
 const PLUGIN_NAME = 'siyuan-plugin-bullet-journal'
 export const kernelAvailable = ref(false)
@@ -1126,7 +1166,8 @@ export async function checkKernelAvailable(): Promise<boolean> {
   try {
     await rpcCall('ping')
     kernelAvailable.value = true
-  } catch {
+  }
+  catch {
     kernelAvailable.value = false
   }
   return kernelAvailable.value
@@ -1187,6 +1228,7 @@ git commit -m "feat: add useKernelTimer composable with RPC client and WebSocket
 ## 任务 11：reminderService 改造
 
 **文件：**
+
 - 修改：`src/services/reminderService.ts`
 
 - [ ] **步骤 1：在 `reminderService.ts` 中追加内核分支**
@@ -1213,6 +1255,7 @@ git commit -m "feat: add kernel RPC branch to reminderService with fallback"
 ## 任务 12：pomodoroStore 改造
 
 **文件：**
+
 - 修改：`src/stores/pomodoroStore.ts`
 
 - [ ] **步骤 1：在 pomodoroStore 各方法末尾追加 RPC 调用**
@@ -1253,6 +1296,7 @@ git commit -m "feat: add kernel RPC integration to pomodoroStore"
 ## 任务 13：Webhook 设置 UI
 
 **文件：**
+
 - 修改：`src/stores/settingsStore.ts`
 - 修改：`src/components/settings/SettingsDialog.vue`
 - 创建：`src/components/settings/WebhookConfigSection.vue`
@@ -1274,6 +1318,7 @@ webhookConfig: {
 - [ ] **步骤 3：创建 `WebhookConfigSection.vue`**
 
 参考 `AiConfigSection.vue` 的供应商卡片列表模式，实现：
+
 - 总开关
 - Channel 卡片列表（名称 + 类型标签 + 启用开关 + 编辑/删除按钮）
 - 添加 Channel 按钮
@@ -1282,6 +1327,7 @@ webhookConfig: {
 - [ ] **步骤 4：创建 `WebhookChannelEditForm.vue`**
 
 参考 `AiProviderEditForm.vue` 的布局，实现：
+
 - 渠道名称 input
 - 类型选择 SySelect（钉钉/飞书/企微/自定义）
 - Webhook URL input
@@ -1303,6 +1349,7 @@ git commit -m "feat: add webhook notification settings UI"
 ## 任务 14：插件入口集成
 
 **文件：**
+
 - 修改：`src/index.ts`
 
 - [ ] **步骤 1：在插件 `onload()` 中初始化 useKernelTimer**
@@ -1356,6 +1403,7 @@ git commit -m "feat: integrate kernel timer into plugin lifecycle"
 ## 任务 15：清理旧文件
 
 **文件：**
+
 - 删除：`src/mcp/kernel.ts`
 - 删除：`src/mcp/kernelTools.ts`
 
@@ -1392,6 +1440,7 @@ git commit -m "refactor: remove old kernel.ts and kernelTools.ts (migrated to sr
 - [ ] **步骤 2：验证 RPC ping**
 
 通过浏览器控制台调用：
+
 ```javascript
 fetch('/api/plugin/rpc/siyuan-plugin-bullet-journal', {
   method: 'POST',

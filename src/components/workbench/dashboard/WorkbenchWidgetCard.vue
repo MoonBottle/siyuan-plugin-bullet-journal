@@ -1,13 +1,25 @@
 <template>
-  <article class="workbench-widget-card" data-testid="workbench-widget-card">
-    <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
+  <article
+    class="workbench-widget-card"
+    data-testid="workbench-widget-card"
+  >
+    <span
+      class="workbench-widget-card__drag"
+      aria-hidden="true"
+    >::</span>
     <header class="workbench-widget-card__header">
       <div class="workbench-widget-card__title-wrap">
         <span class="workbench-widget-card__title">{{ title }}</span>
-        <span v-if="subtitle" class="workbench-widget-card__subtitle">{{ subtitle }}</span>
+        <span
+          v-if="subtitle"
+          class="workbench-widget-card__subtitle"
+        >{{ subtitle }}</span>
       </div>
       <div class="workbench-widget-card__controls">
-        <div ref="menuWrapRef" class="workbench-widget-card__menu-wrap">
+        <div
+          ref="menuWrapRef"
+          class="workbench-widget-card__menu-wrap"
+        >
           <button
             class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
             data-testid="workbench-widget-menu-trigger"
@@ -58,60 +70,64 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue';
-import { t } from '@/i18n';
+import {
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
 
 defineProps<{
-  title: string;
-  subtitle?: string;
-  showConfigure?: boolean;
-}>();
+  title: string
+  subtitle?: string
+  showConfigure?: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'configure'): void;
-  (event: 'rename'): void;
-  (event: 'delete'): void;
-}>();
+  (event: 'configure'): void
+  (event: 'rename'): void
+  (event: 'delete'): void
+}>()
 
-const isMenuOpen = ref(false);
-const menuWrapRef = ref<HTMLElement>();
+const isMenuOpen = ref(false)
+const menuWrapRef = ref<HTMLElement>()
 
 function toggleMenu() {
-  isMenuOpen.value = !isMenuOpen.value;
+  isMenuOpen.value = !isMenuOpen.value
 }
 
 function handleRename() {
-  isMenuOpen.value = false;
-  emit('rename');
+  isMenuOpen.value = false
+  emit('rename')
 }
 
 function handleConfigure() {
-  isMenuOpen.value = false;
-  emit('configure');
+  isMenuOpen.value = false
+  emit('configure')
 }
 
 function handleDelete() {
-  isMenuOpen.value = false;
-  emit('delete');
+  isMenuOpen.value = false
+  emit('delete')
 }
 
 function handleClickOutside(e: MouseEvent) {
   if (!menuWrapRef.value?.contains(e.target as Node)) {
-    isMenuOpen.value = false;
+    isMenuOpen.value = false
   }
 }
 
 watch(isMenuOpen, (val) => {
   if (val) {
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside)
   } else {
-    document.removeEventListener('mousedown', handleClickOutside);
+    document.removeEventListener('mousedown', handleClickOutside)
   }
-});
+})
 
 onUnmounted(() => {
-  document.removeEventListener('mousedown', handleClickOutside);
-});
+  document.removeEventListener('mousedown', handleClickOutside)
+})
 </script>
 
 <style lang="scss" scoped>

@@ -3,20 +3,30 @@
     <div class="block__icons">
       <!-- 左侧：甘特图控件 -->
       <label class="show-items">
-        <input type="checkbox" v-model="showItems" />
+        <input
+          v-model="showItems"
+          type="checkbox"
+        />
         {{ t('gantt').showItems }}
       </label>
       <div class="date-filter">
         <span>{{ t('gantt').dateFilter }}</span>
-        <input type="date" v-model="startDate" />
+        <input
+          v-model="startDate"
+          type="date"
+        />
         <span>{{ t('gantt').to }}</span>
-        <input type="date" v-model="endDate" />
+        <input
+          v-model="endDate"
+          type="date"
+        />
       </div>
       <div class="view-modes">
         <button
           v-for="mode in viewModes"
           :key="mode.value"
-          :class="['view-mode-btn', { active: viewMode === mode.value }]"
+          class="view-mode-btn"
+          :class="[{ active: viewMode === mode.value }]"
           @click="viewMode = mode.value"
         >
           {{ mode.label }}
@@ -51,43 +61,74 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
-import { showMessage } from '@/utils/dialog';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildViewDebugContext } from '@/utils/viewDebug';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import GanttView from '@/components/gantt/GanttView.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import { showMessage } from '@/utils/dialog'
 
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import GanttView from '@/components/gantt/GanttView.vue';
-import { t } from '@/i18n';
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import { buildViewDebugContext } from '@/utils/viewDebug'
 
-const plugin = usePlugin() as any;
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
+const plugin = usePlugin() as any
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
 
-const selectedGroup = ref('');
-const showItems = ref(false);
-const startDate = ref('');
-const endDate = ref('');
-const viewMode = ref<'day' | 'week' | 'month'>('day');
+const selectedGroup = ref('')
+const showItems = ref(false)
+const startDate = ref('')
+const endDate = ref('')
+const viewMode = ref<'day' | 'week' | 'month'>('day')
 
-const viewModes: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
-  { value: 'day', label: t('gantt').day },
-  { value: 'week', label: t('gantt').week },
-  { value: 'month', label: t('gantt').month }
-];
+const viewModes: Array<{ value: 'day' | 'week' | 'month', label: string }> = [
+  {
+    value: 'day',
+    label: t('gantt').day,
+  },
+  {
+    value: 'week',
+    label: t('gantt').week,
+  },
+  {
+    value: 'month',
+    label: t('gantt').month,
+  },
+]
 
-const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
+const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value))
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
-  settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
+  settingsStore.groups.forEach((g) => {
+    options.push({
+      value: g.id,
+      label: g.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
@@ -95,41 +136,41 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     ...buildViewDebugContext('GanttTab', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
-  });
-  if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  })
+  if (!plugin) return
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock']
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
-    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
-    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
+    const patch: Record<string, unknown> = {}
+    storeKeys.forEach((k) => { if (payload[k] !== undefined) patch[k] = payload[k] })
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch)
   } else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-  await nextTick();
-};
+  await nextTick()
+}
 
 // 事件取消订阅函数
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('GanttTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('GanttTab', plugin))
   // 从插件加载设置
-  settingsStore.loadFromPlugin();
+  settingsStore.loadFromPlugin()
 
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
-    selectedGroup.value = settingsStore.defaultGroup;
+    selectedGroup.value = settingsStore.defaultGroup
   }
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
@@ -137,41 +178,46 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('GanttTab', plugin),
-          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
-        });
-        return handleDataRefresh(payload);
+          data: payload
+            ? {
+                type: 'SETTINGS_CHANGED',
+                ...payload,
+              }
+            : { type: 'SETTINGS_CHANGED' },
+        })
+        return handleDataRefresh(payload)
       },
       viewName: 'GanttTab',
-    });
+    })
   } catch {
     // 忽略
   }
-});
+})
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('GanttTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('GanttTab', plugin))
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 
 const handleRefresh = async () => {
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'gantt-tab:manual-refresh',
-    });
-    showMessage(t('common').dataRefreshed);
+    })
+    showMessage(t('common').dataRefreshed)
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>

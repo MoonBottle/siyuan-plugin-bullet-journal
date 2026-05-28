@@ -1,9 +1,15 @@
 <template>
   <div class="mobile-active-timer">
     <!-- Timer Circle Display -->
-    <div class="timer-display" :class="{ 'is-paused': isPaused }">
+    <div
+      class="timer-display"
+      :class="{ 'is-paused': isPaused }"
+    >
       <div class="timer-circle">
-        <svg class="progress-ring" viewBox="0 0 120 120">
+        <svg
+          class="progress-ring"
+          viewBox="0 0 120 120"
+        >
           <circle
             class="progress-ring-bg"
             cx="60"
@@ -20,14 +26,27 @@
           />
         </svg>
         <div class="timer-content">
-          <div class="time-remaining">{{ formattedTime }}</div>
-          <div v-if="!isStopwatch" class="focused-time-badge">
+          <div class="time-remaining">
+            {{ formattedTime }}
+          </div>
+          <div
+            v-if="!isStopwatch"
+            class="focused-time-badge"
+          >
             {{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}
           </div>
-          <div v-else class="focused-time-badge">
+          <div
+            v-else
+            class="focused-time-badge"
+          >
             {{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}
           </div>
-          <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
+          <div
+            v-if="isPaused"
+            class="pause-badge"
+          >
+            {{ t('pomodoroActive').pauseBadge }}
+          </div>
         </div>
       </div>
     </div>
@@ -35,7 +54,10 @@
     <!-- Item Info Cards -->
     <div class="item-info-section">
       <!-- Project Card -->
-      <div v-if="currentItem?.project" class="info-card">
+      <div
+        v-if="currentItem?.project"
+        class="info-card"
+      >
         <div class="info-card-header">
           <span class="info-card-label">{{ t('todo').project }}</span>
         </div>
@@ -46,10 +68,17 @@
       </div>
 
       <!-- Task Card -->
-      <div v-if="currentItem?.task" class="info-card">
+      <div
+        v-if="currentItem?.task"
+        class="info-card"
+      >
         <div class="info-card-header">
           <span class="info-card-label">{{ t('todo').task }}</span>
-          <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
+          <span
+            v-if="currentItem.task.level"
+            class="task-level-badge"
+            :class="`level-${currentItem.task.level.toLowerCase()}`"
+          >
             {{ currentItem.task.level }}
           </span>
         </div>
@@ -74,25 +103,61 @@
     <!-- Timer Actions -->
     <div class="timer-actions">
       <template v-if="!isPaused">
-        <button class="pause-btn" @click="pausePomodoro">
-          <svg class="btn-icon" viewBox="0 0 24 24">
-            <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
-            <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+        <button
+          class="pause-btn"
+          @click="pausePomodoro"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+          >
+            <rect
+              x="6"
+              y="4"
+              width="4"
+              height="16"
+              fill="currentColor"
+            />
+            <rect
+              x="14"
+              y="4"
+              width="4"
+              height="16"
+              fill="currentColor"
+            />
           </svg>
           {{ t('pomodoroActive').pause }}
         </button>
       </template>
       <template v-else>
-        <button class="resume-btn" @click="resumePomodoro">
-          <svg class="btn-icon" viewBox="0 0 24 24">
-            <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+        <button
+          class="resume-btn"
+          @click="resumePomodoro"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+          >
+            <polygon
+              points="5,3 19,12 5,21"
+              fill="currentColor"
+            />
           </svg>
           {{ t('pomodoroActive').resume }}
         </button>
       </template>
-      <button class="end-btn" @click="endPomodoro">
-        <svg class="btn-icon" viewBox="0 0 24 24">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+      <button
+        class="end-btn"
+        @click="endPomodoro"
+      >
+        <svg
+          class="btn-icon"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+            fill="currentColor"
+          />
         </svg>
         {{ t('pomodoroActive').endFocus }}
       </button>
@@ -111,148 +176,154 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { usePomodoroStore, useProjectStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import type { Item } from '@/types/models';
-import { t } from '@/i18n';
-import MobileConfirmDrawer from '../../confirm/MobileConfirmDrawer.vue';
-import { getProgressDirection } from '@/utils/progressDirection';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+} from '@/stores'
+import { getProgressDirection } from '@/utils/progressDirection'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import MobileConfirmDrawer from '../../confirm/MobileConfirmDrawer.vue'
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const plugin = usePlugin() as any;
-const pinia = getSharedPinia();
-const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
-const projectStore = pinia ? useProjectStore(pinia) : null;
+const plugin = usePlugin() as any
+const pinia = getSharedPinia()
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null
+const projectStore = pinia ? useProjectStore(pinia) : null
 
 // Prevent double-click execution lock
-const isProcessing = ref(false);
+const isProcessing = ref(false)
 
 // Confirm drawer state
-const showConfirmDrawer = ref(false);
-const confirmTitle = ref('');
-const confirmMessage = ref('');
-const onConfirmCallback = ref<(() => void) | null>(null);
+const showConfirmDrawer = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const onConfirmCallback = ref<(() => void) | null>(null)
 
 // Circle circumference
-const radius = 54;
-const circumference = 2 * Math.PI * radius;
+const radius = 54
+const circumference = 2 * Math.PI * radius
 
 // Get current item from projectStore
 const currentItem = computed<Item | undefined>(() => {
-  if (!projectStore) return undefined;
-  const blockId = pomodoroStore?.activePomodoro?.blockId;
-  if (!blockId) return undefined;
-  return projectStore.getItemByBlockId(blockId);
-});
+  if (!projectStore) return undefined
+  const blockId = pomodoroStore?.activePomodoro?.blockId
+  if (!blockId) return undefined
+  return projectStore.getItemByBlockId(blockId)
+})
 
 // Current item content
 const itemContent = computed(() => {
-  return currentItem.value?.content || pomodoroStore?.activePomodoro?.itemContent || '未知事项';
-});
+  return currentItem.value?.content || pomodoroStore?.activePomodoro?.itemContent || '未知事项'
+})
 
 // Pause state
 const isPaused = computed(() => {
-  return pomodoroStore?.activePomodoro?.isPaused || false;
-});
+  return pomodoroStore?.activePomodoro?.isPaused || false
+})
 
 // Stopwatch mode
-const isStopwatch = computed(() => pomodoroStore?.isStopwatch || false);
+const isStopwatch = computed(() => pomodoroStore?.isStopwatch || false)
 
 // Progress direction
-const progressDirection = computed(() => getProgressDirection(pomodoroStore?.activePomodoro?.timerMode));
+const progressDirection = computed(() => getProgressDirection(pomodoroStore?.activePomodoro?.timerMode))
 
 // Accumulated minutes
 const accumulatedMinutes = computed(() => {
-  if (!pomodoroStore?.activePomodoro) return 0;
-  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60);
-});
+  if (!pomodoroStore?.activePomodoro) return 0
+  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60)
+})
 
 // Target minutes
 const targetMinutes = computed(() => {
-  return pomodoroStore?.activePomodoro?.targetDurationMinutes || 25;
-});
+  return pomodoroStore?.activePomodoro?.targetDurationMinutes || 25
+})
 
 // Stopwatch reference seconds (25 minutes)
-const stopwatchReferenceSeconds = 25 * 60;
+const stopwatchReferenceSeconds = 25 * 60
 
 // Formatted time (MM:SS)
 const formattedTime = computed(() => {
-  if (!pomodoroStore) return '00:00';
-  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-});
+  if (!pomodoroStore) return '00:00'
+  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+})
 
 // Progress ring stroke offset
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore?.activePomodoro) {
-    return progressDirection.value === 'shrink' ? 0 : circumference;
+    return progressDirection.value === 'shrink' ? 0 : circumference
   }
 
-  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds
   const totalSeconds = isStopwatch.value
     ? stopwatchReferenceSeconds
-    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  const progress = Math.min(1, elapsedSeconds / totalSeconds);
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60
+  const progress = Math.min(1, elapsedSeconds / totalSeconds)
 
   return progressDirection.value === 'shrink'
     ? circumference * progress
-    : circumference * (1 - progress);
-});
+    : circumference * (1 - progress)
+})
 
 // Get status emoji
 const getStatusEmoji = (item?: Item): string => {
-  if (!item) return '⏳';
-  if (item.status === 'completed') return '✅';
-  if (item.status === 'abandoned') return '❌';
-  return '⏳';
-};
+  if (!item) return '⏳'
+  if (item.status === 'completed') return '✅'
+  if (item.status === 'abandoned') return '❌'
+  return '⏳'
+}
 
 // Pause pomodoro
 const pausePomodoro = async () => {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
+  if (isProcessing.value) return
+  isProcessing.value = true
   try {
-    await pomodoroStore?.pausePomodoro(plugin);
+    await pomodoroStore?.pausePomodoro(plugin)
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 // Resume pomodoro
 const resumePomodoro = async () => {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
+  if (isProcessing.value) return
+  isProcessing.value = true
   try {
-    await pomodoroStore?.resumePomodoro(plugin);
+    await pomodoroStore?.resumePomodoro(plugin)
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 // End pomodoro
 const endPomodoro = () => {
-  confirmTitle.value = t('pomodoroActive').confirmEndTitle;
-  confirmMessage.value = t('pomodoroActive').confirmEndMessage;
+  confirmTitle.value = t('pomodoroActive').confirmEndTitle
+  confirmMessage.value = t('pomodoroActive').confirmEndMessage
   onConfirmCallback.value = async () => {
-    await pomodoroStore?.completePomodoro(plugin);
-    emit('close');
-  };
-  showConfirmDrawer.value = true;
-};
+    await pomodoroStore?.completePomodoro(plugin)
+    emit('close')
+  }
+  showConfirmDrawer.value = true
+}
 
 const handleConfirm = () => {
   if (onConfirmCallback.value) {
-    onConfirmCallback.value();
+    onConfirmCallback.value()
   }
-  showConfirmDrawer.value = false;
-};
+  showConfirmDrawer.value = false
+}
 </script>
 
 <style lang="scss" scoped>
@@ -308,7 +379,10 @@ const handleConfirm = () => {
   stroke: var(--b3-theme-primary);
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear, stroke 0.3s, opacity 0.3s;
+  transition:
+    stroke-dashoffset 1s linear,
+    stroke 0.3s,
+    opacity 0.3s;
 }
 
 .timer-content {
@@ -411,17 +485,17 @@ const handleConfirm = () => {
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
-    color: #4CAF50;
+    color: #4caf50;
   }
 
   &.level-l2 {
     background: rgba(255, 152, 0, 0.15);
-    color: #FF9800;
+    color: #ff9800;
   }
 
   &.level-l3 {
     background: rgba(33, 150, 243, 0.15);
-    color: #2196F3;
+    color: #2196f3;
   }
 }
 

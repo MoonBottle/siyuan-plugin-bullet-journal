@@ -1,7 +1,10 @@
 <template>
   <!-- Desktop Version -->
   <template v-if="!isMobile">
-    <SySettingsSection icon="iconCalendar" :title="t('settings').calendar.title">
+    <SySettingsSection
+      icon="iconCalendar"
+      :title="t('settings').calendar.title"
+    >
       <SySettingItemList>
         <SySettingItem
           :label="t('settings').calendar.defaultView"
@@ -40,9 +43,13 @@
     <div class="ios-settings-content">
       <!-- Header -->
       <div class="ios-group-header">
-        <div class="header-icon">📅</div>
+        <div class="header-icon">
+          📅
+        </div>
         <div class="header-info">
-          <div class="header-title">{{ t('settings').calendar.title }}</div>
+          <div class="header-title">
+            {{ t('settings').calendar.title }}
+          </div>
         </div>
       </div>
 
@@ -50,40 +57,78 @@
       <div class="ios-group">
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').calendar.defaultView }}</div>
+            <div class="cell-title">
+              {{ t('settings').calendar.defaultView }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <select :value="calendarDefaultView" class="ios-select" @change="$emit('update:calendarDefaultView', ($event.target as HTMLSelectElement).value)">
-              <option value="dayGridMonth">{{ t('calendar').month }}</option>
-              <option value="timeGridWeek">{{ t('calendar').week }}</option>
-              <option value="timeGridDay">{{ t('calendar').day }}</option>
-              <option value="listWeek">{{ t('calendar').list }}</option>
+            <select
+              :value="calendarDefaultView"
+              class="ios-select"
+              @change="$emit('update:calendarDefaultView', ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="dayGridMonth">
+                {{ t('calendar').month }}
+              </option>
+              <option value="timeGridWeek">
+                {{ t('calendar').week }}
+              </option>
+              <option value="timeGridDay">
+                {{ t('calendar').day }}
+              </option>
+              <option value="listWeek">
+                {{ t('calendar').list }}
+              </option>
             </select>
           </div>
         </div>
-        <div class="cell-footer">{{ t('settings').calendar.defaultViewDesc }}</div>
+        <div class="cell-footer">
+          {{ t('settings').calendar.defaultViewDesc }}
+        </div>
       </div>
 
       <!-- Pomodoro Display Group -->
       <div class="ios-group">
-        <div class="ios-cell" @click="$emit('update:showPomodoroBlocks', !showPomodoroBlocks)">
+        <div
+          class="ios-cell"
+          @click="$emit('update:showPomodoroBlocks', !showPomodoroBlocks)"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').calendar.showPomodoroBlocks }}</div>
-            <div class="cell-subtitle">{{ t('settings').calendar.showPomodoroBlocksDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').calendar.showPomodoroBlocks }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').calendar.showPomodoroBlocksDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: showPomodoroBlocks ?? true }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: showPomodoroBlocks ?? true }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
         </div>
-        <div class="ios-cell" @click="$emit('update:showPomodoroTotal', !showPomodoroTotal)">
+        <div
+          class="ios-cell"
+          @click="$emit('update:showPomodoroTotal', !showPomodoroTotal)"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').calendar.showPomodoroTotal }}</div>
-            <div class="cell-subtitle">{{ t('settings').calendar.showPomodoroTotalDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').calendar.showPomodoroTotal }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').calendar.showPomodoroTotalDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: showPomodoroTotal ?? true }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: showPomodoroTotal ?? true }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
@@ -94,32 +139,44 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import SySettingsSection from './SySettingsSection.vue'
 
 defineProps<{
-  calendarDefaultView: string;
-  showPomodoroBlocks?: boolean;
-  showPomodoroTotal?: boolean;
-  isMobile?: boolean;
-}>();
+  calendarDefaultView: string
+  showPomodoroBlocks?: boolean
+  showPomodoroTotal?: boolean
+  isMobile?: boolean
+}>()
 
 defineEmits<{
-  'update:calendarDefaultView': [value: string];
-  'update:showPomodoroBlocks': [value: boolean];
-  'update:showPomodoroTotal': [value: boolean];
-}>();
+  'update:calendarDefaultView': [value: string]
+  'update:showPomodoroBlocks': [value: boolean]
+  'update:showPomodoroTotal': [value: boolean]
+}>()
 
 const viewOptions = [
-  { value: 'dayGridMonth', label: t('calendar').month },
-  { value: 'timeGridWeek', label: t('calendar').week },
-  { value: 'timeGridDay', label: t('calendar').day },
-  { value: 'listWeek', label: t('calendar').list }
-];
+  {
+    value: 'dayGridMonth',
+    label: t('calendar').month,
+  },
+  {
+    value: 'timeGridWeek',
+    label: t('calendar').week,
+  },
+  {
+    value: 'timeGridDay',
+    label: t('calendar').day,
+  },
+  {
+    value: 'listWeek',
+    label: t('calendar').list,
+  },
+]
 </script>
 
 <style lang="scss" scoped>
@@ -134,15 +191,15 @@ const viewOptions = [
   display: flex;
   gap: 12px;
   padding: 16px 0 20px;
-  
+
   .header-icon {
     font-size: 36px;
   }
-  
+
   .header-info {
     flex: 1;
   }
-  
+
   .header-title {
     font-size: 20px;
     font-weight: 600;
@@ -160,45 +217,45 @@ const viewOptions = [
   padding: 12px 16px;
   background: #fff;
   min-height: 44px;
-  
+
   &:first-child {
     border-radius: 10px 10px 0 0;
   }
-  
+
   &:last-child {
     border-radius: 0 0 10px 10px;
   }
-  
+
   &:only-child {
     border-radius: 10px;
   }
-  
+
   & + .ios-cell {
     border-top: 0.5px solid #e5e5ea;
   }
-  
+
   &:active {
     background: #f2f2f7;
   }
-  
+
   .cell-content {
     flex: 1;
     min-width: 0;
   }
-  
+
   .cell-title {
     font-size: 16px;
     color: #000;
     line-height: 22px;
   }
-  
+
   .cell-subtitle {
     font-size: 13px;
     color: #6c6c70;
     line-height: 18px;
     margin-top: 2px;
   }
-  
+
   .cell-accessory {
     display: flex;
     align-items: center;
@@ -209,7 +266,7 @@ const viewOptions = [
 
 .ios-cell-select {
   border-radius: 10px !important;
-  
+
   .cell-content {
     padding-right: 8px;
   }
@@ -231,15 +288,15 @@ const viewOptions = [
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &.on {
     background: #34c759;
-    
+
     .switch-thumb {
       transform: translateX(20px);
     }
   }
-  
+
   .switch-thumb {
     width: 27px;
     height: 27px;
@@ -264,7 +321,7 @@ const viewOptions = [
   text-align: right;
   direction: rtl;
   cursor: pointer;
-  
+
   &:focus {
     outline: none;
   }

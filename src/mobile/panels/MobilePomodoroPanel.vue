@@ -32,15 +32,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { usePomodoroStore } from '@/stores';
-import type { PendingPomodoroCompletion } from '@/types/models';
-import { eventBus, Events } from '@/utils/eventBus';
-import MobileActiveTimer from '@/mobile/drawers/pomodoro/sub/MobileActiveTimer.vue';
-import MobileBreakTimer from '@/mobile/drawers/pomodoro/sub/MobileBreakTimer.vue';
-import MobileComplete from '@/mobile/drawers/pomodoro/sub/MobileComplete.vue';
-import MobileRestDialog from '@/mobile/drawers/pomodoro/sub/MobileRestDialog.vue';
-import MobileTimerStarter from '@/mobile/drawers/pomodoro/sub/MobileTimerStarter.vue';
+import type { PendingPomodoroCompletion } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import MobileActiveTimer from '@/mobile/drawers/pomodoro/sub/MobileActiveTimer.vue'
+import MobileBreakTimer from '@/mobile/drawers/pomodoro/sub/MobileBreakTimer.vue'
+import MobileComplete from '@/mobile/drawers/pomodoro/sub/MobileComplete.vue'
+import MobileRestDialog from '@/mobile/drawers/pomodoro/sub/MobileRestDialog.vue'
+import MobileTimerStarter from '@/mobile/drawers/pomodoro/sub/MobileTimerStarter.vue'
+import { usePomodoroStore } from '@/stores'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
 
 const props = withDefaults(defineProps<{
   initialContext?: {
@@ -48,49 +56,49 @@ const props = withDefaults(defineProps<{
   } | null
 }>(), {
   initialContext: null,
-});
+})
 
-const pomodoroStore = usePomodoroStore();
+const pomodoroStore = usePomodoroStore()
 
-const showComplete = ref(false);
-const pendingCompletion = ref<PendingPomodoroCompletion | null>(null);
-const showRestDialog = ref(false);
+const showComplete = ref(false)
+const pendingCompletion = ref<PendingPomodoroCompletion | null>(null)
+const showRestDialog = ref(false)
 
-const preselectedBlockId = computed(() => props.initialContext?.blockId ?? '');
+const preselectedBlockId = computed(() => props.initialContext?.blockId ?? '')
 
-let unsubscribeCompletion: (() => void) | null = null;
+let unsubscribeCompletion: (() => void) | null = null
 
 onMounted(() => {
   unsubscribeCompletion = eventBus.on(
     Events.POMODORO_PENDING_COMPLETION,
     (pending: PendingPomodoroCompletion) => {
-      pendingCompletion.value = pending;
-      showComplete.value = true;
+      pendingCompletion.value = pending
+      showComplete.value = true
     },
-  );
-});
+  )
+})
 
 onUnmounted(() => {
-  unsubscribeCompletion?.();
-});
+  unsubscribeCompletion?.()
+})
 
 function handleCompleteClose() {
-  showComplete.value = false;
-  pendingCompletion.value = null;
+  showComplete.value = false
+  pendingCompletion.value = null
 }
 
 function handleCompleteSave() {
-  showComplete.value = false;
-  pendingCompletion.value = null;
-  showRestDialog.value = true;
+  showComplete.value = false
+  pendingCompletion.value = null
+  showRestDialog.value = true
 }
 
 function handleStartBreak(duration: number) {
-  pomodoroStore.startBreak(duration);
+  pomodoroStore.startBreak(duration)
 }
 
 function handleSkipBreak() {
-  showRestDialog.value = false;
+  showRestDialog.value = false
 }
 </script>
 

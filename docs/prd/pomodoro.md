@@ -15,6 +15,7 @@
 #### 1.2.1 作为用户，我需要查看专注统计
 
 **验收标准：**
+
 - 显示今日番茄数（今日完成的番茄钟数量）
 - 显示今日专注时长（格式：25m 或 1h 30m）
 - 显示总番茄数（所有时间累计）
@@ -24,6 +25,7 @@
 #### 1.2.2 作为用户，我需要在笔记中记录番茄钟
 
 **验收标准：**
+
 - 支持手动在事项下方添加番茄钟行
 - 格式：`🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述`
 - 支持列表格式：`- 🍅...` 或 `1. 🍅...`
@@ -32,6 +34,7 @@
 #### 1.2.3 作为用户，我需要使用专注计时功能
 
 **验收标准：**
+
 - 点击"开始专注"按钮打开弹框
 - 弹框分左右两栏：
   - 左侧：选择待办事项（过期事项 + 今天事项）
@@ -46,6 +49,7 @@
 #### 1.2.4 作为用户，我需要专注状态持久化
 
 **验收标准：**
+
 - 开始专注后，状态保存到文件
 - 插件重启后能恢复专注状态
 - 过期的番茄钟自动标记为完成
@@ -59,7 +63,8 @@
 
 ```markdown
 - 工作事项 @2026-03-08
-🍅2026-03-08 15:45:32~15:50:32 专注描述
+  🍅2026-03-08 15:45:32~15:50:32 专注描述
+
 ```
 
 **有暂停的专注（记录实际专注时长）：**
@@ -68,18 +73,20 @@
 🍅5,2026-03-08 15:45:32~15:50:32 专注描述（实际专注5分钟）
 🍅5，2026-03-08 15:45:32~15:50:32 专注描述（中文逗号）
 🍅5, 2026-03-08 15:45:32~15:50:32 专注描述（逗号后空格）
+
 ```
 
-| 元素 | 格式 | 说明 |
-|------|------|------|
-| 标记 | `🍅` | 番茄钟标识 |
+| 元素     | 格式          | 说明                                                                                        |
+| -------- | ------------- | ------------------------------------------------------------------------------------------- |
+| 标记     | `🍅`          | 番茄钟标识                                                                                  |
 | 实际时长 | `N,` 或 `N，` | 实际专注分钟数（可选），支持中英文逗号，逗号后可有空格。用于暂停/继续功能，记录实际专注时间 |
-| 日期 | `YYYY-MM-DD` | 番茄钟日期 |
-| 开始时间 | `HH:mm:ss` | 专注开始时间 |
-| 结束时间 | `HH:mm:ss` | 专注结束时间 |
-| 描述 | 任意文本 | 专注内容描述（可选）|
+| 日期     | `YYYY-MM-DD`  | 番茄钟日期                                                                                  |
+| 开始时间 | `HH:mm:ss`    | 专注开始时间                                                                                |
+| 结束时间 | `HH:mm:ss`    | 专注结束时间                                                                                |
+| 描述     | 任意文本      | 专注内容描述（可选）                                                                        |
 
 **实际专注时长说明：**
+
 - 当专注过程中有暂停时，系统会记录实际专注时长（不含暂停时间）
 - 格式为 `🍅N,` 或 `🍅N，`（N为实际专注分钟数）
 - 实际时长后的逗号支持中英文两种，逗号后可以有可选空格
@@ -108,23 +115,23 @@
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `blockId` | string | 事项块ID（完成时在此块下添加番茄钟记录）|
-| `itemId` | string | 事项ID |
-| `itemContent` | string | 事项内容 |
-| `startTime` | number | 开始时间戳（毫秒）|
-| `targetDurationMinutes` | number | 目标专注时长（分钟）|
-| `accumulatedSeconds` | number | 已累计专注秒数（不含暂停时间）|
-| `isPaused` | boolean | 是否处于暂停状态 |
-| `pauseCount` | number | 暂停次数（用于统计）|
-| `totalPausedSeconds` | number | 总暂停秒数 |
-| `currentPauseStartTime` | number? | 当前暂停开始时间戳（如果有）|
-| `projectId` | string? | 项目ID |
-| `projectName` | string? | 项目名称 |
-| `taskId` | string? | 任务ID |
-| `taskName` | string? | 任务名称 |
-| `taskLevel` | string? | 任务层级（L1/L2/L3）|
+| 字段                    | 类型    | 说明                                     |
+| ----------------------- | ------- | ---------------------------------------- |
+| `blockId`               | string  | 事项块ID（完成时在此块下添加番茄钟记录） |
+| `itemId`                | string  | 事项ID                                   |
+| `itemContent`           | string  | 事项内容                                 |
+| `startTime`             | number  | 开始时间戳（毫秒）                       |
+| `targetDurationMinutes` | number  | 目标专注时长（分钟）                     |
+| `accumulatedSeconds`    | number  | 已累计专注秒数（不含暂停时间）           |
+| `isPaused`              | boolean | 是否处于暂停状态                         |
+| `pauseCount`            | number  | 暂停次数（用于统计）                     |
+| `totalPausedSeconds`    | number  | 总暂停秒数                               |
+| `currentPauseStartTime` | number? | 当前暂停开始时间戳（如果有）             |
+| `projectId`             | string? | 项目ID                                   |
+| `projectName`           | string? | 项目名称                                 |
+| `taskId`                | string? | 任务ID                                   |
+| `taskName`              | string? | 任务名称                                 |
+| `taskLevel`             | string? | 任务层级（L1/L2/L3）                     |
 
 ## 二、技术实现方案
 
@@ -174,16 +181,16 @@ sequenceDiagram
     PomodoroTimerDialog->>User: 显示弹窗（选择事项+设置时长）
     User->>PomodoroTimerDialog: 确认开始专注
     PomodoroTimerDialog->>PomodoroStore: startPomodoro(item, duration, blockId, plugin)
-    
+
     PomodoroStore->>PomodoroStorage: saveActivePomodoro(data)
     PomodoroStorage->>SiYuanAPI: plugin.saveData()
     SiYuanAPI-->>PomodoroStorage: 保存成功
     PomodoroStorage-->>PomodoroStore: 返回保存的数据
-    
+
     PomodoroStore->>PomodoroStore: 启动倒计时定时器
     PomodoroStore->>PomodoroDock: 触发状态更新（通过事件总线）
     PomodoroDock->>User: 显示倒计时和事项信息
-    
+
     alt 正常完成
         PomodoroStore->>PomodoroStore: 倒计时结束
         PomodoroStore->>SiYuanAPI: appendBlock() 创建番茄钟记录
@@ -204,7 +211,7 @@ sequenceDiagram
         PomodoroStorage->>SiYuanAPI: plugin.loadData()
         SiYuanAPI-->>PomodoroStorage: 返回保存的数据
         PomodoroStorage-->>PomodoroStore: 返回 ActivePomodoroData
-        
+
         alt 已过期
             PomodoroStore->>SiYuanAPI: appendBlock() 自动完成记录
             PomodoroStore->>PomodoroStorage: removeActivePomodoro()
@@ -261,26 +268,26 @@ sequenceDiagram
 // Actions
 - startPomodoro(item, durationMinutes, parentBlockId, plugin)
   // 开始专注，保存到文件，启动定时器
-  
+
 - completePomodoro(plugin)
   // 完成专注，创建番茄钟记录块，删除状态文件，播放提示音，显示通知
   // 根据是否有暂停，决定记录格式（是否包含实际专注时长）
-  
+
 - cancelPomodoro(plugin)
   // 取消专注，删除状态文件，清理本地状态
-  
+
 - restorePomodoro(plugin)
   // 从文件恢复专注状态，计算剩余时间，如已过期则自动完成
   // 支持恢复暂停状态
-  
+
 - pausePomodoro(plugin)
   // 暂停专注，停止定时器，记录暂停开始时间，增加暂停计数
   // 保存状态到文件
-  
+
 - resumePomodoro(plugin)
   // 恢复专注，计算本次暂停时长并累加，恢复计时器
   // 保存状态到文件
-  
+
 - endPomodoroEarly(plugin)
   // 提前结束专注（与取消相同，不保存记录）
 ```
@@ -296,7 +303,7 @@ sequenceDiagram
 startTimer() {
   this.timerStartTimestamp = Date.now();
   this.lastAccumulatedSeconds = this.activePomodoro?.accumulatedSeconds || 0;
-  
+
   this.timerInterval = window.setInterval(() => {
     this.updateTimer();
   }, 1000);
@@ -306,14 +313,14 @@ startTimer() {
 updateTimer() {
   const elapsedMs = Date.now() - this.timerStartTimestamp!;
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
-  
+
   // 更新累计专注秒数
   this.activePomodoro.accumulatedSeconds = this.lastAccumulatedSeconds + elapsedSeconds;
-  
+
   // 更新剩余时间
   const targetSeconds = this.activePomodoro.targetDurationMinutes * 60;
   this.activePomodoro.remainingSeconds = Math.max(0, targetSeconds - this.activePomodoro.accumulatedSeconds);
-  
+
   // 检查是否达到目标时长
   if (this.activePomodoro.accumulatedSeconds >= targetSeconds) {
     this.completePomodoro();
@@ -333,7 +340,7 @@ setupVisibilityListener() {
       this.updateTimer();
     }
   };
-  
+
   document.addEventListener('visibilitychange', visibilityHandler);
 }
 ```
@@ -344,38 +351,39 @@ setupVisibilityListener() {
 
 负责番茄钟状态的持久化存储，使用思源笔记的插件数据存储 API。
 
-| 函数 | 功能 | 思源 API | 说明 |
-|------|------|----------|------|
-| `saveActivePomodoro(plugin, data)` | 保存进行中的番茄钟 | `plugin.saveData()` | 保存到 `active-pomodoro.json` |
-| `loadActivePomodoro(plugin)` | 读取进行中的番茄钟 | `plugin.loadData()` | 返回 `ActivePomodoroData \| null` |
-| `removeActivePomodoro(plugin)` | 删除进行中的番茄钟 | `plugin.removeData()` | 完成后清理文件 |
-| `hasActivePomodoro(plugin)` | 检查是否有进行中的番茄钟 | `plugin.loadData()` | 返回布尔值 |
+| 函数                               | 功能                     | 思源 API              | 说明                              |
+| ---------------------------------- | ------------------------ | --------------------- | --------------------------------- |
+| `saveActivePomodoro(plugin, data)` | 保存进行中的番茄钟       | `plugin.saveData()`   | 保存到 `active-pomodoro.json`     |
+| `loadActivePomodoro(plugin)`       | 读取进行中的番茄钟       | `plugin.loadData()`   | 返回 `ActivePomodoroData \| null` |
+| `removeActivePomodoro(plugin)`     | 删除进行中的番茄钟       | `plugin.removeData()` | 完成后清理文件                    |
+| `hasActivePomodoro(plugin)`        | 检查是否有进行中的番茄钟 | `plugin.loadData()`   | 返回布尔值                        |
 
 **存储数据结构：**
 
 ```typescript
 interface ActivePomodoroData {
-  blockId: string;              // 事项块ID（用于创建番茄钟记录）
-  itemId: string;               // 事项ID（用于关联待办事项）
-  itemContent: string;          // 事项内容（显示在专注界面）
-  startTime: number;            // 开始时间戳（毫秒）
-  targetDurationMinutes: number;// 目标专注时长（分钟）
-  accumulatedSeconds: number;   // 已累计专注秒数（不含暂停时间）
-  isPaused: boolean;            // 是否处于暂停状态
-  pauseCount: number;           // 暂停次数（用于统计）
-  totalPausedSeconds: number;   // 总暂停秒数
-  currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
-  projectId?: string;           // 项目ID（可选）
-  projectName?: string;         // 项目名称（可选）
-  taskId?: string;              // 任务ID（可选）
-  taskName?: string;            // 任务名称（可选）
-  taskLevel?: string;           // 任务层级（可选）
+  blockId: string // 事项块ID（用于创建番茄钟记录）
+  itemId: string // 事项ID（用于关联待办事项）
+  itemContent: string // 事项内容（显示在专注界面）
+  startTime: number // 开始时间戳（毫秒）
+  targetDurationMinutes: number// 目标专注时长（分钟）
+  accumulatedSeconds: number // 已累计专注秒数（不含暂停时间）
+  isPaused: boolean // 是否处于暂停状态
+  pauseCount: number // 暂停次数（用于统计）
+  totalPausedSeconds: number // 总暂停秒数
+  currentPauseStartTime?: number// 当前暂停开始时间戳（如果有）
+  projectId?: string // 项目ID（可选）
+  projectName?: string // 项目名称（可选）
+  taskId?: string // 任务ID（可选）
+  taskName?: string // 任务名称（可选）
+  taskLevel?: string // 任务层级（可选）
 }
 ```
 
 #### 2.2.2 专注状态 Store (`src/stores/pomodoroStore.ts`)
 
 **startPomodoro(item, durationMinutes, parentBlockId, plugin):**
+
 1. 构建番茄钟数据对象（包含项目、任务信息）
 2. 调用 `saveActivePomodoro()` 保存到文件
 3. 设置本地 `activePomodoro` 状态
@@ -383,6 +391,7 @@ interface ActivePomodoroData {
 5. 触发 `POMODORO_STARTED` 事件
 
 **pausePomodoro(plugin):**
+
 1. 先调用 `updateTimer()` 确保 `accumulatedSeconds` 是最新的
 2. 设置暂停状态，`pauseCount++`
 3. 记录 `currentPauseStartTime`
@@ -391,6 +400,7 @@ interface ActivePomodoroData {
 6. 显示暂停提示
 
 **resumePomodoro(plugin):**
+
 1. 计算本次暂停时长：`Date.now() - currentPauseStartTime`
 2. 累加到 `totalPausedSeconds`
 3. 清除暂停状态，`currentPauseStartTime = undefined`
@@ -399,6 +409,7 @@ interface ActivePomodoroData {
 6. 保存状态到文件
 
 **completePomodoro(plugin):**
+
 1. 计算实际专注分钟数：`Math.floor(accumulatedSeconds / 60)`
 2. 判断是否有暂停：`pauseCount > 0 || totalPausedSeconds > 0`
 3. 生成番茄钟内容：
@@ -412,11 +423,13 @@ interface ActivePomodoroData {
 9. 触发 `POMODORO_COMPLETED` 事件
 
 **cancelPomodoro(plugin):**
+
 1. 调用 `removeActivePomodoro()` 删除文件
 2. 清理本地状态
 3. 触发 `POMODORO_CANCELLED` 事件
 
 **restorePomodoro(plugin):**
+
 1. 调用 `loadActivePomodoro()` 读取文件
 2. 计算从上次保存到现在经过的时间（如果是非暂停状态）
 3. 计算剩余时间
@@ -427,6 +440,7 @@ interface ActivePomodoroData {
 6. 触发 `POMODORO_STARTED` 事件
 
 **markExpiredPomodoroComplete(data, plugin):**
+
 1. 使用目标时长作为实际专注时长
 2. 生成番茄钟内容（带实际时长）
 3. 调用 `appendBlock()` 创建块
@@ -435,14 +449,14 @@ interface ActivePomodoroData {
 
 #### 2.2.3 UI 组件
 
-| 组件 | 功能 | 位置 | 说明 |
-|------|------|------|------|
-| `PomodoroTimerDialog.vue` | 开始专注弹框 | `src/components/pomodoro/` | 选择事项、设置时长 |
-| `PomodoroActiveTimer.vue` | 专注中展示 | `src/components/pomodoro/` | 显示倒计时、事项信息、控制按钮、时间线、信息卡片 |
-| `PomodoroStats.vue` | 统计概览 | `src/components/pomodoro/` | 今日/总番茄数、专注时长 |
-| `PomodoroRecordList.vue` | 记录列表 | `src/components/pomodoro/` | 按日期分组展示历史记录 |
-| `PomodoroDock.vue` | Dock 主组件 | `src/tabs/` | 番茄钟 Dock 容器 |
-| `TomatoIcon.vue` | 番茄图标 | `src/components/icons/` | SVG 图标组件 |
+| 组件                      | 功能         | 位置                       | 说明                                             |
+| ------------------------- | ------------ | -------------------------- | ------------------------------------------------ |
+| `PomodoroTimerDialog.vue` | 开始专注弹框 | `src/components/pomodoro/` | 选择事项、设置时长                               |
+| `PomodoroActiveTimer.vue` | 专注中展示   | `src/components/pomodoro/` | 显示倒计时、事项信息、控制按钮、时间线、信息卡片 |
+| `PomodoroStats.vue`       | 统计概览     | `src/components/pomodoro/` | 今日/总番茄数、专注时长                          |
+| `PomodoroRecordList.vue`  | 记录列表     | `src/components/pomodoro/` | 按日期分组展示历史记录                           |
+| `PomodoroDock.vue`        | Dock 主组件  | `src/tabs/`                | 番茄钟 Dock 容器                                 |
+| `TomatoIcon.vue`          | 番茄图标     | `src/components/icons/`    | SVG 图标组件                                     |
 
 **PomodoroActiveTimer.vue 功能详情：**
 
@@ -501,17 +515,17 @@ PomodoroTimerDialog (弹窗)
 
 ### 2.3 思源 API 使用
 
-| 操作 | API | 用途 | 调用位置 |
-|------|-----|------|----------|
-| 保存文件 | `plugin.saveData()` | 保存进行中的番茄钟 | `pomodoroStorage.ts` |
-| 读取文件 | `plugin.loadData()` | 读取进行中的番茄钟 | `pomodoroStorage.ts` |
-| 删除文件 | `plugin.removeData()` | 删除进行中的番茄钟 | `pomodoroStorage.ts` |
-| 创建块 | `appendBlock()` | 完成时在文档中创建番茄钟块 | `pomodoroStore.ts` |
-| 打开文档 | `openDocumentAtLine()` | 点击事项时打开对应文档 | `TodoSidebar.vue` |
-| 更新块 | `updateBlockContent()` | 完成/放弃待办事项 | `TodoSidebar.vue` |
-| 显示菜单 | `Menu` | 右键菜单 | `contextMenu.ts` |
-| 显示消息 | `showMessage()` | 操作反馈提示 | 各组件 |
-| 切换 Dock | `rightDock.toggleModel()` | 激活番茄钟 Dock | `index.ts` |
+| 操作      | API                       | 用途                       | 调用位置             |
+| --------- | ------------------------- | -------------------------- | -------------------- |
+| 保存文件  | `plugin.saveData()`       | 保存进行中的番茄钟         | `pomodoroStorage.ts` |
+| 读取文件  | `plugin.loadData()`       | 读取进行中的番茄钟         | `pomodoroStorage.ts` |
+| 删除文件  | `plugin.removeData()`     | 删除进行中的番茄钟         | `pomodoroStorage.ts` |
+| 创建块    | `appendBlock()`           | 完成时在文档中创建番茄钟块 | `pomodoroStore.ts`   |
+| 打开文档  | `openDocumentAtLine()`    | 点击事项时打开对应文档     | `TodoSidebar.vue`    |
+| 更新块    | `updateBlockContent()`    | 完成/放弃待办事项          | `TodoSidebar.vue`    |
+| 显示菜单  | `Menu`                    | 右键菜单                   | `contextMenu.ts`     |
+| 显示消息  | `showMessage()`           | 操作反馈提示               | 各组件               |
+| 切换 Dock | `rightDock.toggleModel()` | 激活番茄钟 Dock            | `index.ts`           |
 
 ### 2.4 事件机制
 
@@ -519,30 +533,30 @@ PomodoroTimerDialog (弹窗)
 
 用于同上下文组件间的通信：
 
-| 事件名 | 触发位置 | 监听位置 | 说明 |
-|--------|----------|----------|------|
-| `POMODORO_START` | `pomodoroStore.ts` | `PomodoroDock.vue` | 开始专注时通知 Dock |
-| `POMODORO_COMPLETE` | `pomodoroStore.ts` | `TodoSidebar.vue` | 完成专注时刷新列表 |
-| `POMODORO_CANCEL` | `pomodoroStore.ts` | `TodoSidebar.vue` | 取消专注时刷新列表 |
-| `POMODORO_RESTORE` | `index.ts` | `TodoSidebar.vue`, `CalendarView.vue` | 恢复专注状态时通知各组件 |
-| `DATA_REFRESH` | `index.ts` | `TodoSidebar.vue` | 数据刷新事件 |
+| 事件名              | 触发位置           | 监听位置                              | 说明                     |
+| ------------------- | ------------------ | ------------------------------------- | ------------------------ |
+| `POMODORO_START`    | `pomodoroStore.ts` | `PomodoroDock.vue`                    | 开始专注时通知 Dock      |
+| `POMODORO_COMPLETE` | `pomodoroStore.ts` | `TodoSidebar.vue`                     | 完成专注时刷新列表       |
+| `POMODORO_CANCEL`   | `pomodoroStore.ts` | `TodoSidebar.vue`                     | 取消专注时刷新列表       |
+| `POMODORO_RESTORE`  | `index.ts`         | `TodoSidebar.vue`, `CalendarView.vue` | 恢复专注状态时通知各组件 |
+| `DATA_REFRESH`      | `index.ts`         | `TodoSidebar.vue`                     | 数据刷新事件             |
 
 #### 2.4.2 BroadcastChannel
 
 用于跨上下文（iframe）通信：
 
 ```typescript
-const DATA_REFRESH_CHANNEL = 'bullet-journal-data-refresh';
+const DATA_REFRESH_CHANNEL = 'bullet-journal-data-refresh'
 
 // 发送消息
-refreshChannel.postMessage({ type: 'DATA_REFRESH', ...data });
+refreshChannel.postMessage({ type: 'DATA_REFRESH', ...data })
 
 // 接收消息
 refreshChannel.onmessage = (e) => {
   if (e.data?.type === 'DATA_REFRESH') {
     // 处理刷新
   }
-};
+}
 ```
 
 ### 2.5 通知机制
@@ -610,47 +624,47 @@ src/
 ```typescript
 // 进行中的番茄钟数据（文件存储）
 interface ActivePomodoroData {
-  blockId: string;              // 事项块ID
-  itemId: string;               // 事项ID
-  itemContent: string;          // 事项内容
-  startTime: number;            // 开始时间戳（毫秒）
-  targetDurationMinutes: number;// 目标专注时长（分钟）
-  accumulatedSeconds: number;   // 已累计专注秒数（不含暂停时间）
-  isPaused: boolean;            // 是否处于暂停状态
-  pauseCount: number;           // 暂停次数
-  totalPausedSeconds: number;   // 总暂停秒数
-  currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
-  projectId?: string;           // 项目ID
-  projectName?: string;         // 项目名称
-  taskId?: string;              // 任务ID
-  taskName?: string;            // 任务名称
-  taskLevel?: string;           // 任务层级
+  blockId: string // 事项块ID
+  itemId: string // 事项ID
+  itemContent: string // 事项内容
+  startTime: number // 开始时间戳（毫秒）
+  targetDurationMinutes: number// 目标专注时长（分钟）
+  accumulatedSeconds: number // 已累计专注秒数（不含暂停时间）
+  isPaused: boolean // 是否处于暂停状态
+  pauseCount: number // 暂停次数
+  totalPausedSeconds: number // 总暂停秒数
+  currentPauseStartTime?: number// 当前暂停开始时间戳（如果有）
+  projectId?: string // 项目ID
+  projectName?: string // 项目名称
+  taskId?: string // 任务ID
+  taskName?: string // 任务名称
+  taskLevel?: string // 任务层级
 }
 
 // 运行时专注状态（继承自 ActivePomodoroData）
 interface ActivePomodoro extends ActivePomodoroData {
-  remainingSeconds: number;     // 剩余秒数
+  remainingSeconds: number // 剩余秒数
 }
 
 // 番茄钟记录（已完成的）
 interface PomodoroRecord {
-  id: string;
-  date: string;                 // 日期 YYYY-MM-DD
-  startTime: string;            // 开始时间 HH:mm:ss
-  endTime?: string;             // 结束时间 HH:mm:ss
-  description?: string;         // 描述
-  durationMinutes: number;      // 专注时长（分钟）
-  actualDurationMinutes?: number;// 实际专注时长（分钟），用于暂停/继续功能
-  blockId?: string;             // 块ID
-  projectId?: string;           // 项目ID
-  taskId?: string;              // 任务ID
-  itemId?: string;              // 事项ID
-  status?: PomodoroStatus;      // 专注状态
-  itemContent?: string;         // 关联事项内容
+  id: string
+  date: string // 日期 YYYY-MM-DD
+  startTime: string // 开始时间 HH:mm:ss
+  endTime?: string // 结束时间 HH:mm:ss
+  description?: string // 描述
+  durationMinutes: number // 专注时长（分钟）
+  actualDurationMinutes?: number// 实际专注时长（分钟），用于暂停/继续功能
+  blockId?: string // 块ID
+  projectId?: string // 项目ID
+  taskId?: string // 任务ID
+  itemId?: string // 事项ID
+  status?: PomodoroStatus // 专注状态
+  itemContent?: string // 关联事项内容
 }
 
 // 番茄钟状态
-type PomodoroStatus = 'running' | 'completed';
+type PomodoroStatus = 'running' | 'completed'
 ```
 
 ## 三、使用流程

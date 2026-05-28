@@ -13,6 +13,7 @@
 ### 任务 1：类型系统变更
 
 **文件：**
+
 - 修改：`src/types/workbench.ts`
 
 - [ ] **步骤 1：WorkbenchEntry 新增 config 字段**
@@ -22,14 +23,14 @@
 ```typescript
 // src/types/workbench.ts，在 WorkbenchEntry 接口末尾追加
 export interface WorkbenchEntry {
-  id: string;
-  type: 'dashboard' | 'view';
-  title: string;
-  icon: string;
-  order: number;
-  viewType?: WorkbenchViewType;
-  dashboardId?: string;
-  config?: Record<string, unknown>;
+  id: string
+  type: 'dashboard' | 'view'
+  title: string
+  icon: string
+  order: number
+  viewType?: WorkbenchViewType
+  dashboardId?: string
+  config?: Record<string, unknown>
 }
 ```
 
@@ -39,11 +40,11 @@ export interface WorkbenchEntry {
 
 ```typescript
 export interface WorkbenchFocusReviewViewConfig {
-  groupId?: string;
+  groupId?: string
 }
 
 export interface WorkbenchProjectViewConfig {
-  groupId?: string;
+  groupId?: string
 }
 ```
 
@@ -59,13 +60,12 @@ git commit -m "feat: add config field to WorkbenchEntry and new view config type
 ### 任务 2：创建视图注册表
 
 **文件：**
+
 - 创建：`src/workbench/viewRegistry.ts`
 
 - [ ] **步骤 1：创建 viewRegistry.ts**
 
 ```typescript
-// src/workbench/viewRegistry.ts
-import { t } from '@/i18n';
 import type {
   WorkbenchEntry,
   WorkbenchFocusReviewViewConfig,
@@ -75,22 +75,24 @@ import type {
   WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchViewType,
-} from '@/types/workbench';
-import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
-import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
-import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
-import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
+} from '@/types/workbench'
+// src/workbench/viewRegistry.ts
+import { t } from '@/i18n'
+import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog'
+import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog'
+import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog'
+import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog'
 
-type WorkbenchViewConfigContext = {
-  entry: WorkbenchEntry;
-  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
-};
+interface WorkbenchViewConfigContext {
+  entry: WorkbenchEntry
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>
+}
 
-export type WorkbenchViewDefinition = {
-  type: WorkbenchViewType;
-  createDefaultConfig: () => Record<string, unknown>;
-  openConfigDialog?: (context: WorkbenchViewConfigContext) => void;
-};
+export interface WorkbenchViewDefinition {
+  type: WorkbenchViewType
+  createDefaultConfig: () => Record<string, unknown>
+  openConfigDialog?: (context: WorkbenchViewConfigContext) => void
+}
 
 function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition> {
   return {
@@ -100,7 +102,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         preset: {},
       }),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchTodoListWidgetConfig;
+        const config = entry.config as WorkbenchTodoListWidgetConfig
         openTodoWidgetConfigDialog({
           initialConfig: {
             preset: config?.preset ?? {},
@@ -108,9 +110,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               preset: nextConfig.preset ?? {},
-            });
+            })
           },
-        });
+        })
       },
     },
     habit: {
@@ -119,7 +121,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         habitScope: 'active',
       }),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchHabitWeekWidgetConfig;
+        const config = entry.config as WorkbenchHabitWeekWidgetConfig
         openHabitWidgetConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
@@ -129,9 +131,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               habitScope: nextConfig.habitScope ?? 'active',
-            });
+            })
           },
-        });
+        })
       },
     },
     quadrant: {
@@ -140,7 +142,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         quadrant: 'q1',
       }),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchQuadrantWidgetConfig;
+        const config = entry.config as WorkbenchQuadrantWidgetConfig
         openQuadrantWidgetConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
@@ -150,9 +152,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               quadrant: nextConfig.quadrant ?? 'q1',
-            });
+            })
           },
-        });
+        })
       },
     },
     pomodoroStats: {
@@ -161,7 +163,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         section: 'overview',
       }),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig;
+        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig
         openPomodoroWidgetConfigDialog({
           initialConfig: {
             section: config?.section ?? 'overview',
@@ -169,26 +171,26 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               section: nextConfig.section ?? 'overview',
-            });
+            })
           },
-        });
+        })
       },
     },
     focusReview: {
       type: 'focusReview',
       createDefaultConfig: (): WorkbenchFocusReviewViewConfig => ({}),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchFocusReviewViewConfig;
+        const config = entry.config as WorkbenchFocusReviewViewConfig
         import('@/workbench/focusReviewViewConfigDialog').then(({ openFocusReviewViewConfigDialog }) => {
           openFocusReviewViewConfigDialog({
             initialConfig: {
               groupId: config?.groupId,
             },
             onConfirm: async (nextConfig) => {
-              await onUpdateConfig({ groupId: nextConfig.groupId });
+              await onUpdateConfig({ groupId: nextConfig.groupId })
             },
-          });
-        });
+          })
+        })
       },
     },
     project: {
@@ -203,11 +205,11 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       type: 'gantt',
       createDefaultConfig: () => ({}),
     },
-  };
+  }
 }
 
 export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDefinition {
-  return createViewRegistry()[viewType];
+  return createViewRegistry()[viewType]
 }
 ```
 
@@ -223,6 +225,7 @@ git commit -m "feat: add view registry with default configs and config dialogs"
 ### 任务 3：Store 变更
 
 **文件：**
+
 - 修改：`src/stores/workbenchStore.ts`
 
 - [ ] **步骤 1：导入 viewRegistry**
@@ -230,7 +233,7 @@ git commit -m "feat: add view registry with default configs and config dialogs"
 在 store 文件顶部 import 区追加：
 
 ```typescript
-import { getViewDefinition } from '@/workbench/viewRegistry';
+import { getViewDefinition } from '@/workbench/viewRegistry'
 ```
 
 - [ ] **步骤 2：createViewEntry 填入默认配置**
@@ -239,8 +242,8 @@ import { getViewDefinition } from '@/workbench/viewRegistry';
 
 ```typescript
 async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEntry> {
-  const definition = getViewEntryDefinition(viewType);
-  const viewDef = getViewDefinition(viewType);
+  const definition = getViewEntryDefinition(viewType)
+  const viewDef = getViewDefinition(viewType)
   const entry: WorkbenchEntry = {
     id: createId('entry'),
     type: 'view',
@@ -249,12 +252,12 @@ async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEn
     order: entries.value.length,
     viewType,
     config: viewDef.createDefaultConfig(),
-  };
+  }
 
-  entries.value = [...entries.value, entry];
-  activeEntryId.value = entry.id;
-  await persist();
-  return entry;
+  entries.value = [...entries.value, entry]
+  activeEntryId.value = entry.id
+  await persist()
+  return entry
 }
 ```
 
@@ -271,8 +274,8 @@ async function updateViewConfig(
     entry.id === entryId
       ? { ...entry, config }
       : entry,
-  );
-  await persist();
+  )
+  await persist()
 }
 ```
 
@@ -282,26 +285,26 @@ async function updateViewConfig(
 
 ```typescript
 async function load(plugin: WorkbenchPlugin): Promise<void> {
-  bindPlugin(plugin);
-  const settings = await loadWorkbenchSettings(plugin);
+  bindPlugin(plugin)
+  const settings = await loadWorkbenchSettings(plugin)
   entries.value = normalizeOrders(
-    (settings.entries ?? []).map(entry => {
+    (settings.entries ?? []).map((entry) => {
       if (entry.type === 'view' && entry.viewType && !entry.config) {
         return {
           ...entry,
           config: getViewDefinition(entry.viewType).createDefaultConfig(),
-        };
+        }
       }
-      return entry;
+      return entry
     }),
-  );
-  dashboards.value = settings.dashboards ?? [];
-  sidebarCollapsed.value = settings.sidebarCollapsed ?? false;
+  )
+  dashboards.value = settings.dashboards ?? []
+  sidebarCollapsed.value = settings.sidebarCollapsed ?? false
 
-  const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId);
+  const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId)
   activeEntryId.value = hasActiveEntry
     ? settings.activeEntryId
-    : (entries.value[0]?.id ?? null);
+    : (entries.value[0]?.id ?? null)
 }
 ```
 
@@ -313,7 +316,7 @@ async function load(plugin: WorkbenchPlugin): Promise<void> {
 return {
   // ... 现有导出
   updateViewConfig,
-};
+}
 ```
 
 - [ ] **步骤 6：运行现有测试确认无回归**
@@ -336,6 +339,7 @@ git commit -m "feat: add view config support to workbench store"
 ### 任务 4：FocusReview 和 Project 视图配置弹窗
 
 **文件：**
+
 - 创建：`src/workbench/focusReviewViewConfigDialog.ts`
 - 创建：`src/components/workbench/dialogs/FocusReviewViewConfigDialog.vue`
 - 创建：`src/workbench/projectViewConfigDialog.ts`
@@ -345,6 +349,44 @@ git commit -m "feat: add view config support to workbench store"
 
 ```vue
 <!-- src/components/workbench/dialogs/FocusReviewViewConfigDialog.vue -->
+<script setup lang="ts">
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
+import { computed, onMounted, ref } from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+
+const props = defineProps<{
+  initialConfig: WorkbenchFocusReviewViewConfig
+  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void
+  onCancel: () => void
+}>()
+
+const settingsStore = useSettingsStore()
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
+
+onMounted(() => {
+  if (!settingsStore.loaded) {
+    settingsStore.loadFromPlugin()
+  }
+})
+
+const groupOptions = computed(() => [
+  { value: '', label: t('settings').projectGroups.allGroups },
+  ...settingsStore.groups.map(group => ({
+    value: group.id,
+    label: group.name || t('settings').projectGroups.unnamed,
+  })),
+])
+
+function handleConfirm() {
+  props.onConfirm({
+    groupId: selectedGroup.value || undefined,
+  })
+}
+</script>
+
 <template>
   <WorkbenchConfigDialogLayout>
     <div class="focus-review-config-dialog__body">
@@ -382,44 +424,6 @@ git commit -m "feat: add view config support to workbench store"
   </WorkbenchConfigDialogLayout>
 </template>
 
-<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
-
-const props = defineProps<{
-  initialConfig: WorkbenchFocusReviewViewConfig;
-  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void;
-  onCancel: () => void;
-}>();
-
-const settingsStore = useSettingsStore();
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
-
-onMounted(() => {
-  if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
-  }
-});
-
-const groupOptions = computed(() => [
-  { value: '', label: t('settings').projectGroups.allGroups },
-  ...settingsStore.groups.map(group => ({
-    value: group.id,
-    label: group.name || t('settings').projectGroups.unnamed,
-  })),
-]);
-
-function handleConfirm() {
-  props.onConfirm({
-    groupId: selectedGroup.value || undefined,
-  });
-}
-</script>
-
 <style lang="scss" scoped>
 .focus-review-config-dialog__body {
   display: flex;
@@ -445,63 +449,63 @@ function handleConfirm() {
 - [ ] **步骤 2：创建 focusReviewViewConfigDialog.ts**
 
 ```typescript
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
 // src/workbench/focusReviewViewConfigDialog.ts
-import { Dialog } from 'siyuan';
-import { createApp } from 'vue';
-import FocusReviewViewConfigDialog from '@/components/workbench/dialogs/FocusReviewViewConfigDialog.vue';
-import { t } from '@/i18n';
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
-import { getSharedPinia } from '@/utils/sharedPinia';
+import { Dialog } from 'siyuan'
+import { createApp } from 'vue'
+import FocusReviewViewConfigDialog from '@/components/workbench/dialogs/FocusReviewViewConfigDialog.vue'
+import { t } from '@/i18n'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 export function openFocusReviewViewConfigDialog(options: {
-  initialConfig: WorkbenchFocusReviewViewConfig;
-  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void | Promise<void>;
+  initialConfig: WorkbenchFocusReviewViewConfig
+  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void | Promise<void>
 }): Dialog {
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
-  let isConfirming = false;
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
+  let isConfirming = false
 
   const dialog = new Dialog({
     title: t('workbench').configure,
     content: '',
     width: '420px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   app = createApp(FocusReviewViewConfigDialog, {
     initialConfig: options.initialConfig,
     onCancel: closeDialog,
     onConfirm: async (config: WorkbenchFocusReviewViewConfig) => {
       if (isConfirming) {
-        return;
+        return
       }
 
-      isConfirming = true;
+      isConfirming = true
       try {
-        await options.onConfirm(config);
-        closeDialog();
+        await options.onConfirm(config)
+        closeDialog()
       }
       finally {
-        isConfirming = false;
+        isConfirming = false
       }
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    app.use(pinia);
+    app.use(pinia)
   }
-  app.mount(mountEl);
+  app.mount(mountEl)
 
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
-  return dialog;
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
+  return dialog
 }
 ```
 
@@ -509,6 +513,44 @@ export function openFocusReviewViewConfigDialog(options: {
 
 ```vue
 <!-- src/components/workbench/dialogs/ProjectViewConfigDialog.vue -->
+<script setup lang="ts">
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
+import { computed, onMounted, ref } from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+
+const props = defineProps<{
+  initialConfig: WorkbenchProjectViewConfig
+  onConfirm: (config: WorkbenchProjectViewConfig) => void
+  onCancel: () => void
+}>()
+
+const settingsStore = useSettingsStore()
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
+
+onMounted(() => {
+  if (!settingsStore.loaded) {
+    settingsStore.loadFromPlugin()
+  }
+})
+
+const groupOptions = computed(() => [
+  { value: '', label: t('settings').projectGroups.allGroups },
+  ...settingsStore.groups.map(group => ({
+    value: group.id,
+    label: group.name || t('settings').projectGroups.unnamed,
+  })),
+])
+
+function handleConfirm() {
+  props.onConfirm({
+    groupId: selectedGroup.value || undefined,
+  })
+}
+</script>
+
 <template>
   <WorkbenchConfigDialogLayout>
     <div class="project-config-dialog__body">
@@ -546,44 +588,6 @@ export function openFocusReviewViewConfigDialog(options: {
   </WorkbenchConfigDialogLayout>
 </template>
 
-<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
-
-const props = defineProps<{
-  initialConfig: WorkbenchProjectViewConfig;
-  onConfirm: (config: WorkbenchProjectViewConfig) => void;
-  onCancel: () => void;
-}>();
-
-const settingsStore = useSettingsStore();
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
-
-onMounted(() => {
-  if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
-  }
-});
-
-const groupOptions = computed(() => [
-  { value: '', label: t('settings').projectGroups.allGroups },
-  ...settingsStore.groups.map(group => ({
-    value: group.id,
-    label: group.name || t('settings').projectGroups.unnamed,
-  })),
-]);
-
-function handleConfirm() {
-  props.onConfirm({
-    groupId: selectedGroup.value || undefined,
-  });
-}
-</script>
-
 <style lang="scss" scoped>
 .project-config-dialog__body {
   display: flex;
@@ -609,63 +613,63 @@ function handleConfirm() {
 - [ ] **步骤 4：创建 projectViewConfigDialog.ts**
 
 ```typescript
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
 // src/workbench/projectViewConfigDialog.ts
-import { Dialog } from 'siyuan';
-import { createApp } from 'vue';
-import ProjectViewConfigDialog from '@/components/workbench/dialogs/ProjectViewConfigDialog.vue';
-import { t } from '@/i18n';
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
-import { getSharedPinia } from '@/utils/sharedPinia';
+import { Dialog } from 'siyuan'
+import { createApp } from 'vue'
+import ProjectViewConfigDialog from '@/components/workbench/dialogs/ProjectViewConfigDialog.vue'
+import { t } from '@/i18n'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 export function openProjectViewConfigDialog(options: {
-  initialConfig: WorkbenchProjectViewConfig;
-  onConfirm: (config: WorkbenchProjectViewConfig) => void | Promise<void>;
+  initialConfig: WorkbenchProjectViewConfig
+  onConfirm: (config: WorkbenchProjectViewConfig) => void | Promise<void>
 }): Dialog {
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
-  let isConfirming = false;
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
+  let isConfirming = false
 
   const dialog = new Dialog({
     title: t('workbench').configure,
     content: '',
     width: '420px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   app = createApp(ProjectViewConfigDialog, {
     initialConfig: options.initialConfig,
     onCancel: closeDialog,
     onConfirm: async (config: WorkbenchProjectViewConfig) => {
       if (isConfirming) {
-        return;
+        return
       }
 
-      isConfirming = true;
+      isConfirming = true
       try {
-        await options.onConfirm(config);
-        closeDialog();
+        await options.onConfirm(config)
+        closeDialog()
       }
       finally {
-        isConfirming = false;
+        isConfirming = false
       }
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    app.use(pinia);
+    app.use(pinia)
   }
-  app.mount(mountEl);
+  app.mount(mountEl)
 
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
-  return dialog;
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
+  return dialog
 }
 ```
 
@@ -706,6 +710,7 @@ git commit -m "feat: add focusReview and project view config dialogs"
 ### 任务 5：WorkbenchTab 工具栏添加"配置"按钮
 
 **文件：**
+
 - 修改：`src/tabs/WorkbenchTab.vue`
 
 - [ ] **步骤 1：导入 getViewDefinition**
@@ -713,7 +718,7 @@ git commit -m "feat: add focusReview and project view config dialogs"
 在 script 区 import 追加：
 
 ```typescript
-import { getViewDefinition } from '@/workbench/viewRegistry';
+import { getViewDefinition } from '@/workbench/viewRegistry'
 ```
 
 - [ ] **步骤 2：新增 isViewActive 计算属性**
@@ -721,7 +726,7 @@ import { getViewDefinition } from '@/workbench/viewRegistry';
 在 `isDashboardActive` 之后追加：
 
 ```typescript
-const isViewActive = computed(() => currentActiveEntry.value?.type === 'view');
+const isViewActive = computed(() => currentActiveEntry.value?.type === 'view')
 ```
 
 - [ ] **步骤 3：模板工具栏添加"配置"按钮**
@@ -747,18 +752,18 @@ const isViewActive = computed(() => currentActiveEntry.value?.type === 'view');
 
 ```typescript
 async function openViewConfigDialog() {
-  const entry = currentActiveEntry.value;
+  const entry = currentActiveEntry.value
   if (!entry || entry.type !== 'view' || !entry.viewType) {
-    return;
+    return
   }
 
-  const viewDef = getViewDefinition(entry.viewType);
+  const viewDef = getViewDefinition(entry.viewType)
   viewDef.openConfigDialog?.({
     entry,
     onUpdateConfig: async (config) => {
-      await workbenchStore.updateViewConfig(entry.id, config);
+      await workbenchStore.updateViewConfig(entry.id, config)
     },
-  });
+  })
 }
 ```
 
@@ -789,6 +794,7 @@ git commit -m "feat: add configure button for view entries in workbench toolbar"
 ### 任务 6：WorkbenchViewHost 传递 viewConfig
 
 **文件：**
+
 - 修改：`src/components/workbench/view/WorkbenchViewHost.vue`
 
 - [ ] **步骤 1：传递 viewConfig prop 给所有视图组件**
@@ -860,6 +866,7 @@ git commit -m "feat: pass viewConfig prop to all view components"
 ### 任务 7：DesktopTodoDock 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/tabs/DesktopTodoDock.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
@@ -868,11 +875,11 @@ git commit -m "feat: pass viewConfig prop to all view components"
 
 ```typescript
 const props = withDefaults(defineProps<{
-  enableWorkbenchPreview?: boolean;
-  viewConfig?: Record<string, unknown>;
+  enableWorkbenchPreview?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   enableWorkbenchPreview: false,
-});
+})
 ```
 
 - [ ] **步骤 2：导入类型**
@@ -880,7 +887,7 @@ const props = withDefaults(defineProps<{
 在 import 区追加：
 
 ```typescript
-import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
+import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench'
 ```
 
 - [ ] **步骤 3：读取 preset 并初始化状态**
@@ -889,10 +896,11 @@ import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
 
 ```typescript
 const viewPreset = computed<TodoViewPreset | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  const config = props.viewConfig as WorkbenchTodoListWidgetConfig;
-  return config.preset;
-});
+  if (!props.viewConfig)
+    return undefined
+  const config = props.viewConfig as WorkbenchTodoListWidgetConfig
+  return config.preset
+})
 ```
 
 然后修改 selectedGroup 的初始化，使其能从 preset 中读取：
@@ -900,7 +908,7 @@ const viewPreset = computed<TodoViewPreset | undefined>(() => {
 ```typescript
 const selectedGroup = ref(
   viewPreset.value?.groupId ?? settingsStore.todoDock.selectedGroup,
-);
+)
 ```
 
 并在 `dateFilterType`、`selectedPriorities`、`searchQuery`、`selectedTags`、`sortRules` 等初始化中也从 `viewPreset.value` 读取。
@@ -923,17 +931,18 @@ git commit -m "feat: DesktopTodoDock reads initial state from viewConfig preset"
 ### 任务 8：QuadrantTab 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/tabs/QuadrantTab.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
 
 ```typescript
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 ```
 
 - [ ] **步骤 2：读取 groupId 预设分组筛选**
@@ -941,12 +950,13 @@ const props = withDefaults(defineProps<{
 导入类型并读取 groupId：
 
 ```typescript
-import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench';
+import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench'
 
 const viewGroupId = computed<string | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  return (props.viewConfig as WorkbenchQuadrantWidgetConfig).groupId;
-});
+  if (!props.viewConfig)
+    return undefined
+  return (props.viewConfig as WorkbenchQuadrantWidgetConfig).groupId
+})
 ```
 
 在组件挂载时，如果 `viewGroupId.value` 有值，将其设为 defaultGroup：
@@ -954,9 +964,9 @@ const viewGroupId = computed<string | undefined>(() => {
 ```typescript
 onMounted(() => {
   if (viewGroupId.value) {
-    selectedGroupId.value = viewGroupId.value;
+    selectedGroupId.value = viewGroupId.value
   }
-});
+})
 ```
 
 - [ ] **步骤 3：运行测试**
@@ -977,32 +987,34 @@ git commit -m "feat: QuadrantTab reads initial groupId from viewConfig"
 ### 任务 9：PomodoroStatsTab 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/tabs/PomodoroStatsTab.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
 
 ```typescript
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 ```
 
 - [ ] **步骤 2：导入类型**
 
 ```typescript
-import type { WorkbenchPomodoroStatsWidgetConfig } from '@/types/workbench';
+import type { WorkbenchPomodoroStatsWidgetConfig } from '@/types/workbench'
 ```
 
 - [ ] **步骤 3：读取 section 配置**
 
 ```typescript
 const viewSection = computed<WorkbenchPomodoroStatsWidgetConfig['section'] | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  return (props.viewConfig as WorkbenchPomodoroStatsWidgetConfig).section;
-});
+  if (!props.viewConfig)
+    return undefined
+  return (props.viewConfig as WorkbenchPomodoroStatsWidgetConfig).section
+})
 ```
 
 （当前 PomodoroStatsTab 渲染全部 section，`viewSection` 暂存为后续按需渲染预留。）
@@ -1025,34 +1037,36 @@ git commit -m "feat: PomodoroStatsTab accepts viewConfig prop for section config
 ### 任务 10：FocusReviewTab 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/tabs/FocusReviewTab.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
 
 ```typescript
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 ```
 
 - [ ] **步骤 2：导入类型**
 
 ```typescript
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
 ```
 
 - [ ] **步骤 3：读取 groupId**
 
 ```typescript
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
 
 const viewGroupId = computed<string | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  return (props.viewConfig as WorkbenchFocusReviewViewConfig).groupId;
-});
+  if (!props.viewConfig)
+    return undefined
+  return (props.viewConfig as WorkbenchFocusReviewViewConfig).groupId
+})
 ```
 
 （当前 FocusReviewTab 通过 `FocusReviewView` 管理分组，`viewGroupId` 暂存，后续可在 view 层面应用。）
@@ -1075,32 +1089,34 @@ git commit -m "feat: FocusReviewTab accepts viewConfig prop for groupId config"
 ### 任务 11：ProjectTab 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/tabs/ProjectTab.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
 
 ```typescript
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 ```
 
 - [ ] **步骤 2：导入类型**
 
 ```typescript
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
 ```
 
 - [ ] **步骤 3：读取 groupId**
 
 ```typescript
 const viewGroupId = computed<string | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  return (props.viewConfig as WorkbenchProjectViewConfig).groupId;
-});
+  if (!props.viewConfig)
+    return undefined
+  return (props.viewConfig as WorkbenchProjectViewConfig).groupId
+})
 ```
 
 - [ ] **步骤 4：运行测试**
@@ -1121,37 +1137,39 @@ git commit -m "feat: ProjectTab accepts viewConfig prop for groupId config"
 ### 任务 12：WorkbenchHabitView 消费 viewConfig
 
 **文件：**
+
 - 修改：`src/components/workbench/view/WorkbenchHabitView.vue`
 
 - [ ] **步骤 1：新增 viewConfig prop**
 
 ```typescript
 const props = defineProps<{
-  viewConfig?: Record<string, unknown>;
-}>();
+  viewConfig?: Record<string, unknown>
+}>()
 ```
 
 - [ ] **步骤 2：导入类型**
 
 ```typescript
-import type { WorkbenchHabitWeekWidgetConfig } from '@/types/workbench';
+import type { WorkbenchHabitWeekWidgetConfig } from '@/types/workbench'
 ```
 
 - [ ] **步骤 3：读取 habitScope 设置初始 listMode**
 
 ```typescript
-import { computed, onMounted, /* 已有 imports */ } from 'vue';
+import { computed, onMounted, /* 已有 imports */ } from 'vue'
 
 const habitScope = computed<WorkbenchHabitWeekWidgetConfig['habitScope'] | undefined>(() => {
-  if (!props.viewConfig) return undefined;
-  return (props.viewConfig as WorkbenchHabitWeekWidgetConfig).habitScope;
-});
+  if (!props.viewConfig)
+    return undefined
+  return (props.viewConfig as WorkbenchHabitWeekWidgetConfig).habitScope
+})
 
 onMounted(() => {
   if (habitScope.value === 'archived') {
-    showArchivedHabits();
+    showArchivedHabits()
   }
-});
+})
 ```
 
 - [ ] **步骤 4：运行测试**
@@ -1172,6 +1190,7 @@ git commit -m "feat: WorkbenchHabitView reads initial habitScope from viewConfig
 ### 任务 13：补充测试
 
 **文件：**
+
 - 修改：`test/tabs/WorkbenchTab.test.ts`
 
 - [ ] **步骤 1：新增 mock getViewDefinition**
@@ -1179,7 +1198,7 @@ git commit -m "feat: WorkbenchHabitView reads initial habitScope from viewConfig
 在 mock 区，`import { TAB_TYPES } from '@/constants';` 之后追加：
 
 ```typescript
-const mockViewConfigDialog = vi.fn();
+const mockViewConfigDialog = vi.fn()
 vi.mock('@/workbench/viewRegistry', () => ({
   getViewDefinition: (viewType: string) => {
     const defaults: Record<string, () => Record<string, unknown>> = {
@@ -1191,16 +1210,16 @@ vi.mock('@/workbench/viewRegistry', () => ({
       project: () => ({}),
       calendar: () => ({}),
       gantt: () => ({}),
-    };
+    }
     return {
       type: viewType,
       createDefaultConfig: defaults[viewType] ?? (() => ({})),
       openConfigDialog: viewType === 'calendar' || viewType === 'gantt'
         ? undefined
         : mockViewConfigDialog,
-    };
+    }
   },
-}));
+}))
 ```
 
 - [ ] **步骤 2：测试创建 view entry 时填入默认 config**
@@ -1208,55 +1227,55 @@ vi.mock('@/workbench/viewRegistry', () => ({
 在 `describe('WorkbenchTab shell', () => {` 的 `beforeEach` 后面追加：
 
 ```typescript
-  it('creates view entries with default config', async () => {
-    const mounted = await mountWorkbenchTab();
+it('creates view entries with default config', async () => {
+  const mounted = await mountWorkbenchTab()
 
-    const mockCreateView = vi.fn(async (viewType: string) => {
-      const { getViewDefinition } = await import('@/workbench/viewRegistry');
-      const def = getViewDefinition(viewType);
-      return def.createDefaultConfig();
-    });
+  const mockCreateView = vi.fn(async (viewType: string) => {
+    const { getViewDefinition } = await import('@/workbench/viewRegistry')
+    const def = getViewDefinition(viewType)
+    return def.createDefaultConfig()
+  })
 
-    expect(mockCreateView('todo')).toEqual({ preset: {} });
-    expect(mockCreateView('habit')).toEqual({ habitScope: 'active' });
-    expect(mockCreateView('quadrant')).toEqual({ quadrant: 'q1' });
-    expect(mockCreateView('pomodoroStats')).toEqual({ section: 'overview' });
-    expect(mockCreateView('focusReview')).toEqual({});
+  expect(mockCreateView('todo')).toEqual({ preset: {} })
+  expect(mockCreateView('habit')).toEqual({ habitScope: 'active' })
+  expect(mockCreateView('quadrant')).toEqual({ quadrant: 'q1' })
+  expect(mockCreateView('pomodoroStats')).toEqual({ section: 'overview' })
+  expect(mockCreateView('focusReview')).toEqual({})
 
-    mounted.unmount();
-  });
+  mounted.unmount()
+})
 ```
 
 - [ ] **步骤 3：测试 view 工具栏"配置"按钮可见**
 
 ```typescript
-  it('shows configure button for view entries', async () => {
-    mockActiveEntryId.value = 'entry-todo';
-    const mounted = await mountWorkbenchTab();
-    await nextTick();
+it('shows configure button for view entries', async () => {
+  mockActiveEntryId.value = 'entry-todo'
+  const mounted = await mountWorkbenchTab()
+  await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-config-trigger"]')).not.toBeNull();
+  expect(mounted.container.querySelector('[data-testid="workbench-view-config-trigger"]')).not.toBeNull()
 
-    mounted.unmount();
-  });
+  mounted.unmount()
+})
 ```
 
 - [ ] **步骤 4：测试配置按钮点击打开弹窗**
 
 ```typescript
-  it('opens view config dialog when configure button is clicked', async () => {
-    mockActiveEntryId.value = 'entry-todo';
-    const mounted = await mountWorkbenchTab();
-    await nextTick();
+it('opens view config dialog when configure button is clicked', async () => {
+  mockActiveEntryId.value = 'entry-todo'
+  const mounted = await mountWorkbenchTab()
+  await nextTick()
 
-    const configBtn = mounted.container.querySelector('[data-testid="workbench-view-config-trigger"]') as HTMLButtonElement;
-    configBtn.click();
-    await nextTick();
+  const configBtn = mounted.container.querySelector('[data-testid="workbench-view-config-trigger"]') as HTMLButtonElement
+  configBtn.click()
+  await nextTick()
 
-    expect(mockViewConfigDialog).toHaveBeenCalled();
+  expect(mockViewConfigDialog).toHaveBeenCalled()
 
-    mounted.unmount();
-  });
+  mounted.unmount()
+})
 ```
 
 - [ ] **步骤 5：运行全部测试**

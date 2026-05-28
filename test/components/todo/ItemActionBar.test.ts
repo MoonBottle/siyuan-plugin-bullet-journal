@@ -1,23 +1,33 @@
 // @vitest-environment happy-dom
 
-import { createApp, nextTick } from 'vue';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
 
-const mockShowFocusPlanDialog = vi.fn();
-const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const mockShowFocusPlanDialog = vi.fn()
+const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => ({
     isFocusing: false,
   }),
-}));
+}))
 
 vi.mock('@/main', () => ({
   useApp: () => ({}),
   usePlugin: () => ({
     openCustomTab: vi.fn(),
   }),
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
@@ -30,66 +40,66 @@ vi.mock('@/i18n', () => ({
         calendar: '日历',
         migrateToToday: '迁移到今天',
         migrateToTomorrow: '迁移到明天',
-      };
+      }
     }
     if (key === 'focusPlan') {
       return {
         setAction: '设置预计',
         editAction: '修改预计',
-      };
+      }
     }
     if (key === 'statusTag') {
       return {
         completed: '#完成',
         abandoned: '#放弃',
-      };
+      }
     }
-    return {};
+    return {}
   }),
-}));
+}))
 
 vi.mock('@/utils/dialog', () => ({
   hideIconTooltip: vi.fn(),
   showIconTooltip: vi.fn(),
   showPomodoroTimerDialog: vi.fn(),
   showFocusPlanDialog: mockShowFocusPlanDialog,
-}));
+}))
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
-}));
+}))
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
-}));
+}))
 
 async function mountComponent(item: any) {
-  const { default: ItemActionBar } = await import('@/components/todo/ItemActionBar.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(ItemActionBar, { item });
-  app.mount(container);
-  await nextTick();
+  const { default: ItemActionBar } = await import('@/components/todo/ItemActionBar.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(ItemActionBar, { item })
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('ItemActionBar', () => {
+describe('itemActionBar', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
-  });
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-14T08:00:00Z'))
+  })
 
   afterEach(() => {
-    vi.useRealTimers();
-  });
+    vi.useRealTimers()
+  })
 
   it('shows set-focus-plan action and opens dialog for the current item', async () => {
     const mounted = await mountComponent({
@@ -98,20 +108,20 @@ describe('ItemActionBar', () => {
       content: '整理日报',
       date: '2026-05-14',
       status: 'pending',
-    });
+    })
 
-    const buttons = [...mounted.container.querySelectorAll('.block__icon')];
-    const planButton = buttons.find(node => node.getAttribute('aria-label') === '设置预计');
+    const buttons = [...mounted.container.querySelectorAll('.block__icon')]
+    const planButton = buttons.find((node) => node.getAttribute('aria-label') === '设置预计')
     expect(planButton).toBeTruthy();
 
-    (planButton as HTMLElement).click();
+    (planButton as HTMLElement).click()
 
     expect(mockShowFocusPlanDialog).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'item-1' }),
-    );
+    )
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('hides abandon action for completed items', async () => {
     const mounted = await mountComponent({
@@ -120,15 +130,15 @@ describe('ItemActionBar', () => {
       content: '已完成事项',
       date: '2026-05-14',
       status: 'completed',
-    });
+    })
 
-    const buttons = [...mounted.container.querySelectorAll('.block__icon')];
-    const abandonButton = buttons.find(node => node.getAttribute('aria-label') === '放弃');
+    const buttons = [...mounted.container.querySelectorAll('.block__icon')]
+    const abandonButton = buttons.find((node) => node.getAttribute('aria-label') === '放弃')
 
-    expect(abandonButton).toBeFalsy();
+    expect(abandonButton).toBeFalsy()
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('uses BlockWriter setStatus when clicking complete', async () => {
     const mounted = await mountComponent({
@@ -137,21 +147,24 @@ describe('ItemActionBar', () => {
       content: '待完成事项',
       date: '2026-05-14',
       status: 'pending',
-    });
+    })
 
     const completeButton = [...mounted.container.querySelectorAll('.block__icon')]
-      .find(node => node.getAttribute('aria-label') === '完成') as HTMLElement | undefined;
+      .find((node) => node.getAttribute('aria-label') === '完成') as HTMLElement | undefined
 
-    completeButton?.click();
-    await nextTick();
+    completeButton?.click()
+    await nextTick()
 
     expect(mockWriteBlock).toHaveBeenCalledWith(
       { blockId: 'block-3' },
-      { type: 'setStatus', status: 'completed' },
-    );
+      {
+        type: 'setStatus',
+        status: 'completed',
+      },
+    )
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('uses BlockWriter addDate when migrating an overdue item', async () => {
     const mounted = await mountComponent({
@@ -163,13 +176,13 @@ describe('ItemActionBar', () => {
       endDateTime: '2026-05-13 10:30',
       status: 'pending',
       siblingItems: [{ date: '2026-05-20' }],
-    });
+    })
 
     const migrateButton = [...mounted.container.querySelectorAll('.block__icon')]
-      .find(node => node.getAttribute('aria-label') === '迁移到今天') as HTMLElement | undefined;
+      .find((node) => node.getAttribute('aria-label') === '迁移到今天') as HTMLElement | undefined
 
-    migrateButton?.click();
-    await nextTick();
+    migrateButton?.click()
+    await nextTick()
 
     expect(mockWriteBlock).toHaveBeenCalledWith(
       { blockId: 'block-4' },
@@ -189,8 +202,8 @@ describe('ItemActionBar', () => {
           },
         ],
       },
-    );
+    )
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

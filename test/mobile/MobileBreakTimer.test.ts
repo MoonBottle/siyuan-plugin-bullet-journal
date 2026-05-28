@@ -1,8 +1,17 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import MobileBreakTimer from '@/mobile/drawers/pomodoro/sub/MobileBreakTimer.vue';
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
+import MobileBreakTimer from '@/mobile/drawers/pomodoro/sub/MobileBreakTimer.vue'
 
 const {
   pomodoroStore,
@@ -12,15 +21,15 @@ const {
     breakTotalSeconds: 600,
     stopBreak: vi.fn(async () => true),
   },
-}));
+}))
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => pomodoroStore,
-}));
+}))
 
 vi.mock('@/main', () => ({
   usePlugin: () => ({}),
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => {
@@ -32,57 +41,57 @@ vi.mock('@/i18n', () => ({
           breakHint: '选择休息时长，点击「开始休息」启动倒计时',
           skipBreak: '跳过休息',
         },
-      };
+      }
     }
     if (key === 'common') {
       return {
         minutes: '分钟',
-      };
+      }
     }
-    return {};
+    return {}
   },
-}));
+}))
 
 function mountBreakTimer() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const app = createApp(MobileBreakTimer);
-  app.mount(container);
+  const app = createApp(MobileBreakTimer)
+  app.mount(container)
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 afterEach(() => {
-  document.body.innerHTML = '';
-  vi.clearAllMocks();
-});
+  document.body.innerHTML = ''
+  vi.clearAllMocks()
+})
 
-describe('MobileBreakTimer', () => {
+describe('mobileBreakTimer', () => {
   it('renders the breathing circle without inline animation styles', async () => {
-    const mounted = mountBreakTimer();
-    await nextTick();
+    const mounted = mountBreakTimer()
+    await nextTick()
 
-    const circle = mounted.container.querySelector('.breathing-circle') as HTMLDivElement | null;
-    expect(circle).not.toBeNull();
-    expect(circle?.getAttribute('style')).toBeNull();
+    const circle = mounted.container.querySelector('.breathing-circle') as HTMLDivElement | null
+    expect(circle).not.toBeNull()
+    expect(circle?.getAttribute('style')).toBeNull()
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('does not render the break selection hint while the break timer is already running', async () => {
-    const mounted = mountBreakTimer();
-    await nextTick();
+    const mounted = mountBreakTimer()
+    await nextTick()
 
-    expect(mounted.container.textContent).not.toContain('选择休息时长');
-    expect(mounted.container.textContent).not.toContain('启动倒计时');
+    expect(mounted.container.textContent).not.toContain('选择休息时长')
+    expect(mounted.container.textContent).not.toContain('启动倒计时')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

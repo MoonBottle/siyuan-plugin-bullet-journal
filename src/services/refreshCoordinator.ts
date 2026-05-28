@@ -1,50 +1,50 @@
-import type { RefreshRequestPayload } from '@/utils/refreshRequests';
+import type { RefreshRequestPayload } from '@/utils/refreshRequests'
 
-type RefreshCoordinatorSnapshot = {
-  docIds: string[];
-  full: boolean;
-  payload?: Record<string, unknown>;
-};
+interface RefreshCoordinatorSnapshot {
+  docIds: string[]
+  full: boolean
+  payload?: Record<string, unknown>
+}
 
-type RefreshCoordinatorOptions = {
-  runFullRefresh: (payload?: Record<string, unknown>) => Promise<void>;
-  runDirectedRefresh: (docIds: string[], payload?: Record<string, unknown>) => Promise<void>;
-  applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void;
-  emitRefreshCompleted: () => void;
-};
+interface RefreshCoordinatorOptions {
+  runFullRefresh: (payload?: Record<string, unknown>) => Promise<void>
+  runDirectedRefresh: (docIds: string[], payload?: Record<string, unknown>) => Promise<void>
+  applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void
+  emitRefreshCompleted: () => void
+}
 
 function mergePayload(
   current: Record<string, unknown> | undefined,
   next: Record<string, unknown> | undefined,
 ) {
-  if (!next) return current;
+  if (!next) return current
   return {
     ...(current ?? {}),
     ...next,
-  };
+  }
 }
 
 export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
-  let running = false;
-  let pendingFull = false;
-  let pendingPayload: Record<string, unknown> | undefined;
-  const pendingDocIds = new Set<string>();
-  let drainPromise: Promise<void> | null = null;
+  let running = false
+  let pendingFull = false
+  let pendingPayload: Record<string, unknown> | undefined
+  const pendingDocIds = new Set<string>()
+  let drainPromise: Promise<void> | null = null
 
   function hasPendingWork() {
-    return pendingFull || pendingDocIds.size > 0 || pendingPayload !== undefined;
+    return pendingFull || pendingDocIds.size > 0 || pendingPayload !== undefined
   }
 
   function mergeRequest(request: RefreshRequestPayload) {
-    pendingPayload = mergePayload(pendingPayload, request.payload);
+    pendingPayload = mergePayload(pendingPayload, request.payload)
 
     if (request.type === 'full') {
-      pendingFull = true;
-      return;
+      pendingFull = true
+      return
     }
 
     if (request.type === 'directed') {
-      request.docIds.forEach(docId => pendingDocIds.add(docId));
+      request.docIds.forEach((docId) => pendingDocIds.add(docId))
     }
   }
 
@@ -53,49 +53,49 @@ export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
       docIds: Array.from(pendingDocIds),
       full: pendingFull,
       payload: pendingPayload,
-    };
+    }
 
-    pendingFull = false;
-    pendingPayload = undefined;
-    pendingDocIds.clear();
+    pendingFull = false
+    pendingPayload = undefined
+    pendingDocIds.clear()
 
-    return snapshot;
+    return snapshot
   }
 
   async function drain() {
-    if (running) return;
+    if (running) return
 
-    running = true;
+    running = true
     try {
       while (hasPendingWork()) {
-        const snapshot = consumePending();
+        const snapshot = consumePending()
 
         if (snapshot.full) {
-          await options.runFullRefresh(snapshot.payload);
+          await options.runFullRefresh(snapshot.payload)
         } else if (snapshot.docIds.length > 0) {
-          await options.runDirectedRefresh(snapshot.docIds, snapshot.payload);
+          await options.runDirectedRefresh(snapshot.docIds, snapshot.payload)
         } else {
-          await options.applySettingsOnly(snapshot.payload);
+          await options.applySettingsOnly(snapshot.payload)
         }
 
-        options.emitRefreshCompleted();
+        options.emitRefreshCompleted()
       }
     } finally {
-      running = false;
-      drainPromise = null;
+      running = false
+      drainPromise = null
     }
   }
 
   return {
     async submit(request: RefreshRequestPayload) {
-      mergeRequest(request);
+      mergeRequest(request)
       if (!drainPromise) {
-        drainPromise = drain();
+        drainPromise = drain()
       }
-      await drainPromise;
+      await drainPromise
     },
     isRunning() {
-      return running;
+      return running
     },
-  };
+  }
 }

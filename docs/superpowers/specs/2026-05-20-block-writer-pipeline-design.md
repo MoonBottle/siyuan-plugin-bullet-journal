@@ -138,14 +138,14 @@
    - 追加新语义单元：
      - 例如 `xxx /rw` -> `xxx 📋|`
      - 光标落在新增内容之后
-    - 改写既有 marker：
-      - 例如 `评审视觉稿 🌱 📅2026-05-15 ⏰14:00 /jt`
-      - 执行后 `评审视觉稿 🌱 📅2026-05-15,2026-05-20 ⏰14:00|`
-      - 光标落在当前块末尾
-    - 对已有 marker 集合新增优先级：
-      - 例如 `评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 /yxj`
-      - 执行后 `评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱|`
-      - 不应变成 `评审视觉稿 🌱 📅2026-05-15,2026-05-20 ⏰14:00|`
+   - 改写既有 marker：
+     - 例如 `评审视觉稿 🌱 📅2026-05-15 ⏰14:00 /jt`
+     - 执行后 `评审视觉稿 🌱 📅2026-05-15,2026-05-20 ⏰14:00|`
+     - 光标落在当前块末尾
+   - 对已有 marker 集合新增优先级：
+     - 例如 `评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 /yxj`
+     - 执行后 `评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱|`
+     - 不应变成 `评审视觉稿 🌱 📅2026-05-15,2026-05-20 ⏰14:00|`
    - slash 触发位置不改变最终语义结果：
      - 在非已有 marker 外触发：
        - `评审视觉稿 /yxj 📅2026-05-15,2026-05-20 ⏰14:00`
@@ -169,7 +169,7 @@
 1. 当前块是否仍然是有效事项
 2. 当前块是否已经包含目标日期 / 时间 / metadata marker
 
-现有 pinia / parser 快照可以作为常规读取来源，但**不能作为唯一真相**。  
+现有 pinia / parser 快照可以作为常规读取来源，但**不能作为唯一真相**。
 原因是 slash 触发片段可能临时插入到 marker 内部，短时间破坏展示文本结构，例如：
 
 ```text
@@ -327,19 +327,19 @@ Commit 层只关心“如何提交”，不再负责业务判断。
 ### 6.1 统一意图
 
 ```ts
-type BlockMutationIntent =
+type BlockMutationIntent
+  = | {
+    kind: 'update'
+    context: BlockWriteContext
+    patches: BlockPatch[]
+  }
   | {
-      kind: 'update'
-      context: BlockWriteContext
-      patches: BlockPatch[]
-    }
-  | {
-      kind: 'insertAfter'
-      anchorBlockId: string
-      patch: InsertableBlockPatch
-      context?: Partial<BlockWriteContext>
-      resultMode: 'boolean' | 'operations'
-    }
+    kind: 'insertAfter'
+    anchorBlockId: string
+    patch: InsertableBlockPatch
+    context?: Partial<BlockWriteContext>
+    resultMode: 'boolean' | 'operations'
+  }
 ```
 
 保留现有公开 API：
@@ -353,30 +353,30 @@ type BlockMutationIntent =
 ### 6.2 Resolve 结果
 
 ```ts
-type ResolvedMutationPlan =
+type ResolvedMutationPlan
+  = | {
+    kind: 'update'
+    targetBlockId: string
+    targetKind: 'paragraph' | 'task-list-item' | 'block'
+    sourceKind: 'protyle-dom' | 'api-kramdown'
+    sourceBlockId?: string
+    commitKind: 'protyle-update' | 'api-update'
+    preferDataType: 'dom'
+    fallbackDataType: 'markdown'
+    context: BlockWriteContext
+    patches: BlockPatch[]
+    datePatchSource?: DatePatchSourceContext
+  }
   | {
-      kind: 'update'
-      targetBlockId: string
-      targetKind: 'paragraph' | 'task-list-item' | 'block'
-      sourceKind: 'protyle-dom' | 'api-kramdown'
-      sourceBlockId?: string
-      commitKind: 'protyle-update' | 'api-update'
-      preferDataType: 'dom'
-      fallbackDataType: 'markdown'
-      context: BlockWriteContext
-      patches: BlockPatch[]
-      datePatchSource?: DatePatchSourceContext
-    }
-  | {
-      kind: 'insertAfter'
-      anchorBlockId: string
-      commitKind: 'api-insert' | 'protyle-insert'
-      preferDataType: 'dom'
-      fallbackDataType: 'markdown'
-      patch: InsertableBlockPatch
-      context?: Partial<BlockWriteContext>
-      resultMode: 'boolean' | 'operations'
-    }
+    kind: 'insertAfter'
+    anchorBlockId: string
+    commitKind: 'api-insert' | 'protyle-insert'
+    preferDataType: 'dom'
+    fallbackDataType: 'markdown'
+    patch: InsertableBlockPatch
+    context?: Partial<BlockWriteContext>
+    resultMode: 'boolean' | 'operations'
+  }
 ```
 
 关键点：
@@ -388,35 +388,35 @@ type ResolvedMutationPlan =
 ### 6.3 Source 快照
 
 ```ts
-type CaretSnapshot =
-  | {
-      policy: 'wbr-first'
-      containerBlockId: string
-      clonedHtmlWithWbr: string
-      fallbackOffset?: {
-        start: number
-        end: number
-      }
+type CaretSnapshot
+  = | {
+    policy: 'wbr-first'
+    containerBlockId: string
+    clonedHtmlWithWbr: string
+    fallbackOffset?: {
+      start: number
+      end: number
     }
+  }
   | {
-      policy: 'none'
-    }
+    policy: 'none'
+  }
 
-type LoadedMutationSource =
+type LoadedMutationSource
+  = | {
+    kind: 'update'
+    targetBlockId: string
+    sourceBlockId?: string
+    currentMarkdown: string
+    currentDomHtml?: string
+    targetElement?: HTMLElement
+    paragraphElement?: HTMLElement
+    caretSnapshot?: CaretSnapshot
+  }
   | {
-      kind: 'update'
-      targetBlockId: string
-      sourceBlockId?: string
-      currentMarkdown: string
-      currentDomHtml?: string
-      targetElement?: HTMLElement
-      paragraphElement?: HTMLElement
-      caretSnapshot?: CaretSnapshot
-    }
-  | {
-      kind: 'insertAfter'
-      anchorBlockId: string
-    }
+    kind: 'insertAfter'
+    anchorBlockId: string
+  }
 ```
 
 ### 6.4 渲染结果
@@ -434,28 +434,28 @@ interface CaretRestorePlan {
   }
 }
 
-type PreparedMutationPayload =
+type PreparedMutationPayload
+  = | {
+    kind: 'update'
+    targetBlockId: string
+    nextMarkdown: string
+    preferredDataType: 'dom'
+    domHtml?: string
+    transactionDomHtml?: string
+    fallbackMarkdown: string
+    oldDomHtml?: string
+    targetElement?: HTMLElement
+    caretRestorePlan?: CaretRestorePlan
+  }
   | {
-      kind: 'update'
-      targetBlockId: string
-      nextMarkdown: string
-      preferredDataType: 'dom'
-      domHtml?: string
-      transactionDomHtml?: string
-      fallbackMarkdown: string
-      oldDomHtml?: string
-      targetElement?: HTMLElement
-      caretRestorePlan?: CaretRestorePlan
-    }
-  | {
-      kind: 'insertAfter'
-      anchorBlockId: string
-      preferredDataType: 'dom'
-      domHtml?: string
-      fallbackMarkdown: string
-      resultMode: 'boolean' | 'operations'
-      caretRestorePlan?: CaretRestorePlan
-    }
+    kind: 'insertAfter'
+    anchorBlockId: string
+    preferredDataType: 'dom'
+    domHtml?: string
+    fallbackMarkdown: string
+    resultMode: 'boolean' | 'operations'
+    caretRestorePlan?: CaretRestorePlan
+  }
 ```
 
 这个类型明确体现了“语义层结果”和“提交层结果”是两个概念：

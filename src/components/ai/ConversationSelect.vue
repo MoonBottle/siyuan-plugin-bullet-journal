@@ -1,5 +1,8 @@
 <template>
-  <div class="conversation-select" v-click-outside="closeDropdown">
+  <div
+    v-click-outside="closeDropdown"
+    class="conversation-select"
+  >
     <span
       ref="triggerRef"
       class="block__icon b3-tooltips b3-tooltips__sw"
@@ -26,13 +29,16 @@
             v-for="conversation in conversations"
             :key="conversation.id"
             class="conversation-select__item"
-            :class="{ 
+            :class="{
               'is-active': conversation.id === currentConversationId,
-              'is-weixin': conversation.source === 'weixin'
+              'is-weixin': conversation.source === 'weixin',
             }"
             @click="selectConversation(conversation.id)"
           >
-            <span class="conversation-select__source-icon" v-if="conversation.source === 'weixin'">
+            <span
+              v-if="conversation.source === 'weixin'"
+              class="conversation-select__source-icon"
+            >
               📱
             </span>
             <span class="conversation-select__item-title">{{ conversation.title }}</span>
@@ -57,98 +63,103 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
-import { t } from '@/i18n';
-import { useAIStore } from '@/stores';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { useAIStore } from '@/stores'
 
 interface ConversationListItem {
-  id: string;
-  title: string;
-  source?: 'local' | 'weixin';
-  weixinUserId?: string;
-  weixinUserName?: string;
+  id: string
+  title: string
+  source?: 'local' | 'weixin'
+  weixinUserId?: string
+  weixinUserName?: string
 }
 
 interface Props {
-  conversations: ConversationListItem[];
-  currentConversationId: string | null;
+  conversations: ConversationListItem[]
+  currentConversationId: string | null
 }
 
-const props = defineProps<Props>();
-
-const aiStore = useAIStore();
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  select: [conversationId: string];
-  delete: [conversationId: string];
-  create: [];
-}>();
+  select: [conversationId: string]
+  delete: [conversationId: string]
+  create: []
+}>()
 
-const isOpen = ref(false);
-const menuRef = ref<HTMLElement>();
-const triggerRef = ref<HTMLElement>();
-const menuStyle = ref<Record<string, string>>({});
+const aiStore = useAIStore()
+
+const isOpen = ref(false)
+const menuRef = ref<HTMLElement>()
+const triggerRef = ref<HTMLElement>()
+const menuStyle = ref<Record<string, string>>({})
 
 function getWeixinStatus(userId: string) {
-  return aiStore.getWeixinConversationStatus(userId);
+  return aiStore.getWeixinConversationStatus(userId)
 }
 
 // 当前对话标题
 const currentConversationTitle = computed(() => {
-  const current = props.conversations.find(c => c.id === props.currentConversationId);
-  return current?.title || t('aiChat').newConversation;
-});
+  const current = props.conversations.find((c) => c.id === props.currentConversationId)
+  return current?.title || t('aiChat').newConversation
+})
 
 // 切换下拉
 async function toggleDropdown() {
-  isOpen.value = !isOpen.value;
+  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    await nextTick();
-    updateMenuPosition();
+    await nextTick()
+    updateMenuPosition()
   }
 }
 
 // 关闭下拉
 function closeDropdown() {
-  isOpen.value = false;
+  isOpen.value = false
 }
 
 // 选择对话
 function selectConversation(conversationId: string) {
-  emit('select', conversationId);
-  isOpen.value = false;
+  emit('select', conversationId)
+  isOpen.value = false
 }
 
 // 删除对话
 function deleteConversation(conversationId: string) {
-  emit('delete', conversationId);
+  emit('delete', conversationId)
 }
 
 // 创建新对话
 function createNewConversation() {
-  emit('create');
-  isOpen.value = false;
+  emit('create')
+  isOpen.value = false
 }
 
 // 更新菜单位置
 function updateMenuPosition() {
-  const trigger = triggerRef.value;
-  if (!trigger) return;
+  const trigger = triggerRef.value
+  if (!trigger) return
 
-  const rect = trigger.getBoundingClientRect();
-  const menuHeight = 300;
-  const menuWidth = 280;
+  const rect = trigger.getBoundingClientRect()
+  const menuHeight = 300
+  const menuWidth = 280
 
-  let top = rect.bottom + 4;
+  let top = rect.bottom + 4
   if (top + menuHeight > window.innerHeight) {
-    top = rect.top - menuHeight - 4;
+    top = rect.top - menuHeight - 4
   }
 
   // 菜单右对齐到触发器
-  let left = rect.right - menuWidth;
+  let left = rect.right - menuWidth
   // 确保不超出左边界
   if (left < 4) {
-    left = 4;
+    left = 4
   }
 
   menuStyle.value = {
@@ -157,41 +168,41 @@ function updateMenuPosition() {
     left: `${left}px`,
     width: `${menuWidth}px`,
     maxHeight: `${menuHeight}px`,
-    zIndex: '9999'
-  };
+    zIndex: '9999',
+  }
 }
 
 // 窗口大小改变时更新位置
 watch(isOpen, (open) => {
   if (open) {
-    window.addEventListener('scroll', updateMenuPosition, true);
-    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true)
+    window.addEventListener('resize', updateMenuPosition)
   } else {
-    window.removeEventListener('scroll', updateMenuPosition, true);
-    window.removeEventListener('resize', updateMenuPosition);
+    window.removeEventListener('scroll', updateMenuPosition, true)
+    window.removeEventListener('resize', updateMenuPosition)
   }
-});
+})
 
 // 点击外部指令
 const vClickOutside = {
   mounted(el: HTMLElement, binding: any) {
     (el as any)._clickOutside = (event: Event) => {
-      const menuEl = menuRef.value;
-      const target = event.target as Node;
+      const menuEl = menuRef.value
+      const target = event.target as Node
       // 检查点击目标是否在触发器内或下拉菜单内
       if (el.contains(target) || (menuEl && menuEl.contains(target))) {
-        return;
+        return
       }
-      binding.value();
-    };
-    document.addEventListener('click', (el as any)._clickOutside, true);
+      binding.value()
+    }
+    document.addEventListener('click', (el as any)._clickOutside, true)
   },
   unmounted(el: HTMLElement) {
     if ((el as any)._clickOutside) {
-      document.removeEventListener('click', (el as any)._clickOutside, true);
+      document.removeEventListener('click', (el as any)._clickOutside, true)
     }
-  }
-};
+  },
+}
 </script>
 
 <style lang="scss" scoped>

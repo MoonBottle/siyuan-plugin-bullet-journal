@@ -4,28 +4,37 @@
       <!-- 技能名称 -->
       <div class="form-item form-item-full">
         <label class="form-label">{{ t('slash').skillName }}</label>
-        <SyInput 
-          v-model="form.name" 
+        <SyInput
+          v-model="form.name"
           :placeholder="t('slash').skillNamePlaceholder"
           @blur="validateName"
         />
-        <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
-        <span v-else-if="isBuiltinName" class="form-hint warning">
+        <span
+          v-if="errors.name"
+          class="form-error"
+        >{{ errors.name }}</span>
+        <span
+          v-else-if="isBuiltinName"
+          class="form-hint warning"
+        >
           {{ t('slash').willOverrideBuiltin }}
         </span>
       </div>
-      
+
       <!-- 技能描述 -->
       <div class="form-item form-item-full">
         <label class="form-label">{{ t('slash').skillDescription }}</label>
-        <SyTextarea 
+        <SyTextarea
           v-model="form.description"
           :placeholder="t('slash').skillDescriptionPlaceholder"
           :rows="4"
         />
-        <span v-if="errors.description" class="form-error">{{ errors.description }}</span>
+        <span
+          v-if="errors.description"
+          class="form-error"
+        >{{ errors.description }}</span>
       </div>
-      
+
       <!-- 自动启用 -->
       <div class="form-item form-item-inline">
         <SySwitch v-model="form.autoEnable" />
@@ -35,14 +44,17 @@
 
     <!-- 底部按钮 -->
     <div class="action-section">
-      <button 
-        class="start-btn" 
+      <button
+        class="start-btn"
         :disabled="!isValid || isCreating"
         @click="createSkill"
       >
         {{ isCreating ? t('common').creating : t('common').create }}
       </button>
-      <button class="cancel-btn" @click="close">
+      <button
+        class="cancel-btn"
+        @click="close"
+      >
         {{ t('common').cancel }}
       </button>
     </div>
@@ -50,155 +62,163 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { t } from '@/i18n';
-import { showMessage } from 'siyuan';
-import { showConfirmDialog } from '@/utils/dialog';
-import SyInput from '@/components/SiyuanTheme/SyInput.vue';
-import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import { useSkillStore } from '@/stores/skillStore';
-import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
-import { setBlockAttrs, prependBlock, createDocWithMd, lsNotebooks } from '@/api';
-import { 
-  generateSkillDocument, 
+import type { SkillConfig } from '@/types/skill'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  reactive,
+  ref,
+} from 'vue'
+import {
+  createDocWithMd,
+  prependBlock,
+  setBlockAttrs,
+} from '@/api'
+import SyInput from '@/components/SiyuanTheme/SyInput.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue'
+import { t } from '@/i18n'
+import { useSkillStore } from '@/stores/skillStore'
+import { showConfirmDialog } from '@/utils/dialog'
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils'
+import {
+  generateSkillDocument,
   generateSkillDocumentFromTemplate,
+  getBuiltinSkill,
   isBuiltinSkill,
-  getBuiltinSkill
-} from '@/utils/skillTemplates';
-import type { SkillConfig } from '@/types/skill';
+} from '@/utils/skillTemplates'
 
 const props = defineProps<{
-  mode: 'existing' | 'new';
-  docId?: string;
-  notebook?: string;
-  docPath?: string;
-  prefilledName?: string;
-}>();
+  mode: 'existing' | 'new'
+  docId?: string
+  notebook?: string
+  docPath?: string
+  prefilledName?: string
+}>()
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'created', docId: string, skillName?: string): void;
-}>();
+  (e: 'close'): void
+  (e: 'created', docId: string, skillName?: string): void
+}>()
 
-const skillStore = useSkillStore();
+const skillStore = useSkillStore()
 
 const form = reactive({
   name: props.prefilledName || '',
   description: '',
-  autoEnable: true
-});
+  autoEnable: true,
+})
 
 const errors = reactive({
   name: '',
-  description: ''
-});
+  description: '',
+})
 
-const isCreating = ref(false);
+const isCreating = ref(false)
 
-const isBuiltinName = computed(() => isBuiltinSkill(form.name.trim()));
+const isBuiltinName = computed(() => isBuiltinSkill(form.name.trim()))
 
 const isValid = computed(() => {
-  return form.name.trim().length > 0 && 
-         form.description.trim().length > 0 &&
-         !errors.name &&
-         !errors.description;
-});
+  return form.name.trim().length > 0
+    && form.description.trim().length > 0
+    && !errors.name
+    && !errors.description
+})
 
 function validateName() {
-  const name = form.name.trim();
-  errors.name = '';
-  
+  const name = form.name.trim()
+  errors.name = ''
+
   if (!name) {
-    errors.name = t('slash').skillNameRequired;
-    return;
+    errors.name = t('slash').skillNameRequired
+    return
   }
-  
+
   // 检查是否已存在同名技能（非覆盖情况）
   if (!isBuiltinName.value && skillStore.isSkillNameExists(name)) {
-    errors.name = t('slash').skillNameExists;
-    return;
+    errors.name = t('slash').skillNameExists
+
   }
 }
 
 async function createSkill() {
-  if (!isValid.value) return;
-  
-  const skillName = form.name.trim();
-  const isBuiltin = isBuiltinSkill(skillName);
-  
+  if (!isValid.value) return
+
+  const skillName = form.name.trim()
+  const isBuiltin = isBuiltinSkill(skillName)
+
   // 如果是内置技能，确认覆盖
   if (isBuiltin) {
-    const builtin = getBuiltinSkill(skillName);
+    const builtin = getBuiltinSkill(skillName)
     showConfirmDialog(
       t('common').confirmOverride,
       t('slash').overrideBuiltinSkill
         .replace('{name}', skillName)
         .replace('{description}', builtin?.description || ''),
       () => {
-        doCreateSkill(skillName, isBuiltin);
-      }
-    );
-    return;
+        doCreateSkill(skillName, isBuiltin)
+      },
+    )
+    return
   }
-  
-  await doCreateSkill(skillName, isBuiltin);
+
+  await doCreateSkill(skillName, isBuiltin)
 }
 
 async function getTaskAssistantNotebook(): Promise<string> {
-  const notebook = await getOrCreateTaskAssistantNotebook();
+  const notebook = await getOrCreateTaskAssistantNotebook()
   if (!notebook) {
-    throw new Error('没有可用的笔记本');
+    throw new Error('没有可用的笔记本')
   }
-  return notebook.id;
+  return notebook.id
 }
 
 async function doCreateSkill(skillName: string, isBuiltin: boolean) {
-  isCreating.value = true;
-  
+  isCreating.value = true
+
   try {
-    let targetDocId: string;
-    
+    let targetDocId: string
+
     if (props.mode === 'new') {
       // 新建模式：创建新文档
-      const notebook = props.notebook || await getTaskAssistantNotebook();
-      const docPath = `AI技能/${skillName}`;
-      targetDocId = await createDocWithMd(notebook, docPath, '');
+      const notebook = props.notebook || await getTaskAssistantNotebook()
+      const docPath = `AI技能/${skillName}`
+      targetDocId = await createDocWithMd(notebook, docPath, '')
       if (!targetDocId) {
-        throw new Error('创建文档失败');
+        throw new Error('创建文档失败')
       }
     } else {
       // 已有文档模式：使用传入的 docId
-      targetDocId = props.docId!;
+      targetDocId = props.docId!
     }
-    
+
     // 1. 设置文档自定义属性（name、description）
     await setBlockAttrs(targetDocId, {
       'custom-name': skillName,
-      'custom-description': form.description.trim()
-    });
-    
+      'custom-description': form.description.trim(),
+    })
+
     // 2. 生成技能文档内容并添加到文档开头
-    let documentContent: string;
+    let documentContent: string
     if (isBuiltin) {
-      const builtin = getBuiltinSkill(skillName);
+      const builtin = getBuiltinSkill(skillName)
       documentContent = generateSkillDocumentFromTemplate(
         skillName,
         form.description,
         'User',
-        builtin?.content || ''
-      );
+        builtin?.content || '',
+      )
     } else {
       documentContent = generateSkillDocument(
         skillName,
         form.description,
-        'User'
-      );
+        'User',
+      )
     }
-    
+
     // 在文档开头添加技能内容
-    await prependBlock('markdown', documentContent, targetDocId);
-    
+    await prependBlock('markdown', documentContent, targetDocId)
+
     // 3. 添加到技能列表（docId 作为主键）
     const skillConfig: SkillConfig = {
       docId: targetDocId,
@@ -206,36 +226,39 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
       description: form.description.trim(),
       enabled: form.autoEnable,
       createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    
-    skillStore.addSkill(skillConfig);
-    
+      updatedAt: Date.now(),
+    }
+
+    skillStore.addSkill(skillConfig)
+
     // 4. 显示成功提示
     if (isBuiltin) {
       showMessage(
-        t('slash').overrideSuccess.replace('{name}', skillName), 
-        3000, 
-        'info'
-      );
+        t('slash').overrideSuccess.replace('{name}', skillName),
+        3000,
+        'info',
+      )
     } else {
-      showMessage(t('slash').createSkillSuccess, 3000, 'info');
+      showMessage(t('slash').createSkillSuccess, 3000, 'info')
     }
-    
+
     // 5. 打开创建的文档并关闭弹框
-    console.log('[CreateSkillDialog] Emitting created event:', { targetDocId, skillName });
-    emit('created', targetDocId, skillName);
-    emit('close');
+    console.log('[CreateSkillDialog] Emitting created event:', {
+      targetDocId,
+      skillName,
+    })
+    emit('created', targetDocId, skillName)
+    emit('close')
   } catch (error) {
-    console.error('[CreateSkillDialog] Failed to create skill:', error);
-    showMessage(t('slash').createSkillFailed, 3000, 'error');
+    console.error('[CreateSkillDialog] Failed to create skill:', error)
+    showMessage(t('slash').createSkillFailed, 3000, 'error')
   } finally {
-    isCreating.value = false;
+    isCreating.value = false
   }
 }
 
 function close() {
-  emit('close');
+  emit('close')
 }
 </script>
 
@@ -261,7 +284,7 @@ function close() {
 
 .form-item-full {
   width: 100%;
-  
+
   input,
   textarea {
     width: 100%;

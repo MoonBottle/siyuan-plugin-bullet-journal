@@ -1,31 +1,37 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
-import * as caretController from '@/utils/blockWriter/shared/caretController';
-import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
+import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter'
+import * as caretController from '@/utils/blockWriter/shared/caretController'
 
 function readUseHref(useEl: Element | null): string | null {
   return useEl?.getAttribute('href')
     ?? useEl?.getAttribute('xlink:href')
     ?? useEl?.getAttributeNS('http://www.w3.org/1999/xlink', 'href')
-    ?? null;
+    ?? null
 }
 
 describe('protyleCommitter', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
-    window.getSelection()?.removeAllRanges();
-  });
+    document.body.innerHTML = ''
+    window.getSelection()?.removeAllRanges()
+  })
 
   it('restores caret at line end after setTaskTag', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.setAttribute('data-node-id', 'block-1');
-    targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.setAttribute('data-node-id', 'block-1')
+    targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -44,33 +50,33 @@ describe('protyleCommitter', () => {
           placement: 'line-end',
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledTimes(1);
-    expect(targetElement.textContent).toBe('任务 📋');
+    expect(success).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledTimes(1)
+    expect(targetElement.textContent).toBe('任务 📋')
 
-    const selection = window.getSelection();
-    expect(selection?.rangeCount).toBe(1);
-    const range = selection!.getRangeAt(0);
-    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement;
-    const logicalOffset = document.createRange();
-    logicalOffset.selectNodeContents(editable);
-    logicalOffset.setEnd(range.startContainer, range.startOffset);
-    expect(range.collapsed).toBe(true);
-    expect(range.startContainer.textContent).toBe('任务 📋');
-    expect(logicalOffset.toString().length).toBe((editable.textContent ?? '').length);
-  });
+    const selection = window.getSelection()
+    expect(selection?.rangeCount).toBe(1)
+    const range = selection!.getRangeAt(0)
+    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement
+    const logicalOffset = document.createRange()
+    logicalOffset.selectNodeContents(editable)
+    logicalOffset.setEnd(range.startContainer, range.startOffset)
+    expect(range.collapsed).toBe(true)
+    expect(range.startContainer.textContent).toBe('任务 📋')
+    expect(logicalOffset.toString().length).toBe((editable.textContent ?? '').length)
+  })
 
   it('restores caret to the current line end for multiline slash cleanup', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.setAttribute('data-node-id', 'block-1');
-    targetElement.innerHTML = '<div contenteditable="true">测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 /fq\n测试换行</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.setAttribute('data-node-id', 'block-1')
+    targetElement.innerHTML = '<div contenteditable="true">测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 /fq\n测试换行</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -90,41 +96,41 @@ describe('protyleCommitter', () => {
           lineIndex: 0,
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledTimes(1);
-    expect(targetElement.textContent).toBe('测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌\n测试换行');
+    expect(success).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledTimes(1)
+    expect(targetElement.textContent).toBe('测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌\n测试换行')
 
-    const selection = window.getSelection();
-    expect(selection?.rangeCount).toBe(1);
-    const range = selection!.getRangeAt(0);
-    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement;
-    const logicalOffset = document.createRange();
-    logicalOffset.selectNodeContents(editable);
-    logicalOffset.setEnd(range.startContainer, range.startOffset);
-    expect(range.collapsed).toBe(true);
-    expect(logicalOffset.toString()).toBe('测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌');
-  });
+    const selection = window.getSelection()
+    expect(selection?.rangeCount).toBe(1)
+    const range = selection!.getRangeAt(0)
+    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement
+    const logicalOffset = document.createRange()
+    logicalOffset.selectNodeContents(editable)
+    logicalOffset.setEnd(range.startContainer, range.startOffset)
+    expect(range.collapsed).toBe(true)
+    expect(logicalOffset.toString()).toBe('测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌')
+  })
 
   it('restores caret on the live task-list node after transaction replaces the list item', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.classList.add('li');
-    targetElement.setAttribute('data-node-id', 'task-1');
-    targetElement.setAttribute('data-type', 'NodeListItem');
-    targetElement.setAttribute('data-subtype', 't');
-    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.classList.add('li')
+    targetElement.setAttribute('data-node-id', 'task-1')
+    targetElement.setAttribute('data-type', 'NodeListItem')
+    targetElement.setAttribute('data-subtype', 't')
+    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn((doOperations: Array<{ data: string }>) => {
-        const template = document.createElement('template');
-        template.innerHTML = doOperations[0].data;
-        const replacement = template.content.firstElementChild as HTMLElement;
-        targetElement.replaceWith(replacement);
-        targetElement.innerHTML = '';
+        const template = document.createElement('template')
+        template.innerHTML = doOperations[0].data
+        const replacement = template.content.firstElementChild as HTMLElement
+        targetElement.replaceWith(replacement)
+        targetElement.innerHTML = ''
       }),
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -144,44 +150,44 @@ describe('protyleCommitter', () => {
           lineIndex: 0,
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
-    const liveTarget = document.querySelector('[data-node-id="task-1"]') as HTMLElement;
-    expect(liveTarget).not.toBe(targetElement);
+    expect(success).toBe(true)
+    const liveTarget = document.querySelector('[data-node-id="task-1"]') as HTMLElement
+    expect(liveTarget).not.toBe(targetElement)
 
-    const selection = window.getSelection();
-    expect(selection?.rangeCount).toBe(1);
-    const range = selection!.getRangeAt(0);
-    const editable = liveTarget.querySelector('[contenteditable="true"]') as HTMLElement;
-    const logicalOffset = document.createRange();
-    logicalOffset.selectNodeContents(editable);
-    logicalOffset.setEnd(range.startContainer, range.startOffset);
-    expect(range.collapsed).toBe(true);
-    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
-  });
+    const selection = window.getSelection()
+    expect(selection?.rangeCount).toBe(1)
+    const range = selection!.getRangeAt(0)
+    const editable = liveTarget.querySelector('[contenteditable="true"]') as HTMLElement
+    const logicalOffset = document.createRange()
+    logicalOffset.selectNodeContents(editable)
+    logicalOffset.setEnd(range.startContainer, range.startOffset)
+    expect(range.collapsed).toBe(true)
+    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌')
+  })
 
   it('restores slash caret by WBR before offset fallback', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.setAttribute('data-node-id', 'task-1');
-    targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.setAttribute('data-node-id', 'task-1')
+    targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>'
+    document.body.appendChild(targetElement)
 
-    const focusOrder: string[] = [];
-    const originalFocusByWbr = caretController.focusByWbr;
-    const originalFocusByOffset = caretController.focusByOffset;
+    const focusOrder: string[] = []
+    const originalFocusByWbr = caretController.focusByWbr
+    const originalFocusByOffset = caretController.focusByOffset
     const focusByWbrSpy = vi.spyOn(caretController, 'focusByWbr').mockImplementation((nodeElement: HTMLElement) => {
-      focusOrder.push('wbr');
-      return originalFocusByWbr(nodeElement);
-    });
+      focusOrder.push('wbr')
+      return originalFocusByWbr(nodeElement)
+    })
     const focusByOffsetSpy = vi.spyOn(caretController, 'focusByOffset').mockImplementation((nodeElement: HTMLElement, offset) => {
-      focusOrder.push('offset');
-      return originalFocusByOffset(nodeElement, offset);
-    });
+      focusOrder.push('offset')
+      return originalFocusByOffset(nodeElement, offset)
+    })
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -199,38 +205,41 @@ describe('protyleCommitter', () => {
           policy: 'wbr',
           placement: 'after-inserted-text',
           anchorText: '📋',
-          fallbackOffset: { start: 2, end: 2 },
+          fallbackOffset: {
+            start: 2,
+            end: 2,
+          },
         },
       },
-    );
+    )
 
-    focusByWbrSpy.mockRestore();
-    focusByOffsetSpy.mockRestore();
+    focusByWbrSpy.mockRestore()
+    focusByOffsetSpy.mockRestore()
 
-    expect(success).toBe(true);
-    expect(focusOrder[0]).toBe('wbr');
-  });
+    expect(success).toBe(true)
+    expect(focusOrder[0]).toBe('wbr')
+  })
 
   it('prefers the connected target element when duplicate block ids exist elsewhere in the document', async () => {
-    const staleDuplicate = document.createElement('div');
-    staleDuplicate.setAttribute('data-node-id', 'task-1');
-    staleDuplicate.textContent = '旧节点 /fq';
-    document.body.appendChild(staleDuplicate);
+    const staleDuplicate = document.createElement('div')
+    staleDuplicate.setAttribute('data-node-id', 'task-1')
+    staleDuplicate.textContent = '旧节点 /fq'
+    document.body.appendChild(staleDuplicate)
 
-    const targetElement = document.createElement('div');
-    targetElement.classList.add('li');
-    targetElement.setAttribute('data-node-id', 'task-1');
-    targetElement.setAttribute('data-type', 'NodeListItem');
-    targetElement.setAttribute('data-subtype', 't');
-    targetElement.innerHTML = '<span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.classList.add('li')
+    targetElement.setAttribute('data-node-id', 'task-1')
+    targetElement.setAttribute('data-type', 'NodeListItem')
+    targetElement.setAttribute('data-subtype', 't')
+    targetElement.innerHTML = '<span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn(),
       wysiwyg: {
         element: document.body,
       },
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -250,34 +259,34 @@ describe('protyleCommitter', () => {
           lineIndex: 0,
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
-    const selection = window.getSelection();
-    expect(selection?.rangeCount).toBe(1);
-    const range = selection!.getRangeAt(0);
-    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement;
-    const logicalOffset = document.createRange();
-    logicalOffset.selectNodeContents(editable);
-    logicalOffset.setEnd(range.startContainer, range.startOffset);
-    expect(range.collapsed).toBe(true);
-    expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
-    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
-  });
+    expect(success).toBe(true)
+    const selection = window.getSelection()
+    expect(selection?.rangeCount).toBe(1)
+    const range = selection!.getRangeAt(0)
+    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement
+    const logicalOffset = document.createRange()
+    logicalOffset.selectNodeContents(editable)
+    logicalOffset.setEnd(range.startContainer, range.startOffset)
+    expect(range.collapsed).toBe(true)
+    expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌')
+    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌')
+  })
 
   it('toggles task checkbox DOM when next markdown completes a task list item', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.classList.add('li');
-    targetElement.setAttribute('data-node-id', 'task-1');
-    targetElement.setAttribute('data-type', 'NodeListItem');
-    targetElement.setAttribute('data-subtype', 't');
-    targetElement.setAttribute('data-task', ' ');
-    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">任务 /wc</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.classList.add('li')
+    targetElement.setAttribute('data-node-id', 'task-1')
+    targetElement.setAttribute('data-type', 'NodeListItem')
+    targetElement.setAttribute('data-subtype', 't')
+    targetElement.setAttribute('data-task', ' ')
+    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">任务 /wc</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const success = await commitViaProtyle(
       { protyle },
@@ -295,27 +304,27 @@ describe('protyleCommitter', () => {
           policy: 'none',
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
-    expect(targetElement.classList.contains('protyle-task--done')).toBe(true);
-    expect(targetElement.getAttribute('data-task')).toBe('X');
-    expect(readUseHref(targetElement.querySelector('use'))).toBe('#iconCheck');
-  });
+    expect(success).toBe(true)
+    expect(targetElement.classList.contains('protyle-task--done')).toBe(true)
+    expect(targetElement.getAttribute('data-task')).toBe('X')
+    expect(readUseHref(targetElement.querySelector('use'))).toBe('#iconCheck')
+  })
 
   it('logs debug when both wbr and offset caret restore fail', async () => {
-    const targetElement = document.createElement('div');
-    targetElement.setAttribute('data-node-id', 'block-fail');
-    targetElement.innerHTML = '<div contenteditable="true">任务</div>';
-    document.body.appendChild(targetElement);
+    const targetElement = document.createElement('div')
+    targetElement.setAttribute('data-node-id', 'block-fail')
+    targetElement.innerHTML = '<div contenteditable="true">任务</div>'
+    document.body.appendChild(targetElement)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
-    vi.spyOn(caretController, 'focusByWbr').mockReturnValue(false);
-    vi.spyOn(caretController, 'focusByOffset').mockReturnValue(false);
-    const consoleSpy = vi.spyOn(console, 'log');
+    vi.spyOn(caretController, 'focusByWbr').mockReturnValue(false)
+    vi.spyOn(caretController, 'focusByOffset').mockReturnValue(false)
+    const consoleSpy = vi.spyOn(console, 'log')
 
     const success = await commitViaProtyle(
       { protyle },
@@ -331,21 +340,27 @@ describe('protyleCommitter', () => {
         targetElement,
         caretRestorePlan: {
           policy: 'wbr',
-          fallbackOffset: { start: 2, end: 2 },
+          fallbackOffset: {
+            start: 2,
+            end: 2,
+          },
         },
       },
-    );
+    )
 
-    expect(success).toBe(true);
+    expect(success).toBe(true)
     expect(consoleSpy).toHaveBeenCalledWith(
       '[BJ-MutationPlanner][protyleCommitter] caret restore fully failed',
       expect.objectContaining({
         targetBlockId: 'block-fail',
         caretRestoreFailed: true,
-        fallbackOffset: { start: 2, end: 2 },
+        fallbackOffset: {
+          start: 2,
+          end: 2,
+        },
       }),
-    );
+    )
 
-    vi.restoreAllMocks();
-  });
-});
+    vi.restoreAllMocks()
+  })
+})

@@ -12,19 +12,20 @@
 
 ## 文件结构
 
-| 文件 | 职责 | 操作 |
-|------|------|------|
-| `src/utils/projectTaskTree.ts` | 树构建、合并逻辑、过滤、进度统计 | 修改 |
-| `src/components/project/ProjectTreeNode.vue` | 树节点渲染（适配 MergedItem） | 修改 |
-| `src/components/project/ProjectDetailPane.vue` | 右栏详情面板（动态 showAllDates） | 修改 |
-| `src/components/project/ProjectTreePane.vue` | 键盘导航（visibleNodes 适配 MergedItem） | 修改 |
-| `test/utils/projectTaskTree.test.ts` | 单元测试 | 修改 |
+| 文件                                           | 职责                                     | 操作 |
+| ---------------------------------------------- | ---------------------------------------- | ---- |
+| `src/utils/projectTaskTree.ts`                 | 树构建、合并逻辑、过滤、进度统计         | 修改 |
+| `src/components/project/ProjectTreeNode.vue`   | 树节点渲染（适配 MergedItem）            | 修改 |
+| `src/components/project/ProjectDetailPane.vue` | 右栏详情面板（动态 showAllDates）        | 修改 |
+| `src/components/project/ProjectTreePane.vue`   | 键盘导航（visibleNodes 适配 MergedItem） | 修改 |
+| `test/utils/projectTaskTree.test.ts`           | 单元测试                                 | 修改 |
 
 ---
 
 ### 任务 1：新增 MergedItem 类型和 formatDateRange 函数
 
 **文件：**
+
 - 修改：`src/utils/projectTaskTree.ts`
 - 测试：`test/utils/projectTaskTree.test.ts`
 
@@ -33,27 +34,27 @@
 在 `test/utils/projectTaskTree.test.ts` 末尾（`describe` 块内、最后一个 `it` 之后）追加：
 
 ```typescript
-import { formatDateRange } from '@/utils/projectTaskTree';
+import { formatDateRange } from '@/utils/projectTaskTree'
 ```
 
 ```typescript
 describe('formatDateRange', () => {
   it('同年同月只显示日', () => {
-    expect(formatDateRange('2026-05-20', '2026-05-23')).toBe('2026-05-20 ~ 23');
-  });
+    expect(formatDateRange('2026-05-20', '2026-05-23')).toBe('2026-05-20 ~ 23')
+  })
 
   it('同年不同月显示月-日', () => {
-    expect(formatDateRange('2026-05-20', '2026-06-03')).toBe('2026-05-20 ~ 06-03');
-  });
+    expect(formatDateRange('2026-05-20', '2026-06-03')).toBe('2026-05-20 ~ 06-03')
+  })
 
   it('不同年显示完整日期', () => {
-    expect(formatDateRange('2025-12-28', '2026-01-03')).toBe('2025-12-28 ~ 2026-01-03');
-  });
+    expect(formatDateRange('2025-12-28', '2026-01-03')).toBe('2025-12-28 ~ 2026-01-03')
+  })
 
   it('起止日期相同只返回单个日期', () => {
-    expect(formatDateRange('2026-05-20', '2026-05-20')).toBe('2026-05-20');
-  });
-});
+    expect(formatDateRange('2026-05-20', '2026-05-20')).toBe('2026-05-20')
+  })
+})
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -67,14 +68,14 @@ describe('formatDateRange', () => {
 
 ```typescript
 export interface MergedItem {
-  isMerged: true;
-  blockId: string;
-  items: Item[];
-  content: string;
-  status: Item['status'];
-  priority?: string;
-  dateRange: string;
-  firstItemId: string;
+  isMerged: true
+  blockId: string
+  items: Item[]
+  content: string
+  status: Item['status']
+  priority?: string
+  dateRange: string
+  firstItemId: string
 }
 ```
 
@@ -82,11 +83,11 @@ export interface MergedItem {
 
 ```typescript
 export interface ProjectTaskTreeNode {
-  task: Task;
-  items: (Item | MergedItem)[];
-  children: ProjectTaskTreeNode[];
-  depth: number;
-  orphaned: boolean;
+  task: Task
+  items: (Item | MergedItem)[]
+  children: ProjectTaskTreeNode[]
+  depth: number
+  orphaned: boolean
 }
 ```
 
@@ -94,12 +95,15 @@ export interface ProjectTaskTreeNode {
 
 ```typescript
 export function formatDateRange(start: string, end: string): string {
-  if (start === end) return start;
-  const [sy, sm] = start.split('-');
-  const [ey, em, ed] = end.split('-');
-  if (sy === ey && sm === em) return `${start} ~ ${ed}`;
-  if (sy === ey) return `${start} ~ ${em}-${ed}`;
-  return `${start} ~ ${end}`;
+  if (start === end)
+    return start
+  const [sy, sm] = start.split('-')
+  const [ey, em, ed] = end.split('-')
+  if (sy === ey && sm === em)
+    return `${start} ~ ${ed}`
+  if (sy === ey)
+    return `${start} ~ ${em}-${ed}`
+  return `${start} ~ ${end}`
 }
 ```
 
@@ -120,6 +124,7 @@ git commit -m "feat(project-tree): add MergedItem type and formatDateRange"
 ### 任务 2：实现 mergeItemsByBlockId 并集成到 buildProjectTaskTree
 
 **文件：**
+
 - 修改：`src/utils/projectTaskTree.ts`
 - 测试：`test/utils/projectTaskTree.test.ts`
 
@@ -128,7 +133,7 @@ git commit -m "feat(project-tree): add MergedItem type and formatDateRange"
 在 `test/utils/projectTaskTree.test.ts` 的 `import` 行追加：
 
 ```typescript
-import { mergeItemsByBlockId } from '@/utils/projectTaskTree';
+import { mergeItemsByBlockId } from '@/utils/projectTaskTree'
 ```
 
 在 `describe('projectTaskTree')` 块内（最后一个 `it` 之后、`describe('formatDateRange')` 之前）追加：
@@ -141,38 +146,38 @@ it('mergeItemsByBlockId 按blockId分组合并多日期Item', () => {
     item({ id: 'i3', blockId: 'blk-a', content: '写文档', date: '2026-05-25', status: 'pending' }),
     item({ id: 'i4', blockId: 'blk-b', content: '测试', date: '2026-05-21', status: 'completed' }),
     item({ id: 'i5', content: '无blockId', date: '2026-05-21', status: 'pending' }),
-  ];
+  ]
 
-  const result = mergeItemsByBlockId(items);
+  const result = mergeItemsByBlockId(items)
 
-  expect(result).toHaveLength(3);
-  const merged = result[0] as MergedItem;
-  expect(merged.isMerged).toBe(true);
-  expect(merged.blockId).toBe('blk-a');
-  expect(merged.dateRange).toBe('2026-05-20 ~ 25');
-  expect(merged.firstItemId).toBe('i1');
-  expect(merged.status).toBe('pending');
-  expect(merged.items).toHaveLength(3);
-  expect(result[1]).toMatchObject({ id: 'i4', content: '测试' });
-  expect(result[2]).toMatchObject({ id: 'i5', content: '无blockId' });
-});
+  expect(result).toHaveLength(3)
+  const merged = result[0] as MergedItem
+  expect(merged.isMerged).toBe(true)
+  expect(merged.blockId).toBe('blk-a')
+  expect(merged.dateRange).toBe('2026-05-20 ~ 25')
+  expect(merged.firstItemId).toBe('i1')
+  expect(merged.status).toBe('pending')
+  expect(merged.items).toHaveLength(3)
+  expect(result[1]).toMatchObject({ id: 'i4', content: '测试' })
+  expect(result[2]).toMatchObject({ id: 'i5', content: '无blockId' })
+})
 
 it('mergeItemsByBlockId 单个blockId不合并', () => {
   const items = [
     item({ id: 'i1', blockId: 'blk-a', content: '写文档', date: '2026-05-20' }),
-  ];
+  ]
 
-  const result = mergeItemsByBlockId(items);
+  const result = mergeItemsByBlockId(items)
 
-  expect(result).toHaveLength(1);
-  expect(result[0]).toMatchObject({ id: 'i1' });
-});
+  expect(result).toHaveLength(1)
+  expect(result[0]).toMatchObject({ id: 'i1' })
+})
 ```
 
 需要在测试文件顶部导入 `MergedItem`：
 
 ```typescript
-import type { MergedItem } from '@/utils/projectTaskTree';
+import type { MergedItem } from '@/utils/projectTaskTree'
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -186,28 +191,28 @@ import type { MergedItem } from '@/utils/projectTaskTree';
 
 ```typescript
 export function mergeItemsByBlockId(items: Item[]): (Item | MergedItem)[] {
-  const groups = new Map<string, Item[]>();
-  const order: string[] = [];
+  const groups = new Map<string, Item[]>()
+  const order: string[] = []
 
   for (const it of items) {
-    const key = it.blockId ?? it.id;
+    const key = it.blockId ?? it.id
     if (!groups.has(key)) {
-      groups.set(key, []);
-      order.push(key);
+      groups.set(key, [])
+      order.push(key)
     }
-    groups.get(key)!.push(it);
+    groups.get(key)!.push(it)
   }
 
-  const result: (Item | MergedItem)[] = [];
+  const result: (Item | MergedItem)[] = []
   for (const key of order) {
-    const group = groups.get(key)!;
+    const group = groups.get(key)!
     if (group.length === 1) {
-      result.push(group[0]);
-      continue;
+      result.push(group[0])
+      continue
     }
-    const sorted = [...group].sort((a, b) => a.date.localeCompare(b.date));
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
+    const sorted = [...group].sort((a, b) => a.date.localeCompare(b.date))
+    const first = sorted[0]
+    const last = sorted.at(-1)
     result.push({
       isMerged: true,
       blockId: key,
@@ -217,9 +222,9 @@ export function mergeItemsByBlockId(items: Item[]): (Item | MergedItem)[] {
       priority: first.priority,
       dateRange: formatDateRange(first.date, last.date),
       firstItemId: first.id,
-    });
+    })
   }
-  return result;
+  return result
 }
 ```
 
@@ -259,6 +264,7 @@ git commit -m "feat(project-tree): merge items by blockId in buildProjectTaskTre
 ### 任务 3：适配 getTaskItemProgress 支持合并项
 
 **文件：**
+
 - 修改：`src/utils/projectTaskTree.ts`
 - 测试：`test/utils/projectTaskTree.test.ts`
 
@@ -272,17 +278,17 @@ it('统计含合并事项的进度（合并项计为1个）', () => {
     item({ id: 'a1', blockId: 'blk-1', status: 'completed', date: '2026-05-01' }),
     item({ id: 'a2', blockId: 'blk-1', status: 'completed', date: '2026-05-02' }),
     item({ id: 'b', status: 'pending', date: '2026-05-03' }),
-  ]);
+  ])
 
-  const progress = getTaskItemProgress(task({ items: mergedItems }));
+  const progress = getTaskItemProgress(task({ items: mergedItems }))
 
   expect(progress).toEqual({
     total: 2,
     completed: 1,
     pending: 1,
     abandoned: 0,
-  });
-});
+  })
+})
 ```
 
 注意：现有进度统计测试传入的是 `task({ items: [...] })` 其中 items 是 `Item[]`，所以需要验证 `getTaskItemProgress` 的 `Task` 类型参数的 `items` 能接受 `(Item | MergedItem)[]`。如果 `Task.items` 类型是 `Item[]`，测试需要直接传合并后的数组给修改后的函数签名。
@@ -305,17 +311,17 @@ it('统计含合并事项的进度（合并项计为1个）', () => {
       firstItemId: 'a1',
     },
     item({ id: 'b', status: 'pending', date: '2026-05-03' }),
-  ];
+  ]
 
-  const progress = getTaskItemProgress(mergedItems);
+  const progress = getTaskItemProgress(mergedItems)
 
   expect(progress).toEqual({
     total: 2,
     completed: 1,
     pending: 1,
     abandoned: 0,
-  });
-});
+  })
+})
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -329,18 +335,18 @@ it('统计含合并事项的进度（合并项计为1个）', () => {
 
 ```typescript
 export function getTaskItemProgress(itemsOrTask: Task | (Item | MergedItem)[]): TaskItemProgress {
-  const items = Array.isArray(itemsOrTask) ? itemsOrTask : (itemsOrTask.items ?? []);
+  const items = Array.isArray(itemsOrTask) ? itemsOrTask : (itemsOrTask.items ?? [])
   return items.reduce<TaskItemProgress>((progress, entry) => {
-    const status: ItemStatus = 'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status;
-    progress.total += 1;
-    progress[status] += 1;
-    return progress;
+    const status: ItemStatus = 'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status
+    progress.total += 1
+    progress[status] += 1
+    return progress
   }, {
     total: 0,
     completed: 0,
     pending: 0,
     abandoned: 0,
-  });
+  })
 }
 ```
 
@@ -365,6 +371,7 @@ git commit -m "feat(project-tree): adapt getTaskItemProgress for MergedItem"
 ### 任务 4：适配搜索/过滤支持 MergedItem
 
 **文件：**
+
 - 修改：`src/utils/projectTaskTree.ts`
 - 测试：`test/utils/projectTaskTree.test.ts`
 
@@ -384,16 +391,16 @@ it('搜索命中合并事项时保留该项', () => {
         item({ id: 'i3', content: '开会', date: '2026-05-20' }),
       ],
     }),
-  ]));
+  ]))
 
-  const result = filterProjectTaskTree(tree, '周报');
+  const result = filterProjectTaskTree(tree, '周报')
 
-  expect(result.nodes[0].items).toHaveLength(1);
-  const merged = result.nodes[0].items[0] as MergedItem;
-  expect(merged.isMerged).toBe(true);
-  expect(merged.dateRange).toBe('2026-05-19 ~ 26');
-  expect(result.matchedItemIds).toContain('i1');
-});
+  expect(result.nodes[0].items).toHaveLength(1)
+  const merged = result.nodes[0].items[0] as MergedItem
+  expect(merged.isMerged).toBe(true)
+  expect(merged.dateRange).toBe('2026-05-19 ~ 26')
+  expect(result.matchedItemIds).toContain('i1')
+})
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
@@ -411,37 +418,38 @@ it('搜索命中合并事项时保留该项', () => {
 const matchedItems = node.items.filter(item =>
   (!query || itemMatchesQuery(item, query))
   && (!hasTagFilter || itemMatchesTags(item, normalizedTags)),
-);
+)
 ```
 
 改为：
 
 ```typescript
-const matchedItems = node.items.filter(entry => {
+const matchedItems = node.items.filter((entry) => {
   if ('isMerged' in entry) {
-    const mi = entry as MergedItem;
+    const mi = entry as MergedItem
     const matchQuery = !query || mi.content.toLowerCase().includes(query)
       || mi.dateRange.toLowerCase().includes(query)
-      || mi.items.some(it => itemMatchesQuery(it, query));
-    const matchTags = !hasTagFilter || mi.items.some(it => itemMatchesTags(it, normalizedTags));
-    return matchQuery && matchTags;
+      || mi.items.some(it => itemMatchesQuery(it, query))
+    const matchTags = !hasTagFilter || mi.items.some(it => itemMatchesTags(it, normalizedTags))
+    return matchQuery && matchTags
   }
-  const it = entry as Item;
+  const it = entry as Item
   return (!query || itemMatchesQuery(it, query))
-    && (!hasTagFilter || itemMatchesTags(it, normalizedTags));
-});
+    && (!hasTagFilter || itemMatchesTags(it, normalizedTags))
+})
 ```
 
 同样，`matchedItemIds` 收集需要处理 MergedItem：
 
 ```typescript
-matchedItems.forEach(entry => {
+matchedItems.forEach((entry) => {
   if ('isMerged' in entry) {
-    matchedItemIds.add((entry as MergedItem).firstItemId);
-  } else {
-    matchedItemIds.add((entry as Item).id);
+    matchedItemIds.add((entry as MergedItem).firstItemId)
   }
-});
+  else {
+    matchedItemIds.add((entry as Item).id)
+  }
+})
 ```
 
 还需要修改 `matchedItems.map(row => row.id)` 相关的断言。现有测试（第 100 行）使用 `result.nodes[0].items.map(row => row.id)`，合并后 MergedItem 没有 `id` 属性。由于 `filterNode` 返回的 `items` 类型已变为 `(Item | MergedItem)[]`，需要确保现有测试仍通过。现有测试数据中每个 item 的 blockId 都不同（或为空），因此不会触发合并，保持兼容。
@@ -463,6 +471,7 @@ git commit -m "feat(project-tree): adapt filter for MergedItem"
 ### 任务 5：适配 ProjectTreeNode.vue 渲染 MergedItem
 
 **文件：**
+
 - 修改：`src/components/project/ProjectTreeNode.vue`
 
 - [ ] **步骤 1：修改 script 适配 MergedItem**
@@ -470,8 +479,8 @@ git commit -m "feat(project-tree): adapt filter for MergedItem"
 在 `import` 行添加：
 
 ```typescript
-import { getTaskItemProgress } from '@/utils/projectTaskTree';
-import type { MergedItem } from '@/utils/projectTaskTree';
+import type { MergedItem } from '@/utils/projectTaskTree'
+import { getTaskItemProgress } from '@/utils/projectTaskTree'
 ```
 
 修改 `progress` computed，将 `getTaskItemProgress(props.node.task)` 改为 `getTaskItemProgress(props.node.items)`。
@@ -479,19 +488,19 @@ import type { MergedItem } from '@/utils/projectTaskTree';
 添加辅助函数：
 
 ```typescript
-import type { Item } from '@/types/models';
-import type { ProjectTaskTreeNode, MergedItem } from '@/utils/projectTaskTree';
+import type { Item } from '@/types/models'
+import type { MergedItem, ProjectTaskTreeNode } from '@/utils/projectTaskTree'
 
 function getItemId(entry: Item | MergedItem): string {
-  return 'isMerged' in entry ? entry.firstItemId : entry.id;
+  return 'isMerged' in entry ? entry.firstItemId : entry.id
 }
 
 function getItemMeta(entry: Item | MergedItem): string {
   if ('isMerged' in entry) {
-    return [entry.dateRange, entry.priority].filter(Boolean).join(' · ');
+    return [entry.dateRange, entry.priority].filter(Boolean).join(' · ')
   }
-  const it = entry as Item;
-  return [it.date, it.priority].filter(Boolean).join(' · ');
+  const it = entry as Item
+  return [it.date, it.priority].filter(Boolean).join(' · ')
 }
 ```
 
@@ -517,8 +526,12 @@ function getItemMeta(entry: Item | MergedItem): string {
   :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
   @click="$emit('select-item', getItemId(entry))"
 >
-  <span :class="['project-item-row__status', `project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"></span>
-  <span class="project-item-row__content">{{ 'isMerged' in entry ? (entry as MergedItem).content : (entry as Item).content }}</span>
+  <span
+    :class="['project-item-row__status', `project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"
+  ></span>
+  <span class="project-item-row__content"
+    >{{ 'isMerged' in entry ? (entry as MergedItem).content : (entry as Item).content }}</span
+  >
   <span class="project-item-row__meta">{{ getItemMeta(entry) }}</span>
 </button>
 ```
@@ -541,6 +554,7 @@ git commit -m "feat(project-tree): render MergedItem in tree nodes"
 ### 任务 6：适配 ProjectTreePane.vue 键盘导航
 
 **文件：**
+
 - 修改：`src/components/project/ProjectTreePane.vue`
 
 - [ ] **步骤 1：修改 visibleNodes 中的 item id 获取**
@@ -548,20 +562,20 @@ git commit -m "feat(project-tree): render MergedItem in tree nodes"
 在 `import` 行添加：
 
 ```typescript
-import type { MergedItem } from '@/utils/projectTaskTree';
+import type { MergedItem } from '@/utils/projectTaskTree'
 ```
 
 将 `visibleNodes` computed 中的 `for (const item of node.items)` 循环内的：
 
 ```typescript
-result.push({ type: 'item', id: item.id, parentTaskId: node.task.id });
+result.push({ type: 'item', id: item.id, parentTaskId: node.task.id })
 ```
 
 改为：
 
 ```typescript
-const itemId = 'isMerged' in item ? (item as MergedItem).firstItemId : (item as Item).id;
-result.push({ type: 'item', id: itemId, parentTaskId: node.task.id });
+const itemId = 'isMerged' in item ? (item as MergedItem).firstItemId : (item as Item).id
+result.push({ type: 'item', id: itemId, parentTaskId: node.task.id })
 ```
 
 确保文件顶部有 `import type { Item } from '@/types/models';`（如果没有则添加）。
@@ -582,6 +596,7 @@ git commit -m "feat(project-tree): adapt keyboard navigation for MergedItem"
 ### 任务 7：右栏详情动态 showAllDates
 
 **文件：**
+
 - 修改：`src/components/project/ProjectDetailPane.vue`
 
 - [ ] **步骤 1：修改 showAllDates 逻辑**

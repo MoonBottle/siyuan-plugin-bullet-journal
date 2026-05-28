@@ -14,39 +14,40 @@
 
 ### Create
 
-| File | Responsibility |
-|------|----------------|
+| File                                        | Responsibility                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `test/domain/habit/habitEbbinghaus.test.ts` | Focused unit coverage for stage derivation, next due date, overdue days, and final-interval looping |
 
 ### Modify
 
-| File | Responsibility |
-|------|----------------|
-| `src/types/models.ts` | Extend `HabitFrequency`, `HabitDayState`, and `HabitPeriodState` with Ebbinghaus-facing fields |
-| `src/parser/habitParser.ts` | Parse/serialize `🔄艾宾浩斯` and custom interval syntax |
-| `test/parser/habitParser.test.ts` | Parser regressions for Chinese/English Ebbinghaus syntax and malformed templates |
-| `src/domain/habit/habitPeriod.ts` | Normalize interval templates, derive stage/next due date/overdue days, and integrate with period eligibility |
-| `src/domain/habit/habitCompletion.ts` | Surface due/overdue/not-needed day-state semantics for Ebbinghaus |
-| `test/domain/habit/habitPeriod.test.ts` | Verify `getHabitPeriod()` and `isDateEligibleForHabit()` behavior for Ebbinghaus |
-| `test/domain/habit/habitCompletion.test.ts` | Verify day/period state for due, overdue, completed, and backfilled records |
-| `src/domain/habit/habitStats.ts` | Adjust completion-rate denominator and streak behavior for Ebbinghaus |
-| `test/domain/habit/habitStats.test.ts` | Verify expected-count math and conservative streak handling |
-| `src/components/dialog/HabitCreateDialog.vue` | Add Ebbinghaus frequency option and optional custom interval input |
-| `test/components/dialog/HabitCreateDialog.test.ts` | Verify create/edit markdown generation and validation |
-| `src/components/habit/HabitListItem.vue` | Show `艾宾浩斯` frequency summary and derived schedule hint |
-| `test/components/habit/HabitListItem.test.ts` | Verify stage/due/overdue text rendering |
-| `src/components/habit/HabitWorkspaceDetailPane.vue` | Show current stage, current interval, next due date, and overdue days |
-| `test/components/habit/HabitWorkspaceDetailPane.test.ts` | Verify detail metadata rendering |
-| `src/i18n/zh_CN.json` | Add Chinese labels for Ebbinghaus option, stage text, and overdue hints |
-| `src/i18n/en_US.json` | Add English labels for Ebbinghaus option, stage text, and overdue hints |
-| `docs/user-guide/data-format.md` | Document new frequency syntax and examples |
-| `docs/user-guide/habit-checkin.md` | Document stage progression and missed-date behavior |
+| File                                                     | Responsibility                                                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/types/models.ts`                                    | Extend `HabitFrequency`, `HabitDayState`, and `HabitPeriodState` with Ebbinghaus-facing fields               |
+| `src/parser/habitParser.ts`                              | Parse/serialize `🔄艾宾浩斯` and custom interval syntax                                                      |
+| `test/parser/habitParser.test.ts`                        | Parser regressions for Chinese/English Ebbinghaus syntax and malformed templates                             |
+| `src/domain/habit/habitPeriod.ts`                        | Normalize interval templates, derive stage/next due date/overdue days, and integrate with period eligibility |
+| `src/domain/habit/habitCompletion.ts`                    | Surface due/overdue/not-needed day-state semantics for Ebbinghaus                                            |
+| `test/domain/habit/habitPeriod.test.ts`                  | Verify `getHabitPeriod()` and `isDateEligibleForHabit()` behavior for Ebbinghaus                             |
+| `test/domain/habit/habitCompletion.test.ts`              | Verify day/period state for due, overdue, completed, and backfilled records                                  |
+| `src/domain/habit/habitStats.ts`                         | Adjust completion-rate denominator and streak behavior for Ebbinghaus                                        |
+| `test/domain/habit/habitStats.test.ts`                   | Verify expected-count math and conservative streak handling                                                  |
+| `src/components/dialog/HabitCreateDialog.vue`            | Add Ebbinghaus frequency option and optional custom interval input                                           |
+| `test/components/dialog/HabitCreateDialog.test.ts`       | Verify create/edit markdown generation and validation                                                        |
+| `src/components/habit/HabitListItem.vue`                 | Show `艾宾浩斯` frequency summary and derived schedule hint                                                  |
+| `test/components/habit/HabitListItem.test.ts`            | Verify stage/due/overdue text rendering                                                                      |
+| `src/components/habit/HabitWorkspaceDetailPane.vue`      | Show current stage, current interval, next due date, and overdue days                                        |
+| `test/components/habit/HabitWorkspaceDetailPane.test.ts` | Verify detail metadata rendering                                                                             |
+| `src/i18n/zh_CN.json`                                    | Add Chinese labels for Ebbinghaus option, stage text, and overdue hints                                      |
+| `src/i18n/en_US.json`                                    | Add English labels for Ebbinghaus option, stage text, and overdue hints                                      |
+| `docs/user-guide/data-format.md`                         | Document new frequency syntax and examples                                                                   |
+| `docs/user-guide/habit-checkin.md`                       | Document stage progression and missed-date behavior                                                          |
 
 ---
 
 ## Task 1: Add Ebbinghaus Syntax to the Habit Model and Parser
 
 **Files:**
+
 - Modify: `src/types/models.ts`
 - Modify: `src/parser/habitParser.ts`
 - Test: `test/parser/habitParser.test.ts`
@@ -59,28 +60,28 @@ Append these cases to `test/parser/habitParser.test.ts`:
 it('parses default ebbinghaus habit frequency', () => {
   expect(parseHabitFrequency('艾宾浩斯')).toEqual({
     type: 'ebbinghaus',
-  });
-});
+  })
+})
 
 it('parses custom ebbinghaus intervals', () => {
   expect(parseHabitFrequency('艾宾浩斯[1,2,4,7,15]')).toEqual({
     type: 'ebbinghaus',
     intervals: [1, 2, 4, 7, 15],
-  });
-});
+  })
+})
 
 it('parses english ebbinghaus syntax', () => {
   expect(parseHabitFrequency('ebbinghaus[1,2,4,7,15]')).toEqual({
     type: 'ebbinghaus',
     intervals: [1, 2, 4, 7, 15],
-  });
-});
+  })
+})
 
 it('rejects malformed ebbinghaus intervals', () => {
-  expect(parseHabitFrequency('艾宾浩斯[1,2,2]')).toBeNull();
-  expect(parseHabitFrequency('艾宾浩斯[0,2,4]')).toBeNull();
-  expect(parseHabitFrequency('艾宾浩斯[a,2,4]')).toBeNull();
-});
+  expect(parseHabitFrequency('艾宾浩斯[1,2,2]')).toBeNull()
+  expect(parseHabitFrequency('艾宾浩斯[0,2,4]')).toBeNull()
+  expect(parseHabitFrequency('艾宾浩斯[a,2,4]')).toBeNull()
+})
 
 it('serializes ebbinghaus frequency back to markdown', () => {
   expect(buildHabitDefinitionMarkdown({
@@ -88,8 +89,8 @@ it('serializes ebbinghaus frequency back to markdown', () => {
     startDate: '2026-05-14',
     type: 'binary',
     frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
-  })).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
-});
+  })).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]')
+})
 ```
 
 - [ ] **Step 2: Run the parser test file and confirm the new cases fail**
@@ -107,42 +108,42 @@ Expected: FAIL because `parseHabitFrequency()` and `buildHabitDefinitionMarkdown
 Update `src/types/models.ts`:
 
 ```ts
-export type HabitFrequency = {
-  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days' | 'ebbinghaus';
-  interval?: number;
-  daysPerWeek?: number;
-  daysOfWeek?: number[];
-  intervals?: number[];
-};
+export interface HabitFrequency {
+  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days' | 'ebbinghaus'
+  interval?: number
+  daysPerWeek?: number
+  daysOfWeek?: number[]
+  intervals?: number[]
+}
 
 export interface HabitDayState {
-  date: string;
-  hasRecord: boolean;
-  isCompleted: boolean;
-  isMissed?: boolean;
-  isDue?: boolean;
-  isOverdue?: boolean;
-  overdueDays?: number;
-  nextDueDate?: string;
-  currentStageIndex?: number;
-  currentIntervalDays?: number;
-  currentValue?: number;
-  targetValue?: number;
+  date: string
+  hasRecord: boolean
+  isCompleted: boolean
+  isMissed?: boolean
+  isDue?: boolean
+  isOverdue?: boolean
+  overdueDays?: number
+  nextDueDate?: string
+  currentStageIndex?: number
+  currentIntervalDays?: number
+  currentValue?: number
+  targetValue?: number
 }
 
 export interface HabitPeriodState {
-  periodType: 'day' | 'interval' | 'week';
-  periodStart: string;
-  periodEnd: string;
-  requiredCount: number;
-  completedCount: number;
-  remainingCount: number;
-  isCompleted: boolean;
-  eligibleToday: boolean;
-  nextDueDate?: string;
-  currentStageIndex?: number;
-  currentIntervalDays?: number;
-  overdueDays?: number;
+  periodType: 'day' | 'interval' | 'week'
+  periodStart: string
+  periodEnd: string
+  requiredCount: number
+  completedCount: number
+  remainingCount: number
+  isCompleted: boolean
+  eligibleToday: boolean
+  nextDueDate?: string
+  currentStageIndex?: number
+  currentIntervalDays?: number
+  overdueDays?: number
 }
 ```
 
@@ -153,30 +154,30 @@ Patch `src/parser/habitParser.ts` with a template parser and serializer branch:
 ```ts
 function parseEbbinghausIntervals(raw?: string): number[] | null {
   if (!raw) {
-    return null;
+    return null
   }
 
-  const values = raw.split(',').map(part => Number.parseInt(part.trim(), 10));
+  const values = raw.split(',').map(part => Number.parseInt(part.trim(), 10))
   if (values.length === 0 || values.some(value => !Number.isInteger(value) || value <= 0)) {
-    return null;
+    return null
   }
 
   for (let i = 1; i < values.length; i++) {
     if (values[i] <= values[i - 1]) {
-      return null;
+      return null
     }
   }
 
-  return values;
+  return values
 }
 
-const ebbinghausMatch = str.match(/^(?:艾宾浩斯|ebbinghaus)(?:\[(.+)\])?$/i);
+const ebbinghausMatch = str.match(/^(?:艾宾浩斯|ebbinghaus)(?:\[(.+)\])?$/i)
 if (ebbinghausMatch) {
-  const intervals = parseEbbinghausIntervals(ebbinghausMatch[1]);
+  const intervals = parseEbbinghausIntervals(ebbinghausMatch[1])
   if (ebbinghausMatch[1] && !intervals) {
-    return null;
+    return null
   }
-  return intervals ? { type: 'ebbinghaus', intervals } : { type: 'ebbinghaus' };
+  return intervals ? { type: 'ebbinghaus', intervals } : { type: 'ebbinghaus' }
 }
 ```
 
@@ -185,9 +186,9 @@ And in `frequencyToMarkdown()`:
 ```ts
 if (frequency.type === 'ebbinghaus') {
   if (frequency.intervals?.length) {
-    return `艾宾浩斯[${frequency.intervals.join(',')}]`;
+    return `艾宾浩斯[${frequency.intervals.join(',')}]`
   }
-  return '艾宾浩斯';
+  return '艾宾浩斯'
 }
 ```
 
@@ -215,6 +216,7 @@ git commit -m "feat(habit): parse ebbinghaus frequency"
 ## Task 2: Implement Derived Ebbinghaus Scheduling in the Domain Layer
 
 **Files:**
+
 - Modify: `src/domain/habit/habitPeriod.ts`
 - Modify: `src/domain/habit/habitCompletion.ts`
 - Create: `test/domain/habit/habitEbbinghaus.test.ts`
@@ -226,9 +228,9 @@ git commit -m "feat(habit): parse ebbinghaus frequency"
 Create `test/domain/habit/habitEbbinghaus.test.ts`:
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { getEbbinghausScheduleState } from '@/domain/habit/habitPeriod';
-import type { Habit } from '@/types/models';
+import type { Habit } from '@/types/models'
+import { describe, expect, it } from 'vitest'
+import { getEbbinghausScheduleState } from '@/domain/habit/habitPeriod'
 
 function mkHabit(overrides: Partial<Habit> = {}): Habit {
   return {
@@ -240,20 +242,20 @@ function mkHabit(overrides: Partial<Habit> = {}): Habit {
     records: [],
     frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
     ...overrides,
-  };
+  }
 }
 
 describe('getEbbinghausScheduleState', () => {
   it('returns first due date after first completion', () => {
     const state = getEbbinghausScheduleState(mkHabit({
       records: [{ date: '2026-05-14', content: '英语单词' } as any],
-    }), '2026-05-15');
+    }), '2026-05-15')
 
-    expect(state.currentStageIndex).toBe(0);
-    expect(state.currentIntervalDays).toBe(1);
-    expect(state.nextDueDate).toBe('2026-05-15');
-    expect(state.isDue).toBe(true);
-  });
+    expect(state.currentStageIndex).toBe(0)
+    expect(state.currentIntervalDays).toBe(1)
+    expect(state.nextDueDate).toBe('2026-05-15')
+    expect(state.isDue).toBe(true)
+  })
 
   it('keeps the final interval once the last stage is reached', () => {
     const state = getEbbinghausScheduleState(mkHabit({
@@ -264,24 +266,24 @@ describe('getEbbinghausScheduleState', () => {
         { date: '2026-05-21', content: '英语单词' },
         { date: '2026-05-28', content: '英语单词' },
       ] as any,
-    }), '2026-06-12');
+    }), '2026-06-12')
 
-    expect(state.currentStageIndex).toBe(4);
-    expect(state.currentIntervalDays).toBe(15);
-    expect(state.nextDueDate).toBe('2026-06-12');
-  });
+    expect(state.currentStageIndex).toBe(4)
+    expect(state.currentIntervalDays).toBe(15)
+    expect(state.nextDueDate).toBe('2026-06-12')
+  })
 
   it('stays overdue on the current stage until make-up completion', () => {
     const state = getEbbinghausScheduleState(mkHabit({
       records: [{ date: '2026-05-14', content: '英语单词' } as any],
-    }), '2026-05-18');
+    }), '2026-05-18')
 
-    expect(state.nextDueDate).toBe('2026-05-15');
-    expect(state.isDue).toBe(true);
-    expect(state.isOverdue).toBe(true);
-    expect(state.overdueDays).toBe(3);
-  });
-});
+    expect(state.nextDueDate).toBe('2026-05-15')
+    expect(state.isDue).toBe(true)
+    expect(state.isOverdue).toBe(true)
+    expect(state.overdueDays).toBe(3)
+  })
+})
 ```
 
 Append these cases to `test/domain/habit/habitCompletion.test.ts`:
@@ -291,11 +293,11 @@ it('marks ebbinghaus date as not needed before the next due date', () => {
   const state = getHabitDayState(mkHabit({
     frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
     records: [{ date: '2026-05-14', content: '英语单词' } as any],
-  }), '2026-05-14');
+  }), '2026-05-14')
 
-  expect(state.isDue).toBe(false);
-  expect(state.nextDueDate).toBe('2026-05-15');
-});
+  expect(state.isDue).toBe(false)
+  expect(state.nextDueDate).toBe('2026-05-15')
+})
 ```
 
 - [ ] **Step 2: Run the domain tests and confirm they fail**
@@ -313,26 +315,26 @@ Expected: FAIL because `getEbbinghausScheduleState()` does not exist and Ebbingh
 Implement the helpers in `src/domain/habit/habitPeriod.ts`:
 
 ```ts
-const DEFAULT_EBBINGHAUS_INTERVALS = [1, 2, 4, 7, 15];
+const DEFAULT_EBBINGHAUS_INTERVALS = [1, 2, 4, 7, 15]
 
 export function getEbbinghausIntervals(frequency?: HabitFrequency): number[] {
   if (frequency?.type !== 'ebbinghaus') {
-    return DEFAULT_EBBINGHAUS_INTERVALS;
+    return DEFAULT_EBBINGHAUS_INTERVALS
   }
 
-  const values = frequency.intervals?.filter(value => Number.isInteger(value) && value > 0) ?? [];
+  const values = frequency.intervals?.filter(value => Number.isInteger(value) && value > 0) ?? []
   if (values.length === 0) {
-    return DEFAULT_EBBINGHAUS_INTERVALS;
+    return DEFAULT_EBBINGHAUS_INTERVALS
   }
 
-  return values;
+  return values
 }
 
 export function getEbbinghausScheduleState(habit: Habit, date: string) {
-  const intervals = getEbbinghausIntervals(habit.frequency);
+  const intervals = getEbbinghausIntervals(habit.frequency)
   const completedRecords = habit.records
     .filter(record => getHabitRecordStatus(record) !== 'missed')
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => a.date.localeCompare(b.date))
 
   if (completedRecords.length === 0) {
     return {
@@ -342,14 +344,14 @@ export function getEbbinghausScheduleState(habit: Habit, date: string) {
       isDue: date >= habit.startDate,
       isOverdue: date > habit.startDate,
       overdueDays: Math.max(dayjs(date).diff(dayjs(habit.startDate), 'day'), 0),
-    };
+    }
   }
 
-  const currentStageIndex = Math.min(completedRecords.length - 1, intervals.length - 1);
-  const nextIntervalIndex = Math.min(completedRecords.length, intervals.length - 1);
-  const lastCompletedDate = completedRecords.at(-1)!.date;
-  const nextDueDate = dayjs(lastCompletedDate).add(intervals[nextIntervalIndex], 'day').format('YYYY-MM-DD');
-  const overdueDays = Math.max(dayjs(date).diff(dayjs(nextDueDate), 'day'), 0);
+  const currentStageIndex = Math.min(completedRecords.length - 1, intervals.length - 1)
+  const nextIntervalIndex = Math.min(completedRecords.length, intervals.length - 1)
+  const lastCompletedDate = completedRecords.at(-1)!.date
+  const nextDueDate = dayjs(lastCompletedDate).add(intervals[nextIntervalIndex], 'day').format('YYYY-MM-DD')
+  const overdueDays = Math.max(dayjs(date).diff(dayjs(nextDueDate), 'day'), 0)
 
   return {
     currentStageIndex,
@@ -358,7 +360,7 @@ export function getEbbinghausScheduleState(habit: Habit, date: string) {
     isDue: date >= nextDueDate,
     isOverdue: date > nextDueDate,
     overdueDays,
-  };
+  }
 }
 ```
 
@@ -377,7 +379,7 @@ if (frequency.type === 'ebbinghaus') {
     periodStart: date,
     periodEnd: date,
     requiredCount: getEbbinghausScheduleState(habit, date).isDue ? 1 : 0,
-  };
+  }
 }
 ```
 
@@ -388,7 +390,7 @@ Patch `src/domain/habit/habitCompletion.ts`:
 ```ts
 const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
   ? getEbbinghausScheduleState(habit, date)
-  : null;
+  : null
 
 if (records.length === 0) {
   return {
@@ -402,7 +404,7 @@ if (records.length === 0) {
     nextDueDate: ebbinghausState?.nextDueDate,
     currentStageIndex: ebbinghausState?.currentStageIndex,
     currentIntervalDays: ebbinghausState?.currentIntervalDays,
-  };
+  }
 }
 ```
 
@@ -411,7 +413,7 @@ And in `getHabitPeriodState()`:
 ```ts
 const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
   ? getEbbinghausScheduleState(habit, date)
-  : null;
+  : null
 
 return {
   ...period,
@@ -425,7 +427,7 @@ return {
   currentStageIndex: ebbinghausState?.currentStageIndex,
   currentIntervalDays: ebbinghausState?.currentIntervalDays,
   overdueDays: ebbinghausState?.overdueDays,
-};
+}
 ```
 
 - [ ] **Step 5: Re-run the domain tests and verify they pass**
@@ -452,6 +454,7 @@ git commit -m "feat(habit): derive ebbinghaus schedule state"
 ## Task 3: Adjust Stats for Ebbinghaus Completion Windows
 
 **Files:**
+
 - Modify: `src/domain/habit/habitStats.ts`
 - Modify: `test/domain/habit/habitStats.test.ts`
 
@@ -468,23 +471,23 @@ it('uses due review count instead of active days for ebbinghaus completion rate'
       { date: '2026-05-14', content: '英语单词' },
       { date: '2026-05-15', content: '英语单词' },
     ] as any,
-  });
+  })
 
-  const stats = calculateHabitStats(habit, '2026-05-20');
-  expect(stats.totalCheckins).toBe(2);
-  expect(stats.completionRate).toBeCloseTo(2 / 3, 5);
-});
+  const stats = calculateHabitStats(habit, '2026-05-20')
+  expect(stats.totalCheckins).toBe(2)
+  expect(stats.completionRate).toBeCloseTo(2 / 3, 5)
+})
 
 it('returns zero streaks for ebbinghaus habits in the first release', () => {
   const habit = mkHabit({
     frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
     records: [{ date: '2026-05-14', content: '英语单词' } as any],
-  });
+  })
 
-  const stats = calculateHabitStats(habit, '2026-05-20');
-  expect(stats.currentStreak).toBe(0);
-  expect(stats.longestStreak).toBe(0);
-});
+  const stats = calculateHabitStats(habit, '2026-05-20')
+  expect(stats.currentStreak).toBe(0)
+  expect(stats.longestStreak).toBe(0)
+})
 ```
 
 - [ ] **Step 2: Run the stats tests and confirm they fail**
@@ -503,28 +506,28 @@ Patch `src/domain/habit/habitStats.ts`:
 
 ```ts
 function countEbbinghausDueCompletions(habit: Habit, currentDate: string) {
-  const completedDates = getCompletedRecordDates(habit).filter(date => date <= currentDate);
+  const completedDates = getCompletedRecordDates(habit).filter(date => date <= currentDate)
   if (habit.frequency?.type !== 'ebbinghaus') {
     return {
       completedCount: completedDates.length,
       expectedCount: completedDates.length,
-    };
+    }
   }
 
-  const intervals = getEbbinghausIntervals(habit.frequency);
-  let expectedCount = 0;
-  let anchorDate = habit.startDate;
+  const intervals = getEbbinghausIntervals(habit.frequency)
+  let expectedCount = 0
+  let anchorDate = habit.startDate
 
   while (anchorDate <= currentDate) {
-    expectedCount++;
-    const nextIndex = Math.min(expectedCount - 1, intervals.length - 1);
-    anchorDate = dayjs(anchorDate).add(intervals[nextIndex], 'day').format('YYYY-MM-DD');
+    expectedCount++
+    const nextIndex = Math.min(expectedCount - 1, intervals.length - 1)
+    anchorDate = dayjs(anchorDate).add(intervals[nextIndex], 'day').format('YYYY-MM-DD')
   }
 
   return {
     completedCount: completedDates.length,
     expectedCount,
-  };
+  }
 }
 ```
 
@@ -532,13 +535,13 @@ Then branch `calculateStreaks()` and `countExpectedAndCompletedForRange()`:
 
 ```ts
 if (habit.frequency?.type === 'ebbinghaus') {
-  return { currentStreak: 0, longestStreak: 0 };
+  return { currentStreak: 0, longestStreak: 0 }
 }
 ```
 
 ```ts
 if (habit.frequency?.type === 'ebbinghaus') {
-  return countEbbinghausWindowForRange(habit, start, end);
+  return countEbbinghausWindowForRange(habit, start, end)
 }
 ```
 
@@ -568,6 +571,7 @@ git commit -m "feat(habit): adapt stats for ebbinghaus cadence"
 ## Task 4: Add the Frequency Option to the Create Dialog
 
 **Files:**
+
 - Modify: `src/components/dialog/HabitCreateDialog.vue`
 - Modify: `test/components/dialog/HabitCreateDialog.test.ts`
 - Modify: `src/i18n/zh_CN.json`
@@ -579,35 +583,35 @@ Append to `test/components/dialog/HabitCreateDialog.test.ts`:
 
 ```ts
 it('保存时应生成默认艾宾浩斯 markdown', async () => {
-  const mounted = mountDialog();
-  await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词');
-  await setInputValue(getByTestId(mounted.container, 'habit-start-date-input'), '2026-05-14');
+  const mounted = mountDialog()
+  await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词')
+  await setInputValue(getByTestId(mounted.container, 'habit-start-date-input'), '2026-05-14')
 
   mounted.container
     .querySelector('[data-testid="habit-frequency-ebbinghaus-button"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+  mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯');
-});
+  expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯')
+})
 
 it('保存时应生成带自定义间隔的艾宾浩斯 markdown', async () => {
-  const mounted = mountDialog();
-  await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词');
+  const mounted = mountDialog()
+  await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词')
   mounted.container
     .querySelector('[data-testid="habit-frequency-ebbinghaus-button"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  await setInputValue(getByTestId(mounted.container, 'habit-ebbinghaus-intervals-input'), '1,2,4,7,15');
-  mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+  await setInputValue(getByTestId(mounted.container, 'habit-ebbinghaus-intervals-input'), '1,2,4,7,15')
+  mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
-});
+  expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]')
+})
 ```
 
 - [ ] **Step 2: Run the dialog tests and confirm they fail**
@@ -630,7 +634,7 @@ const form = reactive({
   ebbinghausIntervals: props.initialData?.frequency?.type === 'ebbinghaus'
     ? (props.initialData.frequency.intervals?.join(',') ?? '')
     : '',
-});
+})
 
 const frequencyOptions = computed(() => [
   { value: 'daily', label: t('habit').freqDaily || '每天' },
@@ -639,7 +643,7 @@ const frequencyOptions = computed(() => [
   { value: 'n_per_week', label: t('habit').freqNPerWeek || '每周N天' },
   { value: 'weekly_days', label: t('habit').freqWeeklyDays || '指定周几' },
   { value: 'ebbinghaus', label: t('habit').freqEbbinghaus || '艾宾浩斯' },
-]);
+])
 ```
 
 Add the input in the template:
@@ -701,6 +705,7 @@ git commit -m "feat(habit): add ebbinghaus create dialog option"
 ## Task 5: Surface Derived Status in Habit UI Components
 
 **Files:**
+
 - Modify: `src/components/habit/HabitListItem.vue`
 - Modify: `src/components/habit/HabitWorkspaceDetailPane.vue`
 - Modify: `test/components/habit/HabitListItem.test.ts`
@@ -737,11 +742,11 @@ it('renders ebbinghaus schedule hints', async () => {
         eligibleToday: true,
       },
     },
-  });
+  })
 
-  expect(wrapper.text()).toContain('艾宾浩斯');
-  expect(wrapper.text()).toContain('已逾期');
-});
+  expect(wrapper.text()).toContain('艾宾浩斯')
+  expect(wrapper.text()).toContain('已逾期')
+})
 ```
 
 Append to `test/components/habit/HabitWorkspaceDetailPane.test.ts`:
@@ -754,11 +759,11 @@ it('shows stage and next due date for ebbinghaus habits', async () => {
       selectedDate: '2026-05-18',
       stats: mkStats(),
     },
-  });
+  })
 
-  expect(wrapper.text()).toContain('第 1 阶段');
-  expect(wrapper.text()).toContain('下次打卡');
-});
+  expect(wrapper.text()).toContain('第 1 阶段')
+  expect(wrapper.text()).toContain('下次打卡')
+})
 ```
 
 - [ ] **Step 2: Run the component tests and confirm they fail**
@@ -777,7 +782,7 @@ Patch `src/components/habit/HabitListItem.vue`:
 
 ```ts
 if (frequency.type === 'ebbinghaus') {
-  return t('habit').freqEbbinghaus || '艾宾浩斯';
+  return t('habit').freqEbbinghaus || '艾宾浩斯'
 }
 ```
 
@@ -786,15 +791,15 @@ And branch the schedule hint:
 ```ts
 if (props.habit.frequency?.type === 'ebbinghaus') {
   if (props.dayState.isCompleted) {
-    return t('habit').selectedDayCompleted;
+    return t('habit').selectedDayCompleted
   }
   if (props.dayState.isOverdue) {
-    return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+    return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0))
   }
   if (props.dayState.isDue) {
-    return t('habit').dueToday;
+    return t('habit').dueToday
   }
-  return t('habit').noNeedToday;
+  return t('habit').noNeedToday
 }
 ```
 
@@ -804,9 +809,17 @@ Add a computed block that reads `getHabitDayState(habit, selectedDate)` and rend
 
 ```vue
 <div v-if="habit.frequency?.type === 'ebbinghaus'" class="habit-detail-ebbinghaus">
-  <div>{{ t('habit').ebbinghausStage.replace('{n}', String((dayState.currentStageIndex ?? -1) + 1)) }}</div>
-  <div>{{ t('habit').ebbinghausInterval.replace('{n}', String(dayState.currentIntervalDays ?? 0)) }}</div>
-  <div>{{ t('habit').nextDueDate.replace('{date}', dayState.nextDueDate || '-') }}</div>
+  <div>{{ t('habit').ebbinghausStage.replace('{n}', String((dayState.currentStageIndex ?? -1) + 1)) }}
+</div>
+
+  <div>
+{{ t('habit').ebbinghausInterval.replace('{n}', String(dayState.currentIntervalDays ?? 0)) }}
+</div>
+
+  <div>
+{{ t('habit').nextDueDate.replace('{date}', dayState.nextDueDate || '-') }}
+</div>
+
   <div v-if="dayState.isOverdue">
     {{ t('habit').overdueDays.replace('{n}', String(dayState.overdueDays || 0)) }}
   </div>
@@ -846,6 +859,7 @@ git commit -m "feat(habit): show ebbinghaus schedule hints"
 ## Task 6: Update User Docs and Run the Targeted Regression Suite
 
 **Files:**
+
 - Modify: `docs/user-guide/data-format.md`
 - Modify: `docs/user-guide/habit-checkin.md`
 
@@ -856,6 +870,7 @@ Patch `docs/user-guide/data-format.md` in the habit frequency table and examples
 ```md
 | `🔄艾宾浩斯` | `🔄ebbinghaus` | 按艾宾浩斯阶段推进复习打卡 |
 | `🔄艾宾浩斯[1,2,4,7,15]` | `🔄ebbinghaus[1,2,4,7,15]` | 自定义复习间隔模板 |
+
 ```
 
 Add an example block:
@@ -863,6 +878,7 @@ Add an example block:
 ```md
 英语单词 🎯2026-05-14 🔄艾宾浩斯
 英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]
+
 ```
 
 - [ ] **Step 2: Update the habit check-in guide with progression rules**
@@ -876,6 +892,7 @@ Patch `docs/user-guide/habit-checkin.md`:
 - 漏打不会自动回退，也不会自动跳过
 - 漏打后会停留在当前阶段，直到用户补打
 - 到达最后一个阶段后，会持续按最后一个间隔循环
+
 ```
 
 - [ ] **Step 3: Run the focused regression suite**

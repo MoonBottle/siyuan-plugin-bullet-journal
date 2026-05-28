@@ -1,5 +1,8 @@
 <template>
-  <div class="workbench-widget-mini-calendar" data-testid="workbench-widget-mini-calendar">
+  <div
+    class="workbench-widget-mini-calendar"
+    data-testid="workbench-widget-mini-calendar"
+  >
     <div
       v-if="showDayHeader"
       class="workbench-widget-mini-calendar__header"
@@ -25,41 +28,52 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
-import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue';
-import CalendarView from '@/components/calendar/CalendarView.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchCalendarWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
-import { persistCalendarEventChange } from '@/utils/calendarEventChange';
-import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
-import dayjs from '@/utils/dayjs';
-import { useSafeProjectStore } from './useSafeProjectStore';
+import type {
+  WorkbenchCalendarWidgetConfig,
+  WorkbenchWidgetInstance,
+} from '@/types/workbench'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+} from 'vue'
+import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue'
+import CalendarView from '@/components/calendar/CalendarView.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+import {
+  calculateDayTotalDurationMinutes,
+  formatTotalDuration,
+} from '@/utils/calendarDuration'
+import { persistCalendarEventChange } from '@/utils/calendarEventChange'
+import dayjs from '@/utils/dayjs'
+import { useSafeProjectStore } from './useSafeProjectStore'
 
 const props = defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
+  widget?: WorkbenchWidgetInstance
+}>()
 
-const calendarRef = ref<any>(null);
-const projectStore = useSafeProjectStore();
-const settingsStore = useSettingsStore();
+const calendarRef = ref<any>(null)
+const projectStore = useSafeProjectStore()
+const settingsStore = useSettingsStore()
 const calendarConfig = computed(() => {
-  return (props.widget?.config ?? {}) as WorkbenchCalendarWidgetConfig;
-});
+  return (props.widget?.config ?? {}) as WorkbenchCalendarWidgetConfig
+})
 
-const view = computed(() => calendarConfig.value.view ?? 'timeGridDay');
-const groupId = computed(() => calendarConfig.value.groupId ?? '');
-const currentTitle = ref('');
-const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
-const showDayHeader = computed(() => view.value === 'timeGridDay');
+const view = computed(() => calendarConfig.value.view ?? 'timeGridDay')
+const groupId = computed(() => calendarConfig.value.groupId ?? '')
+const currentTitle = ref('')
+const currentDateStr = ref(dayjs().format('YYYY-MM-DD'))
+const showDayHeader = computed(() => view.value === 'timeGridDay')
 
 const events = computed(() => {
-  return projectStore?.getFilteredCalendarEvents(groupId.value) ?? [];
-});
+  return projectStore?.getFilteredCalendarEvents(groupId.value) ?? []
+})
 
 const dayTotalDurationMinutes = computed(() => {
   if (view.value !== 'timeGridDay') {
-    return 0;
+    return 0
   }
 
   return calculateDayTotalDurationMinutes(
@@ -67,68 +81,68 @@ const dayTotalDurationMinutes = computed(() => {
     currentDateStr.value,
     settingsStore.lunchBreakStart,
     settingsStore.lunchBreakEnd,
-  );
-});
+  )
+})
 
 const showDayTotalDuration = computed(() => {
-  return view.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0;
-});
+  return view.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0
+})
 
 const dayTotalDurationLabel = computed(() => {
   if (!showDayTotalDuration.value) {
-    return '';
+    return ''
   }
 
-  const duration = formatTotalDuration(dayTotalDurationMinutes.value);
-  return t('calendar').dayTotalDuration.replace('{duration}', duration);
-});
+  const duration = formatTotalDuration(dayTotalDurationMinutes.value)
+  return t('calendar').dayTotalDuration.replace('{duration}', duration)
+})
 
 function updateTitle() {
   if (!calendarRef.value) {
-    return;
+    return
   }
 
-  currentTitle.value = calendarRef.value.getTitle?.() || '';
-  const currentDate = calendarRef.value.getDate?.();
+  currentTitle.value = calendarRef.value.getTitle?.() || ''
+  const currentDate = calendarRef.value.getDate?.()
   if (currentDate) {
-    currentDateStr.value = dayjs(currentDate).format('YYYY-MM-DD');
+    currentDateStr.value = dayjs(currentDate).format('YYYY-MM-DD')
   }
 }
 
 function handlePrev() {
-  calendarRef.value?.prev?.();
-  updateTitle();
+  calendarRef.value?.prev?.()
+  updateTitle()
 }
 
 function handleNext() {
-  calendarRef.value?.next?.();
-  updateTitle();
+  calendarRef.value?.next?.()
+  updateTitle()
 }
 
 function handleToday() {
-  calendarRef.value?.today?.();
-  updateTitle();
+  calendarRef.value?.today?.()
+  updateTitle()
 }
 
 async function handleEventDrop(eventInfo: any) {
-  await persistCalendarEventChange(eventInfo, 'move');
+  await persistCalendarEventChange(eventInfo, 'move')
 }
 
 async function handleEventResize(eventInfo: any) {
-  await persistCalendarEventChange(eventInfo, 'resize');
+  await persistCalendarEventChange(eventInfo, 'resize')
 }
 
 onMounted(() => {
   if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
 
   nextTick(() => {
     setTimeout(() => {
-      updateTitle();
-    }, 100);
-  });
-});
+      updateTitle()
+    }, 100)
+  })
+})
 </script>
 
 <style lang="scss" scoped>

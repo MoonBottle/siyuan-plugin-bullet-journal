@@ -6,7 +6,7 @@ export function toolListGroups(_args: any, cache: KernelData) {
 
 export function toolListProjects(args: any, cache: KernelData) {
   const filtered = args.groupId
-    ? cache.projects.filter(function (p) { return p.groupId === args.groupId })
+    ? cache.projects.filter((p) => { return p.groupId === args.groupId })
     : cache.projects
   return { projects: filtered }
 }
@@ -15,30 +15,30 @@ export function toolFilterItems(args: any, cache: KernelData) {
   let items = cache.items || []
 
   if (args.projectId) {
-    items = items.filter(function (i) { return i.projectId === args.projectId })
+    items = items.filter((i) => { return i.projectId === args.projectId })
   } else if (args.projectIds && args.projectIds.length > 0) {
     const set = new Set(args.projectIds)
-    items = items.filter(function (i) { return set.has(i.projectId) })
+    items = items.filter((i) => { return set.has(i.projectId) })
   } else if (args.groupId) {
     const projectIds = new Set(
       cache.projects
-        .filter(function (p) { return p.groupId === args.groupId })
-        .map(function (p) { return p.id }),
+        .filter((p) => { return p.groupId === args.groupId })
+        .map((p) => { return p.id }),
     )
-    items = items.filter(function (i) { return projectIds.has(i.projectId) })
+    items = items.filter((i) => { return projectIds.has(i.projectId) })
   }
 
   if (args.startDate) {
-    items = items.filter(function (i) { return i.date >= args.startDate })
+    items = items.filter((i) => { return i.date >= args.startDate })
   }
   if (args.endDate) {
-    items = items.filter(function (i) { return i.date <= args.endDate })
+    items = items.filter((i) => { return i.date <= args.endDate })
   }
   if (args.status) {
-    items = items.filter(function (i) { return i.status === args.status })
+    items = items.filter((i) => { return i.status === args.status })
   }
 
-  return { items: items }
+  return { items }
 }
 
 export function collectPomodoros(cache: KernelData) {
@@ -79,13 +79,13 @@ export function filterPomodoros(pomodoros: any[], args: any) {
     endDate = todayDate
   }
   if (startDate) {
-    filtered = filtered.filter(function (p) { return p.date >= startDate })
+    filtered = filtered.filter((p) => { return p.date >= startDate })
   }
   if (endDate) {
-    filtered = filtered.filter(function (p) { return p.date <= endDate })
+    filtered = filtered.filter((p) => { return p.date <= endDate })
   }
   if (args.projectId) {
-    filtered = filtered.filter(function (p) { return p.projectId === args.projectId })
+    filtered = filtered.filter((p) => { return p.projectId === args.projectId })
   }
   return filtered
 }

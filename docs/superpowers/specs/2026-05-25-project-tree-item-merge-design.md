@@ -19,14 +19,14 @@
 
 ```typescript
 export interface MergedItem {
-  isMerged: true;
-  blockId: string;
-  items: Item[];
-  content: string;
-  status: Item['status'];
-  priority?: string;
-  dateRange: string; // 智能省略：同年同月 "2026-05-20 ~ 23"，同年不同月 "2026-05-20 ~ 06-03"，不同年 "2025-12-28 ~ 2026-01-03"
-  firstItemId: string; // 用于 select-item 事件
+  isMerged: true
+  blockId: string
+  items: Item[]
+  content: string
+  status: Item['status']
+  priority?: string
+  dateRange: string // 智能省略：同年同月 "2026-05-20 ~ 23"，同年不同月 "2026-05-20 ~ 06-03"，不同年 "2025-12-28 ~ 2026-01-03"
+  firstItemId: string // 用于 select-item 事件
 }
 ```
 
@@ -80,10 +80,10 @@ export interface MergedItem {
 
 ### 影响范围
 
-| 文件 | 改动 |
-|------|------|
-| `src/utils/projectTaskTree.ts` | 新增 `MergedItem` 类型、`mergeItemsByBlockId` 函数；修改 `buildProjectTaskTree`、`getTaskItemProgress`、`filterNode` |
-| `src/components/project/ProjectTreeNode.vue` | 适配 `MergedItem` 渲染 |
-| `src/components/project/ProjectDetailPane.vue` | 动态计算 `showAllDates` |
-| `src/components/project/ProjectTreePane.vue` | 键盘导航适配 |
-| `src/components/project/ProjectView.vue` | 无改动（`findItemById` 通过 `firstItemId` 找到原始 Item，siblingItems 已由解析器填充） |
+| 文件                                           | 改动                                                                                                                 |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/projectTaskTree.ts`                 | 新增 `MergedItem` 类型、`mergeItemsByBlockId` 函数；修改 `buildProjectTaskTree`、`getTaskItemProgress`、`filterNode` |
+| `src/components/project/ProjectTreeNode.vue`   | 适配 `MergedItem` 渲染                                                                                               |
+| `src/components/project/ProjectDetailPane.vue` | 动态计算 `showAllDates`                                                                                              |
+| `src/components/project/ProjectTreePane.vue`   | 键盘导航适配                                                                                                         |
+| `src/components/project/ProjectView.vue`       | 无改动（`findItemById` 通过 `firstItemId` 找到原始 Item，siblingItems 已由解析器填充）                               |

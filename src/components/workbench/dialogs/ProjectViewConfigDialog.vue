@@ -36,41 +36,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
+import {
+  computed,
+  onMounted,
+  ref,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
 
 const props = defineProps<{
-  initialConfig: WorkbenchProjectViewConfig;
-  onConfirm: (config: WorkbenchProjectViewConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchProjectViewConfig
+  onConfirm: (config: WorkbenchProjectViewConfig) => void
+  onCancel: () => void
+}>()
 
-const settingsStore = useSettingsStore();
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
+const settingsStore = useSettingsStore()
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
 
 onMounted(() => {
   if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-});
+})
 
 const groupOptions = computed(() => [
-  { value: '', label: t('settings').projectGroups.allGroups },
-  ...settingsStore.groups.map(group => ({
+  {
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  },
+  ...settingsStore.groups.map((group) => ({
     value: group.id,
     label: group.name || t('settings').projectGroups.unnamed,
   })),
-]);
+])
 
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
     columnRatios: props.initialConfig.columnRatios,
-  });
+  })
 }
 </script>
 

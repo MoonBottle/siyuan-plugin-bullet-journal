@@ -4,7 +4,10 @@
       <!-- 标题 -->
       <div class="weixin-login-dialog__header">
         <h3>微信 ClawBot 连接</h3>
-        <button class="weixin-login-dialog__close" @click="handleClose">
+        <button
+          class="weixin-login-dialog__close"
+          @click="handleClose"
+        >
           <svg><use xlink:href="#iconClose"></use></svg>
         </button>
       </div>
@@ -12,13 +15,25 @@
       <!-- 连接状态 -->
       <div class="weixin-login-dialog__body">
         <!-- 未连接状态 -->
-        <div v-if="!isConnected" class="weixin-login-dialog__status">
-          <div class="weixin-login-dialog__status-icon" :class="`is-${loginStatus}`">
+        <div
+          v-if="!isConnected"
+          class="weixin-login-dialog__status"
+        >
+          <div
+            class="weixin-login-dialog__status-icon"
+            :class="`is-${loginStatus}`"
+          >
             <svg v-if="loginStatus === 'none' || loginStatus === 'error'">
               <use xlink:href="#iconWeixin"></use>
             </svg>
-            <div v-else-if="loginStatus === 'pending'" class="weixin-login-dialog__spinner"></div>
-            <svg v-else-if="loginStatus === 'scaned'" class="is-green">
+            <div
+              v-else-if="loginStatus === 'pending'"
+              class="weixin-login-dialog__spinner"
+            ></div>
+            <svg
+              v-else-if="loginStatus === 'scaned'"
+              class="is-green"
+            >
               <use xlink:href="#iconCheck"></use>
             </svg>
           </div>
@@ -27,24 +42,36 @@
             {{ statusText }}
           </div>
 
-          <div v-if="errorMessage" class="weixin-login-dialog__error">
+          <div
+            v-if="errorMessage"
+            class="weixin-login-dialog__error"
+          >
             {{ errorMessage }}
           </div>
         </div>
 
         <!-- 二维码区域 -->
-        <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-login-dialog__qrcode">
+        <div
+          v-if="loginStatus === 'pending' && qrcodeUrl"
+          class="weixin-login-dialog__qrcode"
+        >
           <div class="weixin-login-dialog__qrcode-wrapper">
             <canvas ref="qrcodeCanvasRef"></canvas>
           </div>
           <p>请使用微信扫描上方二维码</p>
           <p class="weixin-login-dialog__qrcode-hint">
-            如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
+            如果二维码无法显示，<a
+              :href="qrcodeUrl"
+              target="_blank"
+            >点击此处打开</a>
           </p>
         </div>
 
         <!-- 已连接状态 -->
-        <div v-if="isConnected" class="weixin-login-dialog__connected">
+        <div
+          v-if="isConnected"
+          class="weixin-login-dialog__connected"
+        >
           <div class="weixin-login-dialog__success-icon">
             <svg><use xlink:href="#iconCheck"></use></svg>
           </div>
@@ -57,13 +84,16 @@
         </div>
 
         <!-- 连接用户列表（常显） -->
-        <div v-if="connectedUsers.length > 0" class="weixin-login-dialog__users">
+        <div
+          v-if="connectedUsers.length > 0"
+          class="weixin-login-dialog__users"
+        >
           <div class="weixin-login-dialog__users-title">
             微信会话 ({{ connectedUsers.length }})
           </div>
           <div class="weixin-login-dialog__users-list">
-            <div 
-              v-for="user in connectedUsers" 
+            <div
+              v-for="user in connectedUsers"
               :key="user.id"
               class="weixin-login-dialog__user-item"
               @click="handleUserClick(user.conversationId, user.id)"
@@ -74,7 +104,10 @@
                 class="weixin-login-dialog__user-status"
                 :class="`weixin-login-dialog__user-status--${user.status.tone}`"
               >{{ user.status.label }}</span>
-              <span v-if="user.unread > 0" class="weixin-login-dialog__user-unread">
+              <span
+                v-if="user.unread > 0"
+                class="weixin-login-dialog__user-unread"
+              >
                 {{ user.unread }}
               </span>
             </div>
@@ -85,34 +118,34 @@
       <!-- 操作按钮 -->
       <div class="weixin-login-dialog__footer">
         <template v-if="!isConnected">
-          <button 
+          <button
             v-if="loginStatus === 'none' || loginStatus === 'error'"
             class="weixin-login-dialog__btn weixin-login-dialog__btn--primary"
-            @click="handleStartLogin"
             :disabled="isLoading"
+            @click="handleStartLogin"
           >
             {{ isLoading ? '获取中...' : '获取二维码' }}
           </button>
-          <button 
+          <button
             v-if="loginStatus === 'pending'"
             class="weixin-login-dialog__btn"
-            @click="handleRefreshQR"
             :disabled="isLoading"
+            @click="handleRefreshQR"
           >
             刷新二维码
           </button>
-          <button 
+          <button
             v-if="loginStatus === 'pending'"
             class="weixin-login-dialog__btn weixin-login-dialog__btn--primary"
-            @click="handleCheckStatus"
             :disabled="isChecking"
+            @click="handleCheckStatus"
           >
             {{ isChecking ? '检查中...' : '我已扫码' }}
           </button>
         </template>
-        
+
         <template v-else>
-          <button 
+          <button
             class="weixin-login-dialog__btn weixin-login-dialog__btn--danger"
             @click="handleDisconnect"
           >
@@ -120,7 +153,10 @@
           </button>
         </template>
 
-        <button class="weixin-login-dialog__btn" @click="handleClose">
+        <button
+          class="weixin-login-dialog__btn"
+          @click="handleClose"
+        >
           关闭
         </button>
       </div>
@@ -129,195 +165,205 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { useAIStore } from '@/stores';
-import QRCode from 'qrcode';
+import QRCode from 'qrcode'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { useAIStore } from '@/stores'
 
 const emit = defineEmits<{
-  close: [];
-  'switch-conversation': [conversationId: string];
-}>();
+  "close": []
+  'switch-conversation': [conversationId: string]
+}>()
 
-const aiStore = useAIStore();
+const aiStore = useAIStore()
 
-const isLoading = ref(false);
-const isChecking = ref(false);
-const pollTimeout = ref<number | null>(null);
-const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null);
+const isLoading = ref(false)
+const isChecking = ref(false)
+const pollTimeout = ref<number | null>(null)
+const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null)
 
-const loginStatus = computed(() => aiStore.clawBotLoginStatus);
-const isConnected = computed(() => aiStore.isClawBotConnected);
-const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
+const loginStatus = computed(() => aiStore.clawBotLoginStatus)
+const isConnected = computed(() => aiStore.isClawBotConnected)
+const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl)
 
 watch(qrcodeUrl, async (url) => {
-  if (!url) return;
-  await nextTick();
+  if (!url) return
+  await nextTick()
   if (qrcodeCanvasRef.value) {
     QRCode.toCanvas(qrcodeCanvasRef.value, url, {
       width: 200,
       margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
-    });
+      color: {
+        dark: '#000000',
+        light: '#ffffff',
+      },
+    })
   }
-}, { immediate: true });
+}, { immediate: true })
 
 const errorMessage = computed(() => {
   if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
-    return '本地代理不可用，请重新加载插件';
+    return '本地代理不可用，请重新加载插件'
   }
-  return aiStore.clawBotConfig.errorMessage;
-});
-const accountId = computed(() => aiStore.clawBotConfig.accountId);
+  return aiStore.clawBotConfig.errorMessage
+})
+const accountId = computed(() => aiStore.clawBotConfig.accountId)
 
 const statusText = computed(() => {
   switch (loginStatus.value) {
     case 'none':
-      return '点击"获取二维码"开始连接微信';
+      return '点击"获取二维码"开始连接微信'
     case 'pending':
-      return '等待扫码...';
+      return '等待扫码...'
     case 'scaned':
-      return '已扫码，等待确认...';
+      return '已扫码，等待确认...'
     case 'connected':
-      return '已连接';
+      return '已连接'
     case 'expired':
-      return '二维码已过期，请刷新';
+      return '二维码已过期，请刷新'
     case 'error':
-      return '连接出错';
+      return '连接出错'
     default:
-      return '未知状态';
+      return '未知状态'
   }
-});
+})
 
 const connectedUsers = computed(() => {
-  const users: Array<{ id: string; name: string; conversationId: string; unread: number; status: any }> = [];
-  
-  const conversationMap = aiStore.weixinConversationMap || {};
-  const unreadMessages = aiStore.unreadWeixinMessages || {};
-  
+  const users: Array<{ id: string, name: string, conversationId: string, unread: number, status: any }> = []
+
+  const conversationMap = aiStore.weixinConversationMap || {}
+  const unreadMessages = aiStore.unreadWeixinMessages || {}
+
   for (const userId of Object.keys(conversationMap)) {
-    const map = conversationMap[userId];
-    if (!map) continue;
-    const unread = unreadMessages[userId] || 0;
+    const map = conversationMap[userId]
+    if (!map) continue
+    const unread = unreadMessages[userId] || 0
     users.push({
       id: userId,
       name: map.userName || `用户 ${userId.slice(0, 8)}`,
       conversationId: map.conversationId,
       unread,
       status: aiStore.getWeixinConversationStatus(userId),
-    });
+    })
   }
-  
+
   // 按最后消息时间排序
   users.sort((a, b) => {
-    const mapA = conversationMap[a.id];
-    const mapB = conversationMap[b.id];
-    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0);
-  });
-  
-  return users;
-});
+    const mapA = conversationMap[a.id]
+    const mapB = conversationMap[b.id]
+    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0)
+  })
+
+  return users
+})
 
 // 开始登录
 async function handleStartLogin() {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const result = await aiStore.startClawBotLogin();
+    const result = await aiStore.startClawBotLogin()
     if (result) {
       // 开始自动轮询
-      startPolling();
+      startPolling()
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
 
 // 刷新二维码
 async function handleRefreshQR() {
-  stopPolling();
-  await handleStartLogin();
+  stopPolling()
+  await handleStartLogin()
 }
 
 
 
 // 检查状态（手动触发）
 async function handleCheckStatus() {
-  isChecking.value = true;
+  isChecking.value = true
   try {
-    const success = await aiStore.pollClawBotLogin();
+    const success = await aiStore.pollClawBotLogin()
     if (success) {
-      stopPolling();
+      stopPolling()
     }
   } finally {
-    isChecking.value = false;
+    isChecking.value = false
   }
 }
 
 // 断开连接
 async function handleDisconnect() {
-  await aiStore.disconnectClawBot();
-  stopPolling();
+  await aiStore.disconnectClawBot()
+  stopPolling()
 }
 
 // 关闭弹窗
 function handleClose() {
-  stopPolling();
-  emit('close');
+  stopPolling()
+  emit('close')
 }
 
 // 点击用户切换到对应会话
 function handleUserClick(conversationId: string, userId: string) {
-  aiStore.clearWeixinUnread(userId);
-  emit('switch-conversation', conversationId);
-  emit('close');
+  aiStore.clearWeixinUnread(userId)
+  emit('switch-conversation', conversationId)
+  emit('close')
 }
 
 // 开始自动轮询
 function startPolling() {
-  stopPolling();
-  let stopped = false;
+  stopPolling()
+  const stopped = false
 
   async function poll() {
-    if (stopped) return;
+    if (stopped) return
     if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
       try {
-        const success = await aiStore.pollClawBotLogin();
+        const success = await aiStore.pollClawBotLogin()
         if (success) {
-          stopPolling();
-          return;
+          stopPolling()
+          return
         }
       } catch {
         // 继续轮询
       }
       if (!stopped) {
-        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number;
+        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number
       }
     } else {
-      stopPolling();
+      stopPolling()
     }
   }
 
-  poll();
-  pollTimeout.value = -1 as unknown as number;
+  poll()
+  pollTimeout.value = -1 as unknown as number
 }
 
 // 停止轮询
 function stopPolling() {
   if (pollTimeout.value) {
-    clearTimeout(pollTimeout.value);
-    pollTimeout.value = null;
+    clearTimeout(pollTimeout.value)
+    pollTimeout.value = null
   }
 }
 
 onMounted(() => {
   // 如果已经在登录中，恢复轮询
   if (loginStatus.value === 'pending') {
-    startPolling();
+    startPolling()
   }
-});
+})
 
 onUnmounted(() => {
-  stopPolling();
-});
+  stopPolling()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -435,7 +481,9 @@ onUnmounted(() => {
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   &__status-text {

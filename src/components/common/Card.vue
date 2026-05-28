@@ -6,7 +6,10 @@
     @contextmenu.prevent="handleContextMenu"
   >
     <!-- Header Slot -->
-    <div v-if="showHeader" class="ta-card__header">
+    <div
+      v-if="showHeader"
+      class="ta-card__header"
+    >
       <slot name="header"></slot>
     </div>
 
@@ -16,23 +19,26 @@
     </div>
 
     <!-- Footer Slot -->
-    <div v-if="showFooter" class="ta-card__footer">
+    <div
+      v-if="showFooter"
+      class="ta-card__footer"
+    >
       <slot name="footer"></slot>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 
-export type CardStatus = 'expired' | 'today' | 'tomorrow' | 'future' | 'completed' | 'abandoned' | 'pending';
+export type CardStatus = 'expired' | 'today' | 'tomorrow' | 'future' | 'completed' | 'abandoned' | 'pending'
 
 interface Props {
-  status?: CardStatus;
-  showHeader?: boolean;
-  showFooter?: boolean;
-  clickable?: boolean;
-  hoverEffect?: boolean;
+  status?: CardStatus
+  showHeader?: boolean
+  showFooter?: boolean
+  clickable?: boolean
+  hoverEffect?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,37 +46,37 @@ const props = withDefaults(defineProps<Props>(), {
   showHeader: false,
   showFooter: false,
   clickable: false,
-  hoverEffect: true
-});
+  hoverEffect: true,
+})
 
 const emit = defineEmits<{
-  click: [event: MouseEvent];
-  contextmenu: [event: MouseEvent];
-}>();
+  click: [event: MouseEvent]
+  contextmenu: [event: MouseEvent]
+}>()
 
 const cardClasses = computed(() => {
-  const classes: string[] = [];
+  const classes: string[] = []
   if (props.status) {
-    classes.push(`status-${props.status}`);
+    classes.push(`status-${props.status}`)
   }
   if (props.clickable) {
-    classes.push('is-clickable');
+    classes.push('is-clickable')
   }
   if (props.hoverEffect) {
-    classes.push('has-hover-effect');
+    classes.push('has-hover-effect')
   }
-  return classes;
-});
+  return classes
+})
 
 const handleClick = (event: MouseEvent) => {
   if (props.clickable) {
-    emit('click', event);
+    emit('click', event)
   }
-};
+}
 
 const handleContextMenu = (event: MouseEvent) => {
-  emit('contextmenu', event);
-};
+  emit('contextmenu', event)
+}
 </script>
 
 <style lang="scss" scoped>

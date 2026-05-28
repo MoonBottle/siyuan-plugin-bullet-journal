@@ -1,14 +1,18 @@
+import type { HabitCheckInTimePrecision } from '@/settings/types'
+import type {
+  ProjectDirectory,
+  ProjectGroup,
+  ScanMode,
+} from '@/types/models'
 /**
  * 设置状态管理
  * 从插件实例获取设置数据
  */
-import { defineStore } from 'pinia';
-import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
-import { usePlugin } from '@/main';
-import { defaultTodoSortRules } from '@/settings/types';
-import type { HabitCheckInTimePrecision } from '@/settings/types';
+import { defineStore } from 'pinia'
+import { usePlugin } from '@/main'
+import { defaultTodoSortRules } from '@/settings/types'
 
-const habitCheckInTimePrecisionOptions: HabitCheckInTimePrecision[] = ['day', 'minute', 'second'];
+const habitCheckInTimePrecisionOptions: HabitCheckInTimePrecision[] = ['day', 'minute', 'second']
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
@@ -35,7 +39,7 @@ export const useSettingsStore = defineStore('settings', {
     focusWorkbench: {
       selectedGroup: '',
     },
-    loaded: false
+    loaded: false,
   }),
 
   getters: {
@@ -44,27 +48,27 @@ export const useSettingsStore = defineStore('settings', {
 
     // 获取启用的目录
     enabledDirectories: (state) => {
-      const result = state.directories.filter(d => d.enabled);
-      console.log('[Bullet Journal] enabledDirectories getter called, state.directories:', state.directories);
-      console.log('[Bullet Journal] enabledDirectories getter result:', result);
-      return result;
+      const result = state.directories.filter((d) => d.enabled)
+      console.log('[Bullet Journal] enabledDirectories getter called, state.directories:', state.directories)
+      console.log('[Bullet Journal] enabledDirectories getter result:', result)
+      return result
     },
 
     // 获取分组名称
     getGroupName: (state) => {
       return (groupId: string): string => {
-        const group = state.groups.find(g => g.id === groupId);
-        return group?.name || '';
-      };
+        const group = state.groups.find((g) => g.id === groupId)
+        return group?.name || ''
+      }
     },
 
     // 获取分组选项列表
     groupOptions: (state) => {
-      return state.groups.map(g => ({
+      return state.groups.map((g) => ({
         id: g.id,
-        name: g.name || '未命名分组'
-      }));
-    }
+        name: g.name || '未命名分组',
+      }))
+    },
   },
 
   actions: {
@@ -72,26 +76,26 @@ export const useSettingsStore = defineStore('settings', {
      * 从插件实例加载设置
      */
     loadFromPlugin() {
-      const plugin = usePlugin() as any;
-      console.log('[Bullet Journal] loadFromPlugin called, plugin:', plugin);
+      const plugin = usePlugin() as any
+      console.log('[Bullet Journal] loadFromPlugin called, plugin:', plugin)
       if (plugin && plugin.getSettings) {
-        const settings = plugin.getSettings();
-        console.log('[Bullet Journal] getSettings returned:', settings);
-        console.log('[Bullet Journal] settings.directories:', settings.directories);
+        const settings = plugin.getSettings()
+        console.log('[Bullet Journal] getSettings returned:', settings)
+        console.log('[Bullet Journal] settings.directories:', settings.directories)
         // 新增：scanMode（默认 'full'）
-        this.scanMode = settings.scanMode || 'full';
+        this.scanMode = settings.scanMode || 'full'
 
-        this.directories = settings.directories || [];
-        this.groups = settings.groups || [];
-        this.defaultGroup = settings.defaultGroup || '';
-        this.calendarDefaultView = settings.calendarDefaultView || 'timeGridDay';
-        this.lunchBreakStart = settings.lunchBreakStart || '12:00';
-        this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
+        this.directories = settings.directories || []
+        this.groups = settings.groups || []
+        this.defaultGroup = settings.defaultGroup || ''
+        this.calendarDefaultView = settings.calendarDefaultView || 'timeGridDay'
+        this.lunchBreakStart = settings.lunchBreakStart || '12:00'
+        this.lunchBreakEnd = settings.lunchBreakEnd || '13:00'
         this.habitCheckInTimePrecision = habitCheckInTimePrecisionOptions.includes(settings.habitCheckInTimePrecision)
           ? settings.habitCheckInTimePrecision
-          : 'day';
-        this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true;
-        this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
+          : 'day'
+        this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true
+        this.showPomodoroTotal = settings.showPomodoroTotal ?? true
         this.todoDock = {
           hideCompleted: settings.todoDock?.hideCompleted ?? false,
           hideAbandoned: settings.todoDock?.hideAbandoned ?? false,
@@ -101,12 +105,12 @@ export const useSettingsStore = defineStore('settings', {
             ? settings.todoDock.sortRules
             : [...defaultTodoSortRules],
           selectedGroup: settings.todoDock?.selectedGroup ?? '',
-        };
+        }
         this.focusWorkbench = {
           selectedGroup: settings.focusWorkbench?.selectedGroup ?? '',
-        };
-        this.loaded = true;
-        console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
+        }
+        this.loaded = true
+        console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories)
       }
     },
 
@@ -114,7 +118,7 @@ export const useSettingsStore = defineStore('settings', {
      * 保存设置到插件实例
      */
     saveToPlugin() {
-      const plugin = usePlugin() as any;
+      const plugin = usePlugin() as any
       if (plugin && plugin.updateSettings) {
         plugin.updateSettings({
           // 新增：保存 scanMode
@@ -130,9 +134,9 @@ export const useSettingsStore = defineStore('settings', {
           showPomodoroBlocks: this.showPomodoroBlocks,
           showPomodoroTotal: this.showPomodoroTotal,
           todoDock: this.todoDock,
-          focusWorkbench: this.focusWorkbench
-        });
+          focusWorkbench: this.focusWorkbench,
+        })
       }
-    }
-  }
-});
+    },
+  },
+})
