@@ -93,6 +93,8 @@ export async function rebuildReminderSchedule(): Promise<void> {
           metadata: {
             blockId: habit.blockId,
             content: habit.name,
+            target: habit.target,
+            unit: habit.unit,
           },
           notified: false,
         })
