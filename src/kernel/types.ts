@@ -114,6 +114,8 @@ interface TimerEntry {
     content: string
     projectName?: string
     taskName?: string
+    target?: number
+    unit?: string
   }
   notified: boolean
 }
@@ -192,6 +194,8 @@ interface KernelDataHabit {
   id: string
   name: string
   type: string
+  target?: number
+  unit?: string
   reminder?: ReminderConfig
   targetDate: string
   blockId: string
