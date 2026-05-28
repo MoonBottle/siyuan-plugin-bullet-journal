@@ -168,6 +168,7 @@ export default defineConfig(({
                       "./README*.md",
                       "./plugin.json",
                       "dist/mcp-server.js",
+                      "dist/kernel.js",
                     ])
                     for (const file of files) {
                       this.addWatchFile(file)
