@@ -14,6 +14,7 @@ import { getHabitReminderEntries } from '@/services/habitReminder';
 import dayjs from '@/utils/dayjs';
 import { kernelAvailable, rpcCall } from '@/composables/useKernelTimer';
 import { Events, eventBus } from '@/utils/eventBus';
+import { watch } from 'vue';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
 const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
@@ -37,6 +38,7 @@ export class ReminderService {
   private midnightRefreshJob: Cron | null = null;
   private kernelNotificationUnsubscribe: (() => void) | null = null;
   private kernelDateChangedUnsubscribe: (() => void) | null = null;
+  private kernelAvailableUnwatch: (() => void) | null = null;
 
   /**
    * 启动提醒服务
@@ -58,6 +60,15 @@ export class ReminderService {
     } else {
       this.scheduleMidnightRefresh();
     }
+
+    this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
+      if (available) {
+        console.log('[ReminderService] kernel became available, setting up listeners');
+        this.setupKernelListeners();
+        this.clearAllJobs();
+        this.rebuildSchedule();
+      }
+    });
 
     console.log('[ReminderService] Started with croner');
   }
@@ -82,6 +93,10 @@ export class ReminderService {
     if (this.kernelDateChangedUnsubscribe) {
       this.kernelDateChangedUnsubscribe();
       this.kernelDateChangedUnsubscribe = null;
+    }
+    if (this.kernelAvailableUnwatch) {
+      this.kernelAvailableUnwatch();
+      this.kernelAvailableUnwatch = null;
     }
     this.projectStore = null;
     console.log('[ReminderService] Stopped');
