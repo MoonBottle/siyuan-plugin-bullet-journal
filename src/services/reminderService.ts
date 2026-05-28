@@ -451,8 +451,11 @@ export class ReminderService {
 
   private triggerHabitNotificationByMetadata(metadata: any): void {
     const title = `🎯 ${metadata.content}`
+    const body = metadata.unit
+      ? `${metadata.content} ${metadata.target || 0}${metadata.unit}`
+      : metadata.content
 
-    void showSystemNotification(title, metadata.content, {
+    void showSystemNotification(title, body, {
       tag: `habit-reminder-${metadata.blockId}`,
       icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
       onClick: () => {
