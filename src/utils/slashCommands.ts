@@ -70,6 +70,9 @@ function removeSlashCommandViaWriter(
   if (!writeContext) {
     return Promise.resolve(false);
   }
+
+  console.log('[SlashCommand] removeSlashCommandViaWriter: writeContext=', writeContext, ' writeBlock type=', { type: 'removeSlashCommand' });
+
   return writeBlock(writeContext, { type: 'removeSlashCommand' });
 }
 
