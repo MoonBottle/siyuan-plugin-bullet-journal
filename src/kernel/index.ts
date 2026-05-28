@@ -1,4 +1,4 @@
-import { initMcpServer } from './mcp'
+import { closeMcpServer, initMcpServer } from './mcp'
 import {
   handleFsNotify,
   initReminderScheduler,
@@ -94,6 +94,7 @@ siyuan.plugin.lifecycle.onrunning = async function () {
 siyuan.plugin.lifecycle.onunload = async function () {
   await siyuan.logger.info('[kernel] unloading...')
 
+  closeMcpServer()
   stopScheduler()
   await persistTimerRegistry()
 
