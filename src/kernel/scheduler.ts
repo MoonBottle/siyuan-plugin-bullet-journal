@@ -1,8 +1,8 @@
 import type { TimerEntry } from './types'
 import { formatDate } from './utils'
 
-var timers = new Map<string, TimerEntry>()
-var notifiedTimerIds = new Set<string>()
+const timers = new Map<string, TimerEntry>()
+const notifiedTimerIds = new Set<string>()
 
 export function isTimerNotified(id: string): boolean {
   return notifiedTimerIds.has(id)
@@ -12,13 +12,13 @@ export function markTimerNotified(id: string): void {
   notifiedTimerIds.add(id)
 }
 
-var checkInterval: ReturnType<typeof setInterval> | null = null
-var lastKnownDate = ''
-var persistTimer: ReturnType<typeof setTimeout> | null = null
-var isDirty = false
+let checkInterval: ReturnType<typeof setInterval> | null = null
+let lastKnownDate = ''
+let persistTimer: ReturnType<typeof setTimeout> | null = null
+let isDirty = false
 
-var MISSED_THRESHOLD_MS = 5 * 60 * 1000
-var PURGE_THRESHOLD_S = 24 * 60 * 60
+const MISSED_THRESHOLD_MS = 5 * 60 * 1000
+const PURGE_THRESHOLD_S = 24 * 60 * 60
 
 export function getTimers(): Map<string, TimerEntry> {
   return timers
@@ -26,25 +26,25 @@ export function getTimers(): Map<string, TimerEntry> {
 
 export async function loadTimerRegistry(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('timer-registry.json')
-    var data = await result.json()
+    const result = await siyuan.storage.get('timer-registry.json')
+    const data = await result.json()
     if (data && Array.isArray(data)) {
-      for (var i = 0; i < data.length; i++) {
-        var entry = data[i] as TimerEntry
+      for (let i = 0; i < data.length; i++) {
+        const entry = data[i] as TimerEntry
         if (entry.id && entry.endTime) {
           timers.set(entry.id, entry)
         }
       }
     }
   } catch (e) {
-    await siyuan.logger.warn('[scheduler] failed to load timer registry: ' + String(e))
+    await siyuan.logger.warn(`[scheduler] failed to load timer registry: ${String(e)}`)
   }
 }
 
 export async function persistTimerRegistry(): Promise<void> {
   if (!isDirty) return
-  var entries: TimerEntry[] = []
-  timers.forEach(function (entry) {
+  const entries: TimerEntry[] = []
+  timers.forEach((entry) => {
     if (entry.type === 'reminder' || entry.type === 'habit') {
       entries.push(entry)
     }
@@ -53,13 +53,13 @@ export async function persistTimerRegistry(): Promise<void> {
     await siyuan.storage.put('timer-registry.json', JSON.stringify(entries))
     isDirty = false
   } catch (e) {
-    await siyuan.logger.warn('[scheduler] failed to persist timer registry: ' + String(e))
+    await siyuan.logger.warn(`[scheduler] failed to persist timer registry: ${String(e)}`)
   }
 }
 
 function schedulePersist(): void {
   if (persistTimer) clearTimeout(persistTimer)
-  persistTimer = setTimeout(function () {
+  persistTimer = setTimeout(() => {
     void persistTimerRegistry()
   }, 5000)
   isDirty = true
@@ -67,16 +67,16 @@ function schedulePersist(): void {
 
 export function registerTimer(entry: TimerEntry): void {
   if (notifiedTimerIds.has(entry.id)) entry.notified = true
-  console.log('[scheduler] registerTimer: id=' + entry.id + ' type=' + entry.type + ' endTime=' + entry.endTime + ' content=' + entry.metadata.content + ' notified=' + entry.notified)
+  console.log(`[scheduler] registerTimer: id=${entry.id} type=${entry.type} endTime=${entry.endTime} content=${entry.metadata.content} notified=${entry.notified}`)
   timers.set(entry.id, entry)
   schedulePersist()
 }
 
 export function registerTimers(entries: TimerEntry[]): void {
-  console.log('[scheduler] registerTimers: count=' + entries.length)
-  for (var i = 0; i < entries.length; i++) {
+  console.log(`[scheduler] registerTimers: count=${entries.length}`)
+  for (let i = 0; i < entries.length; i++) {
     if (notifiedTimerIds.has(entries[i].id)) entries[i].notified = true
-    console.log('[scheduler]   - id=' + entries[i].id + ' type=' + entries[i].type + ' endTime=' + entries[i].endTime + ' notified=' + entries[i].notified)
+    console.log(`[scheduler]   - id=${entries[i].id} type=${entries[i].type} endTime=${entries[i].endTime} notified=${entries[i].notified}`)
     timers.set(entries[i].id, entries[i])
   }
   schedulePersist()
@@ -88,24 +88,24 @@ export function cancelTimer(id: string): void {
 }
 
 export function cancelTimersByType(type: string): void {
-  var toDelete: string[] = []
-  timers.forEach(function (entry, key) {
+  const toDelete: string[] = []
+  timers.forEach((entry, key) => {
     if (entry.type === type) {
       toDelete.push(key)
     }
   })
-  for (var i = 0; i < toDelete.length; i++) {
+  for (let i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
   if (toDelete.length > 0) {
-    console.log('[scheduler] cancelTimersByType: type=' + type + ' cancelled=' + toDelete.length)
+    console.log(`[scheduler] cancelTimersByType: type=${type} cancelled=${toDelete.length}`)
   }
   schedulePersist()
 }
 
 export function getActiveTimers(type?: string): TimerEntry[] {
-  var result: TimerEntry[] = []
-  timers.forEach(function (entry) {
+  const result: TimerEntry[] = []
+  timers.forEach((entry) => {
     if (!type || entry.type === type) {
       result.push(entry)
     }
@@ -114,21 +114,25 @@ export function getActiveTimers(type?: string): TimerEntry[] {
 }
 
 export function initScheduler(): void {
+  if (checkInterval) {
+    clearInterval(checkInterval)
+    checkInterval = null
+  }
   lastKnownDate = formatDate(new Date())
-  console.log('[scheduler] initScheduler: existing timers=' + timers.size + ' today=' + lastKnownDate)
-  var now = Date.now() / 1000
-  timers.forEach(function (entry) {
-    if (!entry.notified && entry.endTime <= now) {
-      var diffMs = (now - entry.endTime) * 1000
+  console.log(`[scheduler] initScheduler: existing timers=${timers.size} today=${lastKnownDate}`)
+  const now = Date.now() / 1000
+  timers.forEach((entry) => {
+    if (!notifiedTimerIds.has(entry.id) && entry.endTime <= now) {
+      const diffMs = (now - entry.endTime) * 1000
       if (diffMs <= MISSED_THRESHOLD_MS) {
         entry.notified = true
         notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
+        console.log(`[scheduler] missed timer (within ${Math.round(diffMs / 1000)}s): id=${entry.id} type=${entry.type} content=${entry.metadata.content}`)
         dispatchNotification(entry)
       } else {
         entry.notified = true
         notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
+        console.log(`[scheduler] stale timer (${Math.round(diffMs / 60000)}min ago), skipping: id=${entry.id} type=${entry.type}`)
       }
     }
   })
@@ -144,34 +148,34 @@ export function stopScheduler(): void {
 }
 
 function checkTimers(): void {
-  var now = Date.now() / 1000
-  var firedCount = 0
-  timers.forEach(function (entry) {
-    if (!entry.notified && now >= entry.endTime) {
+  const now = Date.now() / 1000
+  let firedCount = 0
+  timers.forEach((entry) => {
+    if (!notifiedTimerIds.has(entry.id) && now >= entry.endTime) {
       entry.notified = true
       notifiedTimerIds.add(entry.id)
       firedCount++
-      console.log('[scheduler] timer FIRED: id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content + ' endTime=' + entry.endTime + ' now=' + now)
+      console.log(`[scheduler] timer FIRED: id=${entry.id} type=${entry.type} content=${entry.metadata.content} endTime=${entry.endTime} now=${now}`)
       dispatchNotification(entry)
     }
   })
   if (firedCount > 0) {
-    console.log('[scheduler] checkTimers: ' + firedCount + ' timer(s) fired, active=' + timers.size)
+    console.log(`[scheduler] checkTimers: ${firedCount} timer(s) fired, active=${timers.size}`)
   }
 
-  var toDelete: string[] = []
-  timers.forEach(function (entry, key) {
+  const toDelete: string[] = []
+  timers.forEach((entry, key) => {
     if (entry.notified && (now - entry.endTime) > PURGE_THRESHOLD_S) {
       toDelete.push(key)
       notifiedTimerIds.delete(key)
     }
   })
-  for (var i = 0; i < toDelete.length; i++) {
+  for (let i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
   if (toDelete.length > 0) schedulePersist()
 
-  var today = formatDate(new Date())
+  const today = formatDate(new Date())
   if (today !== lastKnownDate) {
     lastKnownDate = today
     siyuan.rpc.broadcast('date-changed', { date: today })
@@ -179,8 +183,8 @@ function checkTimers(): void {
   }
 }
 
-var dispatchNotification: (entry: TimerEntry) => void = function () {}
-var rebuildReminderSchedule: () => void = function () {}
+let dispatchNotification: (entry: TimerEntry) => void = function () {}
+let rebuildReminderSchedule: () => void = function () {}
 
 export function setDispatchNotification(fn: (entry: TimerEntry) => void): void {
   dispatchNotification = fn

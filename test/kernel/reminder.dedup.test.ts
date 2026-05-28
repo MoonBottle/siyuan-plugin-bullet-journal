@@ -30,10 +30,10 @@ beforeEach(() => {
   mockCancelTimersByType.mockReturnValue(undefined)
   mockRegisterTimers.mockReturnValue(undefined)
 
-  var now = Date.now()
+  const now = Date.now()
   mockCalculateReminderTime.mockReturnValue(now + 3600 * 1000)
 
-  var emptyData: KernelData = {
+  const emptyData: KernelData = {
     version: 1,
     updatedAt: new Date().toISOString(),
     groups: [],
@@ -53,7 +53,7 @@ beforeEach(() => {
 })
 
 async function callRebuild(): Promise<void> {
-  var { rebuildReminderSchedule } = await import('@/kernel/reminder')
+  const { rebuildReminderSchedule } = await import('@/kernel/reminder')
   await rebuildReminderSchedule()
 }
 
@@ -97,8 +97,8 @@ function makeHabit(overrides: Partial<KernelData['habits'][0]> = {}): KernelData
 
 describe('rebuildReminderSchedule — timer registration', () => {
   it('registers reminder entries with notified=false by default', async () => {
-    var item = makeItem()
-    var data: KernelData = {
+    const item = makeItem()
+    const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -113,14 +113,14 @@ describe('rebuildReminderSchedule — timer registration', () => {
     await callRebuild()
 
     expect(mockRegisterTimers).toHaveBeenCalledOnce()
-    var registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
     expect(registered.length).toBe(1)
     expect(registered[0].notified).toBe(false)
   })
 
   it('registers habit entries', async () => {
-    var habit = makeHabit()
-    var data: KernelData = {
+    const habit = makeHabit()
+    const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -135,13 +135,13 @@ describe('rebuildReminderSchedule — timer registration', () => {
     await callRebuild()
 
     expect(mockRegisterTimers).toHaveBeenCalledOnce()
-    var registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
     expect(registered.length).toBe(1)
     expect(registered[0].type).toBe('habit')
   })
 
   it('does not call registerTimers when no entries are produced', async () => {
-    var data: KernelData = {
+    const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -159,8 +159,8 @@ describe('rebuildReminderSchedule — timer registration', () => {
   })
 
   it('cancels timers before registering new ones', async () => {
-    var item = makeItem()
-    var data: KernelData = {
+    const item = makeItem()
+    const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -181,13 +181,13 @@ describe('rebuildReminderSchedule — timer registration', () => {
 
 describe('handleFsNotify — .tmp file filtering', () => {
   async function importHandleFsNotify() {
-    var mod = await import('@/kernel/reminder')
+    const mod = await import('@/kernel/reminder')
     return mod.handleFsNotify
   }
 
   it('ignores .tmp file events and does not log', async () => {
-    var handleFsNotify = await importHandleFsNotify()
-    var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const handleFsNotify = await importHandleFsNotify()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     handleFsNotify({
       type: 'fs-notify',
@@ -202,8 +202,8 @@ describe('handleFsNotify — .tmp file filtering', () => {
   })
 
   it('processes non-.tmp file events normally', async () => {
-    var handleFsNotify = await importHandleFsNotify()
-    var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const handleFsNotify = await importHandleFsNotify()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     handleFsNotify({
       type: 'fs-notify',
@@ -213,6 +213,22 @@ describe('handleFsNotify — .tmp file filtering', () => {
     })
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('[reminder] fs-notify: path=kernel-data.json'))
+
+    logSpy.mockRestore()
+  })
+
+  it('ignores timer-registry.json events and does not trigger rebuild', async () => {
+    const handleFsNotify = await importHandleFsNotify()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    handleFsNotify({
+      type: 'fs-notify',
+      detail: {
+        path: 'timer-registry.json',
+      },
+    })
+
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('[reminder] fs-notify: path=timer-registry.json'))
 
     logSpy.mockRestore()
   })

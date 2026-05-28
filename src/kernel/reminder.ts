@@ -1,10 +1,18 @@
-import type { KernelData, TimerEntry } from './types'
+import type {
+  KernelData,
+  TimerEntry,
+} from './types'
+import {
+  cancelTimersByType,
+  registerTimers,
+} from './scheduler'
 import { calculateReminderTime } from './utils'
-import { registerTimers, cancelTimersByType } from './scheduler'
 
-var fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
-var pendingPaths: Record<string, boolean> = {}
-var reloadWebhookConfigFn: (() => Promise<void>) | null = null
+const PATH_SEP_RE = /[/\\]/g
+
+let fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let pendingPaths: Record<string, boolean> = {}
+let reloadWebhookConfigFn: (() => Promise<void>) | null = null
 
 export function setReloadWebhookConfig(fn: () => Promise<void>): void {
   reloadWebhookConfigFn = fn
@@ -18,28 +26,28 @@ export async function initReminderScheduler(): Promise<void> {
 
 export async function rebuildReminderSchedule(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('kernel-data.json')
-    var data: KernelData = await result.json()
+    const result = await siyuan.storage.get('kernel-data.json')
+    const data: KernelData = await result.json()
     if (!data) {
       console.log('[reminder] kernel-data.json is empty or null')
       return
     }
 
-    console.log('[reminder] kernel-data loaded: items=' + (data.items ? data.items.length : 0) + ' habits=' + (data.habits ? data.habits.length : 0))
+    console.log(`[reminder] kernel-data loaded: items=${data.items ? data.items.length : 0} habits=${data.habits ? data.habits.length : 0}`)
 
     cancelTimersByType('reminder')
     cancelTimersByType('habit')
 
-    var entries: TimerEntry[] = []
-    var now = Date.now()
-    var futureWindowMs = 24 * 60 * 60 * 1000
+    const entries: TimerEntry[] = []
+    const now = Date.now()
+    const futureWindowMs = 24 * 60 * 60 * 1000
 
     if (data.items) {
-      for (var i = 0; i < data.items.length; i++) {
-        var item = data.items[i]
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i]
         if (item.status === 'completed' || item.status === 'abandoned') continue
         if (!item.reminder || !item.reminder.enabled) continue
-        var reminderTime = calculateReminderTime(
+        const reminderTime = calculateReminderTime(
           item.date,
           item.startDateTime,
           item.endDateTime,
@@ -50,7 +58,7 @@ export async function rebuildReminderSchedule(): Promise<void> {
         if (reminderTime < now - 5 * 60 * 1000) continue
         if (reminderTime > now + futureWindowMs) continue
         entries.push({
-          id: 'reminder-' + item.id + '-' + item.date + '-' + reminderTime,
+          id: `reminder-${item.id}-${item.date}-${reminderTime}`,
           type: 'reminder',
           endTime: Math.floor(reminderTime / 1000),
           metadata: {
@@ -65,10 +73,10 @@ export async function rebuildReminderSchedule(): Promise<void> {
     }
 
     if (data.habits) {
-      for (var j = 0; j < data.habits.length; j++) {
-        var habit = data.habits[j]
+      for (let j = 0; j < data.habits.length; j++) {
+        const habit = data.habits[j]
         if (!habit.reminder || !habit.reminder.enabled) continue
-        var habitReminderTime = calculateReminderTime(
+        const habitReminderTime = calculateReminderTime(
           habit.targetDate,
           undefined,
           undefined,
@@ -79,7 +87,7 @@ export async function rebuildReminderSchedule(): Promise<void> {
         if (habitReminderTime < now - 5 * 60 * 1000) continue
         if (habitReminderTime > now + futureWindowMs) continue
         entries.push({
-          id: 'habit-' + habit.blockId + '-' + habit.targetDate + '-' + habitReminderTime,
+          id: `habit-${habit.blockId}-${habit.targetDate}-${habitReminderTime}`,
           type: 'habit',
           endTime: Math.floor(habitReminderTime / 1000),
           metadata: {
@@ -95,24 +103,25 @@ export async function rebuildReminderSchedule(): Promise<void> {
       registerTimers(entries)
     }
 
-    console.log('[reminder] schedule rebuilt: ' + entries.length + ' timer entries registered (reminder + habit)')
+    console.log(`[reminder] schedule rebuilt: ${entries.length} timer entries registered (reminder + habit)`)
   } catch (e) {
-    console.log('[reminder] failed to rebuild schedule: ' + String(e))
+    console.log(`[reminder] failed to rebuild schedule: ${String(e)}`)
   }
 }
 
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
-  var path = event.detail.path.replace(/\\/g, '/')
+  const path = event.detail.path.replace(PATH_SEP_RE, '/')
   if (path.endsWith('.tmp')) return
-  console.log('[reminder] fs-notify: path=' + path)
+  if (path === 'timer-registry.json') return
+  console.log(`[reminder] fs-notify: path=${path}`)
   pendingPaths[path] = true
   if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
-  fsNotifyDebounceTimer = setTimeout(function () {
+  fsNotifyDebounceTimer = setTimeout(() => {
     if (pendingPaths['kernel-data.json']) {
       void rebuildReminderSchedule()
     }
-    if (pendingPaths['settings']) {
+    if (pendingPaths.settings) {
       if (reloadWebhookConfigFn) void reloadWebhookConfigFn()
     }
     pendingPaths = {}

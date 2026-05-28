@@ -1,10 +1,16 @@
 import type { TimerEntry } from './types'
-import { registerTimer, registerTimers, cancelTimer, cancelTimersByType, getActiveTimers } from './scheduler'
+import {
+  cancelTimer,
+  cancelTimersByType,
+  getActiveTimers,
+  registerTimer,
+  registerTimers,
+} from './scheduler'
 import { getWebhookConfig } from './webhook'
 
 export function handleRegisterTimer(params: { id: string, type: string, endTime: number, metadata: any }): any {
-  console.log('[pomodoro] handleRegisterTimer: id=' + params.id + ' type=' + params.type + ' endTime=' + params.endTime)
-  var entry: TimerEntry = {
+  console.log(`[pomodoro] handleRegisterTimer: id=${params.id} type=${params.type} endTime=${params.endTime}`)
+  const entry: TimerEntry = {
     id: params.id,
     type: params.type as TimerEntry['type'],
     endTime: params.endTime,
@@ -16,41 +22,50 @@ export function handleRegisterTimer(params: { id: string, type: string, endTime:
 }
 
 export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
-  console.log('[pomodoro] handleRegisterTimers: count=' + params.entries.length)
+  console.log(`[pomodoro] handleRegisterTimers: count=${params.entries.length}`)
+  for (let i = 0; i < params.entries.length; i++) {
+    if (params.entries[i].notified === undefined) {
+      params.entries[i].notified = false
+    }
+  }
   registerTimers(params.entries)
   return { ok: true }
 }
 
 export function handleCancelTimer(params: { id: string }): any {
-  console.log('[pomodoro] handleCancelTimer: id=' + params.id)
+  console.log(`[pomodoro] handleCancelTimer: id=${params.id}`)
   cancelTimer(params.id)
   return { ok: true }
 }
 
 export function handleCancelTimersByType(params: { type: string }): any {
-  console.log('[pomodoro] handleCancelTimersByType: type=' + params.type)
+  console.log(`[pomodoro] handleCancelTimersByType: type=${params.type}`)
   cancelTimersByType(params.type)
   return { ok: true }
 }
 
 export function handleGetActiveTimers(params: { type?: string }): any {
-  var timers = getActiveTimers(params.type)
-  console.log('[pomodoro] handleGetActiveTimers: type=' + (params.type || 'all') + ' count=' + timers.length)
+  const timers = getActiveTimers(params.type)
+  console.log(`[pomodoro] handleGetActiveTimers: type=${params.type || 'all'} count=${timers.length}`)
   return timers
 }
 
 export function handlePing(): any {
   console.log('[pomodoro] handlePing')
-  return { ok: true, name: siyuan.plugin.name, version: siyuan.plugin.version }
+  return {
+    ok: true,
+    name: siyuan.plugin.name,
+    version: siyuan.plugin.version,
+  }
 }
 
 export function handleDiagnose(): any {
-  var timers = getActiveTimers()
-  var webhookConfig = getWebhookConfig()
-  var now = Date.now() / 1000
-  console.log('[pomodoro] handleDiagnose: timers=' + timers.length + ' webhook.enabled=' + webhookConfig.enabled + ' webhook.channels=' + webhookConfig.channels.length)
+  const timers = getActiveTimers()
+  const webhookConfig = getWebhookConfig()
+  const now = Date.now() / 1000
+  console.log(`[pomodoro] handleDiagnose: timers=${timers.length} webhook.enabled=${webhookConfig.enabled} webhook.channels=${webhookConfig.channels.length}`)
   return {
-    timers: timers.map(function (t) {
+    timers: timers.map((t) => {
       return {
         id: t.id,
         type: t.type,
@@ -62,7 +77,7 @@ export function handleDiagnose(): any {
     }),
     webhook: {
       enabled: webhookConfig.enabled,
-      channels: webhookConfig.channels.map(function (ch) {
+      channels: webhookConfig.channels.map((ch) => {
         return {
           name: ch.name,
           type: ch.type,
@@ -71,6 +86,6 @@ export function handleDiagnose(): any {
         }
       }),
     },
-    now: now,
+    now,
   }
 }

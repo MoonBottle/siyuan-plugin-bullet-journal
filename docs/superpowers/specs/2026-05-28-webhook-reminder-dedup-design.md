@@ -1,103 +1,105 @@
-# Webhook 提醒重复推送修复设计
+# Webhook 提醒重复推送修复设计（v2 — 架构优化版）
 
 ## 问题
 
-同一个提醒（同一 item + 同一时间点）被 webhook 重复推送多次。日志中观察到同一提醒被推送 14 次。
+同一个提醒（同一 item + 同一时间点）被 webhook 重复推送多次。日志中观察到同一提醒在 760ms 内被推送 7 次。
 
 ## 根因分析
 
-两个 Bug 叠加导致：
+经过 3 轮修复失败后，深度审查发现 4 个叠加的根因：
 
-### Bug 1：`rebuildReminderSchedule` 并发调用
+### 根因 A（主因）：多个 `setInterval` 定时器并发运行
 
-`handleFsNotify` 的防抖只有 200ms，但 `kernel-data.json` 写入时（原子写入：先写 `.tmp` 再 rename）会产生大量 fs-notify 事件，持续 2+ 秒。防抖在事件间隙多次触发 `rebuildReminderSchedule()`，这些 async 调用并发执行，互相干扰。
+`scheduler.ts:136` 的 `initScheduler()` 没有防护：
 
-### Bug 2：重建时 `notified` 状态丢失
-
-`rebuildReminderSchedule` 的流程是 `cancelTimersByType` → `registerTimers`。cancel 阶段将所有 timers 从 Map 中删除，register 阶段创建的新 `TimerEntry` 始终设 `notified: false`。即使某个定时器已触发过通知，重建后状态被重置，scheduler 的 `checkTimers` 会再次触发。
-
-### Bug 3（加剧因素）：`.tmp` 文件触发防抖重置
-
-`kernel-data.json01rq0gc.tmp` 等临时文件的 fs-notify 事件不断重置防抖计时器，导致防抖无法及时收敛。
-
-## 故障时序图（修复前）
-
-```mermaid
-sequenceDiagram
-    participant FS as 文件系统
-    participant HFN as handleFsNotify
-    participant RRS as rebuildReminderSchedule
-    participant SCH as scheduler/checkTimers
-    participant WH as webhook/dispatchNotification
-
-    Note over SCH: 09:19:00 定时器正常触发
-    SCH->>WH: timer FIRED (id=X, notified=true) ✅
-    WH->>WH: 推送 webhook 第 1 次 ✅
-
-    Note over FS: 09:19:01-03 大量 fs-notify 事件
-    FS->>HFN: kernel-data.json01rq0gc.tmp
-    FS->>HFN: kernel-data.json01rq0gc.tmp
-    FS->>HFN: kernel-data.json
-    FS->>HFN: kernel-data.json (大量事件...)
-
-    Note over HFN: 防抖在事件间隙多次触发
-    HFN->>RRS: rebuild 调用 A
-    HFN->>RRS: rebuild 调用 B
-    HFN->>RRS: rebuild 调用 C
-
-    Note over RRS: 并发执行！
-    RRS->>RRS: A: cancelTimersByType (清空 Map)
-    RRS->>RRS: B: cancelTimersByType (Map 已空)
-    RRS->>RRS: A: registerTimers (id=X, notified=false) ❌
-    RRS->>RRS: B: registerTimers (id=X, notified=false) ❌
-
-    SCH->>SCH: checkTimers: id=X, notified=false, endTime 已过
-    SCH->>WH: timer FIRED (id=X) ❌ 重复推送第 2 次
-    SCH->>WH: timer FIRED (id=X) ❌ 重复推送第 3 次
-    SCH->>WH: timer FIRED (id=X) ❌ ...第 N 次
+```typescript
+checkInterval = setInterval(checkTimers, 1000)  // 无防护！
 ```
+
+如果 `onrunning` 被调用 N 次（插件热重载、工作区切换等），就创建 N 个 `setInterval`，而 `checkInterval` 变量只保存最后一个引用，前 N-1 个全部泄漏。
+
+**日志证据**：同一秒内 7 次 `timer FIRED`，时间戳间隔 20-256ms：
+
+```
+now=1779945600.136  ← Fire 1
+now=1779945600.240  ← Fire 2  (间隔 104ms)
+now=1779945600.335  ← Fire 3  (间隔 95ms)
+now=1779945600.591  ← Fire 4  (间隔 256ms)
+now=1779945600.611  ← Fire 5  (间隔 20ms)
+now=1779945600.720  ← Fire 6  (间隔 109ms)
+now=1779945600.896  ← Fire 7  (间隔 176ms)
+```
+
+单个 `setInterval(checkTimers, 1000)` 不可能产生这种行为。SiYuan 的 Go 运行时可能以不同 goroutine 并发执行 `setInterval` 回调，导致 `entry.notified = true` 的内存可见性问题。
+
+### 根因 B：`checkTimers` 检查 `!entry.notified` 而非 `notifiedTimerIds`
+
+```typescript
+if (!entry.notified && now >= entry.endTime) {  // ← 检查 entry.notified
+```
+
+即使 `notifiedTimerIds` 中已有该 id，`checkTimers` 仍只看 `entry.notified`。如果 `entry.notified` 因并发执行或重新注册而与 `notifiedTimerIds` 不同步，就会导致重复触发。
+
+### 根因 C：前端 RPC 传入 `notified=undefined`
+
+`pomodoro.ts:handleRegisterTimers` 直接透传前端数据，不补充 `notified` 字段：
+
+```typescript
+registerTimers(params.entries)  // entries 没有 notified → undefined
+```
+
+对比 `handleRegisterTimer`（单条）会手动设 `notified: false`。
+
+### 根因 D（架构问题）：双路径注册冲突
+
+reminder/habit 定时器有两条注册路径：
+
+1. **Kernel 内部**：`rebuildReminderSchedule()` → `cancelTimersByType` + `registerTimers`（`notified: false`）
+2. **前端 RPC**：`rebuildScheduleKernel()` → `cancelTimersByType` + `registerTimers`（`notified: undefined`）
+
+两条路径互相 cancel + re-register，造成状态冲突。而前端路径完全冗余——前端已通过 `debouncedWriteKernelData()` 写入 `kernel-data.json`，kernel 通过 fs-notify 自动感知变更并重建。
 
 ## 修复方案
 
-### 核心思路：持久化 `notifiedTimerIds` 集合
+### 核心思路
 
-用一个独立于 timers Map 的 `Set<string>` 追踪已通知的 timer id。此 Set 不受 `cancelTimersByType` 影响，在 `rebuildReminderSchedule` 注册新 entries 时查询此 Set 恢复 `notified` 状态。
+1. **防护 `initScheduler()`**：防止多个 `setInterval` 定时器
+2. **`notifiedTimerIds` 作为唯一去重源**：`checkTimers` 检查 `notifiedTimerIds.has(id)` 而非 `!entry.notified`
+3. **统一注册路径**：移除前端 `rebuildScheduleKernel()`，kernel 独占 reminder/habit 定时器注册
 
 ### 修复后时序图
 
 ```mermaid
 sequenceDiagram
+    participant FE as 前端 projectStore
+    participant KDW as kernelDataWriter
     participant FS as 文件系统
     participant HFN as handleFsNotify
     participant RRS as rebuildReminderSchedule
     participant SCH as scheduler/checkTimers
-    participant WH as webhook/dispatchNotification
     participant NTIDS as notifiedTimerIds (Set)
+    participant WH as webhook
 
-    Note over SCH: 09:19:00 定时器正常触发
-    SCH->>WH: timer FIRED (id=X, notified=true) ✅
-    SCH->>NTIDS: add(id=X) ✅
-    WH->>WH: 推送 webhook 第 1 次 ✅
+    Note over FE: 数据变更
+    FE->>KDW: debouncedWriteKernelData (2s防抖)
+    KDW->>FS: 写入 kernel-data.json
+    FS->>HFN: fs-notify (path=kernel-data.json)
+    Note over HFN: .tmp 和 timer-registry.json 被过滤
+    HFN->>RRS: rebuildReminderSchedule (200ms防抖)
+    RRS->>RRS: cancelTimersByType('reminder')
+    RRS->>RRS: cancelTimersByType('habit')
+    RRS->>RRS: 构建 entries (notified: false)
+    RRS->>NTIDS: registerTimers: 查询 notifiedTimerIds
+    NTIDS-->>RRS: has(id=X)? → false (新timer) / true (已通知)
+    RRS->>SCH: timers.set (notified 恢复正确)
 
-    Note over FS: 09:19:01-03 大量 fs-notify 事件
-    FS->>HFN: kernel-data.json01rq0gc.tmp
-    Note over HFN: .tmp 文件被过滤，不处理 ✅
-    FS->>HFN: kernel-data.json
-    FS->>HFN: kernel-data.json
+    Note over SCH: 定时器到期
+    SCH->>NTIDS: has(id=X)? → false
+    SCH->>WH: timer FIRED (仅1次)
+    SCH->>NTIDS: add(id=X)
 
-    Note over HFN: 防抖触发重建
-    HFN->>RRS: rebuild 调用 A
-    HFN->>RRS: rebuild 调用 B (并发)
-
-    RRS->>RRS: A: cancelTimersByType
-    RRS->>RRS: B: cancelTimersByType
-    RRS->>NTIDS: A: isTimerNotified(id=X)? → true ✅
-    RRS->>RRS: A: registerTimers (id=X, notified=true) ✅
-    RRS->>NTIDS: B: isTimerNotified(id=X)? → true ✅
-    RRS->>RRS: B: registerTimers (id=X, notified=true) ✅
-
-    SCH->>SCH: checkTimers: id=X, notified=true → 跳过 ✅
-    Note over WH: 不会重复推送 ✅
+    Note over SCH: 下次 checkTimers
+    SCH->>NTIDS: has(id=X)? → true → 跳过
 ```
 
 ### 提醒时间修改场景
@@ -115,107 +117,142 @@ sequenceDiagram
     USER->>USER: 修改提醒时间 09:41 → 09:50
     Note over RRS: 重建触发
     RRS->>RRS: cancelTimersByType
-    RRS->>NTIDS: isTimerNotified(id=reminder-item-A-09:50)? → false ✅
-    RRS->>RRS: registerTimers (id=reminder-item-A-09:50, notified=false) ✅
+    RRS->>NTIDS: has(id=reminder-item-A-09:50)? → false
+    RRS->>RRS: registerTimers (id=reminder-item-A-09:50, notified=false)
 
     Note over SCH: 09:50 到达
-    SCH->>WH: timer FIRED (id=reminder-item-A-09:50) ✅
-    SCH->>NTIDS: add(id=reminder-item-A-09:50) ✅
-    WH->>WH: 推送 webhook ✅
+    SCH->>NTIDS: has(id=reminder-item-A-09:50)? → false
+    SCH->>WH: timer FIRED (id=reminder-item-A-09:50)
+    SCH->>NTIDS: add(id=reminder-item-A-09:50)
+    WH->>WH: 推送 webhook
 ```
 
 ## 修改清单
 
 ### 1. `src/kernel/scheduler.ts`
 
-新增 `notifiedTimerIds` 集合及查询函数：
-
-```typescript
-var notifiedTimerIds = new Set<string>()
-
-export function isTimerNotified(id: string): boolean {
-  return notifiedTimerIds.has(id)
-}
-```
-
-在 `checkTimers` 中，timer 触发时记录到 `notifiedTimerIds`：
-
-```typescript
-function checkTimers(): void {
-  timers.forEach(function (entry) {
-    if (!entry.notified && now >= entry.endTime) {
-      entry.notified = true
-      notifiedTimerIds.add(entry.id)  // 新增
-      dispatchNotification(entry)
-    }
-  })
-  // purge 逻辑中同步清理
-  timers.forEach(function (entry, key) {
-    if (entry.notified && (now - entry.endTime) > PURGE_THRESHOLD_S) {
-      toDelete.push(key)
-      notifiedTimerIds.delete(key)  // 新增
-    }
-  })
-}
-```
-
-在 `initScheduler` 中，missed timer 也要记录：
+#### 1.1 防护 `initScheduler()` 多次调用
 
 ```typescript
 export function initScheduler(): void {
-  timers.forEach(function (entry) {
-    if (!entry.notified && entry.endTime <= now) {
-      if (diffMs <= MISSED_THRESHOLD_MS) {
-        entry.notified = true
-        notifiedTimerIds.add(entry.id)  // 新增
-        dispatchNotification(entry)
-      } else {
-        entry.notified = true
-        notifiedTimerIds.add(entry.id)  // 新增：stale timer 也标记
-      }
-    }
-  })
+  if (checkInterval) {
+    clearInterval(checkInterval)
+    checkInterval = null
+  }
+  lastKnownDate = formatDate(new Date())
+  // ... 原有 missed timer 处理 ...
+  checkInterval = setInterval(checkTimers, 1000)
 }
 ```
 
-### 2. `src/kernel/reminder.ts`
+#### 1.2 `notifiedTimerIds` 作为唯一去重源
 
-在 `rebuildReminderSchedule` 中，注册前恢复 `notified` 状态：
+`checkTimers` 和 `initScheduler` 中的条件判断从 `!entry.notified` 改为 `!notifiedTimerIds.has(entry.id)`：
 
 ```typescript
-import { registerTimers, cancelTimersByType, isTimerNotified } from './scheduler'
+// checkTimers:
+if (!notifiedTimerIds.has(entry.id) && now >= entry.endTime) {
+  entry.notified = true
+  notifiedTimerIds.add(entry.id)
+  // ...
+}
 
-export async function rebuildReminderSchedule(): Promise<void> {
-  // ... cancel + build entries（原有逻辑不变）...
-
-  // 注册前，从持久化集合恢复 notified 状态
-  for (var i = 0; i < entries.length; i++) {
-    if (isTimerNotified(entries[i].id)) {
-      entries[i].notified = true
-    }
-  }
-
-  if (entries.length > 0) {
-    registerTimers(entries)
-  }
+// initScheduler:
+if (!notifiedTimerIds.has(entry.id) && entry.endTime <= now) {
+  entry.notified = true
+  notifiedTimerIds.add(entry.id)
+  // ...
 }
 ```
 
-在 `handleFsNotify` 中过滤 `.tmp` 文件：
+### 2. `src/kernel/pomodoro.ts`
+
+补充 `notified: false`：
+
+```typescript
+export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
+  for (var i = 0; i < params.entries.length; i++) {
+    if (params.entries[i].notified === undefined) {
+      params.entries[i].notified = false
+    }
+  }
+  registerTimers(params.entries)
+  return { ok: true }
+}
+```
+
+### 3. `src/kernel/reminder.ts`
+
+过滤 `timer-registry.json` 的 fs-notify 事件：
 
 ```typescript
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
   var path = event.detail.path.replace(/\\/g, '/')
-  if (path.endsWith('.tmp')) return  // 新增：忽略临时文件
-  // ... 原有逻辑不变 ...
+  if (path.endsWith('.tmp')) return
+  if (path === 'timer-registry.json') return  // 新增
+  // ... 原有逻辑 ...
 }
 ```
 
-### 3. 不需要修改的文件
+### 4. `src/services/reminderService.ts`（前端 — 核心架构变更）
+
+#### 4.1 移除 `rebuildScheduleKernel()` 方法
+
+此方法通过 RPC 注册 reminder/habit 定时器，与 kernel 内部的 `rebuildReminderSchedule()` 冲突。前端已通过 `debouncedWriteKernelData()` 写入 `kernel-data.json`，kernel 通过 fs-notify 自动重建，无需前端再通过 RPC 注册。
+
+#### 4.2 简化 `rebuildSchedule()`
+
+```typescript
+private rebuildSchedule(): void {
+  if (!this.projectStore) return;
+
+  if (kernelAvailable.value) {
+    // Kernel 通过 fs-notify 自行管理 reminder/habit 定时器
+    // 前端只需确保 kernel-data.json 是最新的（由 projectStore 的 debouncedWriteKernelData 处理）
+    return;
+  }
+
+  // kernel 不可用时，使用 croner 本地调度
+  // ... 原有的 croner 逻辑不变 ...
+}
+```
+
+#### 4.3 简化 `kernelAvailable` watch 回调
+
+```typescript
+this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
+  if (available) {
+    this.setupKernelListeners();
+    this.clearAllJobs();
+    // 不再调用 rebuildSchedule()
+    // kernel-data.json 由 projectStore 维护，kernel 通过 fs-notify 自行重建
+  }
+});
+```
+
+### 5. 不需要修改的文件
 
 - `webhook.ts`：`dispatchNotification` 逻辑正确，无需修改
 - `index.ts`：生命周期绑定不变，无需修改
+- `kernelDataWriter.ts`：`writeKernelData` 已正确写入 `kernel-data.json`，无需修改
+
+## 数据流对比
+
+```
+修改前（双路径冲突）：
+  前端数据变更 → debouncedWriteKernelData → kernel-data.json
+                                              ↓ fs-notify
+                                          kernel rebuildReminderSchedule → registerTimers (notified:false)
+  前端数据变更 → rebuildScheduleKernel → RPC cancelTimersByType → RPC registerTimers (notified:undefined)
+                                           ↑ 冲突！互相覆盖
+
+修改后（单路径）：
+  前端数据变更 → debouncedWriteKernelData → kernel-data.json
+                                              ↓ fs-notify
+                                          kernel rebuildReminderSchedule → registerTimers (notified:false)
+  前端 pomodoro/break → RPC registerTimer (notified:false) ← 仅番茄钟相关
+```
 
 ## 验证标准
 
@@ -223,3 +260,6 @@ export function handleFsNotify(event: { type: string, detail: any }): void {
 2. 修改提醒时间后，按新时间正常推送
 3. `kernel-data.json` 频繁变更时，不会触发重复推送
 4. `notifiedTimerIds` 随过期 timer 同步清理，不会无限增长
+5. `initScheduler()` 多次调用不会创建多个 `setInterval`
+6. 前端离线时，kernel 仍可基于 `kernel-data.json` 正常推送
+7. `timer-registry.json` 变更不再触发 fs-notify 日志噪音

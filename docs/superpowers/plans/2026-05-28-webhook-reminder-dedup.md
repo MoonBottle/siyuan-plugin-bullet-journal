@@ -1,10 +1,10 @@
-# Webhook 提醒重复推送修复 实现计划
+# Webhook 提醒重复推送修复 实现计划（v2 — 架构优化版）
 
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
-**目标：** 修复同一提醒被 webhook 重复推送多次的 bug，通过持久化 `notifiedTimerIds` 集合和过滤 `.tmp` 文件事件来实现。
+**目标：** 修复同一提醒被 webhook 重复推送多次的 bug，根因是多个 `setInterval` 定时器并发 + `checkTimers` 未使用 `notifiedTimerIds` 作为去重源 + 前端冗余 RPC 注册路径与 kernel 内部路径冲突。
 
-**架构：** 在 `scheduler.ts` 中新增独立于 timers Map 的 `notifiedTimerIds: Set<string>`，timer 触发时记录 id，purge 时同步清理。`rebuildReminderSchedule` 注册前查询此 Set 恢复 `notified` 状态。`handleFsNotify` 过滤 `.tmp` 临时文件事件。
+**架构：** ① `initScheduler()` 加防护防止多个 `setInterval`；② `checkTimers`/`initScheduler` 使用 `notifiedTimerIds.has(id)` 替代 `!entry.notified` 作为唯一去重判断；③ 移除前端 `rebuildScheduleKernel()` 的 reminder/habit RPC 注册，kernel 通过 fs-notify 自行管理；④ `handleRegisterTimers` 补充 `notified: false`；⑤ `handleFsNotify` 过滤 `timer-registry.json`。
 
 **技术栈：** TypeScript, Vitest
 
@@ -14,71 +14,58 @@
 
 | 文件 | 操作 | 职责 |
 |------|------|------|
-| `src/kernel/scheduler.ts` | 修改 | 新增 `notifiedTimerIds` 集合、`isTimerNotified` 导出函数；`checkTimers`/`initScheduler` 中记录已通知 id；purge 中同步清理 |
-| `src/kernel/reminder.ts` | 修改 | `rebuildReminderSchedule` 注册前查询 `isTimerNotified` 恢复状态；`handleFsNotify` 过滤 `.tmp` 文件 |
-| `test/kernel/scheduler.notifiedTimerIds.test.ts` | 创建 | 测试 `notifiedTimerIds` 的记录、查询、清理逻辑 |
-| `test/kernel/reminder.dedup.test.ts` | 创建 | 测试 `rebuildReminderSchedule` 恢复 `notified` 状态和 `handleFsNotify` 过滤 `.tmp` |
+| `src/kernel/scheduler.ts` | 修改 | `initScheduler()` 加防护；`checkTimers`/`initScheduler` 使用 `notifiedTimerIds.has()` |
+| `src/kernel/pomodoro.ts` | 修改 | `handleRegisterTimers` 补充 `notified: false` |
+| `src/kernel/reminder.ts` | 修改 | `handleFsNotify` 过滤 `timer-registry.json` |
+| `src/services/reminderService.ts` | 修改 | 移除 `rebuildScheduleKernel()`；简化 `rebuildSchedule()` 和 `kernelAvailable` watch |
+| `test/kernel/scheduler.notifiedTimerIds.test.ts` | 修改 | 更新现有测试 + 新增 `initScheduler` 防护测试和 `notifiedTimerIds` source-of-truth 测试 |
+| `test/kernel/reminder.dedup.test.ts` | 修改 | 新增 `timer-registry.json` 过滤测试 |
 
 ---
 
-### 任务 1：scheduler.ts — 新增 `notifiedTimerIds` 集合和 `isTimerNotified` 函数
+### 任务 1：scheduler.ts — `initScheduler()` 防护 + `notifiedTimerIds` 作为唯一去重源
 
 **文件：**
-- 修改：`src/kernel/scheduler.ts:1-10`（模块顶部变量区）
-- 测试：`test/kernel/scheduler.notifiedTimerIds.test.ts`
+- 修改：`src/kernel/scheduler.ts:116-136`（`initScheduler` 函数）
+- 修改：`src/kernel/scheduler.ts:146-157`（`checkTimers` 函数）
+- 修改：`test/kernel/scheduler.notifiedTimerIds.test.ts`
 
-- [ ] **步骤 1：编写失败的测试**
+- [ ] **步骤 1：编写失败的测试 — initScheduler 防护**
 
-创建 `test/kernel/scheduler.notifiedTimerIds.test.ts`：
+在 `test/kernel/scheduler.notifiedTimerIds.test.ts` 末尾追加：
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+describe('initScheduler guard', () => {
+  it('calling initScheduler twice should not create duplicate setInterval timers', async () => {
+    vi.useFakeTimers()
+    var dispatchFn = vi.fn()
+    setDispatchNotification(dispatchFn)
 
-vi.mock('siyuan', () => ({
-  storage: {
-    get: vi.fn(),
-    put: vi.fn(),
-  },
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
-  rpc: {
-    broadcast: vi.fn(),
-  },
-}))
-
-describe('scheduler notifiedTimerIds', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
-
-  it('isTimerNotified returns false for unknown id', async () => {
-    var { isTimerNotified } = await import('../../src/kernel/scheduler')
-    expect(isTimerNotified('unknown-id')).toBe(false)
-  })
-
-  it('isTimerNotified returns true after timer fires and records id', async () => {
-    var { isTimerNotified } = await import('../../src/kernel/scheduler')
-    var { registerTimer } = await import('../../src/kernel/scheduler')
-
-    var entry = {
-      id: 'reminder-test-123',
-      type: 'reminder' as const,
-      endTime: Math.floor(Date.now() / 1000) - 10,
-      metadata: { blockId: 'b1', content: 'test' },
+    var pastTime = Math.floor(Date.now() / 1000) - 2
+    var entry: TimerEntry = {
+      id: 'guard-test-1',
+      type: 'reminder',
+      endTime: pastTime,
+      metadata: { blockId: 'b1', content: 'guard test' },
       notified: false,
     }
     registerTimer(entry)
 
-    var { getTimers } = await import('../../src/kernel/scheduler')
-    var timer = getTimers().get('reminder-test-123')
-    if (timer) {
-      timer.notified = true
-    }
+    globalThis.siyuan = {
+      rpc: { broadcast: vi.fn() },
+    } as any
 
-    var mod = await import('../../src/kernel/scheduler')
-    expect(mod.isTimerNotified('reminder-test-123')).toBe(true)
+    var { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+    initScheduler()
+
+    vi.advanceTimersByTime(1000)
+
+    expect(dispatchFn).toHaveBeenCalledTimes(1)
+
+    var { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
   })
 })
 ```
@@ -86,85 +73,51 @@ describe('scheduler notifiedTimerIds', () => {
 - [ ] **步骤 2：运行测试验证失败**
 
 运行：`npx vitest run test/kernel/scheduler.notifiedTimerIds.test.ts`
-预期：FAIL — `isTimerNotified` 不存在
+预期：FAIL — `initScheduler` 被调用两次后 `dispatchFn` 被调用超过 1 次（多个 setInterval 导致重复触发）
 
-- [ ] **步骤 3：编写最少实现代码**
+- [ ] **步骤 3：实现 initScheduler 防护**
 
-在 `src/kernel/scheduler.ts` 顶部（`var timers` 之后）添加：
+修改 `src/kernel/scheduler.ts` 的 `initScheduler` 函数，在开头添加防护：
 
 ```typescript
-var notifiedTimerIds = new Set<string>()
+export function initScheduler(): void {
+  if (checkInterval) {
+    clearInterval(checkInterval)
+    checkInterval = null
+  }
+  lastKnownDate = formatDate(new Date())
+  console.log('[scheduler] initScheduler: existing timers=' + timers.size + ' today=' + lastKnownDate)
+  var now = Date.now() / 1000
+  timers.forEach(function (entry) {
+    if (!notifiedTimerIds.has(entry.id) && entry.endTime <= now) {
+      var diffMs = (now - entry.endTime) * 1000
+      if (diffMs <= MISSED_THRESHOLD_MS) {
+        entry.notified = true
+        notifiedTimerIds.add(entry.id)
+        console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
+        dispatchNotification(entry)
+      } else {
+        entry.notified = true
+        notifiedTimerIds.add(entry.id)
+        console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
+      }
+    }
+  })
 
-export function isTimerNotified(id: string): boolean {
-  return notifiedTimerIds.has(id)
+  checkInterval = setInterval(checkTimers, 1000)
 }
 ```
 
-- [ ] **步骤 4：运行测试验证通过**
+- [ ] **步骤 4：实现 notifiedTimerIds 作为唯一去重源**
 
-运行：`npx vitest run test/kernel/scheduler.notifiedTimerIds.test.ts`
-预期：PASS
-
-- [ ] **步骤 5：Commit**
-
-```bash
-git add src/kernel/scheduler.ts test/kernel/scheduler.notifiedTimerIds.test.ts
-git commit -m "fix(kernel): add notifiedTimerIds set and isTimerNotified export"
-```
-
----
-
-### 任务 2：scheduler.ts — `checkTimers` 中记录已通知 id 并在 purge 中清理
-
-**文件：**
-- 修改：`src/kernel/scheduler.ts:132-164`（`checkTimers` 函数）
-
-- [ ] **步骤 1：编写失败的测试**
-
-在 `test/kernel/scheduler.notifiedTimerIds.test.ts` 中追加：
-
-```typescript
-describe('checkTimers records notified ids', () => {
-  it('checkTimers adds id to notifiedTimerIds when timer fires', async () => {
-    var { registerTimer, isTimerNotified, getTimers, setDispatchNotification } = await import('../../src/kernel/scheduler')
-
-    var dispatchFn = vi.fn()
-    setDispatchNotification(dispatchFn)
-
-    var pastTime = Math.floor(Date.now() / 1000) - 5
-    var entry = {
-      id: 'reminder-fire-test',
-      type: 'reminder' as const,
-      endTime: pastTime,
-      metadata: { blockId: 'b1', content: 'fire test' },
-      notified: false,
-    }
-    registerTimer(entry)
-
-    getTimers().forEach(function (e) {
-      if (!e.notified && Date.now() / 1000 >= e.endTime) {
-        e.notified = true
-        notifiedTimerIds_add_for_test(e.id)
-      }
-    })
-
-    expect(isTimerNotified('reminder-fire-test')).toBe(true)
-  })
-})
-```
-
-注意：由于 `checkTimers` 是内部函数且依赖 `setInterval`，直接测试较困难。下面改为测试 `initScheduler` 中的 missed timer 逻辑。
-
-- [ ] **步骤 2：修改 `checkTimers` 和 `initScheduler`**
-
-在 `src/kernel/scheduler.ts` 的 `checkTimers` 函数中，`entry.notified = true` 之后添加 `notifiedTimerIds.add(entry.id)`：
+修改 `src/kernel/scheduler.ts` 的 `checkTimers` 函数，将 `!entry.notified` 改为 `!notifiedTimerIds.has(entry.id)`：
 
 ```typescript
 function checkTimers(): void {
   var now = Date.now() / 1000
   var firedCount = 0
   timers.forEach(function (entry) {
-    if (!entry.notified && now >= entry.endTime) {
+    if (!notifiedTimerIds.has(entry.id) && now >= entry.endTime) {
       entry.notified = true
       notifiedTimerIds.add(entry.id)
       firedCount++
@@ -197,238 +150,137 @@ function checkTimers(): void {
 }
 ```
 
-在 `initScheduler` 函数中，两处 `entry.notified = true` 之后添加 `notifiedTimerIds.add(entry.id)`：
+- [ ] **步骤 5：编写失败的测试 — notifiedTimerIds 作为 source of truth**
+
+在 `test/kernel/scheduler.notifiedTimerIds.test.ts` 末尾追加：
 
 ```typescript
-export function initScheduler(): void {
-  lastKnownDate = formatDate(new Date())
-  console.log('[scheduler] initScheduler: existing timers=' + timers.size + ' today=' + lastKnownDate)
-  var now = Date.now() / 1000
-  timers.forEach(function (entry) {
-    if (!entry.notified && entry.endTime <= now) {
-      var diffMs = (now - entry.endTime) * 1000
-      if (diffMs <= MISSED_THRESHOLD_MS) {
-        entry.notified = true
-        notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
-        dispatchNotification(entry)
-      } else {
-        entry.notified = true
-        notifiedTimerIds.add(entry.id)
-        console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
-      }
-    }
-  })
+describe('notifiedTimerIds as source of truth', () => {
+  it('checkTimers skips timer when notifiedTimerIds has the id even if entry.notified is false', async () => {
+    vi.useFakeTimers()
+    var dispatchFn = vi.fn()
+    setDispatchNotification(dispatchFn)
 
-  checkInterval = setInterval(checkTimers, 1000)
-}
+    var futureTime = Math.floor(Date.now() / 1000) + 10
+    var entry: TimerEntry = {
+      id: 'sot-test-1',
+      type: 'reminder',
+      endTime: futureTime,
+      metadata: { blockId: 'b1', content: 'sot test' },
+      notified: false,
+    }
+    registerTimer(entry)
+    markTimerNotified('sot-test-1')
+
+    getTimers().get('sot-test-1')!.notified = false
+    getTimers().get('sot-test-1')!.endTime = Math.floor(Date.now() / 1000) - 1
+
+    globalThis.siyuan = {
+      rpc: { broadcast: vi.fn() },
+    } as any
+
+    var { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+
+    vi.advanceTimersByTime(2000)
+
+    expect(dispatchFn).not.toHaveBeenCalled()
+
+    var { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
+  })
+})
 ```
 
-- [ ] **步骤 3：运行测试验证通过**
+- [ ] **步骤 6：运行测试验证通过**
 
 运行：`npx vitest run test/kernel/scheduler.notifiedTimerIds.test.ts`
 预期：PASS
 
-- [ ] **步骤 4：Commit**
+- [ ] **步骤 7：Commit**
 
 ```bash
-git add src/kernel/scheduler.ts
-git commit -m "fix(kernel): record notified ids in checkTimers and initScheduler, clean up on purge"
+git add src/kernel/scheduler.ts test/kernel/scheduler.notifiedTimerIds.test.ts
+git commit -m "fix(kernel): guard initScheduler against multiple calls, use notifiedTimerIds as dedup source"
 ```
 
 ---
 
-### 任务 3：reminder.ts — `rebuildReminderSchedule` 注册前恢复 `notified` 状态
+### 任务 2：pomodoro.ts — `handleRegisterTimers` 补充 `notified: false`
 
 **文件：**
-- 修改：`src/kernel/reminder.ts:1-3`（import 区）
-- 修改：`src/kernel/reminder.ts:94-97`（`registerTimers` 调用前）
+- 修改：`src/kernel/pomodoro.ts:18-22`（`handleRegisterTimers` 函数）
+
+- [ ] **步骤 1：实现修复**
+
+修改 `src/kernel/pomodoro.ts` 的 `handleRegisterTimers` 函数：
+
+```typescript
+export function handleRegisterTimers(params: { entries: TimerEntry[] }): any {
+  console.log('[pomodoro] handleRegisterTimers: count=' + params.entries.length)
+  for (var i = 0; i < params.entries.length; i++) {
+    if (params.entries[i].notified === undefined) {
+      params.entries[i].notified = false
+    }
+  }
+  registerTimers(params.entries)
+  return { ok: true }
+}
+```
+
+- [ ] **步骤 2：Commit**
+
+```bash
+git add src/kernel/pomodoro.ts
+git commit -m "fix(kernel): set notified=false in handleRegisterTimers for missing field"
+```
+
+---
+
+### 任务 3：reminder.ts — `handleFsNotify` 过滤 `timer-registry.json`
+
+**文件：**
+- 修改：`src/kernel/reminder.ts:104-108`（`handleFsNotify` 函数）
+- 修改：`test/kernel/reminder.dedup.test.ts`
 
 - [ ] **步骤 1：编写失败的测试**
 
-创建 `test/kernel/reminder.dedup.test.ts`：
+在 `test/kernel/reminder.dedup.test.ts` 的 `describe('handleFsNotify — .tmp file filtering')` 块中追加测试：
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+it('ignores timer-registry.json events and does not trigger rebuild', async () => {
+  var handleFsNotify = await importHandleFsNotify()
+  var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
-var mockStorageData: Record<string, any> = {}
-
-vi.mock('siyuan', () => ({
-  storage: {
-    get: vi.fn((path: string) => {
-      return Promise.resolve({
-        json: () => Promise.resolve(mockStorageData[path] || null),
-        text: () => Promise.resolve(JSON.stringify(mockStorageData[path] || '')),
-      })
-    }),
-    put: vi.fn(),
-    watcher: { add: vi.fn() },
-  },
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
-}))
-
-describe('rebuildReminderSchedule notified state preservation', () => {
-  beforeEach(() => {
-    vi.resetModules()
-    mockStorageData = {}
+  handleFsNotify({
+    type: 'fs-notify',
+    detail: {
+      path: 'timer-registry.json',
+    },
   })
 
-  it('restores notified=true for already-notified timer ids after rebuild', async () => {
-    var { isTimerNotified, registerTimer, getTimers } = await import('../../src/kernel/scheduler')
-    var { rebuildReminderSchedule } = await import('../../src/kernel/reminder')
+  expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('[reminder] fs-notify: path=timer-registry.json'))
 
-    var now = Date.now()
-    var reminderTime = now - 60000
-    var timerId = 'reminder-item-123-2026-05-28-' + reminderTime
-
-    var { setDispatchNotification } = await import('../../src/kernel/scheduler')
-    setDispatchNotification(vi.fn())
-
-    registerTimer({
-      id: timerId,
-      type: 'reminder',
-      endTime: Math.floor(reminderTime / 1000),
-      metadata: { blockId: 'b1', content: 'test' },
-      notified: true,
-    })
-
-    var timer = getTimers().get(timerId)
-    expect(timer?.notified).toBe(true)
-    expect(isTimerNotified(timerId)).toBe(true)
-
-    mockStorageData['kernel-data.json'] = {
-      items: [{
-        id: 'item-123',
-        content: 'test',
-        date: '2026-05-28',
-        startDateTime: undefined,
-        endDateTime: undefined,
-        status: 'pending',
-        projectName: 'test',
-        taskName: 'default',
-        projectId: 'p1',
-        links: undefined,
-        pomodoros: [],
-        reminder: { enabled: true, type: 'absolute', time: new Date(reminderTime).toISOString() },
-      }],
-      habits: [],
-    }
-
-    await rebuildReminderSchedule()
-
-    var rebuiltTimer = getTimers().get(timerId)
-    expect(rebuiltTimer?.notified).toBe(true)
-  })
+  logSpy.mockRestore()
 })
 ```
 
 - [ ] **步骤 2：运行测试验证失败**
 
 运行：`npx vitest run test/kernel/reminder.dedup.test.ts`
-预期：FAIL — 重建后 `notified` 为 `false`（当前 bug 行为）
+预期：FAIL — `timer-registry.json` 事件未被过滤，日志中出现了 `[reminder] fs-notify: path=timer-registry.json`
 
-- [ ] **步骤 3：修改 `reminder.ts`**
+- [ ] **步骤 3：实现修复**
 
-修改 import（`src/kernel/reminder.ts:3`）：
-
-```typescript
-import { registerTimers, cancelTimersByType, isTimerNotified } from './scheduler'
-```
-
-在 `rebuildReminderSchedule` 函数中，`registerTimers(entries)` 调用之前添加恢复逻辑（`src/kernel/reminder.ts` 约第 94 行）：
-
-```typescript
-    for (var k = 0; k < entries.length; k++) {
-      if (isTimerNotified(entries[k].id)) {
-        entries[k].notified = true
-      }
-    }
-
-    if (entries.length > 0) {
-      registerTimers(entries)
-    }
-```
-
-- [ ] **步骤 4：运行测试验证通过**
-
-运行：`npx vitest run test/kernel/reminder.dedup.test.ts`
-预期：PASS
-
-- [ ] **步骤 5：Commit**
-
-```bash
-git add src/kernel/reminder.ts test/kernel/reminder.dedup.test.ts
-git commit -m "fix(kernel): preserve notified state when rebuilding reminder schedule"
-```
-
----
-
-### 任务 4：reminder.ts — `handleFsNotify` 过滤 `.tmp` 文件
-
-**文件：**
-- 修改：`src/kernel/reminder.ts:104-108`（`handleFsNotify` 函数开头）
-
-- [ ] **步骤 1：编写失败的测试**
-
-在 `test/kernel/reminder.dedup.test.ts` 中追加：
-
-```typescript
-describe('handleFsNotify .tmp file filtering', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
-
-  it('ignores fs-notify events for .tmp files', async () => {
-    var { handleFsNotify } = await import('../../src/kernel/reminder')
-    var consoleSpy = vi.spyOn(console, 'log')
-
-    handleFsNotify({
-      type: 'fs-notify',
-      detail: { path: 'kernel-data.json01rq0gc.tmp' },
-    })
-
-    expect(consoleSpy).not.toHaveBeenCalledWith(
-      expect.stringContaining('[reminder] fs-notify: path=kernel-data.json01rq0gc.tmp')
-    )
-
-    consoleSpy.mockRestore()
-  })
-
-  it('processes fs-notify events for non-.tmp files', async () => {
-    var { handleFsNotify } = await import('../../src/kernel/reminder')
-    var consoleSpy = vi.spyOn(console, 'log')
-
-    handleFsNotify({
-      type: 'fs-notify',
-      detail: { path: 'kernel-data.json' },
-    })
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[reminder] fs-notify: path=kernel-data.json')
-    )
-
-    consoleSpy.mockRestore()
-  })
-})
-```
-
-- [ ] **步骤 2：运行测试验证失败**
-
-运行：`npx vitest run test/kernel/reminder.dedup.test.ts`
-预期：FAIL — `.tmp` 文件事件未被过滤
-
-- [ ] **步骤 3：修改 `handleFsNotify`**
-
-在 `src/kernel/reminder.ts` 的 `handleFsNotify` 函数中，`path` 处理后添加 `.tmp` 过滤：
+修改 `src/kernel/reminder.ts` 的 `handleFsNotify` 函数，在 `.tmp` 过滤之后添加 `timer-registry.json` 过滤：
 
 ```typescript
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
   var path = event.detail.path.replace(/\\/g, '/')
   if (path.endsWith('.tmp')) return
+  if (path === 'timer-registry.json') return
   console.log('[reminder] fs-notify: path=' + path)
   pendingPaths[path] = true
   if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
@@ -452,8 +304,68 @@ export function handleFsNotify(event: { type: string, detail: any }): void {
 - [ ] **步骤 5：Commit**
 
 ```bash
-git add src/kernel/reminder.ts
-git commit -m "fix(kernel): filter .tmp file events in handleFsNotify"
+git add src/kernel/reminder.ts test/kernel/reminder.dedup.test.ts
+git commit -m "fix(kernel): filter timer-registry.json from fs-notify events"
+```
+
+---
+
+### 任务 4：reminderService.ts — 移除 `rebuildScheduleKernel()`，简化 `rebuildSchedule()`
+
+**文件：**
+- 修改：`src/services/reminderService.ts:154-160`（`rebuildSchedule` 方法）
+- 修改：`src/services/reminderService.ts:64-71`（`kernelAvailable` watch 回调）
+- 删除：`src/services/reminderService.ts:419-495`（`rebuildScheduleKernel` 方法）
+
+- [ ] **步骤 1：简化 `rebuildSchedule()`**
+
+修改 `src/services/reminderService.ts` 的 `rebuildSchedule` 方法，kernel 可用时直接 return：
+
+```typescript
+private rebuildSchedule(): void {
+  if (!this.projectStore) return;
+
+  if (kernelAvailable.value) {
+    return;
+  }
+
+  const now = Date.now();
+  // ... 原有的 croner 逻辑不变 ...
+}
+```
+
+- [ ] **步骤 2：简化 `kernelAvailable` watch 回调**
+
+修改 `src/services/reminderService.ts` 的 `kernelAvailable` watch 回调：
+
+```typescript
+this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
+  if (available) {
+    console.log('[ReminderService] kernel became available, setting up listeners');
+    this.setupKernelListeners();
+    this.clearAllJobs();
+  }
+});
+```
+
+- [ ] **步骤 3：移除 `rebuildScheduleKernel()` 方法**
+
+删除 `src/services/reminderService.ts` 中整个 `rebuildScheduleKernel` 方法（第 419-495 行）。
+
+- [ ] **步骤 4：清理未使用的 import**
+
+检查 `reminderService.ts` 顶部，移除 `rebuildScheduleKernel` 不再需要的 import：
+- `rpcCall` — 如果 `pomodoroStore` 仍在使用则保留（检查其他引用）
+- `getHabitReminderEntries` — 仅在 `rebuildScheduleKernel` 和 croner 路径中使用，croner 路径仍需要，保留
+- `calculateReminderTime` — croner 路径仍需要，保留
+
+注意：`rpcCall` 可能在 `pomodoroStore` 中也有使用，但 `reminderService` 中只有 `rebuildScheduleKernel` 使用了它。移除 `reminderService` 中的 `rpcCall` import。
+
+- [ ] **步骤 5：Commit**
+
+```bash
+git add src/services/reminderService.ts
+git commit -m "refactor(reminder): remove rebuildScheduleKernel, kernel owns reminder/habit timers via fs-notify"
 ```
 
 ---
@@ -464,22 +376,22 @@ git commit -m "fix(kernel): filter .tmp file events in handleFsNotify"
 
 - [ ] **步骤 1：运行全量测试**
 
-运行：`npm run test`
+运行：`npx vitest run`
 预期：所有测试通过
 
 - [ ] **步骤 2：运行 lint**
 
 运行：`npm run lint`
-预期：无错误
+预期：无错误（如有自动修复，运行 `npm run lint:fix`）
 
-- [ ] **步骤 3：运行类型检查**
+- [ ] **步骤 3：运行构建**
 
-运行：`npx tsc --noEmit`
-预期：无类型错误
+运行：`npm run build`
+预期：构建成功，无类型错误
 
 - [ ] **步骤 4：Commit（如有 lint 修复）**
 
 ```bash
 git add -A
-git commit -m "chore: lint fixes for webhook reminder dedup"
+git commit -m "chore: lint fixes for webhook reminder dedup v2"
 ```

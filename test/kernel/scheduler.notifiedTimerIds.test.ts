@@ -65,7 +65,7 @@ describe('isTimerNotified', () => {
 
 describe('registerTimer — notified state preservation', () => {
   it('preserves notified=true when id is already in notifiedTimerIds', () => {
-    var dispatchFn = vi.fn()
+    const dispatchFn = vi.fn()
     setDispatchNotification(dispatchFn)
 
     registerTimer(makeEntry('already-fired', 'reminder'))
@@ -75,17 +75,17 @@ describe('registerTimer — notified state preservation', () => {
     expect(getTimers().has('already-fired')).toBe(false)
     expect(isTimerNotified('already-fired')).toBe(true)
 
-    var newEntry = makeEntry('already-fired', 'reminder')
+    const newEntry = makeEntry('already-fired', 'reminder')
     expect(newEntry.notified).toBe(false)
 
     registerTimer(newEntry)
 
-    var restored = getTimers().get('already-fired')!
+    const restored = getTimers().get('already-fired')!
     expect(restored.notified).toBe(true)
   })
 
   it('keeps notified=false when id is NOT in notifiedTimerIds', () => {
-    var entry = makeEntry('never-fired', 'reminder')
+    const entry = makeEntry('never-fired', 'reminder')
     registerTimer(entry)
 
     expect(getTimers().get('never-fired')!.notified).toBe(false)
@@ -94,7 +94,7 @@ describe('registerTimer — notified state preservation', () => {
 
 describe('registerTimers — notified state preservation', () => {
   it('preserves notified=true for entries whose id is in notifiedTimerIds', () => {
-    var dispatchFn = vi.fn()
+    const dispatchFn = vi.fn()
     setDispatchNotification(dispatchFn)
 
     registerTimer(makeEntry('fired-a', 'reminder'))
@@ -102,7 +102,7 @@ describe('registerTimers — notified state preservation', () => {
 
     cancelTimersByType('reminder')
 
-    var entries = [
+    const entries = [
       makeEntry('fired-a', 'reminder'),
       makeEntry('never-fired-b', 'reminder'),
     ]
@@ -114,7 +114,7 @@ describe('registerTimers — notified state preservation', () => {
   })
 
   it('handles pomodoro RPC path: cancel all then register with notified preservation', () => {
-    var dispatchFn = vi.fn()
+    const dispatchFn = vi.fn()
     setDispatchNotification(dispatchFn)
 
     registerTimer(makeEntry('pomodoro-fired', 'reminder'))
@@ -122,7 +122,7 @@ describe('registerTimers — notified state preservation', () => {
 
     cancelTimersByType('reminder')
 
-    var rebuiltEntries = [
+    const rebuiltEntries = [
       makeEntry('pomodoro-fired', 'reminder'),
       makeEntry('future-timer', 'reminder'),
     ]
@@ -131,5 +131,82 @@ describe('registerTimers — notified state preservation', () => {
 
     expect(getTimers().get('pomodoro-fired')!.notified).toBe(true)
     expect(getTimers().get('future-timer')!.notified).toBe(false)
+  })
+})
+
+describe('initScheduler guard', () => {
+  it('calling initScheduler twice should not create duplicate setInterval timers', async () => {
+    vi.useFakeTimers()
+    const dispatchFn = vi.fn()
+    setDispatchNotification(dispatchFn)
+
+    const pastTime = Math.floor(Date.now() / 1000) - 2
+    const entry: TimerEntry = {
+      id: 'guard-test-1',
+      type: 'reminder',
+      endTime: pastTime,
+      metadata: {
+        blockId: 'b1',
+        content: 'guard test',
+      },
+      notified: false,
+    }
+    registerTimer(entry)
+
+    globalThis.siyuan = {
+      rpc: { broadcast: vi.fn() },
+    } as any
+
+    const { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+    initScheduler()
+
+    vi.advanceTimersByTime(1000)
+
+    expect(dispatchFn).toHaveBeenCalledTimes(1)
+
+    const { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
+  })
+})
+
+describe('notifiedTimerIds as source of truth', () => {
+  it('checkTimers skips timer when notifiedTimerIds has the id even if entry.notified is false', async () => {
+    vi.useFakeTimers()
+    const dispatchFn = vi.fn()
+    setDispatchNotification(dispatchFn)
+
+    const futureTime = Math.floor(Date.now() / 1000) + 10
+    const entry: TimerEntry = {
+      id: 'sot-test-1',
+      type: 'reminder',
+      endTime: futureTime,
+      metadata: {
+        blockId: 'b1',
+        content: 'sot test',
+      },
+      notified: false,
+    }
+    registerTimer(entry)
+    markTimerNotified('sot-test-1')
+
+    getTimers().get('sot-test-1')!.notified = false
+    getTimers().get('sot-test-1')!.endTime = Math.floor(Date.now() / 1000) - 1
+
+    globalThis.siyuan = {
+      rpc: { broadcast: vi.fn() },
+    } as any
+
+    const { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+
+    vi.advanceTimersByTime(2000)
+
+    expect(dispatchFn).not.toHaveBeenCalled()
+
+    const { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
   })
 })
