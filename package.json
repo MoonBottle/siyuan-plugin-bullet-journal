@@ -10,7 +10,7 @@
   "scripts": {
     "check:deprecated-fileutils-imports": "node ./scripts/check-deprecated-fileutils-imports.mjs",
     "check:direct-updateblock-imports": "node ./scripts/check-direct-updateblock-imports.mjs",
-    "dev": "vite build --config vite.mcp.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build -w\"",
+    "dev": "vite build --config vite.mcp.config.ts && vite build --config vite.kernel.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build --config vite.kernel.config.ts -w\" \"vite build -w\"",
     "release": "node ./release.js",
     "release:manual": "node ./release.js --mode=manual",
     "release:patch": "node ./release.js --mode=patch",
