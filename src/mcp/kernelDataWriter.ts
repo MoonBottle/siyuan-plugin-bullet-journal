@@ -15,6 +15,7 @@ export interface KernelData {
   }>
   items: Array<{
     id: string
+    blockId: string | undefined
     content: string
     date: string
     startDateTime: string | undefined
@@ -97,6 +98,7 @@ export async function writeKernelData(
     })),
     items: items.map(i => ({
       id: i.id,
+      blockId: i.blockId,
       content: i.content,
       date: i.date,
       startDateTime: i.startDateTime,

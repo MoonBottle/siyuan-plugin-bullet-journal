@@ -167,6 +167,7 @@ interface KernelDataProject {
 
 interface KernelDataItem {
   id: string
+  blockId: string | undefined
   content: string
   date: string
   startDateTime: string | undefined
