@@ -60,6 +60,7 @@ async function callRebuild(): Promise<void> {
 function makeItem(overrides: Partial<KernelData['items'][0]> = {}): KernelData['items'][0] {
   return {
     id: 'item-1',
+    blockId: 'stable-block-id',
     content: 'test item',
     date: '2026-05-28',
     startDateTime: undefined,
@@ -231,5 +232,111 @@ describe('handleFsNotify — .tmp file filtering', () => {
     expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('[reminder] fs-notify: path=timer-registry.json'))
 
     logSpy.mockRestore()
+  })
+})
+
+describe('rebuildReminderSchedule — timer ID uses blockId', () => {
+  it('uses blockId instead of item.id in timer ID when blockId is present', async () => {
+    const item = makeItem({ id: 'volatile-id-123', blockId: 'stable-block-id' })
+    const data: KernelData = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      groups: [],
+      projects: [],
+      items: [item],
+      habits: [],
+    }
+    mockStorageGet.mockResolvedValue({
+      json: () => Promise.resolve(data),
+    })
+
+    await callRebuild()
+
+    expect(mockRegisterTimers).toHaveBeenCalledOnce()
+    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    expect(registered.length).toBe(1)
+    expect(registered[0].id).toContain('stable-block-id')
+    expect(registered[0].id).not.toContain('volatile-id-123')
+  })
+
+  it('uses blockId in metadata.blockId when blockId is present', async () => {
+    const item = makeItem({ id: 'volatile-id-456', blockId: 'stable-block-id-2' })
+    const data: KernelData = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      groups: [],
+      projects: [],
+      items: [item],
+      habits: [],
+    }
+    mockStorageGet.mockResolvedValue({
+      json: () => Promise.resolve(data),
+    })
+
+    await callRebuild()
+
+    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    expect(registered[0].metadata.blockId).toBe('stable-block-id-2')
+  })
+
+  it('falls back to item.id when blockId is undefined', async () => {
+    const item = makeItem({ id: 'fallback-id', blockId: undefined })
+    const data: KernelData = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      groups: [],
+      projects: [],
+      items: [item],
+      habits: [],
+    }
+    mockStorageGet.mockResolvedValue({
+      json: () => Promise.resolve(data),
+    })
+
+    await callRebuild()
+
+    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    expect(registered[0].id).toContain('fallback-id')
+    expect(registered[0].metadata.blockId).toBe('fallback-id')
+  })
+
+  it('rebuild with same blockId produces same timer ID, preserving notified state', async () => {
+    const item = makeItem({ id: 'old-volatile-id', blockId: 'stable-block-id' })
+    const data: KernelData = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      groups: [],
+      projects: [],
+      items: [item],
+      habits: [],
+    }
+    mockStorageGet.mockResolvedValue({
+      json: () => Promise.resolve(data),
+    })
+
+    await callRebuild()
+    const firstId = (mockRegisterTimers.mock.calls[0][0] as TimerEntry[])[0].id
+
+    vi.clearAllMocks()
+    mockCancelTimersByType.mockReturnValue(undefined)
+    mockRegisterTimers.mockReturnValue(undefined)
+
+    const item2 = makeItem({ id: 'new-volatile-id', blockId: 'stable-block-id' })
+    const data2: KernelData = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      groups: [],
+      projects: [],
+      items: [item2],
+      habits: [],
+    }
+    mockStorageGet.mockResolvedValue({
+      json: () => Promise.resolve(data2),
+    })
+
+    await callRebuild()
+    const secondId = (mockRegisterTimers.mock.calls[0][0] as TimerEntry[])[0].id
+
+    expect(firstId).toBe(secondId)
   })
 })

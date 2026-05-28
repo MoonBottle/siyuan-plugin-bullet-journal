@@ -58,11 +58,11 @@ export async function rebuildReminderSchedule(): Promise<void> {
         if (reminderTime < now - 5 * 60 * 1000) continue
         if (reminderTime > now + futureWindowMs) continue
         entries.push({
-          id: `reminder-${item.id}-${item.date}-${reminderTime}`,
+          id: `reminder-${item.blockId || item.id}-${item.date}-${reminderTime}`,
           type: 'reminder',
           endTime: Math.floor(reminderTime / 1000),
           metadata: {
-            blockId: item.id,
+            blockId: item.blockId || item.id,
             content: item.content,
             projectName: item.projectName,
             taskName: item.taskName,
