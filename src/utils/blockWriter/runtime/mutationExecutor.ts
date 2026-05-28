@@ -34,13 +34,14 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
   });
 
   if (hasRemoveSlashPatch(resolvedPlan)) {
-    console.log('[BJ-MutationPlanner][executePlan] slash plan', {
+    console.log('[executePlan] slash payload prepared', {
       planId: plan.id,
       targetBlockId: resolvedPlan.targetBlockId,
-      sourceBlockId: resolvedPlan.sourceBlockId,
-      sourceKind: resolvedPlan.sourceKind,
       commitKind: resolvedPlan.commitKind,
-      patches: resolvedPlan.patches.map(patch => patch.type),
+      nextMarkdown: (payload.nextMarkdown ?? '').slice(0, 200),
+      domHtmlPreview: (payload.domHtml ?? '').slice(0, 200),
+      fallbackMarkdown: (payload.fallbackMarkdown ?? '').slice(0, 200),
+      hasTransactionDomHtml: Boolean(payload.transactionDomHtml),
     });
   }
 
@@ -48,7 +49,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
     const ok = await commitViaProtyle(resolvedPlan.context, payload);
     if (ok) {
       if (hasRemoveSlashPatch(resolvedPlan)) {
-        console.log('[BJ-MutationPlanner][executePlan] protyle commit success', {
+        console.log('[executePlan] protyle commit OK', {
           planId: plan.id,
           targetBlockId: resolvedPlan.targetBlockId,
         });
@@ -57,10 +58,10 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
     }
 
     if (hasRemoveSlashPatch(resolvedPlan)) {
-      console.log('[BJ-MutationPlanner][executePlan] protyle commit failed', {
+      console.log('[executePlan] protyle commit FAIL → api fallback', {
         planId: plan.id,
         targetBlockId: resolvedPlan.targetBlockId,
-        fallback: 'api-reload-source',
+        hasFallback: Boolean(plan.apiFallbackPlan),
       });
     }
 
@@ -71,8 +72,28 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
         sourceBlockId: plan.apiFallbackPlan.sourceBlockId,
         commitKind: plan.apiFallbackPlan.commitKind,
       };
-      const fallbackSource = await loadMutationSource(fallbackResolved);
+
+      const isSlashOnly = hasRemoveSlashPatch(resolvedPlan)
+        && resolvedPlan.patches.every(p => p.type === 'removeSlashCommand');
+
+      let fallbackSource;
+      if (isSlashOnly && payload.fallbackMarkdown !== undefined) {
+        fallbackSource = {
+          kind: 'update' as const,
+          targetBlockId: resolvedPlan.targetBlockId,
+          sourceBlockId: resolvedPlan.sourceBlockId ?? resolvedPlan.targetBlockId,
+          currentMarkdown: payload.fallbackMarkdown,
+        };
+      } else {
+        fallbackSource = await loadMutationSource(fallbackResolved);
+      }
+
       const fallbackPayload = prepareUpdatePayload(fallbackResolved, fallbackSource);
+      console.log('[executePlan] api fallback payload', {
+        targetBlockId: resolvedPlan.targetBlockId,
+        isSlashOnly,
+        fallbackMarkdown: (fallbackPayload.fallbackMarkdown ?? '').slice(0, 200),
+      });
       return await commitViaApi(fallbackPayload);
     }
   }

@@ -79,15 +79,36 @@ function createSlashCleanedDraft(
     return targetElement;
   }
 
+  const ctxRange = plan.context.slashRange;
+  const ctxSlashStart = plan.context.slashStartOffset;
+  const ctxSlashEnd = plan.context.slashEndOffset;
+
+  console.log('[sourceLoader] createSlashCleanedDraft entry', {
+    targetBlockId: plan.targetBlockId,
+    hasCtxRange: Boolean(ctxRange),
+    ctxRangeStartNodeType: ctxRange?.startContainer?.nodeType,
+    ctxRangeStartContainerTag: ctxRange?.startContainer?.nodeName,
+    ctxRangeStartContainerIsInTarget: ctxRange ? targetElement.contains(ctxRange.startContainer) : false,
+    ctxRangeStartOffset: ctxRange?.startOffset,
+    ctxRangeEndOffset: ctxRange?.endOffset,
+    ctxSlashStart,
+    ctxSlashEnd,
+    targetTextContent: previewText(targetElement.textContent),
+    targetInnerHTML: previewText(targetElement.innerHTML),
+    targetChildrenCount: targetElement.childNodes.length,
+  });
+
   const selection = window.getSelection();
   const range = plan.context.slashRange
     ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
   if (!range || range.startContainer.nodeType !== Node.TEXT_NODE) {
-    console.log('[BJ-MutationPlanner][sourceLoader] missing slash range', {
+    console.log('[sourceLoader] missing slash range', {
       targetBlockId: plan.targetBlockId,
       hasContextRange: Boolean(plan.context.slashRange),
       selectionRangeCount: selection?.rangeCount ?? 0,
       startNodeType: range?.startContainer?.nodeType,
+      startContainerTag: range?.startContainer?.nodeName,
+      startContainerValue: range?.startContainer?.nodeValue?.slice(0, 80),
       targetPreview: previewText(targetElement.textContent),
     });
     return targetElement;
@@ -95,7 +116,7 @@ function createSlashCleanedDraft(
 
   const path = getNodePath(targetElement, range.startContainer);
   if (!path) {
-    console.log('[BJ-MutationPlanner][sourceLoader] slash path not found', {
+    console.log('[sourceLoader] slash path not found', {
       targetBlockId: plan.targetBlockId,
       startTextPreview: previewText(range.startContainer.textContent),
       targetPreview: previewText(targetElement.textContent),
@@ -106,7 +127,7 @@ function createSlashCleanedDraft(
   const draftTarget = targetElement.cloneNode(true) as HTMLElement;
   const draftStartNode = getNodeByPath(draftTarget, path);
   if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
-    console.log('[BJ-MutationPlanner][sourceLoader] draft start node invalid', {
+    console.log('[sourceLoader] draft start node invalid', {
       targetBlockId: plan.targetBlockId,
       path,
       draftNodeType: draftStartNode?.nodeType,
@@ -121,7 +142,7 @@ function createSlashCleanedDraft(
   const slashStartOffset = plan.context.slashStartOffset
     ?? findSlashCommandStartOffset(textContent, range.startOffset);
   if (slashStartOffset < 0) {
-    console.log('[BJ-MutationPlanner][sourceLoader] slash start offset not found', {
+    console.log('[sourceLoader] slash start offset not found', {
       targetBlockId: plan.targetBlockId,
       rangeStartOffset: range.startOffset,
       textPreview: previewText(textContent),
@@ -133,7 +154,7 @@ function createSlashCleanedDraft(
     ?? (range.endContainer === range.startContainer ? range.endOffset : range.startOffset);
   const beforeText = draftTarget.textContent ?? '';
   deleteSlashRangeText(draftRange, slashStartOffset, slashEndOffset);
-  console.log('[BJ-MutationPlanner][sourceLoader] slash cleaned draft', {
+  console.log('[sourceLoader] slash cleaned draft', {
     targetBlockId: plan.targetBlockId,
     slashStartOffset,
     slashEndOffset,
@@ -158,6 +179,14 @@ export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<Lo
     const paragraphElement = plan.context.nodeElement ?? targetElement;
     const draftTarget = createSlashCleanedDraft(targetElement, plan);
     const currentMarkdown = blockElementToMarkdownContent(plan.context.protyle, draftTarget ?? targetElement) ?? '';
+
+    console.log('[sourceLoader] loadMutationSource protyle-dom', {
+      targetBlockId: plan.targetBlockId,
+      usedDraft: draftTarget !== null,
+      currentMarkdown: previewText(currentMarkdown),
+      currentDomHtmlPreview: previewText(targetElement.outerHTML),
+    });
+
     const selection = window.getSelection();
     const activeRange = plan.context.slashRange
       ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
