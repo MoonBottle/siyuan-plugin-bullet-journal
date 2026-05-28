@@ -127,11 +127,8 @@ import {
 } from "@/utils/detachedPomodoroWindow";
 import { createRefreshCoordinator } from "@/services/refreshCoordinator";
 import {
-  checkKernelAvailable,
-  connectKernelWebSocket,
-  disconnectKernelWebSocket,
-  startKernelAvailabilityCheck,
-  stopKernelAvailabilityCheck,
+  initKernelConnection,
+  destroyKernelConnection,
   kernelAvailable,
 } from "@/composables/useKernelTimer";
 
@@ -369,17 +366,7 @@ export default class TaskAssistantPlugin extends Plugin {
       reminderService.start(this, projectStore);
     }
 
-    // 初始化内核计时器连接（带重试，解决前端 onload 早于内核 onrunning 的时序问题）
-    startKernelAvailabilityCheck()
-    {
-      const pomodoroStore = usePomodoroStore(pinia)
-      watch(kernelAvailable, (available) => {
-        if (available) {
-          pomodoroStore.setupKernelNotificationListener()
-          console.log('[Task Assistant] Kernel timer connected, notification listener set up')
-        }
-      }, { immediate: true })
-    }
+    this.initKernelTimer(pinia)
 
     // 初始化技能存储服务
     this.initSkillStorage();
@@ -396,6 +383,17 @@ export default class TaskAssistantPlugin extends Plugin {
       isBrowser: this.isBrowser,
       isInWindow: this.isInWindow,
     });
+  }
+
+  private initKernelTimer(pinia: ReturnType<typeof createPinia>): void {
+    initKernelConnection(this)
+    const pomodoroStore = usePomodoroStore(pinia)
+    watch(kernelAvailable, (available) => {
+      if (available) {
+        pomodoroStore.setupKernelNotificationListener()
+        console.log('[Task Assistant] Kernel timer connected, notification listener set up')
+      }
+    }, { immediate: true })
   }
 
   /**
@@ -607,8 +605,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 停止提醒服务
     reminderService.stop();
     // 断开内核计时器连接
-    stopKernelAvailabilityCheck()
-    disconnectKernelWebSocket();
+    destroyKernelConnection(this);
     // 清理内核通知监听器
     const pinia = getSharedPinia();
     if (pinia) {
