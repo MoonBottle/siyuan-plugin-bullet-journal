@@ -28,7 +28,9 @@ export function initKernelConnection(plugin: Plugin): void {
     console.log('[KernelTimer] kernel already running: true')
   }
 
-  onStateChange = (state: { code: number; description: string }) => {
+  onStateChange = (e: CustomEvent<{ code: number; description: string }>) => {
+    const state = e.detail
+    console.log('[KernelTimer] received kernel-plugin-state-change: state=', state, e)
     const available = state.code === 2
     kernelAvailable.value = available
     console.log('[KernelTimer] kernel state changed: code=' + state.code + ' description=' + state.description + ' available=' + available)
