@@ -8,6 +8,10 @@ export function isTimerNotified(id: string): boolean {
   return notifiedTimerIds.has(id)
 }
 
+export function markTimerNotified(id: string): void {
+  notifiedTimerIds.add(id)
+}
+
 var checkInterval: ReturnType<typeof setInterval> | null = null
 var lastKnownDate = ''
 var persistTimer: ReturnType<typeof setTimeout> | null = null
@@ -62,7 +66,8 @@ function schedulePersist(): void {
 }
 
 export function registerTimer(entry: TimerEntry): void {
-  console.log('[scheduler] registerTimer: id=' + entry.id + ' type=' + entry.type + ' endTime=' + entry.endTime + ' content=' + entry.metadata.content)
+  if (notifiedTimerIds.has(entry.id)) entry.notified = true
+  console.log('[scheduler] registerTimer: id=' + entry.id + ' type=' + entry.type + ' endTime=' + entry.endTime + ' content=' + entry.metadata.content + ' notified=' + entry.notified)
   timers.set(entry.id, entry)
   schedulePersist()
 }
@@ -70,7 +75,8 @@ export function registerTimer(entry: TimerEntry): void {
 export function registerTimers(entries: TimerEntry[]): void {
   console.log('[scheduler] registerTimers: count=' + entries.length)
   for (var i = 0; i < entries.length; i++) {
-    console.log('[scheduler]   - id=' + entries[i].id + ' type=' + entries[i].type + ' endTime=' + entries[i].endTime)
+    if (notifiedTimerIds.has(entries[i].id)) entries[i].notified = true
+    console.log('[scheduler]   - id=' + entries[i].id + ' type=' + entries[i].type + ' endTime=' + entries[i].endTime + ' notified=' + entries[i].notified)
     timers.set(entries[i].id, entries[i])
   }
   schedulePersist()

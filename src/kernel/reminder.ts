@@ -1,6 +1,6 @@
 import type { KernelData, TimerEntry } from './types'
 import { calculateReminderTime } from './utils'
-import { registerTimers, cancelTimersByType, isTimerNotified } from './scheduler'
+import { registerTimers, cancelTimersByType } from './scheduler'
 
 var fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
 var pendingPaths: Record<string, boolean> = {}
@@ -88,12 +88,6 @@ export async function rebuildReminderSchedule(): Promise<void> {
           },
           notified: false,
         })
-      }
-    }
-
-    for (var k = 0; k < entries.length; k++) {
-      if (isTimerNotified(entries[k].id)) {
-        entries[k].notified = true
       }
     }
 

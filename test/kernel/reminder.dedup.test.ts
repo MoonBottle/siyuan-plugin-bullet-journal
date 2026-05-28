@@ -10,7 +10,6 @@ import {
   vi,
 } from 'vitest'
 
-const mockIsTimerNotified = vi.fn<(id: string) => boolean>()
 const mockRegisterTimers = vi.fn<(entries: TimerEntry[]) => void>()
 const mockCancelTimersByType = vi.fn<(type: string) => void>()
 const mockCalculateReminderTime = vi.fn<(...args: any[]) => number>()
@@ -18,7 +17,6 @@ const mockCalculateReminderTime = vi.fn<(...args: any[]) => number>()
 const mockStorageGet = vi.fn<(path: string) => Promise<{ json: () => Promise<KernelData> }>>()
 
 vi.mock('@/kernel/scheduler', () => ({
-  isTimerNotified: mockIsTimerNotified,
   registerTimers: mockRegisterTimers,
   cancelTimersByType: mockCancelTimersByType,
 }))
@@ -29,14 +27,13 @@ vi.mock('@/kernel/utils', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockIsTimerNotified.mockReturnValue(false)
   mockCancelTimersByType.mockReturnValue(undefined)
   mockRegisterTimers.mockReturnValue(undefined)
 
-  const now = Date.now()
+  var now = Date.now()
   mockCalculateReminderTime.mockReturnValue(now + 3600 * 1000)
 
-  const emptyData: KernelData = {
+  var emptyData: KernelData = {
     version: 1,
     updatedAt: new Date().toISOString(),
     groups: [],
@@ -56,7 +53,7 @@ beforeEach(() => {
 })
 
 async function callRebuild(): Promise<void> {
-  const { rebuildReminderSchedule } = await import('@/kernel/reminder')
+  var { rebuildReminderSchedule } = await import('@/kernel/reminder')
   await rebuildReminderSchedule()
 }
 
@@ -98,10 +95,10 @@ function makeHabit(overrides: Partial<KernelData['habits'][0]> = {}): KernelData
   }
 }
 
-describe('rebuildReminderSchedule — notified state restoration', () => {
-  it('restores notified=true for entries whose id is in notifiedTimerIds', async () => {
-    const item = makeItem()
-    const data: KernelData = {
+describe('rebuildReminderSchedule — timer registration', () => {
+  it('registers reminder entries with notified=false by default', async () => {
+    var item = makeItem()
+    var data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -113,72 +110,17 @@ describe('rebuildReminderSchedule — notified state restoration', () => {
       json: () => Promise.resolve(data),
     })
 
-    const expectedId = `reminder-${item.id}-${item.date}-${mockCalculateReminderTime()}`
-    mockIsTimerNotified.mockImplementation((id: string) => id === expectedId)
-
     await callRebuild()
 
     expect(mockRegisterTimers).toHaveBeenCalledOnce()
-    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
-    const entry = registered.find((e) => e.id === expectedId)
-    expect(entry).toBeDefined()
-    expect(entry!.notified).toBe(true)
-  })
-
-  it('keeps notified=false for entries whose id is NOT in notifiedTimerIds', async () => {
-    const item = makeItem()
-    const data: KernelData = {
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      groups: [],
-      projects: [],
-      items: [item],
-      habits: [],
-    }
-    mockStorageGet.mockResolvedValue({
-      json: () => Promise.resolve(data),
-    })
-
-    mockIsTimerNotified.mockReturnValue(false)
-
-    await callRebuild()
-
-    expect(mockRegisterTimers).toHaveBeenCalledOnce()
-    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    var registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
     expect(registered.length).toBe(1)
     expect(registered[0].notified).toBe(false)
   })
 
-  it('handles mixed notified states across multiple entries', async () => {
-    const item1 = makeItem({ id: 'item-a' })
-    const item2 = makeItem({ id: 'item-b' })
-    const data: KernelData = {
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      groups: [],
-      projects: [],
-      items: [item1, item2],
-      habits: [],
-    }
-    mockStorageGet.mockResolvedValue({
-      json: () => Promise.resolve(data),
-    })
-
-    const notifiedId = `reminder-${item1.id}-${item1.date}-${mockCalculateReminderTime()}`
-    mockIsTimerNotified.mockImplementation((id: string) => id === notifiedId)
-
-    await callRebuild()
-
-    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
-    const entryA = registered.find((e) => e.id.includes('item-a'))
-    const entryB = registered.find((e) => e.id.includes('item-b'))
-    expect(entryA!.notified).toBe(true)
-    expect(entryB!.notified).toBe(false)
-  })
-
-  it('restores notified=true for habit entries', async () => {
-    const habit = makeHabit()
-    const data: KernelData = {
+  it('registers habit entries', async () => {
+    var habit = makeHabit()
+    var data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -190,19 +132,16 @@ describe('rebuildReminderSchedule — notified state restoration', () => {
       json: () => Promise.resolve(data),
     })
 
-    const expectedId = `habit-${habit.blockId}-${habit.targetDate}-${mockCalculateReminderTime()}`
-    mockIsTimerNotified.mockImplementation((id: string) => id === expectedId)
-
     await callRebuild()
 
-    const registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
-    const entry = registered.find((e) => e.id === expectedId)
-    expect(entry).toBeDefined()
-    expect(entry!.notified).toBe(true)
+    expect(mockRegisterTimers).toHaveBeenCalledOnce()
+    var registered = mockRegisterTimers.mock.calls[0][0] as TimerEntry[]
+    expect(registered.length).toBe(1)
+    expect(registered[0].type).toBe('habit')
   })
 
   it('does not call registerTimers when no entries are produced', async () => {
-    const data: KernelData = {
+    var data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
@@ -219,40 +158,36 @@ describe('rebuildReminderSchedule — notified state restoration', () => {
     expect(mockRegisterTimers).not.toHaveBeenCalled()
   })
 
-  it('calls isTimerNotified for every entry before registerTimers', async () => {
-    const item1 = makeItem({ id: 'item-x' })
-    const item2 = makeItem({ id: 'item-y' })
-    const habit1 = makeHabit({ blockId: 'block-hz' })
-    const data: KernelData = {
+  it('cancels timers before registering new ones', async () => {
+    var item = makeItem()
+    var data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
       groups: [],
       projects: [],
-      items: [item1, item2],
-      habits: [habit1],
+      items: [item],
+      habits: [],
     }
     mockStorageGet.mockResolvedValue({
       json: () => Promise.resolve(data),
     })
 
-    mockIsTimerNotified.mockReturnValue(false)
-
     await callRebuild()
 
-    expect(mockRegisterTimers).toHaveBeenCalledOnce()
-    expect(mockIsTimerNotified).toHaveBeenCalledTimes(3)
+    expect(mockCancelTimersByType).toHaveBeenCalledWith('reminder')
+    expect(mockCancelTimersByType).toHaveBeenCalledWith('habit')
   })
 })
 
 describe('handleFsNotify — .tmp file filtering', () => {
   async function importHandleFsNotify() {
-    const mod = await import('@/kernel/reminder')
+    var mod = await import('@/kernel/reminder')
     return mod.handleFsNotify
   }
 
   it('ignores .tmp file events and does not log', async () => {
-    const handleFsNotify = await importHandleFsNotify()
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    var handleFsNotify = await importHandleFsNotify()
+    var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     handleFsNotify({
       type: 'fs-notify',
@@ -267,8 +202,8 @@ describe('handleFsNotify — .tmp file filtering', () => {
   })
 
   it('processes non-.tmp file events normally', async () => {
-    const handleFsNotify = await importHandleFsNotify()
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    var handleFsNotify = await importHandleFsNotify()
+    var logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     handleFsNotify({
       type: 'fs-notify',
