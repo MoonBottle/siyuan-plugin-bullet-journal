@@ -1,139 +1,58 @@
 import { ref } from 'vue'
 import { Events, eventBus } from '@/utils/eventBus'
+import type { Plugin } from 'siyuan'
 
-const PLUGIN_NAME = 'siyuan-plugin-bullet-journal'
 export const kernelAvailable = ref(false)
 
-let ws: WebSocket | null = null
-let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
-let wsReconnectAttempts = 0
-const WS_MAX_RECONNECT_ATTEMPTS = 10
+type KernelNotificationHandler = (params: any) => void
 
-export async function rpcCall<T = any>(method: string, params?: Record<string, any>): Promise<T> {
-  const resp = await fetch(`/api/plugin/rpc/${PLUGIN_NAME}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method,
-      params: params ?? {},
-      id: Date.now(),
-    }),
-  })
-  const data = await resp.json()
-  if (data.error) {
-    throw new Error(`RPC Error ${data.error.code}: ${data.error.message}`)
+let onTimerExpired: KernelNotificationHandler | null = null
+let onDateChanged: KernelNotificationHandler | null = null
+let onStateChange: ((e: any) => void) | null = null
+
+export function initKernelConnection(plugin: Plugin): void {
+  onTimerExpired = (params: any) => {
+    console.log('[KernelTimer] received timer-expired: type=' + params.type + ' id=' + params.id)
+    eventBus.emit(Events.KERNEL_NOTIFICATION, params)
   }
-  return data.result as T
-}
+  onDateChanged = (params: any) => {
+    console.log('[KernelTimer] received date-changed: date=' + params.date)
+    eventBus.emit(Events.KERNEL_DATE_CHANGED, params)
+  }
 
-export async function checkKernelAvailable(): Promise<boolean> {
-  try {
-    await rpcCall('ping')
+  plugin.kernel.rpc.bind('timer-expired', onTimerExpired)
+  plugin.kernel.rpc.bind('date-changed', onDateChanged)
+
+  if (plugin.kernel.state.code === 2) {
     kernelAvailable.value = true
-    console.log('[KernelTimer] kernel available: true')
-  } catch (e) {
-    kernelAvailable.value = false
-    console.log('[KernelTimer] kernel available: false, error=' + String(e))
+    console.log('[KernelTimer] kernel already running: true')
   }
-  return kernelAvailable.value
+
+  onStateChange = (state: { code: number; description: string }) => {
+    const available = state.code === 2
+    kernelAvailable.value = available
+    console.log('[KernelTimer] kernel state changed: code=' + state.code + ' description=' + state.description + ' available=' + available)
+  }
+  plugin.eventBus.on('kernel-plugin-state-change', onStateChange)
+
+  console.log('[KernelTimer] connection initialized')
 }
 
-let retryTimer: ReturnType<typeof setTimeout> | null = null
-let retryAttempts = 0
-const MAX_RETRY_ATTEMPTS = 5
-const RETRY_INTERVAL = 3000
-
-export function startKernelAvailabilityCheck(): void {
-  void checkKernelAvailable().then((available) => {
-    if (available) {
-      connectKernelWebSocket()
-      return
-    }
-    if (retryAttempts < MAX_RETRY_ATTEMPTS) {
-      retryAttempts++
-      console.log('[KernelTimer] kernel not available, retry ' + retryAttempts + '/' + MAX_RETRY_ATTEMPTS + ' in ' + RETRY_INTERVAL + 'ms')
-      retryTimer = setTimeout(async () => {
-        const ok = await checkKernelAvailable()
-        if (ok) {
-          connectKernelWebSocket()
-        } else {
-          startKernelAvailabilityCheck()
-        }
-      }, RETRY_INTERVAL)
-    } else {
-      console.log('[KernelTimer] kernel not available after ' + MAX_RETRY_ATTEMPTS + ' retries, giving up')
-    }
-  })
-}
-
-export function stopKernelAvailabilityCheck(): void {
-  if (retryTimer) {
-    clearTimeout(retryTimer)
-    retryTimer = null
+export function destroyKernelConnection(plugin: Plugin): void {
+  if (onTimerExpired) {
+    plugin.kernel.rpc.unbind('timer-expired', onTimerExpired)
+    onTimerExpired = null
   }
-  retryAttempts = 0
-}
-
-export function connectKernelWebSocket(): void {
-  if (wsReconnectTimer) {
-    clearTimeout(wsReconnectTimer)
-    wsReconnectTimer = null
+  if (onDateChanged) {
+    plugin.kernel.rpc.unbind('date-changed', onDateChanged)
+    onDateChanged = null
   }
-
-  const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-  const token = (window as any).siyuan?.config?.accessToken || ''
-  const wsUrl = token
-    ? `${protocol}://${location.host}/ws/plugin/rpc/${PLUGIN_NAME}?token=${encodeURIComponent(token)}`
-    : `${protocol}://${location.host}/ws/plugin/rpc/${PLUGIN_NAME}`
-
-  ws = new WebSocket(wsUrl)
-  ws.onopen = () => {
-    wsReconnectAttempts = 0
-    console.log('[KernelTimer] WebSocket connected')
+  if (onStateChange) {
+    plugin.eventBus.off('kernel-plugin-state-change', onStateChange)
+    onStateChange = null
   }
-  ws.onmessage = (event) => {
-    try {
-      console.log('[KernelTimer] WS raw: ' + (typeof event.data) + ' len=' + (event.data && event.data.length) + ' preview=' + String(event.data).substring(0, 300))
-      const data = JSON.parse(event.data)
-      console.log('[KernelTimer] WS parsed: method=' + data.method + ' keys=' + Object.keys(data).join(','))
-      if (data.method === 'timer-expired') {
-        console.log('[KernelTimer] received timer-expired: type=' + (data.params && data.params.type) + ' id=' + (data.params && data.params.id))
-        eventBus.emit(Events.KERNEL_NOTIFICATION, data.params)
-      }
-      if (data.method === 'date-changed') {
-        console.log('[KernelTimer] received date-changed: date=' + (data.params && data.params.date))
-        eventBus.emit(Events.KERNEL_DATE_CHANGED, data.params)
-      }
-    } catch (e) {
-      console.log('[KernelTimer] WebSocket message parse error: ' + String(e))
-    }
-  }
-  ws.onclose = () => {
-    ws = null
-    console.log('[KernelTimer] WebSocket closed, reconnect attempts=' + wsReconnectAttempts)
-    if (wsReconnectAttempts >= WS_MAX_RECONNECT_ATTEMPTS) {
-      kernelAvailable.value = false
-      return
-    }
-    wsReconnectAttempts++
-    wsReconnectTimer = setTimeout(connectKernelWebSocket, 5000)
-  }
-  ws.onerror = () => {
-    console.log('[KernelTimer] WebSocket error')
-    ws?.close()
-  }
-}
-
-export function disconnectKernelWebSocket(): void {
-  if (wsReconnectTimer) {
-    clearTimeout(wsReconnectTimer)
-    wsReconnectTimer = null
-  }
-  if (ws) {
-    ws.close()
-    ws = null
-  }
+  kernelAvailable.value = false
+  console.log('[KernelTimer] connection destroyed')
 }
 
 export interface KernelDiagnoseResult {
@@ -155,8 +74,4 @@ export interface KernelDiagnoseResult {
     }>
   }
   now: number
-}
-
-export async function diagnoseKernel(): Promise<KernelDiagnoseResult> {
-  return rpcCall<KernelDiagnoseResult>('diagnose')
 }
