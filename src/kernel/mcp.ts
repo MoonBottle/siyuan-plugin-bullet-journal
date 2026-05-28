@@ -11,6 +11,9 @@ const KERNEL_DATA_PATH = 'kernel-data.json'
 const SERVER_NAME = 'sy-task-assistant'
 const SERVER_VERSION = '1.0.0'
 
+let activePort: SseRequest['port'] | null = null
+let sessionId = ''
+
 async function loadCache(): Promise<KernelData> {
   try {
     const file = await siyuan.storage.get(KERNEL_DATA_PATH)
@@ -236,75 +239,83 @@ async function handleJsonRpc(message: any): Promise<any> {
   }
 }
 
-async function handleSseRequest(req: SseRequest) {
-  const bodyData = req.request.body.data
-  if (!bodyData) {
-    req.port.close()
-    return
-  }
-
-  let message: any
-  try {
-    message = await bodyData.json()
-  } catch (e) {
-    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')))
-    req.port.close()
-    return
-  }
-
-  const response = await handleJsonRpc(message)
-
-  if (response !== undefined) {
-    req.port.send('message', JSON.stringify(response))
-  }
-
-  req.port.close()
-}
-
 export function initMcpServer(): void {
   siyuan.server.private.es.handler = async function (req: SseRequest) {
-    try {
-      if (req.port.onopen) {
-        req.port.onopen({ type: 'open' })
+    req.port.onopen = async function (_event) {
+      sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+      activePort = req.port
+      req.port.send('endpoint', `/api/plugin/private/siyuan-plugin-bullet-journal/mcp?sid=${sessionId}`)
+    }
+
+    req.port.onclose = async function (_event) {
+      if (activePort === req.port) {
+        activePort = null
+        sessionId = ''
       }
-      await handleSseRequest(req)
-    } catch (e: any) {
-      await siyuan.logger.error('[mcp] SSE handler error:', e.message || String(e))
-      try {
-        req.port.close()
-      } catch (_) {}
     }
   }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
+    const sid = req.url.query?.sid?.[0]
+    if (!sid || sid !== sessionId) {
+      return {
+        statusCode: 403,
+        body: {
+          raw: {
+            contentType: 'application/json',
+            data: '{"error":"forbidden"}',
+          },
+        },
+      }
+    }
+
     const bodyData = req.request.body.data
     if (!bodyData) {
       return {
         statusCode: 400,
-        body: { raw: { contentType: 'application/json', data: '{"error":"no body"}' } },
+        body: {
+          raw: {
+            contentType: 'application/json',
+            data: '{"error":"no body"}',
+          },
+        },
       }
     }
 
     let message: any
     try {
       message = await bodyData.json()
-    } catch (e) {
+    } catch {
       return {
         statusCode: 400,
-        body: { raw: { contentType: 'application/json', data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}' } },
+        body: {
+          raw: {
+            contentType: 'application/json',
+            data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}',
+          },
+        },
       }
     }
 
     const response = await handleJsonRpc(message)
 
-    if (response === undefined) {
-      return { statusCode: 202, headers: {} }
+    if (response !== undefined && activePort) {
+      activePort.send('message', JSON.stringify(response))
     }
 
     return {
-      statusCode: 200,
-      headers: { 'Content-Type': ['application/json'] },
-      body: { raw: { contentType: 'application/json', data: JSON.stringify(response) } },
+      statusCode: 202,
+      headers: {},
     }
+  }
+}
+
+export function closeMcpServer(): void {
+  if (activePort) {
+    try {
+      activePort.close()
+    } catch {}
+    activePort = null
+    sessionId = ''
   }
 }
