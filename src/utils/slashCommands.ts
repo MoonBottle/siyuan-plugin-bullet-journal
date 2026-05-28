@@ -878,7 +878,7 @@ export function getActionHandler(
         })();
       };
     case 'createHabit':
-      return (protyle, nodeElement) => {
+      return async (protyle, nodeElement) => {
         const blockText = nodeElement?.textContent || '';
         const text = processLineText(blockText, filter).trim();
         const blockId = nodeElement?.getAttribute?.('data-node-id') || '';
@@ -886,12 +886,14 @@ export function getActionHandler(
         const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
         const parsedRecord = parseHabitRecordLine(text, blockId);
 
-        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+        await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
 
         if (matchedRecord || parsedRecord) {
           showMessage(t('slash').checkIn || '打卡', 2000, 'info');
           return;
         }
+
+        const shouldUpdateCurrentBlock = Boolean(parsedHabit || !text);
 
         showHabitCreateDialog((markdown) => {
           if (!blockId) {
@@ -903,7 +905,7 @@ export function getActionHandler(
             return;
           }
 
-          void (parsedHabit
+          void (shouldUpdateCurrentBlock
             ? writeBlock({ blockId, nodeElement, protyle }, { type: 'setHabitDefinition', habit: nextHabit })
             : insertBlockAfter(blockId, { type: 'setHabitDefinition', habit: nextHabit }));
         }, parsedHabit || undefined);
