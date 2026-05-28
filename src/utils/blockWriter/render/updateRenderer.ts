@@ -170,7 +170,13 @@ function buildProtyleTransactionHtml(
 
   const draftTarget = targetElement.cloneNode(true) as HTMLElement;
   if (!renderMarkdownIntoBlockEditable(plan.context.protyle, draftTarget, nextMarkdown)) {
-    return undefined;
+    const editable = findEditableElement(draftTarget);
+    if (editable) {
+      editable.innerHTML = '<wbr>';
+    }
+    else {
+      return undefined;
+    }
   }
 
   syncTaskListStatusFromMarkdown(draftTarget, nextMarkdown);
