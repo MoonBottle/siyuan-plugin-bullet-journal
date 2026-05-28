@@ -13,7 +13,7 @@ import {
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
 import { eventBus, Events } from '@/utils/eventBus';
-import { kernelAvailable, rpcCall } from '@/composables/useKernelTimer';
+import { kernelAvailable } from '@/composables/useKernelTimer';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
@@ -229,7 +229,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (kernelAvailable.value && timerMode === 'countdown') {
           const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000);
           console.log('[Pomodoro] registering kernel timer: id=pomodoro-' + parentBlockId + ' endTime=' + endTime + ' kernelAvailable=' + kernelAvailable.value);
-          rpcCall('registerTimer', {
+          usePlugin()!.kernel!.rpc.call.registerTimer({
             id: `pomodoro-${parentBlockId}`,
             type: 'pomodoro',
             endTime,
@@ -281,7 +281,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         cancelMobileFocusEnd(plugin);
 
         if (kernelAvailable.value && this.activePomodoro?.blockId) {
-          rpcCall('cancelTimer', { id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
+          usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
         }
 
         // 保存状态
@@ -339,7 +339,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (kernelAvailable.value && this.activePomodoro?.blockId && this.activePomodoro.timerMode === 'countdown') {
           const remainingSec = this.activePomodoro.remainingSeconds;
           const endTime = Math.floor((Date.now() + remainingSec * 1000) / 1000);
-          rpcCall('registerTimer', {
+          usePlugin()!.kernel!.rpc.call.registerTimer({
             id: `pomodoro-${this.activePomodoro.blockId}`,
             type: 'pomodoro',
             endTime,
@@ -556,7 +556,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         cancelMobileFocusEnd(pluginToUse);
 
         if (kernelAvailable.value && ap.blockId) {
-          rpcCall('cancelTimer', { id: `pomodoro-${ap.blockId}` }).catch(() => {});
+          usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${ap.blockId}` }).catch(() => {});
         }
 
         // 1. 构建并持久化待完成记录
@@ -729,7 +729,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         cancelMobileFocusEnd(plugin);
 
         if (kernelAvailable.value && this.activePomodoro?.blockId) {
-          rpcCall('cancelTimer', { id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
+          usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
         }
 
         // 清理状态
@@ -937,7 +937,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
           if (kernelAvailable.value && data.timerMode !== 'stopwatch') {
             const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000);
-            rpcCall('registerTimer', {
+            usePlugin()!.kernel!.rpc.call.registerTimer({
               id: `pomodoro-${data.blockId}`,
               type: 'pomodoro',
               endTime,
@@ -1060,7 +1060,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       if (kernelAvailable.value) {
         const endTime = Math.floor((Date.now() + totalSeconds * 1000) / 1000);
-        rpcCall('registerTimer', {
+        usePlugin()!.kernel!.rpc.call.registerTimer({
           id: `break-${Date.now()}`,
           type: 'break',
           endTime,
@@ -1122,7 +1122,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
       cancelMobileBreakEnd(plugin);
 
       if (kernelAvailable.value && wasActive) {
-        rpcCall('cancelTimersByType', { type: 'break' }).catch(() => {});
+        usePlugin()!.kernel!.rpc.call.cancelTimersByType({ type: 'break' }).catch(() => {});
       }
 
       if (wasActive && plugin) {
@@ -1148,7 +1148,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       if (kernelAvailable.value) {
         const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000);
-        rpcCall('registerTimer', {
+        usePlugin()!.kernel!.rpc.call.registerTimer({
           id: `break-restore-${Date.now()}`,
           type: 'break',
           endTime,
