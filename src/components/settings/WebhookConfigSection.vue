@@ -9,7 +9,10 @@
         :label="t('settings').webhook.enabled"
         :description="t('settings').webhook.description"
       >
-        <SySwitch v-model="localWebhook.enabled" />
+        <SySwitch
+          :model-value="localWebhook.enabled"
+          @update:model-value="(val: boolean) => { localWebhook.enabled = val; emitUpdate() }"
+        />
       </SySettingItem>
     </SySettingItemList>
 
@@ -40,7 +43,10 @@
                 :aria-label="(t('common') as any).delete ?? '删除'"
                 @click="deleteChannel(channel.id)"
               />
-              <SySwitch v-model="channel.enabled" />
+              <SySwitch
+                :model-value="channel.enabled"
+                @update:model-value="(val: boolean) => { channel.enabled = val; emitUpdate() }"
+              />
             </div>
           </div>
         </div>
@@ -115,20 +121,16 @@ const formRef = ref<InstanceType<typeof WebhookChannelEditForm> | null>(null)
 watch(
   () => props.webhook,
   (val) => {
-    if (val) {
+    if (val && JSON.stringify(val) !== JSON.stringify(localWebhook.value)) {
       localWebhook.value = JSON.parse(JSON.stringify(val))
     }
   },
   { deep: true },
 )
 
-watch(
-  localWebhook,
-  (val) => {
-    emit('update:webhook', JSON.parse(JSON.stringify(val)))
-  },
-  { deep: true },
-)
+function emitUpdate() {
+  emit('update:webhook', JSON.parse(JSON.stringify(localWebhook.value)))
+}
 
 function createEmptyChannel(): WebhookChannel {
   return {
@@ -175,11 +177,13 @@ function saveFromDialog() {
     localWebhook.value.channels.push(result)
   }
   showEditDialog.value = false
+  emitUpdate()
 }
 
 function deleteChannel(id: string) {
   if (!confirm(t('settings').webhook.deleteConfirm)) return
   localWebhook.value.channels = localWebhook.value.channels.filter(c => c.id !== id)
+  emitUpdate()
 }
 </script>
 

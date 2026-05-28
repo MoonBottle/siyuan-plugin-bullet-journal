@@ -16,10 +16,13 @@ siyuan.plugin.lifecycle.onload = async function () {
     void siyuan.logger.info('[kernel] testBroadcast RPC: broadcast called')
     return { ok: true }
   }, '测试 broadcast')
-  
-  void siyuan.logger.info('[kernel] TEST: calling broadcast without any console.log')
-  siyuan.rpc.broadcast('test-event', { ts: Date.now(), source: 'onrunning-direct' })
-  void siyuan.logger.info('[kernel] TEST: broadcast called')
+
+  // 初始化文件系统事件处理
+  console.log('[kernel] storage watcher added')
+  siyuan.event.handler = function (event: { type: string, detail: any }) {
+    console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
+    handleFsNotify(event)
+  }
 
   console.log('[kernel] rpc api bound')
 }
@@ -56,13 +59,11 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   } catch (e) {
     console.log('[kernel] siyuan.client.fetch test FAILED: ' + String(e))
   }
-
-  // 初始化文件系统事件处理
-  console.log('[kernel] storage watcher added')
-  siyuan.event.handler = function (event: { type: string, detail: any }) {
-    console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
-    handleFsNotify(event)
-  }
+  
+  // 测试 broadcast
+  void siyuan.logger.info('[kernel] TEST: calling broadcast without any console.log')
+  siyuan.rpc.broadcast('test-event', { ts: Date.now(), source: 'onrunning-direct' })
+  void siyuan.logger.info('[kernel] TEST: broadcast called')
 
   console.log('[kernel] initialized successfully')
 }
