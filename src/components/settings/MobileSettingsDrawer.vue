@@ -674,6 +674,7 @@ const handleSubPageUpdate = (key: string, value: any) => {
     &.pink {
       background: #ff2d55;
     }
+  }
 
   .cell-content {
     flex: 1;
