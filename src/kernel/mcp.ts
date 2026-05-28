@@ -20,7 +20,7 @@ async function loadCache(): Promise<KernelData> {
     const text = await file.text()
     const data = JSON.parse(text) as KernelData
     return data
-  } catch (e: any) {
+  } catch (_e: any) {
     throw new Error('内核数据不可用。请先打开思源笔记并确保任务助手插件已加载。')
   }
 }

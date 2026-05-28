@@ -1,4 +1,7 @@
-import { closeMcpServer, initMcpServer } from './mcp'
+import {
+  closeMcpServer,
+  initMcpServer,
+} from './mcp'
 import {
   handleFsNotify,
   initReminderScheduler,
