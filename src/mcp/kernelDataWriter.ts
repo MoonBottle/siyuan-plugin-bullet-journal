@@ -51,6 +51,8 @@ export interface KernelData {
     id: string
     name: string
     type: string
+    target?: number
+    unit?: string
     reminder?: {
       enabled: boolean
       type: 'absolute' | 'relative'
@@ -119,8 +121,10 @@ export async function writeKernelData(
     })),
     habits: habits.map(h => ({
       id: h.blockId,
-      name: h.content,
+      name: h.name,
       type: h.type,
+      target: h.target,
+      unit: h.unit,
       reminder: h.reminder,
       targetDate: h.startDate,
       blockId: h.blockId,
