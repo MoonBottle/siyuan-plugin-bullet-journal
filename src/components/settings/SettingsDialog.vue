@@ -435,7 +435,7 @@ function validateSettings(): string | null {
   if (local.pomodoro?.minFocusMinutes !== undefined) {
     const minFocus = local.pomodoro.minFocusMinutes
     console.log('[Settings] 校验最小专注时间:', minFocus)
-    if (isNaN(minFocus)) {
+    if (Number.isNaN(minFocus)) {
       console.log('[Settings] 最小专注时间校验失败: 不是有效数字')
       return '最小专注时间必须是有效数字'
     }

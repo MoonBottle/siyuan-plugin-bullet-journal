@@ -40,7 +40,7 @@ export function getHabitReminderTime(habit: Habit, date: string): Date | null {
   if (!timeStr) return null
 
   const [hours, minutes] = timeStr.split(':').map(Number)
-  if (isNaN(hours) || isNaN(minutes)) return null
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
 
   return day.hour(hours).minute(minutes).second(0).millisecond(0).toDate()
 }

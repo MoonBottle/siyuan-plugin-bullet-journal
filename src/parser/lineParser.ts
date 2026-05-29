@@ -582,7 +582,7 @@ export class LineParser {
     // 完整格式: 2024-01-01
     if (FULL_DATE_RE.test(dateStr)) {
       const date = new Date(dateStr)
-      return isNaN(date.getTime()) ? null : date
+      return Number.isNaN(date.getTime()) ? null : date
     }
 
     // 简写格式: 01-01（继承参考日期的年月）
@@ -591,7 +591,7 @@ export class LineParser {
       const month = dateStr.substring(0, 2)
       const day = dateStr.substring(3, 5)
       const date = new Date(`${year}-${month}-${day}`)
-      return isNaN(date.getTime()) ? null : date
+      return Number.isNaN(date.getTime()) ? null : date
     }
 
     return null

@@ -682,7 +682,7 @@ const focusTotalTime = computed(() => {
     if (!p.startTime) return sum
     const start = new Date(p.startTime)
     const end = p.endTime ? new Date(p.endTime) : new Date()
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return sum
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return sum
     return sum + (end.getTime() - start.getTime()) / 60000
   }, 0)
   if (totalMinutes <= 0) return ''

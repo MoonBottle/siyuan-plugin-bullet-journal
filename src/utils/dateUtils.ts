@@ -54,7 +54,7 @@ export const formatDateTime = (dateStr: string, isAllDay?: boolean): string => {
   }
 
   const date = new Date(dateStr)
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     return dateStr
   }
 
@@ -146,7 +146,7 @@ export const calculateDuration = (
   const start = new Date(startStr)
   const end = new Date(endStr)
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return ''
   }
 
