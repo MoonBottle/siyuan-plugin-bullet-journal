@@ -143,6 +143,10 @@ const emit = defineEmits<{
   'openPomodoro': [item: Item]
 }>()
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const handleComplete = async () => {
   if (!props.item?.blockId) return
   await writeBlock({
@@ -192,10 +196,6 @@ const handleDetail = () => {
 
 const handleCalendar = () => {
   close()
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 </script>
 
