@@ -523,6 +523,10 @@ const emit = defineEmits<{
   'refresh': []
 }>()
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const settingsStore = useSettingsStore()
 const showPomodoroList = ref(false)
 
@@ -963,10 +967,6 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   } catch (error) {
     console.error('[MobileItemDetail] Failed to update time:', error)
   }
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 </script>
 
