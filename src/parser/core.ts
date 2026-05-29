@@ -26,6 +26,24 @@ import {
   parseBlockRefs,
 } from './lineParser'
 
+const BLOCK_ID_RE = /\bid="([^"]+)"/
+const LIST_MARKER_RE = /^\s*(-|\d+\.)\s*/
+const INLINE_BLOCK_ATTR_RE = /\{:[^}]*\}/g
+const COMPLETED_CHECKBOX_RE = /^\s*\[\s*x\s*\]/i
+const CHECKBOX_STRIP_RE = /^\s*\[\s*(?:x\s*)?\]\s*/i
+const TASK_BACKTICK_RE = /`#?task`/
+const TASK_CN_BACKTICK_RE = /`#?任务`/
+const AT_DATE_RE = /@\d{4}-\d{2}-\d{2}/
+const CALENDAR_DATE_RE = /📅\d{4}-\d{2}-\d{2}/
+const POMODORO_LIST_MARKER_RE = /^\s*(-|\d+\.)\s+/
+const POMODORO_BLOCK_ATTR_RE = /^\{:[^}]*\}\s*/
+const MARKDOWN_LINK_RE = /!?\[([^\]]*)\]\(([^)]+)\)/g
+const TASK_LIST_BLOCK_ID_RE = /^-\s*\{:[^}]*\bid="([^"]+)"/
+const TASK_LIST_CHECKBOX_RE = /\[\s*(?:(x)\s*)?\]/i
+const URL_RE = /(https?:\/\/\S+)/
+const LINK_NAME_COLON_RE = /^([^：:]+)[：:]/
+const IS_TASK_LIST_RE = /\[\s*(?:x\s*)?\]/i
+
 const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]'
 
 function logProjectNameDebug(
@@ -71,7 +89,7 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
     const line = rawLine.trim()
 
     if (line.startsWith('{:') && line.endsWith('}')) {
-      const idMatch = line.match(/\bid="([^"]+)"/)
+      const idMatch = line.match(BLOCK_ID_RE)
       if (idMatch) {
         currentBlockId = idMatch[1]
 
@@ -111,23 +129,23 @@ export function stripListAndBlockAttr(line: string): string {
 
   // 第一步：去除行首的列表标记（- 或 1.）
   // 匹配: "- "、"1. "、"  - " 等
-  s = s.replace(/^\s*(-|\d+\.)\s*/, '')
+  s = s.replace(LIST_MARKER_RE, '')
 
   // 第二步：去除块属性 {: ... }
   // 块属性可能在任何位置（行首、行中、行尾），需要全局替换
-  s = s.replace(/\{:[^}]*\}/g, '')
+  s = s.replace(INLINE_BLOCK_ATTR_RE, '')
 
   // 第三步：检测任务列表状态，然后移除标记
   // 匹配: "[ ] "、"[x] "、"[X] " 等（支持空格变化）
   // 如果检测到 [x] 或 [X]，记录状态
-  if (/^\s*\[\s*x\s*\]/i.test(s)) {
+  if (COMPLETED_CHECKBOX_RE.test(s)) {
     hasCompletedTaskList = true
   }
-  s = s.replace(/^\s*\[\s*(?:x\s*)?\]\s*/i, '')
+  s = s.replace(CHECKBOX_STRIP_RE, '')
 
   // 第四步：再次去除可能残留的列表标记
   // 块属性去除后可能暴露出来的 "- " 或 "1. "
-  s = s.replace(/^\s*(-|\d+\.)\s*/, '')
+  s = s.replace(LIST_MARKER_RE, '')
 
   s = s.trim()
 
@@ -143,8 +161,8 @@ export function stripListAndBlockAttr(line: string): string {
  * 判断内容中的 tag 是否仅出现在反引号内（说明性文字，如 `#任务`），不当作真实任务标记
  */
 function isTagInBackticks(content: string, tag: string): boolean {
-  const inBackticks = new RegExp(`\`#?${tag === '#任务' ? '任务' : 'task'}\``)
-  return inBackticks.test(content)
+  const re = tag === '#任务' ? TASK_CN_BACKTICK_RE : TASK_BACKTICK_RE
+  return re.test(content)
 }
 
 /**
@@ -157,7 +175,7 @@ function isNextItemOrTaskLine(content: string): boolean {
   const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋')
   const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task')
   if (hasTaskTag && notInBackticks) return true
-  if ((/@\d{4}-\d{2}-\d{2}/.test(content) || /📅\d{4}-\d{2}-\d{2}/.test(content)) && !hasTaskTag) return true
+  if ((AT_DATE_RE.test(content) || CALENDAR_DATE_RE.test(content)) && !hasTaskTag) return true
   return false
 }
 
@@ -177,15 +195,15 @@ function isItemRelatedContentBoundary(content: string): boolean {
  */
 function isPomodoroLine(line: string): boolean {
   const cleaned = line
-    .replace(/^\s*(-|\d+\.)\s+/, '') // 列表标记
-    .replace(/^\{:[^}]*\}\s*/, '') // 块属性 {: ... }
+    .replace(POMODORO_LIST_MARKER_RE, '')
+    .replace(POMODORO_BLOCK_ATTR_RE, '') // 块属性 {: ... }
     .trim()
   return cleaned.startsWith('🍅')
 }
 
 function extractMarkdownLinks(text: string, blockId: string): Link[] {
   const links: Link[] = []
-  const linkRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g
+  const linkRegex = MARKDOWN_LINK_RE
 
   let match: RegExpExecArray | null
   while ((match = linkRegex.exec(text)) !== null) {
@@ -251,8 +269,8 @@ export function parseKramdown(
 
     // 检测是否是任务列表项（包含 - [ ] 或 - [x]）
     // 思源格式: - {: id="list-item-id" ...}[ ] 内容
-    const taskListMatch = content.match(/^-\s*\{:[^}]*\bid="([^"]+)"/)
-    const taskListCheckboxMatch = content.match(/\[\s*(?:(x)\s*)?\]/i)
+    const taskListMatch = content.match(TASK_LIST_BLOCK_ID_RE)
+    const taskListCheckboxMatch = content.match(TASK_LIST_CHECKBOX_RE)
     if (taskListMatch && taskListCheckboxMatch) {
       // 从行内属性中提取列表项块 ID
       const listItemBlockId = taskListMatch[1]
@@ -357,9 +375,9 @@ export function parseKramdown(
       }
 
       if (content.includes('http://') || content.includes('https://')) {
-        const urlMatch = content.match(/(https?:\/\/\S+)/)
+        const urlMatch = content.match(URL_RE)
         if (urlMatch) {
-          const nameMatch = content.match(/^([^：:]+)[：:]/)
+          const nameMatch = content.match(LINK_NAME_COLON_RE)
           const linkName = nameMatch ? nameMatch[1].trim() : '链接'
           project.links!.push(createLink(linkName, urlMatch[1]))
           continue
@@ -524,7 +542,7 @@ export function parseKramdown(
       }
 
       // 检测是否是任务列表格式（包含 [ ] 或 [x] 标记）
-      const isTaskList = /\[\s*(?:x\s*)?\]/i.test(content)
+      const isTaskList = IS_TASK_LIST_RE.test(content)
 
       // 从栈顶获取当前任务列表项块 ID（处理嵌套列表）
       const listItemBlockId = isTaskList && listItemBlockIdStack.length > 0
