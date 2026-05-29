@@ -237,7 +237,10 @@ describe('handleFsNotify — .tmp file filtering', () => {
 
 describe('rebuildReminderSchedule — timer ID uses blockId', () => {
   it('uses blockId instead of item.id in timer ID when blockId is present', async () => {
-    const item = makeItem({ id: 'volatile-id-123', blockId: 'stable-block-id' })
+    const item = makeItem({
+      id: 'volatile-id-123',
+      blockId: 'stable-block-id',
+    })
     const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -260,7 +263,10 @@ describe('rebuildReminderSchedule — timer ID uses blockId', () => {
   })
 
   it('uses blockId in metadata.blockId when blockId is present', async () => {
-    const item = makeItem({ id: 'volatile-id-456', blockId: 'stable-block-id-2' })
+    const item = makeItem({
+      id: 'volatile-id-456',
+      blockId: 'stable-block-id-2',
+    })
     const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -280,7 +286,10 @@ describe('rebuildReminderSchedule — timer ID uses blockId', () => {
   })
 
   it('falls back to item.id when blockId is undefined', async () => {
-    const item = makeItem({ id: 'fallback-id', blockId: undefined })
+    const item = makeItem({
+      id: 'fallback-id',
+      blockId: undefined,
+    })
     const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -301,7 +310,10 @@ describe('rebuildReminderSchedule — timer ID uses blockId', () => {
   })
 
   it('rebuild with same blockId produces same timer ID, preserving notified state', async () => {
-    const item = makeItem({ id: 'old-volatile-id', blockId: 'stable-block-id' })
+    const item = makeItem({
+      id: 'old-volatile-id',
+      blockId: 'stable-block-id',
+    })
     const data: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -321,7 +333,10 @@ describe('rebuildReminderSchedule — timer ID uses blockId', () => {
     mockCancelTimersByType.mockReturnValue(undefined)
     mockRegisterTimers.mockReturnValue(undefined)
 
-    const item2 = makeItem({ id: 'new-volatile-id', blockId: 'stable-block-id' })
+    const item2 = makeItem({
+      id: 'new-volatile-id',
+      blockId: 'stable-block-id',
+    })
     const data2: KernelData = {
       version: 1,
       updatedAt: new Date().toISOString(),
