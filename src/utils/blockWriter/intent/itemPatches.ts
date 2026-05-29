@@ -5,7 +5,7 @@ import type {
 } from '@/types/models'
 import type { DatePatch } from '@/utils/blockWriter/shared/types'
 
-const TIME_PART_EXTRACT_RE = /^\d{1,2}:\d{2}(?::\d{2})?/
+const TIME_PART_EXTRACT_RE = /\d{1,2}:\d{2}(?::\d{2})?/
 
 export interface ItemDatePatchSource {
   date: string

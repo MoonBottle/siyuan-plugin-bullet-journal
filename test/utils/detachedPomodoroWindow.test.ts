@@ -71,7 +71,7 @@ describe('createDetachedPomodoroWindowHost', () => {
     const executeJavaScript = vi.fn()
     const lingeringClose = vi.fn()
     const setPosition = vi.fn()
-    const BrowserWindow = vi.fn(() => {
+    const BrowserWindow = vi.fn().mockImplementation(function () {
       return {
         loadURL,
         showInactive: vi.fn(),
@@ -143,7 +143,7 @@ describe('createDetachedPomodoroWindowHost', () => {
 
   it('closes the window on destroy', () => {
     const close = vi.fn()
-    const BrowserWindow = vi.fn(() => {
+    const BrowserWindow = vi.fn().mockImplementation(function () {
       return {
         loadURL: vi.fn(),
         showInactive: vi.fn(),

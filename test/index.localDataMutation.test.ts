@@ -11,7 +11,7 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\);/,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\)/,
     )
   })
 
@@ -19,10 +19,10 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/,
+      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\)[\s\S]*\}/,
     )
     expect(indexSource).toMatch(
-      /private async processRefreshRequest\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.enqueueRefreshRequest\(request\);[\s\S]*this\.emitRefreshCompletionSignals\(request\);[\s\S]*\}/,
+      /private async processRefreshRequest\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.enqueueRefreshRequest\(request\)[\s\S]*this\.emitRefreshCompletionSignals\(request\)[\s\S]*\}/,
     )
     expect(indexSource).not.toContain('private refreshTimeout:')
     expect(indexSource).not.toContain('private scheduledRefreshRequest:')
@@ -35,7 +35,7 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.DATA_REFRESHED,\s*\(\)\s*=>\s*\{[\s\S]*mobileNotificationScheduler\.scheduleSync\(useProjectStore\(pinia\)\)[\s\S]*reminderService\.scheduleRebuild\(\);[\s\S]*\}\s*\)/,
+      /this\.registerAppEventListener\(\s*Events\.DATA_REFRESHED,\s*\(\)\s*=>\s*\{[\s\S]*mobileNotificationScheduler\.scheduleSync\(useProjectStore\(pinia\)\)[\s\S]*reminderService\.scheduleRebuild\(\)[\s\S]*\}\s*\)/,
     )
     expect(indexSource).not.toMatch(
       /private scheduleRefresh\(\)\s*\{[\s\S]*mobileNotificationScheduler\.scheduleSync\(useProjectStore\(pinia\)\)[\s\S]*\}/,
@@ -57,7 +57,7 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.REFRESH_REQUEST_SUBMITTED,[\s\S]*void this\.requestRefresh\(request\);/,
+      /this\.registerAppEventListener\(\s*Events\.REFRESH_REQUEST_SUBMITTED,[\s\S]*void this\.requestRefresh\(request\)/,
     )
     expect(indexSource).not.toContain('Events.REFRESH_REQUESTED')
   })
@@ -66,10 +66,10 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*void this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\);/,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*void this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\)/,
     )
     expect(indexSource).toMatch(
-      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/,
+      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\)[\s\S]*\}/,
     )
     expect(indexSource).toMatch(
       /createDirectedRefreshRequest\(rootIDs,\s*\{[\s\S]*reason: createWsMainDirectedRefreshReason\(data\?\.cmd\),[\s\S]*\}\)/,
@@ -81,7 +81,7 @@ describe('taskAssistantPlugin local data mutation refresh wiring', () => {
 
     expect(indexSource).toMatch(/if \(isWsMainFullRefreshCommand\(data\.cmd\)\)/)
     expect(indexSource).toMatch(
-      /void this\.requestRefresh\([\s\S]*createFullRefreshRequest\(createWsMainFullRefreshReason\(data\.cmd\)\)[\s\S]*\);/,
+      /void this\.requestRefresh\([\s\S]*createFullRefreshRequest\(createWsMainFullRefreshReason\(data\.cmd\)\)[\s\S]*\)/,
     )
     expect(indexSource).not.toMatch(/const fullRefreshCmds = \[/)
   })

@@ -148,7 +148,7 @@ vi.mock('@/main', () => ({
 }))
 
 vi.mock('siyuan', () => ({
-  Menu: vi.fn(() => {
+  Menu: vi.fn().mockImplementation(function () {
     return {
       addItem: menuAddItem,
       open: menuOpen,
@@ -386,7 +386,7 @@ describe('quadrantTab', () => {
         rules: { priority: ['none'] },
       },
     ];
-    (globalThis as any).BroadcastChannel = vi.fn(() => {
+    (globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
       return {
         onmessage: null,
         close: vi.fn(),

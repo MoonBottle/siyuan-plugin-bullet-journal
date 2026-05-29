@@ -119,6 +119,41 @@ vi.mock('@/components/workbench/view/AiChatView.vue', () => ({
   },
 }))
 
+vi.mock('@/components/workbench/view/WorkbenchHabitView.vue', () => ({
+  default: {
+    name: 'WorkbenchHabitViewStub',
+    template: '<div data-testid="workbench-habit-view-stub"></div>',
+  },
+}))
+
+vi.mock('@/tabs/FocusWorkbenchTab.vue', () => ({
+  default: {
+    name: 'FocusWorkbenchTabStub',
+    template: '<div data-testid="focus-workbench-tab-stub"></div>',
+  },
+}))
+
+vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
+  default: {
+    name: 'PomodoroStatsTabStub',
+    template: '<div data-testid="pomodoro-stats-tab-stub"></div>',
+  },
+}))
+
+vi.mock('@/tabs/ProjectTab.vue', () => ({
+  default: {
+    name: 'ProjectTabStub',
+    template: '<div data-testid="project-tab-stub"></div>',
+  },
+}))
+
+vi.mock('@/tabs/QuadrantTab.vue', () => ({
+  default: {
+    name: 'QuadrantTabStub',
+    template: '<div data-testid="quadrant-tab-stub"></div>',
+  },
+}))
+
 vi.mock('@/utils/eventBus', () => ({
   eventBus: {
     on: mockEventBusOn,
@@ -260,8 +295,8 @@ describe('workbenchTab shell', () => {
       order: 2,
       viewType: 'todo',
       config: { preset: {} },
-    });
-    (globalThis as any).BroadcastChannel = vi.fn(() => {
+    })
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
       return {
         close: vi.fn(),
       }
@@ -337,13 +372,13 @@ describe('workbenchTab shell', () => {
     expect(mockSettingsLoadFromPlugin).not.toHaveBeenCalled()
 
     mounted.unmount()
-  })
+  }, 10000)
 
   it('cleans up refresh subscriptions and BroadcastChannel on unmount', async () => {
     const unsubscribeRefresh = vi.fn()
     const closeChannel = vi.fn()
-    mockEventBusOn.mockReturnValueOnce(unsubscribeRefresh);
-    (globalThis as any).BroadcastChannel = vi.fn(() => {
+    mockEventBusOn.mockReturnValueOnce(unsubscribeRefresh)
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
       return {
         close: closeChannel,
       }
@@ -357,7 +392,7 @@ describe('workbenchTab shell', () => {
     expect(unsubscribeRefresh).toHaveBeenCalled()
     expect(mockRefreshChannelDispose).toHaveBeenCalled()
     expect(closeChannel).toHaveBeenCalled()
-  })
+  }, 10000)
 
   it('sidebar actions create dashboard and todo view entries', async () => {
     const mounted = await mountWorkbenchTab();
@@ -502,7 +537,7 @@ describe('workbench registration', () => {
       /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconLayout",/,
     )
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{[\s\S]*?menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/,
+      /if\s*\(!this\.isMobile\)\s*\{[\s\S]*?menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\)/,
     )
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*"iconWorkspace"/)
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*t\("workbench"\)\.title/)

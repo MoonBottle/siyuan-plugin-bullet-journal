@@ -34,6 +34,32 @@ vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
 }))
 
+vi.mock('@/utils/dialog', () => ({
+  showIconTooltip: vi.fn(),
+  hideIconTooltip: vi.fn(),
+}))
+
+vi.mock('@/main', () => ({
+  useApp: () => null,
+  usePlugin: () => null,
+}))
+
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    containsTarget: vi.fn(() => false),
+    isOpen: vi.fn(() => false),
+  }),
+}))
+
+vi.mock('@/components/pomodoro/review/FocusWorkbenchRecordPane.vue', () => ({
+  default: {
+    props: ['records', 'itemContent', 'title', 'emptyTitle', 'emptyDesc'],
+    template: '<div data-testid="focus-workbench-record-pane"></div>',
+  },
+}))
+
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'project') {
@@ -58,7 +84,8 @@ vi.mock('@/i18n', () => ({
       }
     }
     if (key === 'common') return { clear: '清除' }
-    if (key === 'todo') { return {
+    if (key === 'todo') {
+      return {
       project: '项目',
       task: '任务',
       item: '事项',
