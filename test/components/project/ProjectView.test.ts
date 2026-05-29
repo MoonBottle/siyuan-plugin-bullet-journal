@@ -86,10 +86,10 @@ vi.mock('@/i18n', () => ({
     if (key === 'common') return { clear: '清除' }
     if (key === 'todo') {
       return {
-      project: '项目',
-      task: '任务',
-      item: '事项',
-    }
+        project: '项目',
+        task: '任务',
+        item: '事项',
+      }
     }
     return {}
   }),

@@ -225,7 +225,7 @@ function parseXmlToolCalls(xmlContent: string): ToolCall[] {
       if (paramMatches) {
         paramMatches.forEach((paramMatch) => {
           const paramMatchDetails = paramMatch.match(PARAMETER_TAG_RE)
-            if (paramMatchDetails) {
+          if (paramMatchDetails) {
             const paramName = paramMatchDetails[1].trim()
             const paramValue = paramMatchDetails[2].trim()
             params[paramName] = paramValue
