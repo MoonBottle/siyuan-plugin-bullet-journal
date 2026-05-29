@@ -110,9 +110,9 @@
           :matched-item-ids="matchedItemIds"
           :selected-task-id="selectedTaskId"
           :selected-item-id="selectedItemId"
-          @toggle-task="$emit('toggle-task', $event)"
-          @select-task="handleSelectTask"
-          @select-item="handleSelectItem"
+          @toggleTask="$emit('toggleTask', $event)"
+          @selectTask="handleSelectTask"
+          @selectItem="handleSelectItem"
         />
       </div>
     </div>
@@ -156,9 +156,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:searchQuery', value: string): void
-  (event: 'toggle-task', taskId: string): void
-  (event: 'select-task', taskId: string): void
-  (event: 'select-item', itemId: string): void
+  (event: 'toggleTask', taskId: string): void
+  (event: 'selectTask', taskId: string): void
+  (event: 'selectItem', itemId: string): void
   (event: 'update:tagQuery', value: string): void
   (event: 'update:selectedTags', value: string[]): void
 }>()
@@ -337,9 +337,9 @@ function handleKeydown(event: KeyboardEvent) {
     if (visibleNodes.value.length > 0) {
       const first = visibleNodes.value[0]
       if (first.type === 'task') {
-        emit('select-task', first.id)
+        emit('selectTask', first.id)
       } else {
-        emit('select-item', first.id)
+        emit('selectItem', first.id)
       }
     }
     event.preventDefault()
@@ -352,21 +352,21 @@ function handleKeydown(event: KeyboardEvent) {
 
   const next = visibleNodes.value[nextIndex]
   if (next.type === 'task') {
-    emit('select-task', next.id)
+    emit('selectTask', next.id)
   } else {
-    emit('select-item', next.id)
+    emit('selectItem', next.id)
   }
 
   event.preventDefault()
 }
 
 function handleSelectTask(taskId: string) {
-  emit('select-task', taskId)
+  emit('selectTask', taskId)
   treeRef.value?.focus()
 }
 
 function handleSelectItem(itemId: string) {
-  emit('select-item', itemId)
+  emit('selectItem', itemId)
   treeRef.value?.focus()
 }
 </script>

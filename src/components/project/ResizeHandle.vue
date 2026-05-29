@@ -14,11 +14,11 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'drag-start', event: MouseEvent): void
+  (e: 'dragStart', event: MouseEvent): void
 }>()
 
 function handleMouseDown(event: MouseEvent) {
-  emit('drag-start', event)
+  emit('dragStart', event)
 }
 </script>
 

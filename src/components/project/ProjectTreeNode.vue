@@ -13,12 +13,12 @@
       :data-task-id="node.task.id"
       :data-depth="String(node.depth)"
       :style="{ paddingLeft: `${12 + node.depth * 18}px` }"
-      @click="$emit('select-task', node.task.id)"
+      @click="$emit('selectTask', node.task.id)"
     >
       <span
         class="project-task-row__toggle"
         :data-testid="`toggle-task-${node.task.id}`"
-        @click.stop="$emit('toggle-task', node.task.id)"
+        @click.stop="$emit('toggleTask', node.task.id)"
       >
         {{ expanded ? '▾' : '▸' }}
       </span>
@@ -41,7 +41,7 @@
         ]"
         :data-item-id="getItemId(entry)"
         :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
-        @click="$emit('select-item', getItemId(entry))"
+        @click="$emit('selectItem', getItemId(entry))"
       >
         <span
           class="project-item-row__status"
@@ -68,9 +68,9 @@
         :matched-item-ids="matchedItemIds"
         :selected-task-id="selectedTaskId"
         :selected-item-id="selectedItemId"
-        @toggle-task="$emit('toggle-task', $event)"
-        @select-task="$emit('select-task', $event)"
-        @select-item="$emit('select-item', $event)"
+        @toggleTask="$emit('toggleTask', $event)"
+        @selectTask="$emit('selectTask', $event)"
+        @selectItem="$emit('selectItem', $event)"
       />
     </template>
   </div>
@@ -103,9 +103,9 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  (event: 'toggle-task', taskId: string): void
-  (event: 'select-task', taskId: string): void
-  (event: 'select-item', itemId: string): void
+  (event: 'toggleTask', taskId: string): void
+  (event: 'selectTask', taskId: string): void
+  (event: 'selectItem', itemId: string): void
 }>()
 
 const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id))

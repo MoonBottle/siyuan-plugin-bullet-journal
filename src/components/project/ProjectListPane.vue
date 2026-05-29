@@ -24,7 +24,7 @@
         type="button"
         class="project-list-row"
         :class="[{ 'project-list-row--active': project.id === selectedProjectId }]"
-        @click="$emit('select-project', project.id)"
+        @click="$emit('selectProject', project.id)"
       >
         <span class="project-list-row__title">{{ project.name }}</span>
         <span class="project-list-row__desc">{{ project.description || project.path }}</span>
@@ -50,7 +50,7 @@ defineProps<{
 
 defineEmits<{
   (event: 'update:searchQuery', value: string): void
-  (event: 'select-project', projectId: string): void
+  (event: 'selectProject', projectId: string): void
 }>()
 </script>
 
