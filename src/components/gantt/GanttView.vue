@@ -65,6 +65,10 @@ import { openDocumentAtLine } from '@/utils/fileUtils'
 import { computeTooltipPosition } from '@/utils/tooltipPosition'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 
+const HTML_DBLQUOTE_RE = /"/g
+const HTML_LT_RE = /</g
+const HTML_GT_RE = />/g
+
 interface Props {
   projects: Project[]
   showItems?: boolean
@@ -587,7 +591,7 @@ onMounted(() => {
       tree: true,
       template: (task) => {
         const text = task.text ?? ''
-        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        const escapedText = text.replace(HTML_DBLQUOTE_RE, '&quot;').replace(HTML_LT_RE, '&lt;').replace(HTML_GT_RE, '&gt;')
         return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`
       },
     },
@@ -629,7 +633,7 @@ onMounted(() => {
       const totalDuration = end.getTime() - start.getTime()
       if (totalDuration <= 0) return ''
       const text = task.text ?? ''
-      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const escapedText = text.replace(HTML_DBLQUOTE_RE, '&quot;').replace(HTML_LT_RE, '&lt;').replace(HTML_GT_RE, '&gt;')
       let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`
       for (const seg of task.extendedProps.segments) {
         const left = ((seg.startTs - start.getTime()) / totalDuration) * 100
@@ -639,7 +643,7 @@ onMounted(() => {
       return html
     }
     const text = task.text ?? ''
-    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedText = text.replace(HTML_DBLQUOTE_RE, '&quot;').replace(HTML_LT_RE, '&lt;').replace(HTML_GT_RE, '&gt;')
     const textColor = task.type === 'project'
       ? 'var(--b3-theme-on-secondary)'
       : String(task.id).startsWith('item-')
@@ -666,7 +670,7 @@ onMounted(() => {
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0)
     if (duration > SHORT_BAR_THRESHOLD_MS || !text) return ''
     if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return ''
-    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escaped = text.replace(HTML_DBLQUOTE_RE, '&quot;').replace(HTML_LT_RE, '&lt;').replace(HTML_GT_RE, '&gt;')
     return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
       color: var(--b3-theme-on-background);
       font-size: 12px;
