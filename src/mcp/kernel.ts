@@ -390,8 +390,11 @@ async function handleJsonRpc(message: any): Promise<any> {
 }
 
 async function handleSseRequest(req: SseRequest) {
+  await siyuan.logger.info('[MCP] handleSseRequest: entered')
+
   const bodyData = req.request.body.data
   if (!bodyData) {
+    await siyuan.logger.warn('[MCP] handleSseRequest: no body, closing port')
     req.port.close()
     return
   }
@@ -400,19 +403,32 @@ async function handleSseRequest(req: SseRequest) {
   try {
     message = await bodyData.json()
   } catch (e) {
-    req.port.send({ event: 'error', data: JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')) })
+    await siyuan.logger.error('[MCP] handleSseRequest: JSON parse error')
+    try {
+      req.port.send({ event: 'error', data: JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')) })
+    } catch (sendErr: any) {
+      await siyuan.logger.error('[MCP] handleSseRequest: port.send error FAILED:', sendErr.message || String(sendErr))
+    }
     req.port.close()
     return
   }
 
-  await siyuan.logger.info('[MCP Kernel Plugin] SSE POST:', message.method, message.id)
+  await siyuan.logger.info('[MCP] handleSseRequest: method=', message.method, 'id=', message.id)
 
   const response = await handleJsonRpc(message)
 
   if (response !== undefined) {
-    req.port.send({ event: 'message', data: JSON.stringify(response) })
+    const responseStr = JSON.stringify(response)
+    await siyuan.logger.info('[MCP] handleSseRequest: sending response, preview=', responseStr.slice(0, 200))
+    try {
+      req.port.send({ event: 'message', data: responseStr })
+      await siyuan.logger.info('[MCP] handleSseRequest: port.send OK')
+    } catch (sendErr: any) {
+      await siyuan.logger.error('[MCP] handleSseRequest: port.send FAILED:', sendErr.message || String(sendErr))
+    }
   }
 
+  await siyuan.logger.info('[MCP] handleSseRequest: closing port')
   req.port.close()
 }
 
@@ -420,7 +436,7 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE and HTTP handlers')
 
   siyuan.server.private.es.handler = async function (req: SseRequest) {
-    await siyuan.logger.info('[MCP Kernel Plugin] SSE handler: method=', req.request.method, 'path=', req.url.pathname)
+    await siyuan.logger.info('[MCP] SSE handler: method=', req.request.method, 'path=', req.url.pathname, 'headers=', JSON.stringify(req.request.headers))
 
     if (req.request.method === 'POST') {
       await handleSseRequest(req)
@@ -428,17 +444,27 @@ siyuan.plugin.lifecycle.onrunning = async function () {
     }
 
     req.port.onopen = async function (_event) {
-      await siyuan.logger.info('[MCP Kernel Plugin] SSE stream opened')
+      await siyuan.logger.info('[MCP] SSE onopen: sending initial event...')
+      try {
+        req.port.send({ id: '0', data: '' })
+        await siyuan.logger.info('[MCP] SSE onopen: initial event sent OK')
+      } catch (e: any) {
+        await siyuan.logger.error('[MCP] SSE onopen: port.send FAILED:', e.message || String(e))
+      }
     }
 
     req.port.onclose = async function (_event) {
-      await siyuan.logger.info('[MCP Kernel Plugin] SSE stream closed')
+      await siyuan.logger.info('[MCP] SSE onclose: stream closed')
     }
   }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
+    const accept = req.request.headers['Accept'] || req.request.headers['accept'] || 'N/A'
+    await siyuan.logger.info('[MCP] HTTP handler: method=', req.request.method, 'Accept=', JSON.stringify(accept))
+
     const bodyData = req.request.body.data
     if (!bodyData) {
+      await siyuan.logger.warn('[MCP] HTTP handler: no body')
       return {
         statusCode: 400,
         body: {
@@ -454,6 +480,7 @@ siyuan.plugin.lifecycle.onrunning = async function () {
     try {
       message = await bodyData.json()
     } catch (e) {
+      await siyuan.logger.error('[MCP] HTTP handler: JSON parse error')
       return {
         statusCode: 400,
         body: {
@@ -465,22 +492,27 @@ siyuan.plugin.lifecycle.onrunning = async function () {
       }
     }
 
+    await siyuan.logger.info('[MCP] HTTP handler: parsed method=', message.method, 'id=', message.id)
+
     const response = await handleJsonRpc(message)
 
     if (response === undefined) {
+      await siyuan.logger.info('[MCP] HTTP handler: returning 202 (no response)')
       return {
         statusCode: 202,
         headers: {},
       }
     }
 
+    const responseStr = JSON.stringify(response)
+    await siyuan.logger.info('[MCP] HTTP handler: returning 200, response preview=', responseStr.slice(0, 200))
     return {
       statusCode: 200,
       headers: { 'Content-Type': ['application/json'] },
       body: {
         raw: {
           contentType: 'application/json',
-          data: JSON.stringify(response),
+          data: responseStr,
         },
       },
     }
