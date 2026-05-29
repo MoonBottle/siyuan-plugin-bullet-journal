@@ -356,13 +356,14 @@ export function initMcpServer(): void {
         } catch {}
       }
       activePort = req.port
-      await siyuan.logger.info('[mcp] SSE onopen: stream opened, sending initial event...')
+      await siyuan.logger.info('[mcp] SSE onopen: stream opened, sending initial event then closing...')
       try {
         req.port.send({ id: '0', data: '' })
-        await siyuan.logger.info('[mcp] SSE onopen: initial event sent OK')
+        await siyuan.logger.info('[mcp] SSE onopen: initial event sent OK, closing stream')
       } catch (sendErr: any) {
         await siyuan.logger.error('[mcp] SSE onopen: port.send FAILED:', sendErr.message || String(sendErr))
       }
+      req.port.close()
     }
 
     req.port.onclose = async function (_event) {
