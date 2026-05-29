@@ -21,6 +21,8 @@ export default antfu(
       'logs',
       'CLAUDE.md',
       'AGENTS.md',
+      'README.md',
+      'README_zh_CN.md',
     ],
   },
   {
