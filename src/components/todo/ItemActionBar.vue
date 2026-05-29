@@ -119,7 +119,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'open-doc', docId: string, blockId: string): void
+  (event: 'openDoc', docId: string, blockId: string): void
 }>()
 
 const app = useApp()

@@ -1230,7 +1230,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'add-tag-filter', value: string): void
+  (event: 'addTagFilter', value: string): void
 }>()
 
 const getPriorityEmoji = (item: Item): string => {
