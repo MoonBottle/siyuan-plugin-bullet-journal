@@ -112,7 +112,17 @@ export function createDetachedPomodoroWindowHost(
     }
   }
 
-  const ensureWindow = () => {
+  const syncPayload = (payload: RenderedPayload) => {
+    const currentWindow = ensureWindow()
+    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`
+    currentWindow.webContents?.executeJavaScript?.(script)
+    currentWindow.showInactive?.()
+    if (!currentWindow.isVisible?.()) {
+      currentWindow.show?.()
+    }
+  }
+
+  function ensureWindow() {
     if (detachedWindow && !detachedWindow.isDestroyed?.()) {
       return detachedWindow
     }
@@ -175,16 +185,6 @@ export function createDetachedPomodoroWindowHost(
         phase: state.phase,
         isPaused: state.isPaused,
       },
-    }
-  }
-
-  const syncPayload = (payload: RenderedPayload) => {
-    const currentWindow = ensureWindow()
-    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`
-    currentWindow.webContents?.executeJavaScript?.(script)
-    currentWindow.showInactive?.()
-    if (!currentWindow.isVisible?.()) {
-      currentWindow.show?.()
     }
   }
 

@@ -112,6 +112,16 @@ export function getActiveTimers(type?: string): TimerEntry[] {
   })
   return result
 }
+let dispatchNotification: (entry: TimerEntry) => void = function () {}
+let rebuildReminderSchedule: () => void = function () {}
+
+export function setDispatchNotification(fn: (entry: TimerEntry) => void): void {
+  dispatchNotification = fn
+}
+
+export function setRebuildReminderSchedule(fn: () => void): void {
+  rebuildReminderSchedule = fn
+}
 
 export function initScheduler(): void {
   if (checkInterval) {
@@ -181,15 +191,4 @@ function checkTimers(): void {
     siyuan.rpc.broadcast('date-changed', { date: today })
     rebuildReminderSchedule()
   }
-}
-
-let dispatchNotification: (entry: TimerEntry) => void = function () {}
-let rebuildReminderSchedule: () => void = function () {}
-
-export function setDispatchNotification(fn: (entry: TimerEntry) => void): void {
-  dispatchNotification = fn
-}
-
-export function setRebuildReminderSchedule(fn: () => void): void {
-  rebuildReminderSchedule = fn
 }
