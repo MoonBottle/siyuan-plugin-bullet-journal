@@ -28,7 +28,7 @@ export function getThemePrimary(containerEl: HTMLElement | null): string {
   const rgb = getVar(el, '--b3-theme-primary-rgb')
   if (rgb) {
     const [r, g, b] = rgb.split(',').map((s) => Number.parseInt(s.trim(), 10))
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+    if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
       return `rgb(${r}, ${g}, ${b})`
     }
   }
@@ -40,7 +40,7 @@ export function getThemePrimary(containerEl: HTMLElement | null): string {
       const rgb = getVar(parentDoc.documentElement, '--b3-theme-primary-rgb')
       if (rgb) {
         const [r, g, b] = rgb.split(',').map((s) => Number.parseInt(s.trim(), 10))
-        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return `rgb(${r}, ${g}, ${b})`
+        if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) return `rgb(${r}, ${g}, ${b})`
       }
     }
   } catch {
@@ -79,7 +79,7 @@ export function toRgba(color: string, alpha: number): string {
     const r = Number.parseInt(color.slice(1, 3), 16)
     const g = Number.parseInt(color.slice(3, 5), 16)
     const b = Number.parseInt(color.slice(5, 7), 16)
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+    if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`
     }
   }
