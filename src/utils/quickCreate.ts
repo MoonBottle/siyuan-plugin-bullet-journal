@@ -60,6 +60,25 @@ const DATE_KEYWORDS: Record<string, () => string> = {
   yesterday: () => dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
 }
 
+const TASK_PREFIX_RE = /^!{1,3}\s*(.+)$/
+const TASK_TAG_TEST_RE = /#task\b/i
+const LEVEL_TAG_TEST_RE = /@(L[123])\b/i
+const EXCLAMATION_RE = /!/g
+const TASK_TAG_REPLACE_RE = /#task\b/gi
+const LEVEL_TAG_REPLACE_RE = /@(L[123])\b/gi
+const EMOJI_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/
+const AT_DATE_RE = /@\s*(\d{4}-\d{2}-\d{2}|今天|明天|后天|昨天|today|tomorrow|yesterday)\b/
+const TIME_RANGE_RE = /(\d{1,2}:\d{2})\s*[~-]\s*(\d{1,2}:\d{2})/
+const SINGLE_TIME_RE = /(\d{1,2}:\d{2})(?!\s*[~-])/
+const PRIORITY_EMOJI_RE = /([🔥🌱🍃])/
+const TAG_RE = /#\w+/g
+const AT_END_RE = /@$|@\s*$/
+const DATE_KEYWORD_TEST_RE = /今天|明天|后天/
+const AT_TRAILING_RE = /@\s*$/
+const DATE_END_RE = /\d{4}-\d{2}-\d{2}$/
+const TIME_END_RE = /:\d{2}$/
+const TASK_OR_EXCL_END_RE = /#task$|!$/
+
 /**
  * 智能解析快速输入
  * 支持格式：
@@ -87,9 +106,9 @@ export function parseQuickInput(input: string): ParsedInput {
   }
 
   // 检测是否为任务（包含 #task 或使用任务级别符号）
-  const taskMatch = trimmed.match(/^!{1,3}\s*(.+)$/)
-  const hasTaskTag = /#task\b/i.test(trimmed)
-  const hasLevelTag = /@(L[123])\b/i.test(trimmed)
+  const taskMatch = trimmed.match(TASK_PREFIX_RE)
+  const hasTaskTag = TASK_TAG_TEST_RE.test(trimmed)
+  const hasLevelTag = LEVEL_TAG_TEST_RE.test(trimmed)
 
   if (hasTaskTag || hasLevelTag || taskMatch) {
     result.type = 'task'
@@ -101,17 +120,17 @@ export function parseQuickInput(input: string): ParsedInput {
         2: 'L2',
         3: 'L3',
       }
-      result.level = levelMap[taskMatch[0].match(/!/g)?.length || 1]
+      result.level = levelMap[taskMatch[0].match(EXCLAMATION_RE)?.length || 1]
       result.content = taskMatch[1]
     } else {
-      const levelMatch = trimmed.match(/@(L[123])\b/i)
+      const levelMatch = trimmed.match(LEVEL_TAG_TEST_RE)
       result.level = (levelMatch?.[1] as 'L1' | 'L2' | 'L3') || 'L1'
     }
 
     // 清理内容中的任务标记
     result.content = result.content
-      .replace(/#task\b/gi, '')
-      .replace(/@(L[123])\b/gi, '')
+      .replace(TASK_TAG_REPLACE_RE, '')
+      .replace(LEVEL_TAG_REPLACE_RE, '')
       .trim()
   } else {
     // 解析事项特有的属性
@@ -121,14 +140,14 @@ export function parseQuickInput(input: string): ParsedInput {
     let content = trimmed
 
     // 日期格式 1: 📅YYYY-MM-DD
-    const emojiDateMatch = content.match(/📅\s*(\d{4}-\d{2}-\d{2})/)
+    const emojiDateMatch = content.match(EMOJI_DATE_RE)
     if (emojiDateMatch) {
       result.date = emojiDateMatch[1]
       content = content.replace(emojiDateMatch[0], '').trim()
     }
 
     // 日期格式 2: @YYYY-MM-DD 或 @关键字
-    const atDateMatch = content.match(/@\s*(\d{4}-\d{2}-\d{2}|今天|明天|后天|昨天|today|tomorrow|yesterday)\b/)
+    const atDateMatch = content.match(AT_DATE_RE)
     if (atDateMatch && !result.date) {
       const dateValue = atDateMatch[1]
       if (DATE_KEYWORDS[dateValue]) {
@@ -140,14 +159,14 @@ export function parseQuickInput(input: string): ParsedInput {
     }
 
     // 解析时间范围: HH:mm~HH:mm 或 HH:mm-HH:mm
-    const timeRangeMatch = content.match(/(\d{1,2}:\d{2})\s*[~-]\s*(\d{1,2}:\d{2})/)
+    const timeRangeMatch = content.match(TIME_RANGE_RE)
     if (timeRangeMatch) {
       result.startTime = timeRangeMatch[1]
       result.endTime = timeRangeMatch[2]
       content = content.replace(timeRangeMatch[0], '').trim()
     } else {
       // 单个时间点
-      const singleTimeMatch = content.match(/(\d{1,2}:\d{2})(?!\s*[~-])/)
+      const singleTimeMatch = content.match(SINGLE_TIME_RE)
       if (singleTimeMatch) {
         result.startTime = singleTimeMatch[1]
         content = content.replace(singleTimeMatch[0], '').trim()
@@ -155,7 +174,7 @@ export function parseQuickInput(input: string): ParsedInput {
     }
 
     // 解析优先级（支持 Emoji 标记）
-    const priorityEmojiMatch = content.match(/([🔥🌱�])/)
+    const priorityEmojiMatch = content.match(PRIORITY_EMOJI_RE)
     if (priorityEmojiMatch) {
       const priorityEmojiMap: Record<string, 'high' | 'medium' | 'low'> = {
         '🔥': 'high',
@@ -167,10 +186,10 @@ export function parseQuickInput(input: string): ParsedInput {
     }
 
     // 解析标签（剩余 #xxx 格式的内容）
-    const tagMatches = content.match(/#\w+/g)
+    const tagMatches = content.match(TAG_RE)
     if (tagMatches) {
       result.tags = tagMatches.map((t) => t.slice(1))
-      content = content.replace(/#\w+/g, '').trim()
+      content = content.replace(TAG_RE, '').trim()
     }
 
     result.content = content
@@ -476,16 +495,16 @@ export function getInputSuggestions(partialInput: string): string[] {
   const trimmed = partialInput.trim()
 
   // 日期建议
-  if (/@$|@\s*$/.test(trimmed) || /今天|明天|后天/.test(trimmed)) {
+  if (AT_END_RE.test(trimmed) || DATE_KEYWORD_TEST_RE.test(trimmed)) {
     suggestions.push(
-      `${trimmed.replace(/@\s*$/, '')} @今天`,
-      `${trimmed.replace(/@\s*$/, '')} @明天`,
-      `${trimmed.replace(/@\s*$/, '')} @后天`,
+      `${trimmed.replace(AT_TRAILING_RE, '')} @今天`,
+      `${trimmed.replace(AT_TRAILING_RE, '')} @明天`,
+      `${trimmed.replace(AT_TRAILING_RE, '')} @后天`,
     )
   }
 
   // 时间建议
-  if (/\d{4}-\d{2}-\d{2}$/.test(trimmed) || /:\d{2}$/.test(trimmed)) {
+  if (DATE_END_RE.test(trimmed) || TIME_END_RE.test(trimmed)) {
     suggestions.push(
       `${trimmed} 09:00~12:00`,
       `${trimmed} 14:00~18:00`,
@@ -493,7 +512,7 @@ export function getInputSuggestions(partialInput: string): string[] {
   }
 
   // 任务级别建议
-  if (/#task$|!$/.test(trimmed)) {
+  if (TASK_OR_EXCL_END_RE.test(trimmed)) {
     suggestions.push(
       `${trimmed} @L1`,
       `${trimmed} @L2`,
