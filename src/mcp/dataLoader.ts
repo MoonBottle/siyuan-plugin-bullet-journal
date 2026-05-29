@@ -49,6 +49,8 @@ function buildSqlGetProjectDocsByPath(dirPath: string): string {
 
 /**
  * 从思源加载项目与事项（与 list_projects / filter_items 内部逻辑一致）
+ * @param client 思源客户端
+ * @param directories 项目目录列表
  * @param scanMode 扫描模式：'full' 扫描所有文档，'directories' 仅扫描配置目录
  */
 export async function loadProjectsAndItems(

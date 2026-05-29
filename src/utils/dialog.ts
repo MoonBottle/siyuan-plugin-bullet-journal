@@ -482,6 +482,7 @@ let lastEventDetailDialog: Dialog | null = null
 /**
  * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
  * @param event 日历事件
+ * @param options 可选配置
  * @param options.preview 为 true 时去掉复制按钮与底部操作按钮，仅保留纯展示内容
  */
 export function buildEventDetailContent(

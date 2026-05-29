@@ -173,9 +173,10 @@ export async function openDocument(docId: string): Promise<boolean> {
 
 /**
  * 打开文档并定位到特定块
- * @param docId 文档 ID
- * @param blockId 块 ID（可选，如果提供则直接定位到该块）
- * @param lineNumber 行号（可选，如果没有 blockId 则通过行号查询块 ID）
+ * @param pluginOrDocId 插件实例或文档 ID
+ * @param docIdOrLineNumber 文档 ID 或行号
+ * @param lineNumberOrBlockId 行号或块 ID
+ * @param maybeBlockId 块 ID（可选，如果提供则直接定位到该块）
  */
 export async function openDocumentAtLine(
   pluginOrDocId: Plugin | string,

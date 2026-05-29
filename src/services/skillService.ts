@@ -157,6 +157,7 @@ export class SkillService {
 
   /**
    * 根据 ID 或名称解析技能
+   * @param params 参数对象
    * @param params.docId 自定义技能的 docId（source 为 'user' 时必填）
    * @param params.skillName 技能名称（source 为 'builtin' 时必填）
    * @param params.source 技能来源：'builtin' 内置技能，'user' 自定义技能

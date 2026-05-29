@@ -67,6 +67,9 @@ export function getDateRangeStatus(
 /**
  * 单日事项的状态判断（含全天、带时间范围、仅开始时间）
  * @param item 含 date、startDateTime、endDateTime
+ * @param item.date 日期
+ * @param item.startDateTime 开始时间
+ * @param item.endDateTime 结束时间
  * @param currentDateTime 当前时间 "YYYY-MM-DD HH:mm:ss"
  * @returns 单日事项返回状态，无 date 返回 undefined
  */

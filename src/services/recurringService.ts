@@ -103,7 +103,7 @@ function buildNextOccurrenceBlockFallback(item: Item, nextDate: string): string 
 
 /**
  * 创建下次 occurrence
- * @param plugin 插件实例
+ * @param _plugin 插件实例
  * @param item 当前事项
  * @returns 是否成功创建
  */
@@ -213,7 +213,7 @@ async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<s
 
 /**
  * 跳过本次（直接修改当前事项日期）
- * @param plugin 插件实例
+ * @param _plugin 插件实例
  * @param item 当前事项
  * @returns 是否成功修改
  */

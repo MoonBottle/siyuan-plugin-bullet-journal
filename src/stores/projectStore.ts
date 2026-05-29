@@ -1317,6 +1317,10 @@ export const useProjectStore = defineStore('project', {
 
     /**
      * 获取甘特图数据
+     * @param showItems 是否显示事项
+     * @param dateFilter 可选，日期范围过滤
+     * @param dateFilter.start 开始日期
+     * @param dateFilter.end 结束日期
      * @param groupId 可选，按该分组过滤；空则全部
      */
     getGanttTasks(showItems: boolean = false, dateFilter?: { start?: string, end?: string }, groupId: string = '') {
