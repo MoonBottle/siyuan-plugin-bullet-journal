@@ -390,178 +390,8 @@ const ganttData = computed(() => {
   return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter)
 })
 
-onMounted(() => {
-  if (!ganttEl.value) return
-
-  // 动态加载 dhtmlx-gantt 样式
-  loadGanttStyles()
-
-  // 配置 Gantt
-  gantt.config.date_format = '%Y-%m-%d %H:%i'
-  gantt.config.xml_date = '%Y-%m-%d %H:%i'
-  gantt.config.columns = [
-    {
-      name: 'text',
-      label: t('gantt').taskName,
-      width: '*',
-      tree: true,
-      template: (task) => {
-        const text = task.text ?? ''
-        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`
-      },
-    },
-    {
-      name: 'start_date',
-      label: t('gantt').startTime,
-      align: 'center',
-      width: 100,
-    },
-    {
-      name: 'end_date',
-      label: t('gantt').endTime,
-      align: 'center',
-      width: 100,
-    },
-  ]
-  gantt.config.open_tree_initially = true
-  gantt.config.bar_height = 28
-  gantt.config.row_height = 36
-  gantt.config.drag_resize = false
-  gantt.config.drag_move = false
-  gantt.config.drag_progress = false
-  gantt.config.drag_links = false
-
-  // 注释掉双击功能：禁用双击打开任务详情
-  gantt.config.details_on_dblclick = false
-
-  // 自定义任务条样式 - 项目/任务/事项区分
-  gantt.templates.task_class = function (_start, _end, task) {
-    if (task.extendedProps?.isMultiDate) return 'gantt-multidate-item'
-    if (task.type === 'project') return 'gantt-project'
-    if (String(task.id).startsWith('item-')) return 'gantt-item'
-    return 'gantt-task'
-  }
-
-  // 自定义任务文本 - 项目/任务/事项对应文字颜色
-  gantt.templates.task_text = function (start, end, task) {
-    if (task.extendedProps?.isMultiDate && task.extendedProps?.segments?.length) {
-      const totalDuration = end.getTime() - start.getTime()
-      if (totalDuration <= 0) return ''
-      const text = task.text ?? ''
-      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`
-      for (const seg of task.extendedProps.segments) {
-        const left = ((seg.startTs - start.getTime()) / totalDuration) * 100
-        const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left
-        html += `<div class="gantt-segment-bar" style="left:${left}%;width:${Math.max(width, 0.5)}%"></div>`
-      }
-      return html
-    }
-    const text = task.text ?? ''
-    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    const textColor = task.type === 'project'
-      ? 'var(--b3-theme-on-secondary)'
-      : String(task.id).startsWith('item-')
-        ? 'var(--b3-theme-on-success)'
-        : 'var(--b3-theme-on-primary)'
-    return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
-      color: ${textColor};
-      font-weight: 500;
-      font-size: 12px;
-      padding: 2px 6px;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    ">${text}</span>`
-  }
-
-  // 短条（≤1 天）在右侧显示文字，避免条内文字不可见
-  // 日/周视图：短文字（如「ddd」「测试」）条内可读，不重复显示；月视图：条极短，一律右侧显示
-  const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000
-  const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6
-  gantt.templates.rightside_text = function (start, end, task) {
-    const text = task.text ?? ''
-    const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0)
-    if (duration > SHORT_BAR_THRESHOLD_MS || !text) return ''
-    if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return ''
-    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
-      color: var(--b3-theme-on-background);
-      font-size: 12px;
-      white-space: nowrap;
-      margin-left: 4px;
-    ">${text}</span>`
-  }
-
-  // 本地化 - 根据插件语言设置
-  gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en')
-
-  // 设置初始视图模式
-  setScaleConfig(props.viewMode)
-
-  gantt.init(ganttEl.value)
-  ganttInitialized = true
-
-  // 先解绑再绑定，防止 Tab 切换时 destroy 未触发 onUnmounted 导致 handler 累积（点击一次弹多个框）
-  if (onTaskClickId !== null) {
-    gantt.detachEvent(String(onTaskClickId))
-    onTaskClickId = null
-  }
-  onTaskClickId = gantt.attachEvent('onTaskClick', (id, e) => {
-    // 仅点击右侧任务条时展示详情，左侧任务列表区域不触发
-    const target = e?.target as HTMLElement | undefined
-    if (!target?.closest('.gantt_task_line')) return true
-    handleGanttTaskClick(id)
-    return true
-  })
-  if (onContextMenuId !== null) {
-    gantt.detachEvent(String(onContextMenuId))
-    onContextMenuId = null
-  }
-  onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
-    return handleGanttContextMenu(taskId, linkId, event as MouseEvent)
-  })
-
-  ganttEl.value.addEventListener('mouseover', handleGanttTooltipMouseOver)
-  ganttEl.value.addEventListener('mouseout', handleGanttTooltipMouseOut)
-
-  // 设置容器高度
-  setGanttHeight()
-
-  // 添加 resize 监听
-  window.addEventListener('resize', handleResize)
-
-  // ResizeObserver 监听容器尺寸变化（与 CalendarView 一致，解决数据变动后空白）
-  resizeObserver = new ResizeObserver(() => {
-    setGanttHeight()
-  })
-  resizeObserver.observe(ganttEl.value)
-
-  updateGantt()
-  ganttReady.value = true
-})
-
-// 设置甘特图容器高度
-const setGanttHeight = () => {
-  if (ganttEl.value) {
-    // gantt-inner 已经通过 CSS 设置为 100% 高度
-    // 只需要通知 gantt 重新计算尺寸
-    if (ganttInitialized) {
-      gantt.setSizes()
-    }
-  }
-}
-
-// resize 处理函数
-const handleResize = () => {
-  setGanttHeight()
-}
-
 // 动态加载甘特图主题样式
 const loadGanttStyles = () => {
-  // 添加思源主题覆盖样式
   const style = document.createElement('style')
   style.id = 'dhtmlx-gantt-theme-styles'
   style.textContent = `
@@ -718,6 +548,181 @@ const setScaleConfig = (mode: 'day' | 'week' | 'month') => {
   }
 }
 
+// 设置甘特图容器高度
+const setGanttHeight = () => {
+  if (ganttEl.value) {
+    if (ganttInitialized) {
+      gantt.setSizes()
+    }
+  }
+}
+
+// resize 处理函数
+const handleResize = () => {
+  setGanttHeight()
+}
+
+const updateGantt = () => {
+  if (!ganttInitialized) return
+  gantt.clearAll()
+  gantt.parse({ data: ganttData.value })
+  gantt.render()
+  gantt.setSizes()
+}
+
+onMounted(() => {
+  if (!ganttEl.value) return
+
+  // 动态加载 dhtmlx-gantt 样式
+  loadGanttStyles()
+
+  // 配置 Gantt
+  gantt.config.date_format = '%Y-%m-%d %H:%i'
+  gantt.config.xml_date = '%Y-%m-%d %H:%i'
+  gantt.config.columns = [
+    {
+      name: 'text',
+      label: t('gantt').taskName,
+      width: '*',
+      tree: true,
+      template: (task) => {
+        const text = task.text ?? ''
+        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`
+      },
+    },
+    {
+      name: 'start_date',
+      label: t('gantt').startTime,
+      align: 'center',
+      width: 100,
+    },
+    {
+      name: 'end_date',
+      label: t('gantt').endTime,
+      align: 'center',
+      width: 100,
+    },
+  ]
+  gantt.config.open_tree_initially = true
+  gantt.config.bar_height = 28
+  gantt.config.row_height = 36
+  gantt.config.drag_resize = false
+  gantt.config.drag_move = false
+  gantt.config.drag_progress = false
+  gantt.config.drag_links = false
+
+  // 注释掉双击功能：禁用双击打开任务详情
+  gantt.config.details_on_dblclick = false
+
+  // 自定义任务条样式 - 项目/任务/事项区分
+  gantt.templates.task_class = function (_start, _end, task) {
+    if (task.extendedProps?.isMultiDate) return 'gantt-multidate-item'
+    if (task.type === 'project') return 'gantt-project'
+    if (String(task.id).startsWith('item-')) return 'gantt-item'
+    return 'gantt-task'
+  }
+
+  // 自定义任务文本 - 项目/任务/事项对应文字颜色
+  gantt.templates.task_text = function (start, end, task) {
+    if (task.extendedProps?.isMultiDate && task.extendedProps?.segments?.length) {
+      const totalDuration = end.getTime() - start.getTime()
+      if (totalDuration <= 0) return ''
+      const text = task.text ?? ''
+      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`
+      for (const seg of task.extendedProps.segments) {
+        const left = ((seg.startTs - start.getTime()) / totalDuration) * 100
+        const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left
+        html += `<div class="gantt-segment-bar" style="left:${left}%;width:${Math.max(width, 0.5)}%"></div>`
+      }
+      return html
+    }
+    const text = task.text ?? ''
+    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const textColor = task.type === 'project'
+      ? 'var(--b3-theme-on-secondary)'
+      : String(task.id).startsWith('item-')
+        ? 'var(--b3-theme-on-success)'
+        : 'var(--b3-theme-on-primary)'
+    return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
+      color: ${textColor};
+      font-weight: 500;
+      font-size: 12px;
+      padding: 2px 6px;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    ">${text}</span>`
+  }
+
+  // 短条（≤1 天）在右侧显示文字，避免条内文字不可见
+  // 日/周视图：短文字（如「ddd」「测试」）条内可读，不重复显示；月视图：条极短，一律右侧显示
+  const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000
+  const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6
+  gantt.templates.rightside_text = function (start, end, task) {
+    const text = task.text ?? ''
+    const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0)
+    if (duration > SHORT_BAR_THRESHOLD_MS || !text) return ''
+    if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return ''
+    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
+      color: var(--b3-theme-on-background);
+      font-size: 12px;
+      white-space: nowrap;
+      margin-left: 4px;
+    ">${text}</span>`
+  }
+
+  // 本地化 - 根据插件语言设置
+  gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en')
+
+  // 设置初始视图模式
+  setScaleConfig(props.viewMode)
+
+  gantt.init(ganttEl.value)
+  ganttInitialized = true
+
+  // 先解绑再绑定，防止 Tab 切换时 destroy 未触发 onUnmounted 导致 handler 累积（点击一次弹多个框）
+  if (onTaskClickId !== null) {
+    gantt.detachEvent(String(onTaskClickId))
+    onTaskClickId = null
+  }
+  onTaskClickId = gantt.attachEvent('onTaskClick', (id, e) => {
+    // 仅点击右侧任务条时展示详情，左侧任务列表区域不触发
+    const target = e?.target as HTMLElement | undefined
+    if (!target?.closest('.gantt_task_line')) return true
+    handleGanttTaskClick(id)
+    return true
+  })
+  if (onContextMenuId !== null) {
+    gantt.detachEvent(String(onContextMenuId))
+    onContextMenuId = null
+  }
+  onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
+    return handleGanttContextMenu(taskId, linkId, event as MouseEvent)
+  })
+
+  ganttEl.value.addEventListener('mouseover', handleGanttTooltipMouseOver)
+  ganttEl.value.addEventListener('mouseout', handleGanttTooltipMouseOut)
+
+  // 设置容器高度
+  setGanttHeight()
+
+  // 添加 resize 监听
+  window.addEventListener('resize', handleResize)
+
+  // ResizeObserver 监听容器尺寸变化（与 CalendarView 一致，解决数据变动后空白）
+  resizeObserver = new ResizeObserver(() => {
+    setGanttHeight()
+  })
+  resizeObserver.observe(ganttEl.value)
+
+  updateGantt()
+  ganttReady.value = true
+})
+
 onUnmounted(() => {
   ganttReady.value = false
   if (resizeObserver) {
@@ -762,14 +767,6 @@ watch(() => props.viewMode, (newMode) => {
     gantt.render()
   }
 })
-
-const updateGantt = () => {
-  if (!ganttInitialized) return
-  gantt.clearAll()
-  gantt.parse({ data: ganttData.value })
-  gantt.render()
-  gantt.setSizes()
-}
 </script>
 
 <style lang="scss">
