@@ -14,11 +14,11 @@
  */
 import type {
   BatchBlockPatch,
+  BlockMutationIntent,
   BlockPatch,
   BlockWriteContext,
   InsertableBlockPatch,
 } from '@/utils/blockWriter/shared/types'
-import type { BlockMutationIntent } from '@/utils/blockWriter/shared/types'
 import {
   normalizeInsertIntent,
   normalizeUpdateIntent,
