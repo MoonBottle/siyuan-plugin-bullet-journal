@@ -317,13 +317,9 @@ export function initMcpServer(): void {
           activePort.close()
         } catch {}
       }
-      try {
-        sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2)
-        activePort = req.port
-        req.port.send('endpoint', `/api/plugin/private/siyuan-plugin-bullet-journal/mcp?sid=${sessionId}`)
-      } catch (e: any) {
-        await siyuan.logger.error('[mcp] SSE onopen error:', e.message || String(e))
-      }
+      activePort = req.port
+      sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+      await siyuan.logger.info('[mcp] SSE connection opened, sid:', sessionId)
     }
 
     req.port.onclose = async function (_event) {
@@ -331,6 +327,7 @@ export function initMcpServer(): void {
         activePort = null
         sessionId = ''
       }
+      await siyuan.logger.info('[mcp] SSE connection closed')
     }
   }
 
@@ -389,18 +386,22 @@ export function initMcpServer(): void {
     }
 
     if (response === undefined) {
+      await siyuan.logger.info('[mcp] HTTP handler: notification, returning 202')
       return {
         statusCode: 202,
         headers: {},
       }
     }
 
+    const responseBody = JSON.stringify(response)
+    await siyuan.logger.info('[mcp] HTTP handler: responding', message.method, responseBody.length, 'bytes')
+
     return {
       statusCode: 200,
       body: {
-        data: {
-          type: 'JSON',
-          data: response,
+        raw: {
+          contentType: 'application/json',
+          data: responseBody,
         },
       },
     }
