@@ -369,6 +369,10 @@ const currentItemHistoricalFocusMinutes = computed(() => {
     return sum + (record.actualDurationMinutes ?? record.durationMinutes)
   }, 0)
 })
+const accumulatedMinutes = computed(() => {
+  if (!pomodoroStore.activePomodoro) return 0
+  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60)
+})
 const currentItemTotalFocusMinutes = computed(() => {
   return currentItemHistoricalFocusMinutes.value + accumulatedMinutes.value
 })
@@ -386,12 +390,6 @@ const isStopwatch = computed(() => pomodoroStore.isStopwatch)
 
 // 进度条方向：正计时延长，倒计时缩短
 const progressDirection = computed(() => getProgressDirection(pomodoroStore.activePomodoro?.timerMode))
-
-// 已专注分钟数
-const accumulatedMinutes = computed(() => {
-  if (!pomodoroStore.activePomodoro) return 0
-  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60)
-})
 
 // 目标分钟数
 const targetMinutes = computed(() => {

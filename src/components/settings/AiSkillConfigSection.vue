@@ -185,6 +185,8 @@ const userSkills = computed(() => skillStore.skills)
 function openCreateSkillDialog(prefilledName: string = '') {
   const container = document.createElement('div')
 
+  let app: ReturnType<typeof createApp>
+
   const dialog = createDialog({
     title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能文档',
     content: '',
@@ -194,7 +196,7 @@ function openCreateSkillDialog(prefilledName: string = '') {
     },
   })
 
-  const app = createApp(CreateSkillDialog, {
+  app = createApp(CreateSkillDialog, {
     mode: 'new',
     prefilledName,
     onClose: () => {

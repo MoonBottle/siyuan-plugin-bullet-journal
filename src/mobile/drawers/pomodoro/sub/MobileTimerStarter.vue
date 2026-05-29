@@ -137,6 +137,10 @@ const emit = defineEmits<{
   started: []
 }>()
 
+const close = () => {
+  emit('close')
+}
+
 const plugin = usePlugin() as any
 const pinia = getSharedPinia()
 const projectStore = pinia ? useProjectStore(pinia) : null
@@ -166,6 +170,14 @@ const preselectedItem = computed(() => {
   return projectStore.getItemByBlockId(props.preselectedBlockId) || null
 })
 
+// Initialize state
+const initState = () => {
+  if (preselectedItem.value) {
+    selectedItem.value = preselectedItem.value
+  }
+  selectedDuration.value = defaultDuration.value
+}
+
 // Initialize on mount
 onMounted(() => {
   initState()
@@ -175,14 +187,6 @@ onMounted(() => {
 watch(defaultDuration, (newVal) => {
   selectedDuration.value = newVal
 })
-
-// Initialize state
-const initState = () => {
-  if (preselectedItem.value) {
-    selectedItem.value = preselectedItem.value
-  }
-  selectedDuration.value = defaultDuration.value
-}
 
 // Open item selector sheet
 const openItemSelector = () => {
@@ -229,11 +233,6 @@ const startPomodoro = async () => {
     emit('started')
     close()
   }
-}
-
-// Close drawer
-const close = () => {
-  emit('close')
 }
 </script>
 
