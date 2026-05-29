@@ -7,7 +7,7 @@ export function ensureHeadingNewlines(text: string): string {
   if (text == null || typeof text !== 'string') return ''
   return text.split('```').map((part, i) => {
     if (i % 2 === 1) return part // 代码块，不修改
-    return part.replace(/([^\n#])(#{1,6}\s)/g, '$1\n$2')
+    return part.replace(HEADING_NEWLINE_RE, '$1\n$2')
   }).join('```')
 }
 
@@ -16,5 +16,5 @@ export function ensureHeadingNewlines(text: string): string {
  */
 export function normalizeExcessiveNewlines(text: string): string {
   if (text == null || typeof text !== 'string') return ''
-  return text.replace(/\n{3,}/g, '\n\n')
+  return text.replace(EXCESSIVE_NEWLINES_RE, '\n\n')
 }

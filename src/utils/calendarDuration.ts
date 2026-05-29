@@ -1,6 +1,8 @@
 import type { CalendarEvent } from '@/types/models'
 import { calculateDuration } from '@/utils/dateUtils'
 
+const DURATION_FORMAT_RE = /^(\d+):(\d{2})$/
+
 function extractEventDate(event: CalendarEvent): string {
   if (event.extendedProps?.date) return event.extendedProps.date
   if (typeof event.start === 'string') {
@@ -12,7 +14,7 @@ function extractEventDate(event: CalendarEvent): string {
 }
 
 function parseDurationToMinutes(duration: string): number {
-  const match = duration.match(/^(\d+):(\d{2})$/)
+  const match = duration.match(DURATION_FORMAT_RE)
   if (!match) return 0
   return Number(match[1]) * 60 + Number(match[2])
 }

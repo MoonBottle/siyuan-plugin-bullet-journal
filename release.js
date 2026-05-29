@@ -132,7 +132,7 @@ const main = async () => {
 
     console.log(`🚀  Ready to release => v${newVersion}`)
 
-    const isValid = /^\d+\.\d+\.\d+$/.test(newVersion)
+    const isValid = SEMVER_RE.test(newVersion)
     if (!isValid) {
       console.log('\n\x1B[31m❌  Invalid version format.\x1B[0m')
       return
@@ -142,7 +142,7 @@ const main = async () => {
     console.log('🔄  \x1B[90mUpdating plugin.json...\x1B[0m')
     const content = readFileSync('./plugin.json', 'utf8')
     const updated = content.replace(
-      /"version"\s*:\s*"[^"]+"/,
+      VERSION_JSON_RE,
       `"version": "${newVersion}"`,
     )
     writeFileSync('./plugin.json', updated, 'utf8')
@@ -151,7 +151,7 @@ const main = async () => {
     console.log('🔄  \x1B[90mUpdating package.json...\x1B[0m')
     const packageContent = readFileSync('./package.json', 'utf8')
     const packageUpdated = packageContent.replace(
-      /"version"\s*:\s*"[^"]+"/,
+      VERSION_JSON_RE,
       `"version": "${newVersion}"`,
     )
     writeFileSync('./package.json', packageUpdated, 'utf8')

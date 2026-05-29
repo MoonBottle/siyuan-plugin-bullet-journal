@@ -12,7 +12,7 @@ function acceptProtyleVisibleTextNode(node: Node): number {
     return NodeFilter.FILTER_REJECT
   }
   // 忽略仅空白 / ZWSP（模板缩进、思源占位等），与「一个可见文本节点」语义一致
-  const text = (node.textContent ?? '').replace(/\u200B/g, '').trim()
+  const text = (node.textContent ?? '').replace(ZWSP_RE, '').trim()
   return text.length > 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
 }
 
@@ -53,7 +53,7 @@ function findEditableElement(element: HTMLElement): HTMLElement | null {
 
 function normalizeBlockMarkdown(markdown: string): string {
   return markdown
-    .replace(/\u200B/g, '')
+    .replace(ZWSP_RE, '')
     .trimEnd()
 }
 

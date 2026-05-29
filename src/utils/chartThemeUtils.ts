@@ -3,6 +3,9 @@
  * 从正确的 DOM 元素读取思源主题变量，确保在 Tab/iframe 等不同上下文中都能正确获取主题色
  */
 
+const RGBA_SUFFIX_RE = /[\d.]+\)\s*$/
+const DIGIT_DOT_RE = /[\d.]+/g
+
 /** 获取用于读取主题的 DOM 元素（优先使用图表容器，确保在正确的主题上下文中） */
 export function getThemeSourceElement(containerEl: HTMLElement | null): Element {
   if (containerEl) {
@@ -70,7 +73,7 @@ export function toRgba(color: string, alpha: number): string {
     return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
   }
   if (color.startsWith('rgba(')) {
-    return color.replace(/[\d.]+\)\s*$/, `${alpha})`)
+    return color.replace(RGBA_SUFFIX_RE, `${alpha})`)
   }
   if (color.startsWith('#') && color.length >= 7) {
     const r = Number.parseInt(color.slice(1, 3), 16)
@@ -92,7 +95,7 @@ export function darkenColor(color: string, percent: number): string {
     g = Number.parseInt(color.slice(3, 5), 16)
     b = Number.parseInt(color.slice(5, 7), 16)
   } else if (color.startsWith('rgb')) {
-    const match = color.match(/[\d.]+/g)
+    const match = color.match(DIGIT_DOT_RE)
     if (match && match.length >= 3) {
       r = Number.parseInt(match[0], 10)
       g = Number.parseInt(match[1], 10)

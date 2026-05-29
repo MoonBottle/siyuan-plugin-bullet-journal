@@ -68,7 +68,7 @@ export function smartFormatMarkdown(content: string): string {
  */
 function normalizeExcessiveNewlines(text: string): string {
   if (text == null || typeof text !== 'string') return ''
-  return text.replace(/\n{3,}/g, '\n\n')
+  return text.replace(EXCESSIVE_NEWLINES_RE, '\n\n')
 }
 
 /**

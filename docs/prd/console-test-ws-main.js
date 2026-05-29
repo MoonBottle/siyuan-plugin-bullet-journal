@@ -91,7 +91,7 @@
         return
       if (obj.on && typeof obj.on === 'function')
         candidates.push(path)
-      const depth = (path.match(/\./g) || []).length
+      const depth = (path.match(DOT_RE) || []).length
       if (depth < 4) {
         Object.keys(obj).slice(0, 15).forEach((k) => {
           try {

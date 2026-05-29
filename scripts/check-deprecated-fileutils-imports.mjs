@@ -5,6 +5,10 @@ import process from 'node:process'
 import fg from 'fast-glob'
 import ts from 'typescript'
 
+const SCRIPT_BLOCK_RE = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+const EXTENSION_RE = /\.[^.\\/]+$/u
+const PATH_SEP_RE = /[\\/]+/gu
+
 const restrictedExports = new Set([
   'updateBlockContent',
   'updateBlockDateTime',
@@ -126,7 +130,7 @@ function visitNode(node, callback) {
 
 function extractVueScriptBlocks(sourceText) {
   const blocks = []
-  const scriptBlockRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+  const scriptBlockRe = SCRIPT_BLOCK_RE
 
   for (const match of sourceText.matchAll(scriptBlockRe)) {
     const fullMatch = match[0]
@@ -162,8 +166,8 @@ function resolveImportPath(moduleSpecifier, importerFilePath) {
 
 function normalizeModulePath(modulePath) {
   return modulePath
-    .replace(/\.[^.\\/]+$/u, '')
-    .replace(/[\\/]+/gu, '/')
+    .replace(EXTENSION_RE, '')
+    .replace(PATH_SEP_RE, '/')
 }
 
 function getAbsoluteLineAndColumn(sourceText, offset) {

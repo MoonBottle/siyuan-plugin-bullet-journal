@@ -11,7 +11,7 @@ import { sql } from '@/api'
 import { usePlugin } from '@/main'
 
 function formatTimeToSeconds(timeStr: string): string {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  const match = timeStr.match(TIME_FORMAT_RE)
   if (!match) return timeStr
 
   const hours = match[1].padStart(2, '0')
@@ -143,7 +143,7 @@ export function optimizeDateTimeExpressions(
   if (expressions.length === 0) return ''
 
   const firstExpr = expressions[0]
-  const restExprs = expressions.slice(1).map((expr) => expr.replace(/^(?:@|📅)/, ''))
+  const restExprs = expressions.slice(1).map((expr) => expr.replace(DATE_PREFIX_RE, ''))
   return [firstExpr, ...restExprs].join(', ')
 }
 

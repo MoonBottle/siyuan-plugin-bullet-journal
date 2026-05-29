@@ -14,7 +14,7 @@ function findSlashTokenEnd(text: string, startOffset: number): number {
   let endOffset = startOffset + 1
   while (endOffset < text.length) {
     const char = text[endOffset]
-    if (!char || /\s/u.test(char) || ZERO_WIDTH_CHARS.test(char)) {
+    if (!char || WHITESPACE_RE.test(char) || ZERO_WIDTH_CHARS.test(char)) {
       break
     }
     endOffset += 1

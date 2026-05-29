@@ -3,6 +3,7 @@ import type { FocusPlan } from '@/types/models'
 const FOCUS_PLAN_REGEX = /⏳(?:(\d+)h)?(?:(\d+)m)?|🍅x?(\d+)/g
 const DURATION_MARKER_REGEX = /⏳(?:(\d+)h)?(?:(\d+)m)?/g
 const POMODORO_MARKER_REGEX = /🍅x?(\d+)/g
+const SPACES_TABS_RE = /[ \t]+/g
 
 export interface ExtractFocusPlanResult {
   active?: FocusPlan
@@ -83,7 +84,7 @@ export function stripFocusPlanMarkers(line: string): string {
   return line
     .replace(DURATION_MARKER_REGEX, '')
     .replace(POMODORO_MARKER_REGEX, '')
-    .replace(/[ \t]+/g, ' ')
+    .replace(SPACES_TABS_RE, ' ')
     .trim()
 }
 

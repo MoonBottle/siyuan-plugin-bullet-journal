@@ -26,7 +26,7 @@ export function buildCompletedAtMarkdown(
   }
 
   const currentTimestamp = formatHabitCompletedAtForMarkdown(precision)
-  return currentTimestamp.replace(/^\d{4}-\d{2}-\d{2}/, date)
+  return currentTimestamp.replace(DATE_PREFIX_RE, date)
 }
 
 export function buildHabitRecordMarkdown(input: HabitRecordMarkdownInput): string {

@@ -13,6 +13,8 @@ export const SINGLE_DATE_TIME_PATTERN = /@\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/
 // 仅日期模式: @2026-02-04
 export const DATE_ONLY_PATTERN = /@\d{4}-\d{2}-\d{2}/
 
+const DATE_ONLY_STR_RE = /^\d{4}-\d{2}-\d{2}$/
+
 /**
  * 获取今天的日期字符串 (YYYY-MM-DD)，使用本地时间
  */
@@ -47,7 +49,7 @@ export const formatDateTimeForMarkdown = (date: Date): string => {
 export const formatDateTime = (dateStr: string, isAllDay?: boolean): string => {
   if (!dateStr) return ''
 
-  if (isAllDay || /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+  if (isAllDay || DATE_ONLY_STR_RE.test(dateStr)) {
     return dateStr
   }
 

@@ -46,7 +46,7 @@ export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌱🍃]/gu, '').trim()
+  return content.replace(PRIORITY_EMOJI_RE, '').trim()
 }
 
 /**

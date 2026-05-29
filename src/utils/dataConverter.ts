@@ -13,6 +13,8 @@ import type {
 import { t } from '@/i18n'
 import dayjs from '@/utils/dayjs'
 
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
+
 export interface GanttSegment {
   startTs: number
   endTs: number
@@ -24,7 +26,7 @@ interface ItemSegment {
 
 export class DataConverter {
   private static isDateOnly(value: string): boolean {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    return DATE_ONLY_RE.test(value)
   }
 
   private static parseGanttDate(
