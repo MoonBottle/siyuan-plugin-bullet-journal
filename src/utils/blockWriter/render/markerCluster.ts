@@ -102,7 +102,7 @@ function buildParsedLine(segments: MarkerSegment[]): ParsedMarkerLine {
 }
 
 export function parseMarkerLine(line: string): ParsedMarkerLine {
-  const tokens = line.trim().length > 0 ? line.trim().split(/\s+/) : []
+  const tokens = line.trim().length > 0 ? line.trim().split(WHITESPACE_RE) : []
   const segments: MarkerSegment[] = []
 
   for (const token of tokens) {
@@ -183,6 +183,6 @@ export function normalizeMarkerLine(parsed: ParsedMarkerLine): string {
     .map((segment) => segment.raw)
     .filter(Boolean)
     .join(' ')
-    .replace(/\s{2,}/g, ' ')
+    .replace(MULTI_WHITESPACE_RE, ' ')
     .trim()
 }

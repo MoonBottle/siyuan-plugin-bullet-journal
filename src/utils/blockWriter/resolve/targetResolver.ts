@@ -20,6 +20,9 @@ import {
 import { parseKramdownBlocks } from '@/parser/core'
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'
 
+const LIST_ITEM_PREFIX_RE = /^\s*(-|\d+\.)\s+/
+const DATE_VALUE_RE = /\d{4}-\d{2}-\d{2}/
+
 /** 日期 patch 源解析结果 */
 export interface DatePatchSource {
   originalBlockId: string
@@ -31,7 +34,7 @@ export interface DatePatchSource {
 }
 
 function isListItemLine(line: string): boolean {
-  return /^\s*(-|\d+\.)\s+/.test(line)
+  return LIST_ITEM_PREFIX_RE.test(line)
 }
 
 /**
@@ -69,7 +72,7 @@ export async function resolveDatePatchSource(blockId: string): Promise<DatePatch
             continue
           }
           const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅')
-          const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed)
+          const hasDateValue = DATE_VALUE_RE.test(trimmed)
           if (hasDateMarker && hasDateValue && (isTaskListFormat(trimmed) || isListItemLine(line))) {
             kramdown = parentResult.kramdown
             targetBlockId = block.parent_id

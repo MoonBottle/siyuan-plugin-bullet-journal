@@ -147,7 +147,7 @@ function syncTaskListStatusFromMarkdown(targetElement: HTMLElement, markdown: st
     return
   }
 
-  const isDone = /\[\s*x\s*\]/i.test(primaryLine)
+  const isDone = TASK_DONE_CHECK_RE.test(primaryLine)
   listItemElement.classList.toggle('protyle-task--done', isDone)
   listItemElement.setAttribute('data-task', isDone ? 'X' : ' ')
 

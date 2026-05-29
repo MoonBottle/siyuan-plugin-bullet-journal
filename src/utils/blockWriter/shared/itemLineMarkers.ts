@@ -12,9 +12,11 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const PRIORITY_REGEX = /[🔥🌱🍃]/gu
+const TASK_LIST_FORMAT_RE = /\[\s*(?:x\s*)?\]/i
+const MULTI_WHITESPACE_RE = /\s{2,}/g
 
 export function isTaskListFormat(line: string): boolean {
-  return /\[\s*(?:x\s*)?\]/i.test(line)
+  return TASK_LIST_FORMAT_RE.test(line)
 }
 
 export function generatePriorityMarker(priority: PriorityLevel): string {
@@ -22,7 +24,7 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
 }
 
 export function stripPriorityMarker(line: string): string {
-  return line.replace(PRIORITY_REGEX, '').replace(/\s{2,}/g, ' ').trim()
+  return line.replace(PRIORITY_REGEX, '').replace(MULTI_WHITESPACE_RE, ' ').trim()
 }
 
 export function statusToLabel(status: string): string {

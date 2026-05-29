@@ -23,6 +23,12 @@ const DATE_MARKER_REGEX = new RegExp(DATE_MARKER_PATTERN, 'g')
 const RESIDUAL_DATE_MARKER_REGEX = new RegExp(`[，,]\\s*\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`, 'g')
 const COMPLETED_MARKERS_RE = /#done|#已完成|✅/u
 const ABANDONED_MARKERS_RE = /#abandoned|#已放弃|❌/u
+const TIME_FORMAT_RE = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+const DATE_PREFIX_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}/
+const DATE_MARKER_PREFIX_RE = /^(?:@|📅)/
+const TASK_DONE_CHECK_RE = /\[\s*x\s*\]/i
+const STATUS_MARKERS_RE = /#done|#abandoned|#已完成|#已放弃|[✅❌]/g
+const BLOCK_ATTR_SUFFIX_RE = /\n\{:[^}]*\}/g
 
 export interface DatePatchRenderContext {
   originalBlockId: string
@@ -33,7 +39,7 @@ export interface DatePatchRenderContext {
 }
 
 function addOneHour(timeStr: string): string {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  const match = timeStr.match(TIME_FORMAT_RE)
   if (!match) return timeStr
 
   let hours = Number.parseInt(match[1], 10)
@@ -47,7 +53,7 @@ function addOneHour(timeStr: string): string {
 }
 
 function formatTimeToSeconds(timeStr: string): string {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  const match = timeStr.match(TIME_FORMAT_RE)
   if (!match) return timeStr
 
   const hours = match[1].padStart(2, '0')
@@ -85,7 +91,7 @@ function findPrimaryItemLineIndex(lines: string[]): number {
       fallbackIndex = i
     }
 
-    if (/(?:@|📅)\d{4}-\d{2}-\d{2}/.test(strippedLine)) {
+    if (DATE_PREFIX_RE.test(strippedLine)) {
       return i
     }
   }
@@ -216,7 +222,7 @@ function optimizeDateTimeExpressions(items: ItemDateTimeInfo[]): string {
   if (expressions.length === 0) return ''
 
   const firstExpr = expressions[0]
-  const restExprs = expressions.slice(1).map((expr) => expr.replace(/^(?:@|📅)/, ''))
+  const restExprs = expressions.slice(1).map((expr) => expr.replace(DATE_MARKER_PREFIX_RE, ''))
   return [firstExpr, ...restExprs].join(', ')
 }
 
@@ -227,7 +233,7 @@ function inferStatus(line: string, fallback?: ItemStatus): ItemStatus {
   if (ABANDONED_MARKERS_RE.test(line)) {
     return 'abandoned'
   }
-  if (/\[\s*x\s*\]/i.test(line) || COMPLETED_MARKERS_RE.test(line)) {
+  if (TASK_DONE_CHECK_RE.test(line) || COMPLETED_MARKERS_RE.test(line)) {
     return 'completed'
   }
   return 'pending'
@@ -288,7 +294,7 @@ function rebuildSingleLineContent(
   let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS)
   itemContent = stripListAndBlockAttr(itemContent)
     .replace(DATE_MARKER_REGEX, '')
-    .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
+    .replace(STATUS_MARKERS_RE, '')
     .replace(RESIDUAL_DATE_MARKER_REGEX, '')
     .trim()
 
@@ -327,8 +333,8 @@ export function renderDatePatch(
     : (formattedStartTime ? addOneHour(formattedStartTime) : undefined)
 
   if (!hasTomatoClock && !useMultiLineForStructure) {
-    const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('')
-    const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim()
+    const attrSuffix = (kramdown.match(BLOCK_ATTR_SUFFIX_RE) || []).join('')
+    const content = kramdown.replace(BLOCK_ATTR_SUFFIX_RE, '').trim()
     return rebuildSingleLineContent(
       content,
       patch,
@@ -349,8 +355,8 @@ export function renderDatePatch(
   }
 
   if (itemLineIndex === -1) {
-    const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('')
-    const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim()
+    const attrSuffix = (kramdown.match(BLOCK_ATTR_SUFFIX_RE) || []).join('')
+    const content = kramdown.replace(BLOCK_ATTR_SUFFIX_RE, '').trim()
     return rebuildSingleLineContent(
       content,
       patch,
@@ -363,7 +369,7 @@ export function renderDatePatch(
   const cleanedItemLine = stripListAndBlockAttr(itemLine)
   let itemContent = cleanedItemLine
     .replace(DATE_MARKER_REGEX, '')
-    .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
+    .replace(STATUS_MARKERS_RE, '')
     .replace(RESIDUAL_DATE_MARKER_REGEX, '')
     .trim()
   itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS)

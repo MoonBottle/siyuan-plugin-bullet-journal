@@ -3,6 +3,8 @@ import { updateBlock } from '@/api'
 import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom'
 
+const BLOCK_ATTR_SUFFIX_RE = /\n\{:[^}]*\}/g
+
 /**
  * @deprecated Compat helpers only.
  * New write paths must go through sourceLoader/updateRenderer/committers.
@@ -43,7 +45,7 @@ export async function writeMarkdownToCurrentBlock(
   }
 
   const oldHTML = options?.oldHTML ?? nodeElement.outerHTML
-  const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim()
+  const textContent = content.replace(BLOCK_ATTR_SUFFIX_RE, '').trim()
   if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
     return false
   }

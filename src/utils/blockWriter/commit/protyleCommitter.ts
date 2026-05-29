@@ -19,6 +19,10 @@ import {
   focusByWbr,
 } from '@/utils/blockWriter/shared/caretController'
 
+const MULTI_WHITESPACE_GU_RE = /\s+/gu
+const BACKSLASH_RE = /\\/g
+const DOUBLE_QUOTE_RE = /"/g
+
 function formatUpdatedAttr(date = new Date()): string {
   const y = date.getFullYear()
   const mo = String(date.getMonth() + 1).padStart(2, '0')
@@ -30,11 +34,11 @@ function formatUpdatedAttr(date = new Date()): string {
 }
 
 function previewText(value: string | null | undefined): string {
-  return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160)
+  return (value ?? '').replace(MULTI_WHITESPACE_GU_RE, ' ').slice(0, 160)
 }
 
 function escapeAttributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return value.replace(BACKSLASH_RE, '\\\\').replace(DOUBLE_QUOTE_RE, '\\"')
 }
 
 function resolveSearchRoot(protyle: any, fallback: HTMLElement): ParentNode {

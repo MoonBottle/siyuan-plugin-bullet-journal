@@ -22,10 +22,13 @@ import {
 } from '@/utils/blockWriter/shared/slashRange'
 import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom'
 
+const TRAILING_SPACES_RE = /\s+$/u
+const MULTI_WHITESPACE_GU_RE = /\s+/gu
+
 function trimTrailingSpacesPerLine(markdown: string): string {
   return markdown
     .split('\n')
-    .map((line) => line.replace(/\s+$/u, ''))
+    .map((line) => line.replace(TRAILING_SPACES_RE, ''))
     .join('\n')
 }
 
@@ -70,7 +73,7 @@ function getNodeByPath(root: Node, path: number[]): Node | null {
 }
 
 function previewText(value: string | null | undefined): string {
-  return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160)
+  return (value ?? '').replace(MULTI_WHITESPACE_GU_RE, ' ').slice(0, 160)
 }
 
 /**

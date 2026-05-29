@@ -33,7 +33,7 @@ export function extractTimePart(value?: string | null): string | undefined {
     return undefined
   }
 
-  const matched = normalized.match(/\b\d{2}:\d{2}(?::\d{2})?\b/)
+  const matched = normalized.match(TIME_PART_EXTRACT_RE)
   return matched?.[0] ?? normalized
 }
 

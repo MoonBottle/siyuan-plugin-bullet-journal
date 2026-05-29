@@ -8,13 +8,14 @@ export interface ActiveSlashRange {
 
 const SLASH_COMMAND_START_CHARS = ['/', '、'] as const
 const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u
+const WHITESPACE_U_RE = /\s/u
 
 function isSlashCommandStartChar(char: string | undefined): boolean {
   return SLASH_COMMAND_START_CHARS.includes(char)
 }
 
 function isSlashCommandBodyChar(char: string | undefined): boolean {
-  return Boolean(char) && !/\s/u.test(char) && !ZERO_WIDTH_CHARS.test(char)
+  return Boolean(char) && !WHITESPACE_U_RE.test(char) && !ZERO_WIDTH_CHARS.test(char)
 }
 
 function extendThroughTrailingZeroWidth(text: string, offset: number): number {
