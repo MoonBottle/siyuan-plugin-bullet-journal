@@ -7,7 +7,7 @@
       <DashboardCanvas
         v-if="activeEntry.type === 'dashboard'"
         :entry="activeEntry"
-        @request-add-widget="emit('request-add-widget')"
+        @requestAddWidget="emit('requestAddWidget')"
       />
       <WorkbenchViewHost
         v-else
@@ -35,7 +35,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'request-add-widget'): void
+  (event: 'requestAddWidget'): void
 }>()
 </script>
 

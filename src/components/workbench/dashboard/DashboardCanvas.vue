@@ -21,7 +21,7 @@
         class="workbench-dashboard-canvas__empty-action"
         data-testid="workbench-dashboard-add-widget-empty"
         type="button"
-        @click="emit('request-add-widget')"
+        @click="emit('requestAddWidget')"
       >
         {{ t('workbench').addWidget }}
       </button>

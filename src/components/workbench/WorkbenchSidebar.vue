@@ -86,7 +86,7 @@
         @mouseleave="handleHeaderToggleMouseLeave"
         @focus="handleHeaderToggleMouseEnter"
         @blur="handleHeaderToggleMouseLeave"
-        @click="emit('toggle-sidebar')"
+        @click="emit('toggleSidebar')"
       >
         <svg><use :xlink:href="collapsed ? '#iconRight' : '#iconLeft'"></use></svg>
       </button>
@@ -309,12 +309,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'select', id: string): void
-  (event: 'create-dashboard'): void
-  (event: 'create-view', viewType: WorkbenchViewType): void
-  (event: 'rename-entry', id: string, title: string): void
-  (event: 'delete-entry', id: string): void
-  (event: 'reorder-entries', orderedIds: string[]): void
-  (event: 'toggle-sidebar'): void
+  (event: 'createDashboard'): void
+  (event: 'createView', viewType: WorkbenchViewType): void
+  (event: 'renameEntry', id: string, title: string): void
+  (event: 'deleteEntry', id: string): void
+  (event: 'reorderEntries', orderedIds: string[]): void
+  (event: 'toggleSidebar'): void
 }>()
 
 const entriesContainerRef = ref<HTMLElement | null>(null)
@@ -378,7 +378,7 @@ function initSortable() {
       const ids = Array.from(entriesContainerRef.value.children)
         .map((el) => (el as HTMLElement).dataset.id)
         .filter((id): id is string => typeof id === 'string')
-      emit('reorder-entries', ids)
+      emit('reorderEntries', ids)
     },
   })
 }
@@ -528,12 +528,12 @@ function handleDocumentPointerDown(event: PointerEvent) {
 
 function handleCreateDashboard() {
   isCreateMenuOpen.value = false
-  emit('create-dashboard')
+  emit('createDashboard')
 }
 
 function handleCreateView(viewType: WorkbenchViewType) {
   isCreateMenuOpen.value = false
-  emit('create-view', viewType)
+  emit('createView', viewType)
 }
 
 function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
@@ -554,7 +554,7 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
             return
           }
 
-          emit('rename-entry', entry.id, nextTitle)
+          emit('renameEntry', entry.id, nextTitle)
         },
       )
     },
@@ -566,7 +566,7 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
       showConfirmDialog(
         t('workbench').delete,
         t('workbench').deleteConfirm.replace('{name}', entry.title),
-        () => emit('delete-entry', entry.id),
+        () => emit('deleteEntry', entry.id),
       )
     },
   })

@@ -12,7 +12,7 @@
         :range-start="rangeStart"
         :range-end="rangeEnd"
         :get-summary-by-date="getSummaryByDate"
-        @date-click="handleDateClick"
+        @dateClick="handleDateClick"
       />
     </div>
 
@@ -25,7 +25,7 @@
         :range-start="rangeStart"
         :range-end="rangeEnd"
         :get-summary-by-date="getSummaryByDate"
-        @date-click="handleDateClick"
+        @dateClick="handleDateClick"
       />
     </div>
   </div>

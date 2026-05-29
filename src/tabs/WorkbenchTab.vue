@@ -87,7 +87,7 @@
       </div>
       <WorkbenchContentHost
         :active-entry="currentActiveEntry"
-        @request-add-widget="openWidgetMenu"
+        @requestAddWidget="openWidgetMenu"
       />
     </section>
   </div>
