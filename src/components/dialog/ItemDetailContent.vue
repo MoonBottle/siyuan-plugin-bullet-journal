@@ -230,15 +230,15 @@
             :recurring-text="recurringText"
             :reminder-tooltip="reminderButtonTooltip"
             :recurring-tooltip="recurringButtonTooltip"
-            @set-reminder="emit('set-reminder')"
-            @set-recurring="emit('set-recurring')"
+            @setReminder="emit('setReminder')"
+            @setRecurring="emit('setRecurring')"
           />
 
           <button
             v-if="showSkipButton"
             class="action-btn skip-btn b3-tooltips b3-tooltips__n"
             :aria-label="skipButtonTooltip"
-            @click="emit('skip-occurrence')"
+            @click="emit('skipOccurrence')"
           >
             <span class="action-text">{{ t('recurring.skipThis') }}</span>
           </button>
@@ -321,10 +321,10 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  "close": []
-  'set-reminder': []
-  'set-recurring': []
-  'skip-occurrence': []
+  close: []
+  setReminder: []
+  setRecurring: []
+  skipOccurrence: []
 }>()
 
 const DATETIME_PREFIX_RE = /^(?:@|📅)/

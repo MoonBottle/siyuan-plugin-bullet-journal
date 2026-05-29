@@ -177,8 +177,8 @@ import {
 import { useAIStore } from '@/stores'
 
 const emit = defineEmits<{
-  "close": []
-  'switch-conversation': [conversationId: string]
+  close: []
+  switchConversation: [conversationId: string]
 }>()
 
 const aiStore = useAIStore()
@@ -313,7 +313,7 @@ function handleClose() {
 // 点击用户切换到对应会话
 function handleUserClick(conversationId: string, userId: string) {
   aiStore.clearWeixinUnread(userId)
-  emit('switch-conversation', conversationId)
+  emit('switchConversation', conversationId)
   emit('close')
 }
 

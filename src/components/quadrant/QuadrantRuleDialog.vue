@@ -81,7 +81,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'save', panel: QuadrantPanelConfig): void
-  (event: 'reset-defaults'): void
+  (event: 'resetDefaults'): void
   (event: 'close'): void
 }>()
 
@@ -144,7 +144,7 @@ function handleResetDefaults() {
   showConfirmDialog(
     t('quadrant').editPanel,
     t('quadrant').resetConfirm,
-    () => emit('reset-defaults'),
+    () => emit('resetDefaults'),
   )
 }
 
