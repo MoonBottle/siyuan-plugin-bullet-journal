@@ -148,12 +148,10 @@ vi.mock('@/main', () => ({
 }))
 
 vi.mock('siyuan', () => ({
-  Menu: vi.fn().mockImplementation(function () {
-    return {
-      addItem: menuAddItem,
-      open: menuOpen,
-    }
-  }),
+  Menu: vi.fn().mockImplementation(() => ({
+    addItem: menuAddItem,
+    open: menuOpen,
+  })),
 }))
 
 vi.mock('@/utils/dialog', async (importOriginal) => {
@@ -386,12 +384,10 @@ describe('quadrantTab', () => {
         rules: { priority: ['none'] },
       },
     ];
-    (globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
-      return {
-        onmessage: null,
-        close: vi.fn(),
-      }
-    })
+    (globalThis as any).BroadcastChannel = vi.fn().mockImplementation(() => ({
+      onmessage: null,
+      close: vi.fn(),
+    }))
   })
 
   it('renders four quadrant panels with config-driven titles and enables drag for default priority config', async () => {

@@ -138,12 +138,10 @@ function mountSettingsDialog() {
 
 describe('settingsDialog habit precision persistence', () => {
   beforeEach(() => {
-    vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(function () {
-      return {
-        observe: vi.fn(),
-        disconnect: vi.fn(),
-      }
-    }))
+    vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      disconnect: vi.fn(),
+    })))
   })
 
   afterEach(() => {

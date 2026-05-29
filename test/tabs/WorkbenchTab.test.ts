@@ -296,11 +296,9 @@ describe('workbenchTab shell', () => {
       viewType: 'todo',
       config: { preset: {} },
     })
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
-      return {
-        close: vi.fn(),
-      }
-    })
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(() => ({
+      close: vi.fn(),
+    }))
   })
 
   async function mountWorkbenchTab() {
@@ -378,11 +376,9 @@ describe('workbenchTab shell', () => {
     const unsubscribeRefresh = vi.fn()
     const closeChannel = vi.fn()
     mockEventBusOn.mockReturnValueOnce(unsubscribeRefresh)
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
-      return {
-        close: closeChannel,
-      }
-    })
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(() => ({
+      close: closeChannel,
+    }))
 
     const mounted = await mountWorkbenchTab()
     await nextTick()

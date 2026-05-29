@@ -71,25 +71,23 @@ describe('createDetachedPomodoroWindowHost', () => {
     const executeJavaScript = vi.fn()
     const lingeringClose = vi.fn()
     const setPosition = vi.fn()
-    const BrowserWindow = vi.fn().mockImplementation(function () {
-      return {
-        loadURL,
-        showInactive: vi.fn(),
-        show: vi.fn(),
-        close: vi.fn(),
-        isDestroyed: vi.fn(() => false),
-        isVisible: vi.fn(() => true),
-        webContents: {
-          executeJavaScript,
-          on: vi.fn(),
-        },
+    const BrowserWindow = vi.fn().mockImplementation(() => ({
+      loadURL,
+      showInactive: vi.fn(),
+      show: vi.fn(),
+      close: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+      isVisible: vi.fn(() => true),
+      webContents: {
+        executeJavaScript,
         on: vi.fn(),
-        once: vi.fn(),
-        setAlwaysOnTop: vi.fn(),
-        setPosition,
-        setVisibleOnAllWorkspaces: vi.fn(),
-      }
-    })
+      },
+      on: vi.fn(),
+      once: vi.fn(),
+      setAlwaysOnTop: vi.fn(),
+      setPosition,
+      setVisibleOnAllWorkspaces: vi.fn(),
+    }))
     BrowserWindow.getAllWindows = vi.fn(() => [
       {
         close: lingeringClose,
@@ -143,24 +141,22 @@ describe('createDetachedPomodoroWindowHost', () => {
 
   it('closes the window on destroy', () => {
     const close = vi.fn()
-    const BrowserWindow = vi.fn().mockImplementation(function () {
-      return {
-        loadURL: vi.fn(),
-        showInactive: vi.fn(),
-        show: vi.fn(),
-        close,
-        isDestroyed: vi.fn(() => false),
-        isVisible: vi.fn(() => false),
-        webContents: {
-          executeJavaScript: vi.fn(),
-          on: vi.fn(),
-        },
+    const BrowserWindow = vi.fn().mockImplementation(() => ({
+      loadURL: vi.fn(),
+      showInactive: vi.fn(),
+      show: vi.fn(),
+      close,
+      isDestroyed: vi.fn(() => false),
+      isVisible: vi.fn(() => false),
+      webContents: {
+        executeJavaScript: vi.fn(),
         on: vi.fn(),
-        once: vi.fn(),
-        setAlwaysOnTop: vi.fn(),
-        setVisibleOnAllWorkspaces: vi.fn(),
-      }
-    })
+      },
+      on: vi.fn(),
+      once: vi.fn(),
+      setAlwaysOnTop: vi.fn(),
+      setVisibleOnAllWorkspaces: vi.fn(),
+    }))
 
     const host = createDetachedPomodoroWindowHost({
       frontEnd: 'desktop',

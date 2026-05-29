@@ -41,13 +41,11 @@ const nativePreviewContainsTarget = vi.fn(() => false)
 const mockRequestRefresh = vi.fn(() => Promise.resolve())
 
 vi.mock('siyuan', () => ({
-  Menu: vi.fn().mockImplementation(function () {
-    return {
-      addItem: menuAddItem,
-      addSeparator: menuAddSeparator,
-      open: menuOpen,
-    }
-  }),
+  Menu: vi.fn().mockImplementation(() => ({
+    addItem: menuAddItem,
+    addSeparator: menuAddSeparator,
+    open: menuOpen,
+  })),
 }))
 
 vi.mock('@/main', () => ({
@@ -302,9 +300,7 @@ describe('desktopTodoDock', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     mockRequestRefresh.mockClear()
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
-      return { close: vi.fn() }
-    })
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(() => ({ close: vi.fn() }))
   })
 
   it('renders a top-level refresh button before the more button', async () => {
