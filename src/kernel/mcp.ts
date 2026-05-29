@@ -335,19 +335,6 @@ export function initMcpServer(): void {
   }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
-    const sid = req.url.query?.sid?.[0]
-    if (!sid || sid !== sessionId) {
-      return {
-        statusCode: 403,
-        body: {
-          raw: {
-            contentType: 'application/json',
-            data: '{"error":"forbidden"}',
-          },
-        },
-      }
-    }
-
     const bodyData = req.request.body.data
     if (!bodyData) {
       return {
@@ -378,17 +365,37 @@ export function initMcpServer(): void {
 
     const response = await handleJsonRpc(message)
 
-    if (response !== undefined) {
-      if (activePort) {
-        activePort.send('message', JSON.stringify(response))
-      } else {
-        await siyuan.logger.warn('[mcp] Response dropped: SSE connection closed')
+    const sid = req.url.query?.sid?.[0]
+    if (sid && sid === sessionId) {
+      if (response !== undefined) {
+        if (activePort) {
+          activePort.send('message', JSON.stringify(response))
+        } else {
+          await siyuan.logger.warn('[mcp] Response dropped: SSE connection closed')
+        }
+      }
+      return {
+        statusCode: 202,
+        headers: {},
+      }
+    }
+
+    if (response === undefined) {
+      return {
+        statusCode: 202,
+        headers: {},
       }
     }
 
     return {
-      statusCode: 202,
-      headers: {},
+      statusCode: 200,
+      headers: { 'Content-Type': ['application/json'] },
+      body: {
+        raw: {
+          contentType: 'application/json',
+          data: JSON.stringify(response),
+        },
+      },
     }
   }
 }
