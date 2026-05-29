@@ -500,6 +500,10 @@ const emit = defineEmits<{
   'created': []
 }>()
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const projectStore = useProjectStore()
 
 // Form state
@@ -666,19 +670,11 @@ const canSubmit = computed(() => {
   return true
 })
 
-// Watch for drawer open to reset/init form
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    initForm()
-  }
-})
-
 // Initialize form with preselected values
 const initForm = () => {
   selectedProjectId.value = props.preselectedProjectId || ''
   selectedTaskId.value = props.preselectedTaskId || ''
 
-  // Set task input if task is preselected
   if (selectedTaskId.value) {
     const task = availableTasks.value.find((t) => t.id === selectedTaskId.value)
     if (task) {
@@ -691,12 +687,19 @@ const initForm = () => {
   itemForm.value = {
     content: '',
     date: dayjs().format('YYYY-MM-DD'),
-    isAllDay: true, // 重置为全天
+    isAllDay: true,
     startTime: '',
     endTime: '',
     priority: undefined,
   }
 }
+
+// Watch for drawer open to reset/init form
+watch(() => props.modelValue, (val) => {
+  if (val) {
+    initForm()
+  }
+})
 
 // Format helpers
 const formatWeekday = (dateStr: string) => {
@@ -783,14 +786,14 @@ const selectDate = (date: string) => {
   tempSelectedDate.value = date
 }
 
-const selectQuickDate = (days: number) => {
-  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD')
-  confirmDate()
-}
-
 const confirmDate = () => {
   itemForm.value.date = tempSelectedDate.value
   closeDatePicker()
+}
+
+const selectQuickDate = (days: number) => {
+  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD')
+  confirmDate()
 }
 
 // Time picker - 已迁移到 TimeRangeSelector 组件
@@ -858,10 +861,6 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Error creating:', error)
   }
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 </script>
 

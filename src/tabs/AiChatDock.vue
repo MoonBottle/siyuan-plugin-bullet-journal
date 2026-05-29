@@ -169,6 +169,8 @@ const showWeixinDialog = ref(false)
 const openSkillManager = () => {
   const container = document.createElement('div')
 
+  let app: ReturnType<typeof createApp>
+
   const dialog = createDialog({
     title: '',
     content: '',
@@ -178,7 +180,7 @@ const openSkillManager = () => {
     },
   })
 
-  const app = createApp(AiSkillConfigSection, {
+  app = createApp(AiSkillConfigSection, {
     dialog,
     onEditSkill: (docId: string) => {
       // 打开文档
@@ -366,6 +368,13 @@ const handleConversationDelete = async (conversationId: string) => {
   await refreshConversationsList()
 }
 
+// 打开设置
+const handleOpenSettings = () => {
+  if (plugin?.openSetting) {
+    plugin.openSetting()
+  }
+}
+
 // 更多按钮点击事件
 const handleMoreClick = (event: MouseEvent) => {
   event.stopPropagation()
@@ -420,13 +429,6 @@ const handleMoreClick = (event: MouseEvent) => {
     y: rect.bottom + 4,
     isLeft: true,
   })
-}
-
-// 打开设置
-const handleOpenSettings = () => {
-  if (plugin?.openSetting) {
-    plugin.openSetting()
-  }
 }
 
 // 事件取消订阅函数

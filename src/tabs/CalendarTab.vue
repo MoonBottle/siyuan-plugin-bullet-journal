@@ -221,6 +221,17 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   await nextTick()
 }
 
+// 更新标题
+const updateTitle = () => {
+  if (calendarRef.value) {
+    currentTitle.value = calendarRef.value.getTitle() || ''
+    const d = calendarRef.value.getDate?.()
+    if (d) {
+      currentDateStr.value = dayjs(d).format('YYYY-MM-DD')
+    }
+  }
+}
+
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0
@@ -365,18 +376,6 @@ const handleBack = () => {
   updateTitle()
 }
 
-// 更新标题
-const updateTitle = () => {
-  if (calendarRef.value) {
-    currentTitle.value = calendarRef.value.getTitle() || ''
-    // 同步更新当前日期
-    const d = calendarRef.value.getDate?.()
-    if (d) {
-      currentDateStr.value = dayjs(d).format('YYYY-MM-DD')
-    }
-  }
-}
-
 const handleEventClick = async (eventInfo: any) => {
   const event = eventInfo.event
   if (!event) return
@@ -389,6 +388,11 @@ const handleEventClick = async (eventInfo: any) => {
   }
 }
 
+// 统一处理事件变化
+const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
+  await persistCalendarEventChange(eventInfo, action)
+}
+
 // 处理事件拖拽
 const handleEventDrop = async (eventInfo: any) => {
   await handleEventChange(eventInfo, 'move')
@@ -397,11 +401,6 @@ const handleEventDrop = async (eventInfo: any) => {
 // 处理事件调整大小
 const handleEventResize = async (eventInfo: any) => {
   await handleEventChange(eventInfo, 'resize')
-}
-
-// 统一处理事件变化
-const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
-  await persistCalendarEventChange(eventInfo, action)
 }
 
 // 监听视图切换（用户手动切换下拉框时清空 drill-down 栈）
