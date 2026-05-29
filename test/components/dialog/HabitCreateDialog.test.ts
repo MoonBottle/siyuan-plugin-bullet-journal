@@ -55,13 +55,13 @@ function getByTestId(container: Element, testId: string): HTMLInputElement {
   return element as HTMLInputElement
 }
 
+beforeEach(() => {
+  setSharedPinia(createPinia())
+})
+
 afterEach(() => {
   document.body.innerHTML = ''
   setSharedPinia(null)
-})
-
-beforeEach(() => {
-  setSharedPinia(createPinia())
 })
 
 describe('habitCreateDialog', () => {

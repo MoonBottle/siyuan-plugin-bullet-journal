@@ -55,13 +55,13 @@ async function setTextareaValue(element: Element | null, value: string) {
   await nextTick()
 }
 
+beforeEach(() => {
+  setSharedPinia(createPinia())
+})
+
 afterEach(() => {
   document.body.innerHTML = ''
   setSharedPinia(null)
-})
-
-beforeEach(() => {
-  setSharedPinia(createPinia())
 })
 
 describe('habitRecordEditDialog', () => {

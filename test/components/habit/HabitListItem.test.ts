@@ -58,14 +58,14 @@ function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
   }
 }
 
-afterEach(() => {
-  document.body.innerHTML = ''
-  vi.useRealTimers()
-})
-
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-04-12T10:00:00+08:00'))
+})
+
+afterEach(() => {
+  document.body.innerHTML = ''
+  vi.useRealTimers()
 })
 
 describe('habitListItem', () => {
