@@ -8,6 +8,10 @@ import type { BuiltinSkill } from '@/types/skill'
 // 导入内置技能文件内容（Vite 会处理 .md 导入）
 import dailyReportContent from '@/builtin-skills/daily-report.md?raw'
 
+const FRONTMATTER_RE = /^---\s*\n[\s\S]*?\n---\s*/
+const PLACEHOLDER_DESCRIPTION_RE = /\{\{description\}\}/g
+const PLACEHOLDER_SKILL_NAME_RE = /\{\{skillName\}\}/g
+
 /**
  * 内置日报技能
  */
@@ -82,8 +86,8 @@ export function generateSkillDocument(
   _author: string,
 ): string {
   return DEFAULT_SKILL_TEMPLATE
-    .replace(/\{\{skillName\}\}/g, skillName)
-    .replace(/\{\{description\}\}/g, description)
+    .replace(PLACEHOLDER_SKILL_NAME_RE, skillName)
+    .replace(PLACEHOLDER_DESCRIPTION_RE, description)
 }
 
 /**
@@ -97,8 +101,8 @@ export function generateSkillDocumentFromTemplate(
   templateContent: string,
 ): string {
   // 移除 frontmatter (---...---)
-  const contentWithoutFrontmatter = templateContent.replace(/^---\s*\n[\s\S]*?\n---\s*/, '')
+  const contentWithoutFrontmatter = templateContent.replace(FRONTMATTER_RE, '')
 
   // 替换描述占位符
-  return contentWithoutFrontmatter.replace(/\{\{description\}\}/g, description)
+  return contentWithoutFrontmatter.replace(PLACEHOLDER_DESCRIPTION_RE, description)
 }

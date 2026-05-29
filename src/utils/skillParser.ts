@@ -10,6 +10,10 @@ import type {
   SkillScript,
 } from '@/types/skill'
 
+const CODE_BLOCK_START_RE = /^```(\w+)?/
+const REFERENCE_TAG_RE = /\[reference:\s*(.+?)\]/i
+const SINGLE_QUOTE_RE = /'/g
+
 /**
  * 解析技能文档内容
  * @param content 文档完整内容
@@ -73,7 +77,7 @@ function parseFrontmatter(lines: string[]): SkillMetadata {
     // 处理数组
     if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
       try {
-        value = JSON.parse(value.replace(/'/g, '"')) as string[]
+        value = JSON.parse(value.replace(SINGLE_QUOTE_RE, '"')) as string[]
       } catch {
         // 解析失败，保持原样
       }
@@ -115,7 +119,7 @@ function parseBody(lines: string[]): {
   const contentLines: string[] = []
 
   for (const line of lines) {
-    const codeBlockMatch = line.match(/^```(\w+)?/)
+    const codeBlockMatch = line.match(CODE_BLOCK_START_RE)
 
     if (codeBlockMatch) {
       if (!inCodeBlock) {
@@ -148,7 +152,7 @@ function parseBody(lines: string[]): {
       contentLines.push(line)
 
       // 查找参考文件引用 [reference: filename]
-      const refMatch = line.match(/\[reference:\s*(.+?)\]/i)
+      const refMatch = line.match(REFERENCE_TAG_RE)
       if (refMatch) {
         references.push({
           name: refMatch[1].trim(),

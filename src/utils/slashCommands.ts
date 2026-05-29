@@ -88,6 +88,9 @@ import {
   processLineText,
 } from '@/utils/slashCommandUtils'
 
+const MULTI_WHITESPACE_RE = /\s+/gu
+const TASK_LIST_DONE_RE = /\[\s*x\s*\]/i
+
 function removeSlashCommandViaWriter(
   protyle: any,
   nodeElement: HTMLElement | null | undefined,
@@ -691,7 +694,7 @@ export function getActionHandler(
           const completedTag = getStatusTag('completed')
           const blockContent = nodeElement.textContent || ''
           // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
-          const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent)
+          const isTaskListDone = TASK_LIST_DONE_RE.test(blockContent)
           const blockId = item.blockId || nodeElement.getAttribute('data-node-id')
           if (!blockId) {
             return
@@ -711,7 +714,7 @@ export function getActionHandler(
             listItemBlockId: item.listItemBlockId,
             hasSlashRange: Boolean(writeContext.slashRange),
             slashStartOffset: writeContext.slashStartOffset,
-            blockPreview: (blockContent || '').replace(/\s+/gu, ' ').slice(0, 160),
+            blockPreview: (blockContent || '').replace(MULTI_WHITESPACE_RE, ' ').slice(0, 160),
           })
           if (item.status === 'completed' || (completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
             void writeBlock(writeContext, { type: 'removeSlashCommand' })
@@ -768,7 +771,7 @@ export function getActionHandler(
             listItemBlockId: item.listItemBlockId,
             hasSlashRange: Boolean(writeContext.slashRange),
             slashStartOffset: writeContext.slashStartOffset,
-            blockPreview: blockContent.replace(/\s+/gu, ' ').slice(0, 160),
+            blockPreview: blockContent.replace(MULTI_WHITESPACE_RE, ' ').slice(0, 160),
           })
           if (item.status === 'abandoned' || (abandonedTag && blockContent.includes(abandonedTag))) {
             void writeBlock(writeContext, { type: 'removeSlashCommand' })
