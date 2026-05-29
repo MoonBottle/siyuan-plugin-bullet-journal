@@ -71,7 +71,7 @@ interface SseRequest {
   port: {
     onopen: ((e: { type: string }) => void) | null
     onclose: ((e: { type: string }) => void) | null
-    send: (name: string, message: any) => void
+    send: (event: { event: string, data: any }) => void
     close: () => void
   }
 }

@@ -11,6 +11,9 @@ const KERNEL_DATA_PATH = 'kernel-data.json'
 const SERVER_NAME = 'sy-task-assistant'
 const SERVER_VERSION = '1.0.0'
 
+let activePort: SseRequest['port'] | null = null
+let sessionId = ''
+
 async function loadCache(): Promise<KernelData> {
   try {
     const file = await siyuan.storage.get(KERNEL_DATA_PATH)
@@ -307,6 +310,29 @@ async function handleJsonRpc(message: any): Promise<any> {
 }
 
 export function initMcpServer(): void {
+  siyuan.server.private.es.handler = async function (req: SseRequest) {
+    req.port.onopen = async function (_event) {
+      if (activePort && activePort !== req.port) {
+        try {
+          activePort.close()
+        } catch {}
+      }
+      activePort = req.port
+      sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+      req.port.send({
+        event: 'endpoint',
+        data: `/api/plugin/private/${siyuan.plugin.name}/mcp?sid=${sessionId}`,
+      })
+    }
+
+    req.port.onclose = async function (_event) {
+      if (activePort === req.port) {
+        activePort = null
+        sessionId = ''
+      }
+    }
+  }
+
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
     const bodyData = req.request.body.data
     if (!bodyData) {
@@ -338,6 +364,17 @@ export function initMcpServer(): void {
 
     const response = await handleJsonRpc(message)
 
+    const sid = req.url.query?.sid?.[0]
+    if (sid && sid === sessionId && activePort) {
+      if (response !== undefined) {
+        activePort.send({ event: 'message', data: JSON.stringify(response) })
+      }
+      return {
+        statusCode: 202,
+        headers: {},
+      }
+    }
+
     if (response === undefined) {
       return {
         statusCode: 202,
@@ -354,5 +391,15 @@ export function initMcpServer(): void {
         },
       },
     }
+  }
+}
+
+export function closeMcpServer(): void {
+  if (activePort) {
+    try {
+      activePort.close()
+    } catch {}
+    activePort = null
+    sessionId = ''
   }
 }
