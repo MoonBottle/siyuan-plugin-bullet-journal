@@ -390,7 +390,7 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
   // 创建容器元素
   const container = document.createElement('div')
 
-  // 创建 Vue 应用
+  let dialog: Dialog
   const app = createApp(ItemDetailDialog, {
     item,
     showAllDates,
@@ -423,11 +423,10 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     },
   })
 
-  // 挂载应用
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = createDialog({
+  dialog = createDialog({
     title: t('todo').itemDetail,
     content: '',
     width: '520px',
@@ -595,9 +594,9 @@ export function showEventDetailModal(
     endCondition: props.endCondition,
   }
 
-  // 创建 Vue 应用
   const hasSiblingItems = !!(props.siblingItems?.length)
 
+  let dialog: Dialog
   const app = createApp(ItemDetailDialog, {
     item,
     showAllDates: hasSiblingItems,
@@ -629,11 +628,10 @@ export function showEventDetailModal(
     },
   })
 
-  // 挂载应用
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = createDialog({
+  dialog = createDialog({
     title: t('todo').itemDetail,
     content: '',
     width: '520px',
@@ -801,6 +799,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGrou
   }
 
   // 桌面端使用传统对话框
+  let timerDialogApp: any = null
   const dialog = new Dialog({
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
@@ -813,7 +812,6 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGrou
     },
   })
 
-  let timerDialogApp: any = null
   const closeDialog = () => {
     dialog.destroy()
   }
@@ -1100,6 +1098,8 @@ export function showDatePickerDialog(
     width: '360px',
   })
 
+  let bindEvents: () => void
+
   const updateContent = () => {
     const contentEl = dialog.element.querySelector('.sy-dialog-content')
     if (contentEl) {
@@ -1108,7 +1108,7 @@ export function showDatePickerDialog(
     }
   }
 
-  const bindEvents = () => {
+  bindEvents = () => {
     const element = dialog.element
 
     // 导航按钮
@@ -1186,6 +1186,7 @@ export function showDatePickerDialog(
 export function showReminderSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(ReminderSettingDialog, {
     blockId: item.blockId!,
     initialConfig: item.reminder,
@@ -1201,7 +1202,7 @@ export function showReminderSettingDialog(item: Item, options?: ItemSettingWrite
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('reminder').settingTitle,
     content: '',
     width: '380px',
@@ -1232,6 +1233,7 @@ export function showReminderSettingDialog(item: Item, options?: ItemSettingWrite
 export function showRecurringSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(RecurringSettingDialog, {
     blockId: item.blockId!,
     initialRepeatRule: item.repeatRule,
@@ -1248,7 +1250,7 @@ export function showRecurringSettingDialog(item: Item, options?: ItemSettingWrit
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('recurring').settingTitle,
     content: '',
     width: '380px',
@@ -1284,6 +1286,7 @@ export function showPrioritySettingDialog(
 ): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(PrioritySettingDialog, {
     initialPriority,
     onConfirm: (priority: PriorityLevel | undefined) => {
@@ -1298,7 +1301,7 @@ export function showPrioritySettingDialog(
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('todo').priority.setPriority,
     content: '',
     width: '280px',
@@ -1326,6 +1329,7 @@ export function showPrioritySettingDialog(
 export function showFocusPlanDialog(item: Item, options?: ({ ensureDate?: string } & ItemSettingWriteOptions)): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(FocusPlanDialog, {
     initialPlan: item.focusPlan,
     onSave: async (plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined) => {
@@ -1341,7 +1345,7 @@ export function showFocusPlanDialog(item: Item, options?: ({ ensureDate?: string
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('focusPlan').settingTitle,
     content: '',
     width: '340px',
@@ -1378,6 +1382,7 @@ export function showFocusPlanItemPickerDialog(input: {
 
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(FocusPlanItemPickerDialog, {
     sections,
     selectedDate: input.selectedDate,
@@ -1391,7 +1396,7 @@ export function showFocusPlanItemPickerDialog(input: {
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('focusPlan').settingTitle,
     content: '',
     width: '760px',
@@ -1426,6 +1431,7 @@ export function showHabitCreateDialog(
 ): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(HabitCreateDialog, {
     initialData,
     onSave: (markdown: string) => {
@@ -1440,7 +1446,7 @@ export function showHabitCreateDialog(
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('slash').createHabit || '创建习惯',
     content: '',
     width: '460px',
@@ -1553,6 +1559,7 @@ export function showHabitRecordEditDialog(
 ): Dialog {
   const container = document.createElement('div')
 
+  let dialog: Dialog
   const app = createApp(HabitRecordEditDialog, {
     initialMarkdown,
     onSave: (markdown: string) => {
@@ -1567,7 +1574,7 @@ export function showHabitRecordEditDialog(
   app.use(getSharedPinia())
   app.mount(container)
 
-  const dialog = new Dialog({
+  dialog = new Dialog({
     title: t('habit').recordEditTitle,
     content: '',
     width: '520px',
