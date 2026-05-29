@@ -50,6 +50,9 @@ import { SkillService } from '@/services/skillService'
 import { useProjectStore } from './projectStore'
 import { useSettingsStore } from './settingsStore'
 
+const LINE_BREAK_RE = /\r?\n/
+const WHITESPACE_RE = /\s+/g
+
 export interface AIStoreSettings {
   providers: AIProviderConfig[]
   activeProviderId: string | null
@@ -600,10 +603,10 @@ export const useAIStore = defineStore('ai', () => {
 
   function normalizeConversationTitleFromMessage(content: string): string {
     return content
-      .split(/\r?\n/)
+      .split(LINE_BREAK_RE)
       .map((line) => line.trim())
       .find(Boolean)
-      ?.replace(/\s+/g, ' ')
+      ?.replace(WHITESPACE_RE, ' ')
       || ''
   }
 

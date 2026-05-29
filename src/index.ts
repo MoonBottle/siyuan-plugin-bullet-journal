@@ -168,6 +168,9 @@ import {
 } from "@/utils/vueHostMount"
 import "@/index.scss"
 
+const DATA_NODE_ID_GLOBAL_RE = /data-node-id="([^"]+)"/g
+const DATA_NODE_ID_RE = /data-node-id="([^"]+)"/
+
 let PluginInfo = {
   version: "",
 }
@@ -2318,10 +2321,10 @@ export default class TaskAssistantPlugin extends Plugin {
     )
 
     let contentBlockId = listItemBlockId
-    const dataNodeIdMatches = op.data.match(/data-node-id="([^"]+)"/g)
+    const dataNodeIdMatches = op.data.match(DATA_NODE_ID_GLOBAL_RE)
     if (dataNodeIdMatches && dataNodeIdMatches.length >= 2) {
       const secondMatch = dataNodeIdMatches[1]
-      const idMatch = secondMatch.match(/data-node-id="([^"]+)"/)
+      const idMatch = secondMatch.match(DATA_NODE_ID_RE)
       if (idMatch) {
         contentBlockId = idMatch[1]
         console.log(

@@ -6,6 +6,8 @@ import type {
 } from '@/types/models'
 import { putFile } from '@/api'
 
+const TIME_EXTRACT_RE = /T(\d{2}:\d{2})/
+
 export interface KernelData {
   version: 2
   updatedAt: string
@@ -79,7 +81,7 @@ const KERNEL_DATA_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/kerne
 
 function extractTime(dateTimeStr: string | undefined): string | undefined {
   if (!dateTimeStr) return undefined
-  const match = dateTimeStr.match(/T(\d{2}:\d{2})/)
+  const match = dateTimeStr.match(TIME_EXTRACT_RE)
   return match ? match[1] : undefined
 }
 

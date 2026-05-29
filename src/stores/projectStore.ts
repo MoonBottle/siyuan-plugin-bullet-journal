@@ -44,6 +44,8 @@ import {
 } from '@/utils/focusPlanReview'
 import { useSettingsStore } from './settingsStore'
 
+const LEADING_HASH_RE = /^#/
+
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
   items: Item[] | undefined,
@@ -240,7 +242,7 @@ function matchesPriorityFilter(item: Item, params: TodoFilterParams): boolean {
 }
 
 function normalizeSearchQuery(query?: string): string {
-  return normalizeString(query).trim().replace(/^#/, '')
+  return normalizeString(query).trim().replace(LEADING_HASH_RE, '')
 }
 
 function matchesSearchQuery(item: Item, searchQuery?: string): boolean {
