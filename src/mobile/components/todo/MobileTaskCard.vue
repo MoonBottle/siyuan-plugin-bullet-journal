@@ -90,8 +90,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  "click": [item: Item]
-  'long-press': [item: Item]
+  click: [item: Item]
+  longPress: [item: Item]
 }>()
 
 const isPressing = ref(false)
@@ -129,7 +129,7 @@ const handleClick = () => {
 const handleTouchStart = () => {
   isPressing.value = true
   pressTimer = setTimeout(() => {
-    emit('long-press', props.item)
+    emit('longPress', props.item)
     isPressing.value = false
   }, PRESS_DURATION)
 }

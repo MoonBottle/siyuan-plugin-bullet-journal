@@ -194,7 +194,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'switch-conversation': [conversationId: string]
+  'switchConversation': [conversationId: string]
 }>()
 
 const aiStore = useAIStore()
@@ -318,7 +318,7 @@ async function handleDisconnect() {
 
 function handleUserClick(conversationId: string, userId: string) {
   aiStore.clearWeixinUnread(userId)
-  emit('switch-conversation', conversationId)
+  emit('switchConversation', conversationId)
   close()
 }
 

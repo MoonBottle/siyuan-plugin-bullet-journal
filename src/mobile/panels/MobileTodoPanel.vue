@@ -158,7 +158,7 @@ import {
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const emit = defineEmits<{
-  'open-pomodoro': [{ blockId?: string }]
+  openPomodoro: [{ blockId?: string }]
 }>()
 
 const plugin = usePlugin() as any
@@ -366,7 +366,7 @@ watch(
 )
 
 const handleOpenPomodoro = (item: Item) => {
-  emit('open-pomodoro', {
+  emit('openPomodoro', {
     blockId: item.blockId,
   })
 }

@@ -13,7 +13,7 @@
 
       <button
         class="nav-item"
-        @click="emit('open-habit')"
+        @click="emit('openHabit')"
       >
         <div class="nav-icon-wrapper">
           <svg class="nav-icon"><use xlink:href="#iconCheck"></use></svg>
@@ -52,9 +52,9 @@ import { t } from '@/i18n'
 import SettingsDrawer from '../../drawers/settings/SettingsDrawer.vue'
 
 const emit = defineEmits<{
-  'open-pomodoro': []
-  'open-habit': []
-  "create": []
+  openPomodoro: []
+  openHabit: []
+  create: []
 }>()
 
 const showSettingsDrawer = ref(false)
@@ -65,7 +65,7 @@ const showSettings = () => {
 
 const handleOpenPomodoro = () => {
   console.log('[MobileBottomNav] 番茄钟按钮被点击')
-  emit('open-pomodoro')
+  emit('openPomodoro')
 }
 </script>
 
