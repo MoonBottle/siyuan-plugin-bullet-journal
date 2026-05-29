@@ -75,7 +75,7 @@
         class="habit-calendar-btn b3-tooltips b3-tooltips__n"
         data-testid="habit-list-item-open-doc"
         :aria-label="t('todo').openDoc"
-        @click.stop="emit('open-doc', habit)"
+        @click.stop="emit('openDoc', habit)"
       >
         <svg><use xlink:href="#iconFile"></use></svg>
       </button>
@@ -232,12 +232,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'check-in': [habit: Habit]
-  'increment': [habit: Habit]
-  'mark-missed': [habit: Habit, date: string]
-  'reset-record': [habit: Habit, date: string]
-  'open-doc': [habit: Habit]
-  'open-detail': [habit: Habit]
+  checkIn: [habit: Habit]
+  increment: [habit: Habit]
+  markMissed: [habit: Habit, date: string]
+  resetRecord: [habit: Habit, date: string]
+  openDoc: [habit: Habit]
+  openDetail: [habit: Habit]
 }>()
 
 const isMobile = computed(() => props.isMobile === true)
@@ -473,13 +473,13 @@ const metaStatusMarker = computed(() => {
 
 function handleMainClick() {
   closeContextMenu()
-  emit('open-detail', props.habit)
+  emit('openDetail', props.habit)
 }
 
 function handleBinaryActionClick() {
   closeContextMenu()
   if (props.dayState.isMissed) {
-    emit('reset-record', props.habit, referenceDate.value)
+    emit('resetRecord', props.habit, referenceDate.value)
     return
   }
 
@@ -487,13 +487,13 @@ function handleBinaryActionClick() {
     return
   }
 
-  emit('check-in', props.habit)
+  emit('checkIn', props.habit)
 }
 
 function handleCountActionClick() {
   closeContextMenu()
   if (props.dayState.isMissed) {
-    emit('reset-record', props.habit, referenceDate.value)
+    emit('resetRecord', props.habit, referenceDate.value)
     return
   }
 
@@ -540,11 +540,11 @@ function handleMenuAction() {
   const action = contextMenu.value.action
   closeContextMenu()
   if (action === 'mark-missed') {
-    emit('mark-missed', props.habit, referenceDate.value)
+    emit('markMissed', props.habit, referenceDate.value)
     return
   }
 
-  emit('reset-record', props.habit, referenceDate.value)
+  emit('resetRecord', props.habit, referenceDate.value)
 }
 
 function handleDocumentClick() {

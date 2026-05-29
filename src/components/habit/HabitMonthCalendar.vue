@@ -160,9 +160,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:viewMonth': [value: string]
-  'month-cell-primary': [value: string]
-  'month-cell-mark-missed': [value: string]
-  'month-cell-reset': [value: string]
+  'monthCellPrimary': [value: string]
+  'monthCellMarkMissed': [value: string]
+  'monthCellReset': [value: string]
 }>()
 
 const viewMonth = ref(props.viewMonth || props.currentDate.substring(0, 7))
@@ -291,11 +291,11 @@ function handleCellClick(cell: CalendarCell) {
   }
 
   if (cell.status === 'missed') {
-    emit('month-cell-reset', cell.date)
+    emit('monthCellReset', cell.date)
     return
   }
 
-  emit('month-cell-primary', cell.date)
+  emit('monthCellPrimary', cell.date)
 }
 
 function handleCellContextMenu(event: MouseEvent, cell: CalendarCell) {
@@ -325,11 +325,11 @@ function handleMenuAction() {
   }
 
   if (action === 'mark-missed') {
-    emit('month-cell-mark-missed', date)
+    emit('monthCellMarkMissed', date)
     return
   }
 
-  emit('month-cell-reset', date)
+  emit('monthCellReset', date)
 }
 
 function handleMarkerMouseEnter(event: MouseEvent, cell: CalendarCell) {

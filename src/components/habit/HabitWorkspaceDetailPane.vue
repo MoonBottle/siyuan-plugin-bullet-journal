@@ -35,7 +35,7 @@
             class="block__icon b3-tooltips b3-tooltips__sw"
             :data-testid="openDocButtonTestId || undefined"
             :aria-label="t('todo').openDoc"
-            @click="emit('open-doc')"
+            @click="emit('openDoc')"
           >
             <svg><use xlink:href="#iconFile"></use></svg>
           </button>
@@ -85,9 +85,9 @@
             :current-date="currentDate"
             :view-month="viewMonth"
             @update:view-month="emit('update:viewMonth', $event)"
-            @month-cell-primary="emit('month-cell-primary', $event)"
-            @month-cell-mark-missed="emit('month-cell-mark-missed', $event)"
-            @month-cell-reset="emit('month-cell-reset', $event)"
+            @monthCellPrimary="emit('monthCellPrimary', $event)"
+            @monthCellMarkMissed="emit('monthCellMarkMissed', $event)"
+            @monthCellReset="emit('monthCellReset', $event)"
           />
         </div>
 
@@ -179,14 +179,14 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  "refresh": []
-  "archive": []
-  "unarchive": []
-  'open-doc': []
+  'refresh': []
+  'archive': []
+  'unarchive': []
+  'openDoc': []
   'update:viewMonth': [value: string]
-  'month-cell-primary': [value: string]
-  'month-cell-mark-missed': [value: string]
-  'month-cell-reset': [value: string]
+  'monthCellPrimary': [value: string]
+  'monthCellMarkMissed': [value: string]
+  'monthCellReset': [value: string]
 }>()
 
 const headerTitle = computed(() => props.title || props.selectedHabit?.name || '')

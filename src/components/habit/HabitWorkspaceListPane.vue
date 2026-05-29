@@ -28,12 +28,12 @@
           :current-date="selectedDate"
           :is-mobile="itemOpenBehavior === 'detail'"
           :readonly-actions="archivedList"
-          @check-in="emit('check-in', $event)"
+          @checkIn="emit('checkIn', $event)"
           @increment="emit('increment', $event)"
-          @mark-missed="handleMarkMissed"
-          @reset-record="handleResetRecord"
-          @open-doc="emit('open-doc', $event)"
-          @open-detail="emit('select-habit', $event)"
+          @markMissed="handleMarkMissed"
+          @resetRecord="handleResetRecord"
+          @openDoc="emit('openDoc', $event)"
+          @openDetail="emit('selectHabit', $event)"
         />
       </div>
     </div>
@@ -90,20 +90,20 @@ withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:selectedDate': [value: string]
-  'select-habit': [habit: Habit]
-  'open-doc': [habit: Habit]
-  'check-in': [habit: Habit]
+  'selectHabit': [habit: Habit]
+  'openDoc': [habit: Habit]
+  'checkIn': [habit: Habit]
   'increment': [habit: Habit]
-  'mark-missed': [habit: Habit, date: string]
-  'reset-record': [habit: Habit, date: string]
+  'markMissed': [habit: Habit, date: string]
+  'resetRecord': [habit: Habit, date: string]
 }>()
 
 function handleMarkMissed(habit: Habit, date: string) {
-  emit('mark-missed', habit, date)
+  emit('markMissed', habit, date)
 }
 
 function handleResetRecord(habit: Habit, date: string) {
-  emit('reset-record', habit, date)
+  emit('resetRecord', habit, date)
 }
 </script>
 
