@@ -1,8 +1,9 @@
 import enUS from './en_US.json'
-/**
- * 国际化工具函数
- */
 import zhCN from './zh_CN.json'
+
+const UNDERSCORE_RE = /_/g
+const DASH_RE = /-/g
+const TEMPLATE_PARAM_RE = /\{(\w+)\}/g
 
 type Translations = typeof zhCN
 
@@ -21,12 +22,12 @@ let currentLocale: Translations = zhCN
  * 初始化国际化
  */
 function findLocale(lang: string): Translations | undefined {
-  const normalized = lang?.toLowerCase().replace(/_/g, '-') || ''
-  const normalizedAlt = normalized.replace(/-/g, '_')
+  const normalized = lang?.toLowerCase().replace(UNDERSCORE_RE, '-') || ''
+  const normalizedAlt = normalized.replace(DASH_RE, '_')
   const key = Object.keys(locales).find(
     (k) =>
-      k.toLowerCase().replace(/_/g, '-') === normalized
-      || k.toLowerCase().replace(/-/g, '_') === normalizedAlt,
+      k.toLowerCase().replace(UNDERSCORE_RE, '-') === normalized
+      || k.toLowerCase().replace(DASH_RE, '_') === normalizedAlt,
   )
   return key ? locales[key] : undefined
 }
@@ -64,7 +65,7 @@ export function t(key: string, params?: Record<string, string | number>): any {
 
   // 如果结果是字符串且有参数，进行模板替换
   if (typeof value === 'string' && params) {
-    return value.replace(/\{(\w+)\}/g, (match, key) => {
+    return value.replace(TEMPLATE_PARAM_RE, (match, key) => {
       return params[key] !== undefined ? String(params[key]) : match
     })
   }
