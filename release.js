@@ -14,6 +14,9 @@ const {
   version: currentVersion = '0.0.0',
 } = PluginInfo
 
+const SEMVER_RE = /^\d+\.\d+\.\d+$/
+const VERSION_JSON_RE = /"version"\s*:\s*"[^"]+"/
+
 function parseVersion(version) {
   const [major, minor, patch] = version.split('.').map(Number)
   return {
