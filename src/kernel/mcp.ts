@@ -356,6 +356,7 @@ export function initMcpServer(): void {
     } catch (e: any) {
       await siyuan.logger.error('[mcp] SSE GET: port.send FAILED:', e.message || String(e))
     }
+    await new Promise(resolve => setTimeout(resolve, 100))
     req.port.close()
   }
 
