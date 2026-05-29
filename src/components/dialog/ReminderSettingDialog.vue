@@ -229,15 +229,20 @@ onMounted(() => {
   const config = props.initialConfig
   if (config?.type === 'relative' && config.offsetMinutes) {
     const minutes = config.offsetMinutes
-    if (minutes === 5) { selectedMethod.value = 'before5m'
+    if (minutes === 5) {
+      selectedMethod.value = 'before5m'
     }
-    else if (minutes === 15) { selectedMethod.value = 'before15m'
+    else if (minutes === 15) {
+      selectedMethod.value = 'before15m'
     }
-    else if (minutes === 30) { selectedMethod.value = 'before30m'
+    else if (minutes === 30) {
+      selectedMethod.value = 'before30m'
     }
-    else if (minutes === 60) { selectedMethod.value = 'before1h'
+    else if (minutes === 60) {
+      selectedMethod.value = 'before1h'
     }
-    else if (minutes === 1440) { selectedMethod.value = 'before1d'
+    else if (minutes === 1440) {
+      selectedMethod.value = 'before1d'
     }
     else {
       selectedMethod.value = 'custom'
@@ -284,11 +289,21 @@ function handleSave() {
   } else {
     let offsetMinutes: number
     switch (selectedMethod.value) {
-      case 'before5m': offsetMinutes = 5; break
-      case 'before15m': offsetMinutes = 15; break
-      case 'before30m': offsetMinutes = 30; break
-      case 'before1h': offsetMinutes = 60; break
-      case 'before1d': offsetMinutes = 1440; break
+      case 'before5m':
+        offsetMinutes = 5
+        break
+      case 'before15m':
+        offsetMinutes = 15
+        break
+      case 'before30m':
+        offsetMinutes = 30
+        break
+      case 'before1h':
+        offsetMinutes = 60
+        break
+      case 'before1d':
+        offsetMinutes = 1440
+        break
       case 'custom':
         if (offsetUnit.value === 'days') offsetMinutes = customOffset.value * 1440
         else if (offsetUnit.value === 'hours') offsetMinutes = customOffset.value * 60
