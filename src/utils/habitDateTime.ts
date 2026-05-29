@@ -16,6 +16,9 @@ export const HABIT_COMPLETED_AT_TOKEN_RE = new RegExp(
   'g',
 )
 
+const DATETIME_WITH_TIME_RE = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
+
 type HabitDateTimePrecision = 'day' | 'minute' | 'second'
 
 const MARKDOWN_FORMATS: Record<HabitDateTimePrecision, string> = {
@@ -84,8 +87,8 @@ export function formatHabitCompletedAtForDisplay(
     return ''
   }
 
-  const hasTime = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/.test(completedAt)
-  const isDayOnly = /^\d{4}-\d{2}-\d{2}$/.test(completedAt)
+  const hasTime = DATETIME_WITH_TIME_RE.test(completedAt)
+  const isDayOnly = DATE_ONLY_RE.test(completedAt)
   if (!isDayOnly && !hasTime) {
     return ''
   }

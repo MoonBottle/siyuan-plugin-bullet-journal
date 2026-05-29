@@ -134,7 +134,7 @@ export class ClawBotService {
   }
 
   private buildCdnUrl(pathOrUrl: string): string {
-    if (/^https?:\/\//.test(pathOrUrl)) {
+    if (ABSOLUTE_URL_RE.test(pathOrUrl)) {
       return pathOrUrl
     }
     return `${this.config.cdnBaseUrl}/${pathOrUrl}`

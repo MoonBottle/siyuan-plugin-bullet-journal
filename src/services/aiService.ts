@@ -10,6 +10,11 @@ import type {
   UsageInfo,
 } from '@/types/ai'
 
+const TOOL_CALL_TAG_RE = /<tool_call([\s\S]*?)<\/tool_call>/g
+const FUNCTION_TAG_RE = /<function=([^>]+)>([\s\S]*?)<\/function>/
+const PARAMETER_TAG_GLOBAL_RE = /<parameter=([^>]+)>([\s\S]*?)<\/parameter>/g
+const PARAMETER_TAG_RE = /<parameter=([^>]+)>([\s\S]*?)<\/parameter>/
+
 /**
  * 根据 provider 和 model 返回合适的 temperature
  * Kimi API 要求 temperature 必须为 1
@@ -202,13 +207,13 @@ function parseXmlToolCalls(xmlContent: string): ToolCall[] {
   const toolCalls: ToolCall[] = []
 
   try {
-    // 匹配 <tool_call> 标签
-    const toolCallMatches = xmlContent.match(/<tool_call>([\s\S]*?)<\/tool_call>/g)
+    // 匹配  标签
+    const toolCallMatches = xmlContent.match(TOOL_CALL_TAG_RE)
     if (!toolCallMatches) return toolCalls
 
     toolCallMatches.forEach((toolCallMatch) => {
       // 提取 <function> 标签
-      const functionMatch = toolCallMatch.match(/<function=([^>]+)>([\s\S]*?)<\/function>/)
+      const functionMatch = toolCallMatch.match(FUNCTION_TAG_RE)
       if (!functionMatch) return
 
       const functionName = functionMatch[1].trim()
@@ -216,11 +221,11 @@ function parseXmlToolCalls(xmlContent: string): ToolCall[] {
 
       // 提取参数
       const params: Record<string, string> = {}
-      const paramMatches = functionContent.match(/<parameter=([^>]+)>([\s\S]*?)<\/parameter>/g)
+      const paramMatches = functionContent.match(PARAMETER_TAG_GLOBAL_RE)
       if (paramMatches) {
         paramMatches.forEach((paramMatch) => {
-          const paramMatchDetails = paramMatch.match(/<parameter=([^>]+)>([\s\S]*?)<\/parameter>/)
-          if (paramMatchDetails) {
+          const paramMatchDetails = paramMatch.match(PARAMETER_TAG_RE)
+            if (paramMatchDetails) {
             const paramName = paramMatchDetails[1].trim()
             const paramValue = paramMatchDetails[2].trim()
             params[paramName] = paramValue

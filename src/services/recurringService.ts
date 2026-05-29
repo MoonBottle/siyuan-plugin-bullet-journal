@@ -25,6 +25,9 @@ import { extractTimePart } from '@/utils/blockWriter/intent/itemPatches'
 import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
 import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks'
 
+const DATE_MARKER_RE = /[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g
+const STATUS_ICON_RE = /[✅❌✔️]/gu
+
 /**
  * 检查是否需要创建下次
  */
@@ -73,8 +76,8 @@ function buildNextOccurrenceBlockFallback(item: Item, nextDate: string): string 
   const endCondition = decrementEndCondition(item.endCondition)
 
   const content = stripRecurringMarkers(stripReminderMarker(item.content))
-    .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
-    .replace(/[✅❌✔️]/gu, '')
+    .replace(DATE_MARKER_RE, '')
+    .replace(STATUS_ICON_RE, '')
     .trim()
 
   let datePart = `📅${nextDate}`
