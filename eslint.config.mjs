@@ -19,10 +19,7 @@ export default antfu(
       'node_modules',
       'docs',
       'logs',
-      'CLAUDE.md',
-      'AGENTS.md',
-      'README.md',
-      'README_zh_CN.md',
+      '**/*.md',
     ],
   },
   {
