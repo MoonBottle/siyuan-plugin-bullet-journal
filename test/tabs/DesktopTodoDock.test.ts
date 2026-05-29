@@ -302,7 +302,9 @@ describe('desktopTodoDock', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     mockRequestRefresh.mockClear()
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () { return { close: vi.fn() } })
+    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(function () {
+      return { close: vi.fn() }
+    })
   })
 
   it('renders a top-level refresh button before the more button', async () => {

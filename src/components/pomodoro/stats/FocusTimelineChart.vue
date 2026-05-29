@@ -130,7 +130,9 @@ const focusByDateHour = computed(() => {
 
 const maxMinutes = computed(() => {
   let max = 0
-  focusByDateHour.value.forEach((v) => { if (v > max) max = v })
+  focusByDateHour.value.forEach((v) => {
+    if (v > max) max = v
+  })
   return max || 1
 })
 

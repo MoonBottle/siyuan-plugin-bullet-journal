@@ -89,12 +89,13 @@ vi.mock('@/utils/pomodoroStorage', () => ({
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
-    if (key === 'settings') { return {
-      pomodoro: {
-        breakEndMessage: '休息结束',
-        breakLabel: '休息',
-      },
-    }
+    if (key === 'settings') {
+      return {
+        pomodoro: {
+          breakEndMessage: '休息结束',
+          breakLabel: '休息',
+        },
+      }
     }
     return key
   }),

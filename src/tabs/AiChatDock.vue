@@ -325,7 +325,9 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {}
-    storeKeys.forEach((k) => { if (k !== 'ai' && payload[k] !== undefined) patch[k] = payload[k] })
+    storeKeys.forEach((k) => {
+      if (k !== 'ai' && payload[k] !== undefined) patch[k] = payload[k]
+    })
     if (Object.keys(patch).length > 0) settingsStore.$patch(patch)
     if (payload.ai && typeof payload.ai === 'object') {
       aiStore.loadSettings({

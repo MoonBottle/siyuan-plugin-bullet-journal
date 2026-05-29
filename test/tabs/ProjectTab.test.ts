@@ -71,25 +71,28 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
-    if (key === 'settings') { return {
-      projectGroups: {
-        allGroups: '全部分组',
-        unnamed: '未命名分组',
-      },
+    if (key === 'settings') {
+      return {
+        projectGroups: {
+          allGroups: '全部分组',
+          unnamed: '未命名分组',
+        },
+      }
     }
+    if (key === 'common') {
+      return {
+        refresh: '刷新',
+        loading: '加载中',
+        dataRefreshed: '已刷新',
+      }
     }
-    if (key === 'common') { return {
-      refresh: '刷新',
-      loading: '加载中',
-      dataRefreshed: '已刷新',
-    }
-    }
-    if (key === 'project') { return {
-      viewModes: {
-        table: '表格视图',
-        card: '卡片视图',
-      },
-    }
+    if (key === 'project') {
+      return {
+        viewModes: {
+          table: '表格视图',
+          card: '卡片视图',
+        },
+      }
     }
     return {}
   }),

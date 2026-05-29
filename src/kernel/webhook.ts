@@ -195,7 +195,9 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
       console.log(`[webhook] send SUCCESS: channel="${channel.name}" type=${channel.type}`)
     } else {
       let respText = ''
-      try { respText = await resp.text() } catch (_) {}
+      try {
+        respText = await resp.text()
+      } catch (_) {}
       console.log(`[webhook] target returned status=${resp.status} body=${respText.substring(0, 200)}`)
     }
   } catch (e) {

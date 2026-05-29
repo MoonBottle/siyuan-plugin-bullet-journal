@@ -158,7 +158,9 @@ describe('kernelTools', () => {
       const cache = makeCache()
       const result = toolFilterItems({ groupId: 'g1' }, cache)
       expect(result.items).toHaveLength(2)
-      expect(result.items.every((i) => { return i.projectId === 'p1' })).toBe(true)
+      expect(result.items.every((i) => {
+        return i.projectId === 'p1'
+      })).toBe(true)
     })
 
     it('filters by date range', () => {

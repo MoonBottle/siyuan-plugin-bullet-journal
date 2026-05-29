@@ -412,10 +412,11 @@ function cloneSettings(data: SettingsData): SettingsData {
       ...merged.pomodoro,
     }
   }
-  if (!merged.ai) { merged.ai = {
-    providers: [],
-    activeProviderId: null,
-  }
+  if (!merged.ai) {
+    merged.ai = {
+      providers: [],
+      activeProviderId: null,
+    }
   }
   if (!merged.customSlashCommands) merged.customSlashCommands = []
   return JSON.parse(JSON.stringify(merged))

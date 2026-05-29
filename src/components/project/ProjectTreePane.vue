@@ -253,7 +253,10 @@ function handleTagKeydown(event: KeyboardEvent) {
     return
   }
 
-  if (event.key === 'Escape') { closeTagDropdown(); return }
+  if (event.key === 'Escape') {
+    closeTagDropdown()
+    return
+  }
   if (!filteredTagOptions.value.length) return
 
   if (event.key === 'ArrowDown') {
