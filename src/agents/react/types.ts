@@ -4,12 +4,12 @@ import type { ConversationData } from '@/services/conversationStorageService'
  * Reasoning + Acting 架构的核心类型
  */
 import type {
+  AIProviderConfig,
   ChatMessage,
   ToolCall,
   ToolDefinition,
   UsageInfo,
 } from '@/types/ai'
-import type { AIProviderConfig } from '@/types/ai'
 
 /**
  * ReAct 步骤类型
