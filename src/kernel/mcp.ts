@@ -310,13 +310,12 @@ export function initMcpServer(): void {
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
     const bodyData = req.request.body.data
     if (!bodyData) {
-      await siyuan.logger.warn('[mcp] HTTP handler: no body', req.url.path)
       return {
         statusCode: 400,
         body: {
-          data: {
-            type: 'JSON',
-            data: { error: 'no body' },
+          raw: {
+            contentType: 'application/json',
+            data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"no body"}}',
           },
         },
       }
@@ -326,43 +325,32 @@ export function initMcpServer(): void {
     try {
       message = await bodyData.json()
     } catch {
-      await siyuan.logger.warn('[mcp] HTTP handler: JSON parse error')
       return {
         statusCode: 400,
         body: {
-          data: {
-            type: 'JSON',
-            data: {
-              jsonrpc: '2.0',
-              id: null,
-              error: { code: -32700, message: 'Parse error' },
-            },
+          raw: {
+            contentType: 'application/json',
+            data: '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}',
           },
         },
       }
     }
 
-    await siyuan.logger.info('[mcp] HTTP handler:', message.method, message.id)
-
     const response = await handleJsonRpc(message)
 
     if (response === undefined) {
-      await siyuan.logger.info('[mcp] HTTP handler: notification, returning 202')
       return {
         statusCode: 202,
         headers: {},
       }
     }
 
-    const responseBody = JSON.stringify(response)
-    await siyuan.logger.info('[mcp] HTTP handler: responding', message.method, responseBody.length, 'bytes')
-
     return {
       statusCode: 200,
       body: {
         raw: {
           contentType: 'application/json',
-          data: responseBody,
+          data: JSON.stringify(response),
         },
       },
     }
