@@ -185,6 +185,8 @@ const props = withDefaults(defineProps<Props>(), {
   siblingItems: () => [],
 })
 
+const DATETIME_PREFIX_RE = /^(?:@|📅)/
+
 const settingsStore = useSettingsStore()
 
 // 时间显示
@@ -198,7 +200,7 @@ const timeDisplay = computed(() => {
       },
       ...props.siblingItems,
     ]
-    return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '')
+    return optimizeDateTimeExpressions(allItems).replace(DATETIME_PREFIX_RE, '')
   }
   const dateLabel = formatDateLabel(props.date || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow)
   const timeRange = formatTimeRange(props.startDateTime, props.endDateTime)

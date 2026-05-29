@@ -327,6 +327,8 @@ const emit = defineEmits<{
   'skip-occurrence': []
 }>()
 
+const DATETIME_PREFIX_RE = /^(?:@|📅)/
+
 const settingsStore = useSettingsStore()
 
 const copiedState = reactive<Record<string, boolean>>({
@@ -378,7 +380,7 @@ const timeDisplay = computed(() => {
   if (props.item.siblingItems?.length) {
     allItems.push(...props.item.siblingItems)
   }
-  return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '')
+  return optimizeDateTimeExpressions(allItems).replace(DATETIME_PREFIX_RE, '')
 })
 
 const timeDisplayNeedsTooltip = computed(() => timeDisplay.value.length > 30)

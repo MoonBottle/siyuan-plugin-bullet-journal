@@ -131,6 +131,8 @@ import {
   useSettingsStore,
 } from '@/stores'
 
+const WECHAT_PREFIX_RE = /^微信:\s*/
+
 const aiStore = useAIStore()
 const projectStore = useProjectStore()
 const settingsStore = useSettingsStore()
@@ -158,7 +160,7 @@ const currentTitle = computed(() => {
   const conv = currentConversation.value
   if (conv?.source === 'weixin') {
     return conv.weixinUserName?.trim()
-      || conv.title.replace(/^微信:\s*/, '').trim()
+      || conv.title.replace(WECHAT_PREFIX_RE, '').trim()
       || '微信会话'
   }
 

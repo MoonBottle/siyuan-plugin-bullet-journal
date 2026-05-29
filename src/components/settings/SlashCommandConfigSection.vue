@@ -365,7 +365,8 @@ const emit = defineEmits<{
   'update:modelValue': [value: CustomSlashCommand[]]
 }>()
 
-// 内置命令列表
+const COMMA_SEPARATOR_RE = /[,，]/
+
 const builtinCommands = computed(() => [
   {
     commands: SLASH_COMMAND_FILTERS.TODAY,
@@ -549,7 +550,7 @@ function closeDialog() {
 
 function saveCommand() {
   const commands = commandsInput.value
-    .split(/[,，]/)
+    .split(COMMA_SEPARATOR_RE)
     .map((c) => c.trim())
     .filter((c) => c.startsWith('/'))
 

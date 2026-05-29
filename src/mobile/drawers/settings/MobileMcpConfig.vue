@@ -48,6 +48,9 @@ import { showMessage } from 'siyuan'
 import { getWorkspaceInfo } from '@/api'
 import { t } from '@/i18n'
 
+const BACKSLASH_RE = /\\/g
+const TRAILING_SLASHES_RE = /\/+$/
+
 const copyMcpConfig = async () => {
   const workspaceInfo = await getWorkspaceInfo()
   const workspacePath = workspaceInfo?.workspaceDir ?? ''
@@ -56,7 +59,7 @@ const copyMcpConfig = async () => {
     return
   }
 
-  const base = workspacePath.replace(/\\/g, '/').replace(/\/+$/, '')
+  const base = workspacePath.replace(BACKSLASH_RE, '/').replace(TRAILING_SLASHES_RE, '')
   const mcpPath = `${base}/data/plugins/siyuan-plugin-bullet-journal/mcp-server.js`
 
   const mcpConfig = {

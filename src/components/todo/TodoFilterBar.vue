@@ -288,6 +288,8 @@ const emit = defineEmits<{
   (event: 'reset-sort-rules'): void
 }>()
 
+const LEADING_HASH_RE = /^#/
+
 function handleSearchInput(event: Event) {
   const target = event.target as HTMLInputElement | null
   if (!target) {
@@ -342,7 +344,7 @@ const showTagDropdown = computed(() => {
 })
 
 function normalizeTagQuery(query?: string) {
-  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase()
+  return (query || '').trim().replace(LEADING_HASH_RE, '').toLocaleLowerCase()
 }
 
 function normalizeSelectedTag(tag?: string) {

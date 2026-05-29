@@ -96,6 +96,8 @@ const emit = defineEmits<{
   (event: 'update:selectedTags', value: string[]): void
 }>()
 
+const LEADING_HASH_RE = /^#/
+
 const tagSearchRoot = ref<HTMLElement | null>(null)
 const tagSearchRow = ref<HTMLElement | null>(null)
 const tagSearchInput = ref<HTMLInputElement | null>(null)
@@ -136,7 +138,7 @@ const showTagDropdown = computed(() => isTagDropdownOpen.value && filteredTagOpt
 const highlightedTagName = computed(() => filteredTagOptions.value[highlightedTagIndex.value]?.name ?? '')
 
 function normalizeTagQuery(query?: string) {
-  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase()
+  return (query || '').trim().replace(LEADING_HASH_RE, '').toLocaleLowerCase()
 }
 
 function normalizeSelectedTag(tag?: string) {

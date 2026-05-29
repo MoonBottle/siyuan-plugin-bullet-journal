@@ -228,6 +228,8 @@ const emit = defineEmits<{
   openSettings: []
 }>()
 
+const NEWLINE_RE = /\n/g
+
 // 判断是否为移动端
 const isMobile = computed(() => {
   const frontEnd = getFrontend()
@@ -540,7 +542,7 @@ async function handleInsertToNote(message: ChatMessageType) {
     // 使用 Lute 格式化消息内容（规范化 Markdown 格式 + 压缩多余空行）
     const timestamp = new Date(message.timestamp).toLocaleString('zh-CN')
     const formattedContent = smartFormatMarkdown(message.content)
-    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(/\n/g, '\n> ')}`
+    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(NEWLINE_RE, '\n> ')}`
 
     await appendBlock('markdown', contentToInsert, docId)
     await pushMsg(t('aiChat').insertSuccess, 1000)

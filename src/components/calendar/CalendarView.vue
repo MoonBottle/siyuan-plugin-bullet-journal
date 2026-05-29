@@ -82,6 +82,8 @@ const emit = defineEmits<{
   (e: 'weekViewFromClick', previousView: string): void
 }>()
 
+const WEEK_NUMBER_RE = /week\s+(\d+)/i
+
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
@@ -450,7 +452,7 @@ onMounted(async () => {
       navLinks: true,
       navLinkHint: (dateText: string, date: Date) => {
         const template = (t('calendar') as any).navLinkHint ?? 'Go to $0'
-        const weekMatch = /week\s+(\d+)/i.exec(dateText)
+        const weekMatch = WEEK_NUMBER_RE.exec(dateText)
         const displayText = weekMatch
           ? ((t('calendar') as any).weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
           : dateText

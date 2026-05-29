@@ -163,13 +163,15 @@ const emit = defineEmits<{
   (event: 'update:selectedTags', value: string[]): void
 }>()
 
+const LEADING_HASH_RE = /^#/
+
 const treeRef = ref<HTMLDivElement | null>(null)
 const tagFilterRowRef = ref<HTMLElement | null>(null)
 const tagInputRef = ref<HTMLInputElement | null>(null)
 const isTagDropdownOpen = ref(false)
 const highlightedIndex = ref(-1)
 
-const normalizedTagQuery = computed(() => (props.tagQuery || '').trim().replace(/^#/, '').toLocaleLowerCase())
+const normalizedTagQuery = computed(() => (props.tagQuery || '').trim().replace(LEADING_HASH_RE, '').toLocaleLowerCase())
 
 const normalizedSelectedTags = computed(() => new Set((props.selectedTags ?? []).map((t) => t.toLocaleLowerCase())))
 

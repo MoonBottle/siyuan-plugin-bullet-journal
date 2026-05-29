@@ -78,6 +78,9 @@ defineProps<{
   isMobile?: boolean
 }>()
 
+const BACKSLASH_RE = /\\/g
+const TRAILING_SLASHES_RE = /\/+$/
+
 async function copyMcpConfig() {
   const workspaceInfo = await getWorkspaceInfo()
   const workspacePath = workspaceInfo?.workspaceDir ?? ''
@@ -86,7 +89,7 @@ async function copyMcpConfig() {
     return
   }
 
-  const base = workspacePath.replace(/\\/g, '/').replace(/\/+$/, '')
+  const base = workspacePath.replace(BACKSLASH_RE, '/').replace(TRAILING_SLASHES_RE, '')
   const mcpPath = `${base}/data/plugins/siyuan-plugin-bullet-journal/mcp-server.js`
 
   const mcpConfig = {

@@ -148,6 +148,8 @@ const props = defineProps<{
   embedded?: boolean
 }>()
 
+const WECHAT_PREFIX_RE = /^微信:\s*/
+
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
@@ -235,7 +237,7 @@ const currentWeixinConversationName = computed(() => {
     return userName
   }
 
-  return conv.title.replace(/^微信:\s*/, '').trim() || conv.title
+  return conv.title.replace(WECHAT_PREFIX_RE, '').trim() || conv.title
 })
 
 const currentHeaderTitle = computed(() => {
