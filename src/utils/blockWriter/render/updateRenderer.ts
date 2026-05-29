@@ -4,7 +4,13 @@ import type {
   PreparedMutationPayload,
   ResolvedMutationPlan,
 } from '@/utils/blockWriter/shared/types'
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
 import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender'
+import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
+import { injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController'
+import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks'
+import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom'
 
 const TASK_DONE_CHECK_RE = /\[\s*x\s*\]/i
 /**
@@ -16,12 +22,6 @@ const TASK_DONE_CHECK_RE = /\[\s*x\s*\]/i
  * 3. Transaction Render — 在克隆 DOM 上渲染并注入 <wbr>（用于 protyle transaction）
  * 4. Caret Plan — 根据光标策略生成光标恢复计划
  */
-import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
-import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
-import { injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController'
-import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'
-import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks'
-import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom'
 
 interface CaretRestoreOptions {
   caretOwner?: boolean
