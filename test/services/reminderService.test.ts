@@ -17,6 +17,7 @@ import { ReminderService } from '@/services/reminderService'
 
 // Mock notification utils
 const mockShowSystemNotification = vi.fn().mockResolvedValue(null)
+const mockNotificationRequestPermission = vi.fn()
 vi.mock('@/utils/notification', () => ({
   showSystemNotification: (...args: unknown[]) => mockShowSystemNotification(...args),
   requestNotificationPermission: () => {
@@ -45,8 +46,6 @@ vi.mock('croner', () => {
 })
 
 // Mock window.Notification
-const mockNotificationRequestPermission = vi.fn()
-
 beforeEach(() => {
   (globalThis as any).window = globalThis
   vi.stubGlobal('Notification', vi.fn().mockImplementation(() => ({})));

@@ -142,13 +142,13 @@ const todayItems = computed(() => {
     .filter((item) => item.date === currentDate && item.status === 'pending')
 })
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const selectItem = (item: Item) => {
   emit('select', item)
   close()
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 
 const formatDate = (dateStr: string): string => {

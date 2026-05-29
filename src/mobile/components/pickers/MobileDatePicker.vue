@@ -209,6 +209,11 @@ const formatQuickDate = (days: number) => {
   return dayjs().add(days, 'day').format('MM-DD')
 }
 
+const confirm = () => {
+  emit('confirm', tempSelectedDate.value)
+  emit('update:modelValue', false)
+}
+
 const selectQuickDate = (days: number) => {
   tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD')
   confirm()
@@ -217,11 +222,6 @@ const selectQuickDate = (days: number) => {
 const close = () => {
   emit('update:modelValue', false)
   emit('cancel')
-}
-
-const confirm = () => {
-  emit('confirm', tempSelectedDate.value)
-  emit('update:modelValue', false)
 }
 </script>
 

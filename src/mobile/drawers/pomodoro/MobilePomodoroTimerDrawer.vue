@@ -328,6 +328,10 @@ const getStatusEmoji = (item: Item): string => {
   return '⏳'
 }
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const startPomodoro = async () => {
   if (!selectedItem.value) return
   if (!pomodoroStore) {
@@ -359,10 +363,6 @@ const startPomodoro = async () => {
       rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true)
     }
   }
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 
 const closeOnOverlay = (e: MouseEvent) => {

@@ -147,6 +147,13 @@ const pendingDeleteConversationId = ref<string | null>(null)
 const allItems = computed(() => projectStore.items || [])
 const isClawBotConnected = computed(() => aiStore.isClawBotConnected)
 const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin)
+
+const currentConversation = computed(() => {
+  const convId = aiStore.currentConversationId
+  if (!convId) return null
+  return conversationsList.value.find((c) => c.id === convId) || null
+})
+
 const currentTitle = computed(() => {
   const conv = currentConversation.value
   if (conv?.source === 'weixin') {
@@ -156,12 +163,6 @@ const currentTitle = computed(() => {
   }
 
   return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle
-})
-
-const currentConversation = computed(() => {
-  const convId = aiStore.currentConversationId
-  if (!convId) return null
-  return conversationsList.value.find((c) => c.id === convId) || null
 })
 
 const currentWeixinStatus = computed(() => {

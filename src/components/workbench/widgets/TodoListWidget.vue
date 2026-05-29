@@ -420,6 +420,8 @@ function handleNativePreviewDestroyed({
   })
 }
 
+const todoContentPaneRef = ref<InstanceType<typeof TodoContentPane> | null>(null)
+
 function syncWidgetScrollbarGutter() {
   const hostEl = widgetRootRef.value
   const scrollEl = todoContentPaneRef.value?.getScrollElement?.() as HTMLElement | null | undefined
@@ -430,8 +432,6 @@ function syncWidgetScrollbarGutter() {
   const gutterWidth = Math.max(0, scrollEl.offsetWidth - scrollEl.clientWidth)
   hostEl.style.setProperty('--todo-scrollbar-gutter-width', `${gutterWidth}px`)
 }
-
-const todoContentPaneRef = ref<InstanceType<typeof TodoContentPane> | null>(null)
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,

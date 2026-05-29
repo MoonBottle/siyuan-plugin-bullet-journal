@@ -272,6 +272,28 @@ const menuItems = computed<MenuItem[]>(() => {
   ]
 })
 
+const sectionKeywords: Record<string, string> = computed(() => {
+  const s = t('settings') as Record<string, unknown>
+  return {
+    dir: collectStrings({
+      dirConfig: s.dirConfig,
+      projectDirectories: s.projectDirectories,
+    }).join(' '),
+    group: collectStrings({
+      groupManage: s.groupManage,
+      projectGroups: s.projectGroups,
+    }).join(' '),
+    pomodoro: collectStrings(s.pomodoro).join(' '),
+    calendar: collectStrings(s.calendar).join(' '),
+    habit: collectStrings(s.habitSettings).join(' '),
+    ai: collectStrings(s.ai).join(' '),
+    mcp: collectStrings(s.mcp).join(' '),
+    webhook: collectStrings(s.webhook).join(' '),
+    lunch: collectStrings(s.lunchBreak).join(' '),
+    slash: collectStrings(s.slashCommands).join(' '),
+  }
+})
+
 const visibleMenuItems = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return menuItems.value
@@ -323,28 +345,6 @@ function collectStrings(obj: unknown): string[] {
   }
   return []
 }
-
-const sectionKeywords: Record<string, string> = computed(() => {
-  const s = t('settings') as Record<string, unknown>
-  return {
-    dir: collectStrings({
-      dirConfig: s.dirConfig,
-      projectDirectories: s.projectDirectories,
-    }).join(' '),
-    group: collectStrings({
-      groupManage: s.groupManage,
-      projectGroups: s.projectGroups,
-    }).join(' '),
-    pomodoro: collectStrings(s.pomodoro).join(' '),
-    calendar: collectStrings(s.calendar).join(' '),
-    habit: collectStrings(s.habitSettings).join(' '),
-    ai: collectStrings(s.ai).join(' '),
-    mcp: collectStrings(s.mcp).join(' '),
-    webhook: collectStrings(s.webhook).join(' '),
-    lunch: collectStrings(s.lunchBreak).join(' '),
-    slash: collectStrings(s.slashCommands).join(' '),
-  }
-})
 
 function sectionVisible(key: string): boolean {
   const q = searchQuery.value.trim().toLowerCase()

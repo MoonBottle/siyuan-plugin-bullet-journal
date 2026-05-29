@@ -220,23 +220,6 @@ const handleSetRecurring = (item: Item) => {
   showRecurringDrawer.value = true
 }
 
-const handleSettingDrawerClose = () => {
-  selectedItemForSetting.value = null
-  handleRefresh()
-}
-
-const hasActiveFilters = computed(() => {
-  return (
-    state.selectedGroup !== ''
-    || state.dateFilter !== 'today'
-    || state.selectedPriorities.length > 0
-  )
-})
-
-settingsStore.loadFromPlugin()
-projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
-projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
-
 const updateSelectedItems = () => {
   if (state.showItemDetail && state.selectedItem?.blockId) {
     const updatedItem = projectStore.getDisplayItems('').find((item) => item.blockId === state.selectedItem?.blockId)
@@ -261,6 +244,23 @@ const handleRefresh = async () => {
   updateSelectedItems()
   showMessage(t('common').dataRefreshed)
 }
+
+const handleSettingDrawerClose = () => {
+  selectedItemForSetting.value = null
+  handleRefresh()
+}
+
+const hasActiveFilters = computed(() => {
+  return (
+    state.selectedGroup !== ''
+    || state.dateFilter !== 'today'
+    || state.selectedPriorities.length > 0
+  )
+})
+
+settingsStore.loadFromPlugin()
+projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
 const openQuickCreate = () => {
   state.selectedProjectId = null

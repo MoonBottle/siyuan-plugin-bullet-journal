@@ -1642,6 +1642,8 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
   // 创建容器元素
   const container = document.createElement('div')
 
+  let dialog: ReturnType<typeof createDialog>
+
   // 创建 Vue 应用
   const app = createApp(CreateSkillDialog, {
     mode: 'existing',
@@ -1687,7 +1689,7 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
   app.mount(container)
 
   // 打开创建技能对话框
-  const dialog = createDialog({
+  dialog = createDialog({
     title: t('slash').createSkillTitle,
     content: '',
     width: '480px',

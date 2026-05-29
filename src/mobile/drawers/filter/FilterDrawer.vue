@@ -557,6 +557,10 @@ const resetFilters = () => {
   localPriorities.value = []
 }
 
+const close = () => {
+  emit('update:modelValue', false)
+}
+
 const applyFilters = () => {
   emit('update:selectedGroup', localGroup.value)
   emit('update:dateFilter', localDateFilter.value)
@@ -571,10 +575,6 @@ const applyFilters = () => {
   emit('update:priorities', localPriorities.value)
   emit('apply')
   close()
-}
-
-const close = () => {
-  emit('update:modelValue', false)
 }
 </script>
 
