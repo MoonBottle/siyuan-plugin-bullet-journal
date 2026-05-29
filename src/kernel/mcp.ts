@@ -349,30 +349,14 @@ export function initMcpServer(): void {
       return
     }
 
-    req.port.onopen = async function (_event) {
-      if (activePort && activePort !== req.port) {
-        try {
-          activePort.close()
-        } catch {}
-      }
-      activePort = req.port
-      await siyuan.logger.info('[mcp] SSE onopen: stream opened, sending initial event then closing...')
-      try {
-        req.port.send({ id: '0', data: '' })
-        await siyuan.logger.info('[mcp] SSE onopen: initial event sent OK, closing stream')
-      } catch (sendErr: any) {
-        await siyuan.logger.error('[mcp] SSE onopen: port.send FAILED:', sendErr.message || String(sendErr))
-      }
-      req.port.close()
+    await siyuan.logger.info('[mcp] SSE GET: sending priming+dummy response then closing')
+    try {
+      req.port.send({ id: '0', data: '' })
+      req.port.send({ data: '{"jsonrpc":"2.0","id":"_init_","result":{}}' })
+    } catch (e: any) {
+      await siyuan.logger.error('[mcp] SSE GET: port.send FAILED:', e.message || String(e))
     }
-
-    req.port.onclose = async function (_event) {
-      if (activePort === req.port) {
-        activePort = null
-        sessionId = ''
-      }
-      await siyuan.logger.info('[mcp] SSE onclose: stream closed')
-    }
+    req.port.close()
   }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
@@ -436,7 +420,23 @@ export function initMcpServer(): void {
     }
 
     const responseStr = JSON.stringify(response)
-    await siyuan.logger.info('[mcp] HTTP handler: returning 200, response preview=', responseStr.slice(0, 200))
+    const wantsSse = accept.includes('text/event-stream')
+    await siyuan.logger.info('[mcp] HTTP handler: returning 200, wantsSse=', wantsSse, 'response preview=', responseStr.slice(0, 200))
+
+    if (wantsSse) {
+      const sseData = `event: message\ndata: ${responseStr.replace(/\n/g, '\ndata: ')}\n\n`
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': ['text/event-stream'] },
+        body: {
+          raw: {
+            contentType: 'text/event-stream',
+            data: sseData,
+          },
+        },
+      }
+    }
+
     return {
       statusCode: 200,
       body: {
