@@ -5,6 +5,10 @@ import process from 'node:process'
 import fg from 'fast-glob'
 import ts from 'typescript'
 
+const SCRIPT_BLOCK_RE = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+const EXTENSION_RE = /\.[^.\\/]+$/u
+const PATH_SEP_RE = /[\\/]+/gu
+
 const restrictedImports = new Set([
   'updateBlock',
 ])

@@ -10,6 +10,9 @@ export type MarkerKind =
   | 'endCondition'
   | 'habitArchive'
 
+const WHITESPACE_RE = /\s+/gu
+const MULTI_WHITESPACE_RE = /\s{2,}/g
+
 export interface MarkerToken {
   kind: MarkerKind
   raw: string

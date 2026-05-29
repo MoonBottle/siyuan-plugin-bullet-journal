@@ -5,6 +5,8 @@ import type {
   ResolvedMutationPlan,
 } from '@/utils/blockWriter/shared/types'
 import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender'
+
+const TASK_DONE_CHECK_RE = /\[\s*x\s*\]/i
 /**
  * 更新渲染器：将 patch 应用到 markdown，生成最终提交载荷
  *

@@ -5,6 +5,8 @@
 
 import type { PriorityLevel } from '@/types/models'
 
+const PRIORITY_EMOJI_RE = /[🔥🌱🍃]/gu
+
 /**
  * 优先级配置
  */

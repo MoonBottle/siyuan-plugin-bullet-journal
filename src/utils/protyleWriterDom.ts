@@ -4,6 +4,8 @@
  */
 import { createApiLute } from '@/utils/blockWriter/render/domSerializer'
 
+const ZWSP_RE = /[\u200B\u200C\u200D\uFEFF]/gu
+
 const PROTYLE_WRITER_LOG_PREFIX = '[BJ-ProtyleWriter]'
 
 function acceptProtyleVisibleTextNode(node: Node): number {

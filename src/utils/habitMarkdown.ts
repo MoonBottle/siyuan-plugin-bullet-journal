@@ -2,6 +2,8 @@ import type { HabitCheckInTimePrecision } from '@/settings/types'
 import type { Habit } from '@/types/models'
 import { formatHabitCompletedAtForMarkdown } from '@/utils/habitDateTime'
 
+const DATE_PREFIX_RE = /(?:@|📅)/
+
 export interface HabitRecordMarkdownInput {
   content: string
   habitType: Habit['type']
