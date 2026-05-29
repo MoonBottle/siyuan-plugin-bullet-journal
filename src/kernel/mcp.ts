@@ -311,6 +311,35 @@ async function handleJsonRpc(message: any): Promise<any> {
 
 export function initMcpServer(): void {
   siyuan.server.private.es.handler = async function (req: SseRequest) {
+    await siyuan.logger.info('[mcp] SSE handler: method=', req.request.method, 'path=', req.url.pathname)
+
+    if (req.request.method === 'POST') {
+      const bodyData = req.request.body.data
+      if (!bodyData) {
+        req.port.close()
+        return
+      }
+
+      let message: any
+      try {
+        message = await bodyData.json()
+      } catch {
+        req.port.close()
+        return
+      }
+
+      await siyuan.logger.info('[mcp] SSE handler POST:', message.method, message.id)
+
+      const response = await handleJsonRpc(message)
+
+      if (response !== undefined) {
+        req.port.send({ event: 'message', data: JSON.stringify(response) })
+      }
+
+      req.port.close()
+      return
+    }
+
     req.port.onopen = async function (_event) {
       if (activePort && activePort !== req.port) {
         try {
@@ -318,11 +347,7 @@ export function initMcpServer(): void {
         } catch {}
       }
       activePort = req.port
-      sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2)
-      req.port.send({
-        event: 'endpoint',
-        data: `/api/plugin/private/${siyuan.plugin.name}/mcp?sid=${sessionId}`,
-      })
+      await siyuan.logger.info('[mcp] SSE stream opened')
     }
 
     req.port.onclose = async function (_event) {
@@ -330,10 +355,13 @@ export function initMcpServer(): void {
         activePort = null
         sessionId = ''
       }
+      await siyuan.logger.info('[mcp] SSE stream closed')
     }
   }
 
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
+    await siyuan.logger.info('[mcp] HTTP handler: method=', req.request.method, 'path=', req.url.pathname)
+
     const bodyData = req.request.body.data
     if (!bodyData) {
       return {

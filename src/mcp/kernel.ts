@@ -400,15 +400,17 @@ async function handleSseRequest(req: SseRequest) {
   try {
     message = await bodyData.json()
   } catch (e) {
-    req.port.send('error', JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')))
+    req.port.send({ event: 'error', data: JSON.stringify(makeJsonRpcError(null, -32700, 'Parse error')) })
     req.port.close()
     return
   }
 
+  await siyuan.logger.info('[MCP Kernel Plugin] SSE POST:', message.method, message.id)
+
   const response = await handleJsonRpc(message)
 
   if (response !== undefined) {
-    req.port.send('message', JSON.stringify(response))
+    req.port.send({ event: 'message', data: JSON.stringify(response) })
   }
 
   req.port.close()
@@ -418,16 +420,19 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   await siyuan.logger.info('[MCP Kernel Plugin] Registering SSE and HTTP handlers')
 
   siyuan.server.private.es.handler = async function (req: SseRequest) {
-    try {
-      if (req.port.onopen) {
-        req.port.onopen({ type: 'open' })
-      }
+    await siyuan.logger.info('[MCP Kernel Plugin] SSE handler: method=', req.request.method, 'path=', req.url.pathname)
+
+    if (req.request.method === 'POST') {
       await handleSseRequest(req)
-    } catch (e: any) {
-      await siyuan.logger.error('[MCP Kernel Plugin] SSE handler error:', e.message || String(e))
-      try {
-        req.port.close()
-      } catch (_) {}
+      return
+    }
+
+    req.port.onopen = async function (_event) {
+      await siyuan.logger.info('[MCP Kernel Plugin] SSE stream opened')
+    }
+
+    req.port.onclose = async function (_event) {
+      await siyuan.logger.info('[MCP Kernel Plugin] SSE stream closed')
     }
   }
 
