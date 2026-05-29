@@ -82,6 +82,11 @@ const emit = defineEmits<{
   (e: 'weekViewFromClick', previousView: string): void
 }>()
 
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
+const pomodoroStore = usePomodoroStore()
+const plugin = usePlugin()
+
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
   if (allDay) return ''
@@ -222,11 +227,6 @@ let calendarInstance: Calendar | null = null
 let resizeObserver: ResizeObserver | null = null
 /** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
 let pendingNavigateDate: string | null = null
-
-const settingsStore = useSettingsStore()
-const projectStore = useProjectStore()
-const pomodoroStore = usePomodoroStore()
-const plugin = usePlugin()
 
 // 悬浮预览：显示
 const showEventTooltip = (info: any) => {
@@ -391,6 +391,36 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   menuOptions.x = mouseEvent?.clientX ?? 0
   menuOptions.y = mouseEvent?.clientY ?? 0
   showContextMenu(menuOptions)
+}
+
+const updateEvents = () => {
+  if (!calendarInstance) return
+  calendarInstance.removeAllEvents()
+  calendarInstance.addEventSource(props.events)
+  calendarInstance.updateSize()
+}
+
+// 处理事件变化（拖拽或调整大小)
+const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
+  const event = info.event
+  const extendedProps = event.extendedProps
+  const emitData = {
+    id: event.id,
+    title: event.title,
+    start: event.startStr,
+    end: event.endStr,
+    allDay: event.allDay,
+    docId: extendedProps?.docId,
+    lineNumber: extendedProps?.lineNumber,
+    blockId: extendedProps?.blockId,
+    date: extendedProps?.date,
+    originalStartDateTime: extendedProps?.originalStartDateTime,
+    originalEndDateTime: extendedProps?.originalEndDateTime,
+    timePrecision: extendedProps?.timePrecision,
+    siblingItems: extendedProps?.siblingItems,
+    status: extendedProps?.itemStatus,
+  }
+  emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData)
 }
 
 onMounted(async () => {
@@ -583,36 +613,6 @@ onUnmounted(() => {
 watch(() => props.events, () => {
   updateEvents()
 }, { deep: true })
-
-const updateEvents = () => {
-  if (!calendarInstance) return
-  calendarInstance.removeAllEvents()
-  calendarInstance.addEventSource(props.events)
-  calendarInstance.updateSize()
-}
-
-// 处理事件变化（拖拽或调整大小)
-const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
-  const event = info.event
-  const extendedProps = event.extendedProps
-  const emitData = {
-    id: event.id,
-    title: event.title,
-    start: event.startStr,
-    end: event.endStr,
-    allDay: event.allDay,
-    docId: extendedProps?.docId,
-    lineNumber: extendedProps?.lineNumber,
-    blockId: extendedProps?.blockId,
-    date: extendedProps?.date,
-    originalStartDateTime: extendedProps?.originalStartDateTime,
-    originalEndDateTime: extendedProps?.originalEndDateTime,
-    timePrecision: extendedProps?.timePrecision,
-    siblingItems: extendedProps?.siblingItems,
-    status: extendedProps?.itemStatus,
-  }
-  emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData)
-}
 
 defineExpose({
   getCalendarInstance: () => calendarInstance,
