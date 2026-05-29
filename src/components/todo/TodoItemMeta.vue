@@ -20,8 +20,8 @@
       :recurring-text="recurringText"
       :reminder-tooltip="reminderTooltip"
       :recurring-tooltip="recurringTooltip"
-      @set-reminder="openReminderSetting"
-      @set-recurring="openRecurringSetting"
+      @setReminder="openReminderSetting"
+      @setRecurring="openRecurringSetting"
     />
   </div>
 </template>

@@ -36,8 +36,8 @@
     <ActionDrawer
       v-model="state.showActionDrawer"
       :item="state.selectedItem"
-      @open-detail="openItemDetail"
-      @open-pomodoro="handleOpenPomodoro"
+      @openDetail="openItemDetail"
+      @openPomodoro="handleOpenPomodoro"
     />
 
     <MobileItemDetail
@@ -45,18 +45,18 @@
       :item="state.selectedItem"
       @open-project="openProjectDetail"
       @open-task="openTaskDetail"
-      @open-pomodoro="handleOpenPomodoro"
-      @set-reminder="handleSetReminder"
-      @set-recurring="handleSetRecurring"
+      @openPomodoro="handleOpenPomodoro"
+      @setReminder="handleSetReminder"
+      @setRecurring="handleSetRecurring"
       @refresh="handleRefresh"
     />
 
     <TaskItemDetail
       v-model="state.showTaskItemDetail"
       :item="state.selectedTaskItem"
-      @open-pomodoro="handleOpenPomodoro"
-      @set-reminder="handleSetTaskItemReminder"
-      @set-recurring="handleSetTaskItemRecurring"
+      @openPomodoro="handleOpenPomodoro"
+      @setReminder="handleSetTaskItemReminder"
+      @setRecurring="handleSetTaskItemRecurring"
       @refresh="handleRefresh"
     />
 

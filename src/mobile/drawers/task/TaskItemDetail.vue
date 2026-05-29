@@ -5,9 +5,9 @@
     :disable-navigation="true"
     overlay-class="task-item-detail-overlay"
     @update:model-value="$emit('update:modelValue', $event)"
-    @open-pomodoro="$emit('openPomodoro', $event)"
-    @set-reminder="$emit('setReminder', $event)"
-    @set-recurring="$emit('setRecurring', $event)"
+    @openPomodoro="$emit('openPomodoro', $event)"
+    @setReminder="$emit('setReminder', $event)"
+    @setRecurring="$emit('setRecurring', $event)"
     @refresh="$emit('refresh')"
   />
 </template>

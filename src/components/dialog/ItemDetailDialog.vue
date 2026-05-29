@@ -6,9 +6,9 @@
       :show-action-row="true"
       :close-on-siyuan-link="true"
       @close="handleClose"
-      @set-reminder="handleSetReminder"
-      @set-recurring="handleSetRecurring"
-      @skip-occurrence="handleSkipOccurrence"
+      @setReminder="handleSetReminder"
+      @setRecurring="handleSetRecurring"
+      @skipOccurrence="handleSkipOccurrence"
     />
 
     <!-- 底部按钮 -->

@@ -36,11 +36,11 @@
         v-model:search-query="projectSearchQuery"
         :projects="filteredProjects"
         :selected-project-id="selectedProjectId"
-        @select-project="selectProject"
+        @selectProject="selectProject"
       />
       <ResizeHandle
         :is-active="activeHandleIndex === 0"
-        @drag-start="(e: MouseEvent) => onMouseDown(e, 0)"
+        @dragStart="(e: MouseEvent) => onMouseDown(e, 0)"
       />
       <ProjectTreePane
         v-model:search-query="treeSearchQuery"
@@ -54,15 +54,15 @@
         :tag-query="treeTagQuery"
         :selected-tags="treeSelectedTags"
         :tag-options="projectTagOptions"
-        @toggle-task="toggleTask"
-        @select-task="selectTask"
-        @select-item="selectItem"
+        @toggleTask="toggleTask"
+        @selectTask="selectTask"
+        @selectItem="selectItem"
         @update:tag-query="treeTagQuery = $event"
         @update:selected-tags="treeSelectedTags = $event"
       />
       <ResizeHandle
         :is-active="activeHandleIndex === 1"
-        @drag-start="(e: MouseEvent) => onMouseDown(e, 1)"
+        @dragStart="(e: MouseEvent) => onMouseDown(e, 1)"
       />
       <ProjectDetailPane
         :project="selectedProject"

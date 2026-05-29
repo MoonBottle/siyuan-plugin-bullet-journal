@@ -136,9 +136,9 @@
             :empty-desc="t('workbench').habitDetailEmptyDesc"
             content-test-id="habit-detail-content"
             @update:view-month="selectedViewMonth = $event"
-            @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
-            @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
-            @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
+            @monthCellPrimary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+            @monthCellMarkMissed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+            @monthCellReset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
           />
         </div>
       </template>
@@ -157,12 +157,12 @@
           :empty-desc="listMode === 'archived' ? t('habit').archivedEmptyDesc : ''"
           item-test-id-prefix="habit-list-item-"
           @update:selected-date="selectedDate = $event"
-          @check-in="checkInHabit"
+          @checkIn="checkInHabit"
           @increment="incrementHabit"
-          @mark-missed="markHabitMissedForDate"
-          @reset-record="resetHabitRecordForDate"
-          @open-doc="openHabitDoc"
-          @select-habit="selectHabit"
+          @markMissed="markHabitMissedForDate"
+          @resetRecord="resetHabitRecordForDate"
+          @openDoc="openHabitDoc"
+          @selectHabit="selectHabit"
         />
       </template>
     </div>

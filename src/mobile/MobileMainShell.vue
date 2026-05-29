@@ -8,7 +8,7 @@
         v-if="hasMountedTodoPanel"
         v-show="activeTab === 'todo'"
         ref="todoPanelRef"
-        @open-pomodoro="handleOpenPomodoro"
+        @openPomodoro="handleOpenPomodoro"
       />
       <MobileAiPanel v-if="activeTab === 'ai'" />
       <MobilePomodoroPanel

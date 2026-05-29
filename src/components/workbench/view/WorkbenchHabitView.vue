@@ -83,11 +83,11 @@
         item-open-behavior="detail"
         item-test-id-prefix="workbench-habit-item-"
         @update:selected-date="selectedDate = $event"
-        @check-in="checkInHabit"
+        @checkIn="checkInHabit"
         @increment="incrementHabit"
-        @mark-missed="markHabitMissedForDate"
-        @reset-record="resetHabitRecordForDate"
-        @select-habit="selectHabit"
+        @markMissed="markHabitMissedForDate"
+        @resetRecord="resetHabitRecordForDate"
+        @selectHabit="selectHabit"
       />
     </aside>
 
@@ -113,11 +113,11 @@
         @refresh="refreshHabits"
         @archive="archiveSelectedHabit"
         @unarchive="unarchiveSelectedHabit"
-        @open-doc="openSelectedHabitDoc"
+        @openDoc="openSelectedHabitDoc"
         @update:view-month="selectedViewMonth = $event"
-        @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
-        @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
-        @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
+        @monthCellPrimary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+        @monthCellMarkMissed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+        @monthCellReset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
       />
     </section>
   </div>

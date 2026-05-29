@@ -105,7 +105,7 @@
 
     <MobileWeixinSheet
       v-model="showWeixinSheet"
-      @switch-conversation="handleWeixinSwitch"
+      @switchConversation="handleWeixinSwitch"
     />
   </div>
 </template>

@@ -30,11 +30,11 @@
         :period-state="habitPeriodStateMap.get(habit.blockId)!"
         :stats="habitStatsMap.get(habit.blockId)"
         :is-mobile="true"
-        @check-in="handleCheckIn"
+        @checkIn="handleCheckIn"
         @increment="handleIncrement"
-        @mark-missed="handleMarkMissed"
-        @reset-record="handleResetRecord"
-        @open-detail="openHabitDetail"
+        @markMissed="handleMarkMissed"
+        @resetRecord="handleResetRecord"
+        @openDetail="openHabitDetail"
       />
     </div>
 

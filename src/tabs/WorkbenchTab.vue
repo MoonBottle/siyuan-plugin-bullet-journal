@@ -8,12 +8,12 @@
       :active-entry-id="currentActiveEntryId"
       :collapsed="workbenchStore.sidebarCollapsed"
       @select="handleSelect"
-      @create-dashboard="handleCreateDashboard"
-      @create-view="handleCreateView"
-      @rename-entry="handleRenameEntry"
-      @delete-entry="handleDeleteEntry"
-      @reorder-entries="handleReorderEntries"
-      @toggle-sidebar="handleToggleSidebar"
+      @createDashboard="handleCreateDashboard"
+      @createView="handleCreateView"
+      @renameEntry="handleRenameEntry"
+      @deleteEntry="handleDeleteEntry"
+      @reorderEntries="handleReorderEntries"
+      @toggleSidebar="handleToggleSidebar"
     />
     <section class="workbench-tab__main">
       <div

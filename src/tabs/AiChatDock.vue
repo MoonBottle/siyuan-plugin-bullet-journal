@@ -82,7 +82,7 @@
     <WeixinLoginDialog
       v-if="!isMobile && showWeixinDialog"
       @close="showWeixinDialog = false"
-      @switch-conversation="handleWeixinConversationSwitch"
+      @switchConversation="handleWeixinConversationSwitch"
     />
 
     <!-- 聊天面板 -->

@@ -13,11 +13,11 @@
       :archived-list="habitConfig.habitScope === 'archived'"
       item-open-behavior="detail"
       @update:selected-date="selectedDate = $event"
-      @check-in="checkInHabit"
+      @checkIn="checkInHabit"
       @increment="incrementHabit"
-      @mark-missed="markHabitMissedForDate"
-      @reset-record="resetHabitRecordForDate"
-      @select-habit="handleOpenDetail"
+      @markMissed="markHabitMissedForDate"
+      @resetRecord="resetHabitRecordForDate"
+      @selectHabit="handleOpenDetail"
     />
   </div>
 </template>

@@ -55,17 +55,17 @@
         @update:tag-query="tagQuery = $event"
         @update:selected-tags="selectedTags = $event"
         @update:date-filter-type="dateFilterType = $event"
-        @change:date-filter-type="onDateFilterChange"
+        @changeDateFilterType="onDateFilterChange"
         @update:start-date="startDate = $event"
         @update:end-date="endDate = $event"
-        @toggle-priority="togglePriority"
-        @toggle-sort-panel="toggleSortPanel"
-        @update-sort-field="updateSortField"
-        @update-sort-direction="updateSortDirection"
-        @move-sort-rule="moveSortRule"
-        @remove-sort-rule="removeSortRule"
-        @add-sort-rule="addSortRule"
-        @reset-sort-rules="resetSortRules"
+        @togglePriority="togglePriority"
+        @toggleSortPanel="toggleSortPanel"
+        @updateSortField="updateSortField"
+        @updateSortDirection="updateSortDirection"
+        @moveSortRule="moveSortRule"
+        @removeSortRule="removeSortRule"
+        @addSortRule="addSortRule"
+        @resetSortRules="resetSortRules"
       />
       <TodoContentPane
         ref="todoContentPane"
@@ -77,7 +77,7 @@
         :priorities="selectedPriorities"
         :preview-trigger-mode="enableWorkbenchPreview ? 'click' : 'hover'"
         :on-item-preview-click="enableWorkbenchPreview ? handleItemPreviewClick : undefined"
-        @add-tag-filter="handleAddTagFilter"
+        @addTagFilter="handleAddTagFilter"
       />
     </div>
   </div>

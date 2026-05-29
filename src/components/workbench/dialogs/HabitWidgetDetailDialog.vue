@@ -16,11 +16,11 @@
       record-preview-trigger-mode="preview"
       :on-record-preview-click="handleRecordPreviewClick"
       @refresh="refreshHabits"
-      @open-doc="openSelectedHabitDoc"
+      @openDoc="openSelectedHabitDoc"
       @update:view-month="selectedViewMonth = $event"
-      @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
-      @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
-      @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
+      @monthCellPrimary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+      @monthCellMarkMissed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+      @monthCellReset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
     />
   </div>
 </template>
