@@ -22,6 +22,16 @@ const UNIT_TO_MINUTES: Record<string, number> = {
   天: 24 * 60,
 }
 
+const RELATIVE_TO_END_EN_RE = /⏰(?:结束前|(\d+)\s*(minutes?|hours?|days?|[mhd])\s*before\s*end)/i
+const RELATIVE_TO_END_CN_RE = /⏰结束前(\d+)(分钟|小时|天)/
+const RELATIVE_TO_START_EN_RE = /⏰(?:提前|(\d+)\s*(minutes?|hours?|days?|[mhd])\s*before(?!\s*end))/i
+const RELATIVE_TO_START_CN_RE = /⏰提前(\d+)(分钟|小时|天)/
+const ABSOLUTE_TIME_RE = /⏰(\d{2}:\d{2})(?::\d{2})?/
+const STRIP_CN_RELATIVE_RE = /⏰\s*(?:提前|结束前)\s*\d+\s*(?:分钟|小时|天)/g
+const STRIP_EN_RELATIVE_RE = /⏰\s*\d+\s*(?:minutes?|hours?|days?)\s*before(?:\s*end)?/gi
+const STRIP_ABSOLUTE_TIME_RE = /⏰\s*\d{1,2}:\d{2}(?::\d{2})?/g
+const MULTI_SPACE_RE = /\s+/g
+
 /**
  * 解析提醒标记
  * @param line 行内容
@@ -31,11 +41,11 @@ export function parseReminderFromLine(line: string): ReminderConfig | undefined 
   // 1. 尝试匹配相对结束时间（中英文）
   // 中文: ⏰结束前5分钟
   // 英文: ⏰5 minutes before end / ⏰30m before end
-  const relativeToEndMatch = line.match(/⏰(?:结束前|(\d+)\s*(minutes?|hours?|days?|[mhd])\s*before\s*end)/i)
+  const relativeToEndMatch = line.match(RELATIVE_TO_END_EN_RE)
   if (relativeToEndMatch) {
     if (line.includes('结束前')) {
       // 中文格式
-      const match = line.match(/⏰结束前(\d+)(分钟|小时|天)/)
+      const match = line.match(RELATIVE_TO_END_CN_RE)
       if (match) {
         const value = Number.parseInt(match[1], 10)
         const unit = match[2]
@@ -64,11 +74,11 @@ export function parseReminderFromLine(line: string): ReminderConfig | undefined 
   // 2. 尝试匹配相对开始时间（中英文）
   // 中文: ⏰提前5分钟
   // 英文: ⏰5 minutes before / ⏰30m before
-  const relativeToStartMatch = line.match(/⏰(?:提前|(\d+)\s*(minutes?|hours?|days?|[mhd])\s*before(?!\s*end))/i)
+  const relativeToStartMatch = line.match(RELATIVE_TO_START_EN_RE)
   if (relativeToStartMatch) {
     if (line.includes('提前')) {
       // 中文格式
-      const match = line.match(/⏰提前(\d+)(分钟|小时|天)/)
+      const match = line.match(RELATIVE_TO_START_CN_RE)
       if (match) {
         const value = Number.parseInt(match[1], 10)
         const unit = match[2]
@@ -96,7 +106,7 @@ export function parseReminderFromLine(line: string): ReminderConfig | undefined 
 
   // 3. 尝试匹配绝对时间
   // ⏰09:00 或 ⏰09:00:00
-  const absoluteMatch = line.match(/⏰(\d{2}:\d{2})(?::\d{2})?/)
+  const absoluteMatch = line.match(ABSOLUTE_TIME_RE)
   if (absoluteMatch) {
     const time = absoluteMatch[1]
     return {
@@ -212,10 +222,10 @@ export function stripReminderMarker(content: string): string {
   // 2. 英文相对时间: ⏰5 minutes before, ⏰30 minutes before end, ⏰1 hour before
   // 3. 绝对时间: ⏰09:00, ⏰09:00:00
   return content
-    .replace(/⏰\s*(?:提前|结束前)\s*\d+\s*(?:分钟|小时|天)/g, '')
-    .replace(/⏰\s*\d+\s*(?:minutes?|hours?|days?)\s*before(?:\s*end)?/gi, '')
-    .replace(/⏰\s*\d{1,2}:\d{2}(?::\d{2})?/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(STRIP_CN_RELATIVE_RE, '')
+    .replace(STRIP_EN_RELATIVE_RE, '')
+    .replace(STRIP_ABSOLUTE_TIME_RE, '')
+    .replace(MULTI_SPACE_RE, ' ')
     .trim()
 }
 

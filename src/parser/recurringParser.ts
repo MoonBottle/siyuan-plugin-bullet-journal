@@ -56,6 +56,18 @@ const ENGLISH_WEEKDAY_MAP: Record<string, number> = {
   sun: 0,
 }
 
+const MONTHLY_WITH_DAY_RE = /🔁(?:每月(\d+)日|monthly\s+on\s+day\s+(\d+))/i
+const WEEKLY_WITH_DAYS_RE = /🔁(?:每周([一二三四五六日天]+)|weekly\s+on\s+([MonTueWdhFriSa,\s]+))/i
+const COMMA_RE = /,/g
+const WHITESPACE_SPLIT_RE = /\s+/
+const BASE_REPEAT_RULE_RE = /🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/i
+const END_DATE_RE = /(?:截止到|until)\s*(\d{4}-\d{2}-\d{2})/i
+const END_COUNT_RE = /剩余\s*(\d+)\s*次|(\d+)\s*(?:times?\s*)?remaining/i
+const REPEAT_EMOJI_RE = /🔁/
+const STRIP_END_DATE_RE = /(?:截止到|until)\s*\d{4}-\d{2}-\d{2}/gi
+const STRIP_END_COUNT_RE = /剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining/gi
+const MULTI_SPACE_RE = /\s+/g
+
 /**
  * 解析重复规则
  * @param line 行内容
@@ -65,7 +77,7 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
   // 尝试匹配带参数的格式
   // 中文: 🔁每月3日
   // 英文: 🔁monthly on day 3
-  const monthlyWithDayMatch = line.match(/🔁(?:每月(\d+)日|monthly\s+on\s+day\s+(\d+))/i)
+  const monthlyWithDayMatch = line.match(MONTHLY_WITH_DAY_RE)
   if (monthlyWithDayMatch) {
     const dayOfMonth = Number.parseInt(monthlyWithDayMatch[1] || monthlyWithDayMatch[2], 10)
     return {
@@ -76,7 +88,7 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
 
   // 中文: 🔁每周一三五（紧凑格式）
   // 英文: 🔁weekly on Mon,Wed,Fri 或 🔁weekly on Mon Wed Fri
-  const weeklyWithDaysMatch = line.match(/🔁(?:每周([一二三四五六日天]+)|weekly\s+on\s+([MonTueWdhFriSa,\s]+))/i)
+  const weeklyWithDaysMatch = line.match(WEEKLY_WITH_DAYS_RE)
   if (weeklyWithDaysMatch) {
     let daysOfWeek: number[] = []
 
@@ -89,8 +101,8 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
     } else if (weeklyWithDaysMatch[2]) {
       // 英文格式
       const englishDays = weeklyWithDaysMatch[2]
-        .replace(/,/g, ' ')
-        .split(/\s+/)
+        .replace(COMMA_RE, ' ')
+        .split(WHITESPACE_SPLIT_RE)
         .map((d) => d.trim().toLowerCase().substring(0, 3))
       daysOfWeek = englishDays
         .map((d) => ENGLISH_WEEKDAY_MAP[d])
@@ -106,7 +118,7 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
   }
 
   // 基础规则: 🔁每天 / 🔁daily
-  const baseMatch = line.match(/🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/i)
+  const baseMatch = line.match(BASE_REPEAT_RULE_RE)
   if (baseMatch) {
     const ruleKey = baseMatch[1].toLowerCase()
     const type = REPEAT_RULE_MAP[ruleKey]
@@ -127,7 +139,7 @@ export function parseEndCondition(line: string): EndCondition | undefined {
   // 按日期结束
   // 中文: 截止到2026-12-31
   // 英文: until 2026-12-31
-  const dateMatch = line.match(/(?:截止到|until)\s*(\d{4}-\d{2}-\d{2})/i)
+  const dateMatch = line.match(END_DATE_RE)
   if (dateMatch) {
     return {
       type: 'date',
@@ -138,7 +150,7 @@ export function parseEndCondition(line: string): EndCondition | undefined {
   // 按次数结束
   // 中文: 剩余5次
   // 英文: 5 times remaining / 5 remaining
-  const countMatch = line.match(/剩余\s*(\d+)\s*次|(\d+)\s*(?:times?\s*)?remaining/i)
+  const countMatch = line.match(END_COUNT_RE)
   if (countMatch) {
     const maxCount = Number.parseInt(countMatch[1] || countMatch[2], 10)
     return {
@@ -155,7 +167,7 @@ export function parseEndCondition(line: string): EndCondition | undefined {
  * @param line 行内容
  */
 export function hasRepeatRule(line: string): boolean {
-  return /🔁/.test(line)
+  return REPEAT_EMOJI_RE.test(line)
 }
 
 /**
@@ -187,10 +199,10 @@ export function stripRecurringMarkers(content: string): string {
 
   // 第三步：移除结束条件
   content = content
-    .replace(/(?:截止到|until)\s*\d{4}-\d{2}-\d{2}/gi, '')
-    .replace(/剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining/gi, '')
+    .replace(STRIP_END_DATE_RE, '')
+    .replace(STRIP_END_COUNT_RE, '')
 
-  return content.replace(/\s+/g, ' ').trim()
+  return content.replace(MULTI_SPACE_RE, ' ').trim()
 }
 
 /**

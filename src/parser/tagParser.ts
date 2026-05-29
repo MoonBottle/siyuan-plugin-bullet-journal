@@ -15,13 +15,16 @@ const RESERVED_TAGS = new Set([
 const TAG_REGEX = /#([^\s#.,，。！？；：、)\]】」』}）〕〗〙〛]+)(?=$|[\s#.,，。！？；：、)\]】」』}）〕〗〙〛])/gu
 const ZERO_WIDTH_CHARS_REGEX = /[\u200B\u200C\u200D\uFEFF]/gu
 const NATIVE_SIYUAN_TAG_REGEX = /#([^\s#.,，。！？；：、)\]】」』}）〕〗〙〛\u200B\u200C\u200D]+)#(?=$|[\s#.,，。！？；：、)\]】」』}）〕〗〙〛\u200B\u200C\u200D])/gu
+const ALL_ALPHA_RE = /^[A-Z]+$/i
+const OPEN_BRACKET_COMMA_RE = /([([{（【「『])\s*[,，、]+\s*/gu
+const MULTI_SPACE_RE = /\s+/g
 
 function normalizeTag(tag: string): string {
   const rawTag = tag.startsWith('#') ? tag.slice(1) : tag
   const withoutTrailingMarker = rawTag.endsWith('#') ? rawTag.slice(0, -1) : rawTag
   const withoutZeroWidthChars = withoutTrailingMarker.replace(ZERO_WIDTH_CHARS_REGEX, '')
   const trimmedTag = withoutZeroWidthChars.trim()
-  return /^[A-Z]+$/i.test(trimmedTag)
+  return ALL_ALPHA_RE.test(trimmedTag)
     ? trimmedTag.toLowerCase()
     : trimmedTag
 }
@@ -68,7 +71,7 @@ export function stripTagsFromLine(text: string): string {
     .replace(TAG_REGEX, (fullMatch, tag: string) => {
       return isReservedTag(tag) ? fullMatch : ''
     })
-    .replace(/([([{（【「『])\s*[,，、]+\s*/gu, '$1')
-    .replace(/\s+/g, ' ')
+    .replace(OPEN_BRACKET_COMMA_RE, '$1')
+    .replace(MULTI_SPACE_RE, ' ')
     .trim()
 }

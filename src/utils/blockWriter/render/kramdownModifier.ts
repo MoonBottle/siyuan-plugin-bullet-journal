@@ -46,6 +46,13 @@ const REMINDER_MARKER_RE = /(?:^|\s)⏰(?:\d{2}:\d{2}(?::\d{2})?|提前\d+(?:分
 const RECURRING_MARKER_RE = /(?:^|\s)🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/iu
 const END_CONDITION_MARKER_RE = /(?:^|\s)(?:截止到\d{4}-\d{2}-\d{2}|until\s+\d{4}-\d{2}-\d{2}|剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining)(?=\s|$)/iu
 const HABIT_ARCHIVE_MARKER_RE = /(?:^|\s)📦\d{4}-\d{2}-\d{2}(?=\s|$)/gu
+const DATE_PATTERN_RE = /\d{4}-\d{2}-\d{2}/
+const MULTI_SPACE_RE = /\s{2,}/g
+const TASK_CHECKBOX_INLINE_RE = /\[\s*(?:x\s*)?\]/i
+const LIST_PREFIX_RE = /^(\s*-(?:\s*\{:[^}]*\}\s*)?)/
+const HEADING_PREFIX_RE = /^(\s{0,3}#{1,6})(?=\s|$)/
+const TASK_CHECKBOX_START_RE = /^(\[\s*(?:x\s*)?\])/i
+const NON_WHITESPACE_RE = /\S/u
 
 function primaryLineIndex(contentLines: string[]): number {
   return 0
@@ -56,7 +63,7 @@ function isItemContentLine(line: string): boolean {
   if (!trimmed || trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
     return false
   }
-  return (trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed)
+  return (trimmed.includes('@') || trimmed.includes('📅')) && DATE_PATTERN_RE.test(trimmed)
 }
 
 function pinnedTargetLineIndex(contentLines: string[]): number {
@@ -71,12 +78,12 @@ function pinnedTargetLineIndex(contentLines: string[]): number {
 function applyStatus(line: string, isTaskList: boolean, status: string): string {
   const clean = line
     .replace(STATUS_MARKERS_RE, '')
-    .replace(/\s{2,}/g, ' ')
+    .replace(MULTI_SPACE_RE, ' ')
     .trim()
 
   if (isTaskList) {
     const checked = status === 'completed' ? '[x]' : '[ ]'
-    const toggled = clean.replace(/\[\s*(?:x\s*)?\]/i, checked)
+    const toggled = clean.replace(TASK_CHECKBOX_INLINE_RE, checked)
     if (status === 'pending' || status === 'completed') {
       return toggled
     }
@@ -115,14 +122,14 @@ function applyDate(line: string, patch: DatePatch): string {
 
 function applyContent(line: string, newItemContent?: string): string {
   if (newItemContent !== undefined && newItemContent !== null) {
-    const listPrefixMatch = line.match(/^(\s*-(?:\s*\{:[^}]*\}\s*)?)/)
+    const listPrefixMatch = line.match(LIST_PREFIX_RE)
     const listPrefix = listPrefixMatch ? listPrefixMatch[1] : ''
-    const headingPrefixMatch = !listPrefix ? line.match(/^(\s{0,3}#{1,6})(?=\s|$)/) : null
+    const headingPrefixMatch = !listPrefix ? line.match(HEADING_PREFIX_RE) : null
     const headingPrefix = headingPrefixMatch ? headingPrefixMatch[1] : ''
     const structuralPrefix = listPrefix || headingPrefix
     let rest = structuralPrefix ? line.slice(structuralPrefix.length).trimStart() : line
 
-    const taskCheckboxRe = /^(\[\s*(?:x\s*)?\])/i
+    const taskCheckboxRe = TASK_CHECKBOX_START_RE
     const taskMatch = rest.match(taskCheckboxRe)
     const taskMarker = taskMatch ? taskMatch[1] : ''
     if (taskMarker) rest = rest.slice(taskMarker.length).trimStart()
@@ -133,7 +140,7 @@ function applyContent(line: string, newItemContent?: string): string {
     return [structuralPrefix, taskMarker, newItemContent, markers]
       .filter((s) => s.length > 0)
       .join(' ')
-      .replace(/\s{2,}/g, ' ')
+      .replace(MULTI_SPACE_RE, ' ')
       .trim()
   }
   return line
@@ -169,7 +176,7 @@ function findPatternStart(line: string, regex: RegExp): number {
   if (!match || match.index === undefined) {
     return -1
   }
-  const relativeStart = match[0].search(/\S/u)
+  const relativeStart = match[0].search(NON_WHITESPACE_RE)
   return relativeStart >= 0 ? match.index + relativeStart : match.index
 }
 
@@ -233,7 +240,7 @@ function applyHabitArchive(
 ): string {
   const clean = line
     .replace(HABIT_ARCHIVE_MARKER_RE, ' ')
-    .replace(/\s{2,}/g, ' ')
+    .replace(MULTI_SPACE_RE, ' ')
     .trim()
 
   if (!patch.archivedAt) {
