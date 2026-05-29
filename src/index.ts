@@ -2692,22 +2692,6 @@ export default class TaskAssistantPlugin extends Plugin {
     let initialRight = 0
     let initialBottom = 0
 
-    const onMouseDown = (e: MouseEvent) => {
-      isDragging = false
-      startX = e.clientX
-      startY = e.clientY
-
-      const rect = el.getBoundingClientRect()
-      const parentRect =
-        el.parentElement?.getBoundingClientRect()
-        || document.body.getBoundingClientRect()
-      initialRight = parentRect.right - rect.right
-      initialBottom = parentRect.bottom - rect.bottom
-
-      document.addEventListener("mousemove", onMouseMove)
-      document.addEventListener("mouseup", onMouseUp)
-    }
-
     const onMouseMove = (e: MouseEvent) => {
       const dx = e.clientX - startX
       const dy = e.clientY - startY
@@ -2721,7 +2705,6 @@ export default class TaskAssistantPlugin extends Plugin {
         const newRight = initialRight - dx
         const newBottom = initialBottom - dy
 
-        // 限制在视窗内
         const maxRight = window.innerWidth - el.offsetWidth
         const maxBottom = window.innerHeight - el.offsetHeight
 
@@ -2737,6 +2720,22 @@ export default class TaskAssistantPlugin extends Plugin {
       setTimeout(() => {
         el.classList.remove("dragging")
       }, 100)
+    }
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = false
+      startX = e.clientX
+      startY = e.clientY
+
+      const rect = el.getBoundingClientRect()
+      const parentRect =
+        el.parentElement?.getBoundingClientRect()
+        || document.body.getBoundingClientRect()
+      initialRight = parentRect.right - rect.right
+      initialBottom = parentRect.bottom - rect.bottom
+
+      document.addEventListener("mousemove", onMouseMove)
+      document.addEventListener("mouseup", onMouseUp)
     }
 
     el.addEventListener("mousedown", onMouseDown)
