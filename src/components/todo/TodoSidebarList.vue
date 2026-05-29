@@ -1251,9 +1251,11 @@ const getFocusPlanActionLabel = (item: Item): string => {
     : (t('focusPlan').setAction || '设置预计')
 }
 
-// 获取状态 emoji
+const projectStore = useProjectStore()
+const pomodoroStore = usePomodoroStore()
+const plugin = usePlugin()
+
 const getStatusEmoji = (item: Item): string => {
-  // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
     return '🍅'
   }
@@ -1273,10 +1275,6 @@ const getStatusEmoji = (item: Item): string => {
   return '⏳'
 }
 
-const projectStore = useProjectStore()
-const pomodoroStore = usePomodoroStore()
-const plugin = usePlugin()
-
 // 防止重复点击的执行锁
 const isProcessing = ref(false)
 
@@ -1284,9 +1282,6 @@ const isProcessing = ref(false)
 const currentDate = computed(() => projectStore.currentDate)
 
 const loading = computed(() => props.loading ?? projectStore.loading)
-const showInitialLoading = computed(() => {
-  return loading.value && !hasAnyItemsRaw.value && visibleItemCount.value === 0
-})
 
 // 折叠状态管理
 const collapsedSections = ref({
@@ -1374,14 +1369,6 @@ const hideCompleted = computed(() => projectStore.hideCompleted)
 // 是否隐藏已放弃事项
 const hideAbandoned = computed(() => projectStore.hideAbandoned)
 
-const completedItems = computed(() => {
-  return visibleItems.value.filter((item) => item.status === 'completed')
-})
-
-const abandonedItems = computed(() => {
-  return visibleItems.value.filter((item) => item.status === 'abandoned')
-})
-
 const visibleItems = computed(() => {
   let items = [...props.items]
   if (projectStore.hideCompleted) {
@@ -1391,6 +1378,60 @@ const visibleItems = computed(() => {
     items = items.filter((item) => item.status !== 'abandoned')
   }
   return items
+})
+
+const completedItems = computed(() => {
+  return visibleItems.value.filter((item) => item.status === 'completed')
+})
+
+const abandonedItems = computed(() => {
+  return visibleItems.value.filter((item) => item.status === 'abandoned')
+})
+
+const pinnedItems = computed(() => {
+  return visibleItems.value.filter((item) => item.pinned && item.status === 'pending')
+})
+
+const regularPendingItems = computed(() => {
+  return visibleItems.value.filter((item) => !item.pinned && item.status === 'pending')
+})
+
+const expiredItems = computed(() => {
+  const todayStr = getTodayStr()
+  return regularPendingItems.value.filter((item) => {
+    const effectiveDate = getEffectiveDate(item)
+    return effectiveDate < todayStr
+  })
+})
+
+const todayItems = computed(() => {
+  const todayStr = getTodayStr()
+  return regularPendingItems.value.filter((item) => item.date === todayStr)
+})
+
+const tomorrowItems = computed(() => {
+  const tomorrowStr = getTomorrowStr()
+  return regularPendingItems.value.filter((item) => item.date === tomorrowStr)
+})
+
+const futureItems = computed(() => {
+  const todayStr = getTodayStr()
+  const tomorrowStr = getTomorrowStr()
+  return regularPendingItems.value.filter((item) => {
+    if (item.date === todayStr || item.date === tomorrowStr) return false
+    const effectiveDate = getEffectiveDate(item)
+    return effectiveDate >= todayStr
+  })
+})
+
+const visibleItemCount = computed(() => {
+  return pinnedItems.value.length
+    + expiredItems.value.length
+    + todayItems.value.length
+    + tomorrowItems.value.length
+    + futureItems.value.length
+    + (hideCompleted.value ? 0 : completedItems.value.length)
+    + (hideAbandoned.value ? 0 : abandonedItems.value.length)
 })
 
 const hasAnyItemsRaw = computed(() => {
@@ -1411,55 +1452,8 @@ const panelEmptyTitle = computed(() => {
 
 const panelEmptyDesc = computed(() => props.emptyStateDesc)
 
-const pinnedItems = computed(() => {
-  return visibleItems.value.filter((item) => item.pinned && item.status === 'pending')
-})
-
-const regularPendingItems = computed(() => {
-  return visibleItems.value.filter((item) => !item.pinned && item.status === 'pending')
-})
-
-const visibleItemCount = computed(() => {
-  return pinnedItems.value.length
-    + expiredItems.value.length
-    + todayItems.value.length
-    + tomorrowItems.value.length
-    + futureItems.value.length
-    + (hideCompleted.value ? 0 : completedItems.value.length)
-    + (hideAbandoned.value ? 0 : abandonedItems.value.length)
-})
-
-// 今日待办事项
-const todayItems = computed(() => {
-  const todayStr = getTodayStr()
-  return regularPendingItems.value.filter((item) => item.date === todayStr)
-})
-
-// 明日待办事项
-const tomorrowItems = computed(() => {
-  const tomorrowStr = getTomorrowStr()
-  return regularPendingItems.value.filter((item) => item.date === tomorrowStr)
-})
-
-// 未来待办事项
-const futureItems = computed(() => {
-  const todayStr = getTodayStr()
-  const tomorrowStr = getTomorrowStr()
-  return regularPendingItems.value.filter((item) => {
-    // 排除今天、明天和已过期的事项
-    if (item.date === todayStr || item.date === tomorrowStr) return false
-    const effectiveDate = getEffectiveDate(item)
-    return effectiveDate >= todayStr
-  })
-})
-
-// 过期事项
-const expiredItems = computed(() => {
-  const todayStr = getTodayStr()
-  return regularPendingItems.value.filter((item) => {
-    const effectiveDate = getEffectiveDate(item)
-    return effectiveDate < todayStr
-  })
+const showInitialLoading = computed(() => {
+  return loading.value && !hasAnyItemsRaw.value && visibleItemCount.value === 0
 })
 
 function normalizeTag(tag?: string) {
@@ -1576,6 +1570,11 @@ const handleItemHoverStart = (item: Item, event: MouseEvent) => {
   props.onItemHoverStart?.(payload, event)
 }
 
+const openItem = async (item: Item) => {
+  if (!item.docId) return
+  await openDocumentAtLine(item.docId, item.lineNumber, item.blockId)
+}
+
 const handleItemPreviewClick = (item: Item, event: MouseEvent) => {
   if (props.previewTriggerMode !== 'click') {
     openItem(item)
@@ -1652,13 +1651,6 @@ const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
   })
 }
 
-// 打开事项所在文档
-const openItem = async (item: Item) => {
-  if (!item.docId) return
-  await openDocumentAtLine(item.docId, item.lineNumber, item.blockId)
-}
-
-// 打开详情 - 使用思源原生弹框
 const openDetail = (item: Item) => {
   showItemDetailModal(item)
 }
