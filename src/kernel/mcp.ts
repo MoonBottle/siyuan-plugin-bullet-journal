@@ -307,16 +307,6 @@ async function handleJsonRpc(message: any): Promise<any> {
 }
 
 export function initMcpServer(): void {
-  siyuan.server.private.es.handler = async function (req: SseRequest) {
-    req.port.onopen = async function (_event) {
-      await siyuan.logger.info('[mcp] SSE stream opened')
-    }
-
-    req.port.onclose = async function (_event) {
-      await siyuan.logger.info('[mcp] SSE stream closed')
-    }
-  }
-
   siyuan.server.private.http.handler = async function (req: HttpRequest) {
     const bodyData = req.request.body.data
     if (!bodyData) {
