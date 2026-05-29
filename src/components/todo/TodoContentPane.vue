@@ -16,7 +16,7 @@
       :display-mode="displayMode"
       :preview-trigger-mode="previewTriggerMode"
       :on-item-preview-click="onItemPreviewClick"
-      @add-tag-filter="emit('add-tag-filter', $event)"
+      @addTagFilter="emit('addTagFilter', $event)"
     />
   </div>
 </template>
@@ -51,7 +51,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'add-tag-filter', value: string): void
+  (event: 'addTagFilter', value: string): void
 }>()
 
 const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null)

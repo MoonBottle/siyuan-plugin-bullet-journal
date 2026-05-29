@@ -1467,7 +1467,7 @@ function isTagSelected(tag: string) {
 
 function handleAddTagFilter(tag: string) {
   if (!tag) return
-  emit('add-tag-filter', tag)
+  emit('addTagFilter', tag)
 }
 
 function getPinAriaLabel(item: Item) {

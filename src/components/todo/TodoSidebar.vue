@@ -14,7 +14,7 @@
     :on-item-hover-start="onItemHoverStart"
     :on-item-hover-end="onItemHoverEnd"
     :on-item-preview-click="onItemPreviewClick"
-    @add-tag-filter="emit('add-tag-filter', $event)"
+    @addTagFilter="emit('addTagFilter', $event)"
   />
 </template>
 

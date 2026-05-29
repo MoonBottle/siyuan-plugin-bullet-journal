@@ -243,7 +243,7 @@ async function handleMigrate() {
 function handleOpenDocClick() {
   if (!props.item?.blockId || isProcessing.value) return
 
-  emit('open-doc', props.item.docId, props.item.blockId)
+  emit('openDoc', props.item.docId, props.item.blockId)
 
   if (props.openDocMode === 'preview') {
     openBlockPreview(props.item.blockId)

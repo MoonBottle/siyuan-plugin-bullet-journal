@@ -15,7 +15,7 @@
       @mouseleave="handleHideTooltip"
       @focus="handleShowTooltip($event, reminderTooltip || reminderText)"
       @blur="handleHideTooltip"
-      @click.stop="$emit('set-reminder')"
+      @click.stop="$emit('setReminder')"
     >
       <span class="action-icon">⏰</span>
       <span class="action-text">{{ reminderText }}</span>
@@ -33,7 +33,7 @@
       @mouseleave="handleHideTooltip"
       @focus="handleShowTooltip($event, recurringTooltip || recurringText)"
       @blur="handleHideTooltip"
-      @click.stop="$emit('set-recurring')"
+      @click.stop="$emit('setRecurring')"
     >
       <span class="action-icon">🔁</span>
       <span class="action-text">{{ recurringText }}</span>
@@ -64,8 +64,8 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  'set-reminder': []
-  'set-recurring': []
+  setReminder: []
+  setRecurring: []
 }>()
 
 const showActions = computed(() => props.showReminder || props.showRecurring)
