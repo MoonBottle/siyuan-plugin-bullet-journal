@@ -55,20 +55,23 @@ export function buildFocusPlanReview(input: FocusPlanReviewInput) {
       deltaMinutes,
     }
   }
-  if (input.actualMinutes === 0) { return {
-    status: 'not-started' as const,
-    deltaMinutes,
+  if (input.actualMinutes === 0) {
+    return {
+      status: 'not-started' as const,
+      deltaMinutes,
+    }
   }
+  if (input.itemStatus !== 'completed') {
+    return {
+      status: 'in-progress' as const,
+      deltaMinutes,
+    }
   }
-  if (input.itemStatus !== 'completed') { return {
-    status: 'in-progress' as const,
-    deltaMinutes,
-  }
-  }
-  if (Math.abs(deltaMinutes) <= 25) { return {
-    status: 'matched' as const,
-    deltaMinutes,
-  }
+  if (Math.abs(deltaMinutes) <= 25) {
+    return {
+      status: 'matched' as const,
+      deltaMinutes,
+    }
   }
   return deltaMinutes > 0
     ? {
