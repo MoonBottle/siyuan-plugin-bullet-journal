@@ -350,17 +350,17 @@
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
-    color: #4CAF50;
+    color: #4caf50;
   }
 
   &.level-l2 {
     background: rgba(255, 152, 0, 0.15);
-    color: #FF9800;
+    color: #ff9800;
   }
 
   &.level-l3 {
     background: rgba(33, 150, 243, 0.15);
-    color: #2196F3;
+    color: #2196f3;
   }
 }
 
@@ -378,7 +378,6 @@
   justify-content: center;
   gap: 8px;
   margin-bottom: 16px;
-  
   .b3-button {
     min-width: 32px;
     padding: 4px 8px;
@@ -431,7 +430,6 @@
   color: var(--b3-theme-on-background);
   cursor: pointer;
   transition: all 0.15s ease;
-  
   &:hover:not(.empty) {
     background: var(--b3-theme-surface-light);
   }
@@ -450,7 +448,7 @@
     background: var(--b3-theme-primary-light);
     color: var(--b3-theme-primary);
     font-weight: 600;
-    
+
     &.today {
       background: var(--b3-theme-primary);
       color: var(--b3-theme-on-primary);
@@ -511,7 +509,9 @@
     border-radius: 3px;
     color: var(--b3-theme-primary);
     cursor: pointer;
-    transition: background 0.2s, color 0.3s;
+    transition:
+      background 0.2s,
+      color 0.3s;
 
     &:hover {
       background: var(--b3-theme-primary-light);
@@ -543,7 +543,8 @@
   }
 
   @keyframes tomato-pulse {
-    0%, 100% {
+    0%,
+    100% {
       color: #e74c3c;
       opacity: 1;
     }
@@ -813,11 +814,7 @@
 
   .floating-tomato-action--complete {
     color: var(--b3-theme-primary);
-    background: color-mix(
-      in srgb,
-      var(--b3-theme-primary) 12%,
-      var(--b3-theme-surface) 88%
-    );
+    background: color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface) 88%);
   }
 
   .floating-tomato-progress,
@@ -847,7 +844,9 @@
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s, visibility 0.15s;
+  transition:
+    opacity 0.15s,
+    visibility 0.15s;
 
   &.visible {
     opacity: 1;
@@ -886,7 +885,9 @@
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s, visibility 0.15s;
+  transition:
+    opacity 0.15s,
+    visibility 0.15s;
 
   &.visible {
     opacity: 1;
