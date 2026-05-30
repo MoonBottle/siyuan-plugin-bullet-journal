@@ -1599,7 +1599,7 @@ export default class TaskAssistantPlugin extends Plugin {
           (this.element as HTMLElement).style.display = "flex";
           (this.element as HTMLElement).style.flexDirection = "column"
           const pinia = getSharedPinia() ?? createPinia()
-          const app = createApp(HabitDock, { plugin })
+          const app = createApp(HabitDock, { plugin: self })
           app.use(pinia)
           mountVueAppInHost(this.element, app)
         },
