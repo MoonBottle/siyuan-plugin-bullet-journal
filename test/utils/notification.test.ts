@@ -53,9 +53,9 @@ vi.mock('@/stores/aiStore', () => ({
 
 function installBrowserNotification() {
   const BrowserNotification = Object.assign(
-    vi.fn().mockImplementation(() => ({
-      close: vi.fn(),
-    })),
+    vi.fn().mockImplementation(class {
+      close = vi.fn()
+    }),
     {
       permission: 'granted' as string,
       requestPermission: vi.fn(),
