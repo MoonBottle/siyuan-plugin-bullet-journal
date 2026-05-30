@@ -433,17 +433,17 @@
   &:hover:not(.empty) {
     background: var(--b3-theme-surface-light);
   }
-  
+
   &.empty {
     cursor: default;
   }
-  
+
   &.today {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
     font-weight: 600;
   }
-  
+
   &.selected {
     background: var(--b3-theme-primary-light);
     color: var(--b3-theme-primary);

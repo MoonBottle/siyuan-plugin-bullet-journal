@@ -81,6 +81,9 @@ export default antfu(
       'ts/consistent-type-imports': 'off',
       'ts/explicit-function-return-type': 'off',
       'ts/no-require-imports': 'off',
+      'ts/no-this-alias': ['error', {
+        allowedNames: ['self'],
+      }],
       'ts/no-use-before-define': 'warn',
       'ts/prefer-literal-enum-member': 'off',
       'ts/strict-boolean-expressions': 'off',

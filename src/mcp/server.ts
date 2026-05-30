@@ -3,6 +3,7 @@
  * 任务助手 MCP 服务器
  * 提供 list_groups、list_projects、filter_items、get_pomodoro_stats、get_pomodoro_records 工具
  */
+import process from 'node:process'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio'
 import { z } from 'zod'

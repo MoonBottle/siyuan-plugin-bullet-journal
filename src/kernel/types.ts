@@ -36,11 +36,13 @@ declare const siyuan: {
     broadcast: (method: string, params: any) => void
   }
   client: {
-    fetch: (path: string, init?: {
-      method?: string
-      headers?: Record<string, string>
-      body?: string
-    }) => Promise<{      ok: boolean      status: number      headers: Record<string, string>      text: () => Promise<string>      json: () => Promise<any>    }>
+    fetch: (path: string, init?: { method?: string, headers?: Record<string, string>, body?: string }) => Promise<{
+      ok: boolean
+      status: number
+      headers: Record<string, string>
+      text: () => Promise<string>
+      json: () => Promise<any>
+    }>
   }
   event: {
     handler: ((event: { type: string, detail: any }) => void) | null
