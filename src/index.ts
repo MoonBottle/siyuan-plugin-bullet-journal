@@ -1468,8 +1468,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注册 Dock（侧边栏）
    */
   private registerDocks() {
-    // 保存 plugin 实例引用
-    const plugin = this
+    const self = this
 
     // 日历 Dock（移动端专用）- 暂时注释掉
     // if (this.isMobile) {
@@ -1515,7 +1514,7 @@ export default class TaskAssistantPlugin extends Plugin {
         (this.element as HTMLElement).style.display = "flex";
         (this.element as HTMLElement).style.flexDirection = "column"
         const pinia = getSharedPinia() ?? createPinia()
-        const app = createApp(TodoDock, { plugin })
+        const app = createApp(TodoDock, { plugin: self })
         app.use(pinia)
         mountVueAppInHost(this.element, app)
       },

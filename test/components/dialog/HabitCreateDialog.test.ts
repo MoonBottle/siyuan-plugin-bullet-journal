@@ -190,15 +190,12 @@ describe('habitCreateDialog', () => {
       callback(0)
       return 1
     })
-    let focusedElement: Element | null = null
-    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement) {
-      focusedElement = this
-    })
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus')
 
     const dialog = showHabitCreateDialog(() => {})
     await nextTick()
 
-    expect(focusedElement).toBe(dialog.element.querySelector('input, button'))
+    expect(focusSpy.mock.contexts[0]).toBe(dialog.element.querySelector('input, button'))
 
     dialog.destroy()
     focusSpy.mockRestore()
