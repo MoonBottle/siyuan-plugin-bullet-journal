@@ -60,7 +60,7 @@ const DATE_KEYWORDS: Record<string, () => string> = {
   yesterday: () => dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
 }
 
-const TASK_PREFIX_RE = /^!{1,3}\s*(.+)$/
+const TASK_PREFIX_RE = /^!{1,3}\s*(\S.*)$/
 const TASK_TAG_TEST_RE = /#task\b/i
 const LEVEL_TAG_TEST_RE = /@(L[123])\b/i
 const EXCLAMATION_RE = /!/g
@@ -70,7 +70,7 @@ const EMOJI_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/
 const AT_DATE_RE = /@\s*(\d{4}-\d{2}-\d{2}|今天|明天|后天|昨天|today|tomorrow|yesterday)\b/
 const TIME_RANGE_RE = /(\d{1,2}:\d{2})\s*[~-]\s*(\d{1,2}:\d{2})/
 const SINGLE_TIME_RE = /(\d{1,2}:\d{2})(?!\s*[~-])/
-const PRIORITY_EMOJI_RE = /([🔥🌱🍃])/
+const PRIORITY_EMOJI_RE = /([🔥🌱🍃])/u
 const TAG_RE = /#\w+/g
 const AT_END_RE = /@$|@\s*$/
 const DATE_KEYWORD_TEST_RE = /今天|明天|后天/
