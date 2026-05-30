@@ -65,6 +65,13 @@ import { openDocumentAtLine } from '@/utils/fileUtils'
 import { computeTooltipPosition } from '@/utils/tooltipPosition'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 
+const props = withDefaults(defineProps<Props>(), {
+  showItems: false,
+  startDate: '',
+  endDate: '',
+  viewMode: 'day',
+})
+
 const HTML_DBLQUOTE_RE = /"/g
 const HTML_LT_RE = /</g
 const HTML_GT_RE = />/g
@@ -76,13 +83,6 @@ interface Props {
   endDate?: string
   viewMode?: 'day' | 'week' | 'month'
 }
-
-const props = withDefaults(defineProps<Props>(), {
-  showItems: false,
-  startDate: '',
-  endDate: '',
-  viewMode: 'day',
-})
 
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
