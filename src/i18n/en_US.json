@@ -344,18 +344,6 @@
       },
       "fullWithDirectoriesHint": "Currently in global scan mode, directory configuration is only used for grouping"
     },
-    "scanMode": {
-      "label": "Scan Scope",
-      "full": {
-        "label": "Scan entire workspace",
-        "description": "All documents containing task markers will be scanned and displayed"
-      },
-      "directories": {
-        "label": "Scan configured directories only",
-        "description": "Only scan documents in the configured directories below, suitable for large workspaces"
-      },
-      "fullWithDirectoriesHint": "Currently in global scan mode, directory configuration is only used for grouping"
-    },
     "mcp": {
       "title": "MCP Config",
       "description": "Expose task data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
@@ -1096,9 +1084,6 @@
     "noHabits": "No Habits",
     "noHabitsDesc": "Use 🎯 marker in documents to create habits",
     "backToList": "Back to List",
-    "widgetScopeLabel": "Scope",
-    "widgetScopeActive": "Active habits",
-    "widgetScopeArchived": "Archived habits",
     "monthlyCompletionRate": "Monthly Rate",
     "weeklyCompletionRate": "Weekly Rate",
     "target": "Target {target}{unit}",

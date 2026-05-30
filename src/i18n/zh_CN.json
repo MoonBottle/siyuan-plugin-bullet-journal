@@ -344,18 +344,6 @@
       },
       "fullWithDirectoriesHint": "当前为全局扫描模式，目录配置仅用于分组归类"
     },
-    "scanMode": {
-      "label": "扫描范围",
-      "full": {
-        "label": "扫描整个工作空间",
-        "description": "所有包含任务标记的文档都会被扫描和展示"
-      },
-      "directories": {
-        "label": "仅扫描配置目录",
-        "description": "只扫描下方配置的目录中的文档，适合大型工作空间"
-      },
-      "fullWithDirectoriesHint": "当前为全局扫描模式，目录配置仅用于分组归类"
-    },
     "mcp": {
       "title": "MCP 配置",
       "description": "将任务数据暴露给 Cursor、Claude 等 AI 助手。在 Cursor 设置 → MCP 中添加以下配置，并将 SIYUAN_TOKEN 替换为思源 设置→关于 中的 API Token。",
@@ -1116,9 +1104,6 @@
     "viewArchived": "查看已归档",
     "archivedEmptyTitle": "暂无已归档习惯",
     "archivedEmptyDesc": "归档后的习惯会出现在这里",
-    "widgetScopeLabel": "范围",
-    "widgetScopeActive": "进行中习惯",
-    "widgetScopeArchived": "已归档习惯",
     "archivedCannotCheckIn": "习惯已归档",
     "todayUnchecked": "待打卡",
     "periodCompleted": "本周已达标",
