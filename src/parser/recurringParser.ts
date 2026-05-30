@@ -186,15 +186,15 @@ export function stripRecurringMarkers(content: string): string {
   // 第一步：移除带参数的复杂格式
   // 注意：必须先匹配更具体的模式（如 🔁每周一三五）再匹配通用的（如 🔁每周）
   content = content
-    .replace(new RegExp(`${repeatEmoji}\\s*每月\\d+日`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*每月\\d+日`, 'g'), '')
     // 匹配紧凑格式：🔁每周一三五（连续星期几字符）
-    .replace(new RegExp(`${repeatEmoji}\\s*每周[一二三四五六日天]+`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*每周[一二三四五六日天]+`, 'g'), '')
     .replace(new RegExp(`${repeatEmoji}\\s*monthly\\s+on\\s+day\\s+\\d+`, 'gi'), '')
-    .replace(new RegExp(`${repeatEmoji}\\s*weekly\\s+on\\s+[MonTueWedThuFriSatSun,\\s]+`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*weekly\\s+on\\s[MonTueWdhFriSa,\\s]+`, 'gi'), '')
 
   // 第二步：移除基础格式（通用的，不带参数）
   content = content
-    .replace(new RegExp(`${repeatEmoji}\\s*(?:每天|每周|每月|每年|工作日)`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*(?:每天|每周|每月|每年|工作日)`, 'g'), '')
     .replace(new RegExp(`${repeatEmoji}\\s*(?:daily|weekly|monthly|yearly|workday)`, 'gi'), '')
 
   // 第三步：移除结束条件
@@ -285,7 +285,7 @@ export function getNextOccurrenceDate(
  * @param nextDate 下次日期
  * @param endCondition 结束条件
  * @param _currentCount 当前已创建次数（可选）
- * @returns { canCreate: boolean; reason?: string }
+ * @returns 检查结果，包含是否可创建及原因 — { canCreate: boolean; reason?: string }
  */
 export function checkEndCondition(
   nextDate: string,
