@@ -22,7 +22,7 @@
       </button>
     </div>
     <FocusWorkbenchView
-      ref="focusReviewViewRef"
+      ref="focusWorkbenchViewRef"
       :initial-group-id="initialGroupId"
     />
   </div>
@@ -46,10 +46,10 @@ const props = withDefaults(defineProps<{
 
 const showHeader = computed(() => !props.embedded)
 const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusReviewViewConfig | undefined)?.groupId)
-const focusReviewViewRef = ref<InstanceType<typeof FocusWorkbenchView> | null>(null)
+const focusWorkbenchViewRef = ref<InstanceType<typeof FocusWorkbenchView> | null>(null)
 
 function handleRefresh() {
-  focusReviewViewRef.value?.handleRefresh?.()
+  focusWorkbenchViewRef.value?.handleRefresh?.()
 }
 </script>
 
