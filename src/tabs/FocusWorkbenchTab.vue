@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench'
+import type { WorkbenchFocusWorkbenchViewConfig } from '@/types/workbench'
 import {
   computed,
   ref,
@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<{
 })
 
 const showHeader = computed(() => !props.embedded)
-const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusReviewViewConfig | undefined)?.groupId)
+const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusWorkbenchViewConfig | undefined)?.groupId)
 const focusWorkbenchViewRef = ref<InstanceType<typeof FocusWorkbenchView> | null>(null)
 
 function handleRefresh() {
