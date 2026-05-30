@@ -238,7 +238,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const msg = t('pomodoro').startFocusStatus.replace('{content}', item.content).replace('{mode}', mode)
         showMessage(msg)
 
-        console.log('[Pomodoro] kernelAvailable=' + kernelAvailable.value)
+        console.log(`[Pomodoro] kernelAvailable=${kernelAvailable.value}`)
         if (kernelAvailable.value && timerMode === 'countdown') {
           const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000)
           console.log(`[Pomodoro] registering kernel timer: id=pomodoro-${parentBlockId} endTime=${endTime} kernelAvailable=${kernelAvailable.value}`)
