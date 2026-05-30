@@ -24,6 +24,7 @@ import {
   getWebhookConfig,
   loadWebhookConfig,
   reloadWebhookConfig,
+  setInstanceTag,
 } from './webhook'
 
 let iid = ''
@@ -36,6 +37,7 @@ function genId(): string {
 siyuan.plugin.lifecycle.onload = async function () {
   iid = genId()
   isActive = true
+  setInstanceTag(`[${iid}]`)
   console.log(`[kernel${iid}] onload fired`)
 
   await initRpcApi()
@@ -90,6 +92,10 @@ siyuan.plugin.lifecycle.onrunning = async function () {
     console.log(`[kernel${iid}] siyuan.client.fetch test FAILED: ${String(e)}`)
   }
 
+  setInterval(() => {
+    console.log(`[test] tick from instance #${iid}`)
+  }, 1000)
+
   console.log(`[kernel${iid}] initialized successfully`)
 }
 
@@ -97,6 +103,7 @@ siyuan.plugin.lifecycle.onunload = async function () {
   console.log(`[kernel${iid}] unloading...`)
 
   isActive = false
+  setInstanceTag('')
   siyuan.event.handler = null
   siyuan.server.private.http.handler = null
   siyuan.server.private.es.handler = null
@@ -106,9 +113,9 @@ siyuan.plugin.lifecycle.onunload = async function () {
   console.log(`[kernel${iid}] before cleanup: activeTimers=${activeTimers.length}`)
 
   closeMcpServer()
+  clearModuleState()
   stopScheduler()
   await persistTimerRegistry()
-  clearModuleState()
 
   console.log(`[kernel${iid}] unloaded, all state cleared`)
 }

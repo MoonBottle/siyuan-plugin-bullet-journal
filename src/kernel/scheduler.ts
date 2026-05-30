@@ -16,6 +16,11 @@ let checkInterval: ReturnType<typeof setInterval> | null = null
 let lastKnownDate = ''
 let persistTimer: ReturnType<typeof setTimeout> | null = null
 let isDirty = false
+let isActive = false
+
+export function isSchedulerActive(): boolean {
+  return isActive
+}
 
 const MISSED_THRESHOLD_MS = 5 * 60 * 1000
 const PURGE_THRESHOLD_S = 24 * 60 * 60
@@ -136,6 +141,7 @@ export function initScheduler(): void {
     clearInterval(checkInterval)
     checkInterval = null
   }
+  isActive = true
   lastKnownDate = formatDate(new Date())
   console.log(`[scheduler] initScheduler: existing timers=${timers.size} today=${lastKnownDate}`)
   const now = Date.now() / 1000
@@ -167,6 +173,7 @@ export function stopScheduler(): void {
 }
 
 export function clearModuleState(): void {
+  isActive = false
   timers.clear()
   notifiedTimerIds.clear()
   lastKnownDate = ''

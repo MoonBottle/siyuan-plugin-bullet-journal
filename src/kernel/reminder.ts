@@ -4,6 +4,7 @@ import type {
 } from './types'
 import {
   cancelTimersByType,
+  isSchedulerActive,
   registerTimers,
 } from './scheduler'
 import { calculateReminderTime } from './utils'
@@ -25,6 +26,7 @@ export async function initReminderScheduler(): Promise<void> {
 }
 
 export async function rebuildReminderSchedule(): Promise<void> {
+  if (!isSchedulerActive()) return
   try {
     const result = await siyuan.storage.get('kernel-data.json')
     const data: KernelData = await result.json()

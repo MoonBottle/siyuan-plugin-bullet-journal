@@ -38,14 +38,19 @@ export async function reloadWebhookConfig(): Promise<void> {
 }
 
 const dispatchedNotificationIds = new Set<string>()
+let instanceTag = ''
+
+export function setInstanceTag(tag: string): void {
+  instanceTag = tag
+}
 
 export function dispatchNotification(entry: TimerEntry): void {
   if (dispatchedNotificationIds.has(entry.id)) {
-    console.log(`[webhook] dispatchNotification SKIP id=${entry.id} (already dispatched)`)
+    console.log(`[webhook${instanceTag}] dispatch SKIP id=${entry.id} (already dispatched)`)
     return
   }
   dispatchedNotificationIds.add(entry.id)
-  console.log(`[webhook] dispatchNotification: type=${entry.type} id=${entry.id}`)
+  console.log(`[webhook${instanceTag}] dispatchNotification: type=${entry.type} id=${entry.id}`)
 
   const broadcastParams = {
     id: entry.id,
