@@ -34,7 +34,7 @@ const ZERO_WIDTH_CHARS_RE = /[\u200B-\u200D\uFEFF]/g
 const EBBINGHAUS_RE = /^(?:艾宾浩斯|ebbinghaus)(?:\[(.+)\])?$/i
 const EVERY_N_DAYS_RE = /^每(\d+)天$|^every\s+(\d+)\s+days?$/i
 const N_PER_WEEK_RE = /^每周(\d+)天$|^(\d+)\s+days?\/week$/i
-const WEEKLY_DAYS_RE = /^每周([一二三四五六日天]+)$|^weekly\s+on\s+(.+)$/i
+const WEEKLY_DAYS_RE = /^每周([一二三四五六日天]+)$|^weekly\s+on\s+(\S.*)$/i
 const DAY_SEPARATOR_RE = /[,，\s]+/
 const START_DATE_RE = /🎯(\d{4}-\d{2}-\d{2})/
 const DURATION_DAYS_RE = /坚持(\d+)天/
@@ -42,7 +42,7 @@ const START_DATE_REMOVE_RE = /🎯\d{4}-\d{2}-\d{2}/
 const DURATION_DAYS_REMOVE_RE = /坚持\d+天/
 const REMINDER_TIME_REMOVE_RE = /⏰\d{2}:\d{2}(?::\d{2})?/
 const COUNT_TARGET_RE = /(\d+)([a-z\u4E00-\u9FFF]{1,4})$/i
-const FREQ_MARKER_RE = /🔄(.+?)(?=\s+📦\S+$|$)/
+const FREQ_MARKER_RE = /🔄(\S+(?:\s+\S+)*?)(?=\s+📦\S+$|$)/
 const ARCHIVE_DATE_RE = /(?:^|\s)📦(\d{4}-\d{2}-\d{2})(?=\s|$)/
 const ARCHIVE_MARKER_RE = /(?:^|\s)📦\d{4}-\d{2}-\d{2}(?=\s|$)/
 const MISSED_MARKER_RE = /(?:^|\s)❌$/

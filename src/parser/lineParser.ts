@@ -75,13 +75,13 @@ const TRAILING_COMMA_RE = /\s+[，,]$/g
 const COMMA_RE = /,/g
 const FULL_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const SHORT_DATE_RE = /^\d{2}-\d{2}$/
-const BLOCK_ATTR_RE = /\{:\s*([^}]*)\}/
+const BLOCK_ATTR_RE = /\{:\s*([^}\s][^}]*)\}/
 const KEY_VALUE_ATTR_RE = /([\w-]+)=['"]([^'"]*)['"]/g
 const LIST_MARKER_RE = /^\s*(-|\d+\.)\s+/
 const BLOCK_ATTR_STRIP_RE = /^\{:[^}]*\}\s*/
-const POMODORO_LINE_RE = /^🍅(?:(\d+)[,，]\s*)?(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/
+const POMODORO_LINE_RE = /^🍅(?:(\d+)[,，]\s*)?(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?(.*)$/
 const POMODORO_HEADER_RE = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/
-const POMODORO_SINGLE_LINE_RE = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/
+const POMODORO_SINGLE_LINE_RE = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})(.*)$/
 const TIME_RANGE_MATCH_RE = new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})~(${TIME_PART_PATTERN})`)
 const SINGLE_TIME_MATCH_RE = new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})(?!~)`)
 const DATE_WITH_TIME_STRIP_RE = new RegExp(DATE_WITH_OPTIONAL_TIME_PATTERN, 'g')
@@ -182,9 +182,10 @@ export class LineParser {
     // 解析链接（支持多个）
     const links: Link[] = []
     const urlRegex = URL_RE
-    let urlMatch
-    while ((urlMatch = urlRegex.exec(line)) !== null) {
+    let urlMatch = urlRegex.exec(line)
+    while (urlMatch !== null) {
       links.push(createLink('链接', urlMatch[1]))
+      urlMatch = urlRegex.exec(line)
     }
 
     // 解析业务标签
@@ -470,8 +471,8 @@ export class LineParser {
     // 匹配 @日期 或 📅日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
     const mainRegex = MAIN_DATETIME_RE
 
-    let mainMatch
-    while ((mainMatch = mainRegex.exec(line)) !== null) {
+    let mainMatch = mainRegex.exec(line)
+    while (mainMatch !== null) {
       const startIndex = mainMatch.index
       const mainDatePart = mainMatch[1]
       const mainTimePart = mainMatch[2] || null
@@ -512,6 +513,8 @@ export class LineParser {
         // 安全检查：防止无限循环
         if (contMatch[0].length === 0) break
       }
+
+      mainMatch = mainRegex.exec(line)
     }
 
     return expressions
@@ -602,11 +605,10 @@ export class LineParser {
    */
   private static expandDateRange(start: Date, end: Date): string[] {
     const dates: string[] = []
-    const current = new Date(start)
-
-    while (current <= end) {
-      dates.push(this.formatDate(new Date(current)))
-      current.setDate(current.getDate() + 1)
+    const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+    for (let i = 0; i < totalDays; i++) {
+      const current = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+      dates.push(this.formatDate(current))
     }
 
     return dates
@@ -638,9 +640,10 @@ export class LineParser {
       // 匹配 key="value" 或 key='value' 格式
       // key 支持字母、数字、下划线、连字符（如 custom-pomodoro-status）
       const keyValueRegex = KEY_VALUE_ATTR_RE
-      let kvMatch
-      while ((kvMatch = keyValueRegex.exec(attrContent)) !== null) {
+      let kvMatch = keyValueRegex.exec(attrContent)
+      while (kvMatch !== null) {
         attrs[kvMatch[1]] = kvMatch[2]
+        kvMatch = keyValueRegex.exec(attrContent)
       }
     }
 
