@@ -82,6 +82,7 @@ describe('createDetachedPomodoroWindowHost', () => {
         executeJavaScript,
         on: vi.fn(),
       }
+
       on = vi.fn()
       once = vi.fn()
       setAlwaysOnTop = vi.fn()
@@ -152,6 +153,7 @@ describe('createDetachedPomodoroWindowHost', () => {
         executeJavaScript: vi.fn(),
         on: vi.fn(),
       }
+
       on = vi.fn()
       once = vi.fn()
       setAlwaysOnTop = vi.fn()

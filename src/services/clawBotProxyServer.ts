@@ -3,6 +3,7 @@ import type {
   Server,
   ServerResponse,
 } from 'node:http'
+import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 
 interface ProxyServerInstance {

@@ -383,7 +383,7 @@ describe('quadrantTab', () => {
         title: '不重要不紧急',
         rules: { priority: ['none'] },
       },
-    ];
+    ]
     ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(class {
       onmessage: string | null = null
       close = vi.fn()

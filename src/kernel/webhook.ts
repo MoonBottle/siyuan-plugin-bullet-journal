@@ -3,6 +3,7 @@ import type {
   WebhookChannel,
   WebhookConfig,
 } from './types'
+import { Buffer } from 'node:buffer'
 import { renderTemplate } from './utils'
 
 let webhookConfig: WebhookConfig = {
