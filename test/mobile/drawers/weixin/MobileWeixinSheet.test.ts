@@ -217,7 +217,7 @@ describe('mobileWeixinSheet', () => {
 
   it('stops polling on unmount', async () => {
     vi.useFakeTimers()
-    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
 
     mockAiStore.clawBotLoginStatus = 'pending'
     mockAiStore.clawBotConfig.qrcodeUrl = 'https://example.com/qr'

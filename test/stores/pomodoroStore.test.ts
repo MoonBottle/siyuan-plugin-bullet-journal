@@ -29,11 +29,11 @@ import {
 
 // 提供 window 和 document（Node 环境无此全局，vitest fake timers 会替换 setInterval）
 beforeAll(() => {
-  if (typeof (global as any).window === 'undefined') {
-    (global as any).window = global
+  if (typeof (globalThis as any).window === 'undefined') {
+    (globalThis as any).window = globalThis
   }
-  if (typeof (global as any).document === 'undefined') {
-    (global as any).document = {
+  if (typeof (globalThis as any).document === 'undefined') {
+    (globalThis as any).document = {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       visibilityState: 'visible',
