@@ -125,8 +125,8 @@ import {
   usePomodoroStore,
   useProjectStore,
 } from '@/stores'
-import { getSharedPinia } from '@/utils/sharedPinia'
 import { showMessage } from '@/utils/dialog'
+import { getSharedPinia } from '@/utils/sharedPinia'
 import ItemSelectorSheet from './ItemSelectorSheet.vue'
 
 const props = defineProps<{

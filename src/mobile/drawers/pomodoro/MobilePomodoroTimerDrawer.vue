@@ -224,8 +224,8 @@ import {
   useSettingsStore,
 } from '@/stores'
 import dayjs from '@/utils/dayjs'
-import { getSharedPinia } from '@/utils/sharedPinia'
 import { showMessage } from '@/utils/dialog'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 const props = defineProps<{
   modelValue: boolean

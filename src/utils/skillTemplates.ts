@@ -8,7 +8,7 @@ import type { BuiltinSkill } from '@/types/skill'
 // 导入内置技能文件内容（Vite 会处理 .md 导入）
 import dailyReportContent from '@/builtin-skills/daily-report.md?raw'
 
-const FRONTMATTER_RE = /^---\s*\n[\s\S]*?\n---\s*/
+const FRONTMATTER_RE = /^---[ \t]*\n[\s\S]*?\n---[ \t]*/
 const PLACEHOLDER_DESCRIPTION_RE = /\{\{description\}\}/g
 const PLACEHOLDER_SKILL_NAME_RE = /\{\{skillName\}\}/g
 

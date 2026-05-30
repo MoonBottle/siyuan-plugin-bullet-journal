@@ -102,7 +102,7 @@ onMounted(() => {
   unsubscribeShellNavigate = eventBus.on(Events.MOBILE_MAIN_SHELL_NAVIGATE, handleShellNavigate)
 
   if (process.env.DEV_MODE === 'true') {
-    new VConsole()
+    const _vconsole = new VConsole()
   }
 })
 

@@ -11,7 +11,7 @@ import { sql } from '@/api'
 import { usePlugin } from '@/main'
 
 const TIME_FORMAT_RE = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
-const DATE_PREFIX_RE = /(?:@|📅)/
+const DATE_PREFIX_RE = /@|📅/
 
 function formatTimeToSeconds(timeStr: string): string {
   const match = timeStr.match(TIME_FORMAT_RE)

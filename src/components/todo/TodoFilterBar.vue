@@ -73,7 +73,7 @@
         class="tag-dropdown tag-options"
       >
         <button
-          v-for="(option, index) in filteredTagOptions"
+          v-for="option in filteredTagOptions"
           :key="option.name"
           class="tag-chip tag-option"
           :class="[

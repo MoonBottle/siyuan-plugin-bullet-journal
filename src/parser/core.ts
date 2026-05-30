@@ -206,7 +206,8 @@ function extractMarkdownLinks(text: string, blockId: string): Link[] {
   const linkRegex = MARKDOWN_LINK_RE
 
   let match: RegExpExecArray | null
-  while ((match = linkRegex.exec(text)) !== null) {
+  match = linkRegex.exec(text)
+  while (match !== null) {
     const [, rawName, rawUrl] = match
     const url = rawUrl.trim()
     const isAttachment = url.startsWith('assets/')
@@ -214,6 +215,7 @@ function extractMarkdownLinks(text: string, blockId: string): Link[] {
     const name = rawName.trim() || fallbackName
 
     links.push(createLink(name, url, isAttachment ? 'attachment' : undefined, isAttachment ? blockId : undefined))
+    match = linkRegex.exec(text)
   }
 
   return links

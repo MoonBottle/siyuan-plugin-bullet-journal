@@ -11,7 +11,7 @@ import type {
 } from '@/types/skill'
 
 const CODE_BLOCK_START_RE = /^```(\w+)?/
-const REFERENCE_TAG_RE = /\[reference:\s*(.+?)\]/i
+const REFERENCE_TAG_RE = /\[reference:\s*(\S[^\]]*)\]/i
 const SINGLE_QUOTE_RE = /'/g
 
 /**

@@ -4,8 +4,8 @@ import type {
   PreparedMutationPayload,
   ResolvedMutationPlan,
 } from '@/utils/blockWriter/shared/types'
-import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
 import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender'
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer'
 import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
 import { injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController'
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'

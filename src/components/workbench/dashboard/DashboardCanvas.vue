@@ -125,7 +125,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'request-add-widget'): void
+  (event: 'requestAddWidget'): void
 }>()
 
 function resolveWorkbenchStore() {

@@ -99,7 +99,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'date-click': [date: string, event: MouseEvent]
+  dateClick: [date: string, event: MouseEvent]
 }>()
 
 const today = dayjs().format('YYYY-MM-DD')

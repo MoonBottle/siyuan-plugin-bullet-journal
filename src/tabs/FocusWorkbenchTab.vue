@@ -22,7 +22,7 @@
       </button>
     </div>
     <FocusWorkbenchView
-      ref="focusWorkbenchViewRef"
+      ref="focusReviewViewRef"
       :initial-group-id="initialGroupId"
     />
   </div>

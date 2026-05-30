@@ -262,7 +262,6 @@ import type {
   AIProviderConfig,
 } from '@/types/ai'
 import { showMessage } from 'siyuan'
-import { showConfirmDialog } from '@/utils/dialog'
 import {
   computed,
   reactive,
@@ -274,6 +273,7 @@ import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
 import { PROVIDER_PRESETS } from '@/types/ai'
+import { showConfirmDialog } from '@/utils/dialog'
 import AiProviderEditForm from './AiProviderEditForm.vue'
 import SySettingsActionButton from './SySettingsActionButton.vue'
 import SySettingsSection from './SySettingsSection.vue'

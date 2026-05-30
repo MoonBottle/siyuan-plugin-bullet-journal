@@ -20,7 +20,7 @@ import {
 import { parseKramdownBlocks } from '@/parser/core'
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers'
 
-const LIST_ITEM_PREFIX_RE = /^\s*(-|\d+\.)\s+/
+const LIST_ITEM_PREFIX_RE = /^\s*(?:-|\d+\.)\s+/
 const DATE_VALUE_RE = /\d{4}-\d{2}-\d{2}/
 
 /** 日期 patch 源解析结果 */

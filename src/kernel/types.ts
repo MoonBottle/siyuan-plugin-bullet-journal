@@ -1,4 +1,4 @@
-declare const siyuan: {
+export declare const siyuan: {
   plugin: {
     name: string
     version: string
@@ -101,7 +101,7 @@ interface HttpResponse {
   }
 }
 
-interface TimerEntry {
+export interface TimerEntry {
   id: string
   type: 'reminder' | 'pomodoro' | 'break' | 'habit'
   endTime: number
@@ -116,7 +116,7 @@ interface TimerEntry {
   notified: boolean
 }
 
-interface WebhookConfig {
+export interface WebhookConfig {
   enabled: boolean
   channels: WebhookChannel[]
 }
@@ -198,7 +198,7 @@ interface KernelDataHabit {
   blockId: string
 }
 
-interface KernelData {
+export interface KernelData {
   version: number
   updatedAt: string
   groups: KernelDataGroup[]

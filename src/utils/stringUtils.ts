@@ -4,6 +4,7 @@
  */
 
 const SLASH_COMMAND_START_CHARS = ['/', '、'] as const
+// eslint-disable-next-line no-misleading-character-class
 const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u
 const WHITESPACE_RE = /\s/u
 

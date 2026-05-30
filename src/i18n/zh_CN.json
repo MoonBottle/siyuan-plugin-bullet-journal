@@ -915,6 +915,9 @@
       "settings": "设置",
       "view": "视图"
     },
+    "create": {
+      "success": "创建成功"
+    },
     "quickCreate": {
       "title": "快速创建",
       "task": "任务",

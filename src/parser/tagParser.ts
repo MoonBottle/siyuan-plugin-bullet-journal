@@ -13,6 +13,7 @@ const RESERVED_TAGS = new Set([
 ])
 
 const TAG_REGEX = /#([^\s#.,，。！？；：、)\]】」』}）〕〗〙〛]+)(?=$|[\s#.,，。！？；：、)\]】」』}）〕〗〙〛])/gu
+// eslint-disable-next-line no-misleading-character-class
 const ZERO_WIDTH_CHARS_REGEX = /[\u200B\u200C\u200D\uFEFF]/gu
 const NATIVE_SIYUAN_TAG_REGEX = /#([^\s#.,，。！？；：、)\]】」』}）〕〗〙〛\u200B\u200C\u200D]+)#(?=$|[\s#.,，。！？；：、)\]】」』}）〕〗〙〛\u200B\u200C\u200D])/gu
 const ALL_ALPHA_RE = /^[A-Z]+$/i

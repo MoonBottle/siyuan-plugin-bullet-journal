@@ -59,10 +59,10 @@ function resolveBlockPanelCtor(): NativeBlockPanelCtor | null {
   return null
 }
 
-function instantiateBlockPanel(panelCtor: NativeBlockPanelCtor, options: OpenNativeBlockPreviewOptions): NativeBlockPanelInstance {
+function instantiateBlockPanel(PanelCtor: NativeBlockPanelCtor, options: OpenNativeBlockPreviewOptions): NativeBlockPanelInstance {
 
   try {
-    return new panelCtor({
+    return new PanelCtor({
       app: options.app,
       targetElement: options.anchorEl,
       nodeIds: [options.blockId],
@@ -71,7 +71,7 @@ function instantiateBlockPanel(panelCtor: NativeBlockPanelCtor, options: OpenNat
     })
   }
   catch {
-    return new panelCtor({
+    return new PanelCtor({
       app: options.app,
       targetElement: options.anchorEl,
       refDefs: [{ refID: options.blockId }],
@@ -435,9 +435,9 @@ export function createNativeBlockPreviewController() {
       return currentPanel
     }
 
-    const panelCtor = resolveBlockPanelCtor()
-    if (panelCtor) {
-      const panel = instantiateBlockPanel(panelCtor, options)
+    const PanelCtor = resolveBlockPanelCtor()
+    if (PanelCtor) {
+      const panel = instantiateBlockPanel(PanelCtor, options)
       makeDestroyIdempotent(panel, options)
       registerPanel(panel)
       pinPanelForController(panel)

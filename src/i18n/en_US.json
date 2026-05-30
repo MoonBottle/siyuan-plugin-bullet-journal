@@ -875,6 +875,9 @@
       "settings": "Settings",
       "view": "View"
     },
+    "create": {
+      "success": "Created successfully"
+    },
     "quickCreate": {
       "title": "Quick Create",
       "task": "Task",

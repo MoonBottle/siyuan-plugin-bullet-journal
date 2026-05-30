@@ -52,13 +52,13 @@
               </div>
               <div class="quick-times-grid">
                 <button
-                  v-for="time in quickTimes"
-                  :key="time"
+                  v-for="qt in quickTimes"
+                  :key="qt"
                   class="quick-time-btn"
-                  :class="{ active: currentHour === time.split(':')[0] && currentMinute === time.split(':')[1] }"
-                  @click="selectQuickTime(time)"
+                  :class="{ active: currentHour === qt.split(':')[0] && currentMinute === qt.split(':')[1] }"
+                  @click="selectQuickTime(qt)"
                 >
-                  {{ time }}
+                  {{ qt }}
                 </button>
               </div>
             </div>

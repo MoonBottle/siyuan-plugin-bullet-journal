@@ -34,12 +34,12 @@ function isWeekend(date: Date): boolean {
 
 function enumerateDateRange(start: string, end: string): string[] {
   const result: string[] = []
-  const current = new Date(start)
-  const endDate = new Date(end)
+  let current = new Date(start)
+  const endMs = new Date(end).getTime()
 
-  while (current <= endDate) {
+  while (current.getTime() <= endMs) {
     result.push(formatDate(current))
-    current.setDate(current.getDate() + 1)
+    current = new Date(current.getTime() + 86400000)
   }
 
   return result

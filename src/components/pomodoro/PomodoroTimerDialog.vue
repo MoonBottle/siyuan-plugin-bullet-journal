@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="dialogContent"
     class="pomodoro-timer-dialog"
   >
     <div
@@ -205,11 +204,11 @@ import {
   useSettingsStore,
 } from '@/stores'
 import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
 import {
   formatFocusActualDisplay,
   formatFocusPlanDisplay,
 } from '@/utils/focusPlanReview'
-import { showMessage } from '@/utils/dialog'
 import { getSharedPinia } from '@/utils/sharedPinia'
 import SelectedItemCard from './SelectedItemCard.vue'
 

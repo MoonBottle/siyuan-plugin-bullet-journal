@@ -501,7 +501,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
 function createCustomSlashCommands(
   customCommands: CustomSlashCommand[],
   config: SlashCommandConfig,
-): Array<{ filter: string[], html: string, id: string, callback: Function }> {
+): Array<{ filter: string[], html: string, id: string, callback: (...args: any[]) => any }> {
   return customCommands.map((cmd) => ({
     filter: cmd.commands,
     html: `<div class="b3-list-item__first">
