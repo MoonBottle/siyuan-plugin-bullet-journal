@@ -324,7 +324,6 @@ import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
   useProjectStore,
-  useSettingsStore,
 } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
@@ -343,7 +342,6 @@ import { getProgressDirection } from '@/utils/progressDirection'
 const plugin = usePlugin() as any
 const pomodoroStore = usePomodoroStore()
 const projectStore = useProjectStore()
-const settingsStore = useSettingsStore()
 
 // 防止重复点击的执行锁
 const isProcessing = ref(false)

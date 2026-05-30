@@ -128,14 +128,6 @@ const focusByDateHour = computed(() => {
   return map
 })
 
-const maxMinutes = computed(() => {
-  let max = 0
-  focusByDateHour.value.forEach((v) => {
-    if (v > max) max = v
-  })
-  return max || 1
-})
-
 function getCellFocus(date: string, hour: number): number {
   return focusByDateHour.value.get(`${date}-${hour}`) ?? 0
 }

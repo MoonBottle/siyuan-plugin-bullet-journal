@@ -386,7 +386,7 @@ export async function getFile(path: string): Promise<any> {
   try {
     const file = await fetchSyncPost(url, data)
     return file
-  } catch (error_msg) {
+  } catch {
     return null
   }
 }

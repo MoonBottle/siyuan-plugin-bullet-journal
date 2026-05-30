@@ -43,7 +43,6 @@ import {
 import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
-  useProjectStore,
   useSettingsStore,
 } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
@@ -85,7 +84,6 @@ const emit = defineEmits<{
 const WEEK_NUMBER_RE = /week\s+(\d+)/i
 
 const settingsStore = useSettingsStore()
-const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
 const plugin = usePlugin()
 
@@ -296,7 +294,6 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   const props = info.event.extendedProps
   if (!props) return
 
-  const isItem = !!props.item
   const item = {
     id: info.event.id,
     content: props.item || info.event.title,
@@ -450,7 +447,7 @@ onMounted(async () => {
         return template.replace('{num}', String(arg.num))
       },
       navLinks: true,
-      navLinkHint: (dateText: string, date: Date) => {
+      navLinkHint: (dateText: string, _date: Date) => {
         const template = (t('calendar') as any).navLinkHint ?? 'Go to $0'
         const weekMatch = WEEK_NUMBER_RE.exec(dateText)
         const displayText = weekMatch

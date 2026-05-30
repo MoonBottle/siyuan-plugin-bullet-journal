@@ -17,10 +17,10 @@ export interface SkillListItem {
 
 /**
  * 构建系统提示词
- * @param skills 可选，可用技能列表（name + description）
+ * @param _skills 可选，可用技能列表（name + description）
  * @returns 完整的系统提示词
  */
-export function buildSystemPrompt(skills?: SkillListItem[]): string {
+export function buildSystemPrompt(_skills?: SkillListItem[]): string {
   const now = dayjs()
   const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`
 

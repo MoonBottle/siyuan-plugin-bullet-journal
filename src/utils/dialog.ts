@@ -63,9 +63,6 @@ const AMP_RE = /&/g
 const LT_RE = /</g
 const QUOT_RE = /"/g
 
-// 复制图标 SVG (使用 fill 而不是 stroke)
-const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
-
 /** 链接名称最大显示长度，超出则截断并 hover 显示全部 */
 const LINK_NAME_MAX_LEN = 12
 
@@ -227,66 +224,6 @@ function focusDialogInitialElement(dialogElement: HTMLElement): void {
   }
 }
 
-function formatLinkDisplay(name: string): { display: string, tooltipAttr: string } {
-  const escapeHtml = (s: string) => s.replace(AMP_RE, '&amp;').replace(LT_RE, '&lt;').replace(QUOT_RE, '&quot;')
-  if (!name || name.length <= LINK_NAME_MAX_LEN) {
-    return {
-      display: escapeHtml(name),
-      tooltipAttr: '',
-    }
-  }
-  const escaped = escapeHtml(name)
-  return {
-    display: `${escapeHtml(name.slice(0, LINK_NAME_MAX_LEN))}...`,
-    tooltipAttr: ` data-sy-tooltip="${escaped}"`,
-  }
-}
-
-function bindLinkTooltips(element: HTMLElement): void {
-  element.querySelectorAll('[data-sy-tooltip]').forEach((el) => {
-    const fullText = (el as HTMLElement).dataset.syTooltip
-    if (!fullText) return
-
-    const showTooltip = () => {
-      let tip = document.getElementById(SY_LINK_TOOLTIP_ID)
-      if (!tip) {
-        tip = document.createElement('div')
-        tip.id = SY_LINK_TOOLTIP_ID
-        tip.className = 'sy-dialog-link-tooltip'
-        document.body.appendChild(tip)
-      }
-      tip.textContent = fullText
-      const rect = (el as HTMLElement).getBoundingClientRect()
-      const margin = 8
-      const left = rect.left + rect.width / 2
-      tip.style.left = `${left}px`
-      tip.style.top = `${rect.top - 4}px`
-      tip.style.transform = 'translate(-50%, -100%)'
-      tip.classList.add('visible')
-      // 显示后根据实际宽度调整位置，避免超出视口（tip 使用 translate(-50%) 居中）
-      requestAnimationFrame(() => {
-        const tipRect = tip.getBoundingClientRect()
-        if (tipRect.right > window.innerWidth - margin) {
-          tip.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
-        } else if (tipRect.left < margin) {
-          tip.style.left = `${tipRect.width / 2 + margin}px`
-        }
-      })
-    }
-
-    const hideTooltip = () => {
-      const tip = document.getElementById(SY_LINK_TOOLTIP_ID)
-      if (tip) tip.classList.remove('visible')
-    }
-
-    el.addEventListener('mouseenter', showTooltip)
-    el.addEventListener('mouseleave', hideTooltip)
-  })
-}
-
-// 对勾图标 SVG
-const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`
-
 /**
  * 弹框配置
  */
@@ -318,40 +255,6 @@ export function createDialog(options: DialogOptions): Dialog {
  */
 export function closeDialog(dialog: Dialog): void {
   dialog.destroy()
-}
-
-/**
- * 生成信息行 HTML
- */
-function createInfoRow(label: string, value: string, valueClass: string = ''): string {
-  return `
-    <div class="sy-dialog-info-row">
-      <span class="sy-dialog-label">${label}</span>
-      <span class="sy-dialog-value ${valueClass}">${value}</span>
-    </div>
-  `
-}
-
-/**
- * 生成链接列表 HTML
- */
-function createLinksRow(label: string, links: Array<{ name: string, url: string }>): string {
-  if (!links || links.length === 0) return ''
-
-  const linksHtml = links.map((link) => {
-    const {
-      display,
-      tooltipAttr,
-    } = formatLinkDisplay(link.name)
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link"${tooltipAttr}>${display}</a>`
-  }).join('')
-
-  return `
-    <div class="sy-dialog-info-row">
-      <span class="sy-dialog-label">${label}</span>
-      <div class="sy-dialog-links">${linksHtml}</div>
-    </div>
-  `
 }
 
 /**
@@ -450,30 +353,6 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
   })
 
   return dialog
-}
-
-/**
- * 生成链接分组 HTML
- */
-function createLinkGroup(title: string, links: Array<{ name: string, url: string }>): string {
-  if (!links || links.length === 0) return ''
-
-  const linksHtml = links.map((link) => {
-    const {
-      display,
-      tooltipAttr,
-    } = formatLinkDisplay(link.name)
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`
-  }).join('')
-
-  return `
-    <div class="sy-dialog-link-group">
-      <div class="sy-dialog-link-group-title">${title}</div>
-      <div class="sy-dialog-link-group-items">
-        ${linksHtml}
-      </div>
-    </div>
-  `
 }
 
 /** 当前打开的事项详情弹框，用于单例守卫（防止重复点击创建多个） */
@@ -748,7 +627,7 @@ export async function showPomodoroCompleteDialog(
       showMessage('关联事项已不存在，番茄钟记录已清理', 'info')
       return null
     }
-  } catch (error) {
+  } catch {
     // API 调用失败，假设块不存在
     console.log(`[Dialog] Failed to check block ${pending.blockId}, skipping dialog`)
     const plugin = usePlugin()

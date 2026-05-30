@@ -64,7 +64,6 @@
 
 <script setup lang="ts">
 import {
-  computed,
   nextTick,
   ref,
   watch,
@@ -85,7 +84,7 @@ interface Props {
   currentConversationId: string | null
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   select: [conversationId: string]
@@ -103,12 +102,6 @@ const menuStyle = ref<Record<string, string>>({})
 function getWeixinStatus(userId: string) {
   return aiStore.getWeixinConversationStatus(userId)
 }
-
-// 当前对话标题
-const currentConversationTitle = computed(() => {
-  const current = props.conversations.find((c) => c.id === props.currentConversationId)
-  return current?.title || t('aiChat').newConversation
-})
 
 // 切换下拉
 async function toggleDropdown() {
@@ -133,12 +126,6 @@ function selectConversation(conversationId: string) {
 // 删除对话
 function deleteConversation(conversationId: string) {
   emit('delete', conversationId)
-}
-
-// 创建新对话
-function createNewConversation() {
-  emit('create')
-  isOpen.value = false
 }
 
 // 更新菜单位置

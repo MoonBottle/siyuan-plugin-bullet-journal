@@ -471,7 +471,7 @@ watch(
 // 监听消息内容变化（用于流式响应）
 watch(
   () => messages.value.map((m) => m.content),
-  async (newContents, oldContents) => {
+  async (newContents, _oldContents) => {
     console.log('[ChatPanel] messages.content 变化:', { count: newContents.length })
     await nextTick()
     scrollToBottom()

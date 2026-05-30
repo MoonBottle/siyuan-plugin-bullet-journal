@@ -10,9 +10,6 @@ import type {
 
 const PENDING_COMPLETION_KEY = 'pending-pomodoro-completion.json'
 
-// 文件路径
-const ACTIVE_POMODORO_PATH = '/data/storage/pensieve/bullet-journal/active-pomodoro.json'
-
 /**
  * 保存进行中的番茄钟到文件
  * @param plugin 思源插件实例

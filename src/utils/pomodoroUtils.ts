@@ -213,8 +213,6 @@ export function groupPomodorosByItem(
 
   for (const {
     record,
-    projectName,
-    taskName,
     itemContent,
   } of filtered) {
     const key = itemContent ?? t('common').uncategorized

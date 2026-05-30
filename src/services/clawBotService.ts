@@ -301,7 +301,7 @@ export class ClawBotService {
 
         // 等待 1 秒再轮询
         await new Promise((r) => setTimeout(r, 1000))
-      } catch (error) {
+      } catch {
         if (error instanceof Error && error.message === '二维码已过期') {
           throw error
         }
@@ -445,7 +445,7 @@ export class ClawBotService {
         if (resp.longpolling_timeout_ms && resp.longpolling_timeout_ms > 0) {
           // 使用服务器建议的超时时间
         }
-      } catch (error) {
+      } catch {
         if (this.abortController?.signal.aborted) {
           break
         }

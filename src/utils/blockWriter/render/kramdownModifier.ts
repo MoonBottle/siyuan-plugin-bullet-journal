@@ -35,7 +35,6 @@ import { buildHabitRecordMarkdown } from '@/utils/habitMarkdown'
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu
 
-const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/g
 const DATE_MARKER_START_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/u
 const PRIORITY_MARKER_RE = /(?:^|\s)[🔥🌱🍃](?=\s|$)/u
 const TASK_TAG_MARKER_RE = /(?:^|\s)📋(?=\s|$)/u
@@ -54,7 +53,7 @@ const HEADING_PREFIX_RE = /^(\s{0,3}#{1,6})(?=\s|$)/
 const TASK_CHECKBOX_START_RE = /^(\[\s*(?:x\s*)?\])/i
 const NON_WHITESPACE_RE = /\S/u
 
-function primaryLineIndex(contentLines: string[]): number {
+function primaryLineIndex(_contentLines: string[]): number {
   return 0
 }
 

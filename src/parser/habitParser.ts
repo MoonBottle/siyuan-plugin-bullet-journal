@@ -258,7 +258,6 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   const normalizedLine = normalizeHabitText(line)
   const hasArchiveMarker = ARCHIVE_MARKER_RE.test(normalizedLine)
   const isMissedRecord = MISSED_MARKER_RE.test(normalizedLine)
-  const hasCompletedMarker = COMPLETED_MARKER_RE.test(normalizedLine)
 
   if (hasArchiveMarker) {
     return null

@@ -203,7 +203,6 @@ export function prepareUpdatePayload(
 ): Extract<PreparedMutationPayload, { kind: 'update' }> {
   const renderablePatches = plan.patches.filter((patch) => patch.type !== 'removeSlashCommand')
   let nextMarkdown = source.currentMarkdown
-  const sourceBlockId = plan.sourceBlockId ?? source.sourceBlockId ?? source.targetBlockId
 
   for (const patch of renderablePatches) {
     if (patch.type === 'addDate') {

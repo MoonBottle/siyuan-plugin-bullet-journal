@@ -12,19 +12,6 @@ export async function generateAesKey(): Promise<Uint8Array> {
 }
 
 /**
- * 将 Uint8Array 转换为 CryptoKey
- */
-async function importAesKey(keyData: Uint8Array): Promise<CryptoKey> {
-  return await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'AES-CBC' }, // 使用 CBC 模式模拟 ECB
-    false,
-    ['encrypt', 'decrypt'],
-  )
-}
-
-/**
  * PKCS7 填充
  */
 function pkcs7Pad(data: Uint8Array): Uint8Array {

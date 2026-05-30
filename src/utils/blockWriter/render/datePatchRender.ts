@@ -317,7 +317,6 @@ export function renderDatePatch(
   const sourceBlockId = context?.sourceBlockId ?? originalBlockId
   const targetItemBlockRaw = context?.targetItemBlockRaw ?? null
   const usedParentDocumentContext = context?.usedParentDocumentContext ?? false
-  const finalTargetBlockId = context?.finalTargetBlockId ?? sourceBlockId
 
   const lines = kramdown.split('\n')
   const hasTomatoClock = lines.some((line) => line.trim().startsWith('🍅'))

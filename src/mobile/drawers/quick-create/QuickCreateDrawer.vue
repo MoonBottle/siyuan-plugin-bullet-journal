@@ -630,10 +630,6 @@ const isExistingTask = computed(() => {
   return availableTasks.value.some((t) => t.name === taskInput.value)
 })
 
-const selectedTask = computed(() => {
-  return availableTasks.value.find((t) => t.id === selectedTaskId.value)
-})
-
 const calendarYear = computed(() => calendarDate.value.year())
 const calendarMonth = computed(() => calendarDate.value.month())
 

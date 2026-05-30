@@ -121,7 +121,7 @@ vi.mock('@/components/icons/WeixinIcon.vue', () => ({
 vi.mock('@/mobile/drawers/weixin/MobileWeixinSheet.vue', () => ({
   default: defineComponent({
     name: 'MobileWeixinSheetStub',
-    setup(_, { emit }) {
+    setup(_, { emit: _emit }) {
       return () => h('div', { 'data-testid': 'weixin-sheet-stub' })
     },
   }),

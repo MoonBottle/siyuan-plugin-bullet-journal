@@ -117,7 +117,7 @@ defineProps<{
   }
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   'update:ai': [value: { providers: AIProviderConfig[], activeProviderId: string | null, showToolCalls?: boolean }]
 }>()
 
@@ -130,15 +130,15 @@ const toggleShowToolCalls = () => {
   // Implementation needed
 }
 
-const toggleProvider = (provider: AIProviderConfig) => {
+const toggleProvider = (_provider: AIProviderConfig) => {
   // Implementation needed
 }
 
-const editProvider = (provider: AIProviderConfig) => {
+const editProvider = (_provider: AIProviderConfig) => {
   // Implementation needed
 }
 
-const removeProvider = (id: string) => {
+const removeProvider = (_id: string) => {
   // Implementation needed
 }
 

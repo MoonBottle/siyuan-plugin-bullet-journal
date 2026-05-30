@@ -68,7 +68,6 @@ import {
 
 import {
   usePomodoroStore,
-  useProjectStore,
   useSettingsStore,
 } from '@/stores'
 import {
@@ -88,7 +87,6 @@ import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
-const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
 
 // 数据刷新处理函数
@@ -138,7 +136,7 @@ const openCompleteDialog = async (pending: PendingPomodoroCompletion) => {
       showMessage('关联事项已不存在，番茄钟记录已清理', 'info')
       return
     }
-  } catch (error) {
+  } catch {
     // API 调用失败，假设块不存在
     console.log(`[PomodoroDock] Failed to check block ${pending.blockId}, skipping dialog`)
     if (plugin) {
@@ -228,7 +226,7 @@ const restorePomodoroState = async () => {
 }
 
 // 处理番茄钟恢复事件（从插件主逻辑触发）
-const handlePomodoroRestore = async (data: any) => {
+const handlePomodoroRestore = async (_data: any) => {
   console.log('[PomodoroDock] 收到番茄钟恢复事件')
   if (!plugin) return
 

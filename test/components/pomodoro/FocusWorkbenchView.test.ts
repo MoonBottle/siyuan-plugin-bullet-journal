@@ -97,39 +97,6 @@ const entriesByDateAndGroup: Record<string, Record<string, any[]>> = {
   },
 }
 
-const entriesByDate: Record<string, typeof mockEntries> = {
-  '2026-05-13': historicalFocusedEntries,
-  '2026-05-14': mockEntries,
-  '2026-05-15': [
-    {
-      itemId: 'item-3',
-      blockId: 'block-3',
-      date: '2026-05-15',
-      estimatedMinutes: 25,
-      actualMinutes: 0,
-      itemStatus: 'pending',
-      itemContent: '补材料',
-      reviewStatus: 'not-started',
-      deltaMinutes: -25,
-    },
-  ],
-}
-
-const summaryByDate = (date: string) => {
-  const entries = entriesByDate[date] ?? []
-  return {
-    total: entries.length,
-    estimatedMinutes: entries.reduce((sum, entry) => sum + entry.estimatedMinutes, 0),
-    actualMinutes: entries.reduce((sum, entry) => sum + entry.actualMinutes, 0),
-    matched: entries.filter((entry) => entry.reviewStatus === 'matched').length,
-    overrun: entries.filter((entry) => entry.reviewStatus === 'overrun').length,
-    underrun: entries.filter((entry) => entry.reviewStatus === 'underrun').length,
-    notStarted: entries.filter((entry) => entry.reviewStatus === 'not-started').length,
-    inProgress: entries.filter((entry) => entry.reviewStatus === 'in-progress').length,
-    unplanned: entries.filter((entry) => entry.reviewStatus === 'unplanned').length,
-  }
-}
-
 const summaryByDateAndGroup = (date: string, groupId = '') => {
   const entries = entriesByDateAndGroup[date]?.[groupId || 'all'] ?? []
   return {

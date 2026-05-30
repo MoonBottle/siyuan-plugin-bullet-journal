@@ -29,7 +29,6 @@ vi.mock('@/api', async () => {
 })
 
 const mockSql = vi.mocked(api.sql)
-const mockGetDocKramdown = vi.mocked(api.getDocKramdown)
 
 // 测试数据构造器
 const mkItem = (

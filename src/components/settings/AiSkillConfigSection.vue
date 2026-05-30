@@ -131,7 +131,6 @@ import { showMessage } from 'siyuan'
 import {
   computed,
   createApp,
-  ref,
 } from 'vue'
 import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue'
 import SkillIcon from '@/components/icons/SkillIcon.vue'
@@ -162,8 +161,6 @@ const emit = defineEmits<{
 }>()
 
 const skillStore = useSkillStore()
-
-const prefilledSkillName = ref('')
 
 // 内置技能列表
 const builtinSkills = computed(() => {
@@ -283,14 +280,6 @@ async function createOverrideSkill(skill: { name: string, description: string })
   }
 }
 
-// 技能创建成功回调
-async function onSkillCreated(skillId: string) {
-  showDialog.value = false
-  // 打开创建的文档
-  if (skillId) {
-    await openDocument(skillId)
-  }
-}
 </script>
 
 <style scoped>

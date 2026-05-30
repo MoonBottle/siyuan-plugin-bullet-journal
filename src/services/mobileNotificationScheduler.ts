@@ -209,7 +209,7 @@ export class MobileNotificationScheduler {
       this.lastScheduleAttempts.delete(entryKey)
     }
 
-    for (const [entryKey, plan] of nextPlans) {
+    for (const [, plan] of nextPlans) {
       await this.syncPlanEntry(registry, plan)
     }
   }

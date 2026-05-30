@@ -34,7 +34,6 @@ import {
 import { ReActAgent } from '@/agents/react/agent'
 import { t } from '@/i18n'
 
-import { getCurrentPlugin } from '@/main'
 import { buildSystemPrompt } from '@/services/aiPromptService'
 import { bulletJournalTools } from '@/services/aiTools'
 import {
@@ -391,10 +390,6 @@ export const useAIStore = defineStore('ai', () => {
     return Object.values(messages).some((count) => count > 0)
   })
 
-  function getPluginInstance() {
-    return plugin ?? getCurrentPlugin()
-  }
-
   function isClawBotAllowedOnCurrentFrontend() {
     return true
   }
@@ -524,7 +519,7 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
-  function loadChatHistory(chatHistory: { conversations: ChatConversation[], currentConversationId: string | null }) {
+  function loadChatHistory(_chatHistory: { conversations: ChatConversation[], currentConversationId: string | null }) {
     console.log('[AIStore] loadChatHistory called (ignored in split storage mode)')
   }
 
@@ -723,7 +718,7 @@ export const useAIStore = defineStore('ai', () => {
           tools: bulletJournalTools,
           maxIterations: 5,
         },
-        onStreamUpdate: (content) => {
+        onStreamUpdate: (_content) => {
           // 强制触发 Vue 响应式更新
           if (currentConversation.value) {
             currentConversation.value = { ...currentConversation.value }

@@ -86,7 +86,6 @@ import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import {
   useProjectStore,
-  useSettingsStore,
 } from '@/stores'
 import { createExampleDocument } from '@/utils/exampleDocUtils'
 import { openDocumentAtLine } from '@/utils/fileUtils'
@@ -94,7 +93,6 @@ import { openDocumentAtLine } from '@/utils/fileUtils'
 const plugin = usePlugin() as any
 
 const projectStore = useProjectStore()
-const settingsStore = useSettingsStore()
 
 // 防止重复点击的执行锁
 const isProcessing = ref(false)

@@ -201,17 +201,6 @@ export function calculateReminderTime(
 }
 
 /**
- * 解析时间字符串
- */
-function parseTime(timeStr: string): { hours: number, minutes: number } {
-  const parts = timeStr.split(':')
-  return {
-    hours: Number.parseInt(parts[0], 10),
-    minutes: Number.parseInt(parts[1], 10),
-  }
-}
-
-/**
  * 从行内容中移除提醒标记
  * @param content 内容
  * @returns 清理后的内容

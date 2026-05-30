@@ -189,8 +189,7 @@ function onCancel() {
   emit('update:modelValue', false)
 }
 
-// 当前时间字符串
-const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.value}`)
+
 </script>
 
 <style scoped>

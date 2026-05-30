@@ -234,16 +234,6 @@ function handleCloseHabitDetail() {
   state.showHabitDetail = false
 }
 
-async function refreshHabits() {
-  if (!plugin)
-    return
-
-  await plugin.requestRefresh?.({
-    type: 'full',
-    reason: 'mobile-habit:manual-refresh',
-  })
-  syncSelectedHabit()
-}
 
 async function handleCheckIn(habit: Habit) {
   const dayState = getHabitDayState(habit, state.selectedDate)

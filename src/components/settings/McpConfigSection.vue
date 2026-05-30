@@ -109,7 +109,7 @@ async function copyMcpConfig() {
   try {
     await navigator.clipboard.writeText(configStr)
     showMessage((t('settings') as any).mcp?.copySuccess ?? 'MCP 配置已复制到剪贴板', 3000, 'info')
-  } catch (err) {
+  } catch {
     showMessage((t('settings') as any).mcp?.copyFailed ?? '复制失败，请手动复制', 3000, 'error')
   }
 }
@@ -127,7 +127,7 @@ async function copyHttpMcpConfig() {
   try {
     await navigator.clipboard.writeText(configStr)
     showMessage((t('settings') as any).mcp?.httpCopySuccess ?? 'HTTP MCP 配置已复制到剪贴板', 3000, 'info')
-  } catch (err) {
+  } catch {
     showMessage((t('settings') as any).mcp?.httpCopyFailed ?? '复制失败，请手动复制', 3000, 'error')
   }
 }

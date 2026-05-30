@@ -1348,65 +1348,7 @@ function getStatusTag(status: 'completed' | 'abandoned'): string {
   return t('statusTag')[status] || ''
 }
 
-/**
- * 标记为已完成
- */
-async function markAsDone(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id')
-  if (!blockId) return
 
-  // 检查是否已完成
-  const blockContent = nodeElement.textContent || ''
-  const completedTag = getStatusTag('completed')
-  if (completedTag && blockContent.includes(completedTag)) {
-    showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info')
-    return
-  }
-
-  // 标记事项完成
-  const success = await writeBlock({ blockId }, {
-    type: 'setStatus',
-    status: 'completed',
-  })
-
-  if (success) {
-    showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info')
-
-    // 注意：重复事项的自动创建由 WebSocket 处理器处理
-    // 避免重复调用 createNextOccurrence
-
-    // 数据刷新会触发统一检测逻辑
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error')
-  }
-}
-
-/**
- * 标记为已放弃
- */
-async function markAsAbandoned(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id')
-  if (!blockId) return
-
-  // 检查是否已放弃
-  const blockContent = nodeElement.textContent || ''
-  const abandonedTag = getStatusTag('abandoned')
-  if (abandonedTag && blockContent.includes(abandonedTag)) {
-    showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info')
-    return
-  }
-
-  const success = await writeBlock({ blockId }, {
-    type: 'setStatus',
-    status: 'abandoned',
-  })
-
-  if (success) {
-    showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info')
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error')
-  }
-}
 
 
 

@@ -1889,7 +1889,7 @@ const handleCreateExample = async () => {
   if (isProcessing.value) return
   isProcessing.value = true
   try {
-    const docId = await createExampleDocument()
+    await createExampleDocument()
     // 新文档创建成功，等待 ws-main 事件触发刷新
   } finally {
     isProcessing.value = false

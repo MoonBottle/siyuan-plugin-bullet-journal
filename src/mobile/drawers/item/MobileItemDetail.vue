@@ -653,18 +653,8 @@ const formatTimeOnlyDisplay = computed(() => {
   return timeRange || (t('mobile.detail.allDay') || '全天')
 })
 
-// 兼容旧代码：完整时间显示（日期+时间）
-const formatTimeDisplay = computed(() => {
-  if (!props.item) return ''
-  const todoTranslations = t('todo') as Record<string, string>
-  const dateLabel = formatDateLabel(
-    props.item.date,
-    todoTranslations.today || '今天',
-    todoTranslations.tomorrow || '明天',
-  )
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
-  return timeRange ? `${dateLabel} ${timeRange}` : dateLabel
-})
+
+
 
 const duration = computed(() => {
   if (!props.item?.startDateTime || !props.item?.endDateTime) return ''
@@ -845,10 +835,6 @@ const handleMigrateToTomorrow = async () => {
 const handleStartPomodoro = () => {
   if (!props.item) return
   emit('openPomodoro', props.item)
-  close()
-}
-
-const handleOpenCalendar = () => {
   close()
 }
 

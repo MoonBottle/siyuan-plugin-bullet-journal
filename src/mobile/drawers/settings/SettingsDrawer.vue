@@ -165,7 +165,7 @@ import {
   useSettingsStore,
 } from '@/stores'
 
-const props = defineProps<{
+defineProps<{
   modelValue: boolean
 }>()
 
@@ -220,13 +220,6 @@ const handleHabitCheckInTimePrecisionChange = (event: Event) => {
   settingsStore.habitCheckInTimePrecision = value
 }
 
-const openPluginSettings = () => {
-  // 打开插件设置页面
-  if (plugin?.openSetting) {
-    plugin.openSetting()
-  }
-  close()
-}
 </script>
 
 <style lang="scss" scoped>

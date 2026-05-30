@@ -113,7 +113,7 @@ import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { usePomodoroStore } from '@/stores'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
 }>()
 

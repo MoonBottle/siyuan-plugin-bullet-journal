@@ -243,11 +243,6 @@ const accumulatedMinutes = computed(() => {
   return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60)
 })
 
-// Target minutes
-const targetMinutes = computed(() => {
-  return pomodoroStore?.activePomodoro?.targetDurationMinutes || 25
-})
-
 // Stopwatch reference seconds (25 minutes)
 const stopwatchReferenceSeconds = 25 * 60
 

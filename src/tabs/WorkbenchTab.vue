@@ -114,7 +114,6 @@ import {
   usePlugin,
 } from '@/main'
 import {
-  useProjectStore,
   useSettingsStore,
   useWorkbenchStore,
 } from '@/stores'
@@ -128,7 +127,6 @@ import { getViewDefinition } from '@/workbench/viewRegistry'
 import { getWidgetRegistry } from '@/workbench/widgetRegistry'
 
 const plugin = usePlugin()
-const projectStore = useProjectStore()
 const workbenchStore = useWorkbenchStore()
 const settingsStore = useSettingsStore()
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId)

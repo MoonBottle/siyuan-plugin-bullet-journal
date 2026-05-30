@@ -198,7 +198,7 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
       let respText = ''
       try {
         respText = await resp.text()
-      } catch (_) {}
+      } catch {}
       console.log(`[webhook] target returned status=${resp.status} body=${respText.substring(0, 200)}`)
     }
   } catch (e) {

@@ -249,7 +249,6 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
     return new Promise((resolve, reject) => {
       let fullContent = ''
       let fullReasoning = ''
-      let toolCalls: ToolCall[] | undefined
       let lastUsage: { prompt_tokens: number, completion_tokens: number, total_tokens: number } | undefined
       let detectedToolCalls = false
 

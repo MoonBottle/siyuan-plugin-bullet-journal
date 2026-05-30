@@ -104,14 +104,12 @@ import type { Item } from '@/types/models'
 
 import {
   Menu,
-  openTab,
   showMessage,
 
 } from 'siyuan'
 
 import {
   computed,
-  createApp,
   nextTick,
   onMounted,
   onUnmounted,
@@ -123,7 +121,6 @@ import ChatPanel from '@/components/ai/ChatPanel.vue'
 import ConversationSelect from '@/components/ai/ConversationSelect.vue'
 import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue'
 import WeixinIcon from '@/components/icons/WeixinIcon.vue'
-import AiSkillConfigSection from '@/components/settings/AiSkillConfigSection.vue'
 import { t } from '@/i18n'
 import {
   getCurrentPlugin,
@@ -134,14 +131,12 @@ import {
   useProjectStore,
   useSettingsStore,
 } from '@/stores'
-import { createDialog } from '@/utils/dialog'
 import {
   DATA_REFRESH_CHANNEL,
   eventBus,
   Events,
 } from '@/utils/eventBus'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
-import { getSharedPinia } from '@/utils/sharedPinia'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = defineProps<{
@@ -166,49 +161,6 @@ const chatPanelRef = ref<InstanceType<typeof ChatPanel>>()
 
 // 微信登录弹窗状态
 const showWeixinDialog = ref(false)
-
-// 打开技能管理弹框
-const openSkillManager = () => {
-  const container = document.createElement('div')
-
-  let app: ReturnType<typeof createApp>
-
-  const dialog = createDialog({
-    title: '',
-    content: '',
-    width: '600px',
-    destroyCallback: () => {
-      app.unmount()
-    },
-  })
-
-  app = createApp(AiSkillConfigSection, {
-    dialog,
-    onEditSkill: (docId: string) => {
-      // 打开文档
-      const plugin = usePlugin() as any
-      if (plugin?.app && docId) {
-        openTab({
-          app: plugin.app,
-          doc: { id: docId },
-        })
-      }
-      // 关闭弹框
-      dialog.destroy()
-    },
-    onClose: () => {
-      dialog.destroy()
-    },
-  })
-
-  app.use(getSharedPinia())
-  app.mount(container)
-
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
-  if (bodyEl) {
-    bodyEl.appendChild(container)
-  }
-}
 
 // ClawBot 状态
 const isClawBotConnected = computed(() => aiStore.isClawBotConnected)

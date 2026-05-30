@@ -121,7 +121,7 @@ import { t } from '@/i18n'
 import { useProjectStore } from '@/stores'
 import dayjs from '@/utils/dayjs'
 
-const props = defineProps<{
+defineProps<{
   modelValue: boolean
 }>()
 

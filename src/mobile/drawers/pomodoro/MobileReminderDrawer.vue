@@ -71,7 +71,6 @@ import type {
   ReminderConfig,
 } from '@/types/models'
 import {
-  computed,
   ref,
 } from 'vue'
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue'
@@ -94,8 +93,6 @@ interface Props {
   initialConfig?: ReminderConfig
   item?: Item
 }
-
-const hasItem = computed(() => !!props.item)
 
 async function handleSave(config: ReminderConfig) {
   if (props.item) {

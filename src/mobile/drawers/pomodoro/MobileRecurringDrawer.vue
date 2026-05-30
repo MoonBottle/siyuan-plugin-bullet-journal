@@ -73,7 +73,6 @@ import type {
   RepeatRule,
 } from '@/types/models'
 import {
-  computed,
   ref,
 } from 'vue'
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue'
@@ -97,8 +96,6 @@ interface Props {
   initialEndCondition?: EndCondition
   item?: Item
 }
-
-const hasItem = computed(() => !!props.item)
 
 async function handleSave(repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) {
   if (props.item) {

@@ -255,7 +255,6 @@ function updateChart() {
   const containerEl = chartCanvas.value?.parentElement ?? null
   const primaryColor = getThemePrimary(containerEl)
   const textColor = getChartTextColor(containerEl)
-  const gridColor = toRgba(textColor, 0.3) // 适中透明度
 
   chartInstance = new Chart(ctx, {
     type: 'line',

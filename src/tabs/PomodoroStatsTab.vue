@@ -54,7 +54,6 @@ import {
   usePlugin,
 } from '@/main'
 import {
-  useProjectStore,
   useSettingsStore,
 } from '@/stores'
 import { showMessage } from '@/utils/dialog'
@@ -80,7 +79,6 @@ const showHeader = computed(() => !props.embedded)
 
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
-const projectStore = useProjectStore()
 
 const handleRefresh = async () => {
   if (plugin) {

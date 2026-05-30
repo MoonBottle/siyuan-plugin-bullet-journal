@@ -176,7 +176,7 @@ let PluginInfo = {
 }
 try {
   PluginInfo = PluginInfoString
-} catch (err) {
+} catch {
   // Plugin info parse error
 }
 const { version } = PluginInfo
@@ -301,7 +301,7 @@ export default class TaskAssistantPlugin extends Plugin {
     try {
       require("@electron/remote").require("@electron/remote/main")
       this.isElectron = true
-    } catch (err) {
+    } catch {
       this.isElectron = false
     }
 
@@ -2379,7 +2379,7 @@ export default class TaskAssistantPlugin extends Plugin {
   private async doHandleTaskListCompletion(
     listItemBlockId: string,
     contentBlockId: string,
-    op: any,
+    _op: any,
   ) {
     // 从 projectStore 获取该 block 对应的事项
     const pinia = getSharedPinia()

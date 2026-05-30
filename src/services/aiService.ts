@@ -41,7 +41,7 @@ function normalizeMessageContent(m: ChatMessage): string {
  * 构建 API 请求用的消息对象
  * Kimi thinking 模式下，含 tool_calls 的 assistant 消息必须包含 reasoning_content
  */
-function buildMessageForApi(m: ChatMessage, config: AIProviderConfig): Record<string, unknown> {
+function buildMessageForApi(m: ChatMessage, _config: AIProviderConfig): Record<string, unknown> {
   const content = normalizeMessageContent(m)
   const msg: Record<string, unknown> = {
     role: m.role,

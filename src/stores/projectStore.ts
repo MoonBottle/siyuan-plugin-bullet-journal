@@ -1189,7 +1189,7 @@ export const useProjectStore = defineStore('project', {
                 docId,
                 path,
               })
-            } catch (e) {
+            } catch {
               console.warn('[Task Assistant] Failed to get hpath for doc:', docId)
               path = ''
             }

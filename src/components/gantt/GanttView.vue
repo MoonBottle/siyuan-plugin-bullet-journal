@@ -44,8 +44,6 @@ import {
 import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
-  useProjectStore,
-  useSettingsStore,
 } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
 import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
@@ -84,8 +82,6 @@ interface Props {
   viewMode?: 'day' | 'week' | 'month'
 }
 
-const settingsStore = useSettingsStore()
-const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
 const plugin = usePlugin() as any
 
