@@ -20,7 +20,7 @@ describe('isProtyleBlockSafeForWriterFastPath', () => {
     const el = parseBlock(`
       <div data-node-id="id1" data-type="NodeParagraph" class="p">
         <div contenteditable="true" spellcheck="false">纯文本一行事项</div>
-        <div class="protyle-attr" contenteditable="false"><div>​</div></div>
+        <div class="protyle-attr" contenteditable="false"><div>&#x200B;</div></div>
       </div>
     `)
     expect(isProtyleBlockSafeForWriterFastPath(el)).toBe(true)
@@ -32,7 +32,7 @@ describe('isProtyleBlockSafeForWriterFastPath', () => {
         <div contenteditable="true" spellcheck="false">
           测试<span data-type="block-ref" data-subtype="d" data-id="20260418163212-tayjs0q">测试引用块</span>修改事项2/jt
         </div>
-        <div class="protyle-attr" contenteditable="false"><div>​</div></div>
+        <div class="protyle-attr" contenteditable="false"><div>&#x200B;</div></div>
       </div>
     `)
     expect(isProtyleBlockSafeForWriterFastPath(el)).toBe(false)
@@ -44,7 +44,7 @@ describe('isProtyleBlockSafeForWriterFastPath', () => {
         <div contenteditable="true" spellcheck="false">
           前缀<strong>粗体</strong>后缀
         </div>
-        <div class="protyle-attr" contenteditable="false"><div>​</div></div>
+        <div class="protyle-attr" contenteditable="false"><div>&#x200B;</div></div>
       </div>
     `)
     expect(isProtyleBlockSafeForWriterFastPath(el)).toBe(false)
