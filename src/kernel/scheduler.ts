@@ -159,12 +159,23 @@ export function initScheduler(): void {
 }
 
 export function stopScheduler(): void {
-  console.log('[scheduler] stopScheduler', checkInterval)
+  console.log(`[scheduler] stopScheduler checkInterval=${checkInterval != null}`)
   if (checkInterval) {
-    console.log('[scheduler] stopScheduler: clearInterval')
     clearInterval(checkInterval)
     checkInterval = null
   }
+}
+
+export function clearModuleState(): void {
+  timers.clear()
+  notifiedTimerIds.clear()
+  lastKnownDate = ''
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  isDirty = false
+  console.log('[scheduler] module state cleared')
 }
 
 function checkTimers(): void {

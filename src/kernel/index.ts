@@ -10,6 +10,8 @@ import {
 } from './reminder'
 import { initRpcApi } from './rpc'
 import {
+  clearModuleState,
+  getActiveTimers,
   initScheduler,
   loadTimerRegistry,
   persistTimerRegistry,
@@ -24,86 +26,89 @@ import {
   reloadWebhookConfig,
 } from './webhook'
 
-siyuan.plugin.lifecycle.onload = async function () {
-  void siyuan.logger.info('[kernel] onload fired')
+let iid = ''
+let isActive = false
 
-  // 初始化 RPC API
+function genId(): string {
+  return Math.random().toString(36).slice(2, 8)
+}
+
+siyuan.plugin.lifecycle.onload = async function () {
+  iid = genId()
+  isActive = true
+  console.log(`[kernel${iid}] onload fired`)
+
   await initRpcApi()
 
   await siyuan.rpc.bind('testBroadcast', () => {
-    void siyuan.logger.info('[kernel] testBroadcast RPC: calling broadcast')
+    console.log(`[kernel${iid}] testBroadcast RPC: calling broadcast`)
     siyuan.rpc.broadcast('test-event', {
       ts: Date.now(),
-      source: 'testBroadcast-rpc',
+      source: `testBroadcast-rpc${iid}`,
     })
-    void siyuan.logger.info('[kernel] testBroadcast RPC: broadcast called')
     return { ok: true }
   }, '测试 broadcast')
 
-  // 初始化文件系统事件处理
-  console.log('[kernel] storage watcher added')
+  const handlerIid = iid
   siyuan.event.handler = function (event: { type: string, detail: any }) {
-    // console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
+    if (!isActive || iid !== handlerIid) return
     handleFsNotify(event)
   }
 
-  console.log('[kernel] rpc api bound')
+  console.log(`[kernel${iid}] rpc api bound, handler set`)
 }
 
 siyuan.plugin.lifecycle.onrunning = async function () {
-  void siyuan.logger.info(`[kernel] onrunning fired, platform=${siyuan.plugin.platform}`)
-
-  console.log(`[kernel] onrunning fired, platform=${siyuan.plugin.platform}`)
+  console.log(`[kernel${iid}] onrunning fired, platform=${siyuan.plugin.platform}`)
 
   setDispatchNotification(dispatchNotification)
   setRebuildReminderSchedule(rebuildReminderSchedule)
   setReloadWebhookConfig(reloadWebhookConfig)
 
   await loadTimerRegistry()
-  console.log('[kernel] timer registry loaded')
+  console.log(`[kernel${iid}] timer registry loaded`)
+
   initScheduler()
-  console.log('[kernel] scheduler started')
+  const activeTimers = getActiveTimers()
+  console.log(`[kernel${iid}] scheduler started, activeTimers=${activeTimers.length}`)
 
   await initReminderScheduler()
-  console.log('[kernel] reminder scheduler initialized')
+  console.log(`[kernel${iid}] reminder scheduler initialized`)
+
   await loadWebhookConfig()
   const whConfig = getWebhookConfig()
-  console.log(`[kernel] webhook config loaded, enabled=${whConfig.enabled} channels=${whConfig.channels.length}`)
+  console.log(`[kernel${iid}] webhook config loaded, enabled=${whConfig.enabled} channels=${whConfig.channels.length}`)
 
-  // 初始化 MCP 服务器
   initMcpServer()
-  console.log('[kernel] mcp server initialized')
+  console.log(`[kernel${iid}] mcp server initialized`)
 
-  // 测试 siyuan.client.fetch
   try {
     const testResp = await siyuan.client.fetch('/api/system/version')
     const testText = await testResp.text()
-    console.log(`[kernel] siyuan.client.fetch test: ok=${testResp.ok} body=${testText.substring(0, 100)}`)
+    console.log(`[kernel${iid}] siyuan.client.fetch test: ok=${testResp.ok} body=${testText.substring(0, 100)}`)
   } catch (e) {
-    console.log(`[kernel] siyuan.client.fetch test FAILED: ${String(e)}`)
+    console.log(`[kernel${iid}] siyuan.client.fetch test FAILED: ${String(e)}`)
   }
 
-  // 测试 broadcast
-  void siyuan.logger.info('[kernel] TEST: calling broadcast without any console.log')
-  siyuan.rpc.broadcast('test-event', {
-    ts: Date.now(),
-    source: 'onrunning-direct',
-  })
-  void siyuan.logger.info('[kernel] TEST: broadcast called')
-
-  console.log('[kernel] initialized successfully')
+  console.log(`[kernel${iid}] initialized successfully`)
 }
 
 siyuan.plugin.lifecycle.onunload = async function () {
-  await siyuan.logger.info('[kernel] unloading...')
+  console.log(`[kernel${iid}] unloading...`)
+
+  isActive = false
+  siyuan.event.handler = null
+  siyuan.server.private.http.handler = null
+  siyuan.server.private.es.handler = null
+  console.log(`[kernel${iid}] handlers cleared`)
+
+  const activeTimers = getActiveTimers()
+  console.log(`[kernel${iid}] before cleanup: activeTimers=${activeTimers.length}`)
 
   closeMcpServer()
   stopScheduler()
   await persistTimerRegistry()
+  clearModuleState()
 
-  siyuan.server.private.http.handler = null
-  siyuan.server.private.es.handler = null
-  siyuan.event.handler = null
-
-  await siyuan.logger.info('[kernel] unloaded')
+  console.log(`[kernel${iid}] unloaded, all state cleared`)
 }
