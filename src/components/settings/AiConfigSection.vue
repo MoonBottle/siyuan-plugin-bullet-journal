@@ -262,6 +262,7 @@ import type {
   AIProviderConfig,
 } from '@/types/ai'
 import { showMessage } from 'siyuan'
+import { showConfirmDialog } from '@/utils/dialog'
 import {
   computed,
   reactive,
@@ -405,18 +406,22 @@ function removeProvider(id: string) {
   const provider = props.ai.providers.find((p) => p.id === id)
   if (!provider) return
 
-  if (confirm(((t('settings') as any).ai?.confirmDeleteProvider ?? '确定要删除 "{{name}}" 吗？').replace('{{name}}', provider.name))) {
-    const providers = props.ai.providers.filter((p) => p.id !== id)
-    let activeProviderId = props.ai.activeProviderId
-    if (activeProviderId === id) {
-      activeProviderId = providers.find((p) => p.enabled)?.id || null
-    }
-    emit('update:ai', {
-      ...props.ai,
-      providers,
-      activeProviderId,
-    })
-  }
+  showConfirmDialog(
+    '',
+    ((t('settings') as any).ai?.confirmDeleteProvider ?? '确定要删除 "{{name}}" 吗？').replace('{{name}}', provider.name),
+    () => {
+      const providers = props.ai.providers.filter((p) => p.id !== id)
+      let activeProviderId = props.ai.activeProviderId
+      if (activeProviderId === id) {
+        activeProviderId = providers.find((p) => p.enabled)?.id || null
+      }
+      emit('update:ai', {
+        ...props.ai,
+        providers,
+        activeProviderId,
+      })
+    },
+  )
 }
 
 function handleShowToolCallsChange(checked: boolean) {

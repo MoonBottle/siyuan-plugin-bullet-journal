@@ -225,6 +225,7 @@ import {
 } from '@/stores'
 import dayjs from '@/utils/dayjs'
 import { getSharedPinia } from '@/utils/sharedPinia'
+import { showMessage } from '@/utils/dialog'
 
 const props = defineProps<{
   modelValue: boolean
@@ -341,7 +342,7 @@ const startPomodoro = async () => {
 
   const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID')
+    showMessage('无法获取事项块ID', 'error')
     return
   }
 

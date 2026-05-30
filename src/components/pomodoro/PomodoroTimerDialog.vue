@@ -209,6 +209,7 @@ import {
   formatFocusActualDisplay,
   formatFocusPlanDisplay,
 } from '@/utils/focusPlanReview'
+import { showMessage } from '@/utils/dialog'
 import { getSharedPinia } from '@/utils/sharedPinia'
 import SelectedItemCard from './SelectedItemCard.vue'
 
@@ -336,7 +337,7 @@ const startPomodoro = async () => {
 
   const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID')
+    showMessage('无法获取事项块ID', 'error')
     return
   }
 

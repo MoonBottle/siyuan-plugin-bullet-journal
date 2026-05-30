@@ -126,6 +126,7 @@ import {
   useProjectStore,
 } from '@/stores'
 import { getSharedPinia } from '@/utils/sharedPinia'
+import { showMessage } from '@/utils/dialog'
 import ItemSelectorSheet from './ItemSelectorSheet.vue'
 
 const props = defineProps<{
@@ -215,7 +216,7 @@ const startPomodoro = async () => {
 
   const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID')
+    showMessage('无法获取事项块ID', 'error')
     return
   }
 

@@ -128,6 +128,7 @@ import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
+import { showConfirmDialog } from '@/utils/dialog'
 
 const props = defineProps<{
   webhook?: WebhookConfig
@@ -213,9 +214,10 @@ function saveFromDialog() {
 }
 
 function deleteChannel(id: string) {
-  if (!confirm(t('settings').webhook.deleteConfirm)) return
-  localWebhook.value.channels = localWebhook.value.channels.filter((c) => c.id !== id)
-  emitUpdate()
+  showConfirmDialog('', t('settings').webhook.deleteConfirm, () => {
+    localWebhook.value.channels = localWebhook.value.channels.filter((c) => c.id !== id)
+    emitUpdate()
+  })
 }
 </script>
 
