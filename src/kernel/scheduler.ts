@@ -66,7 +66,10 @@ function schedulePersist(): void {
 }
 
 export function registerTimer(entry: TimerEntry): void {
-  if (notifiedTimerIds.has(entry.id)) entry.notified = true
+  if (notifiedTimerIds.has(entry.id)) {
+    console.log(`[scheduler] registerTimer SKIP id=${entry.id} (already notified)`)
+    return
+  }
   console.log(`[scheduler] registerTimer: id=${entry.id} type=${entry.type} endTime=${entry.endTime} content=${entry.metadata.content} notified=${entry.notified}`)
   timers.set(entry.id, entry)
   schedulePersist()
@@ -74,11 +77,16 @@ export function registerTimer(entry: TimerEntry): void {
 
 export function registerTimers(entries: TimerEntry[]): void {
   console.log(`[scheduler] registerTimers: count=${entries.length}`)
+  let skipped = 0
   for (let i = 0; i < entries.length; i++) {
-    if (notifiedTimerIds.has(entries[i].id)) entries[i].notified = true
+    if (notifiedTimerIds.has(entries[i].id)) {
+      skipped++
+      continue
+    }
     console.log(`[scheduler]   - id=${entries[i].id} type=${entries[i].type} endTime=${entries[i].endTime} notified=${entries[i].notified}`)
     timers.set(entries[i].id, entries[i])
   }
+  if (skipped > 0) console.log(`[scheduler]   skipped ${skipped} already-notified timer(s)`)
   schedulePersist()
 }
 
@@ -151,7 +159,9 @@ export function initScheduler(): void {
 }
 
 export function stopScheduler(): void {
+  console.log('[scheduler] stopScheduler', checkInterval)
   if (checkInterval) {
+    console.log('[scheduler] stopScheduler: clearInterval')
     clearInterval(checkInterval)
     checkInterval = null
   }

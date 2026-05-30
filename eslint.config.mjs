@@ -31,9 +31,11 @@ export default antfu(
   },
   {
     files: [
-      'src/**/*.ts',
+      'src/kernel/**/*.ts',
+      'src/services/**/*.ts',
     ],
     rules: {
+      'node/prefer-global/buffer': 'off',
     },
   },
   {
