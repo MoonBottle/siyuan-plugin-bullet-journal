@@ -13,8 +13,9 @@ export function calculateReminderTime(
   endTime: string | undefined,
   reminder: ReminderConfig,
 ): number {
+  let baseTime: number
   if (reminder.type === 'absolute') {
-    var baseTime = new Date(`${itemDate}T${reminder.time || '00:00'}:00`).getTime()
+    baseTime = new Date(`${itemDate}T${reminder.time || '00:00'}:00`).getTime()
     if (reminder.alertMode && reminder.alertMode.type === 'before' && reminder.alertMode.minutes) {
       return baseTime - reminder.alertMode.minutes * 60000
     }
@@ -23,7 +24,6 @@ export function calculateReminderTime(
     }
     return baseTime
   }
-  var baseTime: number
   if (reminder.relativeTo === 'end') {
     baseTime = endDateTime
       ? new Date(endDateTime).getTime()
