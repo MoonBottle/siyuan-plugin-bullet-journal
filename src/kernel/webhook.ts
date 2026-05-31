@@ -50,7 +50,7 @@ export function dispatchNotification(entry: TimerEntry): void {
     return
   }
   dispatchedNotificationIds.add(entry.id)
-  console.log(`[webhook${instanceTag}] dispatchNotification: type=${entry.type} id=${entry.id}`)
+  console.log(`[webhook${instanceTag}] dispatchNotification: type=${entry.type} id=${entry.id} webhookEnabled=${webhookConfig.enabled} channels=${webhookConfig.channels.length}`)
 
   const broadcastParams = {
     id: entry.id,

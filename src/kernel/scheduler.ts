@@ -187,6 +187,23 @@ export function clearModuleState(): void {
 
 function checkTimers(): void {
   const now = Date.now() / 1000
+
+  let pomodoroBreakCount = 0
+  timers.forEach((entry) => {
+    if ((entry.type === 'pomodoro' || entry.type === 'break') && !notifiedTimerIds.has(entry.id)) {
+      pomodoroBreakCount++
+    }
+  })
+  if (pomodoroBreakCount > 0) {
+    const summaries: string[] = []
+    timers.forEach((entry) => {
+      if ((entry.type === 'pomodoro' || entry.type === 'break') && !notifiedTimerIds.has(entry.id)) {
+        summaries.push(`${entry.type}:${entry.id} remaining=${Math.round(entry.endTime - now)}s`)
+      }
+    })
+    console.log(`[scheduler] active pomodoro/break timers: ${summaries.join(' | ')}`)
+  }
+
   let firedCount = 0
   timers.forEach((entry) => {
     if (!notifiedTimerIds.has(entry.id) && now >= entry.endTime) {

@@ -9,7 +9,9 @@ import {
 import { getWebhookConfig } from './webhook'
 
 export function handleRegisterTimer(params: { id: string, type: string, endTime: number, metadata: any }): any {
-  console.log(`[pomodoro] handleRegisterTimer: id=${params.id} type=${params.type} endTime=${params.endTime}`)
+  const now = Math.floor(Date.now() / 1000)
+  const remaining = params.endTime - now
+  console.log(`[pomodoro] handleRegisterTimer: id=${params.id} type=${params.type} endTime=${params.endTime} remaining=${remaining}s metadata=${JSON.stringify(params.metadata)}`)
   const entry: TimerEntry = {
     id: params.id,
     type: params.type as TimerEntry['type'],
@@ -18,6 +20,8 @@ export function handleRegisterTimer(params: { id: string, type: string, endTime:
     notified: false,
   }
   registerTimer(entry)
+  const activeTimers = getActiveTimers()
+  console.log(`[pomodoro] handleRegisterTimer done: totalActiveTimers=${activeTimers.length} types=${activeTimers.map((t) => t.type).join(',')}`)
   return { ok: true }
 }
 

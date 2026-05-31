@@ -238,7 +238,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const msg = t('pomodoro').startFocusStatus.replace('{content}', item.content).replace('{mode}', mode)
         showMessage(msg)
 
-        console.log(`[Pomodoro] kernelAvailable=${kernelAvailable.value}`)
+        console.log(`[Pomodoro] kernelAvailable=${kernelAvailable.value} timerMode=${timerMode} durationMinutes=${durationMinutes}`)
         if (kernelAvailable.value && timerMode === 'countdown') {
           const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000)
           console.log(`[Pomodoro] registering kernel timer: id=pomodoro-${parentBlockId} endTime=${endTime} kernelAvailable=${kernelAvailable.value}`)
@@ -252,9 +252,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
               projectName: item.project?.name,
               taskName: item.task?.name,
             },
-          }).then(() => {
-            console.log('[Pomodoro] kernel timer registered successfully')
-          }).catch((err) => {
+          }).then((res: any) => {
+            console.log(`[Pomodoro] kernel timer registered successfully, response=${JSON.stringify(res)}`)
+          }).catch((err: any) => {
             console.error('[Pomodoro] Failed to register kernel timer:', err)
           })
         } else {
