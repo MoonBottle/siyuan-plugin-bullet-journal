@@ -1,8 +1,3 @@
-import type { ToolName } from './aiTools'
-/**
- * AI 工具执行器
- * 执行 AI 请求的工具调用
- */
 import type { ToolCall } from '@/types/ai'
 import type {
   Item,
@@ -27,8 +22,6 @@ import {
   aggregatePomodorosFromProjects,
   computePomodoroStats,
   filterPomodoros,
-
-
   toPomodoroRecordCompact,
   toPomodoroRecordOutput,
 } from '@/utils/pomodoroUtils'
@@ -39,9 +32,6 @@ import {
 } from '@/utils/refreshRequests'
 import { SkillService } from './skillService'
 
-/**
- * 筛选事项参数
- */
 export interface FilterItemsArgs {
   projectId?: string
   projectIds?: string[]
@@ -51,9 +41,6 @@ export interface FilterItemsArgs {
   status?: 'pending' | 'completed' | 'abandoned'
 }
 
-/**
- * 项目列表输出
- */
 export interface ListProjectOutput {
   id: string
   name: string
@@ -63,9 +50,6 @@ export interface ListProjectOutput {
   taskCount: number
 }
 
-/**
- * 事项筛选输出
- */
 export interface FilterItemOutput {
   id: string
   content: string
@@ -79,9 +63,6 @@ export interface FilterItemOutput {
   pomodoros?: PomodoroRecordCompact[]
 }
 
-/**
- * 工具执行上下文
- */
 export interface ToolExecutionContext {
   groups: ProjectGroup[]
   projects: Project[]
@@ -89,19 +70,28 @@ export interface ToolExecutionContext {
   directories?: ProjectDirectory[]
 }
 
-/**
- * 执行 list_groups 工具
- */
-function executeListGroups(context: ToolExecutionContext): ProjectGroup[] {
+export type ToolName =
+  | 'list_groups'
+  | 'list_projects'
+  | 'filter_items'
+  | 'get_pomodoro_stats'
+  | 'get_pomodoro_records'
+  | 'list_skills'
+  | 'get_skill_detail'
+  | 'update_item_status'
+  | 'create_item'
+  | 'update_item'
+  | 'delete_item'
+  | 'create_task'
+  | 'create_project'
+
+export function executeListGroups(context: ToolExecutionContext): ProjectGroup[] {
   return context.groups
 }
 
-/**
- * 执行 list_projects 工具
- */
-function executeListProjects(
-  context: ToolExecutionContext,
+export function executeListProjects(
   args: { groupId?: string },
+  context: ToolExecutionContext,
 ): ListProjectOutput[] {
   const filtered = args.groupId
     ? context.projects.filter((p) => p.groupId === args.groupId)
@@ -117,12 +107,9 @@ function executeListProjects(
   }))
 }
 
-/**
- * 执行 filter_items 工具
- */
-function executeFilterItems(
-  context: ToolExecutionContext,
+export function executeFilterItems(
   args: FilterItemsArgs,
+  context: ToolExecutionContext,
 ): FilterItemOutput[] {
   let filtered = [...context.allItems]
 
@@ -159,12 +146,9 @@ function executeFilterItems(
   }))
 }
 
-/**
- * 执行 get_pomodoro_stats 工具
- */
-function executeGetPomodoroStats(
-  context: ToolExecutionContext,
+export function executeGetPomodoroStats(
   args: { date?: string, startDate?: string, endDate?: string, projectId?: string },
+  context: ToolExecutionContext,
 ): PomodoroStatsOutput {
   const todayDate = dayjs().format('YYYY-MM-DD')
   let startDate = args.startDate
@@ -203,12 +187,9 @@ function executeGetPomodoroStats(
   return result
 }
 
-/**
- * 执行 get_pomodoro_records 工具
- */
-function executeGetPomodoroRecords(
-  context: ToolExecutionContext,
+export function executeGetPomodoroRecords(
   args: { date?: string, startDate?: string, endDate?: string, projectId?: string },
+  context: ToolExecutionContext,
 ): { records: ReturnType<typeof toPomodoroRecordOutput>[] } {
   const todayDate = dayjs().format('YYYY-MM-DD')
   let startDate = args.startDate
@@ -235,13 +216,9 @@ function executeGetPomodoroRecords(
   return { records }
 }
 
-/**
- * 执行 update_item_status 工具
- * 修改事项状态（完成/放弃/恢复待办）
- */
-async function executeUpdateItemStatus(
-  context: ToolExecutionContext,
+export async function executeUpdateItemStatus(
   args: { itemId: string, status: 'completed' | 'abandoned' | 'pending' },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string }> {
   const item = context.allItems.find((i) => i.id === args.itemId)
   if (!item) {
@@ -295,9 +272,6 @@ async function executeUpdateItemStatus(
   }
 }
 
-/**
- * 构建 AI 创建事项的 Markdown 内容
- */
 function buildCreateItemContent(
   content: string,
   date: string,
@@ -313,12 +287,7 @@ function buildCreateItemContent(
   return `${content} ${datePart}`
 }
 
-/**
- * 执行 create_item 工具
- * 在指定项目下创建新事项
- */
-async function executeCreateItem(
-  context: ToolExecutionContext,
+export async function executeCreateItem(
   args: {
     projectId: string
     content: string
@@ -326,8 +295,8 @@ async function executeCreateItem(
     startTime?: string
     endTime?: string
   },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string, itemId?: string }> {
-  // 查找项目
   const project = context.projects.find((p) => p.id === args.projectId)
   if (!project) {
     return {
@@ -336,7 +305,6 @@ async function executeCreateItem(
     }
   }
 
-  // 找到最后一个任务的 blockId 作为插入锚点
   const lastTask = project.tasks.at(-1)
   if (!lastTask?.blockId) {
     return {
@@ -345,7 +313,6 @@ async function executeCreateItem(
     }
   }
 
-  // 构建事项 Markdown
   const itemContent = buildCreateItemContent(
     args.content,
     args.date,
@@ -354,7 +321,6 @@ async function executeCreateItem(
   )
 
   try {
-    // 在任务块后追加事项（previousID = lastTask.blockId 表示在其后插入）
     const result = await insertBlockAfterWithResult(lastTask.blockId, {
       type: 'replaceMarkdown',
       markdown: itemContent,
@@ -381,12 +347,7 @@ async function executeCreateItem(
   }
 }
 
-/**
- * 执行 update_item 工具
- * 修改事项的日期、时间或内容
- */
-async function executeUpdateItem(
-  context: ToolExecutionContext,
+export async function executeUpdateItem(
   args: {
     itemId: string
     content?: string
@@ -394,6 +355,7 @@ async function executeUpdateItem(
     startTime?: string
     endTime?: string
   },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string }> {
   const item = context.allItems.find((i) => i.id === args.itemId)
   if (!item) {
@@ -467,13 +429,9 @@ async function executeUpdateItem(
   }
 }
 
-/**
- * 执行 delete_item 工具
- * 删除指定事项
- */
-async function executeDeleteItem(
-  context: ToolExecutionContext,
+export async function executeDeleteItem(
   args: { itemId: string },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string }> {
   const item = context.allItems.find((i) => i.id === args.itemId)
   if (!item) {
@@ -503,17 +461,13 @@ async function executeDeleteItem(
   }
 }
 
-/**
- * 执行 create_task 工具
- * 在指定项目下创建新任务
- */
-async function executeCreateTask(
-  context: ToolExecutionContext,
+export async function executeCreateTask(
   args: {
     projectId: string
     name: string
     level?: string
   },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string, taskId?: string }> {
   const project = context.projects.find((p) => p.id === args.projectId)
   if (!project) {
@@ -527,7 +481,6 @@ async function executeCreateTask(
   const taskMarkdown = `${args.name} #task @${level}`
 
   try {
-    // 在文档末尾追加任务块
     const result = await siyuanAPI.appendBlock(
       'markdown',
       taskMarkdown,
@@ -555,23 +508,18 @@ async function executeCreateTask(
   }
 }
 
-/**
- * 执行 create_project 工具
- * 创建新项目（新建思源笔记文档）
- */
-async function executeCreateProject(
-  context: ToolExecutionContext,
+export async function executeCreateProject(
   args: {
     directoryId?: string
     name: string
     description?: string
   },
+  context: ToolExecutionContext,
 ): Promise<{ success: boolean, message: string, projectId?: string }> {
   const directories = context.directories || []
   const hasEnabledDirs = directories.some((d) => d.enabled)
 
   try {
-    // 获取笔记本列表
     const notebooksResult = await siyuanAPI.lsNotebooks()
     if (!notebooksResult?.notebooks) {
       return {
@@ -587,13 +535,11 @@ async function executeCreateProject(
       }
     }
 
-    // 构建文档内容
     let docContent = `# ${args.name}\n`
     if (args.description) {
       docContent += `\n${args.description}\n`
     }
 
-    // 场景 A：无目录配置（空、undefined、或全部未启用）
     if (!hasEnabledDirs) {
       const docId = await siyuanAPI.createDocWithMd(
         notebook.id,
@@ -614,7 +560,6 @@ async function executeCreateProject(
       }
     }
 
-    // 场景 C：有启用的目录但未传 directoryId
     if (!args.directoryId) {
       const availableDirs = directories
         .filter((d) => d.enabled)
@@ -626,7 +571,6 @@ async function executeCreateProject(
       }
     }
 
-    // 场景 B：有目录配置 + 传了 directoryId
     const directory = directories.find((d) => d.id === args.directoryId)
     if (!directory) {
       const availableDirs = directories
@@ -653,7 +597,6 @@ async function executeCreateProject(
       }
     }
 
-    // 将新项目路径添加到 settings 的 directories 中
     const newDir: ProjectDirectory = {
       id: `dir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       path: docPath,
@@ -680,66 +623,7 @@ async function executeCreateProject(
   }
 }
 
-/**
- * 执行工具调用
- */
-export async function executeTool(
-  toolCall: ToolCall,
-  context: ToolExecutionContext,
-): Promise<string> {
-  const args = JSON.parse(toolCall.function.arguments)
-  const toolName = toolCall.function.name as ToolName
-
-  switch (toolName) {
-    case 'list_groups':
-      return JSON.stringify(executeListGroups(context))
-
-    case 'list_projects':
-      return JSON.stringify(executeListProjects(context, args))
-
-    case 'filter_items':
-      return JSON.stringify(executeFilterItems(context, args))
-
-    case 'get_pomodoro_stats':
-      return JSON.stringify(executeGetPomodoroStats(context, args))
-
-    case 'get_pomodoro_records':
-      return JSON.stringify(executeGetPomodoroRecords(context, args))
-
-    case 'list_skills':
-      return JSON.stringify(await executeListSkills())
-
-    case 'get_skill_detail':
-      return JSON.stringify(await executeGetSkillDetail(args))
-
-    case 'update_item_status':
-      return JSON.stringify(await executeUpdateItemStatus(context, args))
-
-    case 'create_item':
-      return JSON.stringify(await executeCreateItem(context, args))
-
-    case 'update_item':
-      return JSON.stringify(await executeUpdateItem(context, args))
-
-    case 'delete_item':
-      return JSON.stringify(await executeDeleteItem(context, args))
-
-    case 'create_task':
-      return JSON.stringify(await executeCreateTask(context, args))
-
-    case 'create_project':
-      return JSON.stringify(await executeCreateProject(context, args))
-
-    default:
-      throw new Error(`Unknown tool: ${toolName}`)
-  }
-}
-
-/**
- * 执行 list_skills 工具
- * 预加载所有技能到内存，返回技能名称和描述列表
- */
-async function executeListSkills(): Promise<Array<{
+export async function executeListSkills(): Promise<Array<{
   name: string
   description: string
 }>> {
@@ -747,10 +631,8 @@ async function executeListSkills(): Promise<Array<{
 
   console.log('[executeListSkills] 开始加载技能...')
 
-  // 预加载所有技能到内存缓存
   await skillService.preloadAllSkills()
 
-  // 返回缓存中的技能元数据
   const skillNames = skillService.getCachedSkillNames()
   const result = skillNames.map((name) => {
     const skill = skillService.getSkillFromCache(name)!
@@ -764,12 +646,7 @@ async function executeListSkills(): Promise<Array<{
   return result
 }
 
-/**
- * 执行 get_skill_detail 工具
- * 根据技能名称从内存缓存获取详细内容
- * 参数：name（技能名称）
- */
-async function executeGetSkillDetail(args: {
+export async function executeGetSkillDetail(args: {
   name: string
 }): Promise<{
   name: string
@@ -779,10 +656,8 @@ async function executeGetSkillDetail(args: {
   const skillService = SkillService.getInstance()
 
   try {
-    // 从内存缓存获取技能
     let skill = skillService.getSkillFromCache(args.name)
 
-    // 如果缓存未命中，重新加载所有技能
     if (!skill) {
       await skillService.preloadAllSkills()
       skill = skillService.getSkillFromCache(args.name)
@@ -804,9 +679,58 @@ async function executeGetSkillDetail(args: {
   }
 }
 
-/**
- * 批量执行多个工具调用
- */
+export async function executeTool(
+  toolCall: ToolCall,
+  context: ToolExecutionContext,
+): Promise<string> {
+  const args = JSON.parse(toolCall.function.arguments)
+  const toolName = toolCall.function.name as ToolName
+
+  switch (toolName) {
+    case 'list_groups':
+      return JSON.stringify(executeListGroups(context))
+
+    case 'list_projects':
+      return JSON.stringify(executeListProjects(args, context))
+
+    case 'filter_items':
+      return JSON.stringify(executeFilterItems(args, context))
+
+    case 'get_pomodoro_stats':
+      return JSON.stringify(executeGetPomodoroStats(args, context))
+
+    case 'get_pomodoro_records':
+      return JSON.stringify(executeGetPomodoroRecords(args, context))
+
+    case 'list_skills':
+      return JSON.stringify(await executeListSkills())
+
+    case 'get_skill_detail':
+      return JSON.stringify(await executeGetSkillDetail(args))
+
+    case 'update_item_status':
+      return JSON.stringify(await executeUpdateItemStatus(args, context))
+
+    case 'create_item':
+      return JSON.stringify(await executeCreateItem(args, context))
+
+    case 'update_item':
+      return JSON.stringify(await executeUpdateItem(args, context))
+
+    case 'delete_item':
+      return JSON.stringify(await executeDeleteItem(args, context))
+
+    case 'create_task':
+      return JSON.stringify(await executeCreateTask(args, context))
+
+    case 'create_project':
+      return JSON.stringify(await executeCreateProject(args, context))
+
+    default:
+      throw new Error(`Unknown tool: ${toolName}`)
+  }
+}
+
 export async function executeToolCalls(
   toolCalls: ToolCall[],
   context: ToolExecutionContext,

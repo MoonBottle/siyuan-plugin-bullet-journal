@@ -35,7 +35,7 @@ import { ReActAgent } from '@/agents/react/agent'
 import { t } from '@/i18n'
 
 import { buildSystemPrompt } from '@/services/aiPromptService'
-import { bulletJournalTools } from '@/services/aiTools'
+import { bulletJournalToolDefinitions } from '@/services/aiTools'
 import {
   resetClawBotService,
   useClawBotService,
@@ -715,7 +715,7 @@ export const useAIStore = defineStore('ai', () => {
           conversationId: conversation.id,
           provider,
           systemPrompt,
-          tools: bulletJournalTools,
+          tools: bulletJournalToolDefinitions,
           maxIterations: 5,
         },
         onStreamUpdate: (_content) => {
@@ -1363,7 +1363,7 @@ export const useAIStore = defineStore('ai', () => {
           conversationId,
           provider,
           systemPrompt,
-          tools: bulletJournalTools,
+          tools: bulletJournalToolDefinitions,
           maxIterations: 5,
         },
         onStreamUpdate: (content) => {
