@@ -6,6 +6,7 @@ import type {
 import type {
   AIProviderConfig,
   ChatConversation,
+  ChatMessage,
 } from '@/types/ai'
 
 import type {
@@ -730,25 +731,43 @@ export const useAIStore = defineStore('ai', () => {
       const historyMessages = [...currentConversation.value!.messages]
       const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
 
-      function updateConversationMessages(newPiMsgs: any[]) {
-        if (!currentConversation.value) return
-        const newChatMsgs = newPiMsgs.map((m) =>
+      function getStreamingChatMessages(): ChatMessage[] {
+        const agent = piAgent.getAgent()
+        if (!agent) return historyMessages
+
+        const committedMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
           PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
         )
-        currentConversation.value = {
-          ...currentConversation.value,
-          messages: [...historyMessages, ...newChatMsgs],
+
+        if (agent.state.streamingMessage) {
+          const streamingMsg = PiMessageAdapter.toChatMessage(
+            agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
+          )
+          streamingMsg.loading = true
+          committedMsgs.push(streamingMsg)
         }
+
+        return [...historyMessages, ...committedMsgs]
       }
 
       piAgent.subscribe((event) => {
         switch (event.type) {
           case 'message_start':
-          case 'message_update':
+          case 'message_update': {
+            if (currentConversation.value) {
+              currentConversation.value = {
+                ...currentConversation.value,
+                messages: getStreamingChatMessages(),
+              }
+            }
+            break
+          }
           case 'message_end': {
-            const agent = piAgent.getAgent()
-            if (agent) {
-              updateConversationMessages(agent.state.messages.slice(piMsgOffset))
+            if (currentConversation.value) {
+              currentConversation.value = {
+                ...currentConversation.value,
+                messages: getStreamingChatMessages(),
+              }
             }
             debouncedSaveConversation()
             break
@@ -760,8 +779,14 @@ export const useAIStore = defineStore('ai', () => {
           }
           case 'agent_end': {
             const agent = piAgent.getAgent()
-            if (agent) {
-              updateConversationMessages(agent.state.messages.slice(piMsgOffset))
+            if (agent && currentConversation.value) {
+              const finalMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              currentConversation.value = {
+                ...currentConversation.value,
+                messages: [...historyMessages, ...finalMsgs],
+              }
             }
             break
           }
@@ -1399,11 +1424,23 @@ export const useAIStore = defineStore('ai', () => {
       const historyMessages = [...conversation.messages]
       const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
 
-      function updateConvMessages(newPiMsgs: any[]) {
-        const newChatMsgs = newPiMsgs.map((m) =>
+      function getConvStreamingMessages() {
+        const agent = piAgent.getAgent()
+        if (!agent) return
+
+        const committedMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
           PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
         )
-        conversation.messages = [...historyMessages, ...newChatMsgs]
+
+        let streamingMsg: ChatMessage | undefined
+        if (agent.state.streamingMessage) {
+          streamingMsg = PiMessageAdapter.toChatMessage(
+            agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
+          )
+          streamingMsg.loading = true
+        }
+
+        conversation.messages = [...historyMessages, ...committedMsgs, ...(streamingMsg ? [streamingMsg] : [])]
         if (currentConversationId.value === conversationId) {
           currentConversation.value = { ...conversation }
         }
@@ -1412,12 +1449,12 @@ export const useAIStore = defineStore('ai', () => {
       piAgent.subscribe((event) => {
         switch (event.type) {
           case 'message_start':
-          case 'message_update':
+          case 'message_update': {
+            getConvStreamingMessages()
+            break
+          }
           case 'message_end': {
-            const agent = piAgent.getAgent()
-            if (agent) {
-              updateConvMessages(agent.state.messages.slice(piMsgOffset))
-            }
+            getConvStreamingMessages()
             break
           }
           case 'tool_execution_start':
@@ -1430,7 +1467,13 @@ export const useAIStore = defineStore('ai', () => {
           case 'agent_end': {
             const agent = piAgent.getAgent()
             if (agent) {
-              updateConvMessages(agent.state.messages.slice(piMsgOffset))
+              const finalMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...finalMsgs]
+              if (currentConversationId.value === conversationId) {
+                currentConversation.value = { ...conversation }
+              }
             }
             break
           }
