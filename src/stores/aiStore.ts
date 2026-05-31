@@ -21,27 +21,29 @@ import type {
   Project,
   ProjectGroup,
 } from '@/types/models'
-/**
- * AI Store
- * 管理 AI 配置和对话状态（基于 ReAct Agent 架构）
- */
 import { defineStore } from 'pinia'
 import { showMessage } from 'siyuan'
 import {
   computed,
   ref,
 } from 'vue'
+import { PiAgentAdapter } from '@/agents/pi/PiAgentAdapter'
+import { PiMessageAdapter } from '@/agents/pi/PiMessageAdapter'
+import { PiModelAdapter } from '@/agents/pi/PiModelAdapter'
 import { ReActAgent } from '@/agents/react/agent'
 import { t } from '@/i18n'
 
 import { buildSystemPrompt } from '@/services/aiPromptService'
-import { bulletJournalToolDefinitions } from '@/services/aiTools'
+import {
+  bulletJournalTools,
+  setToolContext as setToolContextAction,
+
+} from '@/services/aiTools'
 import {
   resetClawBotService,
   useClawBotService,
 } from '@/services/clawBotService'
 import {
-
 
   useConversationStorage,
 } from '@/services/conversationStorageService'
@@ -87,7 +89,7 @@ export const useAIStore = defineStore('ai', () => {
 
   // ReAct Agent 相关
   const reactSteps = ref<ReActStep[]>([])
-  let currentAgent: ReActAgent | null = null
+  let currentAgent: ReActAgent | PiAgentAdapter | null = null
 
   // 工具上下文
   const toolContext = ref<ToolExecutionContext>({
@@ -626,7 +628,10 @@ export const useAIStore = defineStore('ai', () => {
       allItems,
       directories,
     }
-    currentAgent?.setToolContext(toolContext.value)
+    if (currentAgent instanceof ReActAgent) {
+      currentAgent.setToolContext(toolContext.value)
+    }
+    setToolContextAction(toolContext.value)
   }
 
   /**
@@ -709,49 +714,95 @@ export const useAIStore = defineStore('ai', () => {
     reactSteps.value = []
 
     try {
-      // 创建 ReAct Agent
-      currentAgent = new ReActAgent({
-        context: {
-          conversationId: conversation.id,
-          provider,
-          systemPrompt,
-          tools: bulletJournalToolDefinitions,
-          maxIterations: 5,
-        },
-        onStreamUpdate: (_content) => {
-          // 强制触发 Vue 响应式更新
-          if (currentConversation.value) {
-            currentConversation.value = { ...currentConversation.value }
+      const model = PiModelAdapter.toPiModel(provider)
+      const apiKey = PiModelAdapter.getApiKey(provider)
+
+      setToolContextAction(toolContext.value)
+
+      const piAgent = new PiAgentAdapter()
+      await piAgent.createAgent({
+        model,
+        systemPrompt,
+        tools: bulletJournalTools,
+        apiKey,
+      })
+
+      if (conversation.messages.length > 0) {
+        const piMessages = PiMessageAdapter.toPiMessages(conversation.messages)
+        const agent = piAgent.getAgent()
+        if (agent) {
+          agent.state.messages = piMessages
+        }
+      }
+
+      currentAgent = piAgent
+
+      const historyMessages = [...conversation.messages]
+      const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
+
+      piAgent.subscribe((event) => {
+        switch (event.type) {
+          case 'message_start': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            currentConversation.value = { ...currentConversation.value! }
+            debouncedSaveConversation()
+            break
           }
-          debouncedSaveConversation()
-        },
-        onStepComplete: (step) => {
-          reactSteps.value.push(step)
-        },
-      })
-
-      // 监听消息添加和更新事件
-      currentAgent.on('messageAdd', () => {
-        // 强制触发响应式更新
-        if (currentConversation.value) {
-          currentConversation.value = { ...currentConversation.value }
+          case 'message_update': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            currentConversation.value = { ...currentConversation.value! }
+            debouncedSaveConversation()
+            break
+          }
+          case 'message_end': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            currentConversation.value = { ...currentConversation.value! }
+            debouncedSaveConversation()
+            break
+          }
+          case 'tool_execution_start':
+          case 'tool_execution_end': {
+            currentConversation.value = { ...currentConversation.value! }
+            break
+          }
+          case 'agent_end': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            currentConversation.value = { ...currentConversation.value! }
+            break
+          }
         }
       })
 
-      currentAgent.on('messageUpdate', () => {
-        // 强制触发响应式更新
-        if (currentConversation.value) {
-          currentConversation.value = { ...currentConversation.value }
-        }
-      })
+      await piAgent.prompt(content)
 
-      // 设置工具上下文
-      currentAgent.setToolContext(toolContext.value)
-
-      // 运行 Agent
-      await currentAgent.run(content, conversation)
-
-      // 强制保存
       await forceSaveConversation()
       await refreshConversationsList()
 
@@ -759,10 +810,13 @@ export const useAIStore = defineStore('ai', () => {
       console.error('[AIStore] Send message error:', err)
       error.value = err instanceof Error ? err.message : '发送消息失败'
 
-      // 保存错误状态
       await forceSaveConversation()
     } finally {
       isLoading.value = false
+      if (currentAgent instanceof PiAgentAdapter) {
+        currentAgent.dispose()
+      }
+      currentAgent = null
     }
   }
 
@@ -1357,30 +1411,76 @@ export const useAIStore = defineStore('ai', () => {
       }
       console.log('[AIStore] 使用 Provider:', provider.name, provider.provider)
 
-      console.log('[AIStore] 创建 ReActAgent...')
-      const currentAgent = new ReActAgent({
-        context: {
-          conversationId,
-          provider,
-          systemPrompt,
-          tools: bulletJournalToolDefinitions,
-          maxIterations: 5,
-        },
-        onStreamUpdate: (content) => {
-          console.log('[AIStore] ReAct onStreamUpdate, content长度:', content?.length)
-        },
-        onStepComplete: (step) => {
-          console.log('[AIStore] ReAct onStepComplete:', step.type, step.type === 'action' ? step.tool : '')
-        },
+      const model = PiModelAdapter.toPiModel(provider)
+      const apiKey = PiModelAdapter.getApiKey(provider)
+
+      setToolContextAction(toolContext.value)
+
+      console.log('[AIStore] 创建 PiAgentAdapter...')
+      const piAgent = new PiAgentAdapter()
+      await piAgent.createAgent({
+        model,
+        systemPrompt,
+        tools: bulletJournalTools,
+        apiKey,
       })
 
-      console.log('[AIStore] 设置工具上下文...')
-      currentAgent.setToolContext(toolContext.value)
+      if (conversation.messages.length > 0) {
+        const piMessages = PiMessageAdapter.toPiMessages(conversation.messages)
+        const agent = piAgent.getAgent()
+        if (agent) {
+          agent.state.messages = piMessages
+        }
+      }
 
-      // 运行 Agent
-      console.log('[AIStore] 开始运行 ReActAgent.run()...')
-      await currentAgent.run(userContent, conversation)
-      console.log('[AIStore] ReActAgent.run() 完成')
+      const historyMessages = [...conversation.messages]
+      const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
+
+      piAgent.subscribe((event) => {
+        switch (event.type) {
+          case 'message_start':
+          case 'message_update':
+          case 'message_end': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            if (currentConversationId.value === conversationId) {
+              currentConversation.value = { ...conversation }
+            }
+            break
+          }
+          case 'tool_execution_start':
+          case 'tool_execution_end': {
+            if (currentConversationId.value === conversationId) {
+              currentConversation.value = { ...conversation }
+            }
+            break
+          }
+          case 'agent_end': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
+              const newChatMsgs = newPiMsgs.map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...newChatMsgs]
+            }
+            if (currentConversationId.value === conversationId) {
+              currentConversation.value = { ...conversation }
+            }
+            break
+          }
+        }
+      })
+
+      console.log('[AIStore] 开始运行 PiAgentAdapter.prompt()...')
+      await piAgent.prompt(userContent)
+      console.log('[AIStore] PiAgentAdapter.prompt() 完成')
       console.log('[AIStore] 运行后消息数:', conversation.messages.length)
       console.log('[AIStore] 运行后消息:', conversation.messages.map((m) => ({
         role: m.role,
@@ -1389,26 +1489,13 @@ export const useAIStore = defineStore('ai', () => {
         toolCallId: m.toolCallId,
       })))
 
-      // 保存会话前检查消息
-      console.log('[AIStore] 保存会话前，消息数:', conversation.messages.length)
-      console.log('[AIStore] 消息列表:', conversation.messages.map((m) => ({
-        role: m.role,
-        id: m.id?.slice(0, 10),
-        content: m.content?.slice(0, 20),
-      })))
+      piAgent.dispose()
 
       await storageService.saveConversation(conversation)
       console.log('[AIStore] 会话保存成功')
 
-      // 如果用户当前正在查看该微信会话，则更新 UI
-      console.log('[AIStore] 检查是否需要更新 UI:', {
-        currentConversationId: currentConversationId.value,
-        conversationId,
-        isMatch: currentConversationId.value === conversationId,
-      })
       if (currentConversationId.value === conversationId) {
         console.log('[AIStore] 用户正在查看当前微信会话，强制刷新 UI')
-        // 强制触发响应式更新：先设为 null，再设为刷新后的会话
         const refreshedConv = await storageService!.loadConversation(conversationId)
         if (refreshedConv) {
           console.log('[AIStore] 强制触发响应式更新，消息数:', refreshedConv.messages.length)
@@ -1421,10 +1508,8 @@ export const useAIStore = defineStore('ai', () => {
         console.log('[AIStore] 用户未查看当前微信会话，跳过 UI 更新')
       }
 
-      // 刷新会话列表
       await refreshConversationsList()
 
-      // 获取最后一条 AI 消息
       const lastMessage = conversation.messages.at(-1)
       console.log('[AIStore] 最后一条消息详情:', {
         role: lastMessage?.role,
@@ -1436,7 +1521,6 @@ export const useAIStore = defineStore('ai', () => {
       })
 
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
-        // 发送到微信
         console.log('[AIStore] 准备发送到微信, 内容长度:', lastMessage.content.length)
         await sendReplyToWeixin(toUserId, lastMessage.content, contextToken)
         console.log('[AIStore] 发送到微信完成')
@@ -1448,7 +1532,6 @@ export const useAIStore = defineStore('ai', () => {
       console.error('[AIStore] AI 回复失败:', err)
       console.error('[AIStore] 错误详情:', err instanceof Error ? err.stack : String(err))
 
-      // 打印当前会话状态以便调试
       console.log('[AIStore] 错误时会话消息数:', conversation.messages.length)
       console.log('[AIStore] 错误时会话消息:', conversation.messages.map((m) => ({
         role: m.role,
@@ -1457,7 +1540,6 @@ export const useAIStore = defineStore('ai', () => {
         toolCallId: m.toolCallId,
       })))
 
-      // 发送错误提示
       await sendReplyToWeixin(toUserId, '抱歉，我暂时无法处理您的请求，请稍后再试。', contextToken)
     } finally {
       console.log('[AIStore] generateAIReply FINALLY')

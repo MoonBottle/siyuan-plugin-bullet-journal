@@ -1,9 +1,9 @@
-/**
- * AI Agents 模块
- * 导出 ReAct Agent 相关功能
- */
+export { PiAgentAdapter } from './pi/PiAgentAdapter'
+export type { PiAgentAdapterOptions } from './pi/PiAgentAdapter'
+export { PiMessageAdapter } from './pi/PiMessageAdapter'
+export { PiModelAdapter } from './pi/PiModelAdapter'
+export { PiToolAdapter } from './pi/PiToolAdapter'
 
-// ReAct Agent
 export { ReActAgent } from './react/agent'
 export type {
   AIResponse,
