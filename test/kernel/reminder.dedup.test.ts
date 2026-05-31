@@ -19,10 +19,22 @@ const mockStorageGet = vi.fn<(path: string) => Promise<{ json: () => Promise<Ker
 vi.mock('@/kernel/scheduler', () => ({
   registerTimers: mockRegisterTimers,
   cancelTimersByType: mockCancelTimersByType,
+  isSchedulerActive: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock('@/kernel/utils', () => ({
   calculateReminderTime: mockCalculateReminderTime,
+  formatDate: (d: Date) => {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  },
+}))
+
+vi.mock('@/kernel/habitSchedule', () => ({
+  isDateEligibleForHabit: vi.fn().mockReturnValue(true),
+  isTodayCompleted: vi.fn().mockReturnValue(false),
 }))
 
 beforeEach(() => {
@@ -84,9 +96,12 @@ function makeHabit(overrides: Partial<KernelData['habits'][0]> = {}): KernelData
   return {
     id: 'habit-1',
     name: 'test habit',
-    type: 'daily',
+    type: 'binary',
     targetDate: '2026-05-28',
     blockId: 'block-h1',
+    startDate: '2026-05-28',
+    frequency: { type: 'daily' },
+    records: [],
     reminder: {
       enabled: true,
       type: 'absolute',

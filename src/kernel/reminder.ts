@@ -7,7 +7,8 @@ import {
   isSchedulerActive,
   registerTimers,
 } from './scheduler'
-import { calculateReminderTime } from './utils'
+import { isDateEligibleForHabit, isTodayCompleted } from './habitSchedule'
+import { calculateReminderTime, formatDate } from './utils'
 
 const PATH_SEP_RE = /[/\\]/g
 
@@ -75,11 +76,14 @@ export async function rebuildReminderSchedule(): Promise<void> {
     }
 
     if (data.habits) {
+      const today = formatDate(new Date())
       for (let j = 0; j < data.habits.length; j++) {
         const habit = data.habits[j]
         if (!habit.reminder || !habit.reminder.enabled) continue
+        if (!isDateEligibleForHabit(habit, today)) continue
+        if (isTodayCompleted(habit, today)) continue
         const habitReminderTime = calculateReminderTime(
-          habit.targetDate,
+          today,
           undefined,
           undefined,
           undefined,
@@ -89,7 +93,7 @@ export async function rebuildReminderSchedule(): Promise<void> {
         if (habitReminderTime < now - 5 * 60 * 1000) continue
         if (habitReminderTime > now + futureWindowMs) continue
         entries.push({
-          id: `habit-${habit.blockId}-${habit.targetDate}-${habitReminderTime}`,
+          id: `habit-${habit.blockId}-${today}-${habitReminderTime}`,
           type: 'habit',
           endTime: Math.floor(habitReminderTime / 1000),
           metadata: {
