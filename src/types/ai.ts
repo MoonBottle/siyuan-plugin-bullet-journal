@@ -2,7 +2,6 @@
  * AI 相关类型定义
  */
 
-// AI 服务商类型（仅保留支持 OpenAI 兼容协议的供应商）
 export type AIProvider =
   | 'openai'
   | 'kimi'
@@ -11,7 +10,6 @@ export type AIProvider =
   | 'zhipu'
   | 'custom'
 
-// 供应商配置
 export interface ProviderConfig {
   name: string
   defaultUrl: string
@@ -19,7 +17,6 @@ export interface ProviderConfig {
   models: string[]
 }
 
-// 供应商预设配置
 export const PROVIDER_PRESETS: Record<Exclude<AIProvider, 'custom'>, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
@@ -53,16 +50,6 @@ export const PROVIDER_PRESETS: Record<Exclude<AIProvider, 'custom'>, ProviderCon
   },
 }
 
-// AI 配置（单供应商，旧版兼容）
-export interface AIConfig {
-  provider: AIProvider
-  apiKey: string
-  apiUrl?: string
-  model: string
-  enabled: boolean
-}
-
-// 供应商配置实例（支持多实例）
 export interface AIProviderConfig {
   id: string
   name: string
@@ -74,10 +61,8 @@ export interface AIProviderConfig {
   enabled: boolean
 }
 
-// 消息角色
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-// 工具调用
 export interface ToolCall {
   id: string
   type: 'function'
@@ -87,7 +72,6 @@ export interface ToolCall {
   }
 }
 
-// 工具定义（用于发送给 AI）
 export interface ToolDefinition {
   type: 'function'
   function: {
@@ -101,7 +85,6 @@ export interface ToolDefinition {
   }
 }
 
-// Token 使用信息
 export interface UsageInfo {
   prompt_tokens: number
   completion_tokens: number
@@ -109,7 +92,6 @@ export interface UsageInfo {
   cached_tokens?: number
 }
 
-// 聊天消息
 export interface ChatMessage {
   id: string
   role: MessageRole
@@ -118,21 +100,16 @@ export interface ChatMessage {
   loading?: boolean
   error?: string
 
-  // 工具调用相关
   toolCalls?: ToolCall[]
   toolCallId?: string
 
-  // 思考过程（某些模型如 step-3.5-flash 会返回）
   reasoning?: string
 
-  // Token 使用情况
   usage?: UsageInfo
 }
 
-// 消息来源类型
 export type MessageSource = 'local' | 'weixin'
 
-// 对话会话
 export interface ChatConversation {
   id: string
   title: string
@@ -140,61 +117,7 @@ export interface ChatConversation {
   createdAt: number
   updatedAt: number
 
-  // ClawBot 新增字段
   source?: MessageSource
   weixinUserId?: string
   weixinUserName?: string
-}
-
-// AI 请求体（OpenAI 格式）
-export interface AIRequestBody {
-  model: string
-  messages: Array<{
-    role: MessageRole
-    content: string
-  }>
-  temperature?: number
-  max_tokens?: number
-  stream?: boolean
-}
-
-// AI 响应体（OpenAI 格式）
-export interface AIResponseBody {
-  id: string
-  object: string
-  created: number
-  model: string
-  choices: Array<{
-    index: number
-    message: {
-      role: MessageRole
-      content: string
-    }
-    finish_reason: string
-  }>
-  usage?: {
-    prompt_tokens: number
-    completion_tokens: number
-    total_tokens: number
-  }
-}
-
-// AI 设置（存储在插件设置中）
-export interface AISettings {
-  config: AIConfig
-  conversations: ChatConversation[]
-  currentConversationId: string | null
-  showToolCalls?: boolean // 是否展示工具调用详情
-}
-
-// 默认 AI 设置
-export const defaultAISettings: AISettings = {
-  config: {
-    provider: 'openai',
-    apiKey: '',
-    model: 'gpt-4o-mini',
-    enabled: false,
-  },
-  conversations: [],
-  currentConversationId: null,
 }

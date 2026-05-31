@@ -86,13 +86,6 @@ vi.mock('@/services/aiTools', () => ({
   bulletJournalTools: [],
 }))
 
-vi.mock('@/agents/react/agent', () => ({
-  ReActAgent: vi.fn().mockImplementation(() => ({
-    setToolContext: vi.fn(),
-    run: vi.fn(),
-  })),
-}))
-
 vi.mock('@/stores/projectStore', () => ({
   useProjectStore: vi.fn(() => ({
     projects: [],

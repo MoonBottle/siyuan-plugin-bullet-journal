@@ -1,4 +1,3 @@
-import type { ReActStep } from '@/agents/react/types'
 import type { ToolExecutionContext } from '@/services/aiToolsExecutor'
 import type {
   ConversationData,
@@ -30,7 +29,6 @@ import {
 import { PiAgentAdapter } from '@/agents/pi/PiAgentAdapter'
 import { PiMessageAdapter } from '@/agents/pi/PiMessageAdapter'
 import { PiModelAdapter } from '@/agents/pi/PiModelAdapter'
-import { ReActAgent } from '@/agents/react/agent'
 import { t } from '@/i18n'
 
 import { buildSystemPrompt } from '@/services/aiPromptService'
@@ -87,9 +85,7 @@ export const useAIStore = defineStore('ai', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // ReAct Agent 相关
-  const reactSteps = ref<ReActStep[]>([])
-  let currentAgent: ReActAgent | PiAgentAdapter | null = null
+  let currentAgent: PiAgentAdapter | null = null
 
   // 工具上下文
   const toolContext = ref<ToolExecutionContext>({
@@ -616,7 +612,7 @@ export const useAIStore = defineStore('ai', () => {
         || conversation.title === 'New Conversation')
   }
 
-  // ==================== ReAct Agent Core ====================
+  // ==================== AI Agent Core ====================
 
   /**
    * 设置工具执行上下文
@@ -628,14 +624,14 @@ export const useAIStore = defineStore('ai', () => {
       allItems,
       directories,
     }
-    if (currentAgent instanceof ReActAgent) {
+    if (currentAgent) {
       currentAgent.setToolContext(toolContext.value)
     }
     setToolContextAction(toolContext.value)
   }
 
   /**
-   * 发送消息（基于 ReAct Agent）
+   * 发送消息（基于 Pi Agent）
    */
   async function sendMessage(content: string): Promise<void> {
     // 前置检查
@@ -700,18 +696,12 @@ export const useAIStore = defineStore('ai', () => {
     // 从 SkillService 获取所有启用技能（包括内置和用户自定义）
     const skillService = SkillService.getInstance()
     const allSkills = skillService.getEnabledSkills()
-    const skills = allSkills.map((skill) => ({
-      name: skill.name,
-      description: skill.description,
-    }))
 
-    // 构建系统提示词（注入技能列表）
-    const systemPrompt = buildSystemPrompt(skills)
+    const systemPrompt = buildSystemPrompt(allSkills)
 
     // 设置状态
     isLoading.value = true
     error.value = null
-    reactSteps.value = []
 
     try {
       const model = PiModelAdapter.toPiModel(provider)
@@ -925,7 +915,7 @@ export const useAIStore = defineStore('ai', () => {
       // 刷新会话列表
       await refreshConversationsList()
 
-      // 调用 AI 回复（消息添加由 ReActAgent 统一处理）
+      // 调用 AI 回复（消息添加由 PiAgentAdapter 统一处理）
       if (isAIEnabled.value) {
         console.log('[AIStore] AI 已启用，开始生成回复')
         await generateAIReply(conversationId, content, fromUserId, contextToken)
@@ -1392,12 +1382,8 @@ export const useAIStore = defineStore('ai', () => {
     // 获取技能
     const skillService = SkillService.getInstance()
     const allSkills = skillService.getEnabledSkills()
-    const skills = allSkills.map((skill) => ({
-      name: skill.name,
-      description: skill.description,
-    }))
 
-    const systemPrompt = buildSystemPrompt(skills)
+    const systemPrompt = buildSystemPrompt(allSkills)
     console.log('[AIStore] SystemPrompt 长度:', systemPrompt.length)
 
     isLoading.value = true
@@ -1685,7 +1671,6 @@ export const useAIStore = defineStore('ai', () => {
     isLoading,
     error,
     showToolCalls,
-    reactSteps,
 
     // Getters
     activeProvider,
