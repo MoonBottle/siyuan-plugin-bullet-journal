@@ -196,6 +196,20 @@ interface KernelDataHabit {
   reminder?: ReminderConfig
   targetDate: string
   blockId: string
+  startDate: string
+  frequency?: {
+    type: string
+    interval?: number
+    daysOfWeek?: number[]
+    intervals?: number[]
+  }
+  records: Array<{
+    date: string
+    currentValue?: number
+    status?: string
+  }>
+  durationDays?: number
+  archivedAt?: string
 }
 
 export interface KernelData {
