@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kernel Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Lifecycle Section */
+  .lifecycle-section {
+    margin-bottom: 48px;
+  }
+  .lifecycle-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    justify-content: center;
+  }
+  .lifecycle-box {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    position: relative;
+    min-width: 180px;
+  }
+  .lifecycle-box .phase {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .lifecycle-box .fn-name {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 14px;
+    color: #f1f5f9;
+    font-weight: 600;
+  }
+  .lifecycle-box .actions {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .lifecycle-arrow {
+    display: flex;
+    align-items: center;
+    color: #475569;
+    font-size: 20px;
+    padding: 0 4px;
+  }
+
+  /* Main Grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+
+  /* Module Card */
+  .module-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .module-header {
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #334155;
+  }
+  .module-header .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .module-header .file-name {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #64748b;
+    margin-left: auto;
+  }
+  .module-body {
+    padding: 14px 18px;
+  }
+  .method-list {
+    list-style: none;
+  }
+  .method-list li {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    padding: 4px 0;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .method-list li .tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .tag-export { background: #065f46; color: #6ee7b7; }
+  .tag-internal { background: #1e3a5f; color: #7dd3fc; }
+  .tag-handler { background: #4a1d6e; color: #c4b5fd; }
+
+  /* Data Store */
+  .data-store {
+    background: #1e293b;
+    border: 2px dashed #475569;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .data-store-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .data-item {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .data-item:last-child { margin-bottom: 0; }
+  .data-item .data-name {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #fbbf24;
+    font-weight: 600;
+  }
+  .data-item .data-type {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .data-item .data-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* Flow Diagram */
+  .flow-section {
+    margin-bottom: 48px;
+  }
+  .flow-section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #e2e8f0;
+    text-align: center;
+  }
+  .flow-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: center;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+  .flow-node {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 140px;
+    position: relative;
+  }
+  .flow-node .node-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .flow-node .node-detail {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 3px;
+  }
+  .flow-arrow-down {
+    color: #475569;
+    font-size: 18px;
+    padding: 2px 0;
+    text-align: center;
+  }
+  .flow-arrow-right {
+    color: #475569;
+    font-size: 16px;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .flow-label {
+    font-size: 10px;
+    color: #64748b;
+    text-align: center;
+    max-width: 80px;
+  }
+
+  /* Timer Lifecycle */
+  .timer-lifecycle {
+    margin-bottom: 48px;
+  }
+  .timer-lifecycle h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #e2e8f0;
+    text-align: center;
+  }
+  .timer-steps {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .timer-step {
+    text-align: center;
+    max-width: 130px;
+  }
+  .timer-step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 18px;
+  }
+  .timer-step .step-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+  }
+  .timer-step .step-desc {
+    font-size: 10px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .timer-step-connector {
+    display: flex;
+    align-items: center;
+    padding-top: 14px;
+    color: #475569;
+    font-size: 16px;
+  }
+
+  /* Color themes for modules */
+  .color-scheduler .module-header { background: linear-gradient(135deg, rgba(59,130,246,0.15), transparent); }
+  .color-scheduler .icon { background: #1e3a5f; color: #60a5fa; }
+  .color-reminder .module-header { background: linear-gradient(135deg, rgba(16,185,129,0.15), transparent); }
+  .color-reminder .icon { background: #064e3b; color: #34d399; }
+  .color-pomodoro .module-header { background: linear-gradient(135deg, rgba(245,158,11,0.15), transparent); }
+  .color-pomodoro .icon { background: #451a03; color: #fbbf24; }
+  .color-rpc .module-header { background: linear-gradient(135deg, rgba(168,85,247,0.15), transparent); }
+  .color-rpc .icon { background: #3b0764; color: #c084fc; }
+  .color-webhook .module-header { background: linear-gradient(135deg, rgba(236,72,153,0.15), transparent); }
+  .color-webhook .icon { background: #500724; color: #f472b6; }
+  .color-mcp .module-header { background: linear-gradient(135deg, rgba(6,182,212,0.15), transparent); }
+  .color-mcp .icon { background: #083344; color: #22d3ee; }
+  .color-habit .module-header { background: linear-gradient(135deg, rgba(132,204,22,0.15), transparent); }
+  .color-habit .icon { background: #1a2e05; color: #a3e635; }
+  .color-utils .module-header { background: linear-gradient(135deg, rgba(100,116,139,0.15), transparent); }
+  .color-utils .icon { background: #1e293b; color: #94a3b8; }
+  .color-types .module-header { background: linear-gradient(135deg, rgba(100,116,139,0.15), transparent); }
+  .color-types .icon { background: #1e293b; color: #94a3b8; }
+
+  /* Dependency arrows section */
+  .deps-section {
+    margin-bottom: 48px;
+  }
+  .deps-section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #e2e8f0;
+    text-align: center;
+  }
+  .deps-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .deps-table th {
+    background: #1e293b;
+    padding: 10px 14px;
+    text-align: left;
+    color: #94a3b8;
+    font-weight: 600;
+    border-bottom: 2px solid #334155;
+  }
+  .deps-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #1e293b;
+    color: #cbd5e1;
+  }
+  .deps-table tr:hover td { background: #1e293b; }
+  .deps-table .mono {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    .timer-steps {
+      flex-direction: column;
+      align-items: center;
+    }
+    .timer-step-connector {
+      transform: rotate(90deg);
+      padding: 0;
+    }
+    .lifecycle-row {
+      flex-direction: column;
+      align-items: center;
+    }
+    .lifecycle-arrow {
+      transform: rotate(90deg);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Kernel Architecture</h1>
+  <p class="subtitle">siyuan-plugin-bullet-journal &middot; src/kernel/</p>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>调度器</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>提醒</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>番茄钟 RPC</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>RPC 注册</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ec4899"></div>Webhook</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>MCP Server</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>习惯调度</div>
+  </div>
+
+  <!-- Lifecycle -->
+  <div class="lifecycle-section">
+    <div class="lifecycle-row">
+      <div class="lifecycle-box" style="border-color: #3b82f6">
+        <div class="phase">Phase 1</div>
+        <div class="fn-name">onload()</div>
+        <div class="actions">
+          initRpcApi()<br>
+          bind event handler<br>
+          genId()
+        </div>
+      </div>
+      <div class="lifecycle-arrow">→</div>
+      <div class="lifecycle-box" style="border-color: #10b981">
+        <div class="phase">Phase 2</div>
+        <div class="fn-name">onrunning()</div>
+        <div class="actions">
+          setDispatchNotification<br>
+          loadTimerRegistry<br>
+          initScheduler<br>
+          initReminderScheduler<br>
+          loadWebhookConfig<br>
+          initMcpServer
+        </div>
+      </div>
+      <div class="lifecycle-arrow">→</div>
+      <div class="lifecycle-box" style="border-color: #ef4444">
+        <div class="phase">Phase 3</div>
+        <div class="fn-name">onunload()</div>
+        <div class="actions">
+          clearModuleState<br>
+          stopScheduler<br>
+          persistTimerRegistry<br>
+          closeMcpServer
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Architecture Grid -->
+  <div class="main-grid">
+    <!-- Left Column: Input Sources -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="data-store">
+        <div class="data-store-title">SiYuan Storage</div>
+        <div class="data-item">
+          <div class="data-name">kernel-data.json</div>
+          <div class="data-type">KernelData</div>
+          <div class="data-desc">groups, projects, items, habits — 由插件 parser 层生成</div>
+        </div>
+        <div class="data-item">
+          <div class="data-name">timer-registry.json</div>
+          <div class="data-type">TimerEntry[]</div>
+          <div class="data-desc">持久化的 reminder/habit 计时器，启动时恢复</div>
+        </div>
+        <div class="data-item">
+          <div class="data-name">settings</div>
+          <div class="data-type">{ webhook: WebhookConfig }</div>
+          <div class="data-desc">Webhook 通道配置</div>
+        </div>
+      </div>
+
+      <div class="data-store">
+        <div class="data-store-title">SiYuan Runtime</div>
+        <div class="data-item">
+          <div class="data-name">siyuan.rpc</div>
+          <div class="data-desc">bind / broadcast — 插件间 RPC 通信</div>
+        </div>
+        <div class="data-item">
+          <div class="data-name">siyuan.event</div>
+          <div class="data-desc">fs-notify 事件 — 文件变更监听</div>
+        </div>
+        <div class="data-item">
+          <div class="data-name">siyuan.server.private</div>
+          <div class="data-desc">HTTP / SSE handler — MCP Server 入口</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Column: Core Modules -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="module-card color-scheduler">
+        <div class="module-header">
+          <div class="icon">⏱</div>
+          <span>Scheduler — 计时器引擎</span>
+          <span class="file-name">scheduler.ts</span>
+        </div>
+        <div class="module-body">
+          <ul class="method-list">
+            <li><span class="tag tag-export">exp</span> registerTimer(entry)</li>
+            <li><span class="tag tag-export">exp</span> registerTimers(entries[])</li>
+            <li><span class="tag tag-export">exp</span> cancelTimer(id)</li>
+            <li><span class="tag tag-export">exp</span> cancelTimersByType(type)</li>
+            <li><span class="tag tag-export">exp</span> getActiveTimers(type?)</li>
+            <li><span class="tag tag-export">exp</span> initScheduler() / stopScheduler()</li>
+            <li><span class="tag tag-export">exp</span> loadTimerRegistry() / persistTimerRegistry()</li>
+            <li><span class="tag tag-export">exp</span> markTimerNotified(id) / isTimerNotified(id)</li>
+            <li><span class="tag tag-internal">int</span> checkTimers() — 1s 轮询</li>
+            <li><span class="tag tag-internal">int</span> schedulePersist() — 5s 防抖写盘</li>
+          </ul>
+          <div style="margin-top:12px;padding:10px;background:#0f172a;border-radius:6px">
+            <div style="font-size:11px;color:#64748b;margin-bottom:6px">核心数据结构</div>
+            <div style="font-family:'Fira Code',monospace;font-size:11px;color:#fbbf24">timers: Map&lt;string, TimerEntry&gt;</div>
+            <div style="font-family:'Fira Code',monospace;font-size:11px;color:#60a5fa;margin-top:4px">notifiedTimerIds: Set&lt;string&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="module-card color-reminder">
+          <div class="module-header">
+            <div class="icon">🔔</div>
+            <span>Reminder</span>
+            <span class="file-name">reminder.ts</span>
+          </div>
+          <div class="module-body">
+            <ul class="method-list">
+              <li><span class="tag tag-export">exp</span> initReminderScheduler()</li>
+              <li><span class="tag tag-export">exp</span> rebuildReminderSchedule()</li>
+              <li><span class="tag tag-handler">hdl</span> handleFsNotify(event)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="module-card color-pomodoro">
+          <div class="module-header">
+            <div class="icon">🍅</div>
+            <span>Pomodoro RPC</span>
+            <span class="file-name">pomodoro.ts</span>
+          </div>
+          <div class="module-body">
+            <ul class="method-list">
+              <li><span class="tag tag-handler">hdl</span> handleRegisterTimer</li>
+              <li><span class="tag tag-handler">hdl</span> handleRegisterTimers</li>
+              <li><span class="tag tag-handler">hdl</span> handleCancelTimer</li>
+              <li><span class="tag tag-handler">hdl</span> handleCancelTimersByType</li>
+              <li><span class="tag tag-handler">hdl</span> handleGetActiveTimers</li>
+              <li><span class="tag tag-handler">hdl</span> handlePing / handleDiagnose</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="module-card color-webhook">
+          <div class="module-header">
+            <div class="icon">📡</div>
+            <span>Webhook</span>
+            <span class="file-name">webhook.ts</span>
+          </div>
+          <div class="module-body">
+            <ul class="method-list">
+              <li><span class="tag tag-export">exp</span> dispatchNotification(entry)</li>
+              <li><span class="tag tag-export">exp</span> loadWebhookConfig()</li>
+              <li><span class="tag tag-internal">int</span> sendWebhook(channel, entry)</li>
+              <li><span class="tag tag-internal">int</span> buildPlatformPayload</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="module-card color-mcp">
+          <div class="module-header">
+            <div class="icon">🔌</div>
+            <span>MCP Server</span>
+            <span class="file-name">mcp.ts + mcpTools.ts</span>
+          </div>
+          <div class="module-body">
+            <ul class="method-list">
+              <li><span class="tag tag-export">exp</span> initMcpServer()</li>
+              <li><span class="tag tag-handler">hdl</span> handleJsonRpc(message)</li>
+              <li><span class="tag tag-handler">hdl</span> list_groups / list_projects</li>
+              <li><span class="tag tag-handler">hdl</span> filter_items</li>
+              <li><span class="tag tag-handler">hdl</span> get_pomodoro_stats/records</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Output / External -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="data-store">
+        <div class="data-store-title">通知输出</div>
+        <div class="data-item">
+          <div class="data-name">siyuan.rpc.broadcast</div>
+          <div class="data-desc">timer-expired 事件 → 前端 Dock 监听</div>
+        </div>
+        <div class="data-item">
+          <div class="data-name">Webhook Push</div>
+          <div class="data-desc">钉钉 / 飞书 / 企微 / 自定义 HTTP</div>
+        </div>
+      </div>
+
+      <div class="data-store">
+        <div class="data-store-title">MCP 客户端</div>
+        <div class="data-item">
+          <div class="data-name">SSE + HTTP</div>
+          <div class="data-desc">AI 助手通过 JSON-RPC 2.0 查询任务数据</div>
+        </div>
+      </div>
+
+      <div class="data-store">
+        <div class="data-store-title">RPC 调用方</div>
+        <div class="data-item">
+          <div class="data-name">前端 Pomodoro Dock</div>
+          <div class="data-desc">siyuan.rpc.call('registerTimer', ...)</div>
+        </div>
+      </div>
+
+      <div class="module-card color-habit" style="margin-top:auto">
+        <div class="module-header">
+          <div class="icon">🎯</div>
+          <span>Habit Schedule</span>
+          <span class="file-name">habitSchedule.ts</span>
+        </div>
+        <div class="module-body">
+          <ul class="method-list">
+            <li><span class="tag tag-export">exp</span> isDateEligibleForHabit</li>
+            <li><span class="tag tag-export">exp</span> isTodayCompleted</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="module-card color-utils">
+        <div class="module-header">
+          <div class="icon">🔧</div>
+          <span>Utils + Types</span>
+          <span class="file-name">utils.ts / types.ts</span>
+        </div>
+        <div class="module-body">
+          <ul class="method-list">
+            <li><span class="tag tag-export">exp</span> formatDate(d)</li>
+            <li><span class="tag tag-export">exp</span> calculateReminderTime(...)</li>
+            <li><span class="tag tag-export">exp</span> renderTemplate(tpl, vars)</li>
+            <li style="color:#64748b;margin-top:4px">TimerEntry, WebhookConfig, KernelData, ...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Flow -->
+  <div class="flow-section">
+    <h2>核心数据流</h2>
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <div class="flow-node" style="border-color:#10b981">
+          <div class="node-title">kernel-data.json</div>
+          <div class="node-detail">items + habits</div>
+        </div>
+        <div class="flow-arrow-right">→</div>
+        <div class="flow-label">fs-notify 触发</div>
+        <div class="flow-arrow-right">→</div>
+        <div class="flow-node" style="border-color:#10b981">
+          <div class="node-title">rebuildReminderSchedule()</div>
+          <div class="node-detail">cancelByType → build entries → registerTimers</div>
+        </div>
+        <div class="flow-arrow-right">→</div>
+        <div class="flow-node" style="border-color:#3b82f6">
+          <div class="node-title">scheduler.timers</div>
+          <div class="node-detail">Map&lt;id, TimerEntry&gt;</div>
+        </div>
+        <div class="flow-arrow-right">→</div>
+        <div class="flow-node" style="border-color:#3b82f6">
+          <div class="node-title">checkTimers()</div>
+          <div class="node-detail">1s 轮询，endTime 到期触发</div>
+        </div>
+        <div class="flow-arrow-right">→</div>
+        <div class="flow-node" style="border-color:#ec4899">
+          <div class="node-title">dispatchNotification()</div>
+          <div class="node-detail">broadcast + webhook</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timer Lifecycle -->
+  <div class="timer-lifecycle">
+    <h2>Timer 生命周期</h2>
+    <div class="timer-steps">
+      <div class="timer-step">
+        <div class="timer-step-circle" style="background:#1e3a5f;color:#60a5fa">1</div>
+        <div class="step-title">Register</div>
+        <div class="step-desc">registerTimer / registerTimers<br>写入 timers Map<br>检查 notifiedTimerIds</div>
+      </div>
+      <div class="timer-step-connector">→</div>
+      <div class="timer-step">
+        <div class="timer-step-circle" style="background:#064e3b;color:#34d399">2</div>
+        <div class="step-title">Pending</div>
+        <div class="step-desc">等待 endTime 到达<br>notified = false<br>id ∉ notifiedTimerIds</div>
+      </div>
+      <div class="timer-step-connector">→</div>
+      <div class="timer-step">
+        <div class="timer-step-circle" style="background:#451a03;color:#fbbf24">3</div>
+        <div class="step-title">Fire</div>
+        <div class="step-desc">checkTimers 检测到期<br>notified = true<br>id → notifiedTimerIds</div>
+      </div>
+      <div class="timer-step-connector">→</div>
+      <div class="timer-step">
+        <div class="timer-step-circle" style="background:#500724;color:#f472b6">4</div>
+        <div class="step-title">Notify</div>
+        <div class="step-desc">dispatchNotification<br>rpc.broadcast('timer-expired')<br>webhook push</div>
+      </div>
+      <div class="timer-step-connector">→</div>
+      <div class="timer-step">
+        <div class="timer-step-circle" style="background:#1e293b;color:#64748b">5</div>
+        <div class="step-title">Purge</div>
+        <div class="step-desc">到期 &gt; 24h 后清除<br>从 timers Map 删除<br>从 notifiedTimerIds 删除</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Dependencies -->
+  <div class="deps-section">
+    <h2>模块依赖关系</h2>
+    <table class="deps-table">
+      <thead>
+        <tr>
+          <th>模块</th>
+          <th>依赖</th>
+          <th>被依赖</th>
+          <th>核心职责</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono" style="color:#60a5fa">scheduler.ts</td>
+          <td class="mono">types, utils</td>
+          <td class="mono">index, reminder, pomodoro</td>
+          <td>计时器注册、轮询、触发、持久化</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#34d399">reminder.ts</td>
+          <td class="mono">types, scheduler, habitSchedule, utils</td>
+          <td class="mono">index</td>
+          <td>读取 kernel-data → 构建 reminder/habit 计时器</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#fbbf24">pomodoro.ts</td>
+          <td class="mono">types, scheduler, webhook</td>
+          <td class="mono">rpc</td>
+          <td>RPC handler 层，转发番茄钟操作到 scheduler</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#c084fc">rpc.ts</td>
+          <td class="mono">pomodoro</td>
+          <td class="mono">index</td>
+          <td>注册 RPC 方法到 siyuan.rpc</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#f472b6">webhook.ts</td>
+          <td class="mono">types, utils</td>
+          <td class="mono">index, pomodoro</td>
+          <td>通知分发：broadcast + 外部推送</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#22d3ee">mcp.ts</td>
+          <td class="mono">types, mcpTools</td>
+          <td class="mono">index</td>
+          <td>MCP JSON-RPC Server (SSE + HTTP)</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#22d3ee">mcpTools.ts</td>
+          <td class="mono">types</td>
+          <td class="mono">mcp</td>
+          <td>5 个 MCP tool 实现：list_groups/projects, filter_items, pomodoro_stats/records</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#a3e635">habitSchedule.ts</td>
+          <td class="mono">types</td>
+          <td class="mono">reminder</td>
+          <td>习惯日期资格判断（daily/weekly/ebbinghaus 等）</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#94a3b8">utils.ts</td>
+          <td class="mono">types</td>
+          <td class="mono">scheduler, reminder, webhook</td>
+          <td>formatDate, calculateReminderTime, renderTemplate</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color:#94a3b8">types.ts</td>
+          <td class="mono">—</td>
+          <td class="mono">所有模块</td>
+          <td>TimerEntry, WebhookConfig, KernelData, siyuan 全局类型</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Key Design Decisions -->
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin-bottom:48px">
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;color:#e2e8f0">关键设计决策</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12px;line-height:1.8;color:#cbd5e1">
+      <div>
+        <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">双重状态追踪</div>
+        <code style="color:#60a5fa">timers Map</code> 存完整 entry，<code style="color:#60a5fa">notifiedTimerIds Set</code> 存已通知 id。cancel 后 Set 保留，防止重新注册时重复通知。
+      </div>
+      <div>
+        <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">增量重建</div>
+        <code style="color:#34d399">rebuildReminderSchedule()</code> 先 cancelByType 再 registerTimers。notifiedTimerIds 确保已触发的 timer 不会被重新调度。
+      </div>
+      <div>
+        <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">防抖持久化</div>
+        <code style="color:#60a5fa">schedulePersist()</code> 5s 防抖，避免高频写盘。仅持久化 reminder/habit 类型。
+      </div>
+      <div>
+        <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">MCP 只读</div>
+        MCP Server 仅读取 <code style="color:#22d3ee">kernel-data.json</code>，不修改任何状态。与 scheduler 完全解耦。
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
