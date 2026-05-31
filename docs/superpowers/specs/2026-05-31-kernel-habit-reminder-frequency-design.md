@@ -76,6 +76,8 @@ interface KernelDataHabit {
     intervals?: number[]       // ebbinghaus: 间隔模板 [1, 2, 4, 7, 15]
     completedDates?: string[]  // ebbinghaus: 已完成的打卡日期（已排序，去重）
   }
+  todayCompleted?: boolean     // 今天是否已完成打卡
+  todayCount?: number          // 今天的当前打卡值（计数型）
   durationDays?: number
   archivedAt?: string
 }
@@ -86,6 +88,7 @@ interface KernelDataHabit {
 - `frequency` 对象包含所有频率类型的必要字段
 - `ebbinghaus` 类型的 `completedDates` 由前端在写入 kernel-data.json 时提供（已排序、已去重、仅包含非 missed 的记录）
 - `daily`、`weekly`、`n_per_week` 三种类型在 Kernel 层判断时始终返回 true（与前端 `isDateEligibleForHabit` 一致）
+- `todayCompleted` 由前端在写入 kernel-data.json 时计算，Kernel 层据此决定是否跳过提醒
 
 ### 2. 新建 habitSchedule.ts
 
@@ -171,6 +174,7 @@ if (data.habits) {
     const habit = data.habits[j]
     if (!habit.reminder || !habit.reminder.enabled) continue
     if (!isDateEligibleForHabit(habit, today)) continue
+    if (habit.todayCompleted) continue              // ← 新增：今天已完成则跳过
     const habitReminderTime = calculateReminderTime(
       today,               // ← 使用今天，不是 startDate
       undefined, undefined, undefined, undefined,
@@ -195,9 +199,12 @@ if (data.habits) {
 ```
 
 **关键变化**：
-- 增加 `isDateEligibleForHabit(habit, today)` 检查
+- 增加 `isDateEligibleForHabit(habit, today)` 检查（频率判断）
+- 增加 `habit.todayCompleted` 检查（打卡完成判断）——如果用户在提醒时间之前已完成打卡，则不注册提醒
 - `calculateReminderTime` 的第一个参数从 `habit.targetDate` 改为 `today`
 - timer ID 中的日期部分从 `habit.targetDate` 改为 `today`，确保每天生成不同的 ID
+
+**todayCompleted 的更新时机**：前端打卡后会更新 habit records → 触发 `writeKernelData` → kernel-data.json 写入 `todayCompleted: true` → kernel 的 fs-notify 触发 `rebuildReminderSchedule()` → 读取到 `todayCompleted: true` → 不再注册提醒。这个链路确保了打卡后提醒及时取消。
 
 ### 4. 修改 kernelDataWriter.ts
 
@@ -244,15 +251,39 @@ habits: habits.map((h) => ({
         )].sort()
       : undefined,
   },
+  todayCompleted: computeTodayCompleted(h),
+  todayCount: computeTodayCount(h),
   durationDays: h.durationDays,
   archivedAt: h.archivedAt,
 })),
+```
+
+**辅助函数**（在 kernelDataWriter.ts 中新增）：
+
+```typescript
+function computeTodayCompleted(habit: Habit): boolean {
+  const today = new Date().toISOString().slice(0, 10)
+  const todayRecords = habit.records.filter(r => r.date === today && r.status !== 'missed')
+  if (todayRecords.length === 0) return false
+  if (habit.type === 'binary') return true
+  const currentValue = todayRecords.reduce((sum, r) => sum + (r.currentValue ?? 1), 0)
+  return currentValue >= (habit.target ?? 1)
+}
+
+function computeTodayCount(habit: Habit): number {
+  const today = new Date().toISOString().slice(0, 10)
+  return habit.records
+    .filter(r => r.date === today && r.status !== 'missed')
+    .reduce((sum, r) => sum + (r.currentValue ?? 1), 0)
+}
 ```
 
 **设计决策**：
 - `completedDates` 仅在 `ebbinghaus` 类型时生成，其他类型不传递（减少数据量）
 - 使用 `[...new Set()]` 去重，`.sort()` 排序
 - 仅包含 `status !== 'missed'` 的记录（与前端 `getCompletedEbbinghausDates` 一致）
+- `todayCompleted` 由前端实时计算，Kernel 层据此决定是否跳过提醒
+- `todayCount` 为计数型习惯提供当前值（可用于未来扩展提醒内容）
 
 ### 5. 修改 Webhook Channel 默认事件
 
@@ -328,9 +359,12 @@ scheduler.ts checkTimers() 检测日期变更 (L216-221)
 ## 测试要点
 
 1. **频率判断**：验证所有 6 种频率类型在 Kernel 层的判断结果与前端 `isDateEligibleForHabit` 一致
-2. **零点刷新**：验证午夜后习惯提醒能正确重新调度
-3. **Ebbinghaus**：验证基于 completedDates 的到期日计算正确
-4. **已过期习惯**：验证 `durationDays` 到期后不再注册提醒
-5. **已归档习惯**：验证 `archivedAt` 存在时不再注册提醒
-6. **Webhook 推送**：验证新建 channel 默认包含全部四种事件类型
-7. **向后兼容**：验证不含 `frequency` 字段的旧格式 kernel-data.json 不会报错（fallback 为 daily）
+2. **打卡完成跳过**：验证 `todayCompleted: true` 时 Kernel 层不注册提醒
+3. **打卡后提醒取消**：验证用户打卡后，kernel-data.json 更新触发 `rebuildReminderSchedule`，已注册的提醒被移除
+4. **计数型部分完成**：验证 `todayCount < target` 时提醒仍注册（未达标）
+5. **零点刷新**：验证午夜后习惯提醒能正确重新调度（`todayCompleted` 重置为 false）
+6. **Ebbinghaus**：验证基于 completedDates 的到期日计算正确
+7. **已过期习惯**：验证 `durationDays` 到期后不再注册提醒
+8. **已归档习惯**：验证 `archivedAt` 存在时不再注册提醒
+9. **Webhook 推送**：验证新建 channel 默认包含全部四种事件类型
+10. **向后兼容**：验证不含 `frequency` 字段的旧格式 kernel-data.json 不会报错（fallback 为 daily）
