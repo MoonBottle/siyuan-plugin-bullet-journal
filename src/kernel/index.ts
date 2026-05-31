@@ -29,7 +29,7 @@ import {
 
 let iid = ''
 let isActive = false
-let testInterval: ReturnType<typeof setInterval> | null = null
+// let testInterval: ReturnType<typeof setInterval> | null = null
 
 function genId(): string {
   return Math.random().toString(36).slice(2, 8)
@@ -93,10 +93,10 @@ siyuan.plugin.lifecycle.onrunning = async function () {
     console.log(`[kernel${iid}] siyuan.client.fetch test FAILED: ${String(e)}`)
   }
 
-  if (testInterval) clearInterval(testInterval)
-  testInterval = setInterval(() => {
-    console.log(`[test] tick from instance #${iid}`)
-  }, 1000)
+  // if (testInterval) clearInterval(testInterval)
+  // testInterval = setInterval(() => {
+  //   console.log(`[test] tick from instance #${iid}`)
+  // }, 1000)
 
   console.log(`[kernel${iid}] initialized successfully`)
 }
@@ -106,10 +106,10 @@ siyuan.plugin.lifecycle.onunload = async function () {
 
   isActive = false
   setInstanceTag('')
-  if (testInterval) {
-    clearInterval(testInterval)
-    testInterval = null
-  }
+  // if (testInterval) {
+  //   clearInterval(testInterval)
+  //   testInterval = null
+  // }
   siyuan.event.handler = null
   siyuan.server.private.http.handler = null
   siyuan.server.private.es.handler = null
