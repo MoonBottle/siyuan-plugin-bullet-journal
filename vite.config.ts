@@ -14,6 +14,75 @@ import zipPack from "vite-plugin-zip-pack"
 
 const pluginInfo = require("./plugin.json")
 
+const PI_REGISTER_BUILTINS_ID = 'pi-ai/dist/providers/register-builtins.js'
+
+function piProviderOptimizer() {
+  return {
+    name: 'pi-provider-optimizer',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.includes(PI_REGISTER_BUILTINS_ID))
+        return null
+
+      return {
+        code: `import { registerApiProvider, clearApiProviders } from "../api-registry.js";
+import { AssistantMessageEventStream } from "../utils/event-stream.js";
+let openAICompletionsProviderModulePromise;
+function loadOpenAICompletionsProviderModule() {
+  openAICompletionsProviderModulePromise ||= import("./openai-completions.js").then((module) => {
+    return {
+      stream: module.streamOpenAICompletions,
+      streamSimple: module.streamSimpleOpenAICompletions,
+    };
+  });
+  return openAICompletionsProviderModulePromise;
+}
+function createLazyStream(loadModule) {
+  return (model, context, options) => {
+    const outer = new AssistantMessageEventStream();
+    loadModule()
+      .then((module) => {
+        const inner = module.stream(model, context, options);
+        (async () => { for await (const event of inner) { outer.push(event); } outer.end(); })();
+      })
+      .catch((error) => { outer.end(); });
+    return outer;
+  };
+}
+function createLazySimpleStream(loadModule) {
+  return (model, context, options) => {
+    const outer = new AssistantMessageEventStream();
+    loadModule()
+      .then((module) => {
+        const inner = module.streamSimple(model, context, options);
+        (async () => { for await (const event of inner) { outer.push(event); } outer.end(); })();
+      })
+      .catch((error) => { outer.end(); });
+    return outer;
+  };
+}
+const streamOpenAICompletions = createLazyStream(loadOpenAICompletionsProviderModule);
+const streamSimpleOpenAICompletions = createLazySimpleStream(loadOpenAICompletionsProviderModule);
+export { streamOpenAICompletions, streamSimpleOpenAICompletions };
+export function registerBuiltInApiProviders() {
+  registerApiProvider({
+    api: "openai-completions",
+    stream: streamOpenAICompletions,
+    streamSimple: streamSimpleOpenAICompletions,
+  });
+}
+export function resetApiProviders() {
+  clearApiProviders();
+  registerBuiltInApiProviders();
+}
+registerBuiltInApiProviders();
+`,
+        map: null,
+      }
+    },
+  }
+}
+
 export default defineConfig(({
   mode,
 }) => {
@@ -70,6 +139,7 @@ export default defineConfig(({
     },
 
     plugins: [
+      piProviderOptimizer(),
       vue(),
       viteStaticCopy({
         targets: [

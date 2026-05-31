@@ -22,9 +22,7 @@ import dayjs from 'dayjs'
 import { showMessage } from 'siyuan'
 import { createApp } from 'vue'
 import {
-  getBlockByID,
   getHPathByID,
-  renameDocByID,
 } from '@/api'
 /**
  * 导入 CreateSkillDialog 组件
@@ -1555,85 +1553,26 @@ async function setRecurringForBlock(
  * 从斜杠命令创建技能
  * 将当前文档转换为技能文档
  */
-async function createSkillFromSlash(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id')
-  if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error')
-    return
-  }
-
-  // 获取当前文档信息
-  let docId: string
-  let notebook: string
-  let docPath: string
-
-  try {
-    const block = await getBlockByID(blockId)
-    if (!block) {
-      showMessage('无法获取文档信息', 2000, 'error')
-      return
-    }
-
-    // 获取文档根块
-    docId = block.root_id
-    notebook = block.box
-    docPath = block.hpath || ''
-  } catch (error) {
-    console.error('[SlashCommand] Failed to get document info:', error)
-    showMessage('无法获取文档信息', 2000, 'error')
-    return
-  }
-
+async function createSkillFromSlash(_nodeElement: HTMLElement) {
   // 创建容器元素
   const container = document.createElement('div')
 
   let dialog: ReturnType<typeof createDialog>
 
-  // 创建 Vue 应用
   const app = createApp(CreateSkillDialog, {
-    mode: 'existing',
-    docId,
-    notebook,
-    docPath,
+    mode: 'new',
     onClose: () => {
       dialog.destroy()
     },
-    onCreated: async (_docId: string, skillName?: string) => {
-      console.log('[SlashCommand] onCreated called:', {
-        _docId,
-        skillName,
-      })
+    onCreated: (skillName: string) => {
+      console.log('[SlashCommand] Skill created:', skillName)
       showMessage('技能创建成功！', 3000, 'info')
-      // 使用 ID 重命名文档为技能名称
-      if (skillName && _docId) {
-        console.log('[SlashCommand] Renaming document by ID:', {
-          docId: _docId,
-          newName: skillName,
-        })
-        try {
-          const result = await renameDocByID(_docId, skillName)
-          console.log('[SlashCommand] renameDocByID result:', result)
-          if (result === null) {
-            console.log('[SlashCommand] Rename successful')
-          } else {
-            console.error('[SlashCommand] Rename failed: API returned unexpected result')
-          }
-        } catch (error) {
-          console.error('[SlashCommand] Failed to rename document:', error)
-        }
-      } else {
-        console.log('[SlashCommand] Skip rename: missing params', {
-          skillName,
-          docId: _docId,
-        })
-      }
     },
   })
 
   app.use(getSharedPinia())
   app.mount(container)
 
-  // 打开创建技能对话框
   dialog = createDialog({
     title: t('slash').createSkillTitle,
     content: '',

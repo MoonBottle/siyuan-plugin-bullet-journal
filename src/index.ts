@@ -440,6 +440,12 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async initSkillStorage() {
     try {
+      // 注入内置技能内容到 plugin 实例
+      const dailyReportContent = await import('@/builtin-skills/daily-report/SKILL.md?raw')
+      ;(this as any).__builtin_skills__ = {
+        'daily-report': dailyReportContent.default || dailyReportContent,
+      }
+
       // 初始化技能服务（必须先初始化，因为其他模块依赖它）
       useSkillService(this)
 
@@ -2109,27 +2115,6 @@ export default class TaskAssistantPlugin extends Plugin {
     }
 
     console.log("[Task Assistant] Documents removed:", ids)
-
-    // 检查并删除关联的技能
-    const skillStore = useSkillStore()
-    let removedSkillCount = 0
-
-    for (const docId of ids) {
-      const skill = skillStore.getSkillByDocId(docId)
-      if (skill) {
-        skillStore.removeSkill(docId)
-        removedSkillCount++
-        console.log(
-          `[Task Assistant] Removed skill "${skill.name}" for deleted doc: ${docId}`,
-        )
-      }
-    }
-
-    if (removedSkillCount > 0) {
-      console.log(
-        `[Task Assistant] Total ${removedSkillCount} skill(s) removed`,
-      )
-    }
 
     // 检查并清理关联的番茄钟（静默处理，不弹框）
     await this.cleanupPomodoroForDeletedDocs(ids)

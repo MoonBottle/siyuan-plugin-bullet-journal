@@ -62,43 +62,26 @@
 </template>
 
 <script setup lang="ts">
-import type { SkillConfig } from '@/types/skill'
 import { showMessage } from 'siyuan'
 import {
   computed,
   reactive,
   ref,
 } from 'vue'
-import {
-  createDocWithMd,
-  prependBlock,
-  setBlockAttrs,
-} from '@/api'
 import SyInput from '@/components/SiyuanTheme/SyInput.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue'
 import { t } from '@/i18n'
 import { useSkillStore } from '@/stores/skillStore'
-import { showConfirmDialog } from '@/utils/dialog'
-import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils'
-import {
-  generateSkillDocument,
-  generateSkillDocumentFromTemplate,
-  getBuiltinSkill,
-  isBuiltinSkill,
-} from '@/utils/skillTemplates'
 
 const props = defineProps<{
   mode: 'existing' | 'new'
-  docId?: string
-  notebook?: string
-  docPath?: string
   prefilledName?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'created', docId: string, skillName?: string): void
+  (e: 'created', skillName: string): void
 }>()
 
 const skillStore = useSkillStore()
@@ -116,7 +99,10 @@ const errors = reactive({
 
 const isCreating = ref(false)
 
-const isBuiltinName = computed(() => isBuiltinSkill(form.name.trim()))
+const isBuiltinName = computed(() => {
+  const skill = skillStore.getSkillByName(form.name.trim())
+  return skill?.source === 'builtin'
+})
 
 const isValid = computed(() => {
   return form.name.trim().length > 0
@@ -134,10 +120,9 @@ function validateName() {
     return
   }
 
-  // 检查是否已存在同名技能（非覆盖情况）
-  if (!isBuiltinName.value && skillStore.isSkillNameExists(name)) {
+  const existing = skillStore.getSkillByName(name)
+  if (existing && existing.source === 'user') {
     errors.name = t('slash').skillNameExists
-
   }
 }
 
@@ -145,94 +130,25 @@ async function createSkill() {
   if (!isValid.value) return
 
   const skillName = form.name.trim()
-  const isBuiltin = isBuiltinSkill(skillName)
 
-  // 如果是内置技能，确认覆盖
-  if (isBuiltin) {
-    const builtin = getBuiltinSkill(skillName)
-    showConfirmDialog(
-      t('common').confirmOverride,
-      t('slash').overrideBuiltinSkill
-        .replace('{name}', skillName)
-        .replace('{description}', builtin?.description || ''),
-      () => {
-        doCreateSkill(skillName, isBuiltin)
-      },
-    )
-    return
-  }
-
-  await doCreateSkill(skillName, isBuiltin)
-}
-
-async function getTaskAssistantNotebook(): Promise<string> {
-  const notebook = await getOrCreateTaskAssistantNotebook()
-  if (!notebook) {
-    throw new Error('没有可用的笔记本')
-  }
-  return notebook.id
-}
-
-async function doCreateSkill(skillName: string, isBuiltin: boolean) {
   isCreating.value = true
 
   try {
-    let targetDocId: string
+    const builtinSkill = skillStore.getSkillByName(skillName)
+    const isOverride = builtinSkill?.source === 'builtin'
 
-    if (props.mode === 'new') {
-      // 新建模式：创建新文档
-      const notebook = props.notebook || await getTaskAssistantNotebook()
-      const docPath = `AI技能/${skillName}`
-      targetDocId = await createDocWithMd(notebook, docPath, '')
-      if (!targetDocId) {
-        throw new Error('创建文档失败')
-      }
-    } else {
-      // 已有文档模式：使用传入的 docId
-      targetDocId = props.docId!
-    }
+    const content = isOverride
+      ? builtinSkill.content
+      : `## 工作流程\n\n1. **查询数据** - 描述如何查询数据\n2. **输出结果** - 按格式输出\n`
 
-    // 1. 设置文档自定义属性（name、description）
-    await setBlockAttrs(targetDocId, {
-      'custom-name': skillName,
-      'custom-description': form.description.trim(),
-    })
-
-    // 2. 生成技能文档内容并添加到文档开头
-    let documentContent: string
-    if (isBuiltin) {
-      const builtin = getBuiltinSkill(skillName)
-      documentContent = generateSkillDocumentFromTemplate(
-        skillName,
-        form.description,
-        'User',
-        builtin?.content || '',
-      )
-    } else {
-      documentContent = generateSkillDocument(
-        skillName,
-        form.description,
-        'User',
-      )
-    }
-
-    // 在文档开头添加技能内容
-    await prependBlock('markdown', documentContent, targetDocId)
-
-    // 3. 添加到技能列表（docId 作为主键）
-    const skillConfig: SkillConfig = {
-      docId: targetDocId,
+    await skillStore.addSkill({
       name: skillName,
       description: form.description.trim(),
-      enabled: form.autoEnable,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }
+      content,
+      autoEnable: form.autoEnable,
+    })
 
-    skillStore.addSkill(skillConfig)
-
-    // 4. 显示成功提示
-    if (isBuiltin) {
+    if (isOverride) {
       showMessage(
         t('slash').overrideSuccess.replace('{name}', skillName),
         3000,
@@ -242,12 +158,7 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
       showMessage(t('slash').createSkillSuccess, 3000, 'info')
     }
 
-    // 5. 打开创建的文档并关闭弹框
-    console.log('[CreateSkillDialog] Emitting created event:', {
-      targetDocId,
-      skillName,
-    })
-    emit('created', targetDocId, skillName)
+    emit('created', skillName)
     emit('close')
   } catch (error) {
     console.error('[CreateSkillDialog] Failed to create skill:', error)

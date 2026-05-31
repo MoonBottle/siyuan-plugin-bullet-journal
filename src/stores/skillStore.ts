@@ -1,193 +1,266 @@
-/**
- * Skill Store
- * 管理技能配置状态（简化版，docId 作为主键）
- */
-
-import type { SkillConfig } from '@/types/skill'
+import type { RegisteredSkill } from '@/skills'
 import { defineStore } from 'pinia'
 import {
   computed,
   ref,
 } from 'vue'
+import {
+  getFile,
+  putFile,
+  readDir,
+  removeFile,
+} from '@/api'
+import {
+  SkillLoader,
+  SkillParser,
+  SkillRegistry,
+} from '@/skills'
 
-// 存储键名
-const STORAGE_KEY = 'aiSkills'
+const PLUGIN_NAME = 'siyuan-plugin-bullet-journal'
+const SKILLS_DIR = `/data/storage/petal/${PLUGIN_NAME}/skills`
+const SKILL_STATES_KEY = 'aiSkills'
+
+const registry = new SkillRegistry()
 
 export const useSkillStore = defineStore('skill', () => {
-  // State
-  const skills = ref<SkillConfig[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Getters
-  const enabledSkills = computed(() =>
-    skills.value.filter((s) => s.enabled),
-  )
+  const skills = computed(() => registry.getAllSkills())
+  const enabledSkills = computed(() => registry.getEnabledSkills())
 
-  /**
-   * 检查技能名称是否已存在
-   */
-  function isSkillNameExists(name: string, excludeDocId?: string): boolean {
-    return skills.value.some(
-      (s) => s.name === name && (!excludeDocId || s.docId !== excludeDocId),
-    )
+  function isSkillNameExists(name: string): boolean {
+    return registry.resolveSkill(name) !== undefined
   }
 
-  /**
-   * 根据 docId 获取技能
-   */
-  function getSkillByDocId(docId: string): SkillConfig | undefined {
-    return skills.value.find((s) => s.docId === docId)
+  function getSkillByName(name: string): RegisteredSkill | undefined {
+    return registry.resolveSkill(name)
   }
 
-  /**
-   * 根据名称获取技能
-   */
-  function getSkillByName(name: string): SkillConfig | undefined {
-    return skills.value.find((s) => s.name === name)
-  }
-
-  /**
-   * 加载技能列表
-   */
-  function loadSkills(savedSkills: SkillConfig[]) {
-    skills.value = savedSkills
-  }
-
-  /**
-   * 添加或更新技能（docId 作为主键）
-   */
-  function addSkill(skill: SkillConfig) {
-    const existingIndex = skills.value.findIndex((s) => s.docId === skill.docId)
-    if (existingIndex >= 0) {
-      // 更新现有技能
-      skills.value[existingIndex] = {
-        ...skill,
-        updatedAt: Date.now(),
-      }
-    } else {
-      // 添加新技能
-      skills.value.push(skill)
-    }
-
-    // 保存到存储
-    saveToStorage()
-  }
-
-  /**
-   * 更新技能（使用 docId 作为标识）
-   */
-  function updateSkill(docId: string, updates: Partial<SkillConfig>) {
-    const index = skills.value.findIndex((s) => s.docId === docId)
-    if (index >= 0) {
-      skills.value[index] = {
-        ...skills.value[index],
-        ...updates,
-        updatedAt: Date.now(),
-      }
-      saveToStorage()
-    }
-  }
-
-  /**
-   * 删除技能（使用 docId 作为标识）
-   */
-  function removeSkill(docId: string) {
-    const index = skills.value.findIndex((s) => s.docId === docId)
-    if (index >= 0) {
-      skills.value.splice(index, 1)
-      saveToStorage()
-    }
-  }
-
-  /**
-   * 切换技能启用状态（使用 docId 作为标识）
-   */
-  function toggleSkillEnabled(docId: string, enabled?: boolean) {
-    const skill = skills.value.find((s) => s.docId === docId)
-    if (skill) {
-      skill.enabled = enabled !== undefined ? enabled : !skill.enabled
-      skill.updatedAt = Date.now()
-      saveToStorage()
-    }
-  }
-
-  /**
-   * 获取导出数据（用于保存）
-   * 简化结构：只存必要字段
-   */
-  function getExportData(): { skills: SkillConfig[] } {
-    return {
-      skills: skills.value.map((skill) => ({
-        docId: skill.docId,
-        name: skill.name,
-        description: skill.description,
-        enabled: skill.enabled,
-        createdAt: skill.createdAt,
-        updatedAt: skill.updatedAt,
-      })),
-    }
-  }
-
-  /**
-   * 保存到存储
-   */
-  function saveToStorage() {
-    // 触发事件让插件主程序保存
-    const event = new CustomEvent('skill-store-changed', {
-      detail: getExportData(),
-    })
-    window.dispatchEvent(event)
-  }
-
-  /**
-   * 从插件加载设置
-   */
-  async function loadFromPlugin(plugin: any) {
-    if (!plugin) return
+  async function loadSkills(plugin: any) {
+    isLoading.value = true
+    error.value = null
 
     try {
-      isLoading.value = true
-      const data = await plugin.loadData?.(STORAGE_KEY)
-      if (data?.skills) {
-        loadSkills(data.skills)
+      const readFileFn = async (path: string): Promise<string> => {
+        const content = await getFile(path)
+        if (content == null || content === '') {
+          throw new Error(`File not found: ${path}`)
+        }
+        return typeof content === 'string' ? content : String(content)
       }
+
+      const readdirFn = async (path: string): Promise<string[]> => {
+        try {
+          const entries = await readDir(path)
+          if (!Array.isArray(entries)) return []
+          return entries.filter((e: any) => e.isDir).map((e: any) => e.name)
+        } catch {
+          return []
+        }
+      }
+
+      const loader = new SkillLoader(registry, readFileFn, readdirFn)
+
+      await loader.loadFromDirectory(SKILLS_DIR)
+
+      await loadBuiltinSkills(loader, plugin)
+
+      await restoreSkillStates(plugin)
     } catch (err) {
-      console.error('[SkillStore] Failed to load:', err)
+      console.error('[SkillStore] Failed to load skills:', err)
       error.value = (err as Error).message
     } finally {
       isLoading.value = false
     }
   }
 
-  /**
-   * 保存到插件
-   */
+  async function loadBuiltinSkills(loader: SkillLoader, plugin: any) {
+    const builtinSkillContent = await loadBuiltinSkillContent(plugin, 'daily-report')
+    if (builtinSkillContent) {
+      try {
+        const result = SkillParser.parse(builtinSkillContent)
+        const registered: RegisteredSkill = {
+          name: result.metadata.name,
+          description: result.metadata.description,
+          version: result.metadata.version,
+          author: result.metadata.author,
+          tags: result.metadata.tags,
+          type: result.metadata.type,
+          content: result.content,
+          enabled: true,
+          source: 'builtin',
+          filePath: 'builtin-skills/daily-report/SKILL.md',
+        }
+
+        if (!registry.resolveSkill(registered.name)) {
+          registry.register(registered)
+        }
+      } catch (err) {
+        console.error('[SkillStore] Failed to parse builtin skill:', err)
+      }
+    }
+  }
+
+  async function loadBuiltinSkillContent(plugin: any, skillName: string): Promise<string | null> {
+    if (plugin?.__builtin_skills__?.[skillName]) {
+      return plugin.__builtin_skills__[skillName]
+    }
+    return null
+  }
+
+  async function restoreSkillStates(plugin: any) {
+    if (!plugin) return
+
+    try {
+      const data = await plugin.loadData?.(SKILL_STATES_KEY)
+      if (data?.skills && Array.isArray(data.skills)) {
+        for (const state of data.skills) {
+          const skill = registry.resolveSkill(state.name)
+          if (skill && state.enabled !== undefined) {
+            skill.enabled = state.enabled
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[SkillStore] Failed to restore skill states:', err)
+    }
+  }
+
+  function toggleSkillEnabled(name: string, enabled: boolean) {
+    registry.toggleEnabled(name, enabled)
+    saveToStorage()
+  }
+
+  function removeSkill(name: string) {
+    const skill = registry.resolveSkill(name)
+    if (skill && skill.source === 'user' && skill.filePath) {
+      removeFile(skill.filePath).catch((err) => {
+        console.error('[SkillStore] Failed to remove skill file:', err)
+      })
+    }
+    registry.unregister(name)
+    saveToStorage()
+  }
+
+  async function addSkill(skillData: {
+    name: string
+    description: string
+    content: string
+    version?: string
+    author?: string
+    tags?: string[]
+    type?: 'prompt' | 'tool' | 'workflow'
+    autoEnable?: boolean
+  }) {
+    const {
+      name,
+      description,
+      content,
+      version = '1.0.0',
+      author = 'User',
+      tags = [],
+      type = 'prompt',
+      autoEnable = true,
+    } = skillData
+
+    const skillDir = `${SKILLS_DIR}/${name}`
+    const skillFilePath = `${skillDir}/SKILL.md`
+
+    const frontmatter = [
+      '---',
+      `name: ${name}`,
+      `description: ${description}`,
+      `version: ${version}`,
+      `author: ${author}`,
+      `tags: [${tags.join(', ')}]`,
+      `type: ${type}`,
+      '---',
+      '',
+    ].join('\n')
+
+    const fullContent = frontmatter + content
+
+    try {
+      await putFile(skillDir, true, new Blob())
+      await putFile(skillFilePath, false, new Blob([fullContent], { type: 'text/plain' }))
+    } catch (err) {
+      console.error('[SkillStore] Failed to write skill file:', err)
+      throw err
+    }
+
+    const registered: RegisteredSkill = {
+      name,
+      description,
+      version,
+      author,
+      tags,
+      type,
+      content,
+      enabled: autoEnable,
+      source: 'user',
+      filePath: skillFilePath,
+    }
+
+    registry.register(registered)
+    saveToStorage()
+  }
+
+  function saveToStorage() {
+    const exportData = {
+      skills: registry.getAllSkills().map((s) => ({
+        name: s.name,
+        enabled: s.enabled,
+        source: s.source,
+      })),
+    }
+
+    const event = new CustomEvent('skill-store-changed', {
+      detail: exportData,
+    })
+    window.dispatchEvent(event)
+  }
+
+  async function loadFromPlugin(plugin: any) {
+    await loadSkills(plugin)
+  }
+
   async function saveToPlugin(plugin: any) {
     if (!plugin) return
 
     try {
-      await plugin.saveData?.(STORAGE_KEY, getExportData())
+      await plugin.saveData?.(SKILL_STATES_KEY, {
+        skills: registry.getAllSkills().map((s) => ({
+          name: s.name,
+          enabled: s.enabled,
+          source: s.source,
+        })),
+      })
     } catch (err) {
       console.error('[SkillStore] Failed to save:', err)
       error.value = (err as Error).message
     }
   }
 
+  function getExportData() {
+    return {
+      skills: registry.getAllSkills().map((s) => ({
+        name: s.name,
+        enabled: s.enabled,
+        source: s.source,
+      })),
+    }
+  }
+
   return {
-    // State
     skills,
     isLoading,
     error,
-    // Getters
     enabledSkills,
-    // Actions
     isSkillNameExists,
-    getSkillByDocId,
     getSkillByName,
     loadSkills,
     addSkill,
-    updateSkill,
     removeSkill,
     toggleSkillEnabled,
     getExportData,
