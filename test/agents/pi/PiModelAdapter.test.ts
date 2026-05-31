@@ -60,7 +60,7 @@ describe('piModelAdapter', () => {
       expect(model.name).toBe('OpenAI / gpt-4o-mini')
       expect(model.api).toBe('openai-completions')
       expect(model.provider).toBe('openai')
-      expect(model.baseUrl).toBe('https://api.openai.com/v1/chat/completions')
+      expect(model.baseUrl).toBe('https://api.openai.com/v1')
       expect(model.reasoning).toBe(false)
       expect(model.input).toEqual(['text'])
       expect(model.contextWindow).toBe(128000)
@@ -75,7 +75,7 @@ describe('piModelAdapter', () => {
       expect(model.name).toBe('Kimi (月之暗面) / kimi-k2.5')
       expect(model.api).toBe('openai-completions')
       expect(model.provider).toBe('kimi')
-      expect(model.baseUrl).toBe('https://api.moonshot.cn/v1/chat/completions')
+      expect(model.baseUrl).toBe('https://api.moonshot.cn/v1')
     })
 
     it('should convert custom provider config', () => {
@@ -86,7 +86,7 @@ describe('piModelAdapter', () => {
       expect(model.name).toBe('My Custom Provider / my-model-v1')
       expect(model.api).toBe('openai-completions')
       expect(model.provider).toBe('custom')
-      expect(model.baseUrl).toBe('https://my-llm.example.com/v1/chat/completions')
+      expect(model.baseUrl).toBe('https://my-llm.example.com/v1')
     })
 
     it('should default cost to all zeros', () => {

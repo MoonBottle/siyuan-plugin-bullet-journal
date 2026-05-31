@@ -1,6 +1,17 @@
 import type { Model } from '@earendil-works/pi-ai'
 import type { AIProviderConfig } from '@/types/ai'
 
+function toBaseUrl(apiUrl: string): string {
+  try {
+    const url = new URL(apiUrl)
+    const basePath = url.pathname.replace(/\/chat\/completions\/?$/, '').replace(/\/v1\/?$/, '/v1')
+    return `${url.origin}${basePath}`
+  }
+  catch {
+    return apiUrl.replace(/\/chat\/completions\/?$/, '')
+  }
+}
+
 export class PiModelAdapter {
   static toPiModel(config: AIProviderConfig): Model<'openai-completions'> {
     return {
@@ -8,7 +19,7 @@ export class PiModelAdapter {
       name: `${config.name} / ${config.defaultModel}`,
       api: 'openai-completions',
       provider: config.provider,
-      baseUrl: config.apiUrl,
+      baseUrl: toBaseUrl(config.apiUrl),
       reasoning: false,
       input: ['text'],
       cost: {

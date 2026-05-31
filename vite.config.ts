@@ -15,17 +15,16 @@ import zipPack from "vite-plugin-zip-pack"
 const pluginInfo = require("./plugin.json")
 
 const PI_REGISTER_BUILTINS_ID = 'pi-ai/dist/providers/register-builtins.js'
+const PI_ENV_API_KEYS_ID = 'pi-ai/dist/env-api-keys.js'
 
 function piProviderOptimizer() {
   return {
     name: 'pi-provider-optimizer',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.includes(PI_REGISTER_BUILTINS_ID))
-        return null
-
-      return {
-        code: `import { registerApiProvider, clearApiProviders } from "../api-registry.js";
+      if (id.includes(PI_REGISTER_BUILTINS_ID)) {
+        return {
+          code: `import { registerApiProvider, clearApiProviders } from "../api-registry.js";
 import { streamOpenAICompletions, streamSimpleOpenAICompletions } from "./openai-completions.js";
 export { streamOpenAICompletions, streamSimpleOpenAICompletions };
 export function registerBuiltInApiProviders() {
@@ -41,8 +40,20 @@ export function resetApiProviders() {
 }
 registerBuiltInApiProviders();
 `,
-        map: null,
+          map: null,
+        }
       }
+
+      if (id.includes(PI_ENV_API_KEYS_ID)) {
+        return {
+          code: `export function findEnvKeys() { return undefined; }
+export function getEnvApiKey() { return undefined; }
+`,
+          map: null,
+        }
+      }
+
+      return null
     },
   }
 }
