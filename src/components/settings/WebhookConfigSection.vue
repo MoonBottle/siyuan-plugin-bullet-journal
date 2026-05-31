@@ -172,7 +172,7 @@ function createEmptyChannel(): WebhookChannel {
     type: 'dingtalk',
     url: '',
     enabled: true,
-    events: ['reminder'],
+    events: ['reminder', 'pomodoro', 'break', 'habit'],
   }
 }
 
