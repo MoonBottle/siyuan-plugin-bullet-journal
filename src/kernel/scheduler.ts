@@ -73,6 +73,8 @@ function schedulePersist(): void {
 export function registerTimer(entry: TimerEntry): void {
   if (notifiedTimerIds.has(entry.id)) {
     console.log(`[scheduler] registerTimer SKIP id=${entry.id} (already notified)`)
+    entry.notified = true
+    timers.set(entry.id, entry)
     return
   }
   console.log(`[scheduler] registerTimer: id=${entry.id} type=${entry.type} endTime=${entry.endTime} content=${entry.metadata.content} notified=${entry.notified}`)
@@ -85,6 +87,8 @@ export function registerTimers(entries: TimerEntry[]): void {
   let skipped = 0
   for (let i = 0; i < entries.length; i++) {
     if (notifiedTimerIds.has(entries[i].id)) {
+      entries[i].notified = true
+      timers.set(entries[i].id, entries[i])
       skipped++
       continue
     }
