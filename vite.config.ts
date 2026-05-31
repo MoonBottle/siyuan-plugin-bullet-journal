@@ -26,43 +26,7 @@ function piProviderOptimizer() {
 
       return {
         code: `import { registerApiProvider, clearApiProviders } from "../api-registry.js";
-import { AssistantMessageEventStream } from "../utils/event-stream.js";
-let openAICompletionsProviderModulePromise;
-function loadOpenAICompletionsProviderModule() {
-  openAICompletionsProviderModulePromise ||= import("./openai-completions.js").then((module) => {
-    return {
-      stream: module.streamOpenAICompletions,
-      streamSimple: module.streamSimpleOpenAICompletions,
-    };
-  });
-  return openAICompletionsProviderModulePromise;
-}
-function createLazyStream(loadModule) {
-  return (model, context, options) => {
-    const outer = new AssistantMessageEventStream();
-    loadModule()
-      .then((module) => {
-        const inner = module.stream(model, context, options);
-        (async () => { for await (const event of inner) { outer.push(event); } outer.end(); })();
-      })
-      .catch((error) => { outer.end(); });
-    return outer;
-  };
-}
-function createLazySimpleStream(loadModule) {
-  return (model, context, options) => {
-    const outer = new AssistantMessageEventStream();
-    loadModule()
-      .then((module) => {
-        const inner = module.streamSimple(model, context, options);
-        (async () => { for await (const event of inner) { outer.push(event); } outer.end(); })();
-      })
-      .catch((error) => { outer.end(); });
-    return outer;
-  };
-}
-const streamOpenAICompletions = createLazyStream(loadOpenAICompletionsProviderModule);
-const streamSimpleOpenAICompletions = createLazySimpleStream(loadOpenAICompletionsProviderModule);
+import { streamOpenAICompletions, streamSimpleOpenAICompletions } from "./openai-completions.js";
 export { streamOpenAICompletions, streamSimpleOpenAICompletions };
 export function registerBuiltInApiProviders() {
   registerApiProvider({
@@ -267,8 +231,7 @@ export default defineConfig(({
 
         output: {
           entryFileNames: "[name].js",
-          // chunk 文件命名优化
-          chunkFileNames: "assets/[name]-[hash].js",
+          codeSplitting: false,
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === "style.css") {
               return "index.css"
