@@ -163,7 +163,7 @@ export async function writeKernelData(
             intervals: h.frequency.type === 'ebbinghaus' ? h.frequency.intervals : undefined,
           }
         : undefined,
-      records: (h.records ?? []).map(r => ({
+      records: (h.records ?? []).map((r) => ({
         date: r.date,
         currentValue: r.currentValue,
         status: r.status,

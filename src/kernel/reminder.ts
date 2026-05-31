@@ -3,12 +3,18 @@ import type {
   TimerEntry,
 } from './types'
 import {
+  isDateEligibleForHabit,
+  isTodayCompleted,
+} from './habitSchedule'
+import {
   cancelTimersByType,
   isSchedulerActive,
   registerTimers,
 } from './scheduler'
-import { isDateEligibleForHabit, isTodayCompleted } from './habitSchedule'
-import { calculateReminderTime, formatDate } from './utils'
+import {
+  calculateReminderTime,
+  formatDate,
+} from './utils'
 
 const PATH_SEP_RE = /[/\\]/g
 

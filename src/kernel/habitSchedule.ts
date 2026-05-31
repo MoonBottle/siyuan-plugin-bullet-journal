@@ -34,15 +34,15 @@ function isDateInValidRange(habit: KernelDataHabit, dateStr: string): boolean {
 function getCompletedDates(habit: KernelDataHabit): string[] {
   return [...new Set(
     (habit.records ?? [])
-      .filter(r => r.status !== 'missed')
-      .map(r => r.date),
+      .filter((r) => r.status !== 'missed')
+      .map((r) => r.date),
   )].sort()
 }
 
 function isEbbinghausDueOnDate(habit: KernelDataHabit, dateStr: string): boolean {
   const intervals = habit.frequency?.intervals ?? [1, 2, 4, 7, 15]
   const completedDates = getCompletedDates(habit)
-  const priorCompleted = completedDates.filter(d => d < dateStr)
+  const priorCompleted = completedDates.filter((d) => d < dateStr)
 
   if (priorCompleted.length === 0) {
     return dateStr >= habit.startDate
@@ -84,14 +84,15 @@ export function isDateEligibleForHabit(habit: KernelDataHabit, dateStr: string):
 
 export function isTodayCompleted(habit: KernelDataHabit, today: string): boolean {
   const todayRecords = (habit.records ?? []).filter(
-    r => r.date === today && r.status !== 'missed',
+    (r) => r.date === today && r.status !== 'missed',
   )
   if (todayRecords.length === 0) return false
 
   if (habit.type === 'binary') return true
 
   const currentValue = todayRecords.reduce(
-    (sum, r) => sum + (r.currentValue ?? 1), 0,
+    (sum, r) => sum + (r.currentValue ?? 1),
+    0,
   )
   return currentValue >= (habit.target ?? 1)
 }
