@@ -74,6 +74,20 @@ export interface KernelData {
     }
     targetDate: string
     blockId: string
+    startDate: string
+    frequency?: {
+      type: string
+      interval?: number
+      daysOfWeek?: number[]
+      intervals?: number[]
+    }
+    records: Array<{
+      date: string
+      currentValue?: number
+      status?: string
+    }>
+    durationDays?: number
+    archivedAt?: string
   }>
 }
 
@@ -140,6 +154,22 @@ export async function writeKernelData(
       reminder: h.reminder,
       targetDate: h.startDate,
       blockId: h.blockId,
+      startDate: h.startDate,
+      frequency: h.frequency
+        ? {
+            type: h.frequency.type,
+            interval: h.frequency.interval,
+            daysOfWeek: h.frequency.daysOfWeek,
+            intervals: h.frequency.type === 'ebbinghaus' ? h.frequency.intervals : undefined,
+          }
+        : undefined,
+      records: (h.records ?? []).map(r => ({
+        date: r.date,
+        currentValue: r.currentValue,
+        status: r.status,
+      })),
+      durationDays: h.durationDays,
+      archivedAt: h.archivedAt,
     })),
   }
 
