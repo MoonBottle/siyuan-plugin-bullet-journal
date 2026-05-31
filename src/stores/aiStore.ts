@@ -727,47 +727,29 @@ export const useAIStore = defineStore('ai', () => {
 
       currentAgent = piAgent
 
-      const historyMessages = [...conversation.messages]
+      const historyMessages = [...currentConversation.value!.messages]
       const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
+
+      function updateConversationMessages(newPiMsgs: any[]) {
+        if (!currentConversation.value) return
+        const newChatMsgs = newPiMsgs.map((m) =>
+          PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+        )
+        currentConversation.value = {
+          ...currentConversation.value,
+          messages: [...historyMessages, ...newChatMsgs],
+        }
+      }
 
       piAgent.subscribe((event) => {
         switch (event.type) {
-          case 'message_start': {
-            const agent = piAgent.getAgent()
-            if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
-            }
-            currentConversation.value = { ...currentConversation.value! }
-            debouncedSaveConversation()
-            break
-          }
-          case 'message_update': {
-            const agent = piAgent.getAgent()
-            if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
-            }
-            currentConversation.value = { ...currentConversation.value! }
-            debouncedSaveConversation()
-            break
-          }
+          case 'message_start':
+          case 'message_update':
           case 'message_end': {
             const agent = piAgent.getAgent()
             if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
+              updateConversationMessages(agent.state.messages.slice(piMsgOffset))
             }
-            currentConversation.value = { ...currentConversation.value! }
             debouncedSaveConversation()
             break
           }
@@ -779,13 +761,8 @@ export const useAIStore = defineStore('ai', () => {
           case 'agent_end': {
             const agent = piAgent.getAgent()
             if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
+              updateConversationMessages(agent.state.messages.slice(piMsgOffset))
             }
-            currentConversation.value = { ...currentConversation.value! }
             break
           }
         }
@@ -1422,6 +1399,16 @@ export const useAIStore = defineStore('ai', () => {
       const historyMessages = [...conversation.messages]
       const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
 
+      function updateConvMessages(newPiMsgs: any[]) {
+        const newChatMsgs = newPiMsgs.map((m) =>
+          PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+        )
+        conversation.messages = [...historyMessages, ...newChatMsgs]
+        if (currentConversationId.value === conversationId) {
+          currentConversation.value = { ...conversation }
+        }
+      }
+
       piAgent.subscribe((event) => {
         switch (event.type) {
           case 'message_start':
@@ -1429,14 +1416,7 @@ export const useAIStore = defineStore('ai', () => {
           case 'message_end': {
             const agent = piAgent.getAgent()
             if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
-            }
-            if (currentConversationId.value === conversationId) {
-              currentConversation.value = { ...conversation }
+              updateConvMessages(agent.state.messages.slice(piMsgOffset))
             }
             break
           }
@@ -1450,14 +1430,7 @@ export const useAIStore = defineStore('ai', () => {
           case 'agent_end': {
             const agent = piAgent.getAgent()
             if (agent) {
-              const newPiMsgs = agent.state.messages.slice(piMsgOffset)
-              const newChatMsgs = newPiMsgs.map((m) =>
-                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
-              )
-              conversation.messages = [...historyMessages, ...newChatMsgs]
-            }
-            if (currentConversationId.value === conversationId) {
-              currentConversation.value = { ...conversation }
+              updateConvMessages(agent.state.messages.slice(piMsgOffset))
             }
             break
           }

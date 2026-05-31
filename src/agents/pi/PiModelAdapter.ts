@@ -1,14 +1,17 @@
 import type { Model } from '@earendil-works/pi-ai'
 import type { AIProviderConfig } from '@/types/ai'
 
+const CHAT_COMPLETIONS_RE = /\/chat\/completions\/?$/
+const V1_TRAILING_RE = /\/v1\/?$/
+
 function toBaseUrl(apiUrl: string): string {
   try {
     const url = new URL(apiUrl)
-    const basePath = url.pathname.replace(/\/chat\/completions\/?$/, '').replace(/\/v1\/?$/, '/v1')
+    const basePath = url.pathname.replace(CHAT_COMPLETIONS_RE, '').replace(V1_TRAILING_RE, '/v1')
     return `${url.origin}${basePath}`
   }
   catch {
-    return apiUrl.replace(/\/chat\/completions\/?$/, '')
+    return apiUrl.replace(CHAT_COMPLETIONS_RE, '')
   }
 }
 
