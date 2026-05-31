@@ -59,7 +59,7 @@ function generateId(): string {
   return `pi_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 }
 
-function joinTextBlocks(blocks: PiTextBlock[]): string {
+function joinTextBlocks(blocks: Array<{ text: string }>): string {
   return blocks.map((b) => b.text).join('')
 }
 
@@ -100,7 +100,7 @@ export class PiMessageAdapter {
         }
 
         if (thinkingBlocks.length > 0)
-          chatMsg.reasoning = joinTextBlocks(thinkingBlocks as unknown as PiTextBlock[])
+          chatMsg.reasoning = joinTextBlocks(thinkingBlocks)
 
         if (toolCallBlocks.length > 0) {
           chatMsg.toolCalls = toolCallBlocks.map((tc): ToolCall => ({
