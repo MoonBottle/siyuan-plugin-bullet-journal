@@ -89,6 +89,12 @@
             </div>
             <div class="custom-item-actions">
               <SyButton
+                icon="iconEdit"
+                :text="t('settings').aiSkills?.editSkill ?? '编辑'"
+                :aria-label="t('settings').aiSkills?.editSkill ?? '编辑'"
+                @click="editSkill(skill)"
+              />
+              <SyButton
                 icon="iconTrashcan"
                 :aria-label="t('settings').aiSkills?.delete ?? '删除'"
                 @click="removeSkill(skill)"
@@ -120,7 +126,7 @@ import {
   computed,
   createApp,
 } from 'vue'
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue'
+import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import SkillIcon from '@/components/icons/SkillIcon.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
@@ -136,11 +142,11 @@ import { getSharedPinia } from '@/utils/sharedPinia'
 import SySettingsActionButton from './SySettingsActionButton.vue'
 import SySettingsSection from './SySettingsSection.vue'
 
-const props = defineProps<{
+const _props = defineProps<{
   dialog?: { destroy: () => void }
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   (e: 'close'): void
 }>()
 
@@ -154,31 +160,34 @@ const userSkills = computed(() =>
   skillStore.skills.filter((s) => s.source === 'user'),
 )
 
-function openCreateSkillDialog(prefilledName: string = '') {
+function openSkillEditDialog(skillName: string, mode: 'create' | 'edit' | 'view') {
   const container = document.createElement('div')
 
   let app: ReturnType<typeof createApp>
 
+  const titleMap = {
+    create: t('settings').aiSkills?.addSkill ?? '添加技能',
+    edit: t('settings').aiSkills?.editSkill ?? '编辑技能',
+    view: skillName,
+  }
+
   const dialog = createDialog({
-    title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能',
+    title: titleMap[mode],
     content: '',
-    width: '480px',
+    width: '680px',
     destroyCallback: () => {
       app.unmount()
     },
   })
 
-  app = createApp(CreateSkillDialog, {
-    mode: 'new',
-    prefilledName,
+  app = createApp(SkillEditDialog, {
+    skillName,
+    mode,
     onClose: () => {
       dialog.destroy()
     },
-    onCreated: (_skillName: string) => {
-      if (props.dialog) {
-        props.dialog.destroy()
-      }
-      emit('close')
+    onSaved: () => {
+      dialog.destroy()
     },
   })
 
@@ -192,7 +201,11 @@ function openCreateSkillDialog(prefilledName: string = '') {
 }
 
 function showAddSkillDialog() {
-  openCreateSkillDialog('')
+  openSkillEditDialog('', 'create')
+}
+
+function editSkill(skill: RegisteredSkill) {
+  openSkillEditDialog(skill.name, 'edit')
 }
 
 function removeSkill(skill: RegisteredSkill) {
