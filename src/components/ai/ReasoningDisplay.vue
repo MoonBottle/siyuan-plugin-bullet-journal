@@ -1,6 +1,5 @@
 <template>
   <div class="reasoning-display">
-    <!-- 头部：折叠/展开图标 + 思考图标 + 标题 -->
     <div
       class="reasoning-display__header"
       @click="toggleCollapse"
@@ -19,7 +18,6 @@
       <span class="reasoning-display__title">{{ title }}</span>
     </div>
 
-    <!-- 展开后的内容 -->
     <div
       v-if="!isCollapsed"
       class="reasoning-display__content"
@@ -32,20 +30,23 @@
 import {
   computed,
   ref,
+  watch,
 } from 'vue'
 import { t } from '@/i18n'
 import { renderMarkdown } from '@/utils/markdownRenderer'
 
 const props = defineProps<{
-  /** 思考过程内容 */
   content: string
-  /** 默认是否折叠，默认为 true */
   defaultCollapsed?: boolean
-  /** 自定义标题，默认使用 i18n 的 reasoningTitle */
   title?: string
 }>()
 
 const isCollapsed = ref(props.defaultCollapsed ?? true)
+
+watch(() => props.defaultCollapsed, (val) => {
+  if (val !== undefined)
+    isCollapsed.value = val
+})
 
 const title = computed(() => {
   return props.title ?? (t('aiChat') as Record<string, string>).reasoningTitle ?? '思考过程'
@@ -131,7 +132,6 @@ function toggleCollapse() {
     color: var(--b3-theme-on-surface);
     border-top: 1px solid var(--b3-theme-surface-lightest);
 
-    // Markdown 渲染样式
     :deep(p) {
       margin: 4px 0;
       &:first-child {

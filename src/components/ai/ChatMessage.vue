@@ -60,7 +60,7 @@
         <ReasoningDisplay
           v-if="message.reasoning"
           :content="message.reasoning"
-          :default-collapsed="true"
+          :default-collapsed="!message.loading"
         />
 
         <!-- 错误消息 -->
