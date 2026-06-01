@@ -121,6 +121,12 @@
           />
         </div>
         <div
+          id="section-skill"
+          class="sy-settings-section-wrapper"
+        >
+          <AiSkillConfigSection v-show="sectionVisible('skill')" />
+        </div>
+        <div
           id="section-mcp"
           class="sy-settings-section-wrapper"
         >
@@ -180,6 +186,7 @@ import {
   submitRefreshRequest,
 } from '@/utils/refreshRequests'
 import AiConfigSection from './AiConfigSection.vue'
+import AiSkillConfigSection from './AiSkillConfigSection.vue'
 import CalendarConfigSection from './CalendarConfigSection.vue'
 import DirectoryConfigSection from './DirectoryConfigSection.vue'
 import GroupConfigSection from './GroupConfigSection.vue'
@@ -256,6 +263,12 @@ const menuItems = computed<MenuItem[]>(() => {
       title: settings.ai?.title ?? 'AI 服务配置',
       icon: 'iconSparkles',
       sectionId: 'section-ai',
+    },
+    {
+      key: 'skill',
+      title: settings.aiSkills?.title ?? 'AI 技能配置',
+      icon: 'iconPlugin',
+      sectionId: 'section-skill',
     },
     {
       key: 'mcp',
