@@ -707,6 +707,8 @@ export default class TaskAssistantPlugin extends Plugin {
           groups: data.groups || [],
           defaultGroup: data.defaultGroup || "",
           calendarDefaultView: data.calendarDefaultView || "timeGridDay",
+          calendarDateClickBehavior: data.calendarDateClickBehavior || "click",
+          calendarWeekClickBehavior: data.calendarWeekClickBehavior || "click",
           lunchBreakStart: data.lunchBreakStart || "12:00",
           lunchBreakEnd: data.lunchBreakEnd || "13:00",
           habitCheckInTimePrecision:

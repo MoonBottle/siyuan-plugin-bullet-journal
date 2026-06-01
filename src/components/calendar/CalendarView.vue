@@ -216,6 +216,7 @@ const renderEventContent = (arg: any) => {
 interface Props {
   events: CalendarEvent[]
   initialView?: string
+  dateClickBehavior?: 'click' | 'dblclick'
 }
 
 const calendarEl = ref<HTMLElement | null>(null)
@@ -227,6 +228,8 @@ let calendarInstance: Calendar | null = null
 let resizeObserver: ResizeObserver | null = null
 /** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
 let pendingNavigateDate: string | null = null
+let lastDateClickTime = 0
+let lastDateClickStr = ''
 
 // 悬浮预览：显示
 const showEventTooltip = (info: any) => {
@@ -456,13 +459,13 @@ onMounted(async () => {
         return template.replace('$0', displayText)
       },
       navLinkWeekClick: (weekStart: Date) => {
-        if (calendarInstance) {
-          const previousView = calendarInstance.view.type
-          calendarInstance.changeView('timeGridWeek')
-          calendarInstance.gotoDate(weekStart)
-          emit('navigated')
-          emit('weekViewFromClick', previousView)
-        }
+        if (!calendarInstance) return
+        const currentViewType = calendarInstance.view.type
+
+        calendarInstance.changeView('timeGridWeek')
+        calendarInstance.gotoDate(weekStart)
+        emit('navigated')
+        emit('weekViewFromClick', currentViewType)
       },
       height: '100%',
       eventDisplay: 'block',
@@ -470,6 +473,10 @@ onMounted(async () => {
         if (event.extendedProps?.isPomodoroBlock) return false
         return true
       },
+      selectable: true,
+      unselectAuto: true,
+      unselectCancel: '.fc-event',
+      select: () => {},
       editable: true,
       eventResizableFromStart: true,
       nowIndicator: true,
@@ -538,14 +545,36 @@ onMounted(async () => {
       },
 
       dateClick: (info) => {
-        if (calendarInstance) {
-          const previousView = calendarInstance.view.type
-          calendarInstance.changeView('timeGridDay')
-          calendarInstance.gotoDate(info.dateStr)
-          emit('navigated')
-          if (previousView !== 'timeGridDay') {
-            emit('dayViewFromClick', previousView)
+        if (!calendarInstance) return
+        const currentViewType = calendarInstance.view.type
+
+        if (props.dateClickBehavior === 'dblclick'
+          && !plugin?.isMobile
+          && (currentViewType === 'dayGridMonth' || currentViewType === 'timeGridWeek')) {
+          const now = Date.now()
+          const isDoubleClick = now - lastDateClickTime < 300 && lastDateClickStr === info.dateStr
+          lastDateClickTime = now
+          lastDateClickStr = info.dateStr
+
+          if (isDoubleClick) {
+            calendarInstance.changeView('timeGridDay')
+            calendarInstance.gotoDate(info.dateStr)
+            emit('navigated')
+            emit('dayViewFromClick', currentViewType)
+          } else {
+            const dateOnly = info.dateStr.includes('T')
+              ? info.dateStr.split('T')[0]
+              : info.dateStr
+            calendarInstance.select(dateOnly)
           }
+          return
+        }
+
+        calendarInstance.changeView('timeGridDay')
+        calendarInstance.gotoDate(info.dateStr)
+        emit('navigated')
+        if (currentViewType !== 'timeGridDay') {
+          emit('dayViewFromClick', currentViewType)
         }
       },
     })

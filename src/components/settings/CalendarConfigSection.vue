@@ -34,6 +34,16 @@
             @update:model-value="$emit('update:showPomodoroTotal', $event)"
           />
         </SySettingItem>
+        <SySettingItem
+          :label="t('settings').calendar.dateClickBehavior"
+          :description="t('settings').calendar.dateClickBehaviorDesc"
+        >
+          <SySelect
+            :model-value="calendarDateClickBehavior ?? 'click'"
+            :options="clickBehaviorOptions"
+            @update:model-value="$emit('update:calendarDateClickBehavior', $event)"
+          />
+        </SySettingItem>
       </SySettingItemList>
     </SySettingsSection>
   </template>
@@ -134,6 +144,37 @@
           </div>
         </div>
       </div>
+
+      <!-- Click Behavior Group (desktop only, mobile forces single click) -->
+      <div
+        v-if="!isMobile"
+        class="ios-group"
+      >
+        <div class="ios-cell ios-cell-select">
+          <div class="cell-content">
+            <div class="cell-title">
+              {{ t('settings').calendar.dateClickBehavior }}
+            </div>
+          </div>
+          <div class="cell-accessory">
+            <select
+              :value="calendarDateClickBehavior ?? 'click'"
+              class="ios-select"
+              @change="$emit('update:calendarDateClickBehavior', ($event.target as HTMLSelectElement).value as 'click' | 'dblclick')"
+            >
+              <option value="click">
+                {{ t('settings').calendar.clickBehaviorSingle }}
+              </option>
+              <option value="dblclick">
+                {{ t('settings').calendar.clickBehaviorDouble }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="cell-footer">
+          {{ t('settings').calendar.dateClickBehaviorDesc }}
+        </div>
+      </div>
     </div>
   </template>
 </template>
@@ -151,12 +192,14 @@ defineProps<{
   showPomodoroBlocks?: boolean
   showPomodoroTotal?: boolean
   isMobile?: boolean
+  calendarDateClickBehavior?: 'click' | 'dblclick'
 }>()
 
 defineEmits<{
   'update:calendarDefaultView': [value: string]
   'update:showPomodoroBlocks': [value: boolean]
   'update:showPomodoroTotal': [value: boolean]
+  'update:calendarDateClickBehavior': [value: 'click' | 'dblclick']
 }>()
 
 const viewOptions = [
@@ -175,6 +218,17 @@ const viewOptions = [
   {
     value: 'listWeek',
     label: t('calendar').list,
+  },
+]
+
+const clickBehaviorOptions = [
+  {
+    value: 'click',
+    label: t('settings').calendar.clickBehaviorSingle,
+  },
+  {
+    value: 'dblclick',
+    label: t('settings').calendar.clickBehaviorDouble,
   },
 ]
 </script>

@@ -286,7 +286,11 @@
       "pomodoroTotalLabel": "共专注{minutes}分钟",
       "pomodoroTimelineTitle": "专注时段",
       "pomodoroCountLabel": "{count}次",
-      "pomodoroNoFocus": "暂无专注记录"
+      "pomodoroNoFocus": "暂无专注记录",
+      "dateClickBehavior": "日期点击进入方式",
+      "dateClickBehaviorDesc": "在月视图或周视图中，点击日期格子进入日视图的方式",
+      "clickBehaviorSingle": "单击",
+      "clickBehaviorDouble": "双击"
     },
     "lunchBreak": {
       "title": "午休时间",

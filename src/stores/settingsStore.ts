@@ -28,6 +28,7 @@ export const useSettingsStore = defineStore('settings', {
     habitCheckInTimePrecision: 'day' as HabitCheckInTimePrecision,
     showPomodoroBlocks: true,
     showPomodoroTotal: true,
+    calendarDateClickBehavior: 'click' as 'click' | 'dblclick',
     todoDock: {
       hideCompleted: false,
       hideAbandoned: false,
@@ -96,6 +97,7 @@ export const useSettingsStore = defineStore('settings', {
           : 'day'
         this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true
         this.showPomodoroTotal = settings.showPomodoroTotal ?? true
+        this.calendarDateClickBehavior = settings.calendarDateClickBehavior || 'click'
         this.todoDock = {
           hideCompleted: settings.todoDock?.hideCompleted ?? false,
           hideAbandoned: settings.todoDock?.hideAbandoned ?? false,
@@ -133,6 +135,7 @@ export const useSettingsStore = defineStore('settings', {
           habitCheckInTimePrecision: this.habitCheckInTimePrecision,
           showPomodoroBlocks: this.showPomodoroBlocks,
           showPomodoroTotal: this.showPomodoroTotal,
+          calendarDateClickBehavior: this.calendarDateClickBehavior,
           todoDock: this.todoDock,
           focusWorkbench: this.focusWorkbench,
         })

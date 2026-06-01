@@ -41,6 +41,7 @@
         ref="calendarRef"
         :events="calendarEvents"
         :initial-view="currentView"
+        :date-click-behavior="settingsStore.calendarDateClickBehavior"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -209,7 +210,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     payloadKeys: payload ? Object.keys(payload) : [],
   })
   if (!plugin) return
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode']
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode', 'calendarDateClickBehavior']
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {}

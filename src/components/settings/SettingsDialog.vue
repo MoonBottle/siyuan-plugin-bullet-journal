@@ -81,6 +81,7 @@
             v-model:calendar-default-view="local.calendarDefaultView"
             v-model:show-pomodoro-blocks="local.showPomodoroBlocks"
             v-model:show-pomodoro-total="local.showPomodoroTotal"
+            v-model:calendar-date-click-behavior="local.calendarDateClickBehavior"
           />
         </div>
         <div
@@ -504,6 +505,7 @@ async function handleSave() {
       habitCheckInTimePrecision: settings.habitCheckInTimePrecision || 'day',
       showPomodoroBlocks: settings.showPomodoroBlocks ?? true,
       showPomodoroTotal: settings.showPomodoroTotal ?? true,
+      calendarDateClickBehavior: settings.calendarDateClickBehavior || 'click',
       todoDock: settings.todoDock ?? settingsStore.todoDock,
     })
     submitRefreshRequest(

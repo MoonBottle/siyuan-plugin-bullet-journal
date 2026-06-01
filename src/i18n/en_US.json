@@ -286,7 +286,11 @@
       "pomodoroTotalLabel": "{minutes}min total",
       "pomodoroTimelineTitle": "Focus",
       "pomodoroCountLabel": "{count} sessions",
-      "pomodoroNoFocus": "No focus records"
+      "pomodoroNoFocus": "No focus records",
+      "dateClickBehavior": "Date Click to Enter Day View",
+      "dateClickBehaviorDesc": "How to enter day view by clicking a date cell in month or week view",
+      "clickBehaviorSingle": "Single click",
+      "clickBehaviorDouble": "Double click"
     },
     "lunchBreak": {
       "title": "Lunch Break",

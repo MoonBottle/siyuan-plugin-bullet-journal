@@ -128,6 +128,7 @@ export interface SettingsData {
   groups: ProjectGroup[]
   defaultGroup: string
   calendarDefaultView: string
+  calendarDateClickBehavior: 'click' | 'dblclick'
   lunchBreakStart: string
   lunchBreakEnd: string
   habitCheckInTimePrecision?: HabitCheckInTimePrecision
@@ -198,6 +199,7 @@ export const defaultSettings: SettingsData = {
   groups: [],
   defaultGroup: '',
   calendarDefaultView: 'timeGridDay',
+  calendarDateClickBehavior: 'click',
   lunchBreakStart: '12:00',
   lunchBreakEnd: '13:00',
   habitCheckInTimePrecision: 'day',
