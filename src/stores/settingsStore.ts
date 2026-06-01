@@ -1,16 +1,32 @@
-import type { HabitCheckInTimePrecision } from '@/settings/types'
+import type {
+  CustomSlashCommand,
+  HabitCheckInTimePrecision,
+  PomodoroSettings,
+  SettingsData,
+  WebhookChannel,
+  WebhookConfig,
+} from '@/settings/types'
+import type { AIProviderConfig } from '@/types/ai'
 import type {
   ProjectDirectory,
   ProjectGroup,
   ScanMode,
 } from '@/types/models'
-/**
- * 设置状态管理
- * 从插件实例获取设置数据
- */
 import { defineStore } from 'pinia'
 import { usePlugin } from '@/main'
-import { defaultTodoSortRules } from '@/settings/types'
+import {
+  defaultPomodoroSettings,
+  defaultTodoSortRules,
+} from '@/settings/types'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import {
+  createFullRefreshRequest,
+  RefreshReasons,
+  submitRefreshRequest,
+} from '@/utils/refreshRequests'
 
 const habitCheckInTimePrecisionOptions: HabitCheckInTimePrecision[] = ['day', 'minute', 'second']
 
@@ -40,6 +56,16 @@ export const useSettingsStore = defineStore('settings', {
     focusWorkbench: {
       selectedGroup: '',
     },
+    pomodoro: { ...defaultPomodoroSettings } as PomodoroSettings,
+    ai: {
+      providers: [] as AIProviderConfig[],
+      activeProviderId: null as string | null,
+    },
+    customSlashCommands: [] as CustomSlashCommand[],
+    webhook: {
+      enabled: false,
+      channels: [] as WebhookChannel[],
+    } as WebhookConfig,
     loaded: false,
   }),
 
@@ -111,6 +137,19 @@ export const useSettingsStore = defineStore('settings', {
         this.focusWorkbench = {
           selectedGroup: settings.focusWorkbench?.selectedGroup ?? '',
         }
+        this.pomodoro = {
+          ...defaultPomodoroSettings,
+          ...settings.pomodoro,
+        }
+        this.ai = settings.ai || {
+          providers: [],
+          activeProviderId: null,
+        }
+        this.customSlashCommands = settings.customSlashCommands || []
+        this.webhook = settings.webhook || {
+          enabled: false,
+          channels: [],
+        }
         this.loaded = true
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories)
       }
@@ -138,8 +177,28 @@ export const useSettingsStore = defineStore('settings', {
           calendarDateClickBehavior: this.calendarDateClickBehavior,
           todoDock: this.todoDock,
           focusWorkbench: this.focusWorkbench,
+          pomodoro: this.pomodoro,
+          ai: this.ai,
+          customSlashCommands: this.customSlashCommands,
+          webhook: this.webhook,
         })
       }
+    },
+
+    async applySettings(partial: Partial<SettingsData>) {
+      this.$patch(partial)
+      const plugin = usePlugin() as any
+      if (!plugin?.updateSettings) return
+      plugin.updateSettings(this.$state as SettingsData)
+      await plugin.saveSettings()
+      const settings = plugin.getSettings()
+      submitRefreshRequest(
+        createFullRefreshRequest(
+          RefreshReasons.SETTINGS_DIALOG_SAVE,
+          settings as Record<string, unknown>,
+        ),
+      )
+      eventBus.emit(Events.SETTINGS_CHANGED, settings)
     },
   },
 })
