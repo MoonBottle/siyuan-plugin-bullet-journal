@@ -74,6 +74,8 @@ export const useSkillStore = defineStore('skill', () => {
       await loadBuiltinSkills(loader, plugin)
 
       await restoreSkillStates(plugin)
+
+      registryVersion.value++
     } catch (err) {
       console.error('[SkillStore] Failed to load skills:', err)
       error.value = (err as Error).message
@@ -102,7 +104,6 @@ export const useSkillStore = defineStore('skill', () => {
 
         if (!registry.resolveSkill(registered.name)) {
           registry.register(registered)
-          registryVersion.value++
         }
       } catch (err) {
         console.error('[SkillStore] Failed to parse builtin skill:', err)

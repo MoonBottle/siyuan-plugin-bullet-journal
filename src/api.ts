@@ -378,15 +378,21 @@ export async function renderSprig(template: string): Promise<string> {
 
 // **************************************** File ****************************************
 
-export async function getFile(path: string): Promise<any> {
-  const data = {
-    path,
-  }
+export async function getFile(path: string): Promise<string | null> {
   const url = "/api/file/getFile"
   try {
-    const file = await fetchSyncPost(url, data)
-    return file
-  } catch {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    })
+    if (!response.ok) {
+      console.warn('[API] getFile failed, path=', path, 'status=', response.status)
+      return null
+    }
+    return await response.text()
+  } catch (err) {
+    console.warn('[API] getFile error, path=', path, 'err=', err)
     return null
   }
 }

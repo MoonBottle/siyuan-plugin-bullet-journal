@@ -193,6 +193,7 @@ function initVditor() {
     ],
     cache: { enable: false },
     preview: { mode: 'editor' },
+    customWysiwygToolbar: () => {},
     height: 400,
     after: () => {
       if (initialContent.value) {

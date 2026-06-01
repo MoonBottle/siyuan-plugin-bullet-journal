@@ -3,6 +3,27 @@ import dayjs from '@/utils/dayjs'
 
 const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
+function formatSkillsForSystemPrompt(skills: RegisteredSkill[]): string {
+  const visibleSkills = skills.filter((s) => s.enabled)
+  if (visibleSkills.length === 0) return ''
+
+  const lines = ['<available_skills>']
+  for (const skill of visibleSkills) {
+    lines.push('  <skill>')
+    lines.push(`    <name>${skill.name}</name>`)
+    lines.push(`    <description>${skill.description}</description>`)
+    lines.push('  </skill>')
+  }
+  lines.push('</available_skills>')
+
+  return [
+    '',
+    '你可以使用以下技能来辅助完成任务。当需要使用某个技能时，调用 use_skill 工具获取完整指令。',
+    '',
+    lines.join('\n'),
+  ].join('\n')
+}
+
 export function buildSystemPrompt(skills?: RegisteredSkill[]): string {
   const now = dayjs()
   const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`
@@ -13,13 +34,7 @@ export function buildSystemPrompt(skills?: RegisteredSkill[]): string {
 `
 
   if (skills && skills.length > 0) {
-    const promptSkills = skills.filter((s) => s.type === 'prompt' && s.enabled)
-    if (promptSkills.length > 0) {
-      prompt += '\n\n## 可用技能\n\n'
-      for (const skill of promptSkills) {
-        prompt += `### ${skill.name}\n${skill.content}\n\n`
-      }
-    }
+    prompt += formatSkillsForSystemPrompt(skills)
   }
 
   return prompt

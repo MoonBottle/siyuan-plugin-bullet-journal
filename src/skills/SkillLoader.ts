@@ -17,6 +17,8 @@ export class SkillLoader {
       return
     }
 
+    if (!entries || entries.length === 0) return
+
     for (const entry of entries) {
       const skillFilePath = `${dir}/${entry}/SKILL.md`
       await this.loadFromFile(skillFilePath)

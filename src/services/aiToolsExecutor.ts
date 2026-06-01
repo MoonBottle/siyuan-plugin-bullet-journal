@@ -76,8 +76,7 @@ export type ToolName =
   | 'filter_items'
   | 'get_pomodoro_stats'
   | 'get_pomodoro_records'
-  | 'list_skills'
-  | 'get_skill_detail'
+  | 'use_skill'
   | 'update_item_status'
   | 'create_item'
   | 'update_item'
@@ -623,36 +622,9 @@ export async function executeCreateProject(
   }
 }
 
-export async function executeListSkills(): Promise<Array<{
+export async function executeUseSkill(args: {
   name: string
-  description: string
-}>> {
-  const skillService = SkillService.getInstance()
-
-  console.log('[executeListSkills] 开始加载技能...')
-
-  await skillService.preloadAllSkills()
-
-  const skillNames = skillService.getCachedSkillNames()
-  const result = skillNames.map((name) => {
-    const skill = skillService.getSkillFromCache(name)!
-    return {
-      name: skill.name,
-      description: skill.description,
-    }
-  })
-
-  console.log('[executeListSkills] 返回技能列表:', result.map((s) => s.name))
-  return result
-}
-
-export async function executeGetSkillDetail(args: {
-  name: string
-}): Promise<{
-  name: string
-  description: string
-  content: string
-} | { error: string }> {
+}): Promise<string> {
   const skillService = SkillService.getInstance()
 
   try {
@@ -664,18 +636,18 @@ export async function executeGetSkillDetail(args: {
     }
 
     if (!skill) {
-      return { error: `未找到技能: ${args.name}` }
+      return JSON.stringify({ error: `未找到技能: ${args.name}` })
     }
 
-    return {
-      name: skill.name,
-      description: skill.description,
-      content: skill.content,
-    }
+    return [
+      `<skill name="${skill.name}">`,
+      '',
+      skill.content,
+      '',
+      '</skill>',
+    ].join('\n')
   } catch (error) {
-    return {
-      error: `获取技能详情失败: ${(error as Error).message}`,
-    }
+    return JSON.stringify({ error: `获取技能失败: ${(error as Error).message}` })
   }
 }
 
@@ -702,11 +674,8 @@ export async function executeTool(
     case 'get_pomodoro_records':
       return JSON.stringify(executeGetPomodoroRecords(args, context))
 
-    case 'list_skills':
-      return JSON.stringify(await executeListSkills())
-
-    case 'get_skill_detail':
-      return JSON.stringify(await executeGetSkillDetail(args))
+    case 'use_skill':
+      return await executeUseSkill(args)
 
     case 'update_item_status':
       return JSON.stringify(await executeUpdateItemStatus(args, context))

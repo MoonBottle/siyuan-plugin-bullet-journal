@@ -16,12 +16,11 @@ import {
   executeFilterItems,
   executeGetPomodoroRecords,
   executeGetPomodoroStats,
-  executeGetSkillDetail,
   executeListGroups,
   executeListProjects,
-  executeListSkills,
   executeUpdateItem,
   executeUpdateItemStatus,
+  executeUseSkill,
 } from './aiToolsExecutor'
 
 let currentContext: ToolExecutionContext = {
@@ -138,36 +137,19 @@ export const getPomodoroRecordsTool: AgentTool = {
   },
 }
 
-export const listSkillsTool: AgentTool = {
-  name: 'list_skills',
-  label: '查询技能',
-  description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表，用于了解有哪些技能可用。获取完整技能内容请使用 get_skill_detail。无参数。',
-  parameters: Type.Object({}),
-  execute: async () => {
-    const result = await executeListSkills()
-    return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify(result),
-      }],
-      details: result,
-    }
-  },
-}
-
-export const getSkillDetailTool: AgentTool = {
-  name: 'get_skill_detail',
-  label: '获取技能详情',
-  description: '根据技能名称获取技能的完整内容，包括工作流程、格式要求等详细说明。',
+export const useSkillTool: AgentTool = {
+  name: 'use_skill',
+  label: '使用技能',
+  description: '根据技能名称获取并使用技能的完整指令。技能名称来自系统提示中的 <available_skills> 列表。当需要执行某个技能时调用此工具，返回的指令将指导你完成该技能的工作流程。',
   parameters: Type.Object({
-    name: Type.String({ description: '技能名称，来自 list_skills 返回的 name' }),
+    name: Type.String({ description: '技能名称，来自系统提示中 <available_skills> 列表的 <name>' }),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeGetSkillDetail(args)
+    const result = await executeUseSkill(args)
     return {
       content: [{
         type: 'text' as const,
-        text: JSON.stringify(result),
+        text: typeof result === 'string' ? result : JSON.stringify(result),
       }],
       details: result,
     }
@@ -307,6 +289,7 @@ export const bulletJournalTools: AgentTool[] = [
   filterItemsTool,
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
+  useSkillTool,
 ]
 
 const allTools: AgentTool[] = [
@@ -315,8 +298,7 @@ const allTools: AgentTool[] = [
   filterItemsTool,
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
-  listSkillsTool,
-  getSkillDetailTool,
+  useSkillTool,
   updateItemStatusTool,
   createItemTool,
   updateItemTool,
