@@ -103,6 +103,7 @@ import type { RegisteredSkill } from '@/skills'
 import { showMessage } from 'siyuan'
 import {
   createApp,
+  computed,
 } from 'vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import SkillIcon from '@/components/icons/SkillIcon.vue'
@@ -129,7 +130,7 @@ const _emit = defineEmits<{
 
 const skillStore = useSkillStore()
 
-const skills = skillStore.skills
+const skills = computed(() => skillStore.skills)
 
 const skillTemplates = [
   {
