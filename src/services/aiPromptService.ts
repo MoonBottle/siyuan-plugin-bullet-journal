@@ -18,7 +18,7 @@ function formatSkillsForSystemPrompt(skills: RegisteredSkill[]): string {
 
   return [
     '',
-    '你可以使用以下技能来辅助完成任务。当需要使用某个技能时，调用 use_skill 工具获取完整指令。',
+    '你可以使用以下技能来辅助完成任务。当需要使用某个技能时，调用 skill 工具获取完整指令。',
     '',
     lines.join('\n'),
   ].join('\n')
@@ -38,7 +38,7 @@ export function buildSystemPrompt(skills?: RegisteredSkill[], activeSkillNames?:
   }
 
   if (activeSkillNames && activeSkillNames.length > 0) {
-    prompt += '\n\n用户明确选择了以下技能，请优先使用 skill 工具获取这些技能的指令并按指令执行：\n'
+    prompt += '\n\n**重要**：用户选择了以下技能，你必须首先调用 skill 工具获取每个技能的完整指令，然后严格按照指令执行，不要跳过这一步：\n'
     for (const name of activeSkillNames) {
       prompt += `- ${name}\n`
     }

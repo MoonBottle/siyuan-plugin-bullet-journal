@@ -24,6 +24,10 @@ export class PiModelAdapter {
       provider: config.provider,
       baseUrl: toBaseUrl(config.apiUrl),
       reasoning: true,
+      compat: {
+        supportsDeveloperRole: false,
+        supportsReasoningEffort: false,
+      },
       input: ['text'],
       cost: {
         input: 0,
