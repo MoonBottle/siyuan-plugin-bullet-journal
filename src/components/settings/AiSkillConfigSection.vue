@@ -1,22 +1,9 @@
 <template>
   <SySettingsSection
+    :svg-icon="skillSvgIcon"
     :title="t('settings').aiSkills?.title ?? 'AI 技能配置'"
     :description="t('settings').aiSkills?.description ?? '管理 AI 技能，让 AI 能够执行特定任务'"
   >
-    <template #header>
-      <div class="sy-settings-section__header">
-        <div class="sy-settings-section__header-left">
-          <div class="sy-settings-section__title-row fn__flex">
-            <SkillIcon class="sy-settings-section__icon" />
-            <span class="sy-settings-section__title">{{ t('settings').aiSkills?.title ?? 'AI 技能配置' }}</span>
-          </div>
-          <div class="sy-settings-section__description">
-            {{ t('settings').aiSkills?.description ?? '管理 AI 技能，让 AI 能够执行特定任务' }}
-          </div>
-        </div>
-      </div>
-    </template>
-
     <div class="skill-section">
       <div
         v-if="skills.length === 0"
@@ -106,7 +93,6 @@ import {
   computed,
 } from 'vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
-import SkillIcon from '@/components/icons/SkillIcon.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
@@ -129,6 +115,8 @@ const _emit = defineEmits<{
 }>()
 
 const skillStore = useSkillStore()
+
+const skillSvgIcon = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M758.208 42.688H254.016C184.448 42.688 128 99.008 128 168.64v671.808c0 69.568 56.448 125.952 126.08 125.952h504.128c69.568 0 126.016-56.384 126.016-125.952V168.64a126.016 126.016 0 0 0-126.08-125.952zM254.016 126.656h504.192c23.168 0 41.984 18.752 41.984 41.984v671.808a41.984 41.984 0 0 1-41.984 41.984H254.016a41.984 41.984 0 0 1-41.984-41.984V168.64c0-23.232 18.816-41.984 41.984-41.984z m425.024 231.296a41.984 41.984 0 0 0-4.864-83.712H338.048l-4.864 0.256a41.984 41.984 0 0 0 4.864 83.712h336.128l4.864-0.256z m0 167.936a41.984 41.984 0 0 0-4.864-83.712H338.048l-4.864 0.256a41.984 41.984 0 0 0 4.864 83.712h336.128l4.864-0.256zM476.16 652.096a41.984 41.984 0 0 1-37.12 41.728l-4.864 0.256h-96a41.984 41.984 0 0 1-4.928-83.648l4.864-0.32h96c23.232 0 42.048 18.816 42.048 41.984z" fill="currentColor"/></svg>'
 
 const skills = computed(() => skillStore.skills)
 
