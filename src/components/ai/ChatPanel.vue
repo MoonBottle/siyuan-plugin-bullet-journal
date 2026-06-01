@@ -123,6 +123,7 @@
             v-model="inputContent"
             :placeholder="inputPlaceholder"
             :disabled="isLoading || !isAIEnabled"
+            :skills="enabledSkillList"
             @send="handleSend"
           />
         </div>
@@ -213,6 +214,7 @@ import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
 import { t } from '@/i18n'
 import { useAIStore } from '@/stores'
+import { useSkillStore } from '@/stores'
 import { smartFormatMarkdown } from '@/utils/markdownRenderer'
 import ChatInput from './ChatInput.vue'
 import ChatMessage from './ChatMessage.vue'
@@ -258,6 +260,7 @@ interface EnhancedMessageGroup {
 }
 
 const aiStore = useAIStore()
+const skillStore = useSkillStore()
 
 const messagesContainerRef = ref<HTMLDivElement>()
 const chatInputRef = ref<InstanceType<typeof ChatInput>>()
@@ -269,6 +272,8 @@ const enabledProviders = computed(() => aiStore.enabledProviders)
 
 // 输入内容
 const inputContent = ref('')
+
+const enabledSkillList = computed(() => skillStore.enabledSkills)
 
 // 是否可以发送
 const canSend = computed(() => {
@@ -500,12 +505,33 @@ function scrollToBottom() {
   }
 }
 
-async function handleSend(content?: string | Event) {
-  const messageContent = (typeof content === 'string' ? content : '').trim() || inputContent.value.trim()
+async function handleSend(content?: string | string[], skillNames?: string[]) {
+  let messageContent: string
+  let skills: string[] = []
+
+  if (Array.isArray(content)) {
+    messageContent = content[0] || ''
+    skills = content.slice(1) as string[]
+  } else if (typeof content === 'string') {
+    messageContent = content
+    skills = skillNames ?? []
+  } else {
+    messageContent = inputContent.value.trim()
+    skills = chatInputRef.value?.getSelectedSkillNames() ?? []
+  }
+
+  messageContent = messageContent.trim()
+
+  if (skills.length > 0) {
+    const skillPrefix = skills.map(s => `/${s}`).join(' ')
+    messageContent = messageContent ? `${skillPrefix} ${messageContent}` : skillPrefix
+  }
+
   if (!messageContent || isLoading.value || !isAIEnabled.value) return
 
   inputContent.value = ''
-  await aiStore.sendMessage(messageContent)
+  chatInputRef.value?.clearSelectedSkills()
+  await aiStore.sendMessage(messageContent, skills.length > 0 ? skills : undefined)
 }
 
 function handleExampleClick(example: string) {

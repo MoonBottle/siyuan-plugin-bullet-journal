@@ -24,7 +24,7 @@ function formatSkillsForSystemPrompt(skills: RegisteredSkill[]): string {
   ].join('\n')
 }
 
-export function buildSystemPrompt(skills?: RegisteredSkill[]): string {
+export function buildSystemPrompt(skills?: RegisteredSkill[], activeSkillNames?: string[]): string {
   const now = dayjs()
   const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`
 
@@ -35,6 +35,13 @@ export function buildSystemPrompt(skills?: RegisteredSkill[]): string {
 
   if (skills && skills.length > 0) {
     prompt += formatSkillsForSystemPrompt(skills)
+  }
+
+  if (activeSkillNames && activeSkillNames.length > 0) {
+    prompt += '\n\n用户明确选择了以下技能，请优先使用 skill 工具获取这些技能的指令并按指令执行：\n'
+    for (const name of activeSkillNames) {
+      prompt += `- ${name}\n`
+    }
   }
 
   return prompt

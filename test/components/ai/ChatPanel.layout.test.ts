@@ -36,6 +36,9 @@ const mockAiStore = {
 
 vi.mock('@/stores', () => ({
   useAIStore: vi.fn(() => mockAiStore),
+  useSkillStore: vi.fn(() => ({
+    enabledSkills: [],
+  })),
 }))
 
 vi.mock('@/components/ai/ChatMessage.vue', () => ({
@@ -62,6 +65,10 @@ vi.mock('@/components/ai/ChatInput.vue', () => ({
       disabled: {
         type: Boolean,
         default: false,
+      },
+      skills: {
+        type: Array,
+        default: () => [],
       },
     },
     emits: ['update:modelValue', 'send'],

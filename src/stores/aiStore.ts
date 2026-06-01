@@ -634,7 +634,7 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 发送消息（基于 Pi Agent）
    */
-  async function sendMessage(content: string): Promise<void> {
+  async function sendMessage(content: string, skillNames?: string[]): Promise<void> {
     // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用'
@@ -698,7 +698,7 @@ export const useAIStore = defineStore('ai', () => {
     const skillService = SkillService.getInstance()
     const allSkills = skillService.getEnabledSkills()
 
-    const systemPrompt = buildSystemPrompt(allSkills)
+    const systemPrompt = buildSystemPrompt(allSkills, skillNames)
 
     // 设置状态
     isLoading.value = true

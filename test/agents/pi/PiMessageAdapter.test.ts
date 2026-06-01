@@ -71,7 +71,7 @@ describe('piMessageAdapter', () => {
         content: [
           {
             type: 'thinking' as const,
-            text: 'Let me think...',
+            thinking: 'Let me think...',
           },
           {
             type: 'text' as const,
@@ -235,7 +235,7 @@ describe('piMessageAdapter', () => {
       expect(result[0].content).toEqual([
         {
           type: 'thinking',
-          text: 'Let me think...',
+          thinking: 'Let me think...',
         },
         {
           type: 'text',

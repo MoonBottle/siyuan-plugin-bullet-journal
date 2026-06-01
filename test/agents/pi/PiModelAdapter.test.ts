@@ -61,7 +61,7 @@ describe('piModelAdapter', () => {
       expect(model.api).toBe('openai-completions')
       expect(model.provider).toBe('openai')
       expect(model.baseUrl).toBe('https://api.openai.com/v1')
-      expect(model.reasoning).toBe(false)
+      expect(model.reasoning).toBe(true)
       expect(model.input).toEqual(['text'])
       expect(model.contextWindow).toBe(128000)
       expect(model.maxTokens).toBe(4096)
