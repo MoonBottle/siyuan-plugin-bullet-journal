@@ -104,6 +104,7 @@ export interface ChatMessage {
   toolCallId?: string
 
   reasoning?: string
+  skillNames?: string[]
 
   usage?: UsageInfo
 }

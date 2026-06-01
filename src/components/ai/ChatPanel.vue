@@ -522,12 +522,7 @@ async function handleSend(content?: string | string[], skillNames?: string[]) {
 
   messageContent = messageContent.trim()
 
-  if (skills.length > 0) {
-    const skillPrefix = skills.map(s => `/${s}`).join(' ')
-    messageContent = messageContent ? `${skillPrefix} ${messageContent}` : skillPrefix
-  }
-
-  if (!messageContent || isLoading.value || !isAIEnabled.value) return
+  if ((!messageContent && skills.length === 0) || isLoading.value || !isAIEnabled.value) return
 
   inputContent.value = ''
   chatInputRef.value?.clearSelectedSkills()

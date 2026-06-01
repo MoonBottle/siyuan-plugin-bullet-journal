@@ -82,10 +82,22 @@
 
         <!-- 消息内容（用户和助手的文本消息） -->
         <div
-          v-if="message.content && message.role !== 'tool'"
+          v-if="(message.content || message.skillNames) && message.role !== 'tool'"
           class="chat-message__text"
-          v-html="renderedContent"
-        ></div>
+        >
+          <span
+            v-for="skillName in message.skillNames"
+            :key="skillName"
+            class="chat-message__skill-chip"
+          >
+            <svg class="chat-message__skill-icon"><use xlink:href="#iconSparkles"></use></svg>
+            {{ skillName }}
+          </span>
+          <span
+            v-if="message.content"
+            v-html="renderedContent"
+          ></span>
+        </div>
 
         <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示 footer，仅在最终回答展示） -->
         <div
@@ -218,6 +230,7 @@ const hasContent = computed(() => {
   if (m.role === 'tool') return true
   // 文本内容
   if (m.content && m.role !== 'tool') return true
+  if (m.skillNames && m.skillNames.length > 0) return true
   // 工具调用消息（即使没有 reasoning 或 content）
   if (m.toolCalls && m.toolCalls.length > 0) return true
   // 头部或底部
@@ -816,5 +829,26 @@ function formatTime(timestamp: number): string {
   40% {
     transform: scale(1);
   }
+}
+
+.chat-message__skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--b3-theme-primary-lightest);
+  color: var(--b3-theme-primary);
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: nowrap;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.chat-message__skill-icon {
+  width: 12px;
+  height: 12px;
+  fill: var(--b3-theme-primary);
 }
 </style>

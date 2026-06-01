@@ -739,6 +739,10 @@ export const useAIStore = defineStore('ai', () => {
           PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
         )
 
+        if (committedMsgs.length > 0 && committedMsgs[0].role === 'user' && skillNames && skillNames.length > 0) {
+          committedMsgs[0].skillNames = skillNames
+        }
+
         if (agent.state.streamingMessage) {
           const streamingMsg = PiMessageAdapter.toChatMessage(
             agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
