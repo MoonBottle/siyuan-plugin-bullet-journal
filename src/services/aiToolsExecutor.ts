@@ -76,7 +76,7 @@ export type ToolName =
   | 'filter_items'
   | 'get_pomodoro_stats'
   | 'get_pomodoro_records'
-  | 'use_skill'
+  | 'skill'
   | 'update_item_status'
   | 'create_item'
   | 'update_item'
@@ -622,7 +622,7 @@ export async function executeCreateProject(
   }
 }
 
-export async function executeUseSkill(args: {
+export async function executeSkill(args: {
   name: string
 }): Promise<string> {
   const skillService = SkillService.getInstance()
@@ -674,8 +674,8 @@ export async function executeTool(
     case 'get_pomodoro_records':
       return JSON.stringify(executeGetPomodoroRecords(args, context))
 
-    case 'use_skill':
-      return await executeUseSkill(args)
+    case 'skill':
+      return await executeSkill(args)
 
     case 'update_item_status':
       return JSON.stringify(await executeUpdateItemStatus(args, context))

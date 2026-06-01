@@ -20,7 +20,7 @@ export class PiAgentAdapter {
         systemPrompt: options.systemPrompt,
         model: options.model,
         tools: options.tools,
-        thinkingLevel: 'off',
+        thinkingLevel: 'low',
         messages: [],
       },
       streamFn: (model, context, streamOptions) =>

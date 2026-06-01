@@ -11,7 +11,8 @@ export interface PiTextBlock {
 
 export interface PiThinkingBlock {
   type: 'thinking'
-  text: string
+  thinking: string
+  thinkingSignature?: string
 }
 
 export interface PiToolCallBlock {
@@ -100,7 +101,7 @@ export class PiMessageAdapter {
         }
 
         if (thinkingBlocks.length > 0)
-          chatMsg.reasoning = joinTextBlocks(thinkingBlocks)
+          chatMsg.reasoning = thinkingBlocks.map((b) => b.thinking).join('')
 
         if (toolCallBlocks.length > 0) {
           chatMsg.toolCalls = toolCallBlocks.map((tc): ToolCall => ({
@@ -156,7 +157,7 @@ export class PiMessageAdapter {
         if (msg.reasoning) {
           content.push({
             type: 'thinking',
-            text: msg.reasoning,
+            thinking: msg.reasoning,
           })
         }
 

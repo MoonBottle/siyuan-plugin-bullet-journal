@@ -23,7 +23,7 @@ export class PiModelAdapter {
       api: 'openai-completions',
       provider: config.provider,
       baseUrl: toBaseUrl(config.apiUrl),
-      reasoning: false,
+      reasoning: true,
       input: ['text'],
       cost: {
         input: 0,

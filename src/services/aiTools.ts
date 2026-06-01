@@ -18,9 +18,9 @@ import {
   executeGetPomodoroStats,
   executeListGroups,
   executeListProjects,
+  executeSkill,
   executeUpdateItem,
   executeUpdateItemStatus,
-  executeUseSkill,
 } from './aiToolsExecutor'
 
 let currentContext: ToolExecutionContext = {
@@ -137,15 +137,15 @@ export const getPomodoroRecordsTool: AgentTool = {
   },
 }
 
-export const useSkillTool: AgentTool = {
-  name: 'use_skill',
+export const skillTool: AgentTool = {
+  name: 'skill',
   label: '使用技能',
   description: '根据技能名称获取并使用技能的完整指令。技能名称来自系统提示中的 <available_skills> 列表。当需要执行某个技能时调用此工具，返回的指令将指导你完成该技能的工作流程。',
   parameters: Type.Object({
     name: Type.String({ description: '技能名称，来自系统提示中 <available_skills> 列表的 <name>' }),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeUseSkill(args)
+    const result = await executeSkill(args)
     return {
       content: [{
         type: 'text' as const,
@@ -289,7 +289,7 @@ export const bulletJournalTools: AgentTool[] = [
   filterItemsTool,
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
-  useSkillTool,
+  skillTool,
 ]
 
 const allTools: AgentTool[] = [
@@ -298,7 +298,7 @@ const allTools: AgentTool[] = [
   filterItemsTool,
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
-  useSkillTool,
+  skillTool,
   updateItemStatusTool,
   createItemTool,
   updateItemTool,
