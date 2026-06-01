@@ -27,9 +27,33 @@
       <div class="form-item form-item-full">
         <label class="form-label">{{ t('settings').aiSkills?.editSkill ?? '技能内容' }}</label>
         <div
-          ref="vditorRef"
-          class="vditor-container"
-        />
+          v-if="isLoaded && mode === 'view'"
+          class="bytemd-viewer"
+        >
+          <Viewer
+            :value="content"
+            :plugins="plugins"
+          />
+        </div>
+        <div
+          v-else-if="isLoaded"
+          ref="editorContainerRef"
+          class="bytemd-editor"
+        >
+          <Editor
+            :value="content"
+            :plugins="plugins"
+            :locale="zhHans"
+            :mode="editorMode"
+            @change="handleChange"
+          />
+        </div>
+        <div
+          v-else
+          class="bytemd-loading"
+        >
+          {{ t('common').loading ?? '加载中...' }}
+        </div>
       </div>
     </div>
 
@@ -68,14 +92,17 @@
 
 <script setup lang="ts">
 import { showMessage } from 'siyuan'
-import Vditor from 'vditor'
+import { Editor, Viewer } from '@bytemd/vue-next'
+import gfm from '@bytemd/plugin-gfm'
+import 'bytemd/dist/index.css'
+import zhHans from 'bytemd/locales/zh_Hans.json'
 import {
   computed,
   nextTick,
   onMounted,
-  onUnmounted,
   reactive,
   ref,
+  watch,
 } from 'vue'
 import {
   getFile,
@@ -85,7 +112,6 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue'
 import { t } from '@/i18n'
 import { SkillParser } from '@/skills'
 import { useSkillStore } from '@/stores/skillStore'
-import 'vditor/dist/index.css'
 
 const props = defineProps<{
   skillName: string
@@ -110,9 +136,15 @@ const errors = reactive({
 })
 
 const isSaving = ref(false)
-const initialContent = ref('')
-const vditorRef = ref<HTMLElement>()
-let vditorInstance: Vditor | null = null
+const isLoaded = ref(false)
+const content = ref('')
+const editorContainerRef = ref<HTMLElement>()
+
+const plugins = [gfm()]
+
+const editorMode = computed(() => {
+  return props.mode === 'view' ? 'preview' : 'split'
+})
 
 const isValid = computed(() => {
   return form.name.trim().length > 0
@@ -137,9 +169,22 @@ function validateName() {
   }
 }
 
+function handleChange(v: string) {
+  content.value = v
+}
+
+function refreshCodeMirror() {
+  nextTick(() => {
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'))
+    }, 100)
+  })
+}
+
 async function loadSkillContent() {
   if (props.mode === 'create') {
-    initialContent.value = '## 工作流程\n\n1. **步骤1** - 描述\n2. **步骤2** - 描述\n'
+    content.value = '## 工作流程\n\n1. **步骤1** - 描述\n2. **步骤2** - 描述\n'
+    isLoaded.value = true
     return
   }
 
@@ -156,54 +201,17 @@ async function loadSkillContent() {
       return
     }
 
-    const content = typeof raw === 'string' ? raw : String(raw)
-    const result = SkillParser.parse(content)
+    const fileContent = typeof raw === 'string' ? raw : String(raw)
+    const result = SkillParser.parse(fileContent)
 
     form.name = result.metadata.name
     form.description = result.metadata.description
-    initialContent.value = result.content
+    content.value = result.content
+    isLoaded.value = true
   } catch (err) {
     console.error('[SkillEditDialog] Failed to load skill:', err)
     showMessage(t('settings').aiSkills?.skillNotFound ?? '技能文档不存在', 3000, 'error')
   }
-}
-
-function initVditor() {
-  if (!vditorRef.value) return
-
-  vditorInstance = new Vditor(vditorRef.value, {
-    mode: 'wysiwyg',
-    toolbar: [
-      'headings',
-      'bold',
-      'italic',
-      'strike',
-      '|',
-      'list',
-      'ordered-list',
-      'check',
-      'quote',
-      'code',
-      '|',
-      'table',
-      'link',
-      '|',
-      'undo',
-      'redo',
-    ],
-    cache: { enable: false },
-    preview: { mode: 'editor' },
-    customWysiwygToolbar: () => {},
-    height: 400,
-    after: () => {
-      if (initialContent.value) {
-        vditorInstance?.setValue(initialContent.value)
-      }
-      if (props.mode === 'view') {
-        vditorInstance?.disabled()
-      }
-    },
-  })
 }
 
 async function saveSkill() {
@@ -211,7 +219,6 @@ async function saveSkill() {
 
   const skillName = form.name.trim()
   const description = form.description.trim()
-  const content = vditorInstance?.getValue() ?? ''
 
   isSaving.value = true
 
@@ -220,7 +227,7 @@ async function saveSkill() {
       await skillStore.addSkill({
         name: skillName,
         description,
-        content,
+        content: content.value,
         autoEnable: true,
       })
       showMessage(t('slash').createSkillSuccess, 3000, 'info')
@@ -236,14 +243,14 @@ async function saveSkill() {
         '',
       ].join('\n')
 
-      const fullContent = frontmatter + content
+      const fullContent = frontmatter + content.value
 
       await putFile(skillFilePath, false, new Blob([fullContent], { type: 'text/markdown' }))
 
       const existing = skillStore.getSkillByName(skillName)
       if (existing) {
         existing.description = description
-        existing.content = content
+        existing.content = content.value
       }
 
       showMessage(t('common').save ?? '保存成功', 3000, 'info')
@@ -263,15 +270,12 @@ function close() {
   emit('close')
 }
 
-onMounted(async () => {
-  await loadSkillContent()
-  await nextTick()
-  initVditor()
+watch(isLoaded, (val) => {
+  if (val) refreshCodeMirror()
 })
 
-onUnmounted(() => {
-  vditorInstance?.destroy()
-  vditorInstance = null
+onMounted(() => {
+  loadSkillContent()
 })
 </script>
 
@@ -279,7 +283,8 @@ onUnmounted(() => {
 .skill-edit-dialog {
   padding: 16px;
   min-width: 400px;
-  max-width: 640px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skill-form {
@@ -314,7 +319,21 @@ onUnmounted(() => {
   color: var(--b3-theme-error);
 }
 
-.vditor-container {
+.bytemd-loading {
+  padding: 16px;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  text-align: center;
+}
+
+.bytemd-editor {
+  width: 100%;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  overflow: hidden;
+}
+
+.bytemd-viewer {
   width: 100%;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
@@ -362,5 +381,95 @@ onUnmounted(() => {
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
+}
+</style>
+
+<style lang="scss">
+.skill-edit-dialog .bytemd {
+  border: none !important;
+  height: 400px;
+  color: var(--b3-theme-on-surface);
+  background-color: var(--b3-theme-surface);
+}
+
+.skill-edit-dialog .bytemd-toolbar {
+  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  background-color: var(--b3-theme-surface);
+}
+
+.skill-edit-dialog .bytemd-toolbar-icon {
+  color: var(--b3-theme-on-surface);
+}
+
+.skill-edit-dialog .bytemd-toolbar-icon:hover {
+  background-color: var(--b3-theme-surface-lighter);
+}
+
+.skill-edit-dialog .bytemd-toolbar-icon-active {
+  color: var(--b3-theme-primary);
+}
+
+.skill-edit-dialog .bytemd-toolbar-tab {
+  color: var(--b3-theme-on-surface);
+}
+
+.skill-edit-dialog .bytemd-toolbar-tab-active {
+  color: var(--b3-theme-primary);
+}
+
+.skill-edit-dialog .bytemd-toolbar-right .bytemd-toolbar-icon:last-child {
+  display: none;
+}
+
+.skill-edit-dialog .bytemd-editor {
+  font-size: 14px;
+  color: var(--b3-theme-on-surface);
+  background-color: var(--b3-theme-surface);
+}
+
+.skill-edit-dialog .bytemd-status {
+  border-top: 1px solid var(--b3-theme-surface-lighter);
+  color: var(--b3-theme-on-surface);
+}
+
+.skill-edit-dialog .CodeMirror {
+  font-family: var(--b3-font-code, 'JetBrains Mono', monospace);
+  color: var(--b3-theme-on-surface);
+  background-color: var(--b3-theme-surface);
+}
+
+.skill-edit-dialog .CodeMirror-gutters {
+  background-color: var(--b3-theme-surface);
+  border-right: 1px solid var(--b3-theme-surface-lighter);
+}
+
+.skill-edit-dialog .CodeMirror-linenumber {
+  color: var(--b3-theme-on-surface);
+  opacity: 0.5;
+}
+
+.skill-edit-dialog .CodeMirror-cursor {
+  border-left-color: var(--b3-theme-primary);
+}
+
+.skill-edit-dialog .CodeMirror-selected {
+  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.1);
+}
+
+.skill-edit-dialog .CodeMirror-focused .CodeMirror-selected {
+  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.15);
+}
+
+.skill-edit-dialog .bytemd-preview {
+  border-left: 1px solid var(--b3-theme-surface-lighter);
+  background-color: var(--b3-theme-surface);
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body {
+  color: var(--b3-theme-on-surface);
+}
+
+.skill-edit-dialog .bytemd-split .bytemd-preview {
+  border-left: 1px solid var(--b3-theme-surface-lighter);
 }
 </style>

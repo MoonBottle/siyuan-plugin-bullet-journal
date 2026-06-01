@@ -174,7 +174,7 @@ function openSkillEditDialog(skillName: string, mode: 'create' | 'edit' | 'view'
   const dialog = createDialog({
     title: titleMap[mode],
     content: '',
-    width: '680px',
+    width: '800px',
     destroyCallback: () => {
       app.unmount()
     },
