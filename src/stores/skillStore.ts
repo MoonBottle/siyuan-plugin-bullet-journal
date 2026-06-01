@@ -21,13 +21,20 @@ const SKILLS_DIR = `/data/storage/petal/${PLUGIN_NAME}/skills`
 const SKILL_STATES_KEY = 'aiSkills'
 
 const registry = new SkillRegistry()
+const registryVersion = ref(0)
 
 export const useSkillStore = defineStore('skill', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const skills = computed(() => registry.getAllSkills())
-  const enabledSkills = computed(() => registry.getEnabledSkills())
+  const skills = computed(() => {
+    void registryVersion.value
+    return registry.getAllSkills()
+  })
+  const enabledSkills = computed(() => {
+    void registryVersion.value
+    return registry.getEnabledSkills()
+  })
 
   function isSkillNameExists(name: string): boolean {
     return registry.resolveSkill(name) !== undefined
@@ -95,6 +102,7 @@ export const useSkillStore = defineStore('skill', () => {
 
         if (!registry.resolveSkill(registered.name)) {
           registry.register(registered)
+          registryVersion.value++
         }
       } catch (err) {
         console.error('[SkillStore] Failed to parse builtin skill:', err)
@@ -129,6 +137,7 @@ export const useSkillStore = defineStore('skill', () => {
 
   function toggleSkillEnabled(name: string, enabled: boolean) {
     registry.toggleEnabled(name, enabled)
+    registryVersion.value++
     saveToStorage()
   }
 
@@ -140,6 +149,7 @@ export const useSkillStore = defineStore('skill', () => {
       })
     }
     registry.unregister(name)
+    registryVersion.value++
     saveToStorage()
   }
 
@@ -182,8 +192,7 @@ export const useSkillStore = defineStore('skill', () => {
     const fullContent = frontmatter + content
 
     try {
-      await putFile(skillDir, true, new Blob())
-      await putFile(skillFilePath, false, new Blob([fullContent], { type: 'text/plain' }))
+      await putFile(skillFilePath, false, new Blob([fullContent], { type: 'text/markdown' }))
     } catch (err) {
       console.error('[SkillStore] Failed to write skill file:', err)
       throw err
@@ -203,6 +212,7 @@ export const useSkillStore = defineStore('skill', () => {
     }
 
     registry.register(registered)
+    registryVersion.value++
     saveToStorage()
   }
 

@@ -1,7 +1,7 @@
 <template>
   <SySettingsSection
     :title="t('settings').aiSkills?.title ?? 'AI 技能配置'"
-    :description="t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务'"
+    :description="t('settings').aiSkills?.description ?? '管理 AI 技能，让 AI 能够执行特定任务'"
   >
     <template #header>
       <div class="sy-settings-section__header">
@@ -11,7 +11,7 @@
             <span class="sy-settings-section__title">{{ t('settings').aiSkills?.title ?? 'AI 技能配置' }}</span>
           </div>
           <div class="sy-settings-section__description">
-            {{ t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务' }}
+            {{ t('settings').aiSkills?.description ?? '管理 AI 技能，让 AI 能够执行特定任务' }}
           </div>
         </div>
       </div>
@@ -24,7 +24,7 @@
       <h4 class="skill-section-title">
         {{ t('settings').aiSkills?.builtinSkills ?? '内置技能' }}
         <span class="skill-section-hint">
-          {{ t('settings').aiSkills?.builtinHint ?? '（可创建同名文档覆盖）' }}
+          {{ t('settings').aiSkills?.builtinHint ?? '（可创建同名技能覆盖）' }}
         </span>
       </h4>
       <div class="custom-list">
@@ -106,7 +106,7 @@
     <!-- 添加技能按钮 -->
     <SySettingsActionButton
       icon="iconAdd"
-      :text="t('settings').aiSkills?.addSkill ?? '添加技能文档'"
+      :text="t('settings').aiSkills?.addSkill ?? '添加技能'"
       @click="showAddSkillDialog"
     />
   </SySettingsSection>
@@ -160,7 +160,7 @@ function openCreateSkillDialog(prefilledName: string = '') {
   let app: ReturnType<typeof createApp>
 
   const dialog = createDialog({
-    title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能文档',
+    title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能',
     content: '',
     width: '480px',
     destroyCallback: () => {
