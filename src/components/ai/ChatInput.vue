@@ -141,6 +141,15 @@ function handleKeydown(event: KeyboardEvent) {
     emit('send', props.modelValue?.trim() || '', selectedSkills.value.map(s => s.name))
     selectedSkills.value = []
   }
+
+  if (event.key === 'Backspace') {
+    const value = props.modelValue ?? ''
+    const cursorPos = textareaRef.value?.selectionStart ?? value.length
+    if (value === '' && cursorPos === 0 && selectedSkills.value.length > 0) {
+      event.preventDefault()
+      selectedSkills.value = selectedSkills.value.slice(0, -1)
+    }
+  }
 }
 
 function handleInput(event: Event) {
