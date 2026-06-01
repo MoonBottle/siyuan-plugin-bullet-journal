@@ -61,7 +61,7 @@
             :value="pomodoro.minFocusMinutes ?? 5"
             min="1"
             max="60"
-            @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value)"
+            @input="handleMinFocusMinutesInput(($event.target as HTMLInputElement).value)"
           />
         </SySettingItem>
         <SySettingItem
@@ -357,7 +357,7 @@
               :value="pomodoro.minFocusMinutes ?? 5"
               min="1"
               max="60"
-              @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
+              @input="handleMinFocusMinutesInput(($event.target as HTMLInputElement).value)"
             />
             <span class="unit">{{ t('common').minutes }}</span>
           </div>
@@ -701,6 +701,15 @@ const breakDurationOptions = computed(() => {
     label: `${minutes} ${t('common').minutes}`,
   }))
 })
+
+const handleMinFocusMinutesInput = (rawValue: string) => {
+  const value = Number.parseInt(rawValue)
+  if (Number.isNaN(value) || value < 1 || value > 60) return
+  emit('update:pomodoro', {
+    ...props.pomodoro,
+    minFocusMinutes: value,
+  })
+}
 
 const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   emit('update:pomodoro', {
