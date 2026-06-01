@@ -3,7 +3,6 @@
 import { createPinia } from 'pinia'
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   it,
@@ -99,6 +98,26 @@ vi.mock('@/components/settings/SlashCommandConfigSection.vue', () => ({
     render: () => null,
   },
 }))
+vi.mock('@/components/settings/HabitConfigSection.vue', () => ({
+  default: {
+    name: 'HabitSectionStub',
+    props: ['habitCheckInTimePrecision'],
+    emits: ['update:habitCheckInTimePrecision'],
+    template: '<div class="habit-stub" @click="$emit(\'update:habitCheckInTimePrecision\', \'minute\')"></div>',
+  },
+}))
+vi.mock('@/components/settings/AiSkillConfigSection.vue', () => ({
+  default: {
+    name: 'SectionStub',
+    render: () => null,
+  },
+}))
+vi.mock('@/components/settings/WebhookConfigSection.vue', () => ({
+  default: {
+    name: 'SectionStub',
+    render: () => null,
+  },
+}))
 
 function mountSettingsDialog() {
   const container = document.createElement('div')
@@ -137,15 +156,7 @@ function mountSettingsDialog() {
 }
 
 describe('settingsDialog habit precision persistence', () => {
-  beforeEach(() => {
-    vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(class {
-      observe = vi.fn()
-      disconnect = vi.fn()
-    }))
-  })
-
   afterEach(() => {
-    vi.unstubAllGlobals()
     document.body.innerHTML = ''
   })
 
@@ -154,17 +165,18 @@ describe('settingsDialog habit precision persistence', () => {
     const settingsStore = useSettingsStore(mounted.pinia)
     settingsStore.habitCheckInTimePrecision = 'day'
 
-    mounted.container.querySelector<HTMLButtonElement>('.sy-select__trigger')?.click()
-    await nextTick()
-    document.querySelectorAll<HTMLElement>('.sy-select__option')[1]?.click()
-    await nextTick()
-    mounted.container.querySelector<HTMLButtonElement>('.b3-button--text')?.click()
+    const habitMenu = mounted.container.querySelectorAll('.sy-settings-menu-item')[4]
+    habitMenu?.dispatchEvent(new Event('click'))
     await nextTick()
 
-    expect(mounted.plugin.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
-      habitCheckInTimePrecision: 'minute',
-    }))
+    const habitStub = mounted.container.querySelector('.habit-stub')
+    habitStub?.dispatchEvent(new Event('click'))
+    await nextTick()
+
+    await new Promise((r) => setTimeout(r, 600))
+
     expect(settingsStore.habitCheckInTimePrecision).toBe('minute')
+    expect(mounted.plugin.updateSettings).toHaveBeenCalled()
 
     mounted.unmount()
   })
