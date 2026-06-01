@@ -1,7 +1,6 @@
 <template>
   <div class="sy-settings-dialog">
     <div class="sy-settings-dialog__body">
-      <!-- 左侧栏 -->
       <div class="sy-settings-dialog__sidebar">
         <div class="sy-settings-sidebar__search">
           <div class="sy-settings-search-wrap">
@@ -22,7 +21,7 @@
             :key="item.key"
             class="sy-settings-menu-item"
             :class="{ 'sy-settings-menu-item--active': activeSection === item.key }"
-            @click="scrollToSection(item.key)"
+            @click="activeSection = item.key"
           >
             <svg
               v-if="item.icon"
@@ -35,157 +34,37 @@
         </nav>
       </div>
 
-      <!-- 右侧内容区 -->
-      <div
-        ref="contentRef"
-        class="sy-settings-dialog__content"
-      >
-        <div
-          id="section-dir"
-          class="sy-settings-section-wrapper"
-        >
-          <DirectoryConfigSection
-            v-show="sectionVisible('dir')"
-            v-model:directories="local.directories"
-            v-model:default-group="local.defaultGroup"
-            v-model:scan-mode="local.scanMode"
-            :groups="local.groups"
+      <div class="sy-settings-dialog__content">
+        <KeepAlive>
+          <component
+            :is="currentSectionComponent"
+            v-bind="currentSectionProps"
+            v-on="currentSectionEvents"
           />
-        </div>
-        <div
-          id="section-group"
-          class="sy-settings-section-wrapper"
-        >
-          <GroupConfigSection
-            v-show="sectionVisible('group')"
-            v-model:groups="local.groups"
-            v-model:default-group="local.defaultGroup"
-            v-model:directories="local.directories"
-          />
-        </div>
-        <div
-          id="section-pomodoro"
-          class="sy-settings-section-wrapper"
-        >
-          <PomodoroConfigSection
-            v-show="sectionVisible('pomodoro')"
-            v-model:pomodoro="local.pomodoro"
-          />
-        </div>
-        <div
-          id="section-calendar"
-          class="sy-settings-section-wrapper"
-        >
-          <CalendarConfigSection
-            v-show="sectionVisible('calendar')"
-            v-model:calendar-default-view="local.calendarDefaultView"
-            v-model:show-pomodoro-blocks="local.showPomodoroBlocks"
-            v-model:show-pomodoro-total="local.showPomodoroTotal"
-            v-model:calendar-date-click-behavior="local.calendarDateClickBehavior"
-          />
-        </div>
-        <div
-          id="section-habit"
-          class="sy-settings-section-wrapper"
-        >
-          <HabitConfigSection
-            v-show="sectionVisible('habit')"
-            v-model:habit-check-in-time-precision="local.habitCheckInTimePrecision"
-          />
-        </div>
-        <div
-          id="section-lunch"
-          class="sy-settings-section-wrapper"
-        >
-          <LunchBreakConfigSection
-            v-show="sectionVisible('lunch')"
-            v-model:lunch-break-start="local.lunchBreakStart"
-            v-model:lunch-break-end="local.lunchBreakEnd"
-          />
-        </div>
-        <div
-          id="section-slash"
-          class="sy-settings-section-wrapper"
-        >
-          <SlashCommandConfigSection
-            v-show="sectionVisible('slash')"
-            v-model="local.customSlashCommands"
-          />
-        </div>
-        <div
-          id="section-ai"
-          class="sy-settings-section-wrapper"
-        >
-          <AiConfigSection
-            v-show="sectionVisible('ai')"
-            v-model:ai="local.ai"
-          />
-        </div>
-        <div
-          id="section-skill"
-          class="sy-settings-section-wrapper"
-        >
-          <AiSkillConfigSection v-show="sectionVisible('skill')" />
-        </div>
-        <div
-          id="section-mcp"
-          class="sy-settings-section-wrapper"
-        >
-          <McpConfigSection v-show="sectionVisible('mcp')" />
-        </div>
-        <div
-          id="section-webhook"
-          class="sy-settings-section-wrapper"
-        >
-          <WebhookConfigSection
-            v-show="sectionVisible('webhook')"
-            v-model:webhook="local.webhook"
-          />
-        </div>
+        </KeepAlive>
       </div>
-    </div>
-    <div class="sy-settings-dialog__footer">
-      <button
-        type="button"
-        class="b3-button b3-button--cancel"
-        @click="handleCancel"
-      >
-        {{ t('common').cancel }}
-      </button>
-      <button
-        type="button"
-        class="b3-button b3-button--text"
-        @click="handleSave"
-      >
-        {{ t('common').save }}
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { SettingsData } from '@/settings/types'
+import type { Component } from 'vue'
+import type {
+  CustomSlashCommand,
+  PomodoroSettings,
+  SettingsData,
+  WebhookConfig,
+} from '@/settings/types'
+import type { AIProviderConfig } from '@/types/ai'
 import { showMessage } from 'siyuan'
 import {
   computed,
-  onMounted,
   onUnmounted,
-  reactive,
   ref,
   watch,
 } from 'vue'
 import { t } from '@/i18n'
-import { defaultSettings } from '@/settings/types'
 import { useSettingsStore } from '@/stores/settingsStore'
-import {
-  eventBus,
-  Events,
-} from '@/utils/eventBus'
-import {
-  createFullRefreshRequest,
-  RefreshReasons,
-  submitRefreshRequest,
-} from '@/utils/refreshRequests'
 import AiConfigSection from './AiConfigSection.vue'
 import AiSkillConfigSection from './AiSkillConfigSection.vue'
 import CalendarConfigSection from './CalendarConfigSection.vue'
@@ -203,15 +82,14 @@ const props = defineProps<{
   closeDialog: () => void
 }>()
 
+const settingsStore = useSettingsStore()
 const searchQuery = ref('')
-const contentRef = ref<HTMLElement | null>(null)
 const activeSection = ref('dir')
 
 interface MenuItem {
   key: string
   title: string
   icon: string
-  sectionId: string
 }
 
 const menuItems = computed<MenuItem[]>(() => {
@@ -221,67 +99,56 @@ const menuItems = computed<MenuItem[]>(() => {
       key: 'dir',
       title: settings.dirConfig?.title ?? '目录配置',
       icon: 'iconFolder',
-      sectionId: 'section-dir',
     },
     {
       key: 'group',
       title: settings.groupManage?.title ?? '分组管理',
       icon: 'iconGroups',
-      sectionId: 'section-group',
     },
     {
       key: 'pomodoro',
       title: settings.pomodoro?.title ?? '番茄钟',
       icon: 'iconClock',
-      sectionId: 'section-pomodoro',
     },
     {
       key: 'calendar',
       title: settings.calendar?.title ?? '日历',
       icon: 'iconCalendar',
-      sectionId: 'section-calendar',
     },
     {
       key: 'habit',
       title: settings.habitSettings?.title ?? '习惯',
       icon: 'iconCheck',
-      sectionId: 'section-habit',
     },
     {
       key: 'lunch',
       title: settings.lunchBreak?.title ?? '午休时间',
       icon: 'iconClock',
-      sectionId: 'section-lunch',
     },
     {
       key: 'slash',
       title: settings.slashCommands?.title ?? '斜杠命令',
       icon: 'iconCode',
-      sectionId: 'section-slash',
     },
     {
       key: 'ai',
       title: settings.ai?.title ?? 'AI 服务配置',
       icon: 'iconSparkles',
-      sectionId: 'section-ai',
     },
     {
       key: 'skill',
       title: settings.aiSkills?.title ?? 'AI 技能配置',
       icon: 'iconPlugin',
-      sectionId: 'section-skill',
     },
     {
       key: 'mcp',
       title: settings.mcp?.title ?? 'MCP 配置',
       icon: 'iconLink',
-      sectionId: 'section-mcp',
     },
     {
       key: 'webhook',
       title: settings.webhook?.title ?? 'Webhook 通知',
       icon: 'iconLink',
-      sectionId: 'section-webhook',
     },
   ]
 })
@@ -305,6 +172,7 @@ const sectionKeywords: Record<string, string> = computed(() => {
     webhook: collectStrings(s.webhook).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),
     slash: collectStrings(s.slashCommands).join(' '),
+    skill: collectStrings(s.aiSkills).join(' '),
   }
 })
 
@@ -317,215 +185,190 @@ const visibleMenuItems = computed(() => {
   })
 })
 
-// 用于标记是否正在手动滚动，避免 IntersectionObserver 干扰
-let isManualScrolling = false
-let scrollTimeout: ReturnType<typeof setTimeout> | null = null
-
-function scrollToSection(key: string) {
-  const item = menuItems.value.find((i) => i.key === key)
-  if (!item) return
-
-  // 标记为手动滚动，暂时禁用 observer 的自动更新
-  isManualScrolling = true
-  activeSection.value = key
-
-  const sectionEl = document.getElementById(item.sectionId)
-  if (sectionEl && contentRef.value) {
-    const containerRect = contentRef.value.getBoundingClientRect()
-    const sectionRect = sectionEl.getBoundingClientRect()
-    const scrollTop = contentRef.value.scrollTop + sectionRect.top - containerRect.top
-    contentRef.value.scrollTo({
-      top: scrollTop,
-      behavior: 'smooth',
-    })
+watch(visibleMenuItems, (items) => {
+  if (items.length > 0 && !items.some((i) => i.key === activeSection.value)) {
+    activeSection.value = items[0].key
   }
+})
 
-  // 滚动动画完成后恢复 observer（smooth 滚动大约 300-500ms）
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout)
-  }
-  scrollTimeout = setTimeout(() => {
-    isManualScrolling = false
-  }, 600)
-}
-
-/** 递归收集对象中所有字符串值，用于搜索匹配 */
 function collectStrings(obj: unknown): string[] {
   if (obj == null) return []
   if (typeof obj === 'string') return [obj]
   if (Array.isArray(obj)) return obj.flatMap(collectStrings)
-  if (typeof obj === 'object') {
-    return Object.values(obj).flatMap(collectStrings)
-  }
+  if (typeof obj === 'object') return Object.values(obj).flatMap(collectStrings)
   return []
 }
 
-function sectionVisible(key: string): boolean {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return true
-  const kw = sectionKeywords.value[key]?.toLowerCase() ?? ''
-  return kw.includes(q)
+const sectionComponentMap: Record<string, Component> = {
+  dir: DirectoryConfigSection,
+  group: GroupConfigSection,
+  pomodoro: PomodoroConfigSection,
+  calendar: CalendarConfigSection,
+  habit: HabitConfigSection,
+  lunch: LunchBreakConfigSection,
+  slash: SlashCommandConfigSection,
+  ai: AiConfigSection,
+  skill: AiSkillConfigSection,
+  mcp: McpConfigSection,
+  webhook: WebhookConfigSection,
 }
 
-// 使用 IntersectionObserver 监听当前可见的 section
-let observer: IntersectionObserver | null = null
+const currentSectionComponent = computed(() => sectionComponentMap[activeSection.value] ?? DirectoryConfigSection)
 
-onMounted(() => {
-  if (contentRef.value) {
-    observer = new IntersectionObserver(
-      (entries) => {
-        // 手动滚动期间忽略 observer 的回调
-        if (isManualScrolling) return
-
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const sectionId = entry.target.id
-            const item = menuItems.value.find((i) => i.sectionId === sectionId)
-            if (item) {
-              activeSection.value = item.key
-            }
-          }
-        })
-      },
-      {
-        root: contentRef.value,
-        threshold: 0.5,
-      },
-    )
-
-    // 观察所有 section
-    menuItems.value.forEach((item) => {
-      const el = document.getElementById(item.sectionId)
-      if (el && observer) {
-        observer.observe(el)
+const currentSectionProps = computed(() => {
+  switch (activeSection.value) {
+    case 'dir':
+      return {
+        directories: settingsStore.directories,
+        defaultGroup: settingsStore.defaultGroup,
+        scanMode: settingsStore.scanMode,
+        groups: settingsStore.groups,
       }
-    })
+    case 'group':
+      return {
+        groups: settingsStore.groups,
+        defaultGroup: settingsStore.defaultGroup,
+        directories: settingsStore.directories,
+      }
+    case 'pomodoro':
+      return { pomodoro: settingsStore.pomodoro }
+    case 'calendar':
+      return {
+        calendarDefaultView: settingsStore.calendarDefaultView,
+        showPomodoroBlocks: settingsStore.showPomodoroBlocks,
+        showPomodoroTotal: settingsStore.showPomodoroTotal,
+        calendarDateClickBehavior: settingsStore.calendarDateClickBehavior,
+      }
+    case 'habit':
+      return { habitCheckInTimePrecision: settingsStore.habitCheckInTimePrecision }
+    case 'lunch':
+      return {
+        lunchBreakStart: settingsStore.lunchBreakStart,
+        lunchBreakEnd: settingsStore.lunchBreakEnd,
+      }
+    case 'slash':
+      return { modelValue: settingsStore.customSlashCommands }
+    case 'ai':
+      return { ai: settingsStore.ai }
+    case 'skill':
+      return {}
+    case 'mcp':
+      return {}
+    case 'webhook':
+      return { webhook: settingsStore.webhook }
+    default:
+      return {}
   }
 })
 
-onUnmounted(() => {
-  if (observer) {
-    observer.disconnect()
-  }
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout)
+const currentSectionEvents = computed(() => {
+  switch (activeSection.value) {
+    case 'dir':
+      return {
+        'update:directories': (val: any) => settingsStore.applySettings({ directories: val }),
+        'update:defaultGroup': (val: string) => settingsStore.applySettings({ defaultGroup: val }),
+        'update:scanMode': (val: any) => settingsStore.applySettings({ scanMode: val }),
+      }
+    case 'group':
+      return {
+        'update:groups': (val: any) => settingsStore.applySettings({ groups: val }),
+        'update:defaultGroup': (val: string) => settingsStore.applySettings({ defaultGroup: val }),
+        'update:directories': (val: any) => settingsStore.applySettings({ directories: val }),
+      }
+    case 'pomodoro':
+      return {
+        'update:pomodoro': handlePomodoroUpdate,
+      }
+    case 'calendar':
+      return {
+        'update:calendarDefaultView': (val: string) => settingsStore.applySettings({ calendarDefaultView: val }),
+        'update:showPomodoroBlocks': (val: boolean) => settingsStore.applySettings({ showPomodoroBlocks: val }),
+        'update:showPomodoroTotal': (val: boolean) => settingsStore.applySettings({ showPomodoroTotal: val }),
+        'update:calendarDateClickBehavior': (val: any) => settingsStore.applySettings({ calendarDateClickBehavior: val }),
+      }
+    case 'habit':
+      return {
+        'update:habitCheckInTimePrecision': (val: any) => settingsStore.applySettings({ habitCheckInTimePrecision: val }),
+      }
+    case 'lunch':
+      return {
+        'update:lunchBreakStart': (val: string) => settingsStore.applySettings({ lunchBreakStart: val }),
+        'update:lunchBreakEnd': (val: string) => settingsStore.applySettings({ lunchBreakEnd: val }),
+      }
+    case 'slash':
+      return {
+        'update:modelValue': (val: CustomSlashCommand[]) => settingsStore.applySettings({ customSlashCommands: val }),
+      }
+    case 'ai':
+      return {
+        'update:ai': handleAiUpdate,
+      }
+    case 'webhook':
+      return {
+        'update:webhook': (val: WebhookConfig) => settingsStore.applySettings({ webhook: val }),
+      }
+    default:
+      return {}
   }
 })
 
-function cloneSettings(data: SettingsData): SettingsData {
-  const merged = {
-    ...defaultSettings,
-    ...data,
-  }
-  // 合并 pomodoro 设置，确保新字段有默认值
-  if (!merged.pomodoro) {
-    merged.pomodoro = { ...defaultSettings.pomodoro! }
-  } else {
-    merged.pomodoro = {
-      ...defaultSettings.pomodoro!,
-      ...merged.pomodoro,
+function handlePomodoroUpdate(newPomodoro: PomodoroSettings) {
+  if (newPomodoro.minFocusMinutes !== undefined) {
+    const v = newPomodoro.minFocusMinutes
+    if (Number.isNaN(v) || v < 1 || v > 60) {
+      showMessage('最小专注时间必须在 1-60 分钟之间', 3000, 'error')
+      return
     }
   }
-  if (!merged.ai) {
-    merged.ai = {
-      providers: [],
-      activeProviderId: null,
-    }
-  }
-  if (!merged.customSlashCommands) merged.customSlashCommands = []
-  return JSON.parse(JSON.stringify(merged))
+  settingsStore.applySettings({ pomodoro: newPomodoro })
 }
 
-const local = reactive<SettingsData>(cloneSettings(props.plugin.getSettings()))
-const settingsStore = useSettingsStore()
-
-// 当 plugin 传入的 settings 变化时同步（如 destroyCallback 重新 load 后再次打开）
-watch(() => props.plugin.getSettings(), (newSettings) => {
-  Object.assign(local, cloneSettings(newSettings))
-}, { deep: true })
-
-function validateSettings(): string | null {
-  // 校验番茄钟最小专注时间
-  if (local.pomodoro?.minFocusMinutes !== undefined) {
-    const minFocus = local.pomodoro.minFocusMinutes
-    console.log('[Settings] 校验最小专注时间:', minFocus)
-    if (Number.isNaN(minFocus)) {
-      console.log('[Settings] 最小专注时间校验失败: 不是有效数字')
-      return '最小专注时间必须是有效数字'
-    }
-    if (minFocus < 1) {
-      console.log('[Settings] 最小专注时间校验失败: 小于 1 分钟')
-      return '最小专注时间不能小于 1 分钟'
-    }
-    if (minFocus > 60) {
-      console.log('[Settings] 最小专注时间校验失败: 大于 60 分钟')
-      return '最小专注时间不能大于 60 分钟'
-    }
-  }
-
-  // 校验 AI Provider 配置
-  if (local.ai?.providers) {
-    for (const provider of local.ai.providers) {
+function handleAiUpdate(newAi: {
+  providers: AIProviderConfig[]
+  activeProviderId: string | null
+}) {
+  if (newAi.providers) {
+    for (const provider of newAi.providers) {
       if (!provider.name?.trim()) {
-        return (t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称'
+        showMessage((t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称', 3000, 'error')
+        return
       }
       if (!provider.apiUrl?.trim()) {
-        return (t('settings') as any).ai?.messageEnterApiUrl ?? '请输入 API 地址'
+        showMessage((t('settings') as any).ai?.messageEnterApiUrl ?? '请输入 API 地址', 3000, 'error')
+        return
       }
       if (!provider.apiKey?.trim()) {
-        return (t('settings') as any).ai?.messageEnterApiKey ?? '请输入 API Key'
+        showMessage((t('settings') as any).ai?.messageEnterApiKey ?? '请输入 API Key', 3000, 'error')
+        return
       }
       if (!provider.models || provider.models.length === 0) {
-        return (t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型'
+        showMessage((t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error')
+        return
       }
     }
   }
-  return null
+  settingsStore.applySettings({ ai: newAi })
 }
 
-async function handleSave() {
-  const errorMsg = validateSettings()
-  if (errorMsg) {
-    showMessage(errorMsg, 3000, 'error')
-    return
-  }
+let saveTimer: ReturnType<typeof setTimeout> | null = null
 
-  try {
-    props.plugin.updateSettings(local)
-    await props.plugin.saveSettings()
-    const settings = props.plugin.getSettings()
-    settingsStore.$patch({
-      scanMode: settings.scanMode || 'full',
-      directories: settings.directories || [],
-      groups: settings.groups || [],
-      defaultGroup: settings.defaultGroup || '',
-      calendarDefaultView: settings.calendarDefaultView || 'timeGridDay',
-      lunchBreakStart: settings.lunchBreakStart || '12:00',
-      lunchBreakEnd: settings.lunchBreakEnd || '13:00',
-      habitCheckInTimePrecision: settings.habitCheckInTimePrecision || 'day',
-      showPomodoroBlocks: settings.showPomodoroBlocks ?? true,
-      showPomodoroTotal: settings.showPomodoroTotal ?? true,
-      calendarDateClickBehavior: settings.calendarDateClickBehavior || 'click',
-      todoDock: settings.todoDock ?? settingsStore.todoDock,
-    })
-    submitRefreshRequest(
-      createFullRefreshRequest(
-        RefreshReasons.SETTINGS_DIALOG_SAVE,
-        settings as Record<string, unknown>,
-      ),
-    )
-    // 触发设置变更事件，通知插件主类更新 UI（如番茄钟显示/隐藏）
-    eventBus.emit(Events.SETTINGS_CHANGED, settings)
-    showMessage(t('common').saveSuccess, 3000, 'info')
-    props.closeDialog()
-  } catch (e) {
-    showMessage((e as Error)?.message ?? t('common').actionFailed, 3000, 'error')
-  }
-}
+watch(
+  () => settingsStore.$state,
+  () => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      const plugin = props.plugin
+      if (!plugin?.updateSettings) return
+      plugin.updateSettings(settingsStore.$state as SettingsData)
+      plugin.saveSettings()
+    }, 500)
+  },
+  { deep: true },
+)
 
-function handleCancel() {
-  props.closeDialog()
-}
+onUnmounted(() => {
+  if (saveTimer) clearTimeout(saveTimer)
+})
 </script>
 
 <style scoped>
@@ -547,7 +390,6 @@ function handleCancel() {
   overflow: hidden;
 }
 
-/* 左侧栏 */
 .sy-settings-dialog__sidebar {
   border-radius: 8px;
   width: 200px;
@@ -600,7 +442,6 @@ function handleCancel() {
   color: var(--b3-theme-on-surface-light);
 }
 
-/* 导航菜单 */
 .sy-settings-sidebar__menu {
   flex: 1;
   overflow-y: auto;
@@ -658,7 +499,6 @@ function handleCancel() {
   text-overflow: ellipsis;
 }
 
-/* 右侧内容区 */
 .sy-settings-dialog__content {
   flex: 1;
   min-height: 0;
@@ -673,15 +513,5 @@ function handleCancel() {
 
 .sy-settings-section-wrapper:last-child {
   margin-bottom: 0;
-}
-
-.sy-settings-dialog__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--b3-theme-surface-lighter);
-  flex-shrink: 0;
-  background: var(--b3-theme-background);
 }
 </style>
