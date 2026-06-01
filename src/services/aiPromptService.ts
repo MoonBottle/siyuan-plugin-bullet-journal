@@ -24,6 +24,30 @@ function formatSkillsForSystemPrompt(skills: RegisteredSkill[]): string {
   ].join('\n')
 }
 
+function formatActiveSkillsContent(skills: RegisteredSkill[], activeSkillNames: string[]): string {
+  const activeSkills = skills.filter(
+    s => s.enabled && activeSkillNames.includes(s.name),
+  )
+  if (activeSkills.length === 0) return ''
+
+  const parts = [
+    '',
+    '用户选择了以下技能，请严格按照技能指令执行：',
+    '',
+  ]
+
+  for (const skill of activeSkills) {
+    parts.push(`<skill name="${skill.name}">`)
+    parts.push('')
+    parts.push(skill.content)
+    parts.push('')
+    parts.push('</skill>')
+    parts.push('')
+  }
+
+  return parts.join('\n')
+}
+
 export function buildSystemPrompt(skills?: RegisteredSkill[], activeSkillNames?: string[]): string {
   const now = dayjs()
   const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`
@@ -34,13 +58,10 @@ export function buildSystemPrompt(skills?: RegisteredSkill[], activeSkillNames?:
 `
 
   if (skills && skills.length > 0) {
-    prompt += formatSkillsForSystemPrompt(skills)
-  }
-
-  if (activeSkillNames && activeSkillNames.length > 0) {
-    prompt += '\n\n**重要**：用户选择了以下技能，你必须首先调用 skill 工具获取每个技能的完整指令，然后严格按照指令执行，不要跳过这一步：\n'
-    for (const name of activeSkillNames) {
-      prompt += `- ${name}\n`
+    if (activeSkillNames && activeSkillNames.length > 0) {
+      prompt += formatActiveSkillsContent(skills, activeSkillNames)
+    } else {
+      prompt += formatSkillsForSystemPrompt(skills)
     }
   }
 
