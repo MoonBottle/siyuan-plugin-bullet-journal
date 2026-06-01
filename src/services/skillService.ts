@@ -1,5 +1,4 @@
 import type { RegisteredSkill } from '@/skills'
-import { showMessage } from 'siyuan'
 import { useSkillStore } from '@/stores/skillStore'
 
 export class SkillService {
@@ -31,7 +30,7 @@ export class SkillService {
   }
 
   async resolveSkill(skillName: string): Promise<{
-    source: 'builtin' | 'user'
+    source: 'user'
     skill: RegisteredSkill
   }> {
     const skillStore = useSkillStore()
@@ -59,8 +58,7 @@ export class SkillService {
     }
 
     const skillList = enabledSkills.map((skill) => {
-      const sourceTag = skill.source === 'builtin' ? '[内置]' : '[自定义]'
-      return `- ${skill.name} ${sourceTag}: ${skill.description}`
+      return `- ${skill.name}: ${skill.description}`
     }).join('\n')
 
     return `## 可用技能
@@ -89,7 +87,7 @@ ${skillList}
     }
   }
 
-  getSkillFromCache(name: string): { name: string, description: string, content: string, source: 'builtin' | 'user' } | undefined {
+  getSkillFromCache(name: string): { name: string, description: string, content: string, source: 'user' } | undefined {
     const skillStore = useSkillStore()
     const skill = skillStore.getSkillByName(name)
     if (!skill) return undefined
@@ -107,38 +105,6 @@ ${skillList}
   }
 
   clearSkillCache(): void {
-    // Registry-based, no separate cache to clear
-  }
-
-  async createOverrideSkill(builtinName: string): Promise<RegisteredSkill | null> {
-    const skillStore = useSkillStore()
-    const builtinSkill = skillStore.getSkillByName(builtinName)
-
-    if (!builtinSkill || builtinSkill.source !== 'builtin') {
-      showMessage(`内置技能 "${builtinName}" 不存在`, 3000, 'error')
-      return null
-    }
-
-    try {
-      await skillStore.addSkill({
-        name: builtinSkill.name,
-        description: builtinSkill.description,
-        content: builtinSkill.content,
-        version: builtinSkill.version,
-        author: 'User',
-        tags: builtinSkill.tags,
-        type: builtinSkill.type,
-        autoEnable: true,
-      })
-
-      showMessage(`已创建「${builtinName}」的自定义版本`, 3000, 'info')
-
-      return skillStore.getSkillByName(builtinName) || null
-    } catch (error) {
-      console.error('[SkillService] Failed to create override skill:', error)
-      showMessage('创建技能失败', 3000, 'error')
-      return null
-    }
   }
 }
 

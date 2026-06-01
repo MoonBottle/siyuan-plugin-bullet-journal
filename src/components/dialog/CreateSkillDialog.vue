@@ -99,11 +99,6 @@ const errors = reactive({
 
 const isCreating = ref(false)
 
-const isBuiltinName = computed(() => {
-  const skill = skillStore.getSkillByName(form.name.trim())
-  return skill?.source === 'builtin'
-})
-
 const isValid = computed(() => {
   return form.name.trim().length > 0
     && form.description.trim().length > 0
@@ -134,12 +129,7 @@ async function createSkill() {
   isCreating.value = true
 
   try {
-    const builtinSkill = skillStore.getSkillByName(skillName)
-    const isOverride = builtinSkill?.source === 'builtin'
-
-    const content = isOverride
-      ? builtinSkill.content
-      : `## 工作流程\n\n1. **查询数据** - 描述如何查询数据\n2. **输出结果** - 按格式输出\n`
+    const content = `## 工作流程\n\n1. **查询数据** - 描述如何查询数据\n2. **输出结果** - 按格式输出\n`
 
     await skillStore.addSkill({
       name: skillName,

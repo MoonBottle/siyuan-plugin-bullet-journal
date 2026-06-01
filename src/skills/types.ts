@@ -18,7 +18,7 @@ export interface RegisteredSkill {
   type: 'prompt' | 'tool' | 'workflow'
   content: string
   enabled: boolean
-  source: 'builtin' | 'user' | 'market'
+  source: 'user' | 'market'
   filePath: string
   toolDefinition?: AgentTool
   promptTemplate?: string

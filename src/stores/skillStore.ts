@@ -12,7 +12,6 @@ import {
 } from '@/api'
 import {
   SkillLoader,
-  SkillParser,
   SkillRegistry,
 } from '@/skills'
 
@@ -71,8 +70,6 @@ export const useSkillStore = defineStore('skill', () => {
 
       await loader.loadFromDirectory(SKILLS_DIR)
 
-      await loadBuiltinSkills(loader, plugin)
-
       await restoreSkillStates(plugin)
 
       registryVersion.value++
@@ -82,40 +79,6 @@ export const useSkillStore = defineStore('skill', () => {
     } finally {
       isLoading.value = false
     }
-  }
-
-  async function loadBuiltinSkills(loader: SkillLoader, plugin: any) {
-    const builtinSkillContent = await loadBuiltinSkillContent(plugin, 'daily-report')
-    if (builtinSkillContent) {
-      try {
-        const result = SkillParser.parse(builtinSkillContent)
-        const registered: RegisteredSkill = {
-          name: result.metadata.name,
-          description: result.metadata.description,
-          version: result.metadata.version,
-          author: result.metadata.author,
-          tags: result.metadata.tags,
-          type: result.metadata.type,
-          content: result.content,
-          enabled: true,
-          source: 'builtin',
-          filePath: 'builtin-skills/daily-report/SKILL.md',
-        }
-
-        if (!registry.resolveSkill(registered.name)) {
-          registry.register(registered)
-        }
-      } catch (err) {
-        console.error('[SkillStore] Failed to parse builtin skill:', err)
-      }
-    }
-  }
-
-  async function loadBuiltinSkillContent(plugin: any, skillName: string): Promise<string | null> {
-    if (plugin?.__builtin_skills__?.[skillName]) {
-      return plugin.__builtin_skills__[skillName]
-    }
-    return null
   }
 
   async function restoreSkillStates(plugin: any) {

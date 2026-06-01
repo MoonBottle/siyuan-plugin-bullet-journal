@@ -1,5 +1,5 @@
 /**
- * 技能文档解析工具
+ * 技能解析工具
  * 解析思源文档为技能对象
  */
 
@@ -15,7 +15,7 @@ const REFERENCE_TAG_RE = /\[reference:\s*(\S[^\]]*)\]/i
 const SINGLE_QUOTE_RE = /'/g
 
 /**
- * 解析技能文档内容
+ * 解析技能内容
  * @param content 文档完整内容
  * @returns 解析后的技能对象
  */
@@ -24,12 +24,12 @@ export function parseSkillDocument(content: string): ParsedSkill {
 
   // 检查 frontmatter
   if (lines[0]?.trim() !== '---') {
-    throw new SkillParseError('技能文档格式错误：缺少 YAML frontmatter', 'MISSING_FRONTMATTER')
+    throw new SkillParseError('技能格式错误：缺少 YAML frontmatter', 'MISSING_FRONTMATTER')
   }
 
   const frontmatterEndIndex = lines.findIndex((line, idx) => idx > 0 && line.trim() === '---')
   if (frontmatterEndIndex === -1) {
-    throw new SkillParseError('技能文档格式错误：frontmatter 未正确关闭', 'UNCLOSED_FRONTMATTER')
+    throw new SkillParseError('技能格式错误：frontmatter 未正确关闭', 'UNCLOSED_FRONTMATTER')
   }
 
   // 解析 frontmatter
@@ -185,7 +185,7 @@ function validateMetadata(metadata: Partial<SkillMetadata>): void {
   }
 
   if (errors.length > 0) {
-    throw new SkillParseError(`技能文档验证失败：${errors.join('，')}`, 'VALIDATION_ERROR')
+    throw new SkillParseError(`技能验证失败：${errors.join('，')}`, 'VALIDATION_ERROR')
   }
 }
 
@@ -203,7 +203,7 @@ export class SkillParseError extends Error {
 }
 
 /**
- * 验证技能文档格式
+ * 验证技能格式
  * @returns 验证结果
  */
 export function validateSkillDocument(content: string): { valid: boolean, errors: string[] } {

@@ -190,14 +190,14 @@ async function loadSkillContent() {
 
   const skill = skillStore.getSkillByName(props.skillName)
   if (!skill || !skill.filePath) {
-    showMessage(t('settings').aiSkills?.skillNotFound ?? '技能文档不存在', 3000, 'error')
+    showMessage(t('settings').aiSkills?.skillNotFound ?? '技能不存在', 3000, 'error')
     return
   }
 
   try {
     const raw = await getFile(skill.filePath)
     if (!raw) {
-      showMessage(t('settings').aiSkills?.skillNotFound ?? '技能文档不存在', 3000, 'error')
+      showMessage(t('settings').aiSkills?.skillNotFound ?? '技能不存在', 3000, 'error')
       return
     }
 
@@ -210,7 +210,7 @@ async function loadSkillContent() {
     isLoaded.value = true
   } catch (err) {
     console.error('[SkillEditDialog] Failed to load skill:', err)
-    showMessage(t('settings').aiSkills?.skillNotFound ?? '技能文档不存在', 3000, 'error')
+    showMessage(t('settings').aiSkills?.skillNotFound ?? '技能不存在', 3000, 'error')
   }
 }
 

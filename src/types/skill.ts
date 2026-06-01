@@ -4,7 +4,7 @@
  */
 
 /**
- * 技能文档元数据（Frontmatter）
+ * 技能元数据（Frontmatter）
  * 存储在文档的 YAML frontmatter 中
  */
 export interface SkillMetadata {
@@ -90,9 +90,8 @@ export interface SkillReference {
  * 技能解析结果（含来源信息）
  */
 export interface SkillResolutionResult {
-  source: 'user' | 'builtin'
+  source: 'user'
   skill: ParsedSkill
-  isOverride: boolean // 是否覆盖了内置技能
 }
 
 /**

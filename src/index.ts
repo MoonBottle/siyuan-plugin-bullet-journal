@@ -440,20 +440,11 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async initSkillStorage() {
     try {
-      // 注入内置技能内容到 plugin 实例
-      const dailyReportContent = await import('@/builtin-skills/daily-report/SKILL.md?raw')
-      ;(this as any).__builtin_skills__ = {
-        'daily-report': dailyReportContent.default || dailyReportContent,
-      }
-
-      // 初始化技能服务（必须先初始化，因为其他模块依赖它）
       useSkillService(this)
 
-      // 初始化技能存储
       const skillStore = useSkillStore()
       await skillStore.loadFromPlugin(this)
 
-      // 监听技能存储变化事件
       const handleSkillStoreChanged = async (event: Event) => {
         const data = (event as CustomEvent).detail
         if (data) {
@@ -464,8 +455,6 @@ export default class TaskAssistantPlugin extends Plugin {
         "skill-store-changed",
         handleSkillStoreChanged,
       )
-
-      console.log("[Task Assistant] Skill storage initialized")
     } catch (error) {
       console.error(
         "[Task Assistant] Failed to initialize skill storage:",

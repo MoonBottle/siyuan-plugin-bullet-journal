@@ -1551,7 +1551,7 @@ async function setRecurringForBlock(
 
 /**
  * 从斜杠命令创建技能
- * 将当前文档转换为技能文档
+ * 将当前文档转换为技能
  */
 async function createSkillFromSlash(_nodeElement: HTMLElement) {
   // 创建容器元素
