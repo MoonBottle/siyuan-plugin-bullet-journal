@@ -787,6 +787,11 @@ export const useAIStore = defineStore('ai', () => {
               const finalMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
                 PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
               )
+
+              if (finalMsgs.length > 0 && finalMsgs[0].role === 'user' && skillNames && skillNames.length > 0) {
+                finalMsgs[0].skillNames = skillNames
+              }
+
               currentConversation.value = {
                 ...currentConversation.value,
                 messages: [...historyMessages, ...finalMsgs],
@@ -797,7 +802,13 @@ export const useAIStore = defineStore('ai', () => {
         }
       })
 
-      await piAgent.prompt(content)
+      const promptContent = content.trim() || (skillNames && skillNames.length > 0
+        ? `请使用技能：${skillNames.join('、')}`
+        : '')
+
+      if (!promptContent) return
+
+      await piAgent.prompt(promptContent)
 
       await forceSaveConversation()
       await refreshConversationsList()
