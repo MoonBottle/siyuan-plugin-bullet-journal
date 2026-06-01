@@ -94,7 +94,10 @@
 import { showMessage } from 'siyuan'
 import { Editor, Viewer } from '@bytemd/vue-next'
 import gfm from '@bytemd/plugin-gfm'
+import highlight from '@bytemd/plugin-highlight'
 import 'bytemd/dist/index.css'
+import 'github-markdown-css/github-markdown-light.css'
+import 'highlight.js/styles/github.css'
 import zhHans from 'bytemd/locales/zh_Hans.json'
 import {
   computed,
@@ -140,7 +143,7 @@ const isLoaded = ref(false)
 const content = ref('')
 const editorContainerRef = ref<HTMLElement>()
 
-const plugins = [gfm()]
+const plugins = [gfm(), highlight()]
 
 const editorMode = computed(() => {
   return props.mode === 'view' ? 'preview' : 'split'
@@ -476,6 +479,117 @@ onMounted(() => {
 
 .skill-edit-dialog .bytemd-preview .markdown-body {
   color: var(--b3-theme-on-background) !important;
+  padding: 24px !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body h1,
+.skill-edit-dialog .bytemd-preview .markdown-body h2 {
+  border-bottom: none !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body pre {
+  background-color: var(--b3-theme-surface-light) !important;
+  border-radius: 6px;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body code {
+  background-color: var(--b3-theme-surface-light) !important;
+  border-radius: 3px;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body pre code {
+  background-color: transparent !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body blockquote {
+  color: var(--b3-theme-on-background) !important;
+  border-left-color: var(--b3-theme-primary) !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body table tr {
+  background-color: var(--b3-theme-surface) !important;
+  border-top: 1px solid var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body table tr:nth-child(2n) {
+  background-color: var(--b3-theme-surface-light) !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body table th,
+.skill-edit-dialog .bytemd-preview .markdown-body table td {
+  border: 1px solid var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body hr {
+  border-bottom-color: var(--b3-theme-surface-lighter) !important;
+  background-color: var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-preview .markdown-body a {
+  color: var(--b3-theme-primary) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .bytemd {
+  border: none !important;
+  color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .bytemd-preview {
+  border: none !important;
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body {
+  color: var(--b3-theme-on-background) !important;
+  padding: 24px !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body h1,
+.skill-edit-dialog .bytemd-viewer .markdown-body h2 {
+  border-bottom: none !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body pre {
+  background-color: var(--b3-theme-surface-light) !important;
+  border-radius: 6px;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body code {
+  background-color: var(--b3-theme-surface-light) !important;
+  border-radius: 3px;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body pre code {
+  background-color: transparent !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body blockquote {
+  color: var(--b3-theme-on-background) !important;
+  border-left-color: var(--b3-theme-primary) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body table tr {
+  background-color: var(--b3-theme-surface) !important;
+  border-top: 1px solid var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body table tr:nth-child(2n) {
+  background-color: var(--b3-theme-surface-light) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body table th,
+.skill-edit-dialog .bytemd-viewer .markdown-body table td {
+  border: 1px solid var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body hr {
+  border-bottom-color: var(--b3-theme-surface-lighter) !important;
+  background-color: var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-viewer .markdown-body a {
+  color: var(--b3-theme-primary) !important;
 }
 
 .skill-edit-dialog .bytemd-split .bytemd-preview {
