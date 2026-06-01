@@ -310,7 +310,7 @@ onMounted(() => {
 
 .form-label {
   font-size: 13px;
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background);
   font-weight: 500;
 }
 
@@ -321,7 +321,7 @@ onMounted(() => {
 
 .bytemd-loading {
   padding: 16px;
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background);
   font-size: 13px;
   text-align: center;
 }
@@ -371,7 +371,7 @@ onMounted(() => {
 .cancel-btn {
   padding: 8px 16px;
   background: transparent;
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   font-size: 13px;
@@ -388,88 +388,114 @@ onMounted(() => {
 .skill-edit-dialog .bytemd {
   border: none !important;
   height: 400px;
-  color: var(--b3-theme-on-surface);
-  background-color: var(--b3-theme-surface);
+  color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar {
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
-  background-color: var(--b3-theme-surface);
+  border-bottom: 1px solid var(--b3-theme-surface-lighter) !important;
+  background-color: var(--b3-theme-surface) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-icon {
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background) !important;
+}
+
+.skill-edit-dialog .bytemd-toolbar-icon svg {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+.skill-edit-dialog .bytemd-toolbar-icon svg path[fill="currentColor"] {
+  fill: currentColor !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-icon:hover {
-  background-color: var(--b3-theme-surface-lighter);
+  background-color: var(--b3-theme-surface-lighter) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-icon-active {
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-primary) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-tab {
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-tab-active {
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-primary) !important;
 }
 
 .skill-edit-dialog .bytemd-toolbar-right .bytemd-toolbar-icon:last-child {
-  display: none;
+  display: none !important;
 }
 
 .skill-edit-dialog .bytemd-editor {
   font-size: 14px;
-  color: var(--b3-theme-on-surface);
-  background-color: var(--b3-theme-surface);
+  color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
 }
 
 .skill-edit-dialog .bytemd-status {
-  border-top: 1px solid var(--b3-theme-surface-lighter);
-  color: var(--b3-theme-on-surface);
+  border-top: 1px solid var(--b3-theme-surface-lighter) !important;
+  color: var(--b3-theme-on-background) !important;
 }
 
 .skill-edit-dialog .CodeMirror {
   font-family: var(--b3-font-code, 'JetBrains Mono', monospace);
-  color: var(--b3-theme-on-surface);
-  background-color: var(--b3-theme-surface);
+  color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
 }
 
 .skill-edit-dialog .CodeMirror-gutters {
-  background-color: var(--b3-theme-surface);
-  border-right: 1px solid var(--b3-theme-surface-lighter);
+  background-color: var(--b3-theme-surface) !important;
+  border-right: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
 .skill-edit-dialog .CodeMirror-linenumber {
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background) !important;
   opacity: 0.5;
 }
 
 .skill-edit-dialog .CodeMirror-cursor {
-  border-left-color: var(--b3-theme-primary);
+  border-left-color: var(--b3-theme-primary) !important;
 }
 
 .skill-edit-dialog .CodeMirror-selected {
-  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.1);
+  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.1) !important;
 }
 
 .skill-edit-dialog .CodeMirror-focused .CodeMirror-selected {
-  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.15);
+  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.15) !important;
 }
 
 .skill-edit-dialog .bytemd-preview {
-  border-left: 1px solid var(--b3-theme-surface-lighter);
-  background-color: var(--b3-theme-surface);
+  border-left: 1px solid var(--b3-theme-surface-lighter) !important;
+  background-color: var(--b3-theme-surface) !important;
 }
 
 .skill-edit-dialog .bytemd-preview .markdown-body {
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background) !important;
 }
 
 .skill-edit-dialog .bytemd-split .bytemd-preview {
-  border-left: 1px solid var(--b3-theme-surface-lighter);
+  border-left: 1px solid var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-dropdown {
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.skill-edit-dialog .bytemd-dropdown-title {
+  border-bottom: 1px solid var(--b3-theme-surface-lighter) !important;
+  color: var(--b3-theme-on-background) !important;
+}
+
+.skill-edit-dialog .bytemd-dropdown-item:hover {
+  background-color: var(--b3-theme-surface-lighter) !important;
+}
+
+.skill-edit-dialog .bytemd-dropdown-item-title {
+  color: var(--b3-theme-on-background) !important;
 }
 </style>
