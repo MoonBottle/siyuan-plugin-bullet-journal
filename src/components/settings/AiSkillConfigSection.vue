@@ -89,8 +89,8 @@
 import type { RegisteredSkill } from '@/skills'
 import { showMessage } from 'siyuan'
 import {
-  createApp,
   computed,
+  createApp,
 } from 'vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'

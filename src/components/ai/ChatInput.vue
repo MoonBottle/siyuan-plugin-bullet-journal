@@ -92,10 +92,10 @@ const skillQuery = computed(() => {
 const filteredSkills = computed(() => {
   const query = skillQuery.value.toLowerCase()
   const allSkills = props.skills ?? []
-  const selectedNames = new Set(selectedSkills.value.map(s => s.name))
+  const selectedNames = new Set(selectedSkills.value.map((s) => s.name))
   return allSkills
-    .filter(s => s.enabled && !selectedNames.has(s.name))
-    .filter(s => !query || s.name.toLowerCase().includes(query) || s.description.toLowerCase().includes(query))
+    .filter((s) => s.enabled && !selectedNames.has(s.name))
+    .filter((s) => !query || s.name.toLowerCase().includes(query) || s.description.toLowerCase().includes(query))
 })
 
 watch(() => filteredSkills.value.length, () => {
@@ -138,7 +138,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
-    emit('send', props.modelValue?.trim() || '', selectedSkills.value.map(s => s.name))
+    emit('send', props.modelValue?.trim() || '', selectedSkills.value.map((s) => s.name))
     selectedSkills.value = []
   }
 
@@ -185,7 +185,7 @@ function handleInput(event: Event) {
 }
 
 function selectSkill(skill: RegisteredSkill) {
-  if (selectedSkills.value.some(s => s.name === skill.name)) return
+  if (selectedSkills.value.some((s) => s.name === skill.name)) return
 
   selectedSkills.value = [...selectedSkills.value, skill]
 
@@ -205,7 +205,7 @@ function selectSkill(skill: RegisteredSkill) {
 }
 
 function removeSkill(name: string) {
-  selectedSkills.value = selectedSkills.value.filter(s => s.name !== name)
+  selectedSkills.value = selectedSkills.value.filter((s) => s.name !== name)
 }
 
 function closeSkillMenu() {
@@ -225,7 +225,7 @@ function focus() {
 }
 
 function getSelectedSkillNames(): string[] {
-  return selectedSkills.value.map(s => s.name)
+  return selectedSkills.value.map((s) => s.name)
 }
 
 function clearSelectedSkills() {

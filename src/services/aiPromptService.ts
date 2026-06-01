@@ -26,7 +26,7 @@ function formatSkillsForSystemPrompt(skills: RegisteredSkill[]): string {
 
 function formatActiveSkillsContent(skills: RegisteredSkill[], activeSkillNames: string[]): string {
   const activeSkills = skills.filter(
-    s => s.enabled && activeSkillNames.includes(s.name),
+    (s) => s.enabled && activeSkillNames.includes(s.name),
   )
   if (activeSkills.length === 0) return ''
 

@@ -213,8 +213,12 @@ import {
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
 import { t } from '@/i18n'
-import { useAIStore } from '@/stores'
-import { useSkillStore } from '@/stores'
+import {
+  useAIStore,
+  useSkillStore,
+
+} from '@/stores'
+
 import { smartFormatMarkdown } from '@/utils/markdownRenderer'
 import ChatInput from './ChatInput.vue'
 import ChatMessage from './ChatMessage.vue'

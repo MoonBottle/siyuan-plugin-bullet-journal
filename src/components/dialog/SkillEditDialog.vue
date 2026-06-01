@@ -91,14 +91,14 @@
 </template>
 
 <script setup lang="ts">
-import { showMessage } from 'siyuan'
-import { Editor, Viewer } from '@bytemd/vue-next'
 import gfm from '@bytemd/plugin-gfm'
 import highlight from '@bytemd/plugin-highlight'
-import 'bytemd/dist/index.css'
-import 'github-markdown-css/github-markdown-light.css'
-import 'highlight.js/styles/github.css'
+import {
+  Editor,
+  Viewer,
+} from '@bytemd/vue-next'
 import zhHans from 'bytemd/locales/zh_Hans.json'
+import { showMessage } from 'siyuan'
 import {
   computed,
   nextTick,
@@ -115,6 +115,9 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue'
 import { t } from '@/i18n'
 import { SkillParser } from '@/skills'
 import { useSkillStore } from '@/stores/skillStore'
+import 'bytemd/dist/index.css'
+import 'github-markdown-css/github-markdown-light.css'
+import 'highlight.js/styles/github.css'
 
 const props = defineProps<{
   skillName: string
@@ -409,7 +412,7 @@ onMounted(() => {
   fill: none !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon svg path[fill="currentColor"] {
+.skill-edit-dialog .bytemd-toolbar-icon svg path[fill='currentColor'] {
   fill: currentColor !important;
 }
 
