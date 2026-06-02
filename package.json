@@ -16,7 +16,7 @@
     "release:patch": "node ./release.js --mode=patch",
     "release:minor": "node ./release.js --mode=minor",
     "release:major": "node ./release.js --mode=major",
-    "build": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vite build --config vite.mcp.config.ts && vite build --config vite.kernel.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
+    "build": "npm run typecheck && npm run lint && npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vite build --config vite.mcp.config.ts && vite build --config vite.kernel.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
     "mcp": "node dist/mcp-server.js",
     "build:kernel": "vite build --config vite.kernel.config.ts",
     "test": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vitest run",

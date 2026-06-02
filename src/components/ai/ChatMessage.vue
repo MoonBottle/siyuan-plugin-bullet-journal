@@ -217,6 +217,9 @@ const emit = defineEmits<{
   insertToNote: [message: ChatMessage]
 }>()
 
+// 用于去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
+const MARKDOWN_CODE_BLOCK_RE = /^```(?:markdown)?\n([\s\S]*?)\n```$/
+
 // 判断消息是否有实际内容需要显示
 const hasContent = computed(() => {
   const m = props.message
@@ -280,10 +283,24 @@ function getToolName(): string {
   return ai.tool ?? '工具'
 }
 
+/**
+ * 去除外层 Markdown 代码块包裹
+ * AI 有时会误将整段 Markdown 内容包裹在 ```markdown ... ``` 中，导致前端渲染为代码块而非富文本
+ */
+function unwrapMarkdownCodeBlock(content: string): string {
+  if (!content) return content
+  const trimmed = content.trim()
+  const match = trimmed.match(MARKDOWN_CODE_BLOCK_RE)
+  return match ? match[1].trim() : content
+}
+
 
 
 const renderedContent = computed(() => {
-  const content = props.message.content
+  let content = props.message.content
+
+  // 去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
+  content = unwrapMarkdownCodeBlock(content)
 
   // 检查是否为 JSON 格式
   let isJSON = false

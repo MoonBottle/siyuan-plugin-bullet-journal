@@ -55,6 +55,8 @@ export function buildSystemPrompt(skills?: RegisteredSkill[], activeSkillNames?:
   let prompt = `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。
 
 **时间基准**：当前时间是 ${currentTimeStr}，所有涉及"今天""昨天""当前""最近"的日期计算，以此时间为准，历史对话中提到的时间均为当时的表述，不代表当前时间。
+
+**输出格式**：直接输出 Markdown 内容，不要将整体内容包裹在代码块（如 \`\`\`markdown ... \`\`\`）中。代码块仅用于展示代码片段。
 `
 
   if (skills && skills.length > 0) {
