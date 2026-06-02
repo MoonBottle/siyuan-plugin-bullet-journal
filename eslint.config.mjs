@@ -20,6 +20,7 @@ export default antfu(
       'docs',
       'logs',
       '**/*.md',
+      '**/*.yaml',
     ],
   },
   {
