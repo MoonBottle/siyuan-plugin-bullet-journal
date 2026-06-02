@@ -227,25 +227,26 @@ function deleteChannel(id: string) {
 }
 
 .webhook-empty {
-  padding: 20px;
+  padding: 12px;
   text-align: center;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.5;
+  color: var(--b3-theme-on-surface-light);
   font-size: 13px;
+  background: var(--b3-theme-surface);
+  border-radius: 6px;
+  margin-bottom: 16px;
 }
 
 .custom-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .custom-item {
   padding: 12px;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: 4px;
-  background: var(--b3-theme-background);
+  border-radius: 6px;
+  background: var(--b3-theme-surface);
 }
 
 .custom-item-header {
@@ -256,27 +257,26 @@ function deleteChannel(id: string) {
 
 .custom-item-info {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .channel-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--b3-theme-on-background);
 }
 
 .channel-type {
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: var(--b3-theme-surface-lighter);
-  color: var(--b3-theme-on-surface);
+  font-size: 11px;
+  color: var(--b3-theme-on-surface-light);
 }
 
 .custom-item-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .b3-dialog {
