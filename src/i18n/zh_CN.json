@@ -428,6 +428,7 @@
       "description": "管理 AI 技能，让 AI 能够执行特定任务",
       "emptySkills": "暂无技能，从技能市场浏览模板，或自定义创建",
       "addSkill": "添加技能",
+      "addSkillDescription": "自定义创建新技能",
       "editSkill": "编辑技能",
       "deleteSkill": "删除技能",
       "confirmDeleteSkill": "确定要删除技能「{name}」吗？",

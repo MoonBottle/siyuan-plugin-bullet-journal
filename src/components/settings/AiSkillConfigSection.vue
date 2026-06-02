@@ -60,7 +60,7 @@
       <SySettingsActionButton
         icon="iconAdd"
         :text="t('settings').aiSkills?.addSkill ?? '添加技能'"
-        :title="t('settings').aiSkills?.marketDescription ?? '浏览模板，快速创建技能'"
+        :title="t('settings').aiSkills?.addSkillDescription ?? '自定义创建新技能'"
         @click="showAddSkillDialog"
       />
       <SySettingsActionButton
