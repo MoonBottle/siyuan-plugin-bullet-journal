@@ -297,7 +297,7 @@ function openCreateFromTemplate(skill: MarketSkill) {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--b3-theme-primary-light, var(--b3-theme-surface-lighter));
+    background: var(--b3-theme-primary-lightest);
     color: var(--b3-theme-primary);
   }
 }
