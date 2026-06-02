@@ -122,6 +122,8 @@ import 'highlight.js/styles/github.css'
 const props = defineProps<{
   skillName: string
   mode: 'create' | 'edit' | 'view'
+  initialDescription?: string
+  initialContent?: string
 }>()
 const emit = defineEmits<{
   (e: 'close'): void
@@ -189,7 +191,9 @@ function refreshCodeMirror() {
 
 async function loadSkillContent() {
   if (props.mode === 'create') {
-    content.value = '## 工作流程\n\n1. **步骤1** - 描述\n2. **步骤2** - 描述\n'
+    form.name = props.skillName
+    form.description = props.initialDescription ?? ''
+    content.value = props.initialContent ?? '## 工作流程\n\n1. **步骤1** - 描述\n2. **步骤2** - 描述\n'
     isLoaded.value = true
     return
   }
@@ -225,6 +229,11 @@ async function saveSkill() {
 
   const skillName = form.name.trim()
   const description = form.description.trim()
+
+  if (props.mode === 'create' && skillStore.isSkillNameExists(skillName)) {
+    showMessage(`技能「${skillName}」已存在，请使用其他名称`, 3000, 'error')
+    return
+  }
 
   isSaving.value = true
 

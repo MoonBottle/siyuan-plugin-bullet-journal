@@ -49,79 +49,22 @@
         </div>
       </div>
     </div>
-
-    <div
-      v-if="creatingFrom"
-      class="b3-dialog"
-    >
-      <div
-        class="b3-dialog__scrim"
-        @click="creatingFrom = null"
-      ></div>
-      <div class="b3-dialog__container create-from-template-dialog">
-        <div class="b3-dialog__header">
-          <div class="b3-dialog__title">
-            {{ t('settings').aiSkills?.createFromTemplate ?? '从模板创建技能' }}
-          </div>
-          <svg
-            class="b3-dialog__close"
-            @click="creatingFrom = null"
-          ><use xlink:href="#iconCloseRound"></use></svg>
-        </div>
-        <div class="b3-dialog__content">
-          <div class="create-form">
-            <div class="create-form-item">
-              <label class="create-form-label">{{ t('settings').aiSkills?.templateName ?? '技能名称' }}</label>
-              <SyInput
-                v-model="createForm.name"
-                :placeholder="t('settings').aiSkills?.templateNamePlaceholder ?? '输入技能名称'"
-                @blur="validateName"
-              />
-              <span
-                v-if="createErrors.name"
-                class="create-form-error"
-              >{{ createErrors.name }}</span>
-            </div>
-            <div class="create-form-item">
-              <label class="create-form-label">{{ t('settings').aiSkills?.templateDesc ?? '技能描述' }}</label>
-              <SyInput
-                v-model="createForm.description"
-                :placeholder="t('settings').aiSkills?.templateDescPlaceholder ?? '输入技能描述'"
-              />
-            </div>
-          </div>
-        </div>
-        <div class="b3-dialog__action">
-          <button
-            class="b3-button b3-button--cancel"
-            @click="creatingFrom = null"
-          >
-            {{ t('common').cancel }}
-          </button>
-          <button
-            class="b3-button b3-button--text"
-            :disabled="!isCreateValid || isCreating"
-            @click="handleCreateFromTemplate"
-          >
-            {{ isCreating ? (t('common').saving ?? '创建中...') : (t('settings').aiSkills?.createBtn ?? '创建') }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { MarketSkill } from '@/services/marketService'
-import { showMessage } from 'siyuan'
 import {
+  createApp,
   computed,
-  reactive,
   ref,
 } from 'vue'
 import SyInput from '@/components/SiyuanTheme/SyInput.vue'
+import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
+import { createDialog } from '@/utils/dialog'
 import { t } from '@/i18n'
 import { MarketService } from '@/services/marketService'
+import { getSharedPinia } from '@/utils/sharedPinia'
 import { useSkillStore } from '@/stores/skillStore'
 
 const emit = defineEmits<{
@@ -133,8 +76,6 @@ const skillStore = useSkillStore()
 const marketService = MarketService.getInstance()
 
 const searchQuery = ref('')
-const creatingFrom = ref<MarketSkill | null>(null)
-const isCreating = ref(false)
 
 const catalog = computed(() => marketService.getCatalog())
 
@@ -148,61 +89,40 @@ const filteredCatalog = computed(() => {
   })
 })
 
-const createForm = reactive({
-  name: '',
-  description: '',
-})
-
-const createErrors = reactive({
-  name: '',
-})
-
-const isCreateValid = computed(() => {
-  return createForm.name.trim().length > 0
-    && createForm.description.trim().length > 0
-    && !createErrors.name
-})
-
-function validateName() {
-  const name = createForm.name.trim()
-  createErrors.name = ''
-  if (!name) {
-    createErrors.name = t('slash').skillNameRequired
-    return
-  }
-  const existing = skillStore.getSkillByName(name)
-  if (existing) {
-    createErrors.name = t('slash').skillNameExists
-  }
-}
-
 function openCreateFromTemplate(skill: MarketSkill) {
-  createForm.name = skill.name
-  createForm.description = skill.description
-  createErrors.name = ''
-  creatingFrom.value = skill
-}
+  const container = document.createElement('div')
 
-async function handleCreateFromTemplate() {
-  if (!creatingFrom.value || !isCreateValid.value) return
+  let app: ReturnType<typeof createApp>
 
-  isCreating.value = true
-  try {
-    await skillStore.addSkill({
-      name: createForm.name.trim(),
-      description: createForm.description.trim(),
-      content: creatingFrom.value.content,
-      autoEnable: true,
-    })
-    showMessage(`技能「${createForm.name.trim()}」已创建`, 2000, 'info')
-    creatingFrom.value = null
-    emit('created')
-  }
-  catch (err) {
-    showMessage(`创建失败: ${(err as Error).message}`, 3000, 'error')
-  }
-  finally {
-    isCreating.value = false
+  const dialog = createDialog({
+    title: t('settings').aiSkills?.createFromTemplate ?? '从模板创建技能',
+    content: '',
+    width: '800px',
+    destroyCallback: () => {
+      app.unmount()
+    },
+  })
+
+  app = createApp(SkillEditDialog, {
+    skillName: skill.name,
+    mode: 'create',
+    initialDescription: skill.description,
+    initialContent: skill.content,
+    onClose: () => {
+      dialog.destroy()
+    },
+    onSaved: () => {
+      dialog.destroy()
+      emit('created')
+    },
+  })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
+  if (bodyEl) {
+    bodyEl.appendChild(container)
   }
 }
 </script>
@@ -311,32 +231,5 @@ async function handleCreateFromTemplate() {
   width: 14px;
   height: 14px;
   fill: currentColor;
-}
-
-.create-from-template-dialog {
-  width: 420px;
-}
-
-.create-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.create-form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.create-form-label {
-  font-size: 13px;
-  color: var(--b3-theme-on-background);
-  font-weight: 500;
-}
-
-.create-form-error {
-  font-size: 12px;
-  color: var(--b3-theme-error);
 }
 </style>
