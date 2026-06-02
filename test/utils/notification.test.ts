@@ -53,7 +53,7 @@ vi.mock('@/stores/aiStore', () => ({
 
 function installBrowserNotification() {
   const BrowserNotification = Object.assign(
-    vi.fn().mockImplementation(class {
+    vi.fn<any>().mockImplementation(class {
       close = vi.fn()
     }),
     {

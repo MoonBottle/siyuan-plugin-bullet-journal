@@ -1,4 +1,4 @@
-import type { KernelDataHabit } from '@/kernel/types'
+import type { KernelData } from '@/kernel/types'
 import {
   describe,
   expect,
@@ -9,7 +9,7 @@ import {
   isTodayCompleted,
 } from '@/kernel/habitSchedule'
 
-function makeHabit(overrides: Partial<KernelDataHabit> = {}): KernelDataHabit {
+function makeHabit(overrides: Partial<KernelData['habits'][0]> = {}): KernelData['habits'][0] {
   return {
     id: 'h1',
     name: '喝水',

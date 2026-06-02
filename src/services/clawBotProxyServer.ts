@@ -125,7 +125,7 @@ export async function createClawBotProxyServer(options: CreateProxyOptions = {})
         const upstream = await upstreamFetch(targetUrl, {
           method: req.method,
           headers: filterHeaders(req.headers),
-          body,
+          body: body as BodyInit | undefined,
         })
 
         res.writeHead(upstream.status, {

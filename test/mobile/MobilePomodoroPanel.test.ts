@@ -176,10 +176,10 @@ describe('mobilePomodoroPanel', () => {
     const mounted = mountPanel({ blockId: 'item-123' })
     await nextTick()
 
-    const completionHandler = eventBusOn.mock.calls[0]?.[1]
+    const completionHandler = (eventBusOn.mock.calls as any[][])[0]?.[1]
     expect(typeof completionHandler).toBe('function')
 
-    completionHandler?.({
+    completionHandler({
       durationMinutes: 0,
       itemContent: '测试事项',
     })

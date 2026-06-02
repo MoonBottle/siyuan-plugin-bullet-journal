@@ -186,7 +186,7 @@
             {{ t('settings').pomodoro.title }}
           </div>
           <div class="header-desc">
-            {{ (t('settings').pomodoro as any).sectionDescription ?? t('settings').pomodoro.sectionDesc }}
+            {{ t('settings').pomodoro.sectionDescription ?? t('settings').pomodoro.sectionDesc }}
           </div>
         </div>
       </div>

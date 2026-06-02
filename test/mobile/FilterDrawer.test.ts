@@ -32,7 +32,7 @@ function mountFilterDrawer(props: Record<string, unknown>) {
       name: 'Work',
       order: 1,
     },
-  ] as typeof settingsStore.groups
+  ] as any
 
   const app = createApp(FilterDrawer, props)
   app.use(pinia)

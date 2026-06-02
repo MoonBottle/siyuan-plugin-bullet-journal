@@ -72,16 +72,16 @@ vi.mock('@/workbench/viewRegistry', () => ({
   getViewDefinition: mockGetViewDefinition,
 }))
 
-interface MockPlugin {
-  loadData: ReturnType<typeof vi.fn>
-  saveData: ReturnType<typeof vi.fn>
+interface WorkbenchPlugin {
+  loadData: (path: string) => Promise<unknown>
+  saveData: (path: string) => Promise<void>
 }
 
-function createPlugin(): MockPlugin {
+function createPlugin(): WorkbenchPlugin {
   return {
     loadData: vi.fn(),
     saveData: vi.fn(),
-  }
+  } as WorkbenchPlugin
 }
 
 function createEntry(overrides: Partial<WorkbenchEntry> = {}): WorkbenchEntry {

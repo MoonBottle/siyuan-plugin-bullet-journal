@@ -496,24 +496,6 @@ export class ConversationStorageService {
   }
 
   /**
-   * 更新索引中的会话统计
-   */
-  private async updateConversationStats(
-    conversationId: string,
-    data: ConversationData,
-  ): Promise<void> {
-    const index = await this.loadIndex()
-    const item = index.conversations.find((c) => c.id === conversationId)
-
-    if (item) {
-      item.messageCount = data.messages?.length || 0
-      item.hasSkillExecutions = (data.skillExecutions?.length || 0) > 0
-      item.fileSize = JSON.stringify(data).length
-      await this.saveIndex(index)
-    }
-  }
-
-  /**
    * 更新索引项
    */
   private async updateIndexItem(conversation: ConversationData): Promise<void> {

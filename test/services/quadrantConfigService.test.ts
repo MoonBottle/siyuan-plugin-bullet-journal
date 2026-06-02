@@ -86,7 +86,7 @@ describe('quadrantConfigService', () => {
       ],
     }
 
-    const result = await saveQuadrantConfig(custom)
+    const result = await saveQuadrantConfig(custom as any)
 
     expect(result.panels[0].title).toBe('Custom')
     expect(mockSaveData).toHaveBeenCalledWith(

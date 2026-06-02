@@ -62,6 +62,9 @@ interface PomodoroState {
   autoExtendRemainingSeconds: number
   autoExtendTotalSeconds: number
   autoExtendCountdownInterval: ReturnType<typeof setInterval> | null
+  _visibilityHandler: (() => void) | null
+  _dataRefreshHandler: (() => void) | null
+  _kernelNotificationUnsubscribe: (() => void) | null
 }
 
 function isMobilePomodoroNotificationsEnabled(plugin?: any): boolean {
@@ -146,6 +149,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
     autoExtendRemainingSeconds: 0,
     autoExtendTotalSeconds: 0,
     autoExtendCountdownInterval: null,
+    _visibilityHandler: null,
+    _dataRefreshHandler: null,
+    _kernelNotificationUnsubscribe: null,
   }),
 
   getters: {
@@ -468,10 +474,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
           // 页面重新可见，立即校准时间
           this.updateTimer()
         }
-      };
+      }
 
       // 保存引用以便后续移除
-      (this as any)._visibilityHandler = visibilityHandler
+      this._visibilityHandler = visibilityHandler
       document.addEventListener('visibilitychange', visibilityHandler)
     },
 
@@ -479,10 +485,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
      * 移除页面可见性变化监听
      */
     removeVisibilityListener() {
-      const handler = (this as any)._visibilityHandler
+      const handler = this._visibilityHandler
       if (handler) {
-        document.removeEventListener('visibilitychange', handler);
-        (this as any)._visibilityHandler = null
+        document.removeEventListener('visibilitychange', handler)
+        this._visibilityHandler = null
       }
     },
 
@@ -519,22 +525,21 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (focusingItem.status === 'completed') {
           this.completePomodoro(plugin)
         }
-      };
+      }
 
       // 保存引用以便后续移除
-      (this as any)._dataRefreshHandler = dataRefreshHandler
-      eventBus.on(Events.DATA_REFRESHED, dataRefreshHandler)
+      this._dataRefreshHandler = eventBus.on(Events.DATA_REFRESHED, dataRefreshHandler)
     },
 
     /**
      * 移除数据刷新监听
      */
     removeDataRefreshListener() {
-      const handler = (this as any)._dataRefreshHandler
+      const handler = this._dataRefreshHandler
       if (handler) {
         // eventBus.on 返回的是取消订阅函数
-        handler();
-        (this as any)._dataRefreshHandler = null
+        handler()
+        this._dataRefreshHandler = null
       }
     },
 
@@ -1198,7 +1203,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
     setupKernelNotificationListener(): void {
       console.log('[Pomodoro] setting up kernel notification listener')
-      eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
+      const unsubscribe = eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
         console.log(`[Pomodoro] KERNEL_NOTIFICATION received: type=${params.type} id=${params.id}`)
         if (params.type === 'pomodoro' && this.activePomodoro) {
           console.log('[Pomodoro] kernel pomodoro expired, calling completePomodoro')
@@ -1212,6 +1217,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
           this.playNotificationSound()
         }
       })
+      this._kernelNotificationUnsubscribe = unsubscribe
+    },
+
+    teardownKernelNotificationListener(): void {
+      const unsubscribe = this._kernelNotificationUnsubscribe
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+        this._kernelNotificationUnsubscribe = null
+      }
     },
   },
 })

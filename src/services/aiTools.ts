@@ -145,7 +145,7 @@ export const skillTool: AgentTool = {
     name: Type.String({ description: '技能名称，来自系统提示中 <available_skills> 列表的 <name>' }),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeSkill(args)
+    const result = await executeSkill(args as { name: string })
     return {
       content: [{
         type: 'text' as const,
@@ -165,7 +165,7 @@ export const updateItemStatusTool: AgentTool = {
     status: StringEnum(['completed', 'abandoned', 'pending'], { description: '目标状态：completed=已完成, abandoned=已放弃, pending=恢复待办' }),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeUpdateItemStatus(args, currentContext)
+    const result = await executeUpdateItemStatus(args as { itemId: string, status: 'completed' | 'abandoned' | 'pending' }, currentContext)
     return {
       content: [{
         type: 'text' as const,
@@ -188,7 +188,7 @@ export const createItemTool: AgentTool = {
     endTime: Type.Optional(Type.String({ description: '结束时间，格式 HH:mm:ss（可选）' })),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeCreateItem(args, currentContext)
+    const result = await executeCreateItem(args as { projectId: string, content: string, date: string, startTime?: string, endTime?: string }, currentContext)
     return {
       content: [{
         type: 'text' as const,
@@ -211,7 +211,7 @@ export const updateItemTool: AgentTool = {
     endTime: Type.Optional(Type.String({ description: '新的结束时间，格式 HH:mm:ss（可选，传空字符串清除时间）' })),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeUpdateItem(args, currentContext)
+    const result = await executeUpdateItem(args as { itemId: string, content?: string, date?: string, startTime?: string, endTime?: string }, currentContext)
     return {
       content: [{
         type: 'text' as const,
@@ -230,7 +230,7 @@ export const deleteItemTool: AgentTool = {
     itemId: Type.String({ description: '事项 ID，来自 filter_items 返回的 id' }),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeDeleteItem(args, currentContext)
+    const result = await executeDeleteItem(args as { itemId: string }, currentContext)
     return {
       content: [{
         type: 'text' as const,
@@ -251,7 +251,7 @@ export const createTaskTool: AgentTool = {
     level: Type.Optional(StringEnum(['L1', 'L2', 'L3'], { description: '任务层级，默认 L1' })),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeCreateTask(args, currentContext)
+    const result = await executeCreateTask(args as { projectId: string, name: string, level?: 'L1' | 'L2' | 'L3' }, currentContext)
     return {
       content: [{
         type: 'text' as const,
@@ -272,7 +272,7 @@ export const createProjectTool: AgentTool = {
     description: Type.Optional(Type.String({ description: '项目描述（可选）' })),
   }),
   execute: async (_toolCallId, args) => {
-    const result = await executeCreateProject(args, currentContext)
+    const result = await executeCreateProject(args as { directoryId?: string, name: string, description?: string }, currentContext)
     return {
       content: [{
         type: 'text' as const,

@@ -86,7 +86,7 @@ export function createNativeBlockPreviewController() {
   let restoreSuppressedDescendantTooltips: (() => void) | null = null
   let cleanupHoverListeners: (() => void) | null = null
   let restorePinnedState: (() => void) | null = null
-  let findPanelTimer: ReturnType<typeof window.setTimeout> | null = null
+  let findPanelTimer: number | null = null
   let currentBlockId = ''
   let currentAnchorEl: HTMLElement | null = null
   let controllerClosing = false

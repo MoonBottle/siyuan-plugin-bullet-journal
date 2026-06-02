@@ -2,11 +2,11 @@ import type { App as VueApp } from 'vue'
 
 const HOST_APP_KEY = '__bjVueApp__'
 
-type HostWithVueApp = HTMLElement & {
+type HostWithVueApp = Element & {
   [HOST_APP_KEY]?: VueApp
 }
 
-export function unmountVueAppFromHost(host: HTMLElement): void {
+export function unmountVueAppFromHost(host: Element): void {
   const typedHost = host as HostWithVueApp
   const app = typedHost[HOST_APP_KEY]
 
@@ -18,8 +18,8 @@ export function unmountVueAppFromHost(host: HTMLElement): void {
   host.innerHTML = ''
 }
 
-export function mountVueAppInHost(host: HTMLElement, app: VueApp): void {
+export function mountVueAppInHost(host: Element, app: VueApp): void {
   unmountVueAppFromHost(host)
-  app.mount(host);
-  (host as HostWithVueApp)[HOST_APP_KEY] = app
+  app.mount(host)
+  ;(host as HostWithVueApp)[HOST_APP_KEY] = app
 }

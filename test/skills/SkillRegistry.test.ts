@@ -17,7 +17,7 @@ function createSkill(overrides: Partial<RegisteredSkill> = {}): RegisteredSkill 
     type: 'prompt',
     content: 'Test content',
     enabled: true,
-    source: 'builtin',
+    source: 'user' as const,
     filePath: '/skills/test-skill/SKILL.md',
     ...overrides,
   }

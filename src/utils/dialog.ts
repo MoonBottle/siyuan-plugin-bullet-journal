@@ -445,7 +445,7 @@ export function showEventDetailModal(
 
   // 构建 Item 对象
   const item: Item = {
-    id: props.itemId || '',
+    id: props.blockId || '',
     content: props.item || '',
     date: rawDate,
     status: props.itemStatus || 'pending',
@@ -455,14 +455,21 @@ export function showEventDetailModal(
     blockId: props.blockId,
     project: props.project
       ? {
+          id: '',
           name: props.project,
+          tasks: [],
+          habits: [],
+          path: '',
           links: props.projectLinks || [],
         }
       : undefined,
     task: props.task
       ? {
+          id: '',
           name: props.task,
-          level: props.level,
+          level: props.level as 'L1' | 'L2' | 'L3' ?? 'L1',
+          items: [],
+          lineNumber: 0,
           links: props.taskLinks || [],
         }
       : undefined,
@@ -754,6 +761,9 @@ function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroup
   return {
     element: mountEl,
     destroy: closeDrawer,
+    editors: {},
+    data: null,
+    bindInput: () => {},
   } as Dialog
 }
 
@@ -882,6 +892,9 @@ function showMobileSettingsDrawer(plugin: any): Dialog | null {
   return {
     element: mountEl,
     destroy: closeDrawer,
+    editors: {},
+    data: null,
+    bindInput: () => {},
   } as Dialog
 }
 
@@ -954,7 +967,7 @@ export function showDatePickerDialog(
       <div class="date-picker-nav">
         <button class="b3-button b3-button--outline" data-action="prev-year">«</button>
         <button class="b3-button b3-button--outline" data-action="prev-month">‹</button>
-        <span class="date-picker-month-label">${((t('calendar') as any).yearMonthFormat ?? '{year}/{month}').replace('{year}', String(currentYear)).replace('{month}', String(currentMonth + 1))}</span>
+        <span class="date-picker-month-label">${(t('calendar').yearMonthFormat ?? '{year}/{month}').replace('{year}', String(currentYear)).replace('{month}', String(currentMonth + 1))}</span>
         <button class="b3-button b3-button--outline" data-action="next-month">›</button>
         <button class="b3-button b3-button--outline" data-action="next-year">»</button>
       </div>

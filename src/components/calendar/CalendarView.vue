@@ -451,10 +451,10 @@ onMounted(async () => {
       },
       navLinks: true,
       navLinkHint: (dateText: string, _date: Date) => {
-        const template = (t('calendar') as any).navLinkHint ?? 'Go to $0'
+        const template = t('calendar').navLinkHint ?? 'Go to $0'
         const weekMatch = WEEK_NUMBER_RE.exec(dateText)
         const displayText = weekMatch
-          ? ((t('calendar') as any).weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
+          ? (t('calendar').weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
           : dateText
         return template.replace('$0', displayText)
       },

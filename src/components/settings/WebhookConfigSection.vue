@@ -49,7 +49,7 @@
               />
               <SyButton
                 icon="iconTrashcan"
-                :aria-label="(t('common') as any).delete ?? '删除'"
+                :aria-label="t('common').delete ?? '删除'"
                 @click="deleteChannel(channel.id)"
               />
               <SySwitch

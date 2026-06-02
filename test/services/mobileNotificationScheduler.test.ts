@@ -91,6 +91,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
       name: 'Project A',
       path: '/',
       tasks: [],
+      habits: [],
     },
     task: {
       id: 'task-1',

@@ -41,7 +41,7 @@ const nativePreviewContainsTarget = vi.fn(() => false)
 const mockRequestRefresh = vi.fn(() => Promise.resolve())
 
 vi.mock('siyuan', () => ({
-  Menu: vi.fn().mockImplementation(class {
+  Menu: vi.fn<any>().mockImplementation(class {
     addItem = menuAddItem
     addSeparator = menuAddSeparator
     open = menuOpen
@@ -300,7 +300,7 @@ describe('desktopTodoDock', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     mockRequestRefresh.mockClear()
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(class {
+    ;(globalThis as any).BroadcastChannel = vi.fn<any>().mockImplementation(class {
       close = vi.fn()
     })
   })

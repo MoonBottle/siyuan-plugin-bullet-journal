@@ -129,6 +129,7 @@ export interface SettingsData {
   defaultGroup: string
   calendarDefaultView: string
   calendarDateClickBehavior: 'click' | 'dblclick'
+  calendarWeekClickBehavior?: 'click' | 'dblclick'
   lunchBreakStart: string
   lunchBreakEnd: string
   habitCheckInTimePrecision?: HabitCheckInTimePrecision

@@ -19,7 +19,7 @@ describe('clawBotProxyServer', () => {
     return createClawBotProxyServer({
       ...opts,
       maxPort,
-      fetchFn: fetchMock,
+      fetchFn: fetchMock as any,
     })
   }
 

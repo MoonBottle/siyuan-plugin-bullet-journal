@@ -79,7 +79,7 @@ export function buildProjectTaskTree(project: Project | null | undefined): Proje
       continue
     }
 
-    node.orphaned = task.level !== 'L1'
+    node.orphaned = (task.level as string) !== 'L1'
     roots.push(node)
     if (task.level === 'L2') {
       lastL2 = node

@@ -57,7 +57,7 @@ beforeEach(() => {
     json: () => Promise.resolve(emptyData),
   })
 
-  globalThis.siyuan = {
+  ;(globalThis as any).siyuan = {
     storage: {
       get: mockStorageGet,
     },

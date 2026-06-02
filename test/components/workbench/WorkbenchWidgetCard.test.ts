@@ -8,6 +8,7 @@ import {
 } from 'vitest'
 import {
   createApp,
+  h,
   nextTick,
 } from 'vue'
 import { initI18n } from '@/i18n'
@@ -17,8 +18,10 @@ async function mountCard(props: Record<string, unknown>) {
   const container = document.createElement('div')
   document.body.appendChild(container)
 
-  const app = createApp(WorkbenchWidgetCard, props, {
-    default: () => 'widget body',
+  const app = createApp({
+    render() {
+      return h(WorkbenchWidgetCard, props, { default: () => 'widget body' })
+    },
   })
   app.mount(container)
   await nextTick()

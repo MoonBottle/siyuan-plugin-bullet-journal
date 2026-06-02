@@ -30,7 +30,7 @@ export class SkillService {
   }
 
   async resolveSkill(skillName: string): Promise<{
-    source: 'user'
+    source: 'user' | 'market'
     skill: RegisteredSkill
   }> {
     const skillStore = useSkillStore()
@@ -87,7 +87,7 @@ ${skillList}
     }
   }
 
-  getSkillFromCache(name: string): { name: string, description: string, content: string, source: 'user' } | undefined {
+  getSkillFromCache(name: string): { name: string, description: string, content: string, source: 'user' | 'market' } | undefined {
     const skillStore = useSkillStore()
     const skill = skillStore.getSkillByName(name)
     if (!skill) return undefined

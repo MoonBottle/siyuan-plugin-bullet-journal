@@ -9,20 +9,24 @@ import {
   formatTotalDuration,
 } from '@/utils/calendarDuration'
 
-function createEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
+function createEvent(overrides: Omit<Partial<CalendarEvent>, 'extendedProps'> & { extendedProps?: Partial<CalendarEvent['extendedProps']> }): CalendarEvent {
+  const {
+    extendedProps,
+    ...restOverrides
+  } = overrides
   return {
     id: 'event-1',
     title: '事项',
     start: '2026-04-25 09:00:00',
     end: '2026-04-25 10:00:00',
     allDay: false,
+    ...restOverrides,
     extendedProps: {
       hasItems: true,
       docId: 'doc-1',
       lineNumber: 1,
-      ...overrides.extendedProps,
-    },
-    ...overrides,
+      ...extendedProps,
+    } as CalendarEvent['extendedProps'],
   }
 }
 

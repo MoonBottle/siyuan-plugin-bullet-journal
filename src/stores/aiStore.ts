@@ -344,7 +344,7 @@ export const useAIStore = defineStore('ai', () => {
 
           syncClawBotLoginStateFromService(clawBot)
           markWeixinContextUnknown(conversation.ilinkUserId, checkTime)
-          if (clawBotConfig.value.loginStatus === 'expired') {
+          if ((clawBotConfig.value.loginStatus as string) === 'expired') {
             break
           }
         }
@@ -625,9 +625,6 @@ export const useAIStore = defineStore('ai', () => {
       allItems,
       directories,
     }
-    if (currentAgent) {
-      currentAgent.setToolContext(toolContext.value)
-    }
     setToolContextAction(toolContext.value)
   }
 
@@ -722,7 +719,8 @@ export const useAIStore = defineStore('ai', () => {
         const piMessages = PiMessageAdapter.toPiMessages(conversation.messages)
         const agent = piAgent.getAgent()
         if (agent) {
-          agent.state.messages = piMessages
+          // PiMessage[] 结构兼容 AgentMessage[]，pi-agent 的 state.messages setter 会浅拷贝数组
+          agent.state.messages = piMessages as unknown as typeof agent.state.messages
         }
       }
 
@@ -1432,7 +1430,8 @@ export const useAIStore = defineStore('ai', () => {
         const piMessages = PiMessageAdapter.toPiMessages(conversation.messages)
         const agent = piAgent.getAgent()
         if (agent) {
-          agent.state.messages = piMessages
+          // PiMessage[] 结构兼容 AgentMessage[]，pi-agent 的 state.messages setter 会浅拷贝数组
+          agent.state.messages = piMessages as unknown as typeof agent.state.messages
         }
       }
 
@@ -1516,7 +1515,7 @@ export const useAIStore = defineStore('ai', () => {
         const refreshedConv = await storageService!.loadConversation(conversationId)
         if (refreshedConv) {
           console.log('[AIStore] 强制触发响应式更新，消息数:', refreshedConv.messages.length)
-          currentConversation.value = null as any
+          currentConversation.value = null
           await new Promise((r) => setTimeout(r, 10))
           currentConversation.value = refreshedConv
           console.log('[AIStore] currentConversation 已强制更新')

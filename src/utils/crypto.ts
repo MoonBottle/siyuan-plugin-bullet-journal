@@ -45,7 +45,7 @@ export async function aes128EcbEncrypt(
   // 导入密钥
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key,
+    key as any,
     { name: 'AES-CBC' },
     false,
     ['encrypt'],
@@ -86,7 +86,7 @@ export async function aes128EcbDecrypt(
   // 导入密钥
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key,
+    key as any,
     { name: 'AES-CBC' },
     false,
     ['decrypt'],
@@ -125,7 +125,7 @@ export async function aes128EcbDecrypt(
  * 计算 MD5
  */
 export async function md5(data: Uint8Array): Promise<string> {
-  const hash = await crypto.subtle.digest('MD5', data)
+  const hash = await crypto.subtle.digest('MD5', data as any)
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')

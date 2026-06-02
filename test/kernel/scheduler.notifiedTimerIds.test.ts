@@ -153,9 +153,9 @@ describe('initScheduler guard', () => {
     }
     registerTimer(entry)
 
-    globalThis.siyuan = {
+    ;(globalThis as any).siyuan = {
       rpc: { broadcast: vi.fn() },
-    } as any
+    }
 
     const { initScheduler } = await import('@/kernel/scheduler')
     initScheduler()
@@ -194,9 +194,9 @@ describe('notifiedTimerIds as source of truth', () => {
     getTimers().get('sot-test-1')!.notified = false
     getTimers().get('sot-test-1')!.endTime = Math.floor(Date.now() / 1000) - 1
 
-    globalThis.siyuan = {
+    ;(globalThis as any).siyuan = {
       rpc: { broadcast: vi.fn() },
-    } as any
+    }
 
     const { initScheduler } = await import('@/kernel/scheduler')
     initScheduler()

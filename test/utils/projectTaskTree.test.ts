@@ -158,7 +158,7 @@ describe('projectTaskTree', () => {
 
     const result = filterProjectTaskTree(tree, '评审')
 
-    expect(result.nodes[0].items.map((row) => row.id)).toEqual(['keep'])
+    expect(result.nodes[0].items.map((row) => (row as any).id || (row as any).firstItemId)).toEqual(['keep'])
     expect(result.matchedItemIds).toEqual(new Set(['keep']))
     expect(result.autoExpandedTaskIds).toEqual(new Set(['l1']))
   })

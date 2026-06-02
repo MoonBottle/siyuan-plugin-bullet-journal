@@ -193,19 +193,19 @@ vi.mock('@/stores', async () => {
         ],
         load: mockLoad,
         createDashboardEntry: async (...args: any[]) => {
-          const entry = await mockCreateDashboardEntry(...args)
+          const entry = await (mockCreateDashboardEntry as any)(...args)
           mockEntries.value = [...mockEntries.value, entry]
           mockActiveEntryId.value = entry.id
           return entry
         },
         createViewEntry: async (...args: any[]) => {
-          const entry = await mockCreateViewEntry(...args)
+          const entry = await (mockCreateViewEntry as any)(...args)
           mockEntries.value = [...mockEntries.value, entry]
           mockActiveEntryId.value = entry.id
           return entry
         },
         setActiveEntry: async (id: string) => {
-          mockSetActiveEntry(id)
+          (mockSetActiveEntry as any)(id)
           mockActiveEntryId.value = id
         },
         addWidget: mockAddWidget,
@@ -296,7 +296,7 @@ describe('workbenchTab shell', () => {
       viewType: 'todo',
       config: { preset: {} },
     })
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(class {
+    ;(globalThis as any).BroadcastChannel = vi.fn<any>().mockImplementation(class {
       close = vi.fn()
     })
   })
@@ -338,8 +338,8 @@ describe('workbenchTab shell', () => {
 
     expect(mockEventBusOn).toHaveBeenCalledWith('settings:changed', expect.any(Function))
 
-    const refreshHandler = mockEventBusOn.mock.calls.find((call) => call[0] === 'settings:changed')?.[1]
-    await refreshHandler?.()
+    const refreshHandler = (mockEventBusOn.mock.calls as any[][]).find((call) => call[0] === 'settings:changed')?.[1]
+    await refreshHandler!()
 
     expect(mockSettingsLoadFromPlugin).toHaveBeenCalled()
 
@@ -360,7 +360,7 @@ describe('workbenchTab shell', () => {
     }))
 
     mockSettingsLoadFromPlugin.mockClear()
-    const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh
+    const onRefresh = (mockCreateRefreshChannelGuard.mock.calls as any[][])[0]?.[0]?.onRefresh
     await onRefresh?.({
       scanMode: 'dirs',
       directories: ['updated-dir'],
@@ -376,7 +376,7 @@ describe('workbenchTab shell', () => {
     const unsubscribeRefresh = vi.fn()
     const closeChannel = vi.fn()
     mockEventBusOn.mockReturnValueOnce(unsubscribeRefresh)
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(class {
+    ;(globalThis as any).BroadcastChannel = vi.fn<any>().mockImplementation(class {
       close = closeChannel
     })
 
@@ -496,7 +496,7 @@ describe('workbenchTab shell', () => {
         order: 2,
         viewType: 'aiChat',
         config: {},
-      },
+      } as any,
     ]
     mockActiveEntryId.value = 'entry-ai-chat'
 

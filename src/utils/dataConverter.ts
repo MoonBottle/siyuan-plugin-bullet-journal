@@ -177,8 +177,10 @@ export class DataConverter {
         start: startDateTime,
         end: endDateTime,
         allDay: false,
-        display: 'background',
         extendedProps: {
+          hasItems: false,
+          docId: record.id ?? '',
+          lineNumber: 0,
           isPomodoroBlock: true,
           pomodoroDurationMinutes: durationMinutes,
           pomodoroDescription: record.description,

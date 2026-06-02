@@ -91,6 +91,7 @@ describe('habitMonthCalendar', () => {
         date: '2026-04-12',
         habitId: 'habit-1',
         blockId: 'record-1',
+        docId: 'doc-1',
       }],
     }
 
@@ -122,6 +123,7 @@ describe('habitMonthCalendar', () => {
         unit: '杯',
         habitId: 'habit-1',
         blockId: 'record-1',
+        docId: 'doc-1',
       }],
     }
 
@@ -156,6 +158,7 @@ describe('habitMonthCalendar', () => {
         unit: '杯',
         habitId: 'habit-1',
         blockId: 'record-1',
+        docId: 'doc-1',
       }],
     }
 
@@ -184,6 +187,7 @@ describe('habitMonthCalendar', () => {
         habitId: 'habit-1',
         blockId: 'record-1',
         status: 'missed',
+        docId: 'doc-1',
       }],
     }
 
@@ -210,6 +214,7 @@ describe('habitMonthCalendar', () => {
         habitId: 'habit-1',
         blockId: 'record-1',
         status: 'missed',
+        docId: 'doc-1',
       }],
     }
 

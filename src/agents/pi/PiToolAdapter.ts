@@ -56,7 +56,7 @@ export class PiToolAdapter {
       description,
       parameters: Type.Object(properties),
       execute: async (_toolCallId, args, _signal, _onUpdate) => {
-        const result = await executor(args, this.context)
+        const result = await executor(args as any, this.context)
         return {
           content: [{
             type: 'text' as const,

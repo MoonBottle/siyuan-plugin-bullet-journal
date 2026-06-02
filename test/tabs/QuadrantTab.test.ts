@@ -148,7 +148,7 @@ vi.mock('@/main', () => ({
 }))
 
 vi.mock('siyuan', () => ({
-  Menu: vi.fn().mockImplementation(class {
+  Menu: vi.fn<any>().mockImplementation(class {
     addItem = menuAddItem
     open = menuOpen
   }),
@@ -384,7 +384,7 @@ describe('quadrantTab', () => {
         rules: { priority: ['none'] },
       },
     ]
-    ;(globalThis as any).BroadcastChannel = vi.fn().mockImplementation(class {
+    ;(globalThis as any).BroadcastChannel = vi.fn<any>().mockImplementation(class {
       onmessage: string | null = null
       close = vi.fn()
     })
@@ -661,7 +661,7 @@ describe('quadrantTab', () => {
 
     mockRefresh.mockClear()
 
-    const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh
+    const onRefresh = (mockCreateRefreshChannelGuard.mock.calls as any[][])[0]?.[0]?.onRefresh
     await onRefresh?.({
       defaultGroup: 'group-c',
       groups: mockSettingsStore.groups,
@@ -686,7 +686,7 @@ describe('quadrantTab', () => {
 
     mockRefresh.mockClear()
 
-    const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh
+    const onRefresh = (mockCreateRefreshChannelGuard.mock.calls as any[][])[0]?.[0]?.onRefresh
     await onRefresh?.({
       defaultGroup: 'group-a',
       groups: mockSettingsStore.groups,
@@ -754,8 +754,8 @@ describe('quadrantTab', () => {
 
     expect(mockEventBusOn).toHaveBeenCalledWith('settings:changed', expect.any(Function))
 
-    const refreshHandler = mockEventBusOn.mock.calls.find((call) => call[0] === 'settings:changed')?.[1]
-    await refreshHandler?.()
+    const refreshHandler = (mockEventBusOn.mock.calls as any[][]).find((call) => call[0] === 'settings:changed')?.[1]
+    await refreshHandler!()
 
     expect(mockLoadFromPlugin).toHaveBeenCalled()
     expect(mockRefresh).not.toHaveBeenCalled()
@@ -780,7 +780,7 @@ describe('quadrantTab', () => {
     mockLoadFromPlugin.mockClear()
     mockRefresh.mockClear()
 
-    const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh
+    const onRefresh = (mockCreateRefreshChannelGuard.mock.calls as any[][])[0]?.[0]?.onRefresh
     await onRefresh?.({
       scanMode: 'dirs',
       directories: ['updated-dir'],

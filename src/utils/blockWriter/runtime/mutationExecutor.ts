@@ -1,4 +1,5 @@
 import type {
+  LoadedMutationSource,
   MutationExecutionPlan,
   ResolvedMutationPlan,
 } from '@/utils/blockWriter/shared/types'
@@ -27,11 +28,11 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
   const source = await loadMutationSource(resolvedPlan)
 
   if (resolvedPlan.kind === 'insertAfter') {
-    const payload = prepareInsertPayload(resolvedPlan, source)
+    const payload = prepareInsertPayload(resolvedPlan, source as Extract<LoadedMutationSource, { kind: 'insertAfter' }>)
     return await commitViaApi(payload)
   }
 
-  const payload = prepareUpdatePayload(resolvedPlan, source, {
+  const payload = prepareUpdatePayload(resolvedPlan, source as Extract<LoadedMutationSource, { kind: 'update' }>, {
     caretOwner: plan.caretOwner,
     caretPolicy: plan.caretPolicy,
   })
@@ -75,7 +76,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
         commitKind: plan.apiFallbackPlan.commitKind,
       }
       const fallbackSource = await loadMutationSource(fallbackResolved)
-      const fallbackPayload = prepareUpdatePayload(fallbackResolved, fallbackSource)
+      const fallbackPayload = prepareUpdatePayload(fallbackResolved, fallbackSource as Extract<LoadedMutationSource, { kind: 'update' }>)
       return await commitViaApi(fallbackPayload)
     }
   }

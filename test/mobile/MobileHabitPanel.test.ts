@@ -38,6 +38,7 @@ const {
       type: 'binary',
       startDate: '2026-05-01',
       records: [],
+      archivedAt: undefined,
     },
     {
       blockId: 'habit-2',
@@ -48,6 +49,7 @@ const {
       target: 8,
       unit: 'cups',
       records: [],
+      archivedAt: undefined,
     },
   ]
 

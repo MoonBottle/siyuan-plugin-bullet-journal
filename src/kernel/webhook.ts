@@ -192,7 +192,7 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
   console.log(`[webhook] sendWebhook: channel="${channel.name}" type=${channel.type} method=${method} payloadLen=${payload.length}`)
 
   try {
-    const proxyPath = `/api/network/proxy?u=${Buffer.from(channel.url).toString('base64Url')}`
+    const proxyPath = `/api/network/proxy?u=${Buffer.from(channel.url).toString('base64url' as BufferEncoding)}`
 
     console.log('[webhook] calling siyuan.client.fetch with path=/api/network/proxy')
     const resp = await siyuan.client.fetch(proxyPath, {

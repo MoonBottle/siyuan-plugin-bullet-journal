@@ -1,3 +1,5 @@
+import type { LoadedMutationSource } from '@/utils/blockWriter/shared/types'
+
 // @vitest-environment happy-dom
 import {
   beforeEach,
@@ -56,7 +58,7 @@ describe('sourceLoader', () => {
         nodeElement: node as any,
       },
       patches: [{ type: 'removeSlashCommand' }],
-    })
+    }) as Extract<LoadedMutationSource, { kind: 'update' }>
 
     expect(source.kind).toBe('update')
     expect(source.targetElement).toBe(node)
@@ -97,7 +99,7 @@ describe('sourceLoader', () => {
         slashEndOffset: textNode.textContent!.length,
       },
       patches: [{ type: 'removeSlashCommand' }],
-    })
+    }) as Extract<LoadedMutationSource, { kind: 'update' }>
 
     expect(source.kind).toBe('update')
     expect(source.currentMarkdown).toBe('任务')
@@ -124,7 +126,7 @@ describe('sourceLoader', () => {
         type: 'setPriority',
         priority: 'high',
       }],
-    })
+    }) as Extract<LoadedMutationSource, { kind: 'update' }>
 
     expect(source.kind).toBe('update')
     expect(source.sourceBlockId).toBe('parent-1')
@@ -156,7 +158,7 @@ describe('sourceLoader', () => {
         usedParentDocumentContext: false,
         finalTargetBlockId: 'block-1',
       },
-    })
+    }) as Extract<LoadedMutationSource, { kind: 'update' }>
 
     expect(source.kind).toBe('update')
     expect(source.currentMarkdown).toBe('[x] 已完成任务 📅2026-05-15\n{: id="block-1"}')

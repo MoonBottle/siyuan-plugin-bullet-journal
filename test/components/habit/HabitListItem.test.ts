@@ -1345,6 +1345,7 @@ describe('habitListItem', () => {
         date: '2026-04-10',
         habitId: 'habit-1',
         blockId: 'record-1',
+        docId: 'doc-1',
       }],
       blockId: 'habit-1',
       docId: 'doc-1',

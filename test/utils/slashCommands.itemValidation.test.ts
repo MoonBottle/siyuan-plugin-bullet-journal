@@ -629,9 +629,9 @@ describe('item-only slash command validation', () => {
       status: 'pending',
     }
     projectStoreGetItemByBlockIdMock.mockReturnValue(item as any)
-    vi.mocked(showPrioritySettingDialog).mockImplementation((_, onConfirm) => {
+    vi.mocked(showPrioritySettingDialog).mockImplementation(((_, onConfirm) => {
       void onConfirm('high')
-    })
+    }) as any)
     const handler = getActionHandler('setPriority', {} as any, ['/yxj'])
     const node = document.createElement('div')
     node.setAttribute('data-node-id', 'block-item')
@@ -682,9 +682,9 @@ describe('item-only slash command validation', () => {
 
   it('/rq 在确认日期后通过 BlockWriter 写入 addDate（slash 已在弹框前删除）', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([])
-    vi.mocked(showDatePickerDialog).mockImplementation((_, __, onSelect) => {
+    vi.mocked(showDatePickerDialog).mockImplementation(((_, __, onSelect) => {
       void onSelect('2026-05-20')
-    })
+    }) as any)
     const handler = getActionHandler('date', {} as any, ['/rq'])
     const node = document.createElement('div')
     node.setAttribute('data-node-id', 'block-item')

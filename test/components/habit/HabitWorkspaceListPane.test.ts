@@ -62,11 +62,14 @@ function mountPane(onResetRecord?: (...args: unknown[]) => void) {
   const habitStatsMap = new Map<string, HabitStats>([[
     'habit-1',
     {
+      habitId: 'habit-1',
       totalCheckins: 3,
       currentStreak: 1,
-      bestStreak: 2,
-      thisMonthCheckins: 2,
+      longestStreak: 2,
+      monthlyCheckins: 2,
       completionRate: 50,
+      weeklyCompletionRate: 0,
+      monthlyCompletionRate: 0,
     },
   ]])
 

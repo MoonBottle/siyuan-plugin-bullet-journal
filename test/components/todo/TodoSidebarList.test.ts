@@ -36,7 +36,9 @@ const pendingItem: Item = {
     id: 'project-1',
     name: '项目A',
     tasks: [],
+    habits: [],
     links: [],
+    path: '/',
   },
 }
 

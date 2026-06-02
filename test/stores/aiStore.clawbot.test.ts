@@ -464,7 +464,7 @@ describe('aiStore clawbot context management', () => {
           name: 'Test Provider',
           provider: 'openai',
           apiKey: 'test-key',
-          baseUrl: 'https://api.example.com',
+          apiUrl: 'https://api.example.com',
           defaultModel: 'test-model',
           models: ['test-model'],
           enabled: true,

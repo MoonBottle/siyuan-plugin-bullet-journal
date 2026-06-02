@@ -1,4 +1,7 @@
-import type { Habit } from '@/types/models'
+import type {
+  Habit,
+  ReminderConfig,
+} from '@/types/models'
 import {
   describe,
   expect,
@@ -10,7 +13,11 @@ import {
   isCheckInDay,
 } from '@/services/habitReminder'
 
-function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
+function mkHabit(overrides: Omit<Partial<Habit>, 'reminder'> & { name: string, reminder?: Omit<Partial<ReminderConfig>, 'enabled'> }): Habit {
+  const {
+    reminder,
+    ...rest
+  } = overrides
   return {
     docId: 'doc-1',
     blockId: 'habit-1',
@@ -18,8 +25,16 @@ function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
     startDate: '2026-04-01',
     records: [],
     frequency: { type: 'daily' },
-    ...overrides,
-  }
+    ...rest,
+    ...(reminder
+      ? {
+          reminder: {
+            enabled: true,
+            ...reminder,
+          },
+        }
+      : {}),
+  } as Habit
 }
 
 describe('isCheckInDay', () => {

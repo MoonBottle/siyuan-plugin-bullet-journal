@@ -259,9 +259,9 @@ describe('exampleDocUtils', () => {
 
     expect(getOrCreateTaskAssistantNotebook).toHaveBeenCalledTimes(1)
     expect(createDocWithMd).toHaveBeenCalledTimes(1)
-    expect(createDocWithMd.mock.calls[0][2]).toContain('## 快速开始')
-    expect(createDocWithMd.mock.calls[0][2]).toContain('### 习惯')
-    expect(createDocWithMd.mock.calls[0][2]).toContain('/xg')
+    expect((createDocWithMd.mock.calls as any[][])[0][2]).toContain('## 快速开始')
+    expect((createDocWithMd.mock.calls as any[][])[0][2]).toContain('### 习惯')
+    expect((createDocWithMd.mock.calls as any[][])[0][2]).toContain('/xg')
     expect(openDocument).toHaveBeenCalledWith('doc-id')
     expect(expandDocTree).toHaveBeenCalledWith({
       id: 'doc-id',

@@ -560,7 +560,7 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
     submitRefreshRequest(
       createFullRefreshRequest(
         RefreshReasons.SLASH_COMMAND_SET_PROJECT_DIR,
-        settingsStore.$state as Record<string, unknown>,
+        settingsStore.$state as unknown as Record<string, unknown>,
       ),
     )
 

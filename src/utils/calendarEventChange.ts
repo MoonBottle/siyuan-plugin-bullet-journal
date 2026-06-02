@@ -1,4 +1,5 @@
 import type {
+  ItemDateTimeInfo,
   ItemStatus,
   TimePrecision,
 } from '@/types/models'
@@ -90,7 +91,7 @@ export async function persistCalendarEventChange(
       endTime: newEndTime || undefined,
       allDay,
       originalDate,
-      siblingItems: completeSiblingItems,
+      siblingItems: completeSiblingItems as ItemDateTimeInfo[],
       timePrecision,
     },
   )

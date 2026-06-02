@@ -3,8 +3,8 @@
   <template v-if="!isMobile">
     <SySettingsSection
       icon="iconSparkles"
-      :title="(t('settings') as any).ai?.title ?? 'AI 服务配置'"
-      :description="(t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
+      :title="t('settings').ai?.title ?? 'AI 服务配置'"
+      :description="t('settings').ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
     >
       <!-- 工具调用展示配置 -->
       <SySettingItemList>
@@ -49,7 +49,7 @@
                 />
                 <SyButton
                   icon="iconTrashcan"
-                  :aria-label="(t('settings') as any).projectGroups?.deleteButton ?? '删除'"
+                  :aria-label="t('settings').projectGroups?.deleteButton ?? '删除'"
                   @click="removeProvider(provider.id)"
                 />
                 <SySwitch
@@ -63,7 +63,7 @@
       </div>
       <SySettingsActionButton
         icon="iconAdd"
-        :text="(t('settings') as any).ai?.addProvider ?? '添加供应商'"
+        :text="t('settings').ai?.addProvider ?? '添加供应商'"
         @click="showAddDialog"
       />
     </SySettingsSection>
@@ -157,14 +157,14 @@
 
       <div class="ios-group">
         <div class="ios-cell-header">
-          {{ (t('settings') as any).ai?.providers ?? '供应商' }}
+          {{ t('settings').ai?.providers ?? '供应商' }}
           <span class="header-count">({{ aiData.providers.length }})</span>
         </div>
         <div
           v-if="aiData.providers.length === 0"
           class="ios-empty"
         >
-          {{ (t('settings') as any).ai?.emptyProviders ?? '暂无供应商配置' }}
+          {{ t('settings').ai?.emptyProviders ?? '暂无供应商配置' }}
         </div>
         <div
           v-else
@@ -393,7 +393,7 @@ function handleFormSave(data: Partial<AIProviderConfig>) {
     })
   }
 
-  showMessage((t('settings') as any).ai?.messageApplied ?? '已应用，点击下方「保存」写入配置', 3000)
+  showMessage(t('settings').ai?.messageApplied ?? '已应用，点击下方「保存」写入配置', 3000)
   closeDialog()
 }
 

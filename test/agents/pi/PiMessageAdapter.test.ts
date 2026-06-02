@@ -268,7 +268,7 @@ describe('piMessageAdapter', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].role).toBe('assistant')
-      const content = result[0].content as Array<Record<string, unknown>>
+      const content = result[0].content as unknown as Array<Record<string, unknown>>
       expect(content).toEqual([
         {
           type: 'text',

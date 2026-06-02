@@ -25,9 +25,9 @@ export function useBlockFocusPreview(options: UseBlockFocusPreviewOptions) {
   const isLoading = ref(false)
   const errorMessage = ref('')
 
-  let showTimer: ReturnType<typeof window.setTimeout> | null = null
-  let hideTimer: ReturnType<typeof window.setTimeout> | null = null
-  let popoverLeaveTimer: ReturnType<typeof window.setTimeout> | null = null
+  let showTimer: number | null = null
+  let hideTimer: number | null = null
+  let popoverLeaveTimer: number | null = null
 
   const isOpen = computed(() => !!activeBlockId.value)
 

@@ -1,6 +1,7 @@
 import type {
   Habit,
   Item,
+  ReminderConfig,
 } from '@/types/models'
 /**
  * 提醒服务测试
@@ -69,7 +70,11 @@ describe('reminderService', () => {
     vi.useRealTimers()
   })
 
-  function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
+  function mkHabit(overrides: Omit<Partial<Habit>, 'reminder'> & { name: string, reminder?: Omit<Partial<ReminderConfig>, 'enabled'> }): Habit {
+    const {
+      reminder,
+      ...rest
+    } = overrides
     return {
       docId: 'doc-1',
       blockId: 'habit-1',
@@ -77,8 +82,16 @@ describe('reminderService', () => {
       startDate: '2026-04-01',
       records: [],
       frequency: { type: 'daily' },
-      ...overrides,
-    }
+      ...rest,
+      ...(reminder
+        ? {
+            reminder: {
+              enabled: true,
+              ...reminder,
+            },
+          }
+        : {}),
+    } as Habit
   }
 
   function makeStore(items: Item | Item[] = [], habits: Habit[] = []) {
@@ -159,8 +172,8 @@ describe('reminderService', () => {
           type: 'absolute',
           time: '09:00',
         },
-        project: { name: '项目A' },
-        task: { name: '任务A' },
+        project: { name: '项目A' } as any,
+        task: { name: '任务A' } as any,
       }
 
       service.start({} as any, makeStore(item) as any)

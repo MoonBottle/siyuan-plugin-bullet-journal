@@ -71,7 +71,7 @@ describe('createDetachedPomodoroWindowHost', () => {
     const executeJavaScript = vi.fn()
     const lingeringClose = vi.fn()
     const setPosition = vi.fn()
-    const BrowserWindow = vi.fn().mockImplementation(class {
+    const BrowserWindow = vi.fn<any>().mockImplementation(class {
       loadURL = loadURL
       showInactive = vi.fn()
       show = vi.fn()
@@ -89,7 +89,7 @@ describe('createDetachedPomodoroWindowHost', () => {
       setPosition = setPosition
       setVisibleOnAllWorkspaces = vi.fn()
     })
-    BrowserWindow.getAllWindows = vi.fn(() => [
+    ;(BrowserWindow as any).getAllWindows = vi.fn(() => [
       {
         close: lingeringClose,
         getTitle: vi.fn(() => 'Bullet Journal Pomodoro Floating Window'),
@@ -142,7 +142,7 @@ describe('createDetachedPomodoroWindowHost', () => {
 
   it('closes the window on destroy', () => {
     const close = vi.fn()
-    const BrowserWindow = vi.fn().mockImplementation(class {
+    const BrowserWindow = vi.fn<any>().mockImplementation(class {
       loadURL = vi.fn()
       showInactive = vi.fn()
       show = vi.fn()

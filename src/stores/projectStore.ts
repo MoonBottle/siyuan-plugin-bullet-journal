@@ -362,6 +362,16 @@ interface ProjectState {
   currentDate: string
 }
 
+type ProjectStateWithGetters = ProjectState & {
+  items: Item[]
+  calendarEvents: CalendarEvent[]
+  itemIndex: Map<string, Item>
+  getAllPomodoros: (groupId: string) => PomodoroRecord[]
+  getTodayPomodoros: (groupId: string) => PomodoroRecord[]
+  habits: Habit[]
+  getHabits: (groupId: string) => Habit[]
+}
+
 export const useProjectStore = defineStore('project', {
   state: (): ProjectState => ({
     projects: [],
@@ -421,20 +431,20 @@ export const useProjectStore = defineStore('project', {
 
     // 按分组过滤的事项
     getFilteredItems: (state) => (groupId: string) => {
-      const items = (state as any).items as Item[]
+      const items = (state as ProjectStateWithGetters).items
       if (!groupId) return items
       return items.filter((i) => i.project?.groupId === groupId)
     },
 
     // 多日期事项仅保留代表项，供待办/过期/完成/放弃分组使用
     getDisplayItems: (state) => (groupId: string) => {
-      const items = (state as any).items as Item[]
+      const items = (state as ProjectStateWithGetters).items
       return computeDisplayItems(items, state.currentDate, groupId)
     },
 
     // 按分组过滤的日历事件
     getFilteredCalendarEvents: (state) => (groupId: string) => {
-      const events = (state as any).calendarEvents as CalendarEvent[]
+      const events = (state as ProjectStateWithGetters).calendarEvents
       if (!groupId) return events
       return events.filter((e) => {
         const project = state.projects.find((p) => p.id === e.extendedProps.docId)
@@ -444,7 +454,7 @@ export const useProjectStore = defineStore('project', {
 
     // 通过 blockId 快速查找 Item
     getItemByBlockId: (state) => (blockId: string): Item | undefined => {
-      return (state as any).itemIndex.get(blockId)
+      return (state as ProjectStateWithGetters).itemIndex.get(blockId)
     },
 
     // 需要提醒的事项列表（按提醒时间排序，只包含未来24小时内的）
@@ -485,7 +495,7 @@ export const useProjectStore = defineStore('project', {
 
             // 只收集未来24小时内需要提醒的（减少扫描量）
             if (reminderTime > now && reminderTime < now + 24 * 60 * 60 * 1000) {
-              (item as any)._reminderTime = reminderTime // 缓存计算结果
+              (item as Item & { _reminderTime?: number })._reminderTime = reminderTime
               items.push(item)
               addedCount++
             } else if (reminderTime <= now) {
@@ -502,12 +512,12 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 按提醒时间排序
-      return items.sort((a, b) => ((a as any)._reminderTime || 0) - ((b as any)._reminderTime || 0))
+      return items.sort((a, b) => ((a as Item & { _reminderTime?: number })._reminderTime || 0) - ((b as Item & { _reminderTime?: number })._reminderTime || 0))
     },
 
     // 今日及以后的待办事项（排除已完成和已放弃）
     getFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId)
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
       return items.filter((item) => {
         const effectiveDate = getEffectiveDate(item)
         return (
@@ -520,19 +530,19 @@ export const useProjectStore = defineStore('project', {
 
     // 已完成的事项
     getCompletedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId)
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
       return items.filter((item) => item.status === 'completed')
     },
 
     // 已放弃的事项
     getAbandonedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId)
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
       return items.filter((item) => item.status === 'abandoned')
     },
 
     // 过期的事项（时间过了但未完成未放弃）
     getExpiredItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId)
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
       return items.filter((item) => {
         const effectiveDate = getEffectiveDate(item)
         return (
@@ -547,7 +557,7 @@ export const useProjectStore = defineStore('project', {
     getFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         params.groupId,
       )
@@ -571,7 +581,7 @@ export const useProjectStore = defineStore('project', {
 
     getGroupedFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         params.groupId,
       )
@@ -595,7 +605,7 @@ export const useProjectStore = defineStore('project', {
 
     getTodoTagOptions: (state) => (groupId: string): TodoTagOption[] => {
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         groupId,
       )
@@ -614,7 +624,7 @@ export const useProjectStore = defineStore('project', {
     getFilteredCompletedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         params.groupId,
       )
@@ -635,7 +645,7 @@ export const useProjectStore = defineStore('project', {
     getFilteredAbandonedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         params.groupId,
       )
@@ -654,7 +664,7 @@ export const useProjectStore = defineStore('project', {
 
     // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
     getGroupedFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId)
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
       const futureItems = items.filter((item) => {
         const effectiveDate = getEffectiveDate(item)
         return (
@@ -719,13 +729,13 @@ export const useProjectStore = defineStore('project', {
 
     // 获取今日番茄钟记录
     getTodayPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros.filter((p: PomodoroRecord) => p.date === state.currentDate)
     },
 
     // 获取今日专注分钟数
     getTodayFocusMinutes: (state) => (groupId: string = ''): number => {
-      const todayPomodoros = (state as any).getTodayPomodoros(groupId)
+      const todayPomodoros = (state as ProjectStateWithGetters).getTodayPomodoros(groupId)
       return todayPomodoros.reduce((sum: number, p: PomodoroRecord) => {
         // 优先使用实际专注时长，否则使用计算时长
         const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes
@@ -735,13 +745,13 @@ export const useProjectStore = defineStore('project', {
 
     // 获取总番茄数
     getTotalPomodoros: (state) => (groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros.length
     },
 
     // 获取总专注分钟数
     getTotalFocusMinutes: (state) => (groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros.reduce((sum: number, p: PomodoroRecord) => {
         // 优先使用实际专注时长，否则使用计算时长
         const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes
@@ -751,7 +761,7 @@ export const useProjectStore = defineStore('project', {
 
     // 按日期分组获取番茄钟记录
     getPomodorosByDate: (state) => (groupId: string = ''): Map<string, PomodoroRecord[]> => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       const grouped = new Map<string, PomodoroRecord[]>()
 
       allPomodoros.forEach((p: PomodoroRecord) => {
@@ -777,7 +787,7 @@ export const useProjectStore = defineStore('project', {
       endDate: string,
       groupId: string = '',
     ): Map<string, number> => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       const byDay = new Map<string, number>()
 
       allPomodoros.forEach((p: PomodoroRecord) => {
@@ -793,7 +803,7 @@ export const useProjectStore = defineStore('project', {
 
     // 获取某日的专注分钟数
     getFocusMinutesByDay: (state) => (date: string, groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId)
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros
         .filter((p: PomodoroRecord) => p.date === date)
         .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0)
@@ -810,29 +820,29 @@ export const useProjectStore = defineStore('project', {
     },
 
     getTodayFocusPlanEntries: (state) => (groupId: string = '') => {
-      return buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId)
+      return buildTodayFocusPlanEntries((state as ProjectStateWithGetters).items, state.currentDate, groupId)
     },
 
     getFocusPlanEntriesByDate: (state) => (date: string, groupId: string = '') => {
-      return buildFocusPlanEntriesForDate((state as any).items, date, groupId)
+      return buildFocusPlanEntriesForDate((state as ProjectStateWithGetters).items, date, groupId)
     },
 
     getTodayFocusPlanSummary: (state) => (groupId: string = '') => {
       return buildDailyFocusPlanSummary(
-        buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId),
+        buildTodayFocusPlanEntries((state as ProjectStateWithGetters).items, state.currentDate, groupId),
         state.currentDate,
       )
     },
 
     getFocusPlanSummaryByDate: (state) => (date: string, groupId: string = '') => {
       return buildDailyFocusPlanSummary(
-        buildFocusPlanEntriesForDate((state as any).items, date, groupId),
+        buildFocusPlanEntriesForDate((state as ProjectStateWithGetters).items, date, groupId),
         date,
       )
     },
 
     getItemSummaryByDate: (state) => (date: string, groupId: string = '') => {
-      const allItems = (state as any).items as Item[]
+      const allItems = (state as ProjectStateWithGetters).items
       const today = state.currentDate
       const items = allItems.filter((item: Item) => {
         if (groupId && item.project?.groupId !== groupId) return false
@@ -868,7 +878,7 @@ export const useProjectStore = defineStore('project', {
 
     // 按分组过滤的习惯
     getHabits: (state) => (groupId: string): Habit[] => {
-      const habits = (state as any).habits as Habit[]
+      const habits = (state as ProjectStateWithGetters).habits
       if (!groupId) return habits
       return habits.filter((h) => h.project?.groupId === groupId)
     },
@@ -876,7 +886,7 @@ export const useProjectStore = defineStore('project', {
     // 获取今日打卡记录
     getTodayRecords: (state) => (groupId: string): CheckInRecord[] => {
       const records: CheckInRecord[] = []
-      const habits = (state as any).getHabits(groupId) as Habit[]
+      const habits = (state as ProjectStateWithGetters).getHabits(groupId)
       for (const habit of habits) {
         for (const record of habit.records) {
           if (record.date === state.currentDate) {
@@ -890,7 +900,7 @@ export const useProjectStore = defineStore('project', {
     // 按日期获取打卡记录
     getRecordsByDate: (state) => (date: string, groupId: string): CheckInRecord[] => {
       const records: CheckInRecord[] = []
-      const habits = (state as any).getHabits(groupId) as Habit[]
+      const habits = (state as ProjectStateWithGetters).getHabits(groupId)
       for (const habit of habits) {
         for (const record of habit.records) {
           if (record.date === date) {

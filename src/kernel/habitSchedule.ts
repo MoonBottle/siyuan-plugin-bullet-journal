@@ -32,7 +32,7 @@ function isDateInValidRange(habit: KernelDataHabit, dateStr: string): boolean {
 }
 
 function getCompletedDates(habit: KernelDataHabit): string[] {
-  return [...new Set(
+  return [...new Set<string>(
     (habit.records ?? [])
       .filter((r) => r.status !== 'missed')
       .map((r) => r.date),

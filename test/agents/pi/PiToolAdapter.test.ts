@@ -77,8 +77,8 @@ describe('piToolAdapter', () => {
 
       expect(tool.name).toBe('test_tool')
       expect(tool.parameters).toBeDefined()
-      expect(tool.parameters.type).toBe('object')
-      expect(tool.parameters.properties).toHaveProperty('name')
+      expect((tool.parameters as any).type).toBe('object')
+      expect((tool.parameters as any).properties).toHaveProperty('name')
     })
 
     it('should create an AgentTool with optional string parameter', () => {
@@ -95,7 +95,7 @@ describe('piToolAdapter', () => {
         async () => null,
       )
 
-      expect(tool.parameters.properties).toHaveProperty('groupId')
+      expect((tool.parameters as any).properties).toHaveProperty('groupId')
     })
 
     it('should create an AgentTool with enum parameter', () => {
@@ -113,7 +113,7 @@ describe('piToolAdapter', () => {
         async () => null,
       )
 
-      expect(tool.parameters.properties).toHaveProperty('status')
+      expect((tool.parameters as any).properties).toHaveProperty('status')
     })
 
     it('should create an AgentTool with number parameter', () => {
@@ -130,7 +130,7 @@ describe('piToolAdapter', () => {
         async () => null,
       )
 
-      expect(tool.parameters.properties).toHaveProperty('limit')
+      expect((tool.parameters as any).properties).toHaveProperty('limit')
     })
 
     it('should create an AgentTool with boolean parameter', () => {
@@ -147,7 +147,7 @@ describe('piToolAdapter', () => {
         async () => null,
       )
 
-      expect(tool.parameters.properties).toHaveProperty('verbose')
+      expect((tool.parameters as any).properties).toHaveProperty('verbose')
     })
 
     it('should create an AgentTool with mixed parameter types', () => {
@@ -180,10 +180,10 @@ describe('piToolAdapter', () => {
         async () => [],
       )
 
-      expect(tool.parameters.properties).toHaveProperty('projectId')
-      expect(tool.parameters.properties).toHaveProperty('status')
-      expect(tool.parameters.properties).toHaveProperty('limit')
-      expect(tool.parameters.properties).toHaveProperty('includeCompleted')
+      expect((tool.parameters as any).properties).toHaveProperty('projectId')
+      expect((tool.parameters as any).properties).toHaveProperty('status')
+      expect((tool.parameters as any).properties).toHaveProperty('limit')
+      expect((tool.parameters as any).properties).toHaveProperty('includeCompleted')
     })
 
     it('should create an AgentTool with no parameters', () => {
@@ -194,8 +194,8 @@ describe('piToolAdapter', () => {
         async () => [],
       )
 
-      expect(tool.parameters.type).toBe('object')
-      expect(Object.keys(tool.parameters.properties ?? {})).toHaveLength(0)
+      expect((tool.parameters as any).type).toBe('object')
+      expect(Object.keys((tool.parameters as any).properties ?? {})).toHaveLength(0)
     })
 
     it('should return a valid AgentTool type', () => {

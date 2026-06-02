@@ -286,6 +286,7 @@ describe('projectStore 专注时长统计', () => {
       name: '测试项目',
       path: '/test',
       tasks: [task],
+      habits: [],
     }
     store.$patch({ projects: [project] })
 
@@ -347,6 +348,7 @@ describe('projectStore 专注时长统计', () => {
       name: '测试项目',
       path: '/test',
       tasks: [task],
+      habits: [],
     }
     store.$patch({ projects: [project] })
 

@@ -29,7 +29,7 @@ describe('caretController', () => {
     const snapshot = captureCaretSnapshot(root as any)
 
     expect(snapshot.policy).toBe('wbr-first')
-    expect(snapshot.containerBlockId).toBe('block-1')
+    expect((snapshot as any).containerBlockId).toBe('block-1')
   })
 
   it('restores selection from a rendered wbr marker', () => {

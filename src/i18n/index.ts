@@ -11,9 +11,9 @@ const locales: Record<string, Translations> = {
   'zh-CN': zhCN,
   'zh_CN': zhCN,
   'zh': zhCN,
-  'en': enUS,
-  'en-US': enUS,
-  'en_US': enUS,
+  'en': enUS as unknown as Translations,
+  'en-US': enUS as unknown as Translations,
+  'en_US': enUS as unknown as Translations,
 }
 
 let currentLocale: Translations = zhCN

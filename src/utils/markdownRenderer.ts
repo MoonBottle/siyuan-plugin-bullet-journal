@@ -3,6 +3,8 @@
  * 使用思源笔记内置的 Lute 渲染引擎替代 marked.js
  */
 
+const EXCESSIVE_NEWLINES_RE = /\n{3,}/g
+
 /**
  * 将 Markdown 内容渲染为 HTML
  * 优先使用思源的 Lute 引擎，不可用时降级为纯文本显示

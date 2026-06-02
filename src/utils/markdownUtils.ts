@@ -1,3 +1,6 @@
+const HEADING_NEWLINE_RE = /([^\n#])\n(#{1,6} )/g
+const EXCESSIVE_NEWLINES_RE = /\n{3,}/g
+
 /**
  * 预处理：确保行中的 ATX 标题前有换行（Markdown 要求标题在行首）
  * 用于修复 AI 流式输出时内容拼接缺少换行导致的标题渲染失败

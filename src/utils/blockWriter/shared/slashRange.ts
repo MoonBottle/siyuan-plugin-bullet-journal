@@ -12,7 +12,7 @@ const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u
 const WHITESPACE_U_RE = /\s/u
 
 function isSlashCommandStartChar(char: string | undefined): boolean {
-  return SLASH_COMMAND_START_CHARS.includes(char)
+  return (SLASH_COMMAND_START_CHARS as readonly string[]).includes(char ?? '')
 }
 
 function isSlashCommandBodyChar(char: string | undefined): boolean {

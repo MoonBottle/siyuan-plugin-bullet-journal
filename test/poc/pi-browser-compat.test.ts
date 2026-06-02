@@ -81,7 +81,7 @@ describe('pi browser compatibility PoC', () => {
           thinkingLevel: 'off',
           messages: [],
         },
-        streamFn: mockStreamFn,
+        streamFn: mockStreamFn as any,
       })
       expect(agent).toBeDefined()
       expect(agent.state.systemPrompt).toBe('You are a test assistant.')
@@ -98,7 +98,7 @@ describe('pi browser compatibility PoC', () => {
         parameters: Type.Object({
           input: Type.String({ description: 'Test input' }),
         }),
-        execute: async (_toolCallId, params) => {
+        execute: async (_toolCallId, params: any) => {
           return {
             content: [{
               type: 'text' as const,
@@ -166,7 +166,7 @@ describe('pi browser compatibility PoC', () => {
             description: '标签列表',
           })),
         }),
-        execute: async (_toolCallId, params) => {
+        execute: async (_toolCallId, params: any) => {
           return {
             content: [{
               type: 'text' as const,
@@ -188,7 +188,7 @@ describe('pi browser compatibility PoC', () => {
         parameters: Type.Object({
           message: Type.String({ description: 'Message to echo' }),
         }),
-        execute: async (_toolCallId, params) => {
+        execute: async (_toolCallId, params: any) => {
           return {
             content: [{
               type: 'text' as const,
@@ -229,8 +229,15 @@ describe('pi browser compatibility PoC', () => {
     })
 
     it('should receive agent_start and agent_end events on prompt', async () => {
-      const mockStreamFn = vi.fn().mockImplementation((_model, _context, _options) => {
-        const es = new EventStream<AssistantMessageEvent, AssistantMessage>()
+      const mockStreamFn = vi.fn<any>().mockImplementation((_model, _context, _options) => {
+        const es = new EventStream<AssistantMessageEvent, AssistantMessage>(
+          (e: AssistantMessageEvent) => e.type === 'done' || e.type === 'error',
+          (e: AssistantMessageEvent) => {
+            if (e.type === 'done') return e.message
+            if (e.type === 'error') return e.error
+            throw new Error('Unexpected event type')
+          },
+        )
         const assistantMsg: AssistantMessage = {
           role: 'assistant',
           content: [{
@@ -257,11 +264,11 @@ describe('pi browser compatibility PoC', () => {
           stopReason: 'stop',
           timestamp: Date.now(),
         }
-        es.emit({
+        ;(es as any).emit({
           type: 'start',
           partial: assistantMsg,
         })
-        es.emit({
+        ;(es as any).emit({
           type: 'done',
           reason: 'stop',
           message: assistantMsg,
@@ -278,7 +285,7 @@ describe('pi browser compatibility PoC', () => {
           thinkingLevel: 'off',
           messages: [],
         },
-        streamFn: mockStreamFn,
+        streamFn: mockStreamFn as any,
       })
 
       const eventTypes: string[] = []

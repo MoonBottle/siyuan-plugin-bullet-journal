@@ -1,7 +1,5 @@
 import type {
   PriorityLevel,
-  Project,
-  Task,
 } from '@/types/models'
 // src/tabs/mobile/composables/useQuickCreate.ts
 import {
@@ -52,7 +50,7 @@ export function useQuickCreate() {
   })
 
   // Computed properties
-  const projects = computed<Project[]>(() => {
+  const projects = computed(() => {
     return projectStore.projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -60,7 +58,7 @@ export function useQuickCreate() {
     }))
   })
 
-  const tasks = computed<Task[]>(() => {
+  const tasks = computed(() => {
     if (!state.selectedProjectId) return []
     const project = projectStore.projects.find((p) => p.id === state.selectedProjectId)
     if (!project) return []

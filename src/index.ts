@@ -1,3 +1,4 @@
+import type { IEventBusMap } from 'siyuan'
 import type { MobileNotificationDebugSnapshot } from "@/services/mobileNotificationScheduler"
 import type {
   AIChatHistory,
@@ -243,8 +244,6 @@ export default class TaskAssistantPlugin extends Plugin {
   private statusBarEl: HTMLElement | null = null
   /** 底栏倒计时元素 */
   private statusBarTimerEl: HTMLElement | null = null
-  /** 番茄钟 Dock model */
-  private pomodoroDockModel: any = null
   /** 已处理过的任务列表完成事件，用于去重 */
   private processedTaskCompletions = new Set<string>()
   /** 正在处理的任务列表完成，防止并发重复 */
@@ -531,20 +530,6 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 初始化底栏倒计时
-   * 启用配置后常驻显示，没倒计时时只显示番茄图标
-   * @deprecated 使用 updatePomodoroUIVisibility 替代
-   */
-  private initStatusBarTimer() {
-    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings
-    if (pomodoro.enableStatusBarTimer === true) {
-      this.showStatusBarTimer()
-      // 显示默认的番茄图标，不显示时间（没有倒计时状态）
-      this.updateStatusBarTimerDisplay(false, "", false)
-    }
-  }
-
-  /**
    * 检查并恢复进行中的番茄钟
    * 在插件主逻辑中统一执行恢复，避免多组件并发导致重复记录；完成后触发事件供 UI 刷新
    * 若有待完成记录（弹窗未提交即重启），则弹出完成弹窗补填说明
@@ -781,16 +766,6 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
-  /**
-   * 保存 AI 聊天记录
-   */
-  private async saveAIChatHistory() {
-    try {
-      await this.saveData("ai-chat-history", chatHistory)
-    } catch (error) {
-      console.error("[Task Assistant] Failed to save AI chat history:", error)
-    }
-  }
 
   /**
    * 保存设置
@@ -1166,12 +1141,12 @@ export default class TaskAssistantPlugin extends Plugin {
           void this.requestRefresh(
             createFullRefreshRequest(
               RefreshReasons.INDEX_SET_PROJECT_DIRECTORIES,
-              this.getSettings() as Record<string, unknown>,
+              this.getSettings() as unknown as Record<string, unknown>,
             ),
           )
         } else {
           showMessage(
-            (t("common") as any).dirsExist ?? t("common").dirsExist,
+            t("common").dirsExist ?? t("common").dirsExist,
             3000,
             "info",
           )
@@ -1577,7 +1552,8 @@ export default class TaskAssistantPlugin extends Plugin {
           unmountVueAppFromHost(this.element)
         },
       })
-      this.pomodoroDockModel = pomodoroDock.model
+      // eslint-disable-next-line ts/no-unused-expressions
+      pomodoroDock.model // keep model alive
     }
 
     // 习惯打卡 Dock（桌面端专用）
@@ -1967,7 +1943,7 @@ export default class TaskAssistantPlugin extends Plugin {
       event,
       handlerName: handler.name || "anonymous",
     })
-    this.eventBus.on(event, boundHandler)
+    this.eventBus.on(event as string & keyof IEventBusMap, boundHandler)
     this.cleanupManager.add(() => {
       console.log(
         "[Task Assistant][Lifecycle] cleanup plugin event listener:",
@@ -1977,7 +1953,7 @@ export default class TaskAssistantPlugin extends Plugin {
           handlerName: handler.name || "anonymous",
         },
       )
-      this.eventBus.off(event, boundHandler)
+      this.eventBus.off(event as string & keyof IEventBusMap, boundHandler)
     })
   }
 

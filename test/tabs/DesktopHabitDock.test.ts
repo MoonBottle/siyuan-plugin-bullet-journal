@@ -198,7 +198,7 @@ function mountDock() {
   } as any]
   projectStore.currentDate = '2026-04-30'
   projectStore.refresh = vi.fn().mockResolvedValue(undefined) as any
-  settingsStore.scanMode = 'folder'
+  settingsStore.scanMode = 'directories'
   settingsStore.directories = []
 
   const container = document.createElement('div')

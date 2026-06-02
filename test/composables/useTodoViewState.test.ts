@@ -56,7 +56,7 @@ describe('useTodoViewState', () => {
       priorities: ['high'] as const,
     }
     const state = useTodoViewState({
-      preset,
+      preset: preset as any,
       persistToSettings: false,
     })
 

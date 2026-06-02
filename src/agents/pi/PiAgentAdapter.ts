@@ -4,7 +4,7 @@ import { Agent } from '@earendil-works/pi-agent-core'
 import { stream } from '@earendil-works/pi-ai'
 
 export interface PiAgentAdapterOptions {
-  model: Model
+  model: Model<any>
   systemPrompt: string
   tools: AgentTool[]
   apiKey: string

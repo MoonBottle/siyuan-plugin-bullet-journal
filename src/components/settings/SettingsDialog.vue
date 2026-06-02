@@ -346,11 +346,11 @@ function handleAiUpdate(newAi: {
         return
       }
       if (!provider.apiKey?.trim()) {
-        showMessage((t('settings') as any).ai?.messageEnterApiKey ?? '请输入 API Key', 3000, 'error')
+        showMessage(t('settings').ai?.messageEnterApiKey ?? '请输入 API Key', 3000, 'error')
         return
       }
       if (!provider.models || provider.models.length === 0) {
-        showMessage((t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error')
+        showMessage(t('settings').ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error')
         return
       }
     }

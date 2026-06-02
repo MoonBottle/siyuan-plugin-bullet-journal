@@ -160,7 +160,7 @@ async function mountView() {
   } as any]
   projectStore.currentDate = '2026-05-02'
   projectStore.refresh = vi.fn().mockResolvedValue(undefined) as any
-  settingsStore.scanMode = 'folder'
+  settingsStore.scanMode = 'directories'
   settingsStore.directories = []
 
   const { default: WorkbenchHabitView } = await import('@/components/workbench/view/WorkbenchHabitView.vue')

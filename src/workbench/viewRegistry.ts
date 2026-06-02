@@ -30,9 +30,9 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
   return {
     todo: {
       type: 'todo',
-      createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
+      createDefaultConfig: () => ({
         preset: {},
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -45,16 +45,16 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               preset: nextConfig.preset ?? {},
-            })
+            } as Record<string, unknown>)
           },
         })
       },
     },
     habit: {
       type: 'habit',
-      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
+      createDefaultConfig: () => ({
         habitScope: 'active',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -76,7 +76,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
     },
     quadrant: {
       type: 'quadrant',
-      createDefaultConfig: (): WorkbenchQuadrantViewConfig => ({}),
+      createDefaultConfig: () => ({}) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -87,16 +87,16 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId })
+            await onUpdateConfig({ groupId: nextConfig.groupId } as Record<string, unknown>)
           },
         })
       },
     },
     pomodoroStats: {
       type: 'pomodoroStats',
-      createDefaultConfig: (): WorkbenchPomodoroStatsWidgetConfig => ({
+      createDefaultConfig: () => ({
         section: 'overview',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -116,7 +116,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
     },
     focusWorkbench: {
       type: 'focusWorkbench',
-      createDefaultConfig: (): WorkbenchFocusWorkbenchViewConfig => ({}),
+      createDefaultConfig: () => ({}) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -127,14 +127,14 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId })
+            await onUpdateConfig({ groupId: nextConfig.groupId } as Record<string, unknown>)
           },
         })
       },
     },
     project: {
       type: 'project',
-      createDefaultConfig: (): WorkbenchProjectViewConfig => ({}),
+      createDefaultConfig: () => ({}) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,

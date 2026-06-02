@@ -53,9 +53,9 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 4,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
+      createDefaultConfig: () => ({
         preset: {},
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
@@ -68,7 +68,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               preset: nextConfig.preset ?? {},
-            })
+            } as Record<string, unknown>)
           },
         })
       },
@@ -85,9 +85,9 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 4,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchQuadrantWidgetConfig => ({
+      createDefaultConfig: () => ({
         quadrant: 'q1',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
@@ -102,7 +102,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               quadrant: nextConfig.quadrant ?? 'q1',
-            })
+            } as Record<string, unknown>)
           },
         })
       },
@@ -119,9 +119,9 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 4,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
+      createDefaultConfig: () => ({
         habitScope: 'active',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
@@ -136,7 +136,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               habitScope: nextConfig.habitScope ?? 'active',
-            })
+            } as Record<string, unknown>)
           },
         })
       },
@@ -153,9 +153,9 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 4,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchCalendarWidgetConfig => ({
+      createDefaultConfig: () => ({
         view: 'timeGridDay',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
@@ -170,7 +170,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               view: 'timeGridDay',
-            })
+            } as Record<string, unknown>)
           },
         })
       },
@@ -187,9 +187,9 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 4,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchPomodoroStatsWidgetConfig => ({
+      createDefaultConfig: () => ({
         section: 'overview',
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
@@ -202,7 +202,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               section: nextConfig.section ?? 'overview',
-            })
+            } as Record<string, unknown>)
           },
         })
       },
@@ -219,21 +219,21 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
         w: 3,
         h: 3,
       },
-      createDefaultConfig: (): WorkbenchDatePickerWidgetConfig => ({
+      createDefaultConfig: () => ({
         view: 'month',
         linkages: [],
-      }),
+      }) as Record<string, unknown>,
       openConfigDialog: ({
         widget,
         onUpdateConfig,
         dashboardWidgets,
       }) => {
-        const pickerConfig = widget.config as WorkbenchDatePickerWidgetConfig
+        const pickerConfig = widget.config as unknown as WorkbenchDatePickerWidgetConfig
         openDatePickerWidgetConfigDialog({
           initialConfig: pickerConfig,
           dashboardWidgets: dashboardWidgets ?? [],
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig(nextConfig)
+            await onUpdateConfig(nextConfig as unknown as Record<string, unknown>)
           },
         })
       },

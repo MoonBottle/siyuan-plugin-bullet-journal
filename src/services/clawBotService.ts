@@ -39,8 +39,11 @@ import {
   base64Decode,
   base64Encode,
   generateAesKey,
+  hexToBytes,
   md5,
 } from '@/utils/crypto'
+
+const ABSOLUTE_URL_RE = /^https?:\/\//
 
 const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com'
 const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com'
@@ -301,7 +304,7 @@ export class ClawBotService {
 
         // 等待 1 秒再轮询
         await new Promise((r) => setTimeout(r, 1000))
-      } catch {
+      } catch (error) {
         if (error instanceof Error && error.message === '二维码已过期') {
           throw error
         }
@@ -620,10 +623,10 @@ export class ClawBotService {
     if (media.aes_key) {
       const key = base64Decode(media.aes_key)
       const decrypted = await aes128EcbDecrypt(encryptedData, key)
-      return new Blob([decrypted])
+      return new Blob([decrypted as BlobPart])
     } else if (aesKey) {
       const decrypted = await aes128EcbDecrypt(encryptedData, aesKey)
-      return new Blob([decrypted])
+      return new Blob([decrypted as BlobPart])
     }
 
     return new Blob([encryptedData])
@@ -877,7 +880,7 @@ export class ClawBotService {
 
     return {
       filekey: encryptedMd5,
-      aeskey,
+      aeskey: aesKey,
       fileSize: fileData.length,
       fileSizeCiphertext: encrypted.length,
       downloadEncryptedQueryParam: uploadInfo.upload_param,
