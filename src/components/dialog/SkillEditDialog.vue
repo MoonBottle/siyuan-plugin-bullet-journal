@@ -1,5 +1,5 @@
 <template>
-  <div class="skill-edit-dialog">
+  <div class="ta-skill-edit-dialog">
     <div class="skill-form">
       <div class="form-item form-item-full">
         <label class="form-label">{{ t('slash').skillName }}</label>
@@ -116,7 +116,6 @@ import { t } from '@/i18n'
 import { SkillParser } from '@/skills'
 import { useSkillStore } from '@/stores/skillStore'
 import 'bytemd/dist/index.css'
-import 'github-markdown-css/github-markdown-light.css'
 import 'highlight.js/styles/github.css'
 
 const props = defineProps<{
@@ -295,7 +294,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.skill-edit-dialog {
+.ta-skill-edit-dialog {
   padding: 16px;
   min-width: 400px;
   width: 100%;
@@ -400,228 +399,470 @@ onMounted(() => {
 </style>
 
 <style lang="scss">
-.skill-edit-dialog .bytemd {
+.ta-skill-edit-dialog .bytemd {
   border: none !important;
   height: 400px;
   color: var(--b3-theme-on-background) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar {
+.ta-skill-edit-dialog .bytemd-toolbar {
   border-bottom: 1px solid var(--b3-theme-surface-lighter) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon {
+.ta-skill-edit-dialog .bytemd-toolbar-icon {
   color: var(--b3-theme-on-background) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon svg {
+.ta-skill-edit-dialog .bytemd-toolbar-icon svg {
   stroke: currentColor !important;
   fill: none !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon svg path[fill='currentColor'] {
+.ta-skill-edit-dialog .bytemd-toolbar-icon svg path[fill='currentColor'] {
   fill: currentColor !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon:hover {
+.ta-skill-edit-dialog .bytemd-toolbar-icon:hover {
   background-color: var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-icon-active {
+.ta-skill-edit-dialog .bytemd-toolbar-icon-active {
   color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-tab {
+.ta-skill-edit-dialog .bytemd-toolbar-tab {
   color: var(--b3-theme-on-background) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-tab-active {
+.ta-skill-edit-dialog .bytemd-toolbar-tab-active {
   color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-toolbar-right .bytemd-toolbar-icon:last-child {
+.ta-skill-edit-dialog .bytemd-toolbar-right .bytemd-toolbar-icon:last-child {
   display: none !important;
 }
 
-.skill-edit-dialog .bytemd-editor {
+.ta-skill-edit-dialog .bytemd-editor {
   font-size: 14px;
   color: var(--b3-theme-on-background) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-status {
+.ta-skill-edit-dialog .bytemd-status {
   border-top: 1px solid var(--b3-theme-surface-lighter) !important;
   color: var(--b3-theme-on-background) !important;
 }
 
-.skill-edit-dialog .CodeMirror {
+.ta-skill-edit-dialog .CodeMirror {
   font-family: var(--b3-font-code, 'JetBrains Mono', monospace);
   color: var(--b3-theme-on-background) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .CodeMirror-gutters {
+.ta-skill-edit-dialog .CodeMirror-gutters {
   background-color: var(--b3-theme-surface) !important;
   border-right: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .CodeMirror-linenumber {
+.ta-skill-edit-dialog .CodeMirror-linenumber {
   color: var(--b3-theme-on-background) !important;
   opacity: 0.5;
 }
 
-.skill-edit-dialog .CodeMirror-cursor {
+.ta-skill-edit-dialog .CodeMirror-cursor {
   border-left-color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .CodeMirror-selected {
+.ta-skill-edit-dialog .CodeMirror-selected {
   background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.1) !important;
 }
 
-.skill-edit-dialog .CodeMirror-focused .CodeMirror-selected {
+.ta-skill-edit-dialog .CodeMirror-focused .CodeMirror-selected {
   background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.15) !important;
 }
 
-.skill-edit-dialog .bytemd-preview {
+.ta-skill-edit-dialog .CodeMirror-activeline-background {
+  background: var(--b3-theme-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .CodeMirror-scrollbar-filler,
+.ta-skill-edit-dialog .CodeMirror-gutter-filler {
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-header {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-quote {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-keyword {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-atom {
+  color: var(--b3-theme-on-background) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-number {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-def {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-variable-2 {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.9;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-variable-3,
+.ta-skill-edit-dialog .cm-s-default .cm-type {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.9;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-comment {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-string {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-string-2 {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.75;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-meta,
+.ta-skill-edit-dialog .cm-s-default .cm-qualifier {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.7;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-builtin {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-bracket {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.7;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-tag {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-attribute {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-hr {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-link {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .cm-negative {
+  color: var(--b3-theme-error) !important;
+}
+
+.ta-skill-edit-dialog .cm-positive {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .cm-s-default .cm-error {
+  color: var(--b3-theme-error) !important;
+}
+
+.ta-skill-edit-dialog .CodeMirror-matchingtag {
+  background: rgba(var(--b3-theme-primary-rgb, 0, 0, 0), 0.1) !important;
+}
+
+.ta-skill-edit-dialog div.CodeMirror span.CodeMirror-matchingbracket {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog div.CodeMirror span.CodeMirror-nonmatchingbracket {
+  color: var(--b3-theme-error) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview {
   border-left: 1px solid var(--b3-theme-surface-lighter) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body {
   color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
   padding: 24px !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body h1,
-.skill-edit-dialog .bytemd-preview .markdown-body h2 {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body img {
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .markdown-body mark {
+  background-color: var(--b3-theme-surface-light) !important;
+  color: var(--b3-theme-on-background) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .markdown-body h1,
+.ta-skill-edit-dialog .bytemd-preview .markdown-body h2 {
   border-bottom: none !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body pre {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body pre {
   background-color: var(--b3-theme-surface-light) !important;
   border-radius: 6px;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body code {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body code {
   background-color: var(--b3-theme-surface-light) !important;
   border-radius: 3px;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body pre code {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body pre code {
   background-color: transparent !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body blockquote {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body blockquote {
   color: var(--b3-theme-on-background) !important;
   border-left-color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body table tr {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body table tr {
   background-color: var(--b3-theme-surface) !important;
   border-top: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body table tr:nth-child(2n) {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body table tr:nth-child(2n) {
   background-color: var(--b3-theme-surface-light) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body table th,
-.skill-edit-dialog .bytemd-preview .markdown-body table td {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body table th,
+.ta-skill-edit-dialog .bytemd-preview .markdown-body table td {
   border: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body hr {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body hr {
   border-bottom-color: var(--b3-theme-surface-lighter) !important;
   background-color: var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-preview .markdown-body a {
+.ta-skill-edit-dialog .bytemd-preview .markdown-body a {
   color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .bytemd {
+.ta-skill-edit-dialog .bytemd-preview .hljs {
+  background: transparent !important;
+  color: var(--b3-theme-on-background) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-comment,
+.ta-skill-edit-dialog .bytemd-preview .hljs-quote {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-keyword,
+.ta-skill-edit-dialog .bytemd-preview .hljs-selector-tag {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-string,
+.ta-skill-edit-dialog .bytemd-preview .hljs-addition {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-number,
+.ta-skill-edit-dialog .bytemd-preview .hljs-literal {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-title,
+.ta-skill-edit-dialog .bytemd-preview .hljs-section {
+  color: var(--b3-theme-on-background) !important;
+  font-weight: bold;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-attr,
+.ta-skill-edit-dialog .bytemd-preview .hljs-attribute {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.9;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-symbol,
+.ta-skill-edit-dialog .bytemd-preview .hljs-bullet {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-meta {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-preview .hljs-deletion {
+  color: var(--b3-theme-error) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .bytemd {
   border: none !important;
   color: var(--b3-theme-on-background) !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .bytemd-preview {
+.ta-skill-edit-dialog .bytemd-viewer .bytemd-preview {
   border: none !important;
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body {
   color: var(--b3-theme-on-background) !important;
+  background-color: var(--b3-theme-surface) !important;
   padding: 24px !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body h1,
-.skill-edit-dialog .bytemd-viewer .markdown-body h2 {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body img {
+  background-color: var(--b3-theme-surface) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body mark {
+  background-color: var(--b3-theme-surface-light) !important;
+  color: var(--b3-theme-on-background) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body h1,
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body h2 {
   border-bottom: none !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body pre {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body pre {
   background-color: var(--b3-theme-surface-light) !important;
   border-radius: 6px;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body code {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body code {
   background-color: var(--b3-theme-surface-light) !important;
   border-radius: 3px;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body pre code {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body pre code {
   background-color: transparent !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body blockquote {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body blockquote {
   color: var(--b3-theme-on-background) !important;
   border-left-color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body table tr {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body table tr {
   background-color: var(--b3-theme-surface) !important;
   border-top: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body table tr:nth-child(2n) {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body table tr:nth-child(2n) {
   background-color: var(--b3-theme-surface-light) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body table th,
-.skill-edit-dialog .bytemd-viewer .markdown-body table td {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body table th,
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body table td {
   border: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body hr {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body hr {
   border-bottom-color: var(--b3-theme-surface-lighter) !important;
   background-color: var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-viewer .markdown-body a {
+.ta-skill-edit-dialog .bytemd-viewer .markdown-body a {
   color: var(--b3-theme-primary) !important;
 }
 
-.skill-edit-dialog .bytemd-split .bytemd-preview {
+.ta-skill-edit-dialog .bytemd-viewer .hljs {
+  background: transparent !important;
+  color: var(--b3-theme-on-background) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-comment,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-quote {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-keyword,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-selector-tag {
+  color: var(--b3-theme-primary) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-string,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-addition {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-number,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-literal {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-title,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-section {
+  color: var(--b3-theme-on-background) !important;
+  font-weight: bold;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-attr,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-attribute {
+  color: var(--b3-theme-on-background) !important;
+  opacity: 0.9;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-symbol,
+.ta-skill-edit-dialog .bytemd-viewer .hljs-bullet {
+  color: var(--b3-theme-primary) !important;
+  opacity: 0.85;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-meta {
+  color: var(--b3-theme-on-surface-light) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-viewer .hljs-deletion {
+  color: var(--b3-theme-error) !important;
+}
+
+.ta-skill-edit-dialog .bytemd-split .bytemd-preview {
   border-left: 1px solid var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-dropdown {
+.ta-skill-edit-dialog .bytemd-dropdown {
   background-color: var(--b3-theme-surface) !important;
 }
 
-.skill-edit-dialog .bytemd-dropdown-title {
+.ta-skill-edit-dialog .bytemd-dropdown-title {
   border-bottom: 1px solid var(--b3-theme-surface-lighter) !important;
   color: var(--b3-theme-on-background) !important;
 }
 
-.skill-edit-dialog .bytemd-dropdown-item:hover {
+.ta-skill-edit-dialog .bytemd-dropdown-item:hover {
   background-color: var(--b3-theme-surface-lighter) !important;
 }
 
-.skill-edit-dialog .bytemd-dropdown-item-title {
+.ta-skill-edit-dialog .bytemd-dropdown-item-title {
   color: var(--b3-theme-on-background) !important;
 }
 </style>
