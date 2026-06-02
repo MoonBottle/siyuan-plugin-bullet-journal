@@ -76,7 +76,6 @@ import {
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import { t } from '@/i18n'
 import { MarketService } from '@/services/marketService'
-import { useSkillStore } from '@/stores/skillStore'
 import { createDialog } from '@/utils/dialog'
 import { getSharedPinia } from '@/utils/sharedPinia'
 
@@ -85,7 +84,6 @@ const emit = defineEmits<{
   (e: 'created'): void
 }>()
 
-const skillStore = useSkillStore()
 const marketService = MarketService.getInstance()
 
 const searchQuery = ref('')

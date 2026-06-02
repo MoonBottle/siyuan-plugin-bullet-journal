@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+/* eslint-disable vue/one-component-per-file */
 import type { RegisteredSkill } from '@/skills'
 import { showMessage } from 'siyuan'
 import {
