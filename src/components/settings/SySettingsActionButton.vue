@@ -17,7 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog'
+import {
+  hideIconTooltip,
+  showIconTooltip,
+} from '@/utils/dialog'
 
 const props = defineProps<{
   icon?: string

@@ -69,16 +69,16 @@
 <script setup lang="ts">
 import type { MarketSkill } from '@/services/marketService'
 import {
-  createApp,
   computed,
+  createApp,
   ref,
 } from 'vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
-import { createDialog } from '@/utils/dialog'
 import { t } from '@/i18n'
 import { MarketService } from '@/services/marketService'
-import { getSharedPinia } from '@/utils/sharedPinia'
 import { useSkillStore } from '@/stores/skillStore'
+import { createDialog } from '@/utils/dialog'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 const emit = defineEmits<{
   (e: 'close'): void
