@@ -62,6 +62,7 @@ defineProps<{
 
 <style scoped>
 .sy-settings-section {
+  margin-top: 20px;
   margin-bottom: 20px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
