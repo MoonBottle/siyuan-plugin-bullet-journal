@@ -116,6 +116,8 @@ import { t } from '@/i18n'
 import { SkillParser } from '@/skills'
 import { useSkillStore } from '@/stores/skillStore'
 import 'bytemd/dist/index.css'
+import 'github-markdown-css/github-markdown-light.css'
+
 import 'highlight.js/styles/github.css'
 
 const props = defineProps<{
