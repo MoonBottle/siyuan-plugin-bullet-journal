@@ -10,9 +10,16 @@
             <input
               v-model="searchQuery"
               type="text"
-              class="b3-text-field sy-settings-search"
+              class="sy-settings-search"
               :placeholder="t('settings').searchPlaceholder"
             />
+            <button
+              v-if="searchQuery"
+              class="sy-settings-search__clear"
+              @click="searchQuery = ''"
+            >
+              <svg><use xlink:href="#iconClose"></use></svg>
+            </button>
           </div>
         </div>
         <nav class="sy-settings-sidebar__menu">
@@ -409,29 +416,36 @@ onUnmounted(() => {
 .sy-settings-search-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--b3-border-radius);
+  padding: 5px 10px;
+}
+
+.sy-settings-search-wrap:focus-within {
+  border-color: var(--b3-theme-primary);
 }
 
 .sy-settings-search__icon {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
-  fill: var(--b3-theme-on-surface-light);
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.5;
   pointer-events: none;
 }
 
 .sy-settings-search {
   flex: 1;
   min-width: 0;
-  padding: 0 0 0 5px;
   font-size: 13px;
   background: transparent;
   border: none;
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-background);
 }
 
 .sy-settings-search:focus {
@@ -440,6 +454,28 @@ onUnmounted(() => {
 
 .sy-settings-search::placeholder {
   color: var(--b3-theme-on-surface-light);
+}
+
+.sy-settings-search__clear {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.4;
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+}
+
+.sy-settings-search__clear svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.sy-settings-search__clear:hover {
+  opacity: 0.8;
 }
 
 .sy-settings-sidebar__menu {
