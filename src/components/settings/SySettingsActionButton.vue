@@ -3,6 +3,8 @@
     type="button"
     class="sy-settings-action-btn b3-button b3-button--outline fn__flex-center"
     @click="$emit('click', $event)"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
   >
     <svg
       v-if="icon"
@@ -15,13 +17,26 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { hideIconTooltip, showIconTooltip } from '@/utils/dialog'
+
+const props = defineProps<{
   icon?: string
   text: string
+  title?: string
 }>()
 defineEmits<{
   click: [event: MouseEvent]
 }>()
+
+function onMouseEnter(e: MouseEvent) {
+  if (props.title) {
+    showIconTooltip(e.currentTarget as HTMLElement, props.title)
+  }
+}
+
+function onMouseLeave(e: MouseEvent) {
+  hideIconTooltip(e.currentTarget as HTMLElement)
+}
 </script>
 
 <style scoped>

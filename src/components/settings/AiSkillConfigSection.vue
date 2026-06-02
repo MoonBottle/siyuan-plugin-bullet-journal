@@ -7,29 +7,9 @@
     <div class="skill-section">
       <div
         v-if="skills.length === 0"
-        class="skill-templates"
+        class="skill-empty"
       >
-        <div class="skill-templates-hint">
-          {{ t('settings').aiSkills?.emptySkills ?? '暂无技能，从模板快速创建或自定义添加' }}
-        </div>
-        <div class="template-list">
-          <div
-            v-for="tpl in skillTemplates"
-            :key="tpl.name"
-            class="template-item"
-          >
-            <div class="template-info">
-              <span class="template-name">{{ tpl.name }}</span>
-              <span class="template-desc">{{ tpl.description }}</span>
-            </div>
-            <SyButton
-              icon="iconAdd"
-              :text="t('settings').aiSkills?.addSkill ?? '添加'"
-              :aria-label="t('settings').aiSkills?.addSkill ?? '添加'"
-              @click="createFromTemplate(tpl)"
-            />
-          </div>
-        </div>
+        {{ t('settings').aiSkills?.emptySkills ?? '暂无技能，从技能市场浏览模板，或自定义创建' }}
       </div>
 
       <div
@@ -76,11 +56,20 @@
       </div>
     </div>
 
-    <SySettingsActionButton
-      icon="iconAdd"
-      :text="t('settings').aiSkills?.addSkill ?? '添加技能'"
-      @click="showAddSkillDialog"
-    />
+    <div class="skill-actions">
+      <SySettingsActionButton
+        icon="iconAdd"
+        :text="t('settings').aiSkills?.addSkill ?? '添加技能'"
+        :title="t('settings').aiSkills?.marketDescription ?? '浏览模板，快速创建技能'"
+        @click="showAddSkillDialog"
+      />
+      <SySettingsActionButton
+        icon="iconSparkles"
+        :text="t('settings').aiSkills?.marketTitle ?? '技能市场'"
+        :title="t('settings').aiSkills?.marketDescription ?? '浏览模板，快速创建技能'"
+        @click="openMarketDialog"
+      />
+    </div>
   </SySettingsSection>
 
 </template>
@@ -93,6 +82,7 @@ import {
   createApp,
 } from 'vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
+import SkillMarketDialog from '@/components/dialog/SkillMarketDialog.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
@@ -120,55 +110,36 @@ const skillSvgIcon = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000
 
 const skills = computed(() => skillStore.skills)
 
-const skillTemplates = [
-  {
-    name: 'daily-report',
-    description: '生成每日工作日报，汇总当天完成的任务和番茄钟记录',
-    content: `## 工作流程
+function openMarketDialog() {
+  const container = document.createElement('div')
 
-1. **查询当天任务** — 获取今天完成和进行中的任务
-2. **查询番茄钟记录** — 获取今日番茄钟统计
-3. **生成日报** — 按以下格式整理信息并输出
+  let app: ReturnType<typeof createApp>
 
-## 日报格式
-
-\`\`\`markdown
-# 📋 日报 - {日期}
-
-## ✅ 今日完成
-- {任务1}
-- {任务2}
-
-## 🔄 进行中
-- {任务3}
-
-## 🍅 番茄钟统计
-- 今日完成 {n} 个番茄钟
-- 累计专注 {n} 分钟
-
-## 📝 明日计划
-（根据进行中的任务和用户补充信息生成）
-\`\`\`
-
-## 注意事项
-- 如果用户指定了日期范围，按范围查询
-- 如果没有完成的任务，提示"今日暂无完成任务"
-- 番茄钟数据为空时省略该部分
-`,
-  },
-]
-
-function createFromTemplate(tpl: typeof skillTemplates[0]) {
-  skillStore.addSkill({
-    name: tpl.name,
-    description: tpl.description,
-    content: tpl.content,
-    autoEnable: true,
-  }).then(() => {
-    showMessage(`技能「${tpl.name}」已创建`, 2000, 'info')
-  }).catch((err) => {
-    showMessage(`创建失败: ${(err as Error).message}`, 3000, 'error')
+  const dialog = createDialog({
+    title: t('settings').aiSkills?.marketTitle ?? '技能市场',
+    content: '',
+    width: '600px',
+    destroyCallback: () => {
+      app.unmount()
+    },
   })
+
+  app = createApp(SkillMarketDialog, {
+    onClose: () => {
+      dialog.destroy()
+    },
+    onCreated: () => {
+      dialog.destroy()
+    },
+  })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
+  if (bodyEl) {
+    bodyEl.appendChild(container)
+  }
 }
 
 function openSkillEditDialog(skillName: string, mode: 'create' | 'edit' | 'view') {
@@ -242,55 +213,16 @@ function toggleSkillEnabled(name: string, enabled: boolean) {
   margin-bottom: 20px;
 }
 
-.skill-templates {
-  margin-bottom: 16px;
-}
-
-.skill-templates-hint {
+.skill-empty {
   color: var(--b3-theme-on-surface-light);
   font-size: 13px;
   padding: 12px 0;
   text-align: center;
 }
 
-.template-list {
+.skill-actions {
   display: flex;
-  flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
-}
-
-.template-item {
-  background: var(--b3-theme-surface-light);
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  border: 1px dashed var(--b3-theme-surface-lighter);
-}
-
-.template-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.template-name {
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-  font-size: 13px;
-}
-
-.template-desc {
-  font-size: 11px;
-  color: var(--b3-theme-on-surface-light);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .custom-list {

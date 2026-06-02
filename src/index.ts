@@ -49,6 +49,7 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService"
 import { isForwardProxyAvailable } from "@/services/clawBotForwardProxy"
+import { MarketService } from "@/services/marketService"
 import {
 
   mobileNotificationScheduler,
@@ -409,6 +410,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 初始化技能存储服务
     this.initSkillStorage()
+
+    // 初始化内置模板目录
+    MarketService.getInstance().loadBuiltinCatalog()
 
     // 初始化微信 ClawBot（不依赖 AI Dock 是否打开，确保通知能正常发送）
     this.initClawBot(pinia)

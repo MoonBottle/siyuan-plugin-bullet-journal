@@ -426,7 +426,7 @@
     "aiSkills": {
       "title": "AI 技能配置",
       "description": "管理 AI 技能，让 AI 能够执行特定任务",
-      "emptySkills": "暂无技能，从模板快速创建或自定义添加",
+      "emptySkills": "暂无技能，从技能市场浏览模板，或自定义创建",
       "addSkill": "添加技能",
       "editSkill": "编辑技能",
       "deleteSkill": "删除技能",
@@ -435,7 +435,18 @@
       "skillInvalid": "技能格式错误：{errors}",
       "executionRunning": "执行中...",
       "executionCompleted": "已完成",
-      "executionFailed": "执行失败"
+      "executionFailed": "执行失败",
+      "marketTitle": "技能市场",
+      "marketDescription": "浏览模板，快速创建技能",
+      "useTemplate": "使用模板",
+      "createFromTemplate": "从模板创建技能",
+      "templateName": "技能名称",
+      "templateNamePlaceholder": "输入技能名称",
+      "templateDesc": "技能描述",
+      "templateDescPlaceholder": "输入技能描述",
+      "createBtn": "创建",
+      "emptyMarket": "暂无可用模板",
+      "searchPlaceholder": "搜索模板..."
     },
     "projectDirectories": {
       "title": "项目目录",
