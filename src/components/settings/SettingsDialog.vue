@@ -187,8 +187,9 @@ const visibleMenuItems = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return menuItems.value
   return menuItems.value.filter((item) => {
-    const kw = sectionKeywords.value[item.key]?.toLowerCase() ?? ''
-    return kw.includes(q)
+    const titleMatch = item.title.toLowerCase().includes(q)
+    const kwMatch = (sectionKeywords.value[item.key] ?? '').toLowerCase().includes(q)
+    return titleMatch || kwMatch
   })
 })
 
