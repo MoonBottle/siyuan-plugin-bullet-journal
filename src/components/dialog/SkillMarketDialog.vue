@@ -1,10 +1,24 @@
 <template>
   <div class="skill-market-dialog">
     <div class="market-search">
-      <SyInput
-        v-model="searchQuery"
-        :placeholder="t('settings').aiSkills?.searchPlaceholder ?? '搜索模板...'"
-      />
+      <div class="market-search-wrap">
+        <svg class="market-search__icon">
+          <use xlink:href="#iconSearch"></use>
+        </svg>
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="market-search-input"
+          :placeholder="t('settings').aiSkills?.searchPlaceholder ?? '搜索模板...'"
+        />
+        <button
+          v-if="searchQuery"
+          class="market-search__clear"
+          @click="searchQuery = ''"
+        >
+          <svg><use xlink:href="#iconClose"></use></svg>
+        </button>
+      </div>
     </div>
 
     <div
@@ -59,7 +73,6 @@ import {
   computed,
   ref,
 } from 'vue'
-import SyInput from '@/components/SiyuanTheme/SyInput.vue'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import { createDialog } from '@/utils/dialog'
 import { t } from '@/i18n'
@@ -136,6 +149,68 @@ function openCreateFromTemplate(skill: MarketSkill) {
 
 .market-search {
   margin-bottom: 16px;
+}
+
+.market-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: var(--b3-border-radius);
+  padding: 5px 10px;
+
+  &:focus-within {
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.market-search__icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.market-search-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+  color: var(--b3-theme-on-background);
+  outline: none;
+
+  &::placeholder {
+    color: var(--b3-theme-on-surface-light);
+  }
+}
+
+.market-search__clear {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.4;
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
 }
 
 .market-empty {
