@@ -19,3 +19,4 @@ package
 .agents/
 logs/
 .trae/
+.qoder/
