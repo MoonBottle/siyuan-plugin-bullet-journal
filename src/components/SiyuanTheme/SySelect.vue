@@ -52,12 +52,12 @@ import {
 } from 'vue'
 
 export interface SySelectOption {
-  value: string
+  value: string | number
   label: string
 }
 
 interface Props {
-  modelValue: string
+  modelValue: string | number
   options: SySelectOption[]
   placeholder?: string
   disabled?: boolean
@@ -71,8 +71,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  "change": [value: string]
+  'update:modelValue': [value: string | number]
+  "change": [value: string | number]
 }>()
 
 const isOpen = ref(false)
@@ -84,8 +84,8 @@ function getOptionLabel(option: SySelectOption): string {
   return option.label || ''
 }
 
-function getOptionValue(option: SySelectOption): string {
-  return option.value || ''
+function getOptionValue(option: SySelectOption): string | number {
+  return option.value
 }
 
 function isOptionActive(option: SySelectOption): boolean {

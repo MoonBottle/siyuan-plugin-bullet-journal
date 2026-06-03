@@ -160,7 +160,7 @@ const menuItems = computed<MenuItem[]>(() => {
   ]
 })
 
-const sectionKeywords: Record<string, string> = computed(() => {
+const sectionKeywords = computed<Record<string, string>>(() => {
   const s = t('settings') as Record<string, unknown>
   return {
     dir: collectStrings({

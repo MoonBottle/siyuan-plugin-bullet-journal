@@ -137,7 +137,7 @@
           <SySelect
             :model-value="pomodoro.defaultFocusDuration ?? 25"
             :options="focusDurationOptions"
-            @update:model-value="pomodoro.defaultFocusDuration = $event"
+            @update:model-value="pomodoro.defaultFocusDuration = $event as number"
           />
         </SySettingItem>
         <SySettingItem
@@ -166,7 +166,7 @@
           <SySelect
             :model-value="pomodoro.defaultBreakDuration ?? 5"
             :options="breakDurationOptions"
-            @update:model-value="pomodoro.defaultBreakDuration = $event"
+            @update:model-value="pomodoro.defaultBreakDuration = $event as number"
           />
         </SySettingItem>
       </SySettingItemList>
