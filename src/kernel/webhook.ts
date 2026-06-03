@@ -3,7 +3,10 @@ import type {
   WebhookChannel,
   WebhookConfig,
 } from './types'
-import { renderTemplate } from './utils'
+import {
+  renderTemplate,
+  toBase64Url,
+} from './utils'
 
 let webhookConfig: WebhookConfig = {
   enabled: false,
@@ -192,7 +195,7 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
   console.log(`[webhook] sendWebhook: channel="${channel.name}" type=${channel.type} method=${method} payloadLen=${payload.length}`)
 
   try {
-    const proxyPath = `/api/network/proxy?u=${Buffer.from(channel.url).toString('base64url' as BufferEncoding)}`
+    const proxyPath = `/api/network/proxy?u=${toBase64Url(channel.url)}`
 
     console.log('[webhook] calling siyuan.client.fetch with path=/api/network/proxy')
     const resp = await siyuan.client.fetch(proxyPath, {

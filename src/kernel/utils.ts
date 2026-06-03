@@ -1,5 +1,13 @@
 import type { ReminderConfig } from './types'
 
+const RE_PLUS = /\+/g
+const RE_SLASH = /\//g
+const RE_PADDING = /=+$/
+
+export function toBase64Url(input: string): string {
+  return Buffer.from(input).toString('base64').replace(RE_PLUS, '-').replace(RE_SLASH, '_').replace(RE_PADDING, '')
+}
+
 export function formatDate(d: Date): string {
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
