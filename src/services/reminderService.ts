@@ -20,6 +20,7 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
+import { isMobileDevice } from '@/utils/isMobile'
 import {
   requestNotificationPermission,
   showSystemNotification,
@@ -52,10 +53,10 @@ export class ReminderService {
   /**
    * 启动提醒服务
    */
-  start(plugin: Plugin, projectStore: ProjectStoreType): void {
+  start(_plugin: Plugin, projectStore: ProjectStoreType): void {
     this.projectStore = projectStore
 
-    if ((plugin as Plugin & { isMobile?: boolean }).isMobile) {
+    if (isMobileDevice()) {
       console.log('[ReminderService] Mobile frontend detected, skipping realtime scheduler startup')
       return
     }

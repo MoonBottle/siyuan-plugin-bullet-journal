@@ -34,8 +34,8 @@ import {
   ref,
   watch,
 } from 'vue'
-
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
+
 import {
   getCurrentLocale,
   t,
@@ -68,6 +68,7 @@ import {
   Events,
 } from '@/utils/eventBus'
 import { openDocumentAtLine } from '@/utils/fileUtils'
+import { isMobileDevice } from '@/utils/isMobile'
 import { computeTooltipPosition } from '@/utils/tooltipPosition'
 
 const props = defineProps<Props>()
@@ -492,7 +493,7 @@ onMounted(async () => {
           start: info.event.startStr,
           end: info.event.endStr,
           allDay: info.event.allDay,
-          extendedProps: info.event.extendedProps,
+          extendedProps: info.event.extendedProps as CalendarEvent['extendedProps'],
         }
         showEventDetailModal(eventData, { plugin: plugin as any })
       },
@@ -549,7 +550,7 @@ onMounted(async () => {
         const currentViewType = calendarInstance.view.type
 
         if (props.dateClickBehavior === 'dblclick'
-          && !plugin?.isMobile
+          && getFrontend() !== 'mobile' && getFrontend() !== 'browser-mobile'
           && (currentViewType === 'dayGridMonth' || currentViewType === 'timeGridWeek')) {
           const now = Date.now()
           const isDoubleClick = now - lastDateClickTime < 300 && lastDateClickStr === info.dateStr

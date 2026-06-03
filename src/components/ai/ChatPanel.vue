@@ -198,7 +198,6 @@ import type {
 } from '@/types/models'
 import {
   getActiveEditor,
-  getFrontend,
 } from 'siyuan'
 import {
   computed,
@@ -218,6 +217,7 @@ import {
   useSkillStore,
 
 } from '@/stores'
+import { isMobileDevice } from '@/utils/isMobile'
 
 import { smartFormatMarkdown } from '@/utils/markdownRenderer'
 import ChatInput from './ChatInput.vue'
@@ -237,10 +237,7 @@ const emit = defineEmits<{
 const NEWLINE_RE = /\n/g
 
 // 判断是否为移动端
-const isMobile = computed(() => {
-  const frontEnd = getFrontend()
-  return frontEnd === 'mobile' || frontEnd === 'browser-mobile'
-})
+const isMobile = computed(() => isMobileDevice())
 
 // 带渲染元数据的消息
 interface RenderMessage extends ChatMessageType {

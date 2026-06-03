@@ -88,11 +88,11 @@ import ProjectTab from "@/tabs/ProjectTab.vue"
 import QuadrantTab from "@/tabs/QuadrantTab.vue"
 import TodoDock from "@/tabs/TodoDock.vue"
 import WorkbenchTab from "@/tabs/WorkbenchTab.vue"
-
 import {
   consumeStatusSnapshot,
   registerStatusResolver,
 } from "@/utils/blockWriter/statusSnapshot"
+
 import { CleanupManager } from "@/utils/cleanupManager"
 import {
   createDetachedPomodoroWindowHost,
@@ -130,6 +130,7 @@ import {
 
   setPendingHabitDockTarget,
 } from "@/utils/habitDockNavigation"
+import { isMobileDevice } from "@/utils/isMobile"
 import {
   getBlockIdFromElement,
   getBlockIdFromRange,
@@ -287,7 +288,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     const frontEnd = getFrontend()
     this.platform = frontEnd as SyFrontendTypes
-    this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile"
+    this.isMobile = isMobileDevice()
     this.isBrowser = frontEnd.includes("browser")
 
     console.log("[TaskAssistant] getFrontend():", frontEnd)

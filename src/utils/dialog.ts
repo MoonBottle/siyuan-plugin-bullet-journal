@@ -18,7 +18,6 @@ import type {
 } from '@/types/models'
 import {
   Dialog,
-  getFrontend,
 } from 'siyuan'
 import { createApp } from 'vue'
 import * as siyuanAPI from '@/api'
@@ -39,11 +38,12 @@ import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue'
-
-
-
-
 import { skipCurrentOccurrence } from '@/services/recurringService'
+
+
+
+
+import { isMobileDevice } from '@/utils/isMobile'
 import { removePendingCompletion } from '@/utils/pomodoroStorage'
 import { getSharedPinia } from '@/utils/sharedPinia'
 
@@ -770,11 +770,6 @@ function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroup
 /**
  * 检测是否为移动端
  */
-function isMobileDevice(): boolean {
-  const frontend = getFrontend()
-  return frontend === 'mobile' || frontend === 'browser-mobile'
-}
-
 /**
  * 显示设置弹框（Vue 重构版）- 支持移动端适配
  */
