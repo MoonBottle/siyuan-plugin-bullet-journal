@@ -24,10 +24,6 @@ import { createApp } from 'vue'
 import {
   getHPathByID,
 } from '@/api'
-/**
- * 导入 CreateSkillDialog 组件
- */
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue'
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import {
   SLASH_COMMAND_FILTERS,
@@ -430,15 +426,6 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-set-recurring',
       callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING),
-    },
-    {
-      filter: SLASH_COMMAND_FILTERS.CREATE_SKILL,
-      html: `<div class="b3-list-item__first">
-          <span class="b3-list-item__text">${t('slash').createSkill}</span>
-          <span class="b3-list-item__meta">AI Skill</span>
-      </div>`,
-      id: 'bullet-journal-create-skill',
-      callback: getActionHandler('createSkill', config, SLASH_COMMAND_FILTERS.CREATE_SKILL),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_PRIORITY,
@@ -927,11 +914,6 @@ export function getActionHandler(
           setRecurringForBlock(protyle, nodeElement, item, capturedWriteContext)
         })()
       }
-    case 'createSkill':
-      return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement)
-        createSkillFromSlash(nodeElement)
-      }
     case 'setPriority':
       return (protyle, nodeElement) => {
         void (async () => {
@@ -1141,7 +1123,6 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     setFocusPlan: 'Focus Plan',
     setReminder: 'Reminder',
     setRecurring: 'Recurring',
-    createSkill: 'AI Skill',
     setPriority: 'Priority',
   }
   return labels[action] || action
@@ -1547,51 +1528,6 @@ async function setRecurringForBlock(
   await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
 
   showRecurringSettingDialog(targetItem)
-}
-
-/**
- * 从斜杠命令创建技能
- * 将当前文档转换为技能
- */
-async function createSkillFromSlash(_nodeElement: HTMLElement) {
-  // 创建容器元素
-  const container = document.createElement('div')
-
-  let dialog: ReturnType<typeof createDialog>
-
-  const app = createApp(CreateSkillDialog, {
-    mode: 'new',
-    onClose: () => {
-      dialog.destroy()
-    },
-    onCreated: (skillName: string) => {
-      console.log('[SlashCommand] Skill created:', skillName)
-      showMessage('技能创建成功！', 3000, 'info')
-    },
-  })
-
-  app.use(getSharedPinia())
-  app.mount(container)
-
-  dialog = createDialog({
-    title: t('slash').createSkillTitle,
-    content: '',
-    width: '480px',
-    height: 'auto',
-  })
-
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
-  if (bodyEl) {
-    bodyEl.appendChild(container)
-  }
-
-  // 自动聚焦到弹框内，使 ESC 键立即生效
-  requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
-    if (focusableEl) {
-      focusableEl.focus()
-    }
-  })
 }
 
 /**

@@ -88,7 +88,6 @@ export type CustomSlashCommandAction =
   | 'setFocusPlan'
   | 'setReminder'
   | 'setRecurring'
-  | 'createSkill'
   | 'setPriority'
   | 'createHabit'
   | 'checkIn'
