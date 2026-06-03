@@ -220,7 +220,7 @@ const progressCircumference = 2 * Math.PI * 8
 const calendarCells = computed(() => {
   const firstDay = dayjs(`${viewMonth.value}-01`)
   // 周一开始: 1=Mon..7=Sun
-  let startDow = firstDay.day() // 0=Sun
+  let startDow: number = firstDay.day() // 0=Sun
   if (startDow === 0) startDow = 7
   const offset = startDow - 1 // 偏移量（周一开始）
 

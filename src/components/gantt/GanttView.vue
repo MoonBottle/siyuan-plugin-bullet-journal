@@ -265,6 +265,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     endDateTime: props.originalEndDateTime,
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
+    listItemBlockId: props.listItemBlockId,
   }
 
   const menuOptions = createItemMenu(
