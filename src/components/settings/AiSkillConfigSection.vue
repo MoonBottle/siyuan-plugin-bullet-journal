@@ -36,6 +36,11 @@
             </div>
             <div class="custom-item-actions">
               <SyButton
+                icon="iconFolder"
+                :aria-label="t('settings').aiSkills?.openFolder ?? '打开目录'"
+                @click="openSkillFolder(skill.name)"
+              />
+              <SyButton
                 icon="iconEdit"
                 :text="t('settings').aiSkills?.editSkill ?? '编辑'"
                 :aria-label="t('settings').aiSkills?.editSkill ?? '编辑'"
@@ -82,6 +87,7 @@ import {
   computed,
   createApp,
 } from 'vue'
+import { getWorkspaceInfo } from '@/api'
 import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
 import SkillMarketDialog from '@/components/dialog/SkillMarketDialog.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'
@@ -201,6 +207,28 @@ function removeSkill(skill: RegisteredSkill) {
       showMessage('技能已删除', 2000, 'info')
     },
   )
+}
+
+const BACKSLASH_RE = /\\/g
+const TRAILING_SLASHES_RE = /\/+$/
+
+async function openSkillFolder(skillName: string) {
+  const workspaceInfo = await getWorkspaceInfo()
+  const workspacePath = workspaceInfo?.workspaceDir ?? ''
+  if (!workspacePath) {
+    showMessage('无法获取工作空间路径，请使用思源桌面版', 4000, 'error')
+    return
+  }
+
+  const base = workspacePath.replace(BACKSLASH_RE, '/').replace(TRAILING_SLASHES_RE, '')
+  const skillPath = `${base}/data/storage/petal/siyuan-plugin-bullet-journal/skills/${skillName}`
+
+  try {
+    const { shell } = (window as any).require('electron')
+    shell.showItemInFolder(skillPath)
+  } catch {
+    showMessage('无法打开目录，请使用思源桌面版', 4000, 'error')
+  }
 }
 
 function toggleSkillEnabled(name: string, enabled: boolean) {

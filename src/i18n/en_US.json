@@ -511,7 +511,8 @@
       "templateDescPlaceholder": "Enter skill description",
       "createBtn": "Create",
       "emptyMarket": "No templates available",
-      "searchPlaceholder": "Search templates..."
+      "searchPlaceholder": "Search templates...",
+      "openFolder": "Open Folder"
     },
     "slashCommands": {
       "title": "Slash Commands",
