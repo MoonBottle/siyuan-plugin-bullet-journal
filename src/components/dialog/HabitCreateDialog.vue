@@ -106,7 +106,7 @@
           class="freq-btn"
           :class="[{ active: form.frequencyType === opt.value }]"
           :data-testid="`habit-frequency-${opt.value}-button`"
-          @click="selectFrequency(opt.value)"
+          @click="selectFrequency(opt.value as HabitFrequency['type'])"
         >
           {{ opt.label }}
         </button>
@@ -149,8 +149,8 @@
           v-for="(label, idx) in weekDayLabels"
           :key="idx"
           class="day-btn"
-          :class="[{ active: form.daysOfWeek.includes(idx) }]"
-          @click="toggleDayOfWeek(idx)"
+          :class="[{ active: form.daysOfWeek.includes(idx as number) }]"
+          @click="toggleDayOfWeek(idx as number)"
         >
           {{ label }}
         </button>
