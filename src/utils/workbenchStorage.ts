@@ -4,7 +4,7 @@ export const WORKBENCH_FILE = 'workbench.json'
 
 interface WorkbenchPlugin {
   loadData: (path: string) => Promise<unknown>
-  saveData: (path: string, data: string) => Promise<void>
+  saveData: (path: string, data: string) => Promise<unknown>
 }
 
 export function createEmptyWorkbenchSettings(): WorkbenchSettings {
