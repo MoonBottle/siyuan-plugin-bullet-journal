@@ -72,6 +72,10 @@ vi.mock('@/services/mobileNotificationRegistry', () => ({
   removeMobileNotificationRegistryEntry: (entryKey: string) => mockRemoveRegistryEntry(entryKey),
 }))
 
+vi.mock('@/utils/isMobile', () => ({
+  isMobileDevice: () => true,
+}))
+
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
     id: 'item-1',
@@ -399,7 +403,6 @@ describe('mobileNotificationScheduler', () => {
     await scheduler.schedulePomodoroFocusEnd({
       expectedEndAt: firstEnd,
       itemContent: 'Write tests',
-      plugin: { isMobile: true },
     })
 
     mockCancelNativeNotification.mockClear()
@@ -408,7 +411,6 @@ describe('mobileNotificationScheduler', () => {
     await scheduler.schedulePomodoroFocusEnd({
       expectedEndAt: secondEnd,
       itemContent: 'Write tests',
-      plugin: { isMobile: true },
     })
 
     expect(mockScheduleNativeNotification).toHaveBeenNthCalledWith(
@@ -434,7 +436,6 @@ describe('mobileNotificationScheduler', () => {
     await scheduler.schedulePomodoroBreakEnd({
       expectedEndAt: breakEndAt,
       breakLabel: '休息',
-      plugin: { isMobile: true },
     })
 
     expect(registryState['pomodoro:break-end']).toEqual(expect.objectContaining({

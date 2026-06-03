@@ -79,6 +79,7 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
+import { isMobileDevice } from '@/utils/isMobile'
 import { requestNotificationPermission } from '@/utils/notification'
 import { removePendingCompletion } from '@/utils/pomodoroStorage'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
@@ -249,7 +250,7 @@ onMounted(async () => {
   await restorePomodoroState()
 
   // 仅桌面端预热浏览器通知权限，移动端走原生通知调度
-  if (!plugin?.isMobile) {
+  if (!isMobileDevice()) {
     void requestNotificationPermission()
   }
 

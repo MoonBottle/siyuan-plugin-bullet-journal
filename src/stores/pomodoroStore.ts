@@ -67,31 +67,29 @@ interface PomodoroState {
   _kernelNotificationUnsubscribe: (() => void) | null
 }
 
-function isMobilePomodoroNotificationsEnabled(plugin?: any): boolean {
-  return mobileNotificationScheduler.isMobileNotificationsEnabled(plugin ?? usePlugin())
+function isMobilePomodoroNotificationsEnabled(): boolean {
+  return mobileNotificationScheduler.isMobileNotificationsEnabled()
 }
 
 async function scheduleMobileFocusEnd(
   store: PomodoroState & {
     activePomodoro: ActivePomodoro | null
   },
-  plugin?: any,
 ): Promise<void> {
   const activePomodoro = store.activePomodoro
   if (!activePomodoro || activePomodoro.timerMode !== 'countdown' || activePomodoro.isPaused)
     return
-  if (!isMobilePomodoroNotificationsEnabled(plugin))
+  if (!isMobilePomodoroNotificationsEnabled())
     return
 
   await mobileNotificationScheduler.schedulePomodoroFocusEnd({
     expectedEndAt: Date.now() + activePomodoro.remainingSeconds * 1000,
     itemContent: activePomodoro.itemContent,
-    plugin,
   })
 }
 
-function cancelMobileFocusEnd(plugin?: any): void {
-  if (!isMobilePomodoroNotificationsEnabled(plugin))
+function cancelMobileFocusEnd(): void {
+  if (!isMobilePomodoroNotificationsEnabled())
     return
   mobileNotificationScheduler.cancelPomodoroFocusEnd()
 }
@@ -115,20 +113,18 @@ function calculateRestoredAccumulatedSeconds(data: ActivePomodoroData): number {
 
 async function scheduleMobileBreakEnd(
   remainingSeconds: number,
-  plugin?: any,
 ): Promise<void> {
-  if (!isMobilePomodoroNotificationsEnabled(plugin))
+  if (!isMobilePomodoroNotificationsEnabled())
     return
 
   await mobileNotificationScheduler.schedulePomodoroBreakEnd({
     expectedEndAt: Date.now() + remainingSeconds * 1000,
     breakLabel: t('settings').pomodoro.breakLabel,
-    plugin,
   })
 }
 
-function cancelMobileBreakEnd(plugin?: any): void {
-  if (!isMobilePomodoroNotificationsEnabled(plugin))
+function cancelMobileBreakEnd(): void {
+  if (!isMobilePomodoroNotificationsEnabled())
     return
   mobileNotificationScheduler.cancelPomodoroBreakEnd()
 }
@@ -235,7 +231,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 启动倒计时
         this.startTimer()
 
-        await scheduleMobileFocusEnd(this, plugin)
+        await scheduleMobileFocusEnd(this)
 
         // 触发专注开始事件
         eventBus.emit(Events.POMODORO_STARTED)
@@ -297,7 +293,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 停止定时器
         this.stopTimer()
 
-        cancelMobileFocusEnd(plugin)
+        cancelMobileFocusEnd()
 
         if (kernelAvailable.value && this.activePomodoro?.blockId) {
           usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {})
@@ -353,7 +349,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 重新启动定时器
         this.startTimer()
 
-        await scheduleMobileFocusEnd(this, plugin)
+        await scheduleMobileFocusEnd(this)
 
         if (kernelAvailable.value && this.activePomodoro?.blockId && this.activePomodoro.timerMode === 'countdown') {
           const remainingSec = this.activePomodoro.remainingSeconds
@@ -574,7 +570,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const ap = this.activePomodoro
         const now = Date.now()
         const actualMinutes = Math.floor(ap.accumulatedSeconds / 60)
-        cancelMobileFocusEnd(pluginToUse)
+        cancelMobileFocusEnd()
 
         if (kernelAvailable.value && ap.blockId) {
           usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${ap.blockId}` }).catch(() => {})
@@ -747,7 +743,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           await removeActivePomodoro(plugin)
         }
 
-        cancelMobileFocusEnd(plugin)
+        cancelMobileFocusEnd()
 
         if (kernelAvailable.value && this.activePomodoro?.blockId) {
           usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {})
@@ -866,7 +862,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         }
 
         this.startTimer()
-        await scheduleMobileFocusEnd(this, plugin)
+        await scheduleMobileFocusEnd(this)
 
         this.autoExtendCount++
 
@@ -939,7 +935,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (remainingSeconds <= 0) {
           // 已经过期，自动标记为完成
           console.log('[Pomodoro] 专注已过期，自动标记为完成')
-          cancelMobileFocusEnd(plugin)
+          cancelMobileFocusEnd()
           await this.markExpiredPomodoroComplete(data, plugin)
           return false
         }
@@ -954,7 +950,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 只有在非暂停状态才启动定时器
         if (!data.isPaused) {
           this.startTimer()
-          await scheduleMobileFocusEnd(this, plugin)
+          await scheduleMobileFocusEnd(this)
 
           if (kernelAvailable.value && data.timerMode !== 'stopwatch') {
             const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000)
@@ -1080,7 +1076,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         })
       }
 
-      await scheduleMobileBreakEnd(totalSeconds, plugin)
+      await scheduleMobileBreakEnd(totalSeconds)
 
       if (kernelAvailable.value) {
         const endTime = Math.floor((Date.now() + totalSeconds * 1000) / 1000)
@@ -1143,7 +1139,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.breakRemainingSeconds = 0
       this.breakTotalSeconds = 0
       this.isBreakOverlayVisible = false
-      cancelMobileBreakEnd(plugin)
+      cancelMobileBreakEnd()
 
       if (kernelAvailable.value && wasActive) {
         usePlugin()!.kernel!.rpc.call.cancelTimersByType({ type: 'break' }).catch(() => {})
@@ -1168,7 +1164,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.breakRemainingSeconds = remainingSeconds
       this.breakTotalSeconds = totalSeconds ?? remainingSeconds
 
-      void scheduleMobileBreakEnd(remainingSeconds, plugin)
+      void scheduleMobileBreakEnd(remainingSeconds)
 
       if (kernelAvailable.value) {
         const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000)

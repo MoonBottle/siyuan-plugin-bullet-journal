@@ -136,6 +136,7 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
+import { isMobileDevice } from '@/utils/isMobile'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
@@ -149,7 +150,7 @@ const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
 const aiStore = useAIStore()
-const isMobile = computed(() => !!plugin?.isMobile)
+const isMobile = computed(() => isMobileDevice())
 
 // 对话列表（直接读取 store，避免组件内副本和 store 脱节）
 const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? [])

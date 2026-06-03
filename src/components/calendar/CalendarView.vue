@@ -550,7 +550,7 @@ onMounted(async () => {
         const currentViewType = calendarInstance.view.type
 
         if (props.dateClickBehavior === 'dblclick'
-          && getFrontend() !== 'mobile' && getFrontend() !== 'browser-mobile'
+          && !isMobileDevice()
           && (currentViewType === 'dayGridMonth' || currentViewType === 'timeGridWeek')) {
           const now = Date.now()
           const isDoubleClick = now - lastDateClickTime < 300 && lastDateClickStr === info.dateStr

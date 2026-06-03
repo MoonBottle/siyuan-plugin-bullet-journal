@@ -5,15 +5,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { usePlugin } from '@/main'
 import MobileMainShell from '@/mobile/MobileMainShell.vue'
+import { isMobileDevice } from '@/utils/isMobile'
 import DesktopTodoDock from './DesktopTodoDock.vue'
 
-const props = defineProps<{
-  plugin?: any
-}>()
-
-// Use injected plugin or fallback to usePlugin()
-const pluginInstance = computed(() => props.plugin || usePlugin())
-const isMobile = computed(() => pluginInstance.value?.isMobile)
+const isMobile = computed(() => isMobileDevice())
 </script>

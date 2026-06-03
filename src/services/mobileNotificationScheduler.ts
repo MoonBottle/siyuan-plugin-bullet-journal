@@ -7,7 +7,6 @@ import type {
   Item,
 } from '@/types/models'
 import type { NativeScheduleFailureReason } from '@/utils/notification'
-import { getCurrentPlugin } from '@/main'
 import { calculateReminderTime } from '@/parser/reminderParser'
 import { getHabitReminderEntries } from '@/services/habitReminder'
 import {
@@ -19,9 +18,9 @@ import {
 } from '@/services/mobileNotificationRegistry'
 import { useProjectStore } from '@/stores'
 import dayjs from '@/utils/dayjs'
+import { isMobileDevice } from '@/utils/isMobile'
 import {
   cancelNativeNotification,
-
   scheduleNativeNotificationWithDebug,
 } from '@/utils/notification'
 
@@ -31,20 +30,14 @@ const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000
 const POMODORO_FOCUS_END_ENTRY_KEY = 'pomodoro:focus-end'
 const POMODORO_BREAK_END_ENTRY_KEY = 'pomodoro:break-end'
 
-type MobilePluginLike = {
-  isMobile?: boolean
-} | null | undefined
-
 interface PomodoroFocusEndOptions {
   expectedEndAt: number
   itemContent?: string
-  plugin?: MobilePluginLike
 }
 
 interface PomodoroBreakEndOptions {
   expectedEndAt: number
   breakLabel?: string
-  plugin?: MobilePluginLike
 }
 
 interface MobileSchedulePlan {
@@ -214,13 +207,12 @@ export class MobileNotificationScheduler {
     }
   }
 
-  isMobileNotificationsEnabled(plugin?: MobilePluginLike): boolean {
-    const runtimePlugin = plugin ?? (getCurrentPlugin?.() as MobilePluginLike)
-    return !!runtimePlugin?.isMobile
+  isMobileNotificationsEnabled(): boolean {
+    return isMobileDevice()
   }
 
   async schedulePomodoroFocusEnd(options: PomodoroFocusEndOptions): Promise<void> {
-    if (!this.isMobileNotificationsEnabled(options.plugin))
+    if (!this.isMobileNotificationsEnabled())
       return
 
     await this.schedulePomodoroPlan(this.buildPomodoroFocusEndPlan(options))
@@ -231,7 +223,7 @@ export class MobileNotificationScheduler {
   }
 
   async schedulePomodoroBreakEnd(options: PomodoroBreakEndOptions): Promise<void> {
-    if (!this.isMobileNotificationsEnabled(options.plugin))
+    if (!this.isMobileNotificationsEnabled())
       return
 
     await this.schedulePomodoroPlan(this.buildPomodoroBreakEndPlan(options))
