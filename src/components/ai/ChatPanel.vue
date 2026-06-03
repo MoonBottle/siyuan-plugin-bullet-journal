@@ -142,7 +142,7 @@
             <button
               class="chat-panel__send-btn"
               :disabled="!canSend"
-              @click="handleSend"
+              @click="handleSend()"
             >
               <svg><use xlink:href="#iconForward"></use></svg>
             </button>
