@@ -16,7 +16,7 @@
             :options="groupSelectOptions"
             :placeholder="t('settings').projectGroups.noGroup"
             class="sy-group-default-select"
-            @update:model-value="$emit('update:defaultGroup', $event)"
+            @update:model-value="$emit('update:defaultGroup', $event as string)"
           />
         </SySettingItem>
         <div class="sy-group-list">

@@ -79,7 +79,7 @@
             :options="groupOptions"
             :placeholder="t('settings').projectGroups.noGroup"
             class="sy-directory-item__group"
-            @update:model-value="(v) => { dir.groupId = v || undefined; }"
+            @update:model-value="(v) => { dir.groupId = (v as string) || undefined; }"
           />
           <SyButton
             icon="iconTrashcan"

@@ -13,7 +13,7 @@
           <SySelect
             :model-value="calendarDefaultView"
             :options="viewOptions"
-            @update:model-value="$emit('update:calendarDefaultView', $event)"
+            @update:model-value="$emit('update:calendarDefaultView', $event as string)"
           />
         </SySettingItem>
         <SySettingItem
@@ -41,7 +41,7 @@
           <SySelect
             :model-value="calendarDateClickBehavior ?? 'click'"
             :options="clickBehaviorOptions"
-            @update:model-value="$emit('update:calendarDateClickBehavior', $event)"
+            @update:model-value="$emit('update:calendarDateClickBehavior', $event as 'click' | 'dblclick')"
           />
         </SySettingItem>
       </SySettingItemList>
