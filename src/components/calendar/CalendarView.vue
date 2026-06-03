@@ -74,9 +74,9 @@ import { computeTooltipPosition } from '@/utils/tooltipPosition'
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'event-click', event: any): void
-  (e: 'event-drop', event: any): void
-  (e: 'event-resize', event: any): void
+  (e: 'eventClick', event: any): void
+  (e: 'eventDrop', event: any): void
+  (e: 'eventResize', event: any): void
   (e: 'navigated'): void
   (e: 'dayViewFromClick', previousView: string): void
   (e: 'weekViewFromClick', previousView: string): void
@@ -311,6 +311,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     endDateTime: props.originalEndDateTime,
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
+    listItemBlockId: props.listItemBlockId,
   }
 
   const menuOptions = createItemMenu(
@@ -423,7 +424,12 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     siblingItems: extendedProps?.siblingItems,
     status: extendedProps?.itemStatus,
   }
-  emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData)
+  if (changeType === 'drop') {
+    emit('eventDrop', emitData)
+  }
+  else {
+    emit('eventResize', emitData)
+  }
 }
 
 onMounted(async () => {
