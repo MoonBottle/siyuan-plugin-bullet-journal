@@ -232,7 +232,7 @@ const hasContent = computed(() => {
   // 工具消息
   if (m.role === 'tool') return true
   // 文本内容
-  if (m.content && m.role !== 'tool') return true
+  if (m.content) return true
   if (m.skillNames && m.skillNames.length > 0) return true
   // 工具调用消息（即使没有 reasoning 或 content）
   if (m.toolCalls && m.toolCalls.length > 0) return true
