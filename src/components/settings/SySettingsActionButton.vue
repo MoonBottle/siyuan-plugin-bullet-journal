@@ -37,8 +37,8 @@ function onMouseEnter(e: MouseEvent) {
   }
 }
 
-function onMouseLeave(e: MouseEvent) {
-  hideIconTooltip(e.currentTarget as HTMLElement)
+function onMouseLeave(_e: MouseEvent) {
+  hideIconTooltip()
 }
 </script>
 
