@@ -84,7 +84,7 @@
       </Card>
 
       <Card
-        :status="itemStatus"
+        :status="itemStatus as CardStatus"
         :show-header="true"
         :show-footer="itemLinks.length > 0"
         :hover-effect="false"
@@ -263,7 +263,7 @@ import {
   computed,
   reactive,
 } from 'vue'
-import Card from '@/components/common/Card.vue'
+import Card, { type CardStatus } from '@/components/common/Card.vue'
 import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue'
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
 import { t } from '@/i18n'
@@ -536,12 +536,12 @@ async function handleLinkClick(link: Link) {
   if (link.type === 'attachment') {
     const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId)
     if (!targetBlockId || !props.item.docId) {
-      showMessage(t('common').blockIdError, 'error')
+      showMessage(t('common').blockIdError, 2000, 'error')
       return
     }
     const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId)
     if (!opened) {
-      showMessage(t('common').blockIdError, 'error')
+      showMessage(t('common').blockIdError, 2000, 'error')
       return
     }
     if (props.closeOnSiyuanLink) emit('close')
