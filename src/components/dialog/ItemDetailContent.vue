@@ -1,7 +1,10 @@
 <template>
   <div
     class="item-detail-content"
-    :class="{ 'item-detail-content--embedded': embedded }"
+    :class="{
+      'item-detail-content--embedded': embedded,
+      'item-detail-content--readonly': readonly,
+    }"
   >
     <div class="item-detail-cards">
       <Card
@@ -16,6 +19,7 @@
         <div class="card-content-row">
           <span class="card-text">{{ project.name }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(project.name, 'project')"
@@ -54,6 +58,7 @@
         <div class="card-content-row">
           <span class="card-text">{{ task.name }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(task.name, 'task')"
@@ -66,7 +71,7 @@
           </span>
         </div>
         <div
-          v-if="taskTags.length"
+          v-if="taskTags.length && !readonly"
           class="item-tags-row"
         >
           <span
@@ -92,7 +97,7 @@
         <template #header>
           <span class="card-label">{{ t('todo').item }}</span>
           <span
-            v-if="props.item.priority"
+            v-if="props.item.priority && !readonly"
             class="priority-badge-header"
           >
             {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
@@ -129,6 +134,7 @@
               >⏱️</span>
               <span class="meta-text">{{ duration }}</span>
               <span
+                v-if="!readonly"
                 class="copy-btn small b3-tooltips b3-tooltips__nw"
                 :aria-label="t('common').copy"
                 @click.stop="handleCopy(duration, 'duration')"
@@ -151,6 +157,7 @@
               >🍅</span>
               <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
               <span
+                v-if="!readonly"
                 class="copy-btn small b3-tooltips b3-tooltips__nw"
                 :aria-label="t('common').copy"
                 @click.stop="handleCopy(focusTotalTimeDisplay, 'focusTime')"
@@ -163,7 +170,7 @@
               </span>
             </span>
             <span
-              v-if="focusPlanDisplay"
+              v-if="focusPlanDisplay && !readonly"
               class="meta-item"
             >
               <span
@@ -174,7 +181,7 @@
               <span class="meta-text">{{ focusPlanDisplay }}</span>
             </span>
             <span
-              v-if="focusPlanReview"
+              v-if="focusPlanReview && !readonly"
               class="meta-item"
             >
               <span
@@ -193,6 +200,7 @@
         >
           <span class="card-text">{{ itemContent }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(itemContent, 'content')"
@@ -206,7 +214,7 @@
         </div>
 
         <div
-          v-if="itemTags.length"
+          v-if="itemTags.length && !readonly"
           class="item-tags-row"
         >
           <span
@@ -309,11 +317,13 @@ const props = withDefaults(defineProps<{
   showActionRow?: boolean
   closeOnSiyuanLink?: boolean
   embedded?: boolean
+  readonly?: boolean
 }>(), {
   showAllDates: false,
   showActionRow: true,
   closeOnSiyuanLink: false,
   embedded: false,
+  readonly: false,
 })
 
 const emit = defineEmits<{
@@ -563,6 +573,13 @@ async function handleLinkClick(link: Link) {
 .item-detail-content--embedded {
   .item-detail-cards {
     gap: 10px;
+  }
+}
+
+.item-detail-content--readonly {
+  :deep(.typed-link) {
+    pointer-events: none;
+    cursor: default;
   }
 }
 
