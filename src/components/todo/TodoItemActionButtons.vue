@@ -41,7 +41,7 @@
 
     <button
       v-if="showSkip"
-      class="action-btn active"
+      class="action-btn"
       :aria-label="skipTooltip || skipText"
       @mouseenter="handleShowTooltip($event, skipTooltip || skipText)"
       @mouseleave="handleHideTooltip"
