@@ -403,7 +403,7 @@ export function buildEventDetailContent(
       ? {
           id: '',
           name: props.task,
-          level: props.level as 'L1' | 'L2' | 'L3' ?? 'L1',
+          level: (props.level ?? 'L1') as 'L1' | 'L2' | 'L3',
           items: [],
           lineNumber: 0,
           links: props.taskLinks || [],
@@ -485,7 +485,7 @@ export function showEventDetailModal(
       ? {
           id: '',
           name: props.task,
-          level: props.level as 'L1' | 'L2' | 'L3' ?? 'L1',
+          level: (props.level ?? 'L1') as 'L1' | 'L2' | 'L3',
           items: [],
           lineNumber: 0,
           links: props.taskLinks || [],
