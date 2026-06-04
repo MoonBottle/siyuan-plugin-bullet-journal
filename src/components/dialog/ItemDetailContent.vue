@@ -494,7 +494,7 @@ const recurringText = computed(() => {
   const endMarker = generateEndConditionMarker(props.item.endCondition)
   return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker
 })
-const showSkipButton = computed(() => hasRecurring.value && itemStatus.value === 'expired')
+const showSkipButton = computed(() => hasRecurring.value && (itemStatus.value === 'expired' || dayjs(props.item.date).isSame(dayjs(), 'day')))
 const skipButtonTooltip = computed(() => {
   if (!props.item.repeatRule) return ''
   return t('recurring.skipTooltip', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) })
