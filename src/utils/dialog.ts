@@ -359,14 +359,11 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
 let lastEventDetailDialog: Dialog | null = null
 
 /**
- * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
- * @param event 日历事件
+ * 从日历事件的 extendedProps 构建 Item 对象
+ * 供 tooltip 和弹框复用
  */
-export function buildEventDetailContent(
-  event: CalendarEvent,
-): string {
+function buildItemFromEventProps(event: CalendarEvent): Item {
   const props = event.extendedProps
-
   const start = event.start
   const end = event.end
   const rawDate = props.date
@@ -377,92 +374,7 @@ export function buildEventDetailContent(
   const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''))
   const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''))
 
-  // 构建 Item 对象
-  const item: Item = {
-    id: props.blockId || '',
-    content: props.item || '',
-    date: rawDate,
-    startDateTime: startForTime || undefined,
-    endDateTime: endForTime || undefined,
-    status: props.itemStatus || 'pending',
-    priority: props.priority,
-    docId: props.docId || '',
-    lineNumber: props.lineNumber ?? 0,
-    blockId: props.blockId,
-    project: props.project
-      ? {
-          id: '',
-          name: props.project,
-          tasks: [],
-          habits: [],
-          path: '',
-          links: props.projectLinks || [],
-        }
-      : undefined,
-    task: props.task
-      ? {
-          id: '',
-          name: props.task,
-          level: (props.level ?? 'L1') as 'L1' | 'L2' | 'L3',
-          items: [],
-          lineNumber: 0,
-          links: props.taskLinks || [],
-        }
-      : undefined,
-    links: props.itemLinks || [],
-    pomodoros: props.pomodoros || [],
-    siblingItems: props.siblingItems,
-    dateRangeStart: props.dateRangeStart,
-    dateRangeEnd: props.dateRangeEnd,
-    reminder: props.reminder,
-    repeatRule: props.repeatRule,
-    endCondition: props.endCondition,
-  }
-
-  // 创建容器元素
-  const container = document.createElement('div')
-
-  // 创建 Vue 应用
-  const app = createApp(EventDetailTooltip, { item })
-
-  // 挂载应用
-  app.use(getSharedPinia())
-  app.mount(container)
-
-  // 获取渲染后的 HTML
-  const html = container.innerHTML
-
-  // 卸载应用（因为这只是获取 HTML，实际事件处理由调用方负责）
-  app.unmount()
-
-  return html
-}
-
-/**
- * 显示日历事件详情弹框
- */
-export function showEventDetailModal(
-  event: CalendarEvent,
-  options?: { plugin?: Plugin | null },
-): Dialog {
-  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
-  const props = event.extendedProps
-  const rawDate = props.date
-    || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
-    || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '')
-  const dateStr = rawDate || dayjs().format('YYYY-MM-DD')
-
-  // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
-  if (lastEventDetailDialog) {
-    lastEventDetailDialog.destroy()
-    lastEventDetailDialog = null
-  }
-
-  // 创建容器元素
-  const container = document.createElement('div')
-
-  // 构建 Item 对象
-  const item: Item = {
+  return {
     id: props.blockId || '',
     content: props.item || '',
     date: rawDate,
@@ -493,8 +405,8 @@ export function showEventDetailModal(
       : undefined,
     links: props.itemLinks || [],
     pomodoros: props.pomodoros || [],
-    startDateTime: props.originalStartDateTime,
-    endDateTime: props.originalEndDateTime,
+    startDateTime: startForTime || undefined,
+    endDateTime: endForTime || undefined,
     siblingItems: props.siblingItems,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
@@ -502,6 +414,50 @@ export function showEventDetailModal(
     repeatRule: props.repeatRule,
     endCondition: props.endCondition,
   }
+}
+
+/**
+ * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
+ * @param event 日历事件
+ */
+export function buildEventDetailContent(
+  event: CalendarEvent,
+): string {
+  const item = buildItemFromEventProps(event)
+
+  const container = document.createElement('div')
+  const app = createApp(EventDetailTooltip, { item })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const html = container.innerHTML
+  app.unmount()
+
+  return html
+}
+
+/**
+ * 显示日历事件详情弹框
+ */
+export function showEventDetailModal(
+  event: CalendarEvent,
+  options?: { plugin?: Plugin | null },
+): Dialog {
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
+  const props = event.extendedProps
+  const item = buildItemFromEventProps(event)
+  const rawDate = item.date
+  const dateStr = rawDate || dayjs().format('YYYY-MM-DD')
+
+  // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
+  if (lastEventDetailDialog) {
+    lastEventDetailDialog.destroy()
+    lastEventDetailDialog = null
+  }
+
+  // 创建容器元素
+  const container = document.createElement('div')
 
   const hasSiblingItems = !!(props.siblingItems?.length)
 
