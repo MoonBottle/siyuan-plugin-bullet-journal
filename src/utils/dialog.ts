@@ -361,19 +361,14 @@ let lastEventDetailDialog: Dialog | null = null
 /**
  * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
  * @param event 日历事件
- * @param options 可选配置
- * @param options.preview 为 true 时去掉复制按钮与底部操作按钮，仅保留纯展示内容
  */
 export function buildEventDetailContent(
   event: CalendarEvent,
-  options?: { preview?: boolean },
 ): string {
-  const preview = options?.preview ?? false
   const props = event.extendedProps
 
   const start = event.start
   const end = event.end
-  const allDay = event.allDay
   const rawDate = props.date
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
     || (start ? dayjs(start).format('YYYY-MM-DD') : '')
@@ -382,30 +377,53 @@ export function buildEventDetailContent(
   const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''))
   const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''))
 
+  // 构建 Item 对象
+  const item: Item = {
+    id: props.blockId || '',
+    content: props.item || '',
+    date: rawDate,
+    startDateTime: startForTime || undefined,
+    endDateTime: endForTime || undefined,
+    status: props.itemStatus || 'pending',
+    priority: props.priority,
+    docId: props.docId || '',
+    lineNumber: props.lineNumber ?? 0,
+    blockId: props.blockId,
+    project: props.project
+      ? {
+          id: '',
+          name: props.project,
+          tasks: [],
+          habits: [],
+          path: '',
+          links: props.projectLinks || [],
+        }
+      : undefined,
+    task: props.task
+      ? {
+          id: '',
+          name: props.task,
+          level: props.level as 'L1' | 'L2' | 'L3' ?? 'L1',
+          items: [],
+          lineNumber: 0,
+          links: props.taskLinks || [],
+        }
+      : undefined,
+    links: props.itemLinks || [],
+    pomodoros: props.pomodoros || [],
+    siblingItems: props.siblingItems,
+    dateRangeStart: props.dateRangeStart,
+    dateRangeEnd: props.dateRangeEnd,
+    reminder: props.reminder,
+    repeatRule: props.repeatRule,
+    endCondition: props.endCondition,
+  }
+
   // 创建容器元素
   const container = document.createElement('div')
 
   // 创建 Vue 应用
-  const app = createApp(EventDetailTooltip, {
-    project: props.project,
-    projectLinks: props.projectLinks || [],
-    task: props.task,
-    level: props.level,
-    taskLinks: props.taskLinks || [],
-    item: props.item,
-    itemContent: props.item,
-    itemStatus: props.itemStatus || 'pending',
-    itemLinks: props.itemLinks || [],
-    date: rawDate,
-    startDateTime: startForTime,
-    endDateTime: endForTime,
-    allDay,
-    dateRangeStart: props.dateRangeStart,
-    dateRangeEnd: props.dateRangeEnd,
-    pomodoros: props.pomodoros || [],
-    siblingItems: props.siblingItems || [],
-    preview,
-  })
+  const app = createApp(EventDetailTooltip, { item })
 
   // 挂载应用
   app.use(getSharedPinia())
