@@ -251,6 +251,7 @@
 </template>
 
 <script setup lang="ts">
+import type { CardStatus } from '@/components/common/Card.vue'
 import type {
   Item,
   Link,
@@ -263,7 +264,7 @@ import {
   computed,
   reactive,
 } from 'vue'
-import Card, { type CardStatus } from '@/components/common/Card.vue'
+import Card from '@/components/common/Card.vue'
 import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue'
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
 import { t } from '@/i18n'

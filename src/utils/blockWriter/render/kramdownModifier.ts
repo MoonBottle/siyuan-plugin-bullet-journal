@@ -113,7 +113,7 @@ function applyTaskTag(line: string, patch: Extract<BlockPatch, { type: 'setTaskT
 
 function applyDate(line: string, patch: DatePatch): string {
   const startTime = patch.startTime ? ` ${patch.startTime}` : ''
-  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `-${patch.endTime}` : ''
+  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `~${patch.endTime}` : ''
   const parsed = parseMarkerLine(line)
   const dateStr = `📅${patch.date}${patch.allDay ? '' : `${startTime}${endTime}`}`
   return normalizeMarkerLine(upsertMarker(parsed, 'date', dateStr))

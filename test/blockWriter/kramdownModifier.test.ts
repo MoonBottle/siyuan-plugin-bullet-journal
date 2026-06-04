@@ -144,7 +144,7 @@ describe('kramdownModifier', () => {
         startTime: '09:00',
         endTime: '10:00',
       })).toBe(
-        '任务 📅2026-05-16 09:00-10:00\n{: id="abc"}',
+        '任务 📅2026-05-16 09:00~10:00\n{: id="abc"}',
       )
     })
 

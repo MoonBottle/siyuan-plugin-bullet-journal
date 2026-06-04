@@ -666,7 +666,7 @@ describe('recurringService', () => {
         'block123',
         {
           type: 'replaceMarkdown',
-          markdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-19 17:00:00-18:00:00',
+          markdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-19 17:00:00~18:00:00',
         },
       )
     })

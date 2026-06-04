@@ -33,7 +33,7 @@ export interface ParsedMarkerLine {
 const MARKER_PATTERNS: Array<{ kind: MarkerKind, regex: RegExp }> = [
   {
     kind: 'date',
-    regex: /^(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:,\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)*(?:\s+\d{2}:\d{2}(?::\d{2})?(?:-\d{2}:\d{2}(?::\d{2})?)?)?$/u,
+    regex: /^(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:,\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)*(?:\s+\d{2}:\d{2}(?::\d{2})?(?:~\d{2}:\d{2}(?::\d{2})?)?)?$/u,
   },
   {
     kind: 'priority',
