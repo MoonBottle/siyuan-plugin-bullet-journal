@@ -1,3 +1,4 @@
+import type { TimePrecision } from '@/types/models'
 import type {
   BlockPatch,
   DatePatch,
@@ -111,9 +112,20 @@ function applyTaskTag(line: string, patch: Extract<BlockPatch, { type: 'setTaskT
   return normalizeMarkerLine(upsertMarker(parsed, 'taskTag', patch.tag))
 }
 
+function inferTimePrecision(timeStr?: string): TimePrecision {
+  if (!timeStr) return 'second'
+  return timeStr.length === 5 ? 'minute' : 'second'
+}
+
+function formatTimeForPrecision(timeStr: string, precision: TimePrecision = 'second'): string {
+  const normalized = timeStr.length === 5 ? `${timeStr}:00` : timeStr
+  return precision === 'minute' ? normalized.slice(0, 5) : normalized
+}
+
 function applyDate(line: string, patch: DatePatch): string {
-  const startTime = patch.startTime ? ` ${patch.startTime}` : ''
-  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `~${patch.endTime}` : ''
+  const precision = patch.timePrecision ?? inferTimePrecision(patch.startTime) ?? 'second'
+  const startTime = patch.startTime ? ` ${formatTimeForPrecision(patch.startTime, precision)}` : ''
+  const endTime = patch.endTime && patch.endTime !== patch.startTime ? `~${formatTimeForPrecision(patch.endTime, precision)}` : ''
   const parsed = parseMarkerLine(line)
   const dateStr = `📅${patch.date}${patch.allDay ? '' : `${startTime}${endTime}`}`
   return normalizeMarkerLine(upsertMarker(parsed, 'date', dateStr))

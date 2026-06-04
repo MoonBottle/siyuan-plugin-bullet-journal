@@ -188,6 +188,7 @@ async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<s
       startTime,
       endTime,
       allDay: !startTime && !endTime,
+      timePrecision: item.timePrecision,
     },
   )
 
