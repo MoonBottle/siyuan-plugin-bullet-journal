@@ -445,7 +445,6 @@ export function showEventDetailModal(
   options?: { plugin?: Plugin | null },
 ): Dialog {
   const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
-  const props = event.extendedProps
   const item = buildItemFromEventProps(event)
   const rawDate = item.date
   const dateStr = rawDate || dayjs().format('YYYY-MM-DD')
@@ -459,7 +458,7 @@ export function showEventDetailModal(
   // 创建容器元素
   const container = document.createElement('div')
 
-  const hasSiblingItems = !!(props.siblingItems?.length)
+  const hasSiblingItems = !!(item.siblingItems?.length)
 
   let dialog: Dialog
   const app = createApp(ItemDetailDialog, {
@@ -470,7 +469,7 @@ export function showEventDetailModal(
     },
     onOpenDoc: async () => {
       if (!plugin) return
-      await openDocumentAtLine(plugin, props.docId, props.lineNumber, props.blockId)
+      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId)
       dialog.destroy()
     },
     onOpenCalendar: () => {
