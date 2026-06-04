@@ -217,7 +217,7 @@
         </div>
 
         <div
-          v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring))"
+          v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring || showSkipButton))"
           class="item-actions-row"
         >
           <TodoItemActionButtons
@@ -226,22 +226,17 @@
             :is-readonly="isCompletedOrAbandoned"
             :show-reminder="!isCompletedOrAbandoned || hasReminder"
             :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
+            :show-skip="showSkipButton"
             :reminder-text="reminderText"
             :recurring-text="recurringText"
+            :skip-text="t('recurring.skipThis')"
             :reminder-tooltip="reminderButtonTooltip"
             :recurring-tooltip="recurringButtonTooltip"
+            :skip-tooltip="skipButtonTooltip"
             @setReminder="emit('setReminder')"
             @setRecurring="emit('setRecurring')"
+            @skipOccurrence="emit('skipOccurrence')"
           />
-
-          <button
-            v-if="showSkipButton"
-            class="action-btn skip-btn b3-tooltips b3-tooltips__n"
-            :aria-label="skipButtonTooltip"
-            @click="emit('skipOccurrence')"
-          >
-            <span class="action-text">{{ t('recurring.skipThis') }}</span>
-          </button>
         </div>
 
         <template #footer>
@@ -747,18 +742,6 @@ async function handleLinkClick(link: Link) {
   gap: 12px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
-}
-
-.skip-btn {
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-surface);
-  border-color: var(--b3-border-color);
-
-  &:hover {
-    background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
 }
 
 .priority-badge-header {

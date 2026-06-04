@@ -38,6 +38,20 @@
       <span class="action-icon">🔁</span>
       <span class="action-text">{{ recurringText }}</span>
     </button>
+
+    <button
+      v-if="showSkip"
+      class="action-btn active"
+      :aria-label="skipTooltip || skipText"
+      @mouseenter="handleShowTooltip($event, skipTooltip || skipText)"
+      @mouseleave="handleHideTooltip"
+      @focus="handleShowTooltip($event, skipTooltip || skipText)"
+      @blur="handleHideTooltip"
+      @click.stop="$emit('skipOccurrence')"
+    >
+      <span class="action-icon">⏭</span>
+      <span class="action-text">{{ skipText }}</span>
+    </button>
   </div>
 </template>
 
@@ -57,18 +71,22 @@ const props = defineProps<{
   isReadonly: boolean
   showReminder: boolean
   showRecurring: boolean
+  showSkip: boolean
   reminderText: string
   recurringText: string
+  skipText: string
   reminderTooltip?: string
   recurringTooltip?: string
+  skipTooltip?: string
 }>()
 
 defineEmits<{
   setReminder: []
   setRecurring: []
+  skipOccurrence: []
 }>()
 
-const showActions = computed(() => props.showReminder || props.showRecurring)
+const showActions = computed(() => props.showReminder || props.showRecurring || props.showSkip)
 
 function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
   if (!text)
