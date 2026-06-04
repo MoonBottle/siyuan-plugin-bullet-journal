@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 
   &.active {
     background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
+    // border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
   }
 
