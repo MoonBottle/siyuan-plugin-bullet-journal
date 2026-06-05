@@ -670,7 +670,7 @@ async function handleLinkClick(link: Link) {
 .status-tag {
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
 
   &.pending {
@@ -679,11 +679,11 @@ async function handleLinkClick(link: Link) {
   }
   &.in-progress {
     background: #ff9800;
-    color: #fff;
+    color: var(--b3-theme-on-primary);
   }
   &.completed {
     background: var(--b3-theme-success);
-    color: var(--b3-theme-on-success);
+    color: var(--b3-theme-on-primary);
   }
   &.abandoned {
     background: var(--b3-theme-on-surface);
@@ -691,7 +691,7 @@ async function handleLinkClick(link: Link) {
   }
   &.expired {
     background: #f44336;
-    color: #fff;
+    color: var(--b3-theme-on-primary);
   }
 }
 
