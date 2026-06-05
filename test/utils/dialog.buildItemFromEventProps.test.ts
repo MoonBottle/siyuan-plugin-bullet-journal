@@ -6,23 +6,26 @@ import {
 } from 'vitest'
 import { buildItemFromEventProps } from '@/utils/dialog'
 
-function makeAllDayEvent(overrides?: Partial<CalendarEvent>): CalendarEvent {
+const baseExtendedProps = {
+  hasItems: false as const,
+  docId: 'doc-1',
+  lineNumber: 1,
+}
+
+function makeAllDayEvent(extendedPropsOverrides?: Partial<CalendarEvent['extendedProps']>): CalendarEvent {
   return {
     id: 'event-1',
     title: '统计',
     start: '2026-06-05',
     allDay: true,
     extendedProps: {
-      hasItems: false,
-      docId: 'doc-1',
-      lineNumber: 1,
-      ...overrides?.extendedProps,
+      ...baseExtendedProps,
+      ...extendedPropsOverrides,
     },
-    ...overrides,
   }
 }
 
-function makeTimedEvent(overrides?: Partial<CalendarEvent>): CalendarEvent {
+function makeTimedEvent(extendedPropsOverrides?: Partial<CalendarEvent['extendedProps']>): CalendarEvent {
   return {
     id: 'event-2',
     title: '会议',
@@ -30,12 +33,9 @@ function makeTimedEvent(overrides?: Partial<CalendarEvent>): CalendarEvent {
     end: '2026-06-05T11:00:00',
     allDay: false,
     extendedProps: {
-      hasItems: false,
-      docId: 'doc-2',
-      lineNumber: 2,
-      ...overrides?.extendedProps,
+      ...baseExtendedProps,
+      ...extendedPropsOverrides,
     },
-    ...overrides,
   }
 }
 
@@ -48,7 +48,8 @@ describe('buildItemFromEventProps', () => {
     })
 
     it('全天事件不应设置 endDateTime', () => {
-      const event = makeAllDayEvent({ end: '2026-06-06' })
+      const event = makeAllDayEvent()
+      event.end = '2026-06-06'
       const item = buildItemFromEventProps(event)
       expect(item.endDateTime).toBeUndefined()
     })
@@ -60,11 +61,7 @@ describe('buildItemFromEventProps', () => {
     })
 
     it('全天事件使用 originalStartDateTime 时仍保留时间', () => {
-      const event = makeAllDayEvent({
-        extendedProps: {
-          originalStartDateTime: '2026-06-05 09:00',
-        },
-      })
+      const event = makeAllDayEvent({ originalStartDateTime: '2026-06-05 09:00' })
       const item = buildItemFromEventProps(event)
       expect(item.startDateTime).toBe('2026-06-05 09:00')
     })
@@ -84,11 +81,7 @@ describe('buildItemFromEventProps', () => {
     })
 
     it('非全天事件优先使用 originalStartDateTime', () => {
-      const event = makeTimedEvent({
-        extendedProps: {
-          originalStartDateTime: '10:00',
-        },
-      })
+      const event = makeTimedEvent({ originalStartDateTime: '10:00' })
       const item = buildItemFromEventProps(event)
       expect(item.startDateTime).toBe('10:00')
     })
@@ -97,11 +90,9 @@ describe('buildItemFromEventProps', () => {
   describe('跳过本次场景（全天循环事件）', () => {
     it('全天循环事件的 startDateTime 为 undefined，不会导致日期残留', () => {
       const event = makeAllDayEvent({
-        extendedProps: {
-          repeatRule: {
-            type: 'weekly',
-            dayOfWeek: 5,
-          },
+        repeatRule: {
+          type: 'weekly',
+          daysOfWeek: [5],
         },
       })
       const item = buildItemFromEventProps(event)
