@@ -13,8 +13,6 @@
       :aria-label="reminderTooltip || reminderText"
       @mouseenter="handleShowTooltip($event, reminderTooltip || reminderText)"
       @mouseleave="handleHideTooltip"
-      @focus="handleShowTooltip($event, reminderTooltip || reminderText)"
-      @blur="handleHideTooltip"
       @click.stop="$emit('setReminder')"
     >
       <span class="action-icon">⏰</span>
@@ -31,8 +29,6 @@
       :aria-label="recurringTooltip || recurringText"
       @mouseenter="handleShowTooltip($event, recurringTooltip || recurringText)"
       @mouseleave="handleHideTooltip"
-      @focus="handleShowTooltip($event, recurringTooltip || recurringText)"
-      @blur="handleHideTooltip"
       @click.stop="$emit('setRecurring')"
     >
       <span class="action-icon">🔁</span>
@@ -45,8 +41,6 @@
       :aria-label="skipTooltip || skipText"
       @mouseenter="handleShowTooltip($event, skipTooltip || skipText)"
       @mouseleave="handleHideTooltip"
-      @focus="handleShowTooltip($event, skipTooltip || skipText)"
-      @blur="handleHideTooltip"
       @click.stop="$emit('skipOccurrence')"
     >
       <span class="action-icon">⏭</span>
