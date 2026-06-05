@@ -29,7 +29,7 @@ vi.mock('@/utils/notification', () => ({
 }))
 
 vi.mock('siyuan', () => ({
-  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
+  getFrontend: mockGetFrontend,
 }))
 
 // Mock calculateReminderTime to return controlled values

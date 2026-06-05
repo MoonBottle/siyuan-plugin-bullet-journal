@@ -45,7 +45,7 @@ vi.mock('@/tabs/DesktopHabitDock.vue', () => ({
 }))
 
 vi.mock('siyuan', () => ({
-  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
+  getFrontend: mockGetFrontend,
 }))
 
 vi.mock('@/main', () => ({

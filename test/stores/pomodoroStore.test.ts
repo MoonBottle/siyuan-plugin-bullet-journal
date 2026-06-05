@@ -59,7 +59,7 @@ vi.mock('@/services/mobileNotificationScheduler', () => ({
     cancelPomodoroFocusEnd: (...args: unknown[]) => mockCancelPomodoroFocusEnd(...args),
     schedulePomodoroBreakEnd: (...args: unknown[]) => mockSchedulePomodoroBreakEnd(...args),
     cancelPomodoroBreakEnd: (...args: unknown[]) => mockCancelPomodoroBreakEnd(...args),
-    isMobileNotificationsEnabled: (...args: unknown[]) => mockIsMobileNotificationsEnabled(...args),
+    isMobileNotificationsEnabled: mockIsMobileNotificationsEnabled,
   },
 }))
 

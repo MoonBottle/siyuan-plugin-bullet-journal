@@ -217,7 +217,7 @@ vi.mock('siyuan', () => ({
   }),
   showMessage: vi.fn(),
   openTab: vi.fn(),
-  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
+  getFrontend: mockGetFrontend,
 }))
 
 function mountDock() {
