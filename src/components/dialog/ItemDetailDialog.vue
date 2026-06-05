@@ -11,6 +11,11 @@
       @skipOccurrence="handleSkipOccurrence"
     />
 
+    <ItemActionBar
+      :item="item"
+      @openDoc="handleOpenDoc"
+    />
+
     <!-- 底部按钮 -->
     <div class="dialog-footer">
       <button
@@ -39,6 +44,7 @@
 <script setup lang="ts">
 import type { Item } from '@/types/models'
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import { t } from '@/i18n'
 
 interface Props {
