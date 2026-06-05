@@ -120,6 +120,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (event: 'openDoc', docId: string, blockId: string): void
+  (event: 'openCalendar', date: string): void
 }>()
 
 const app = useApp()
@@ -305,6 +306,7 @@ onBeforeUnmount(() => {
 
 function handleOpenCalendar() {
   if (!props.item || isProcessing.value) return
+  emit('openCalendar', props.item.date)
   if (plugin?.openCustomTab) {
     plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date })
   }
