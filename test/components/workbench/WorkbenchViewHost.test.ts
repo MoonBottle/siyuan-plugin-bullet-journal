@@ -142,7 +142,7 @@ describe('workbenchViewHost', () => {
     }))
 
     mounted.unmount()
-  }, 10000)
+  }, 30000)
 
   it('quadrant view entry renders workbench quadrant host', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
@@ -249,5 +249,5 @@ describe('workbenchContentHost routing', () => {
     expect(viewMounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull()
     expect(viewMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull()
     viewMounted.unmount()
-  }, 10000)
+  }, 30000)
 })

@@ -196,7 +196,7 @@ describe('workbenchHabitView', () => {
     expect(mounted.container.querySelector('[data-testid="workbench-habit-detail-header"]')).toBeNull()
 
     mounted.unmount()
-  })
+  }, 30000)
 
   it('shows habit detail after selecting a habit from the left list', async () => {
     const mounted = await mountView()

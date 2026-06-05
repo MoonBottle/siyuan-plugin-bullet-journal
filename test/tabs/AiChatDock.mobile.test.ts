@@ -17,6 +17,8 @@ import {
 } from 'vue'
 import AiChatDock from '@/tabs/AiChatDock.vue'
 
+const mockGetFrontend = vi.fn(() => 'desktop')
+
 const mockPlugin = {
   isMobile: false,
   getSettings: vi.fn(() => ({
@@ -215,6 +217,7 @@ vi.mock('siyuan', () => ({
   }),
   showMessage: vi.fn(),
   openTab: vi.fn(),
+  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
 }))
 
 function mountDock() {
@@ -243,6 +246,7 @@ async function flushDock() {
 beforeEach(() => {
   vi.clearAllMocks()
   document.body.innerHTML = ''
+  mockGetFrontend.mockReturnValue('desktop')
   mockPlugin.getSettings.mockReturnValue({
     ai: {
       providers: [],
@@ -291,6 +295,7 @@ afterEach(() => {
 describe('aiChatDock mobile clawbot gating', () => {
   it('does not render the weixin entry on mobile', async () => {
     mockPlugin.isMobile = true
+    mockGetFrontend.mockReturnValue('mobile')
 
     const mounted = mountDock()
     await flushDock()

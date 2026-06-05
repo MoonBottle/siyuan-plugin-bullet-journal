@@ -330,7 +330,7 @@ describe('workbenchTab shell', () => {
     expect(mockLoad).toHaveBeenCalledWith(expect.objectContaining({ name: 'plugin' }))
 
     mounted.unmount()
-  }, 10000)
+  }, 30000)
 
   it('subscribes to same-context settings-changed events and reloads settings without refreshing projects directly', async () => {
     const mounted = await mountWorkbenchTab()

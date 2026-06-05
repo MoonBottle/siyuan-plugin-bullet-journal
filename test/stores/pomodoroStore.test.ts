@@ -46,6 +46,8 @@ const mockCancelPomodoroFocusEnd = vi.fn()
 const mockSchedulePomodoroBreakEnd = vi.fn()
 const mockCancelPomodoroBreakEnd = vi.fn()
 
+const mockIsMobileNotificationsEnabled = vi.fn(() => false)
+
 // Mock dependencies
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
@@ -57,7 +59,7 @@ vi.mock('@/services/mobileNotificationScheduler', () => ({
     cancelPomodoroFocusEnd: (...args: unknown[]) => mockCancelPomodoroFocusEnd(...args),
     schedulePomodoroBreakEnd: (...args: unknown[]) => mockSchedulePomodoroBreakEnd(...args),
     cancelPomodoroBreakEnd: (...args: unknown[]) => mockCancelPomodoroBreakEnd(...args),
-    isMobileNotificationsEnabled: vi.fn((plugin?: { isMobile?: boolean }) => !!plugin?.isMobile),
+    isMobileNotificationsEnabled: (...args: unknown[]) => mockIsMobileNotificationsEnabled(...args),
   },
 }))
 
@@ -288,6 +290,7 @@ describe('pomodoroStore mobile scheduling', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-05-07T06:00:00'))
     setActivePinia(createPinia())
+    mockIsMobileNotificationsEnabled.mockReturnValue(true)
     mockSchedulePomodoroFocusEnd.mockReset().mockResolvedValue(undefined)
     mockCancelPomodoroFocusEnd.mockReset()
     mockSchedulePomodoroBreakEnd.mockReset().mockResolvedValue(undefined)
@@ -474,6 +477,7 @@ describe('pomodoroStore restorePomodoro', () => {
 
   it('restorePomodoro clears stale mobile focus-end when the restored session is already expired', async () => {
     const store = usePomodoroStore()
+    mockIsMobileNotificationsEnabled.mockReturnValue(true)
     mockCancelPomodoroFocusEnd.mockClear()
     mockLoadActivePomodoro.mockResolvedValue({
       blockId: 'b1',
@@ -502,6 +506,7 @@ describe('pomodoroStore autoExtendPomodoro', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-05-07T06:00:00'))
     setActivePinia(createPinia())
+    mockIsMobileNotificationsEnabled.mockReturnValue(true)
     mockSchedulePomodoroFocusEnd.mockReset().mockResolvedValue(undefined)
     mockCancelPomodoroFocusEnd.mockReset()
     mockLoadPendingCompletion.mockReset()

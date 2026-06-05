@@ -19,12 +19,17 @@ import { ReminderService } from '@/services/reminderService'
 // Mock notification utils
 const mockShowSystemNotification = vi.fn().mockResolvedValue(null)
 const mockNotificationRequestPermission = vi.fn()
+const mockGetFrontend = vi.fn(() => 'desktop')
 vi.mock('@/utils/notification', () => ({
   showSystemNotification: (...args: unknown[]) => mockShowSystemNotification(...args),
   requestNotificationPermission: () => {
     mockNotificationRequestPermission()
     return Promise.resolve(true)
   },
+}))
+
+vi.mock('siyuan', () => ({
+  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
 }))
 
 // Mock calculateReminderTime to return controlled values
@@ -110,9 +115,11 @@ describe('reminderService', () => {
     })
 
     it('移动端启动时不应请求浏览器通知权限', () => {
+      mockGetFrontend.mockReturnValue('mobile')
       const projectStore = makeStore([], [])
       service.start({ isMobile: true } as any, projectStore as any)
       expect(mockNotificationRequestPermission).not.toHaveBeenCalled()
+      mockGetFrontend.mockReturnValue('desktop')
     })
 
     it('启动时应先把过期的 currentDate 校准到今天', () => {

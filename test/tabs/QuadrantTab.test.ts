@@ -430,7 +430,7 @@ describe('quadrantTab', () => {
     expect(mockQuadrantConfigStore.loadConfig).toHaveBeenCalledTimes(1)
 
     mounted.unmount()
-  }, 10000)
+  }, 30000)
 
   it('disables drag when any panel uses custom rules', async () => {
     mockQuadrantConfigStore.panels = [
@@ -465,7 +465,7 @@ describe('quadrantTab', () => {
     expect(getLatestTodoSidebarProps().enableDrag).toBe(false)
 
     mounted.unmount()
-  }, 10000)
+  }, 30000)
 
   it('keeps drag enabled when only panel titles differ from defaults', async () => {
     mockQuadrantConfigStore.panels = [

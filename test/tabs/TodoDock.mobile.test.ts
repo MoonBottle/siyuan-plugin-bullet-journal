@@ -15,6 +15,8 @@ import {
 } from 'vue'
 import TodoDock from '@/tabs/TodoDock.vue'
 
+const mockGetFrontend = vi.fn(() => 'desktop')
+
 vi.mock('@/mobile/MobileMainShell.vue', () => ({
   default: defineComponent({
     name: 'MobileMainShellStub',
@@ -42,15 +44,19 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   }),
 }))
 
+vi.mock('siyuan', () => ({
+  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
+}))
+
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => undefined),
 }))
 
-function mountDock(plugin?: { isMobile?: boolean }) {
+function mountDock() {
   const container = document.createElement('div')
   document.body.appendChild(container)
 
-  const app = createApp(TodoDock, { plugin })
+  const app = createApp(TodoDock)
   app.mount(container)
 
   return {
@@ -65,11 +71,13 @@ function mountDock(plugin?: { isMobile?: boolean }) {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.clearAllMocks()
+  mockGetFrontend.mockReturnValue('desktop')
 })
 
 describe('todoDock mobile entry', () => {
   it('mounts MobileMainShell on mobile instead of the legacy MobileTodoDock wrapper', async () => {
-    const mounted = mountDock({ isMobile: true })
+    mockGetFrontend.mockReturnValue('mobile')
+    const mounted = mountDock()
     await nextTick()
 
     expect(mounted.container.querySelector('[data-testid="mobile-main-shell-stub"]')).not.toBeNull()
@@ -80,7 +88,7 @@ describe('todoDock mobile entry', () => {
   })
 
   it('keeps mounting DesktopTodoDock on desktop', async () => {
-    const mounted = mountDock({ isMobile: false })
+    const mounted = mountDock()
     await nextTick()
 
     expect(mounted.container.querySelector('[data-testid="desktop-todo-dock-stub"]')).not.toBeNull()

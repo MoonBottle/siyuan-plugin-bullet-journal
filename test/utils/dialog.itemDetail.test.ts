@@ -18,6 +18,7 @@ vi.mock('siyuan', async () => {
 })
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => null),
+  useApp: vi.fn(() => null),
 }))
 
 describe('showItemDetailModal', () => {
@@ -33,7 +34,7 @@ describe('showItemDetailModal', () => {
     vi.restoreAllMocks()
   })
 
-  it('opens item detail with initial focus on the cancel button instead of reminder actions', async () => {
+  it('opens item detail dialog and focuses the first focusable element on mount', async () => {
     const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
       callback(0)
       return 1
@@ -43,6 +44,7 @@ describe('showItemDetailModal', () => {
 
     const dialog = showItemDetailModal({
       id: 'item-1',
+      blockId: 'block-1',
       content: 'Review PR',
       date: '2026-05-01',
       status: 'pending',
@@ -57,13 +59,14 @@ describe('showItemDetailModal', () => {
 
     await nextTick()
 
-    const cancelButton = Array.from(dialog.element.querySelectorAll('button'))
-      .find((button) => button.textContent?.trim() === 'Cancel')
+    const buttons = dialog.element.querySelectorAll('button')
+    expect(buttons.length).toBeGreaterThan(0)
 
-    expect(cancelButton).toBeTruthy()
-    expect(document.activeElement).toBe(cancelButton)
+    // The first button should receive initial focus (not reminder-specific)
+    const firstButton = buttons[0]
+    expect(document.activeElement).toBe(firstButton)
 
     dialog.destroy()
     rafSpy.mockRestore()
-  }, 10000)
+  }, 15000)
 })

@@ -15,6 +15,8 @@ import {
 } from 'vue'
 import HabitDock from '@/tabs/HabitDock.vue'
 
+const mockGetFrontend = vi.fn(() => 'desktop')
+
 vi.mock('@/mobile/MobileMainShell.vue', () => ({
   default: defineComponent({
     name: 'MobileMainShellStub',
@@ -42,15 +44,19 @@ vi.mock('@/tabs/DesktopHabitDock.vue', () => ({
   }),
 }))
 
+vi.mock('siyuan', () => ({
+  getFrontend: (...args: unknown[]) => mockGetFrontend(...args),
+}))
+
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => undefined),
 }))
 
-function mountDock(plugin?: { isMobile?: boolean }) {
+function mountDock() {
   const container = document.createElement('div')
   document.body.appendChild(container)
 
-  const app = createApp(HabitDock, { plugin })
+  const app = createApp(HabitDock)
   app.mount(container)
 
   return {
@@ -65,11 +71,13 @@ function mountDock(plugin?: { isMobile?: boolean }) {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.clearAllMocks()
+  mockGetFrontend.mockReturnValue('desktop')
 })
 
 describe('habitDock mobile entry', () => {
   it('mounts MobileMainShell on mobile instead of the legacy MobileHabitDock wrapper', async () => {
-    const mounted = mountDock({ isMobile: true })
+    mockGetFrontend.mockReturnValue('mobile')
+    const mounted = mountDock()
     await nextTick()
 
     expect(mounted.container.querySelector('[data-testid="mobile-main-shell-stub"]')).not.toBeNull()
@@ -80,7 +88,7 @@ describe('habitDock mobile entry', () => {
   })
 
   it('keeps mounting DesktopHabitDock on desktop', async () => {
-    const mounted = mountDock({ isMobile: false })
+    const mounted = mountDock()
     await nextTick()
 
     expect(mounted.container.querySelector('[data-testid="desktop-habit-dock-stub"]')).not.toBeNull()
