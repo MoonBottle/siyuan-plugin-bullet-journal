@@ -190,23 +190,23 @@ const item = computed(() => {
 // 重复规则
 const repeatRules = computed(() => [
   {
-    value: 'daily',
+    value: 'daily' as const,
     label: t('recurring.daily'),
   },
   {
-    value: 'weekly',
+    value: 'weekly' as const,
     label: t('recurring.weekly'),
   },
   {
-    value: 'monthly',
+    value: 'monthly' as const,
     label: t('recurring.monthly'),
   },
   {
-    value: 'yearly',
+    value: 'yearly' as const,
     label: t('recurring.yearly'),
   },
   {
-    value: 'workday',
+    value: 'workday' as const,
     label: t('recurring.workday'),
   },
 ])
@@ -277,15 +277,15 @@ function toggleWeekDay(day: number) {
 // 结束条件
 const endConditions = computed(() => [
   {
-    value: 'never',
+    value: 'never' as const,
     label: t('recurring.never'),
   },
   {
-    value: 'date',
+    value: 'date' as const,
     label: t('recurring.endByDate'),
   },
   {
-    value: 'count',
+    value: 'count' as const,
     label: t('recurring.endByCount'),
   },
 ])
