@@ -97,7 +97,7 @@
         <template #header>
           <span class="card-label">{{ t('todo').item }}</span>
           <span
-            v-if="props.item.priority && !readonly"
+            v-if="props.item.priority"
             class="priority-badge-header"
           >
             {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
@@ -649,10 +649,15 @@ async function handleLinkClick(link: Link) {
 }
 
 .task-level-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 8px;
   border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  height: 18px;
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
 
@@ -668,10 +673,15 @@ async function handleLinkClick(link: Link) {
 }
 
 .status-tag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 8px;
   border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  height: 18px;
 
   &.pending {
     background: var(--b3-theme-primary);
@@ -763,14 +773,17 @@ async function handleLinkClick(link: Link) {
 }
 
 .priority-badge-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 2px 8px;
   background: var(--b3-theme-surface);
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
+  vertical-align: middle;
+  height: 18px;
   margin-left: auto;
   margin-right: 4px;
 }
