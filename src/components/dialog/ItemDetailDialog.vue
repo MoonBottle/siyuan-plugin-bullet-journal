@@ -1,7 +1,7 @@
 <template>
   <div class="item-detail-dialog">
     <ItemDetailContent
-      :item="item"
+      :item="reactiveItem"
       :show-all-dates="showAllDates"
       :show-action-row="true"
       :close-on-siyuan-link="true"
@@ -12,7 +12,7 @@
     />
 
     <ItemActionBar
-      :item="item"
+      :item="reactiveItem"
       @openDoc="handleOpenDoc"
     />
 
@@ -43,12 +43,15 @@
 
 <script setup lang="ts">
 import type { Item } from '@/types/models'
+import { computed } from 'vue'
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
 import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
 
 interface Props {
-  item: Item
+  blockId: string
+  fallbackItem: Item
   showAllDates?: boolean
 }
 
@@ -65,6 +68,11 @@ const emit = defineEmits<{
   skipOccurrence: []
 }>()
 
+const projectStore = useProjectStore()
+
+// 从 store 获取响应式 item，fallback 用于 store 未加载或 item 被删除的场景
+const reactiveItem = computed(() => projectStore.getItemByBlockId(props.blockId) ?? props.fallbackItem)
+
 // 关闭弹框
 function handleClose() {
   emit('close')
@@ -77,7 +85,7 @@ function handleOpenDoc() {
 
 // 打开日历
 function handleOpenCalendar() {
-  emit('openCalendar', props.item.date)
+  emit('openCalendar', reactiveItem.value.date)
 }
 
 // 设置提醒

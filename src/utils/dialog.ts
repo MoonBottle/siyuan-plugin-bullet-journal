@@ -462,7 +462,8 @@ export function showEventDetailModal(
 
   let dialog: Dialog
   const app = createApp(ItemDetailDialog, {
-    item,
+    blockId: item.blockId,
+    fallbackItem: item,
     showAllDates: hasSiblingItems,
     onClose: () => {
       dialog.destroy()
