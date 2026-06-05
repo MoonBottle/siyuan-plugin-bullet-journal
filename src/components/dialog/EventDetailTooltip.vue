@@ -1,7 +1,7 @@
 <template>
   <div class="event-detail-tooltip">
     <ItemDetailContent
-      :item="item"
+      :item="reactiveItem"
       :readonly="true"
       :embedded="true"
     />
@@ -10,11 +10,17 @@
 
 <script setup lang="ts">
 import type { Item } from '@/types/models'
+import { computed } from 'vue'
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import { useProjectStore } from '@/stores'
 
-defineProps<{
+const props = defineProps<{
   item: Item
 }>()
+
+const projectStore = useProjectStore()
+
+const reactiveItem = computed(() => projectStore.getItemByBlockId(props.item.blockId) ?? props.item)
 </script>
 
 <style lang="scss" scoped>
