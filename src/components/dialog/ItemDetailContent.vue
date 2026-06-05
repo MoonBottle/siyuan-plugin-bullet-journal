@@ -738,11 +738,11 @@ async function handleLinkClick(link: Link) {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 2px 8px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
-  height: 18px;
+  height: 16px;
   color: var(--b3-theme-on-primary);
   white-space: nowrap;
 
@@ -777,10 +777,11 @@ async function handleLinkClick(link: Link) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   font-size: 13px;
   line-height: 1;
   cursor: help;
+  margin-top: 2px;
 }
 </style>
