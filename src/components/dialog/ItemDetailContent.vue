@@ -14,7 +14,9 @@
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').project }}</span>
+          <div class="card-label">
+            {{ t('todo').project }}
+          </div>
         </template>
         <div class="card-content-row">
           <span class="card-text">{{ project.name }}</span>
@@ -46,14 +48,16 @@
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').task }}</span>
-          <span
+          <div class="card-label">
+            {{ t('todo').task }}
+          </div>
+          <div
             v-if="task.level"
-            class="task-level-badge"
+            class="tag-badge"
             :class="`level-${task.level.toLowerCase()}`"
           >
             {{ task.level }}
-          </span>
+          </div>
         </template>
         <div class="card-content-row">
           <span class="card-text">{{ task.name }}</span>
@@ -95,17 +99,25 @@
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').item }}</span>
-          <span
-            v-if="props.item.priority"
-            class="priority-badge-header"
-          >
-            {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
-          </span>
-          <span
-            class="status-tag"
-            :class="statusInfo.class"
-          >{{ statusInfo.text }}</span>
+          <div class="card-label">
+            {{ t('todo').item }}
+          </div>
+          <div class="header-tags">
+            <div
+              v-if="props.item.priority"
+              class="priority-emoji"
+              @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
+              @mouseleave="hideIconTooltip"
+            >
+              {{ PRIORITY_CONFIG[props.item.priority].emoji }}
+            </div>
+            <div
+              class="tag-badge"
+              :class="`status-${statusInfo.class}`"
+            >
+              {{ statusInfo.text }}
+            </div>
+          </div>
         </template>
 
         <div class="item-meta">
@@ -648,63 +660,6 @@ async function handleLinkClick(link: Link) {
   }
 }
 
-.task-level-badge {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  height: 18px;
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-
-  &.level-l1 {
-    background: #4caf50;
-  }
-  &.level-l2 {
-    background: #ff9800;
-  }
-  &.level-l3 {
-    background: #f44336;
-  }
-}
-
-.status-tag {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  height: 18px;
-
-  &.pending {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-  }
-  &.in-progress {
-    background: #ff9800;
-    color: var(--b3-theme-on-primary);
-  }
-  &.completed {
-    background: var(--b3-theme-success);
-    color: var(--b3-theme-on-primary);
-  }
-  &.abandoned {
-    background: var(--b3-theme-on-surface);
-    color: var(--b3-theme-background);
-  }
-  &.expired {
-    background: #f44336;
-    color: var(--b3-theme-on-primary);
-  }
-}
-
 .item-meta {
   margin-bottom: 8px;
 }
@@ -772,19 +727,60 @@ async function handleLinkClick(link: Link) {
   border-top: 1px dashed var(--b3-border-color);
 }
 
-.priority-badge-header {
-  display: inline-flex;
+.header-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-badge {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 2px 8px;
-  background: var(--b3-theme-surface);
+  padding: 0 8px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
-  vertical-align: middle;
   height: 18px;
-  margin-left: auto;
-  margin-right: 4px;
+  color: var(--b3-theme-on-primary);
+  white-space: nowrap;
+
+  &.status-pending {
+    background: var(--b3-theme-primary);
+  }
+  &.status-in-progress {
+    background: #ff9800;
+  }
+  &.status-completed {
+    background: var(--b3-theme-success);
+  }
+  &.status-abandoned {
+    background: var(--b3-theme-on-surface);
+    color: var(--b3-theme-background);
+  }
+  &.status-expired {
+    background: #f44336;
+  }
+  &.level-l1 {
+    background: #4caf50;
+  }
+  &.level-l2 {
+    background: #ff9800;
+  }
+  &.level-l3 {
+    background: #f44336;
+  }
+}
+
+.priority-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: help;
 }
 </style>
