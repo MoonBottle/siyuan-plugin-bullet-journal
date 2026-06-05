@@ -36,7 +36,7 @@ export function extractTimePart(value?: string | null): string | undefined {
   }
 
   const matched = normalized.match(TIME_PART_EXTRACT_RE)
-  return matched?.[0] ?? normalized
+  return matched?.[0]
 }
 
 export function buildDatePatchFromItem(

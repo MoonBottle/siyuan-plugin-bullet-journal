@@ -362,7 +362,7 @@ let lastEventDetailDialog: Dialog | null = null
  * 从日历事件的 extendedProps 构建 Item 对象
  * 供 tooltip 和弹框复用
  */
-function buildItemFromEventProps(event: CalendarEvent): Item {
+export function buildItemFromEventProps(event: CalendarEvent): Item {
   const props = event.extendedProps
   const start = event.start
   const end = event.end
@@ -370,9 +370,14 @@ function buildItemFromEventProps(event: CalendarEvent): Item {
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
     || (start ? dayjs(start).format('YYYY-MM-DD') : '')
 
-  // 优先使用 originalStartDateTime/originalEndDateTime（日历事件可能被转为 ISO，原格式更可靠）
-  const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''))
-  const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''))
+  // 全天事件不应设置 startDateTime/endDateTime（原始值为 undefined）
+  // 只有非全天事件才从 event.start/end 推导时间
+  const startForTime = props.originalStartDateTime
+    || (!event.allDay && (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : '')))
+    || ''
+  const endForTime = props.originalEndDateTime
+    || (!event.allDay && (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : '')))
+    || ''
 
   return {
     id: props.blockId || '',

@@ -148,6 +148,7 @@
 import type {
   EndCondition,
   RepeatRule,
+  RepeatRuleType,
 } from '@/types/models'
 import {
   computed,
@@ -293,7 +294,7 @@ const endConditionType = ref(props.initialEndCondition?.type ?? 'never')
 const endDate = ref(props.initialEndCondition?.endDate ?? '')
 const maxCount = ref(props.initialEndCondition?.maxCount ?? 10)
 
-function selectRule(rule: string) {
+function selectRule(rule: RepeatRuleType) {
   selectedRule.value = rule
 }
 
