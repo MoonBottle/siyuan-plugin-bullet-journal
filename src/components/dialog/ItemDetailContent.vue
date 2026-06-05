@@ -237,7 +237,7 @@
         </div>
 
         <div
-          v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring || showSkipButton))"
+          v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring))"
           class="item-actions-row"
         >
           <TodoItemActionButtons
@@ -246,16 +246,12 @@
             :is-readonly="isCompletedOrAbandoned"
             :show-reminder="!isCompletedOrAbandoned || hasReminder"
             :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
-            :show-skip="!readonly && showSkipButton"
             :reminder-text="reminderText"
             :recurring-text="recurringText"
-            :skip-text="t('recurring.skipThis')"
             :reminder-tooltip="reminderButtonTooltip"
             :recurring-tooltip="recurringButtonTooltip"
-            :skip-tooltip="skipButtonTooltip"
             @setReminder="emit('setReminder')"
             @setRecurring="emit('setRecurring')"
-            @skipOccurrence="emit('skipOccurrence')"
           />
         </div>
 
@@ -342,7 +338,6 @@ const emit = defineEmits<{
   close: []
   setReminder: []
   setRecurring: []
-  skipOccurrence: []
 }>()
 
 const DATETIME_PREFIX_RE = /^(?:@|📅)/
@@ -511,11 +506,6 @@ const recurringText = computed(() => {
   const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false })
   const endMarker = generateEndConditionMarker(props.item.endCondition)
   return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker
-})
-const showSkipButton = computed(() => hasRecurring.value && (itemStatus.value === 'expired' || dayjs(props.item.date).isSame(dayjs(), 'day')))
-const skipButtonTooltip = computed(() => {
-  if (!props.item.repeatRule) return ''
-  return t('recurring.skipTooltip', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) })
 })
 const reminderButtonTooltip = computed(() => {
   if (!hasReminder.value || !props.item.reminder) return ''

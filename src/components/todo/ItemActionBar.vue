@@ -48,6 +48,17 @@
     </span>
 
     <span
+      v-if="canSkipOccurrence"
+      class="block__icon"
+      :aria-label="t('recurring.skipThis')"
+      @mouseenter="handleTooltipEnter($event, skipTooltip)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleSkipOccurrence"
+    >
+      <svg><use xlink:href="#iconAfter"></use></svg>
+    </span>
+
+    <span
       v-if="canAbandon"
       class="block__icon"
       :aria-label="t('todo').abandon"
@@ -97,6 +108,7 @@ import {
   useApp,
   usePlugin,
 } from '@/main'
+import { getNextOccurrenceDate } from '@/parser/recurringParser'
 import { usePomodoroStore } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
@@ -121,6 +133,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'openDoc', docId: string, blockId: string): void
   (event: 'openCalendar', date: string): void
+  (event: 'skipOccurrence'): void
 }>()
 
 const app = useApp()
@@ -141,6 +154,15 @@ const canComplete = computed(() => !!props.item?.blockId && props.item.status !=
 const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canSkipOccurrence = computed(() => {
+  if (!props.item?.blockId || !props.item.repeatRule) return false
+  if (props.item.status === 'completed' || props.item.status === 'abandoned') return false
+  return props.item.date < dayjs().format('YYYY-MM-DD') || dayjs(props.item.date).isSame(dayjs(), 'day')
+})
+const skipTooltip = computed(() => {
+  if (!canSkipOccurrence.value || !props.item?.repeatRule) return ''
+  return t('recurring.skipTooltip', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) })
+})
 const focusPlanLabel = computed(() => {
   return props.item?.focusPlan
     ? t('focusPlan').editAction
@@ -239,6 +261,11 @@ async function handleMigrate() {
   } finally {
     isProcessing.value = false
   }
+}
+
+function handleSkipOccurrence() {
+  if (!props.item || isProcessing.value) return
+  emit('skipOccurrence')
 }
 
 function handleOpenDocClick() {

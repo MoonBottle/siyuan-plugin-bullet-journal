@@ -8,13 +8,13 @@
       @close="handleClose"
       @setReminder="handleSetReminder"
       @setRecurring="handleSetRecurring"
-      @skipOccurrence="handleSkipOccurrence"
     />
 
     <ItemActionBar
       :item="reactiveItem"
       @openDoc="handleOpenDoc"
       @openCalendar="handleOpenCalendar"
+      @skipOccurrence="handleSkipOccurrence"
     />
   </div>
 </template>
