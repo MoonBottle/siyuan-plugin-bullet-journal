@@ -299,7 +299,8 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
 
   let dialog: Dialog
   const app = createApp(ItemDetailDialog, {
-    item,
+    blockId: item.blockId,
+    fallbackItem: item,
     showAllDates,
     onClose: () => {
       dialog.destroy()
@@ -310,7 +311,6 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
       dialog.destroy()
     },
     onOpenCalendar: (date: string) => {
-      console.log('[Task Assistant] dialog open-calendar', date)
       if (plugin && (plugin as any).openCustomTab) {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date })
       }
