@@ -246,7 +246,7 @@
             :is-readonly="isCompletedOrAbandoned"
             :show-reminder="!isCompletedOrAbandoned || hasReminder"
             :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
-            :show-skip="showSkipButton"
+            :show-skip="!readonly && showSkipButton"
             :reminder-text="reminderText"
             :recurring-text="recurringText"
             :skip-text="t('recurring.skipThis')"
