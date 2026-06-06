@@ -140,7 +140,7 @@ const handleContextMenu = (event: MouseEvent) => {
   margin: -8px -12px 0 -12px;
   padding: 6px 12px;
   font-size: 12px;
-  background: color-mix(in srgb, var(--b3-theme-surface-lighter) 85%, transparent);
+  background: color-mix(in srgb, var(--b3-theme-surface-lighter) 35%, transparent);
   border-bottom: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }

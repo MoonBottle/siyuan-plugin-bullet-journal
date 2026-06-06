@@ -736,35 +736,35 @@ async function handleLinkClick(link: Link) {
   white-space: nowrap;
 
   &.status-pending {
-    background: var(--b3-theme-primary-lightest);
+    background: color-mix(in srgb, var(--b3-theme-primary-lightest) 50%, transparent);
     color: var(--b3-theme-primary);
   }
   &.status-in-progress {
-    background: var(--b3-card-warning-background);
+    background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
     color: var(--b3-card-warning-color);
   }
   &.status-completed {
-    background: var(--b3-card-success-background);
+    background: color-mix(in srgb, var(--b3-card-success-background) 50%, transparent);
     color: var(--b3-card-success-color);
   }
   &.status-abandoned {
-    background: var(--b3-theme-surface-lighter);
+    background: color-mix(in srgb, var(--b3-theme-surface-lighter) 50%, transparent);
     color: var(--b3-theme-on-surface);
   }
   &.status-expired {
-    background: var(--b3-card-error-background);
+    background: color-mix(in srgb, var(--b3-card-error-background) 50%, transparent);
     color: var(--b3-card-error-color);
   }
   &.level-l1 {
-    background: var(--b3-card-success-background);
+    background: color-mix(in srgb, var(--b3-card-success-background) 50%, transparent);
     color: var(--b3-card-success-color);
   }
   &.level-l2 {
-    background: var(--b3-card-warning-background);
+    background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
     color: var(--b3-card-warning-color);
   }
   &.level-l3 {
-    background: var(--b3-card-error-background);
+    background: color-mix(in srgb, var(--b3-card-error-background) 50%, transparent);
     color: var(--b3-card-error-color);
   }
 }
