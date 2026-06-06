@@ -374,7 +374,28 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    expect(mounted.container.textContent).toContain('预计 1h10m')
+    expect(mounted.container.textContent).toContain('⏳1h10m')
+
+    mounted.unmount()
+  })
+
+  it('事项存在 focusPlan 时显示预计番茄钟标签', async () => {
+    const mounted = mountList({
+      items: [{
+        ...pendingItem,
+        focusPlan: {
+          type: 'pomodoro',
+          rawValue: 3,
+          normalizedMinutes: 75,
+          sourceText: '🍅x3',
+        },
+      }],
+      hasAnyItemsRaw: true,
+    })
+
+    await nextTick()
+
+    expect(mounted.container.textContent).toContain('🍅x3')
 
     mounted.unmount()
   })
@@ -474,7 +495,7 @@ describe('todoSidebarList', () => {
     mounted.unmount()
   })
 
-  it('renders priority emoji before project name and keeps status emoji in content line', async () => {
+  it('renders priority emoji and project name in header and keeps status emoji in content line', async () => {
     const mounted = mountList({
       items: [pendingItem],
       hasAnyItemsRaw: true,
@@ -482,10 +503,11 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    const projectEl = mounted.container.querySelector('.item-project') as HTMLSpanElement | null
+    const headerRightEl = mounted.container.querySelector('.item-header-right') as HTMLDivElement | null
     const contentEl = mounted.container.querySelector('.item-content') as HTMLDivElement | null
 
-    expect(projectEl?.textContent?.trim()).toBe('🔥项目A')
+    expect(headerRightEl?.textContent?.trim()).toContain('🔥')
+    expect(headerRightEl?.textContent?.trim()).toContain('项目A')
     expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级')
 
     mounted.unmount()

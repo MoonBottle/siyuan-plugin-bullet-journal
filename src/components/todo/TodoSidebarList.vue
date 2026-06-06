@@ -112,16 +112,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -131,12 +142,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -208,16 +213,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -227,12 +243,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -304,16 +314,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -323,12 +344,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -400,16 +415,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -419,12 +445,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -505,16 +525,27 @@
                     <div class="item-header-left">
                       <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                     </div>
-                    <span
-                      v-if="item.project || getPriorityEmoji(item)"
-                      class="item-project"
-                    >
+                    <div class="item-header-right">
+                      <span
+                        v-if="getFocusPlanDisplay(item)"
+                        class="item-focus-plan-badge"
+                        @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                        @mouseleave="hideIconTooltip"
+                      >
+                        <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                        <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                      </span>
                       <span
                         v-if="getPriorityEmoji(item)"
                         class="item-priority"
+                        @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                        @mouseleave="hideIconTooltip"
                       >{{ getPriorityEmoji(item) }}</span>
-                      <span v-if="item.project">{{ item.project.name }}</span>
-                    </span>
+                      <span
+                        v-if="item.project"
+                        class="item-project-name"
+                      >{{ item.project.name }}</span>
+                    </div>
                   </template>
                   <div
                     v-if="item.task"
@@ -524,12 +555,6 @@
                   </div>
                   <div class="item-content">
                     {{ getStatusEmoji(item) }} {{ item.content }}
-                  </div>
-                  <div
-                    v-if="getFocusPlanLabel(item)"
-                    class="item-focus-plan"
-                  >
-                    {{ getFocusPlanLabel(item) }}
                   </div>
                   <div
                     v-if="item.tags?.length"
@@ -603,16 +628,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -622,12 +658,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -696,16 +726,27 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span
-                  v-if="item.project || getPriorityEmoji(item)"
-                  class="item-project"
-                >
+                <div class="item-header-right">
+                  <span
+                    v-if="getFocusPlanDisplay(item)"
+                    class="item-focus-plan-badge"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseleave="hideIconTooltip"
+                  >
+                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                  </span>
                   <span
                     v-if="getPriorityEmoji(item)"
                     class="item-priority"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
+                    @mouseleave="hideIconTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span v-if="item.project">{{ item.project.name }}</span>
-                </span>
+                  <span
+                    v-if="item.project"
+                    class="item-project-name"
+                  >{{ item.project.name }}</span>
+                </div>
               </template>
               <div
                 v-if="item.task"
@@ -715,12 +756,6 @@
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
-              </div>
-              <div
-                v-if="getFocusPlanLabel(item)"
-                class="item-focus-plan"
-              >
-                {{ getFocusPlanLabel(item) }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -777,6 +812,7 @@ import TodoItemMeta from '@/components/todo/TodoItemMeta.vue'
 import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
 import { skipCurrentOccurrence } from '@/services/recurringService'
 import {
   usePomodoroStore,
@@ -799,17 +835,20 @@ import {
 } from '@/utils/dateUtils'
 import dayjs from '@/utils/dayjs'
 import {
+  hideIconTooltip,
   showDatePickerDialog,
+  showIconTooltip,
   showItemDetailModal,
   showPomodoroTimerDialog,
 } from '@/utils/dialog'
+
 import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
 import { createExampleDocument } from '@/utils/exampleDocUtils'
 import { openDocumentAtLine } from '@/utils/fileUtils'
-import { formatFocusPlanDisplay } from '@/utils/focusPlanReview'
+
 import {
   abandonItem,
   completeItem,
@@ -866,9 +905,41 @@ const getPriorityEmoji = (item: Item): string => {
   return ''
 }
 
-const getFocusPlanLabel = (item: Item): string => {
-  const display = formatFocusPlanDisplay(item.focusPlan)
-  return display ? `${t('focusPlan').estimatedShort || '预计'} ${display}` : ''
+const getPriorityLabel = (item: Item): string => {
+  if (item.priority && PRIORITY_CONFIG[item.priority]) {
+    return PRIORITY_CONFIG[item.priority].label
+  }
+  return ''
+}
+
+const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | { type: 'duration', value: string } | null => {
+  if (!item.focusPlan) return null
+  if (item.focusPlan.type === 'pomodoro') {
+    return {
+      type: 'pomodoro',
+      value: item.focusPlan.rawValue,
+    }
+  }
+  // duration type: format compact minutes
+  const minutes = item.focusPlan.rawValue
+  if (minutes < 60) {
+    return {
+      type: 'duration',
+      value: `${minutes}m`,
+    }
+  }
+  const hours = Math.floor(minutes / 60)
+  const restMinutes = minutes % 60
+  if (restMinutes === 0) {
+    return {
+      type: 'duration',
+      value: `${hours}h`,
+    }
+  }
+  return {
+    type: 'duration',
+    value: `${hours}h${restMinutes}m`,
+  }
 }
 
 const projectStore = useProjectStore()
@@ -1557,15 +1628,7 @@ const handleCreateExample = async () => {
   min-width: 0;
 }
 
-.item-time {
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.item-project {
+.item-header-right {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1577,8 +1640,33 @@ const handleCreateExample = async () => {
   max-width: 50%;
 }
 
+.item-focus-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.8;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.item-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-time {
+  color: var(--b3-theme-on-surface);
+  opacity: 0.7;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .item-priority {
   flex-shrink: 0;
+  cursor: help;
 }
 
 .item-task {
@@ -1598,13 +1686,6 @@ const handleCreateExample = async () => {
   color: var(--b3-theme-on-background);
   word-break: break-all;
   line-height: 1.4;
-}
-
-.item-focus-plan {
-  width: 100%;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface-light);
 }
 
 .item-tag-list {
