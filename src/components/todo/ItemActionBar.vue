@@ -81,6 +81,45 @@
     </span>
 
     <span
+      v-if="!hasFixedRow"
+      class="block__icon"
+      :aria-label="t('todo').calendar"
+      @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleOpenCalendar"
+    >
+      <svg><use xlink:href="#iconCalendar"></use></svg>
+    </span>
+  </div>
+
+  <div
+    v-if="hasFixedRow && item"
+    class="item-actions-fixed"
+  >
+    <span
+      v-if="showPin"
+      class="block__icon"
+      :class="{ 'block__icon--active': item?.pinned }"
+      :aria-label="pinLabel"
+      @mouseenter="handleTooltipEnter($event, pinLabel)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleTogglePinned"
+    >
+      <svg><use xlink:href="#iconPin"></use></svg>
+    </span>
+
+    <span
+      v-if="showDetail"
+      class="block__icon"
+      :aria-label="t('todo').detail"
+      @mouseenter="handleTooltipEnter($event, t('todo').detail)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleOpenDetail"
+    >
+      <svg><use xlink:href="#iconInfo"></use></svg>
+    </span>
+
+    <span
       class="block__icon"
       :aria-label="t('todo').calendar"
       @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
@@ -110,7 +149,6 @@ import {
 } from '@/main'
 import { getNextOccurrenceDate } from '@/parser/recurringParser'
 import { usePomodoroStore } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
 import {
   hideIconTooltip,
@@ -119,6 +157,11 @@ import {
   showPomodoroTimerDialog,
 } from '@/utils/dialog'
 import { openDocumentAtLine } from '@/utils/fileUtils'
+import {
+  abandonItem,
+  completeItem,
+  migrateItem,
+} from '@/utils/itemActions'
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 
 type OpenDocMode = 'navigate' | 'preview'
@@ -126,14 +169,20 @@ type OpenDocMode = 'navigate' | 'preview'
 const props = withDefaults(defineProps<{
   item: Item | null
   openDocMode?: OpenDocMode
+  showPin?: boolean
+  showDetail?: boolean
 }>(), {
   openDocMode: 'navigate',
+  showPin: false,
+  showDetail: false,
 })
 
 const emit = defineEmits<{
   (event: 'openDoc', docId: string, blockId: string): void
   (event: 'openCalendar', date: string): void
   (event: 'skipOccurrence'): void
+  (event: 'openDetail'): void
+  (event: 'togglePinned'): void
 }>()
 
 const app = useApp()
@@ -175,28 +224,11 @@ const migrateLabel = computed(() => {
     : t('todo').migrateToTomorrow
 })
 
-function buildDatePatch(item: Item, targetDate: string) {
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date
-      ? [{
-          date: item.date,
-          startDateTime: item.startDateTime,
-          endDateTime: item.endDateTime,
-        }]
-      : []),
-  ]
-
-  return {
-    type: 'addDate' as const,
-    date: targetDate,
-    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    allDay: !item.startDateTime,
-    originalDate: item.date,
-    siblingItems: completeSiblingItems,
-  }
-}
+const hasFixedRow = computed(() => props.showPin || props.showDetail)
+const pinLabel = computed(() => {
+  if (!props.item) return ''
+  return props.item.pinned ? t('todo').unpin : t('todo').pin
+})
 
 function handleTooltipEnter(event: MouseEvent, text: string) {
   const el = event.currentTarget as HTMLElement | null
@@ -209,32 +241,20 @@ function handleTooltipLeave() {
 }
 
 async function handleComplete() {
-  if (!props.item?.blockId || isProcessing.value) return
+  if (!props.item || isProcessing.value) return
   isProcessing.value = true
   try {
-    await writeBlock({
-      blockId: props.item.blockId,
-      listItemBlockId: props.item.listItemBlockId,
-    }, {
-      type: 'setStatus',
-      status: 'completed',
-    })
+    await completeItem(props.item)
   } finally {
     isProcessing.value = false
   }
 }
 
 async function handleAbandon() {
-  if (!props.item?.blockId || isProcessing.value) return
+  if (!props.item || isProcessing.value) return
   isProcessing.value = true
   try {
-    await writeBlock({
-      blockId: props.item.blockId,
-      listItemBlockId: props.item.listItemBlockId,
-    }, {
-      type: 'setStatus',
-      status: 'abandoned',
-    })
+    await abandonItem(props.item)
   } finally {
     isProcessing.value = false
   }
@@ -251,13 +271,10 @@ function handleFocusPlan() {
 }
 
 async function handleMigrate() {
-  if (!props.item?.blockId || isProcessing.value) return
+  if (!props.item || isProcessing.value) return
   isProcessing.value = true
   try {
-    const targetDate = props.item.date < dayjs().format('YYYY-MM-DD')
-      ? dayjs().format('YYYY-MM-DD')
-      : dayjs().add(1, 'day').format('YYYY-MM-DD')
-    await writeBlock({ blockId: props.item.blockId }, buildDatePatch(props.item, targetDate))
+    await migrateItem(props.item)
   } finally {
     isProcessing.value = false
   }
@@ -266,6 +283,16 @@ async function handleMigrate() {
 function handleSkipOccurrence() {
   if (!props.item || isProcessing.value) return
   emit('skipOccurrence')
+}
+
+function handleTogglePinned() {
+  if (!props.item || isProcessing.value) return
+  emit('togglePinned')
+}
+
+function handleOpenDetail() {
+  if (!props.item || isProcessing.value) return
+  emit('openDetail')
 }
 
 function handleOpenDocClick() {
@@ -376,6 +403,26 @@ function handleOpenCalendar() {
   &:hover {
     color: var(--b3-theme-primary);
     opacity: 1;
+  }
+}
+
+.item-actions-fixed {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+
+  .block__icon {
+    opacity: 1;
+    cursor: pointer;
+
+    &.block__icon--active {
+      color: var(--b3-theme-primary);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 }
 </style>

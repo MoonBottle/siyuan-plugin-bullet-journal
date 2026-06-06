@@ -205,6 +205,8 @@
     "viewDetail": "查看事项详情",
     "viewCalendar": "查看日历",
     "detail": "详情",
+    "pin": "置顶",
+    "unpin": "取消置顶",
     "itemDetail": "事项详情",
     "level": {
       "L1": "L1",

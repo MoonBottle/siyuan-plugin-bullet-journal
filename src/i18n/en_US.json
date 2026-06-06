@@ -205,6 +205,8 @@
     "viewDetail": "View Item Detail",
     "viewCalendar": "View Calendar",
     "detail": "Detail",
+    "pin": "Pin",
+    "unpin": "Unpin",
     "itemDetail": "Item Detail",
     "level": {
       "L1": "L1",

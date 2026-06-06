@@ -10,11 +10,16 @@ import {
 } from 'vitest'
 import {
   createApp,
+  defineComponent,
+  h,
   nextTick,
+  ref,
 } from 'vue'
 
 const mockShowFocusPlanDialog = vi.fn()
-const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockCompleteItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockAbandonItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockMigrateItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => ({
@@ -29,34 +34,58 @@ vi.mock('@/main', () => ({
   }),
 }))
 
-vi.mock('@/i18n', () => ({
-  t: vi.fn((key: string) => {
-    if (key === 'todo') {
-      return {
-        complete: '完成',
-        startFocusAria: '开始专注',
-        abandon: '放弃',
-        openDoc: '打开文档',
-        calendar: '日历',
-        migrateToToday: '迁移到今天',
-        migrateToTomorrow: '迁移到明天',
+vi.mock('@/i18n', () => {
+  const todo = {
+    complete: '完成',
+    startFocusAria: '开始专注',
+    abandon: '放弃',
+    openDoc: '打开文档',
+    calendar: '日历',
+    migrateToToday: '迁移到今天',
+    migrateToTomorrow: '迁移到明天',
+    detail: '详情',
+    pin: '置顶',
+    unpin: '取消置顶',
+  }
+  const focusPlan = {
+    setAction: '设置预计',
+    editAction: '修改预计',
+  }
+  const recurring = {
+    skipThis: '跳过本次',
+    skipTooltip: '跳过本次，下次：{date}',
+  }
+  const flatMap: Record<string, string> = {
+    'todo.complete': '完成',
+    'todo.startFocusAria': '开始专注',
+    'todo.abandon': '放弃',
+    'todo.openDoc': '打开文档',
+    'todo.calendar': '日历',
+    'todo.migrateToToday': '迁移到今天',
+    'todo.migrateToTomorrow': '迁移到明天',
+    'todo.detail': '详情',
+    'todo.pin': '置顶',
+    'todo.unpin': '取消置顶',
+    'focusPlan.setAction': '设置预计',
+    'focusPlan.editAction': '修改预计',
+    'recurring.skipThis': '跳过本次',
+    'recurring.skipTooltip': '跳过本次，下次：{date}',
+  }
+  return {
+    t: vi.fn((key: string, params?: Record<string, string>) => {
+      if (key === 'todo') return todo
+      if (key === 'focusPlan') return focusPlan
+      if (key === 'recurring') return recurring
+      let result = flatMap[key] ?? ''
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          result = result.replace(`{${k}}`, v)
+        }
       }
-    }
-    if (key === 'focusPlan') {
-      return {
-        setAction: '设置预计',
-        editAction: '修改预计',
-      }
-    }
-    if (key === 'statusTag') {
-      return {
-        completed: '#完成',
-        abandoned: '#放弃',
-      }
-    }
-    return {}
-  }),
-}))
+      return result
+    }),
+  }
+})
 
 vi.mock('@/utils/dialog', () => ({
   hideIconTooltip: vi.fn(),
@@ -69,20 +98,65 @@ vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
 }))
 
-vi.mock('@/utils/blockWriter', () => ({
-  writeBlock: mockWriteBlock,
+vi.mock('@/utils/itemActions', () => ({
+  completeItem: mockCompleteItem,
+  abandonItem: mockAbandonItem,
+  migrateItem: mockMigrateItem,
 }))
 
-async function mountComponent(item: any) {
+vi.mock('@/parser/recurringParser', () => ({
+  getNextOccurrenceDate: vi.fn(() => '2026-05-15'),
+}))
+
+async function mountComponent(item: any, extraProps: Record<string, any> = {}) {
   const { default: ItemActionBar } = await import('@/components/todo/ItemActionBar.vue')
   const container = document.createElement('div')
   document.body.appendChild(container)
-  const app = createApp(ItemActionBar, { item })
+  const app = createApp(ItemActionBar, {
+    item,
+    ...extraProps,
+  })
   app.mount(container)
   await nextTick()
 
   return {
     container,
+    unmount() {
+      app.unmount()
+      container.remove()
+    },
+  }
+}
+
+async function mountWithEmitCapture(item: any, extraProps: Record<string, any> = {}) {
+  const { default: ItemActionBar } = await import('@/components/todo/ItemActionBar.vue')
+  const emitted: Record<string, any[]> = {}
+  const Wrapper = defineComponent({
+    setup() {
+      const itemRef = ref(item)
+      return () => h(ItemActionBar, {
+        item: itemRef.value,
+        ...extraProps,
+        onTogglePinned: (...args: any[]) => {
+          if (!emitted.togglePinned) emitted.togglePinned = []
+          emitted.togglePinned.push(args)
+        },
+        onOpenDetail: (...args: any[]) => {
+          if (!emitted.openDetail) emitted.openDetail = []
+          emitted.openDetail.push(args)
+        },
+      })
+    },
+  })
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(Wrapper)
+  app.mount(container)
+  await nextTick()
+
+  return {
+    container,
+    emitted,
     unmount() {
       app.unmount()
       container.remove()
@@ -140,7 +214,7 @@ describe('itemActionBar', () => {
     mounted.unmount()
   })
 
-  it('uses BlockWriter setStatus when clicking complete', async () => {
+  it('calls completeItem when clicking complete', async () => {
     const mounted = await mountComponent({
       id: 'item-3',
       blockId: 'block-3',
@@ -155,18 +229,14 @@ describe('itemActionBar', () => {
     completeButton?.click()
     await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-3' },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
+    expect(mockCompleteItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'item-3' }),
     )
 
     mounted.unmount()
   })
 
-  it('uses BlockWriter addDate when migrating an overdue item', async () => {
+  it('calls migrateItem when migrating an overdue item', async () => {
     const mounted = await mountComponent({
       id: 'item-4',
       blockId: 'block-4',
@@ -184,25 +254,209 @@ describe('itemActionBar', () => {
     migrateButton?.click()
     await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-4' },
-      {
-        type: 'addDate',
-        date: '2026-05-14',
-        startTime: '09:00',
-        endTime: '10:30',
-        allDay: false,
-        originalDate: '2026-05-13',
-        siblingItems: [
-          { date: '2026-05-20' },
-          {
-            date: '2026-05-13',
-            startDateTime: '2026-05-13 09:00',
-            endDateTime: '2026-05-13 10:30',
-          },
-        ],
-      },
+    expect(mockMigrateItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'item-4' }),
     )
+
+    mounted.unmount()
+  })
+
+  it('shows pin icon when showPin is true', async () => {
+    const mounted = await mountComponent({
+      id: 'item-5',
+      blockId: 'block-5',
+      content: '置顶事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showPin: true })
+
+    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
+    expect(fixedRow).toBeTruthy()
+
+    const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '置顶')
+    expect(pinButton).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('hides pin icon when showPin is false (default)', async () => {
+    const mounted = await mountComponent({
+      id: 'item-6',
+      blockId: 'block-6',
+      content: '普通事项',
+      date: '2026-05-14',
+      status: 'pending',
+    })
+
+    const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '置顶')
+    expect(pinButton).toBeFalsy()
+
+    mounted.unmount()
+  })
+
+  it('shows detail icon when showDetail is true', async () => {
+    const mounted = await mountComponent({
+      id: 'item-7',
+      blockId: 'block-7',
+      content: '详情事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showDetail: true })
+
+    const detailButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '详情')
+    expect(detailButton).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('renders fixed row when showPin or showDetail is true', async () => {
+    const mounted = await mountComponent({
+      id: 'item-8',
+      blockId: 'block-8',
+      content: '固定行事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showPin: true })
+
+    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
+    expect(fixedRow).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('does not render fixed row when showPin and showDetail are both false', async () => {
+    const mounted = await mountComponent({
+      id: 'item-9',
+      blockId: 'block-9',
+      content: '无固定行事项',
+      date: '2026-05-14',
+      status: 'pending',
+    })
+
+    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
+    expect(fixedRow).toBeFalsy()
+
+    mounted.unmount()
+  })
+
+  it('moves calendar icon to fixed row when fixed row exists', async () => {
+    const mounted = await mountComponent({
+      id: 'item-10',
+      blockId: 'block-10',
+      content: '日历移动事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showDetail: true })
+
+    const hoverRow = mounted.container.querySelector('.item-action-bar')
+    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
+
+    // Calendar should NOT be in hover row
+    const hoverCalendar = [...(hoverRow?.querySelectorAll('.block__icon') || [])]
+      .find((node) => node.getAttribute('aria-label') === '日历')
+    expect(hoverCalendar).toBeFalsy()
+
+    // Calendar should be in fixed row
+    const fixedCalendar = [...(fixedRow?.querySelectorAll('.block__icon') || [])]
+      .find((node) => node.getAttribute('aria-label') === '日历')
+    expect(fixedCalendar).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('keeps calendar icon in hover row when no fixed row', async () => {
+    const mounted = await mountComponent({
+      id: 'item-11',
+      blockId: 'block-11',
+      content: '日历保留事项',
+      date: '2026-05-14',
+      status: 'pending',
+    })
+
+    const hoverRow = mounted.container.querySelector('.item-action-bar')
+    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
+
+    expect(fixedRow).toBeFalsy()
+
+    const hoverCalendar = [...(hoverRow?.querySelectorAll('.block__icon') || [])]
+      .find((node) => node.getAttribute('aria-label') === '日历')
+    expect(hoverCalendar).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('emits togglePinned when pin icon is clicked', async () => {
+    const mounted = await mountWithEmitCapture({
+      id: 'item-12',
+      blockId: 'block-12',
+      content: '置顶点击事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showPin: true })
+
+    const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '置顶') as HTMLElement | undefined
+
+    pinButton?.click()
+    await nextTick()
+
+    expect(mounted.emitted.togglePinned).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('emits openDetail when detail icon is clicked', async () => {
+    const mounted = await mountWithEmitCapture({
+      id: 'item-13',
+      blockId: 'block-13',
+      content: '详情点击事项',
+      date: '2026-05-14',
+      status: 'pending',
+    }, { showDetail: true })
+
+    const detailButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '详情') as HTMLElement | undefined
+
+    detailButton?.click()
+    await nextTick()
+
+    expect(mounted.emitted.openDetail).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('shows skip icon for recurring overdue item', async () => {
+    const mounted = await mountComponent({
+      id: 'item-14',
+      blockId: 'block-14',
+      content: '循环过期事项',
+      date: '2026-05-13',
+      status: 'pending',
+      repeatRule: 'FREQ=DAILY;INTERVAL=1',
+    })
+
+    const skipButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '跳过本次')
+    expect(skipButton).toBeTruthy()
+
+    mounted.unmount()
+  })
+
+  it('hides skip icon for non-recurring item', async () => {
+    const mounted = await mountComponent({
+      id: 'item-15',
+      blockId: 'block-15',
+      content: '非循环事项',
+      date: '2026-05-13',
+      status: 'pending',
+    })
+
+    const skipButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '跳过本次')
+    expect(skipButton).toBeFalsy()
 
     mounted.unmount()
   })
