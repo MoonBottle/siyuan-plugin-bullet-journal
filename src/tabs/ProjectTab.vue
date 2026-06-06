@@ -47,7 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import type { WorkbenchProjectViewConfig } from '@/types/workbench'
 import {
   computed,
   nextTick,
@@ -78,64 +77,38 @@ import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
-  viewConfig?: Record<string, unknown>
-  onUpdateConfig?: (config: Record<string, unknown>) => void
+  groupId?: string
+  columnRatios?: [number, number, number]
 }>(), {
   embedded: false,
 })
+
+const emit = defineEmits<{
+  (event: 'update:groupId', value: string): void
+  (event: 'update:columnRatios', value: [number, number, number]): void
+}>()
 
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
 
-const selectedGroup = ref('')
+const selectedGroup = ref(props.groupId ?? '')
 const projectViewRef = ref<InstanceType<typeof ProjectView> | null>(null)
 
 const DEFAULT_COLUMN_RATIOS: [number, number, number] = [20, 20, 60]
 
-const columnRatios = ref<[number, number, number]>(getInitialColumnRatios())
-
-function getInitialColumnRatios(): [number, number, number] {
-  if (props.embedded && props.viewConfig?.columnRatios) {
-    const ratios = props.viewConfig.columnRatios as [number, number, number]
-    if (Array.isArray(ratios) && ratios.length === 3) {
-      return ratios
-    }
-  }
-  return [...DEFAULT_COLUMN_RATIOS]
-}
+const columnRatios = ref<[number, number, number]>(
+  props.columnRatios ? [...props.columnRatios] : [...DEFAULT_COLUMN_RATIOS],
+)
 
 function handleColumnRatiosChange(newRatios: [number, number, number]) {
   columnRatios.value = newRatios
-  persistColumnRatios(newRatios)
-}
-
-let persistTimer: ReturnType<typeof setTimeout> | null = null
-
-function persistColumnRatios(ratios: [number, number, number]) {
-  if (!props.embedded || !props.onUpdateConfig) return
-  if (persistTimer) clearTimeout(persistTimer)
-  persistTimer = setTimeout(() => {
-    props.onUpdateConfig!({
-      ...(props.viewConfig ?? {}),
-      columnRatios: ratios,
-    })
-    persistTimer = null
-  }, 300)
+  emit('update:columnRatios', newRatios)
 }
 
 function handleResetColumnRatios() {
-  if (persistTimer) {
-    clearTimeout(persistTimer)
-    persistTimer = null
-  }
   columnRatios.value = [...DEFAULT_COLUMN_RATIOS]
-  if (props.embedded && props.onUpdateConfig) {
-    props.onUpdateConfig({
-      ...(props.viewConfig ?? {}),
-      columnRatios: [...DEFAULT_COLUMN_RATIOS],
-    })
-  }
+  emit('update:columnRatios', [...DEFAULT_COLUMN_RATIOS])
 }
 
 const filteredProjects = computed(() => {
@@ -184,16 +157,21 @@ let unsubscribeRefresh: (() => void) | null = null
 let refreshChannel: BroadcastChannel | null = null
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
-watch(() => props.viewConfig, (config) => {
-  const groupId = (config as WorkbenchProjectViewConfig | undefined)?.groupId
-  if (groupId) {
-    selectedGroup.value = groupId
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) {
+    selectedGroup.value = val
   }
-  const ratios = (config as WorkbenchProjectViewConfig | undefined)?.columnRatios
-  if (ratios && Array.isArray(ratios) && ratios.length === 3) {
-    columnRatios.value = [...ratios]
+})
+
+watch(() => props.columnRatios, (val) => {
+  if (val && Array.isArray(val) && val.length === 3) {
+    columnRatios.value = [...val]
   }
-}, { immediate: true })
+})
+
+watch(selectedGroup, (val) => {
+  emit('update:groupId', val)
+})
 
 // 初始化数据
 onMounted(async () => {

@@ -82,10 +82,21 @@ vi.mock('@/tabs/FocusWorkbenchTab.vue', () => ({
   },
 }))
 
-vi.mock('@/tabs/ProjectTab.vue', () => ({
+vi.mock('@/components/workbench/view/WorkbenchProjectView.vue', () => ({
   default: {
-    props: ['embedded'],
-    template: '<div data-testid="project-tab-mock">Project</div>',
+    template: '<div data-testid="workbench-project-view-mock">Project</div>',
+  },
+}))
+
+vi.mock('@/components/workbench/view/WorkbenchCalendarView.vue', () => ({
+  default: {
+    template: '<div data-testid="workbench-calendar-view-mock">Calendar</div>',
+  },
+}))
+
+vi.mock('@/components/workbench/view/WorkbenchGanttView.vue', () => ({
+  default: {
+    template: '<div data-testid="workbench-gantt-view-mock">Gantt</div>',
   },
 }))
 
@@ -201,10 +212,37 @@ describe('workbenchViewHost', () => {
     mounted.unmount()
   }, 10000)
 
-  it('unsupported view entry renders unsupported placeholder', async () => {
+  it('calendar view entry renders workbench calendar host', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('calendar'),
+    })
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-calendar"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="workbench-calendar-view-mock"]')).not.toBeNull()
+
+    mounted.unmount()
+  })
+
+  it('gantt view entry renders workbench gantt host', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: createViewEntry('gantt'),
+    })
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-gantt"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="workbench-gantt-view-mock"]')).not.toBeNull()
+
+    mounted.unmount()
+  })
+
+  it('unsupported view entry renders unsupported placeholder', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: {
+        ...createViewEntry('todo'),
+        viewType: 'nonExistent',
+      } as any,
     })
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-unsupported"]')).not.toBeNull()

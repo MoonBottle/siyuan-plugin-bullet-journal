@@ -1,5 +1,8 @@
 <template>
-  <div class="hk-work-tab gantt-tab">
+  <div
+    class="hk-work-tab gantt-tab"
+    :class="{ 'gantt-tab--embedded': embedded }"
+  >
     <div class="block__icons">
       <!-- 左侧：甘特图控件 -->
       <label class="show-items">
@@ -67,6 +70,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  watch,
 } from 'vue'
 import GanttView from '@/components/gantt/GanttView.vue'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
@@ -89,15 +93,39 @@ import {
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+  viewMode?: 'day' | 'week' | 'month'
+  showItems?: boolean
+  startDate?: string
+  endDate?: string
+  groupId?: string
+}>(), {
+  embedded: false,
+  viewMode: 'day',
+  showItems: false,
+  startDate: '',
+  endDate: '',
+  groupId: '',
+})
+
+const emit = defineEmits<{
+  (event: 'update:viewMode', value: 'day' | 'week' | 'month'): void
+  (event: 'update:showItems', value: boolean): void
+  (event: 'update:startDate', value: string): void
+  (event: 'update:endDate', value: string): void
+  (event: 'update:groupId', value: string): void
+}>()
+
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
 
-const selectedGroup = ref('')
-const showItems = ref(false)
-const startDate = ref('')
-const endDate = ref('')
-const viewMode = ref<'day' | 'week' | 'month'>('day')
+const selectedGroup = ref(props.groupId)
+const showItems = ref(props.showItems)
+const startDate = ref(props.startDate)
+const endDate = ref(props.endDate)
+const viewMode = ref<'day' | 'week' | 'month'>(props.viewMode)
 
 const viewModes: Array<{ value: 'day' | 'week' | 'month', label: string }> = [
   {
@@ -158,13 +186,65 @@ let unsubscribeRefresh: (() => void) | null = null
 let refreshChannel: BroadcastChannel | null = null
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
+// 同步 props 到内部 ref
+watch(() => props.viewMode, (val) => {
+  if (val && val !== viewMode.value) {
+    viewMode.value = val
+  }
+})
+
+watch(() => props.showItems, (val) => {
+  if (val !== showItems.value) {
+    showItems.value = val
+  }
+})
+
+watch(() => props.startDate, (val) => {
+  if (val !== undefined && val !== startDate.value) {
+    startDate.value = val
+  }
+})
+
+watch(() => props.endDate, (val) => {
+  if (val !== undefined && val !== endDate.value) {
+    endDate.value = val
+  }
+})
+
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) {
+    selectedGroup.value = val
+  }
+})
+
+// 状态变更时 emit 事件
+watch(viewMode, (val) => {
+  emit('update:viewMode', val)
+})
+
+watch(showItems, (val) => {
+  emit('update:showItems', val)
+})
+
+watch(startDate, (val) => {
+  emit('update:startDate', val)
+})
+
+watch(endDate, (val) => {
+  emit('update:endDate', val)
+})
+
+watch(selectedGroup, (val) => {
+  emit('update:groupId', val)
+})
+
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('GanttTab', plugin))
   // 从插件加载设置
   settingsStore.loadFromPlugin()
 
-  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+  if (!selectedGroup.value && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup
   }
 
@@ -229,6 +309,10 @@ const handleRefresh = async () => {
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.gantt-tab--embedded {
+  // 嵌入模式下无需额外样式，预留扩展点
 }
 
 .block__icons {

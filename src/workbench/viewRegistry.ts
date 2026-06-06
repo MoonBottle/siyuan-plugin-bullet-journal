@@ -1,6 +1,8 @@
 import type {
+  WorkbenchCalendarViewConfig,
   WorkbenchEntry,
   WorkbenchFocusWorkbenchViewConfig,
+  WorkbenchGanttViewConfig,
   WorkbenchHabitWeekWidgetConfig,
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchProjectViewConfig,
@@ -8,7 +10,9 @@ import type {
   WorkbenchTodoListWidgetConfig,
   WorkbenchViewType,
 } from '@/types/workbench'
+import { openCalendarViewConfigDialog } from '@/workbench/calendarViewConfigDialog'
 import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog'
+import { openGanttViewConfigDialog } from '@/workbench/ganttViewConfigDialog'
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog'
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog'
 import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog'
@@ -156,11 +160,62 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
     },
     calendar: {
       type: 'calendar',
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: () => ({
+        defaultView: 'timeGridDay',
+        groupId: '',
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchCalendarViewConfig
+        openCalendarViewConfigDialog({
+          initialConfig: {
+            defaultView: config?.defaultView,
+            groupId: config?.groupId,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              defaultView: nextConfig.defaultView,
+              groupId: nextConfig.groupId,
+            })
+          },
+        })
+      },
     },
     gantt: {
       type: 'gantt',
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: () => ({
+        viewMode: 'day',
+        showItems: false,
+        startDate: '',
+        endDate: '',
+        groupId: '',
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchGanttViewConfig
+        openGanttViewConfigDialog({
+          initialConfig: {
+            viewMode: config?.viewMode,
+            showItems: config?.showItems,
+            startDate: config?.startDate,
+            endDate: config?.endDate,
+            groupId: config?.groupId,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              viewMode: nextConfig.viewMode,
+              showItems: nextConfig.showItems,
+              startDate: nextConfig.startDate,
+              endDate: nextConfig.endDate,
+              groupId: nextConfig.groupId,
+            })
+          },
+        })
+      },
     },
     aiChat: {
       type: 'aiChat',

@@ -99,6 +99,19 @@ export interface WorkbenchProjectViewConfig {
   columnRatios?: [number, number, number]
 }
 
+export interface WorkbenchCalendarViewConfig {
+  defaultView?: string
+  groupId?: string
+}
+
+export interface WorkbenchGanttViewConfig {
+  viewMode?: 'day' | 'week' | 'month'
+  showItems?: boolean
+  startDate?: string
+  endDate?: string
+  groupId?: string
+}
+
 export interface WorkbenchWidgetInstance {
   id: string
   type: WorkbenchWidgetType

@@ -261,6 +261,34 @@
       </button>
       <button
         class="workbench-create-popup__option"
+        data-testid="workbench-create-calendar-view"
+        type="button"
+        @click="handleCreateView('calendar')"
+      >
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
+          <svg><use xlink:href="#iconCalendar"></use></svg>
+        </span>
+        <span>{{ t('calendar').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-gantt-view"
+        type="button"
+        @click="handleCreateView('gantt')"
+      >
+        <span
+          class="workbench-create-popup__icon"
+          aria-hidden="true"
+        >
+          <svg><use xlink:href="#iconClock"></use></svg>
+        </span>
+        <span>{{ t('gantt').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
         data-testid="workbench-create-ai-chat-view"
         type="button"
         @click="handleCreateView('aiChat')"

@@ -2,6 +2,7 @@
   <div
     ref="tabRootRef"
     class="hk-work-tab calendar-tab"
+    :class="{ 'calendar-tab--embedded': embedded }"
   >
     <div class="block__icons">
       <CalendarDayHeader
@@ -91,15 +92,28 @@ import {
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+  defaultView?: string
+  groupId?: string
+}>(), {
+  embedded: false,
+})
+
+const emit = defineEmits<{
+  (event: 'update:defaultView', value: string): void
+  (event: 'update:groupId', value: string): void
+}>()
+
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
 
 const tabRootRef = ref<HTMLElement | null>(null)
 const calendarRef = ref<any>(null)
-const currentView = ref('timeGridDay')
+const currentView = ref(props.defaultView || settingsStore.calendarDefaultView || 'timeGridDay')
 const currentTitle = ref('')
-const selectedGroup = ref('')
+const selectedGroup = ref(props.groupId ?? '')
 /** drill-down 返回栈：栈顶为上一个点击进入的视图，用于逐级返回 */
 const previousViewStack = ref<string[]>([])
 /** 设置是否已加载，用于控制 CalendarView 的渲染 */
@@ -274,6 +288,18 @@ let refreshChannel: BroadcastChannel | null = null
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 // 初始化数据
+watch(() => props.defaultView, (val) => {
+  if (val && val !== currentView.value) {
+    currentView.value = val
+  }
+})
+
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) {
+    selectedGroup.value = val
+  }
+})
+
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted')
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
@@ -290,7 +316,7 @@ onMounted(async () => {
   // 标记设置已加载，允许 CalendarView 渲染
   isSettingsLoaded.value = true
 
-  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+  if (!selectedGroup.value && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup
   }
 
@@ -410,9 +436,14 @@ const handleEventResize = async (eventInfo: any) => {
 
 // 监听视图切换（用户手动切换下拉框时清空 drill-down 栈）
 watch(currentView, (newView) => {
+  emit('update:defaultView', newView)
   calendarRef.value?.changeView(newView)
   previousViewStack.value = []
   updateTitle()
+})
+
+watch(selectedGroup, (val) => {
+  emit('update:groupId', val)
 })
 </script>
 
@@ -422,6 +453,10 @@ watch(currentView, (newView) => {
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.calendar-tab--embedded {
+  // 嵌入模式下无需额外样式，预留扩展点
 }
 
 .block__icons {

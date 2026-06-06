@@ -55,10 +55,29 @@
       class="workbench-view-host__surface"
       data-testid="workbench-view-project"
     >
-      <ProjectTab
-        :embedded="true"
+      <WorkbenchProjectView
         :view-config="entry.config"
-        :on-update-config="handleProjectViewConfigUpdate"
+        :on-update-config="handleViewConfigUpdate"
+      />
+    </div>
+    <div
+      v-else-if="viewType === 'calendar'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-calendar"
+    >
+      <WorkbenchCalendarView
+        :view-config="entry.config"
+        :on-update-config="handleViewConfigUpdate"
+      />
+    </div>
+    <div
+      v-else-if="viewType === 'gantt'"
+      class="workbench-view-host__surface"
+      data-testid="workbench-view-gantt"
+    >
+      <WorkbenchGanttView
+        :view-config="entry.config"
+        :on-update-config="handleViewConfigUpdate"
       />
     </div>
     <div
@@ -82,13 +101,15 @@
 import type { WorkbenchEntry } from '@/types/workbench'
 import { computed } from 'vue'
 import AiChatView from '@/components/workbench/view/AiChatView.vue'
+import WorkbenchCalendarView from '@/components/workbench/view/WorkbenchCalendarView.vue'
+import WorkbenchGanttView from '@/components/workbench/view/WorkbenchGanttView.vue'
 import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue'
+import WorkbenchProjectView from '@/components/workbench/view/WorkbenchProjectView.vue'
 import { t } from '@/i18n'
 import { useWorkbenchStore } from '@/stores'
 import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue'
 import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue'
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue'
-import ProjectTab from '@/tabs/ProjectTab.vue'
 import QuadrantTab from '@/tabs/QuadrantTab.vue'
 
 const props = defineProps<{
@@ -97,7 +118,7 @@ const props = defineProps<{
 
 const workbenchStore = useWorkbenchStore()
 
-async function handleProjectViewConfigUpdate(config: Record<string, unknown>) {
+async function handleViewConfigUpdate(config: Record<string, unknown>) {
   await workbenchStore.updateViewConfig(props.entry.id, config)
 }
 
