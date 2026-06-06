@@ -19,6 +19,11 @@ import TodoSidebarList from '@/components/todo/TodoSidebarList.vue'
 const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 const mockShowFocusPlanDialog = vi.hoisted(() => vi.fn())
+const mockCompleteItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockAbandonItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockMigrateItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockMigrateItemToToday = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockMigrateItemToDate = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 
 vi.mock('siyuan', async () => {
   return await import('../../__mocks__/siyuan')
@@ -63,6 +68,7 @@ vi.mock('@/stores', () => ({
 
 vi.mock('@/main', () => ({
   usePlugin: () => null,
+  useApp: () => null,
 }))
 
 vi.mock('@/i18n', () => ({
@@ -88,6 +94,9 @@ vi.mock('@/i18n', () => ({
         emptyGuideDesc: '空',
         createExampleDoc: '创建',
         pinned: '已置顶',
+        pin: '置顶',
+        unpin: '取消置顶',
+        openDoc: '打开文档',
       }
     }
     if (key === 'common') {
@@ -111,6 +120,12 @@ vi.mock('@/i18n', () => ({
         estimatedShort: '预计',
         setAction: '设置预计',
         editAction: '修改预计',
+      }
+    }
+    if (key === 'recurring') {
+      return {
+        skipThis: '跳过本次',
+        skipTooltip: '跳过本次，下次日期：{date}',
       }
     }
     return {}
@@ -193,6 +208,42 @@ vi.mock('@/utils/itemSettingUtils', () => ({
   toggleItemPinned: mockToggleItemPinned,
 }))
 
+vi.mock('@/utils/itemActions', () => ({
+  completeItem: mockCompleteItem,
+  abandonItem: mockAbandonItem,
+  migrateItem: mockMigrateItem,
+  migrateItemToToday: mockMigrateItemToToday,
+  migrateItemToDate: mockMigrateItemToDate,
+}))
+
+vi.mock('@/services/recurringService', () => ({
+  skipCurrentOccurrence: vi.fn(() => Promise.resolve(true)),
+}))
+
+vi.mock('@/composables/useBlockFocusPreview', () => ({
+  useBlockFocusPreview: () => ({
+    showNow: vi.fn(),
+    isOpen: { value: false },
+    activeBlockId: { value: null },
+    anchorEl: { value: null },
+    markPopoverHovered: vi.fn(),
+    forceClose: vi.fn(),
+    dispose: vi.fn(),
+  }),
+}))
+
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    containsTarget: vi.fn(() => false),
+  }),
+}))
+
+vi.mock('@/parser/recurringParser', () => ({
+  getNextOccurrenceDate: vi.fn(() => '2026-05-08'),
+}))
+
 vi.mock('@/utils/dayjs', () => ({
   default: () => ({
     format: () => '2026-05-01',
@@ -262,6 +313,16 @@ afterEach(() => {
   mockToggleItemPinned.mockClear()
   mockWriteBlock.mockReset()
   mockWriteBlock.mockResolvedValue(true)
+  mockCompleteItem.mockReset()
+  mockCompleteItem.mockResolvedValue(true)
+  mockAbandonItem.mockReset()
+  mockAbandonItem.mockResolvedValue(true)
+  mockMigrateItem.mockReset()
+  mockMigrateItem.mockResolvedValue(true)
+  mockMigrateItemToToday.mockReset()
+  mockMigrateItemToToday.mockResolvedValue(true)
+  mockMigrateItemToDate.mockReset()
+  mockMigrateItemToDate.mockResolvedValue(true)
 })
 
 describe('todoSidebarList', () => {
@@ -434,14 +495,14 @@ describe('todoSidebarList', () => {
     const { SY_ICON_TOOLTIP_ID } = await import('@/utils/dialog')
     const mounted = mountReactiveList([pendingItem])
 
-    mockWriteBlock.mockImplementationOnce(async () => {
+    mockCompleteItem.mockImplementationOnce(async () => {
       mounted.items.value = []
       return true
     })
 
     await nextTick()
 
-    const completeAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]') as HTMLSpanElement | null
+    const completeAction = mounted.container.querySelector('.item-action-bar .block__icon[aria-label="完成"]') as HTMLSpanElement | null
     expect(completeAction).not.toBeNull()
 
     completeAction?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
@@ -456,13 +517,13 @@ describe('todoSidebarList', () => {
     await Promise.resolve()
     await nextTick()
 
-    expect(mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]')).toBeNull()
+    expect(mounted.container.querySelector('.item-action-bar .block__icon[aria-label="完成"]')).toBeNull()
     expect(tooltip?.classList.contains('visible')).toBe(false)
 
     mounted.unmount()
   })
 
-  it('uses BlockWriter setStatus when completing an item from the list', async () => {
+  it('calls completeItem when completing an item from the list', async () => {
     const mounted = mountList({
       items: [pendingItem],
       hasAnyItemsRaw: true,
@@ -470,24 +531,23 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    const completeAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]') as HTMLSpanElement | null
+    const completeAction = mounted.container.querySelector('.item-action-bar .block__icon[aria-label="完成"]') as HTMLSpanElement | null
     expect(completeAction).not.toBeNull()
 
     completeAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await Promise.resolve()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
+    expect(mockCompleteItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'item-1',
+        blockId: 'block-1',
+      }),
     )
 
     mounted.unmount()
   })
 
-  it('uses BlockWriter addDate when migrating today item to tomorrow', async () => {
+  it('calls migrateItem when migrating today item to tomorrow', async () => {
     const mounted = mountList({
       items: [{
         ...pendingItem,
@@ -500,30 +560,17 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    const migrateAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="迁移到明天"]') as HTMLSpanElement | null
+    const migrateAction = mounted.container.querySelector('.item-action-bar .block__icon[aria-label="迁移到明天"]') as HTMLSpanElement | null
     expect(migrateAction).not.toBeNull()
 
     migrateAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await Promise.resolve()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      {
-        type: 'addDate',
-        date: '2026-05-02',
-        startTime: '14:00',
-        endTime: '15:30',
-        allDay: false,
-        originalDate: '2026-05-01',
-        siblingItems: [
-          { date: '2026-05-03' },
-          {
-            date: '2026-05-01',
-            startDateTime: '2026-05-01 14:00',
-            endDateTime: '2026-05-01 15:30',
-          },
-        ],
-      },
+    expect(mockMigrateItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'item-1',
+        blockId: 'block-1',
+      }),
     )
 
     mounted.unmount()

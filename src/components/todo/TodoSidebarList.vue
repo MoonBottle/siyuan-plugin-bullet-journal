@@ -154,85 +154,15 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-hover">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').complete"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleDone(item)"
-                  >
-                    <svg><use xlink:href="#iconCheck"></use></svg>
-                  </span>
-                  <span
-                    v-if="!pomodoroStore.isFocusing"
-                    class="block__icon"
-                    :aria-label="t('todo').startFocusAria"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openPomodoroDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconClock"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="getFocusPlanActionLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openFocusPlanDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconAttr"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').migrateToTomorrow"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleMigrate(item)"
-                  >
-                    <svg><use xlink:href="#iconForward"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').abandon"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleAbandon(item)"
-                  >
-                    <svg><use xlink:href="#iconCloseRound"></use></svg>
-                  </span>
-                </div>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :class="{ 'block__icon--active': item.pinned }"
-                    :data-testid="`todo-pin-toggle-${item.id}`"
-                    :aria-label="getPinAriaLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleTogglePinned(item)"
-                  >
-                    <svg><use xlink:href="#iconPin"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-pin="true"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                  @togglePinned="handleTogglePinned(item)"
+                  @skipOccurrence="handleSkipOccurrence(item)"
+                />
               </template>
             </Card>
           </div>
@@ -320,85 +250,15 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-hover">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').complete"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleDone(item)"
-                  >
-                    <svg><use xlink:href="#iconCheck"></use></svg>
-                  </span>
-                  <span
-                    v-if="!pomodoroStore.isFocusing"
-                    class="block__icon"
-                    :aria-label="t('todo').startFocusAria"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openPomodoroDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconClock"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="getFocusPlanActionLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openFocusPlanDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconAttr"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').migrateToToday"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToToday)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleMigrateToday(item)"
-                  >
-                    <svg><use xlink:href="#iconForward"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').abandon"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleAbandon(item)"
-                  >
-                    <svg><use xlink:href="#iconCloseRound"></use></svg>
-                  </span>
-                </div>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :class="{ 'block__icon--active': item.pinned }"
-                    :data-testid="`todo-pin-toggle-${item.id}`"
-                    :aria-label="getPinAriaLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleTogglePinned(item)"
-                  >
-                    <svg><use xlink:href="#iconPin"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-pin="true"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                  @togglePinned="handleTogglePinned(item)"
+                  @skipOccurrence="handleSkipOccurrence(item)"
+                />
               </template>
             </Card>
           </div>
@@ -486,85 +346,15 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-hover">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').complete"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleDone(item)"
-                  >
-                    <svg><use xlink:href="#iconCheck"></use></svg>
-                  </span>
-                  <span
-                    v-if="!pomodoroStore.isFocusing"
-                    class="block__icon"
-                    :aria-label="t('todo').startFocusAria"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openPomodoroDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconClock"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="getFocusPlanActionLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openFocusPlanDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconAttr"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').migrateToTomorrow"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleMigrate(item)"
-                  >
-                    <svg><use xlink:href="#iconForward"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').abandon"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleAbandon(item)"
-                  >
-                    <svg><use xlink:href="#iconCloseRound"></use></svg>
-                  </span>
-                </div>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :class="{ 'block__icon--active': item.pinned }"
-                    :data-testid="`todo-pin-toggle-${item.id}`"
-                    :aria-label="getPinAriaLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleTogglePinned(item)"
-                  >
-                    <svg><use xlink:href="#iconPin"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-pin="true"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                  @togglePinned="handleTogglePinned(item)"
+                  @skipOccurrence="handleSkipOccurrence(item)"
+                />
               </template>
             </Card>
           </div>
@@ -652,85 +442,15 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-hover">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').complete"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleDone(item)"
-                  >
-                    <svg><use xlink:href="#iconCheck"></use></svg>
-                  </span>
-                  <span
-                    v-if="!pomodoroStore.isFocusing"
-                    class="block__icon"
-                    :aria-label="t('todo').startFocusAria"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openPomodoroDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconClock"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="getFocusPlanActionLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openFocusPlanDialog(item)"
-                  >
-                    <svg><use xlink:href="#iconAttr"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').migrateToTomorrow"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleMigrate(item)"
-                  >
-                    <svg><use xlink:href="#iconForward"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').abandon"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleAbandon(item)"
-                  >
-                    <svg><use xlink:href="#iconCloseRound"></use></svg>
-                  </span>
-                </div>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :class="{ 'block__icon--active': item.pinned }"
-                    :data-testid="`todo-pin-toggle-${item.id}`"
-                    :aria-label="getPinAriaLabel(item)"
-                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="handleTogglePinned(item)"
-                  >
-                    <svg><use xlink:href="#iconPin"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-pin="true"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                  @togglePinned="handleTogglePinned(item)"
+                  @skipOccurrence="handleSkipOccurrence(item)"
+                />
               </template>
             </Card>
           </div>
@@ -827,85 +547,15 @@
                   </div>
                   <TodoItemMeta :item="item" />
                   <template #footer>
-                    <div class="item-actions-hover">
-                      <span
-                        class="block__icon"
-                        :aria-label="t('todo').complete"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="handleDone(item)"
-                      >
-                        <svg><use xlink:href="#iconCheck"></use></svg>
-                      </span>
-                      <span
-                        v-if="!pomodoroStore.isFocusing"
-                        class="block__icon"
-                        :aria-label="t('todo').startFocusAria"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="openPomodoroDialog(item)"
-                      >
-                        <svg><use xlink:href="#iconClock"></use></svg>
-                      </span>
-                      <span
-                        class="block__icon"
-                        :aria-label="getFocusPlanActionLabel(item)"
-                        @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="openFocusPlanDialog(item)"
-                      >
-                        <svg><use xlink:href="#iconAttr"></use></svg>
-                      </span>
-                      <span
-                        class="block__icon"
-                        :aria-label="t('todo').migrateToTomorrow"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="handleMigrate(item)"
-                      >
-                        <svg><use xlink:href="#iconForward"></use></svg>
-                      </span>
-                      <span
-                        class="block__icon"
-                        :aria-label="t('todo').abandon"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="handleAbandon(item)"
-                      >
-                        <svg><use xlink:href="#iconCloseRound"></use></svg>
-                      </span>
-                    </div>
-                    <div class="item-actions-fixed">
-                      <span
-                        class="block__icon"
-                        :class="{ 'block__icon--active': item.pinned }"
-                        :data-testid="`todo-pin-toggle-${item.id}`"
-                        :aria-label="getPinAriaLabel(item)"
-                        @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="handleTogglePinned(item)"
-                      >
-                        <svg><use xlink:href="#iconPin"></use></svg>
-                      </span>
-                      <span
-                        class="block__icon"
-                        :aria-label="t('todo').detail"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="openDetail(item)"
-                      >
-                        <svg><use xlink:href="#iconInfo"></use></svg>
-                      </span>
-                      <span
-                        class="block__icon"
-                        :aria-label="t('todo').calendar"
-                        @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                        @mouseleave="handleActionTooltipLeave"
-                        @click.stop="openCalendar(item)"
-                      >
-                        <svg><use xlink:href="#iconCalendar"></use></svg>
-                      </span>
-                    </div>
+                    <ItemActionBar
+                      :item="item"
+                      :show-pin="true"
+                      :show-detail="true"
+                      @openCalendar="openCalendar(item)"
+                      @openDetail="openDetail(item)"
+                      @togglePinned="handleTogglePinned(item)"
+                      @skipOccurrence="handleSkipOccurrence(item)"
+                    />
                   </template>
                 </Card>
               </div>
@@ -995,26 +645,12 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                />
               </template>
             </Card>
           </div>
@@ -1102,26 +738,12 @@
               </div>
               <TodoItemMeta :item="item" />
               <template #footer>
-                <div class="item-actions-fixed">
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').detail"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').detail)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openDetail(item)"
-                  >
-                    <svg><use xlink:href="#iconInfo"></use></svg>
-                  </span>
-                  <span
-                    class="block__icon"
-                    :aria-label="t('todo').calendar"
-                    @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)"
-                    @mouseleave="handleActionTooltipLeave"
-                    @click.stop="openCalendar(item)"
-                  >
-                    <svg><use xlink:href="#iconCalendar"></use></svg>
-                  </span>
-                </div>
+                <ItemActionBar
+                  :item="item"
+                  :show-detail="true"
+                  @openCalendar="openCalendar(item)"
+                  @openDetail="openDetail(item)"
+                />
               </template>
             </Card>
           </div>
@@ -1143,19 +765,19 @@ import type {
 } from '@/types/models'
 import {
   computed,
-  createApp,
   onMounted,
   onUnmounted,
   ref,
 } from 'vue'
 
 import Card from '@/components/common/Card.vue'
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue'
 import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
+import { skipCurrentOccurrence } from '@/services/recurringService'
 import {
   usePomodoroStore,
   useProjectStore,
@@ -1177,12 +799,9 @@ import {
 } from '@/utils/dateUtils'
 import dayjs from '@/utils/dayjs'
 import {
-  createDialog,
-  hideIconTooltip,
   showDatePickerDialog,
-  showFocusPlanDialog,
-  showIconTooltip,
   showItemDetailModal,
+  showPomodoroTimerDialog,
 } from '@/utils/dialog'
 import {
   eventBus,
@@ -1191,6 +810,13 @@ import {
 import { createExampleDocument } from '@/utils/exampleDocUtils'
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import { formatFocusPlanDisplay } from '@/utils/focusPlanReview'
+import {
+  abandonItem,
+  completeItem,
+  migrateItem,
+  migrateItemToDate,
+  migrateItemToToday,
+} from '@/utils/itemActions'
 import { toggleItemPinned } from '@/utils/itemSettingUtils'
 
 const props = withDefaults(defineProps<{
@@ -1243,12 +869,6 @@ const getPriorityEmoji = (item: Item): string => {
 const getFocusPlanLabel = (item: Item): string => {
   const display = formatFocusPlanDisplay(item.focusPlan)
   return display ? `${t('focusPlan').estimatedShort || '预计'} ${display}` : ''
-}
-
-const getFocusPlanActionLabel = (item: Item): string => {
-  return item.focusPlan
-    ? (t('focusPlan').editAction || '修改预计')
-    : (t('focusPlan').setAction || '设置预计')
 }
 
 const projectStore = useProjectStore()
@@ -1329,29 +949,6 @@ defineExpose({
   toggleCollapseAll,
   allCollapsed,
 })
-
-const buildDatePatch = (item: Item, targetDate: string) => {
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date
-      ? [{
-          date: item.date,
-          startDateTime: item.startDateTime,
-          endDateTime: item.endDateTime,
-        }]
-      : []),
-  ]
-
-  return {
-    type: 'addDate' as const,
-    date: targetDate,
-    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    allDay: !item.startDateTime,
-    originalDate: item.date,
-    siblingItems: completeSiblingItems,
-  }
-}
 
 // 获取今天的日期字符串（基于 store 的 currentDate）
 const getTodayStr = (): string => {
@@ -1470,12 +1067,6 @@ function handleAddTagFilter(tag: string) {
   emit('addTagFilter', tag)
 }
 
-function getPinAriaLabel(item: Item) {
-  return item.pinned
-    ? t('todo').unpin || '取消置顶'
-    : t('todo').pin || '置顶'
-}
-
 async function handleTogglePinned(item: Item) {
   if (isProcessing.value) return
 
@@ -1589,16 +1180,6 @@ const handleItemPreviewClick = (item: Item, event: MouseEvent) => {
   props.onItemPreviewClick?.(payload, event)
 }
 
-const handleActionTooltipEnter = (event: MouseEvent, text: string) => {
-  const el = event.currentTarget as HTMLElement | null
-  if (!el || !text) return
-  showIconTooltip(el, text)
-}
-
-const handleActionTooltipLeave = () => {
-  hideIconTooltip()
-}
-
 function shouldSuppressHoverEndForAnchor(anchorEl: HTMLElement, event: MouseEvent) {
   const relatedTarget = event.relatedTarget
   if (relatedTarget instanceof Node && anchorEl.contains(relatedTarget)) {
@@ -1662,70 +1243,6 @@ const openCalendar = (item: Item) => {
   }
 }
 
-const openFocusPlanDialog = (item: Item) => {
-  showFocusPlanDialog(item)
-}
-
-// 标记完成
-const handleDone = async (item: Item) => {
-  if (!item.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  isProcessing.value = true
-  try {
-    await writeBlock(
-      {
-        blockId: item.blockId,
-        listItemBlockId: item.listItemBlockId,
-      },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
-    )
-
-    // 注意：重复事项的自动创建由 WebSocket 处理器处理
-    // 避免重复调用 createNextOccurrence
-
-    // 操作成功，等待 ws-main 事件触发定向刷新
-    // 无需手动调用 refresh
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// 迁移到明天
-const handleMigrate = async (item: Item) => {
-  if (!item.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  isProcessing.value = true
-  try {
-    const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
-    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, tomorrowStr))
-
-    // 操作成功，等待 ws-main 事件触发定向刷新
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// 迁移到今天
-const handleMigrateToday = async (item: Item) => {
-  if (!item.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  isProcessing.value = true
-  try {
-    const todayStr = dayjs().format('YYYY-MM-DD')
-    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, todayStr))
-
-    // 操作成功，等待 ws-main 事件触发定向刷新
-  } finally {
-    isProcessing.value = false
-  }
-}
-
 // 迁移到自定义日期
 const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return
@@ -1735,54 +1252,22 @@ const handleMigrateCustom = (item: Item) => {
     if (isProcessing.value) return // 防止在回调中重复点击
     isProcessing.value = true
     try {
-      await writeBlock({ blockId: item.blockId }, buildDatePatch(item, newDate))
-
-      // 操作成功，等待 ws-main 事件触发定向刷新
+      await migrateItemToDate(item, newDate)
     } finally {
       isProcessing.value = false
     }
   })
 }
 
-// 标记放弃
-const handleAbandon = async (item: Item) => {
-  if (!item.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
+// 跳过当前重复事项
+async function handleSkipOccurrence(item: Item) {
+  if (isProcessing.value) return
+  if (!item.repeatRule || !item.blockId) return
   isProcessing.value = true
   try {
-    await writeBlock({
-      blockId: item.blockId,
-      listItemBlockId: item.listItemBlockId,
-    }, {
-      type: 'setStatus',
-      status: 'abandoned',
-    })
-    // 操作成功，等待 ws-main 事件触发定向刷新
+    await skipCurrentOccurrence(plugin as any, item)
   } finally {
     isProcessing.value = false
-  }
-}
-
-// 打开番茄钟弹框
-const openPomodoroDialog = (item: Item) => {
-  const dialog = createDialog({
-    title: t('pomodoro').startFocusTitle,
-    content: '<div id="pomodoro-timer-dialog-mount"></div>',
-    width: '400px',
-    height: 'auto',
-  })
-
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
-  if (mountEl) {
-    const app = createApp(PomodoroTimerDialog, {
-      closeDialog: () => {
-        dialog.destroy()
-      },
-      preselectedBlockId: item.blockId,
-      hideItemList: true,
-    })
-    app.mount(mountEl)
   }
 }
 
@@ -1802,19 +1287,29 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
     {
       onComplete: () => {
         if (isProcessing.value) return
-        handleDone(item)
+        isProcessing.value = true
+        completeItem(item).finally(() => {
+          isProcessing.value = false
+        })
       },
       onStartPomodoro: () => {
         if (isProcessing.value) return
-        openPomodoroDialog(item)
+        if (!item.blockId) return
+        showPomodoroTimerDialog(item.blockId)
       },
       onMigrateToday: () => {
         if (isProcessing.value) return
-        handleMigrateToday(item)
+        isProcessing.value = true
+        migrateItemToToday(item).finally(() => {
+          isProcessing.value = false
+        })
       },
       onMigrateTomorrow: () => {
         if (isProcessing.value) return
-        handleMigrate(item)
+        isProcessing.value = true
+        migrateItem(item).finally(() => {
+          isProcessing.value = false
+        })
       },
       onMigrateCustom: () => {
         if (isProcessing.value) return
@@ -1822,7 +1317,10 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       },
       onAbandon: () => {
         if (isProcessing.value) return
-        handleAbandon(item)
+        isProcessing.value = true
+        abandonItem(item).finally(() => {
+          isProcessing.value = false
+        })
       },
       onOpenDoc: () => openItem(item),
       onShowDetail: () => openDetail(item),
@@ -2136,41 +1634,6 @@ const handleCreateExample = async () => {
     background: var(--b3-theme-primary-lightest);
     color: var(--b3-theme-primary);
     opacity: 1;
-  }
-}
-
-.item-actions-hover {
-  display: flex;
-  gap: 4px;
-
-  .block__icon {
-    opacity: 1;
-    cursor: pointer;
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
-}
-
-.item-actions-fixed {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-
-  .block__icon {
-    opacity: 1;
-    cursor: pointer;
-
-    &.block__icon--active {
-      color: var(--b3-theme-primary);
-    }
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
   }
 }
 

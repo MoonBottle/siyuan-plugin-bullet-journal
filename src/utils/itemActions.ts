@@ -68,6 +68,11 @@ export async function migrateItemToToday(item: Item): Promise<boolean> {
   return writeBlock({ blockId: item.blockId }, buildDatePatch(item, todayStr))
 }
 
+export async function migrateItemToDate(item: Item, targetDate: string): Promise<boolean> {
+  if (!item.blockId) return false
+  return writeBlock({ blockId: item.blockId }, buildDatePatch(item, targetDate))
+}
+
 export async function skipOccurrenceItem(plugin: any, item: Item): Promise<boolean> {
   if (!item.repeatRule || !item.blockId) return false
   return skipCurrentOccurrence(plugin, item)
