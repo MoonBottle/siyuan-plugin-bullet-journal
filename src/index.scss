@@ -406,11 +406,14 @@
 }
 
 .date-picker-weekday {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 20px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.6;
-  padding: 4px;
 }
 
 .date-picker-grid {
@@ -423,6 +426,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   width: 32px;
   height: 32px;
   border-radius: 50%;
