@@ -654,7 +654,7 @@ watch(searchQuery, () => {
   padding: 16px;
   box-sizing: border-box;
   border-right: 1px solid var(--b3-border-color);
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   overflow: hidden;
   transition:
     width 200ms ease,
@@ -955,8 +955,8 @@ watch(searchQuery, () => {
   padding: 10px 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
   text-align: left;
   cursor: pointer;
 
