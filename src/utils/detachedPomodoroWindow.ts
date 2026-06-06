@@ -507,12 +507,26 @@ function buildDetachedWindowHtml(): string {
         pointer-events: none;
         z-index: 2147483647;
       }
-      /* .b3-tooltips 样式由主题注入（collectTooltipCssRules），以下仅覆盖自定义控制 */
+      /* 内部 .b3-tooltips 元素的覆盖，与主窗口 index.scss 对齐 */
+      .sy-fixed-tooltip {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible !important;
+        cursor: default !important;
+      }
+      .sy-fixed-tooltip::after {
+        opacity: 0 !important;
+        transform: scale(0.9) !important;
+        transition: opacity 150ms cubic-bezier(0, 0, 0.2, 1), transform 150ms cubic-bezier(0, 0, 0.2, 1) !important;
+      }
       .sy-fixed-tooltip:hover::after {
         opacity: 0 !important;
+        transform: scale(0.9) !important;
       }
       .sy-fixed-tooltip.sy-tip-visible::after {
         opacity: 1 !important;
+        transform: scale(1) !important;
       }
     </style>
   </head>
