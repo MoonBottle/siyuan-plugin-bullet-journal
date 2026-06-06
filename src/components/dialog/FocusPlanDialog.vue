@@ -120,6 +120,8 @@ function handleSave() {
   border: 1px solid var(--b3-border-color);
   border-radius: 6px;
   background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
   cursor: pointer;
 
   &.active {
