@@ -428,14 +428,9 @@ const handleEventResize = async (eventInfo: any) => {
 
 // 监听视图切换（用户手动切换下拉框时清空 drill-down 栈）
 watch(currentView, (newView) => {
-  emit('update:defaultView', newView)
   calendarRef.value?.changeView(newView)
   previousViewStack.value = []
   updateTitle()
-})
-
-watch(selectedGroup, (val) => {
-  emit('update:groupId', val)
 })
 </script>
 
