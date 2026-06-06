@@ -363,7 +363,7 @@ onUnmounted(() => {
   gap: 6px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-menu-background);
   box-shadow: var(--b3-dialog-shadow);
 }
 
@@ -376,14 +376,14 @@ onUnmounted(() => {
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-menu-on-background);
   text-align: left;
   cursor: pointer;
 }
 
 .workbench-tab__toolbar-menu-item:hover {
   border-color: var(--b3-border-color);
-  background: var(--b3-theme-background);
+  background: var(--b3-list-hover);
 }
 
 .workbench-tab__toolbar-menu-icon {

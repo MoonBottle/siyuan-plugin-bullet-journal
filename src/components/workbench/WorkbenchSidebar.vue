@@ -1057,7 +1057,7 @@ watch(searchQuery, () => {
   gap: 4px;
   border: 1px solid var(--b3-border-color);
   border-radius: 10px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-menu-background);
   box-shadow: var(--b3-dialog-shadow);
 }
 
@@ -1070,7 +1070,7 @@ watch(searchQuery, () => {
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-menu-on-background);
   text-align: left;
   cursor: pointer;
   font-size: 14px;
@@ -1078,7 +1078,7 @@ watch(searchQuery, () => {
 
 .workbench-create-popup__option:hover {
   border-color: var(--b3-border-color);
-  background: var(--b3-theme-background);
+  background: var(--b3-list-hover);
 }
 
 .workbench-create-popup__icon {
