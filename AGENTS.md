@@ -89,3 +89,4 @@ Vue 3.5 + Pinia 3 + TypeScript 5.8 + Vite 8 + SASS | FullCalendar 6 | dhtmlx-gan
 - 修改后需要验证 npm run test 是否成功
 - 修改后需要验证 npm run lint 是否成功
 - 修改后需要验证 npm run typecheck 是否成功
+- PowerShell 不支持 heredoc 语法
