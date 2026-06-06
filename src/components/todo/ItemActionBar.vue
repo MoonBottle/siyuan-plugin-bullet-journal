@@ -374,9 +374,6 @@ function handleOpenCalendar() {
   gap: 4px;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--b3-border-color);
 }
 
 .block__icon {
