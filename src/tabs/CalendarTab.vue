@@ -310,8 +310,10 @@ onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin()
 
-  // 应用日历默认视图配置
-  currentView.value = settingsStore.calendarDefaultView || 'timeGridDay'
+  // 应用日历默认视图配置（嵌入模式优先使用 props.defaultView）
+  if (!props.defaultView) {
+    currentView.value = settingsStore.calendarDefaultView || 'timeGridDay'
+  }
 
   // 标记设置已加载，允许 CalendarView 渲染
   isSettingsLoaded.value = true
