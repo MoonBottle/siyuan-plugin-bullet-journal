@@ -58,6 +58,7 @@
           :embedded="true"
         />
         <ItemActionBar
+          :show-separator="true"
           :item="item"
           open-doc-mode="preview"
         />

@@ -159,6 +159,7 @@
                 :close-on-siyuan-link="false"
               />
               <ItemActionBar
+                :show-separator="true"
                 :item="selectedItem"
                 open-doc-mode="preview"
               />

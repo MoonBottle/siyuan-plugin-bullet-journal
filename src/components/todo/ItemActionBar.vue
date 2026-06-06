@@ -380,8 +380,8 @@ function handleOpenCalendar() {
 
   &--separator {
     margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--b3-border-color);
+    padding-top: 4px;
+    border-top: 1px solid var(--b3-border-color);
   }
 }
 

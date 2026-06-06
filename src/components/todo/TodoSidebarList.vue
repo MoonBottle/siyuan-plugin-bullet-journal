@@ -890,7 +890,7 @@ const getStatusEmoji = (item: Item): string => {
     const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'))
     if (timeStatus) return dateRangeStatusToEmoji(timeStatus)
   }
-  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr
+  const isExpired = item.date && item.date < todayStr
   if (isExpired) return '⚠️'
   return '⏳'
 }
