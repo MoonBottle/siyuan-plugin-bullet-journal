@@ -83,3 +83,9 @@ Vue 3.5 + Pinia 3 + TypeScript 5.8 + Vite 8 + SASS | FullCalendar 6 | dhtmlx-gan
 - **i18n:** Custom lightweight system — `t('key.path')` function, JSON files in `src/i18n/`
 - **Testing:** Vitest with `@` alias; `siyuan` module mocked at `test/__mocks__/siyuan.ts`
 - **Custom ESLint plugin:** `src/utils/eslint/i18n-validate-keys.mjs` validates i18n key usage
+
+## 重要
+- 禁止使用动态 import，必须使用静态 import
+- 修改后需要验证 npm run test 是否成功
+- 修改后需要验证 npm run lint 是否成功
+- 修改后需要验证 npm run typecheck 是否成功
