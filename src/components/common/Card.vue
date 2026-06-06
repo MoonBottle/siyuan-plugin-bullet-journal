@@ -85,7 +85,7 @@ const handleContextMenu = (event: MouseEvent) => {
   flex-direction: column;
   gap: 4px;
   padding: 8px 12px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-border-color);
   transition: all 0.2s;
@@ -140,7 +140,7 @@ const handleContextMenu = (event: MouseEvent) => {
   margin: -8px -12px 0 -12px;
   padding: 6px 12px;
   font-size: 12px;
-  background: var(--b3-theme-surface-lighter);
+  background: color-mix(in srgb, var(--b3-theme-surface-lighter) 85%, transparent);
   border-bottom: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }
