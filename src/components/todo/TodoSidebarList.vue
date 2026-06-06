@@ -116,7 +116,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -217,7 +217,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -318,7 +318,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -419,7 +419,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -529,7 +529,7 @@
                       <span
                         v-if="getFocusPlanDisplay(item)"
                         class="item-focus-plan-badge"
-                        @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                        @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                         @mouseleave="hideIconTooltip"
                       >
                         <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -632,7 +632,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -730,7 +730,7 @@
                   <span
                     v-if="getFocusPlanDisplay(item)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                    @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
                     @mouseleave="hideIconTooltip"
                   >
                     <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
@@ -912,7 +912,7 @@ const getPriorityLabel = (item: Item): string => {
   return ''
 }
 
-const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | { type: 'duration', value: string } | null => {
+const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | { type: 'duration', value: string, minutes: number } | null => {
   if (!item.focusPlan) return null
   if (item.focusPlan.type === 'pomodoro') {
     return {
@@ -926,6 +926,7 @@ const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | 
     return {
       type: 'duration',
       value: `${minutes}m`,
+      minutes,
     }
   }
   const hours = Math.floor(minutes / 60)
@@ -934,12 +935,37 @@ const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | 
     return {
       type: 'duration',
       value: `${hours}h`,
+      minutes,
     }
   }
   return {
     type: 'duration',
     value: `${hours}h${restMinutes}m`,
+    minutes,
   }
+}
+
+const getFocusPlanTooltip = (item: Item): string => {
+  const display = getFocusPlanDisplay(item)
+  if (!display) return ''
+
+  const fp = t('focusPlan')
+
+  if (display.type === 'pomodoro') {
+    return fp.tooltipPomodoro?.replace('{count}', String(display.value)).replace('{minutes}', String(display.value * 25)) || ''
+  }
+
+  // duration type
+  const minutes = display.minutes
+  if (minutes < 60) {
+    return fp.tooltipDurationMinutes?.replace('{minutes}', String(minutes)) || ''
+  }
+  const hours = Math.floor(minutes / 60)
+  const restMinutes = minutes % 60
+  if (restMinutes === 0) {
+    return fp.tooltipDurationHours?.replace('{hours}', String(hours)) || ''
+  }
+  return fp.tooltipDurationHoursMinutes?.replace('{hours}', String(hours)).replace('{minutes}', String(restMinutes)) || ''
 }
 
 const projectStore = useProjectStore()

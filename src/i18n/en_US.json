@@ -838,7 +838,11 @@
     "pomodoroMode": "Pomodoros",
     "durationMode": "Duration",
     "pomodoroCount": "Pomodoro Count",
-    "durationMinutes": "Minutes"
+    "durationMinutes": "Minutes",
+    "tooltipPomodoro": "Estimated {count} pomodoros ({minutes} minutes)",
+    "tooltipDurationMinutes": "Estimated {minutes} minutes",
+    "tooltipDurationHours": "Estimated {hours} hours",
+    "tooltipDurationHoursMinutes": "Estimated {hours} hours {minutes} minutes"
   },
   "focusWorkbench": {
     "title": "Focus Workbench",

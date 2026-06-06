@@ -845,7 +845,11 @@
     "pomodoroMode": "按番茄",
     "durationMode": "按时长",
     "pomodoroCount": "番茄数",
-    "durationMinutes": "分钟数"
+    "durationMinutes": "分钟数",
+    "tooltipPomodoro": "预计需要 {count} 个番茄钟（{minutes} 分钟）",
+    "tooltipDurationMinutes": "预计需要 {minutes} 分钟",
+    "tooltipDurationHours": "预计需要 {hours} 小时",
+    "tooltipDurationHoursMinutes": "预计需要 {hours} 小时 {minutes} 分钟"
   },
   "focusWorkbench": {
     "title": "专注工作台",
