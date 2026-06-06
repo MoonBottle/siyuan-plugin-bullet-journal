@@ -46,7 +46,7 @@ const mockCancelPomodoroFocusEnd = vi.fn()
 const mockSchedulePomodoroBreakEnd = vi.fn()
 const mockCancelPomodoroBreakEnd = vi.fn()
 
-const mockIsMobileNotificationsEnabled = vi.fn(() => false)
+const mockIsMobileNotificationsEnabled = vi.hoisted(() => vi.fn(() => false))
 
 // Mock dependencies
 vi.mock('@/main', () => ({

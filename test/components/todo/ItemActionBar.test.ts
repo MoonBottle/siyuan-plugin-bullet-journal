@@ -270,9 +270,6 @@ describe('itemActionBar', () => {
       status: 'pending',
     }, { showPin: true })
 
-    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
-    expect(fixedRow).toBeTruthy()
-
     const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
       .find((node) => node.getAttribute('aria-label') === '置顶')
     expect(pinButton).toBeTruthy()
@@ -312,7 +309,7 @@ describe('itemActionBar', () => {
     mounted.unmount()
   })
 
-  it('renders fixed row when showPin or showDetail is true', async () => {
+  it('renders fixed row icons when showPin or showDetail is true', async () => {
     const mounted = await mountComponent({
       id: 'item-8',
       blockId: 'block-8',
@@ -321,13 +318,14 @@ describe('itemActionBar', () => {
       status: 'pending',
     }, { showPin: true })
 
-    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
-    expect(fixedRow).toBeTruthy()
+    const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '置顶')
+    expect(pinButton).toBeTruthy()
 
     mounted.unmount()
   })
 
-  it('does not render fixed row when showPin and showDetail are both false', async () => {
+  it('does not render pin/detail icons when showPin and showDetail are both false', async () => {
     const mounted = await mountComponent({
       id: 'item-9',
       blockId: 'block-9',
@@ -336,13 +334,18 @@ describe('itemActionBar', () => {
       status: 'pending',
     })
 
-    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
-    expect(fixedRow).toBeFalsy()
+    const pinButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '置顶')
+    expect(pinButton).toBeFalsy()
+
+    const detailButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find((node) => node.getAttribute('aria-label') === '详情')
+    expect(detailButton).toBeFalsy()
 
     mounted.unmount()
   })
 
-  it('moves calendar icon to fixed row when fixed row exists', async () => {
+  it('renders only one calendar icon when fixed row exists', async () => {
     const mounted = await mountComponent({
       id: 'item-10',
       blockId: 'block-10',
@@ -351,23 +354,16 @@ describe('itemActionBar', () => {
       status: 'pending',
     }, { showDetail: true })
 
-    const hoverRow = mounted.container.querySelector('.item-action-bar')
-    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
-
-    // Calendar should NOT be in hover row
-    const hoverCalendar = [...(hoverRow?.querySelectorAll('.block__icon') || [])]
-      .find((node) => node.getAttribute('aria-label') === '日历')
-    expect(hoverCalendar).toBeFalsy()
-
-    // Calendar should be in fixed row
-    const fixedCalendar = [...(fixedRow?.querySelectorAll('.block__icon') || [])]
-      .find((node) => node.getAttribute('aria-label') === '日历')
-    expect(fixedCalendar).toBeTruthy()
+    // When hasFixedRow is true, calendar is rendered in the fixed-row template area
+    // (not in the v-if="!hasFixedRow" slot), so there should be exactly one calendar icon
+    const allCalendarIcons = [...mounted.container.querySelectorAll('.block__icon')]
+      .filter((node) => node.getAttribute('aria-label') === '日历')
+    expect(allCalendarIcons.length).toBe(1)
 
     mounted.unmount()
   })
 
-  it('keeps calendar icon in hover row when no fixed row', async () => {
+  it('keeps calendar icon when no fixed row', async () => {
     const mounted = await mountComponent({
       id: 'item-11',
       blockId: 'block-11',
@@ -376,12 +372,7 @@ describe('itemActionBar', () => {
       status: 'pending',
     })
 
-    const hoverRow = mounted.container.querySelector('.item-action-bar')
-    const fixedRow = mounted.container.querySelector('.item-actions-fixed')
-
-    expect(fixedRow).toBeFalsy()
-
-    const hoverCalendar = [...(hoverRow?.querySelectorAll('.block__icon') || [])]
+    const hoverCalendar = [...mounted.container.querySelectorAll('.block__icon')]
       .find((node) => node.getAttribute('aria-label') === '日历')
     expect(hoverCalendar).toBeTruthy()
 

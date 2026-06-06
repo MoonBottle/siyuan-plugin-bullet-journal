@@ -17,7 +17,7 @@ import {
 } from 'vue'
 import AiChatDock from '@/tabs/AiChatDock.vue'
 
-const mockGetFrontend = vi.fn(() => 'desktop')
+const mockGetFrontend = vi.hoisted(() => vi.fn(() => 'desktop'))
 
 const mockPlugin = {
   isMobile: false,

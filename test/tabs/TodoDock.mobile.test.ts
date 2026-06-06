@@ -15,7 +15,7 @@ import {
 } from 'vue'
 import TodoDock from '@/tabs/TodoDock.vue'
 
-const mockGetFrontend = vi.fn(() => 'desktop')
+const mockGetFrontend = vi.hoisted(() => vi.fn(() => 'desktop'))
 
 vi.mock('@/mobile/MobileMainShell.vue', () => ({
   default: defineComponent({

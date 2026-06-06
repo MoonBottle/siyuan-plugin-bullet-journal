@@ -19,7 +19,7 @@ import { ReminderService } from '@/services/reminderService'
 // Mock notification utils
 const mockShowSystemNotification = vi.fn().mockResolvedValue(null)
 const mockNotificationRequestPermission = vi.fn()
-const mockGetFrontend = vi.fn(() => 'desktop')
+const mockGetFrontend = vi.hoisted(() => vi.fn(() => 'desktop'))
 vi.mock('@/utils/notification', () => ({
   showSystemNotification: (...args: unknown[]) => mockShowSystemNotification(...args),
   requestNotificationPermission: () => {
