@@ -83,11 +83,6 @@ const props = withDefaults(defineProps<{
   embedded: false,
 })
 
-const emit = defineEmits<{
-  (event: 'update:groupId', value: string): void
-  (event: 'update:columnRatios', value: [number, number, number]): void
-}>()
-
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
@@ -103,16 +98,22 @@ const columnRatios = ref<[number, number, number]>(
 
 function handleColumnRatiosChange(newRatios: [number, number, number]) {
   columnRatios.value = newRatios
-  emit('update:columnRatios', newRatios)
 }
 
 function handleResetColumnRatios() {
   columnRatios.value = [...DEFAULT_COLUMN_RATIOS]
-  emit('update:columnRatios', [...DEFAULT_COLUMN_RATIOS])
 }
 
 const filteredProjects = computed(() => {
   return projectStore.getFilteredProjects(selectedGroup.value)
+})
+
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) selectedGroup.value = val
+})
+
+watch(() => props.columnRatios, (val) => {
+  if (val && Array.isArray(val) && val.length === 3) columnRatios.value = [...val]
 })
 
 const groupOptions = computed(() => {
@@ -156,22 +157,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 let unsubscribeRefresh: (() => void) | null = null
 let refreshChannel: BroadcastChannel | null = null
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
-
-watch(() => props.groupId, (val) => {
-  if (val !== undefined && val !== selectedGroup.value) {
-    selectedGroup.value = val
-  }
-})
-
-watch(() => props.columnRatios, (val) => {
-  if (val && Array.isArray(val) && val.length === 3) {
-    columnRatios.value = [...val]
-  }
-})
-
-watch(selectedGroup, (val) => {
-  emit('update:groupId', val)
-})
 
 // 初始化数据
 onMounted(async () => {

@@ -109,14 +109,6 @@ const props = withDefaults(defineProps<{
   groupId: '',
 })
 
-const emit = defineEmits<{
-  (event: 'update:viewMode', value: 'day' | 'week' | 'month'): void
-  (event: 'update:showItems', value: boolean): void
-  (event: 'update:startDate', value: string): void
-  (event: 'update:endDate', value: string): void
-  (event: 'update:groupId', value: string): void
-}>()
-
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
@@ -141,6 +133,26 @@ const viewModes: Array<{ value: 'day' | 'week' | 'month', label: string }> = [
     label: t('gantt').month,
   },
 ]
+
+watch(() => props.viewMode, (val) => {
+  if (val && val !== viewMode.value) viewMode.value = val
+})
+
+watch(() => props.showItems, (val) => {
+  if (val !== undefined && val !== showItems.value) showItems.value = val
+})
+
+watch(() => props.startDate, (val) => {
+  if (val !== undefined && val !== startDate.value) startDate.value = val
+})
+
+watch(() => props.endDate, (val) => {
+  if (val !== undefined && val !== endDate.value) endDate.value = val
+})
+
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) selectedGroup.value = val
+})
 
 const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value))
 

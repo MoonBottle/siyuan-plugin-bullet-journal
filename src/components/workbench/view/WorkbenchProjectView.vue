@@ -3,8 +3,6 @@
     embedded
     :group-id="config.groupId"
     :column-ratios="config.columnRatios"
-    @update:group-id="handleChange('groupId', $event)"
-    @update:column-ratios="handleChange('columnRatios', $event)"
   />
 </template>
 
@@ -19,18 +17,4 @@ const props = defineProps<{
 }>()
 
 const config = computed(() => (props.viewConfig ?? {}) as WorkbenchProjectViewConfig)
-
-let timer: ReturnType<typeof setTimeout> | null = null
-
-function handleChange(key: string, value: unknown) {
-  if (!props.onUpdateConfig) return
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    props.onUpdateConfig({
-      ...props.viewConfig,
-      [key]: value,
-    })
-    timer = null
-  }, 300)
-}
 </script>

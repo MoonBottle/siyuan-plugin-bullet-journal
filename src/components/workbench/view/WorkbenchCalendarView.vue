@@ -3,8 +3,6 @@
     embedded
     :default-view="config.defaultView"
     :group-id="config.groupId"
-    @update:default-view="handleChange('defaultView', $event)"
-    @update:group-id="handleChange('groupId', $event)"
   />
 </template>
 
@@ -19,18 +17,4 @@ const props = defineProps<{
 }>()
 
 const config = computed(() => (props.viewConfig ?? {}) as WorkbenchCalendarViewConfig)
-
-let timer: ReturnType<typeof setTimeout> | null = null
-
-function handleChange(key: string, value: unknown) {
-  if (!props.onUpdateConfig) return
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    props.onUpdateConfig({
-      ...props.viewConfig,
-      [key]: value,
-    })
-    timer = null
-  }, 300)
-}
 </script>

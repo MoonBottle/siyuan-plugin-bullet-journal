@@ -100,11 +100,6 @@ const props = withDefaults(defineProps<{
   embedded: false,
 })
 
-const emit = defineEmits<{
-  (event: 'update:defaultView', value: string): void
-  (event: 'update:groupId', value: string): void
-}>()
-
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
