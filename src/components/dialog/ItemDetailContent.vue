@@ -592,7 +592,9 @@ async function handleLinkClick(link: Link) {
 }
 
 .card-label {
-  font-size: 12px;
+  font-size: 13px;
+  height: 20px;
+  line-height: 20px;
   font-weight: 600;
   color: var(--b3-theme-on-surface);
   text-transform: uppercase;
