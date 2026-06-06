@@ -8,9 +8,9 @@
       class="workbench-view-host__surface"
       data-testid="workbench-view-todo"
     >
-      <DesktopTodoDock
-        :enable-workbench-preview="true"
+      <WorkbenchTodoView
         :view-config="entry.config"
+        :on-update-config="handleViewConfigUpdate"
       />
     </div>
     <div
@@ -105,9 +105,9 @@ import WorkbenchCalendarView from '@/components/workbench/view/WorkbenchCalendar
 import WorkbenchGanttView from '@/components/workbench/view/WorkbenchGanttView.vue'
 import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue'
 import WorkbenchProjectView from '@/components/workbench/view/WorkbenchProjectView.vue'
+import WorkbenchTodoView from '@/components/workbench/view/WorkbenchTodoView.vue'
 import { t } from '@/i18n'
 import { useWorkbenchStore } from '@/stores'
-import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue'
 import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue'
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue'
 import QuadrantTab from '@/tabs/QuadrantTab.vue'

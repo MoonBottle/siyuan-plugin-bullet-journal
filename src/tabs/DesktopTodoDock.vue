@@ -136,9 +136,11 @@ import {
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
+  embedded?: boolean
   enableWorkbenchPreview?: boolean
   viewConfig?: Record<string, unknown>
 }>(), {
+  embedded: false,
   enableWorkbenchPreview: false,
 })
 
@@ -158,10 +160,12 @@ const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null)
 const dockBodyRef = ref<HTMLElement | null>(null)
 let dockScrollbarObserver: ResizeObserver | null = null
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup)
-watch(selectedGroup, (val) => {
-  settingsStore.todoDock.selectedGroup = val
-  settingsStore.saveToPlugin()
-})
+if (!props.embedded) {
+  watch(selectedGroup, (val) => {
+    settingsStore.todoDock.selectedGroup = val
+    settingsStore.saveToPlugin()
+  })
+}
 
 const searchQuery = ref('')
 const tagQuery = ref('')
