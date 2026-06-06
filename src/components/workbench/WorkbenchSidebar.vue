@@ -697,7 +697,7 @@ watch(searchQuery, () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 30px;
   box-sizing: border-box;
   padding: 5px 10px;
   background: var(--b3-theme-background);
@@ -908,8 +908,8 @@ watch(searchQuery, () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
@@ -931,9 +931,9 @@ watch(searchQuery, () => {
 }
 
 .workbench-sidebar--collapsed .workbench-sidebar__header-toggle {
-  width: 100%;
+  width: 30px;
+  height: 30px;
   aspect-ratio: 1;
-  height: auto;
   border-radius: 8px;
 }
 
@@ -952,6 +952,7 @@ watch(searchQuery, () => {
   align-items: center;
   gap: 8px;
   width: 100%;
+  height: 30px;
   padding: 10px 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
@@ -970,6 +971,7 @@ watch(searchQuery, () => {
   justify-content: center;
   padding: 8px;
   aspect-ratio: 1;
+  width: 30px;
 }
 
 .workbench-sidebar__entry-drag {
