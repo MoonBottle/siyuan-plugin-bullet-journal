@@ -886,7 +886,7 @@ watch(searchQuery, () => {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  height: 30px;
+  height: 33px;
   padding: 10px 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
@@ -898,6 +898,7 @@ watch(searchQuery, () => {
 
 .workbench-sidebar--collapsed .workbench-sidebar__create-trigger {
   padding: 10px;
+  height: 30px;
 }
 
 .workbench-sidebar__create-trigger {
@@ -953,7 +954,7 @@ watch(searchQuery, () => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 30px;
+  height: 33px;
   padding: 10px 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
@@ -973,6 +974,7 @@ watch(searchQuery, () => {
   padding: 8px;
   aspect-ratio: 1;
   width: 30px;
+  height: 30px;
 }
 
 .workbench-sidebar__entry-drag {
