@@ -181,6 +181,7 @@ export function createDetachedPomodoroWindowHost(
       className: host.className,
       innerHTML: host.innerHTML,
       themeStyleText: collectSiyuanThemeStyleText(),
+      tooltipCssRules: collectTooltipCssRules(),
       state: {
         phase: state.phase,
         isPaused: state.isPaused,
@@ -303,6 +304,29 @@ function collectSiyuanThemeStyleText(): string {
   }
 
   return declarations.join(' ')
+}
+
+/** 收集主窗口中所有包含 .b3-tooltips 的样式规则 */
+function collectTooltipCssRules(): string {
+  if (typeof document === 'undefined') {
+    return ''
+  }
+
+  const rules: string[] = []
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        const selectorText = (rule as CSSStyleRule).selectorText
+        if (selectorText && selectorText.includes('.b3-tooltips')) {
+          rules.push(rule.cssText)
+        }
+      }
+    } catch {
+      // 跨域样式表无法访问，忽略
+    }
+  }
+
+  return rules.join('\n')
 }
 
 function buildDetachedWindowHtml(): string {
@@ -483,56 +507,12 @@ function buildDetachedWindowHtml(): string {
         pointer-events: none;
         z-index: 1000000;
       }
-      /* 内部 .b3-tooltips 元素：与思源 _tooltips.scss 对齐 */
-      .b3-tooltips {
-        position: relative;
-        cursor: pointer;
-        overflow: visible;
-      }
-      .b3-tooltips::after {
-        z-index: 1000000;
-        padding: 4px 8px;
-        font-size: 12px;
-        font-weight: normal;
-        -webkit-font-smoothing: subpixel-antialiased;
-        color: var(--b3-tooltips-color);
-        word-wrap: break-word;
-        white-space: pre;
-        content: attr(aria-label);
-        background-color: var(--b3-tooltips-background);
-        border-radius: var(--b3-border-radius);
-        line-height: 17px;
-        transform: scale(.9);
-        max-width: 60vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        box-sizing: border-box;
-        box-shadow: var(--b3-tooltips-shadow);
-        font-family: var(--b3-font-family);
-        pointer-events: none;
-        position: absolute;
-        opacity: 0;
-        transition: opacity 150ms cubic-bezier(0, 0, .2, 1), transform 150ms cubic-bezier(0, 0, .2, 1);
-      }
-      /* 方向定位：__n（上方居中） */
-      .b3-tooltips__n::after {
-        right: 50%;
-        bottom: 100%;
-        margin-bottom: 5px;
-        transform: translateX(50%) scale(.9);
-      }
-      .b3-tooltips__n.sy-tip-visible::after {
-        opacity: 1;
-        transform: translateX(50%) scale(1);
-      }
-      /* 类控制可见性（覆盖 :hover） */
+      /* .b3-tooltips 样式由主题注入（collectTooltipCssRules），以下仅覆盖自定义控制 */
       .sy-fixed-tooltip:hover::after {
-        opacity: 0;
-        transform: translateX(50%) scale(.9);
+        opacity: 0 !important;
       }
       .sy-fixed-tooltip.sy-tip-visible::after {
-        opacity: 1;
-        transform: translateX(50%) scale(1);
+        opacity: 1 !important;
       }
     </style>
   </head>
@@ -585,6 +565,16 @@ function buildDetachedWindowHtml(): string {
         window.${UPDATE_FN} = (payload) => {
           if (!root || !payload) return;
           document.documentElement.style.cssText = payload.themeStyleText || '';
+          // 注入主题的 .b3-tooltips 样式规则
+          if (payload.tooltipCssRules) {
+            let tooltipStyle = document.getElementById('sy-tooltip-theme-rules');
+            if (!tooltipStyle) {
+              tooltipStyle = document.createElement('style');
+              tooltipStyle.id = 'sy-tooltip-theme-rules';
+              document.head.appendChild(tooltipStyle);
+            }
+            tooltipStyle.textContent = payload.tooltipCssRules;
+          }
           currentState = payload.state || currentState;
           root.className = payload.className || '';
           // 保存当前 tooltip 状态，innerHTML 替换后恢复
@@ -643,6 +633,7 @@ interface RenderedPayload {
   className: string
   innerHTML: string
   themeStyleText: string
+  tooltipCssRules: string
   state: {
     phase: FloatingPomodoroViewState['phase']
     isPaused: boolean
