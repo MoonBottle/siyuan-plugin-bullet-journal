@@ -90,44 +90,43 @@
     >
       <svg><use xlink:href="#iconCalendar"></use></svg>
     </span>
-  </div>
 
-  <div
-    v-if="hasFixedRow && item"
-    class="item-actions-fixed"
-  >
-    <span
-      v-if="showPin"
-      class="block__icon"
-      :class="{ 'block__icon--active': item?.pinned }"
-      :aria-label="pinLabel"
-      @mouseenter="handleTooltipEnter($event, pinLabel)"
-      @mouseleave="handleTooltipLeave"
-      @click.stop="handleTogglePinned"
+    <template
+      v-if="hasFixedRow && item"
     >
-      <svg><use xlink:href="#iconPin"></use></svg>
-    </span>
+      <span
+        v-if="showPin"
+        class="block__icon"
+        :class="{ 'block__icon--active': item?.pinned }"
+        :aria-label="pinLabel"
+        @mouseenter="handleTooltipEnter($event, pinLabel)"
+        @mouseleave="handleTooltipLeave"
+        @click.stop="handleTogglePinned"
+      >
+        <svg><use xlink:href="#iconPin"></use></svg>
+      </span>
 
-    <span
-      v-if="showDetail"
-      class="block__icon"
-      :aria-label="t('todo').detail"
-      @mouseenter="handleTooltipEnter($event, t('todo').detail)"
-      @mouseleave="handleTooltipLeave"
-      @click.stop="handleOpenDetail"
-    >
-      <svg><use xlink:href="#iconInfo"></use></svg>
-    </span>
+      <span
+        v-if="showDetail"
+        class="block__icon"
+        :aria-label="t('todo').detail"
+        @mouseenter="handleTooltipEnter($event, t('todo').detail)"
+        @mouseleave="handleTooltipLeave"
+        @click.stop="handleOpenDetail"
+      >
+        <svg><use xlink:href="#iconInfo"></use></svg>
+      </span>
 
-    <span
-      class="block__icon"
-      :aria-label="t('todo').calendar"
-      @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
-      @mouseleave="handleTooltipLeave"
-      @click.stop="handleOpenCalendar"
-    >
-      <svg><use xlink:href="#iconCalendar"></use></svg>
-    </span>
+      <span
+        class="block__icon"
+        :aria-label="t('todo').calendar"
+        @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
+        @mouseleave="handleTooltipLeave"
+        @click.stop="handleOpenCalendar"
+      >
+        <svg><use xlink:href="#iconCalendar"></use></svg>
+      </span>
+    </template>
   </div>
 </template>
 
@@ -403,26 +402,6 @@ function handleOpenCalendar() {
   &:hover {
     color: var(--b3-theme-primary);
     opacity: 1;
-  }
-}
-
-.item-actions-fixed {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-
-  .block__icon {
-    opacity: 1;
-    cursor: pointer;
-
-    &.block__icon--active {
-      color: var(--b3-theme-primary);
-    }
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
   }
 }
 </style>
