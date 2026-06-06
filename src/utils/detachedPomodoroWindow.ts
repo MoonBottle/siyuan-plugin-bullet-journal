@@ -477,8 +477,8 @@ function buildDetachedWindowHtml(): string {
         z-index: 2147483647;
         max-width: min(300px, 90vw);
         padding: 6px 10px;
-        background: var(--b3-tooltip-background, #2f2f2f);
-        color: var(--b3-tooltip-color, #fff);
+        background: var(--b3-tooltips-background, #2f2f2f);
+        color: var(--b3-tooltips-color, #fff);
         font-size: 12px;
         line-height: 1.4;
         border-radius: 4px;
