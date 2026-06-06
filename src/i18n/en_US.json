@@ -1068,7 +1068,7 @@
     "times": "times",
     "setRecurring": "Set Recurring",
     "skipThis": "Skip This",
-    "skipTooltip": "Change date to {date}",
+    "skipTooltip": "Skip this occurrence, next: {date}",
     "withEndDate": "{rule}, until {date}",
     "withRemainingCount": "{rule}, {count} remaining",
     "save": "Save",
