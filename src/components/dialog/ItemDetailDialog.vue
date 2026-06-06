@@ -12,6 +12,7 @@
 
     <ItemActionBar
       :item="reactiveItem"
+      :show-separator="true"
       @openDoc="handleOpenDoc"
       @openCalendar="handleOpenCalendar"
       @skipOccurrence="handleSkipOccurrence"

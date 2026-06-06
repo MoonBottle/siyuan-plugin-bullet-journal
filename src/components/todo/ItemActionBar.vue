@@ -2,6 +2,7 @@
   <div
     v-if="item"
     class="item-action-bar"
+    :class="{ 'item-action-bar--separator': showSeparator }"
   >
     <span
       v-if="canComplete"
@@ -170,10 +171,12 @@ const props = withDefaults(defineProps<{
   openDocMode?: OpenDocMode
   showPin?: boolean
   showDetail?: boolean
+  showSeparator?: boolean
 }>(), {
   openDocMode: 'navigate',
   showPin: false,
   showDetail: false,
+  showSeparator: false,
 })
 
 const emit = defineEmits<{
@@ -374,6 +377,12 @@ function handleOpenCalendar() {
   gap: 4px;
   width: 100%;
   box-sizing: border-box;
+
+  &--separator {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--b3-border-color);
+  }
 }
 
 .block__icon {
