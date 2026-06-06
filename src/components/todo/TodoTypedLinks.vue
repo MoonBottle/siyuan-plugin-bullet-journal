@@ -37,6 +37,7 @@ const emit = defineEmits<{
 
 <style lang="scss" scoped>
 .typed-link-list {
+  margin-top: 4px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

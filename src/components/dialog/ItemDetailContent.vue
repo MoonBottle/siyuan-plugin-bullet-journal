@@ -614,6 +614,9 @@ async function handleLinkClick(link: Link) {
   color: var(--b3-theme-on-background);
   word-break: break-word;
   flex: 1;
+  height: 20px;
+  line-height: 20px;
+  display: flex;
 }
 
 .copy-btn {
@@ -653,7 +656,6 @@ async function handleLinkClick(link: Link) {
 }
 
 .item-meta {
-  margin-top: 8px;
   margin-bottom: 8px;
 }
 
@@ -689,6 +691,7 @@ async function handleLinkClick(link: Link) {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
 }

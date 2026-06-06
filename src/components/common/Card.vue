@@ -146,6 +146,7 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 .ta-card__content {
+  margin-top: 8px;
   width: 100%;
 }
 
