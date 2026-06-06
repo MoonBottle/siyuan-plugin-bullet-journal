@@ -147,9 +147,9 @@ import {
 import { t } from '@/i18n'
 import dayjs from '@/utils/dayjs'
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   habit: Habit
@@ -337,11 +337,11 @@ function handleMarkerMouseEnter(event: MouseEvent, cell: CalendarCell) {
     return
   }
 
-  showIconTooltip(event.currentTarget as HTMLElement, t('habit').clickableDateHint)
+  showTooltip(event.currentTarget as HTMLElement, t('habit').clickableDateHint)
 }
 
 function handleMarkerMouseLeave() {
-  hideIconTooltip()
+  hideTooltip()
 }
 
 onMounted(() => {
@@ -350,7 +350,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
-  hideIconTooltip()
+  hideTooltip()
 })
 </script>
 

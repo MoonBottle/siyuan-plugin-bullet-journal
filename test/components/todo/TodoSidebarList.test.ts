@@ -514,7 +514,7 @@ describe('todoSidebarList', () => {
   })
 
   it('hides the shared icon tooltip after clicking complete when the action row is removed', async () => {
-    const { SY_ICON_TOOLTIP_ID } = await import('@/utils/dialog')
+    const { WRAPPER_ID } = await import('@/utils/tooltip')
     const mounted = mountReactiveList([pendingItem])
 
     mockCompleteItem.mockImplementationOnce(async () => {
@@ -530,17 +530,18 @@ describe('todoSidebarList', () => {
     completeAction?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await nextTick()
 
-    const tooltip = document.getElementById(SY_ICON_TOOLTIP_ID)
-    expect(tooltip).not.toBeNull()
-    expect(tooltip?.textContent).toBe('完成')
-    expect(tooltip?.classList.contains('visible')).toBe(true)
+    const wrapper = document.getElementById(WRAPPER_ID)
+    expect(wrapper).not.toBeNull()
+    const inner = wrapper?.firstElementChild as HTMLElement | null
+    expect(inner?.getAttribute('aria-label')).toBe('完成')
+    expect(inner?.classList.contains('sy-tip-visible')).toBe(true)
 
     completeAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await Promise.resolve()
     await nextTick()
 
     expect(mounted.container.querySelector('.item-action-bar .block__icon[aria-label="完成"]')).toBeNull()
-    expect(tooltip?.classList.contains('visible')).toBe(false)
+    expect(inner?.classList.contains('sy-tip-visible')).toBe(false)
 
     mounted.unmount()
   })

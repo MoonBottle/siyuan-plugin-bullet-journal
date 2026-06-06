@@ -18,9 +18,9 @@
 
 <script setup lang="ts">
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   icon?: string
@@ -33,12 +33,12 @@ defineEmits<{
 
 function onMouseEnter(e: MouseEvent) {
   if (props.title) {
-    showIconTooltip(e.currentTarget as HTMLElement, props.title)
+    showTooltip(e.currentTarget as HTMLElement, props.title)
   }
 }
 
 function onMouseLeave(_e: MouseEvent) {
-  hideIconTooltip()
+  hideTooltip()
 }
 </script>
 

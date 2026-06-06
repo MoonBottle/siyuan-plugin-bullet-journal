@@ -323,11 +323,13 @@ import {
 } from 'vue'
 import { t } from '@/i18n'
 import {
-  hideIconTooltip,
   showConfirmDialog,
-  showIconTooltip,
   showInputDialog,
 } from '@/utils/dialog'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   entries: WorkbenchEntry[]
@@ -606,12 +608,12 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
 
 function handleEntryMouseEnter(entry: WorkbenchEntry, event: MouseEvent) {
   if (!props.collapsed) return
-  showIconTooltip(event.currentTarget as HTMLElement, entry.title)
+  showTooltip(event.currentTarget as HTMLElement, entry.title)
 }
 
 function handleEntryMouseLeave() {
   if (!props.collapsed) return
-  hideIconTooltip()
+  hideTooltip()
 }
 
 function handleHeaderToggleMouseEnter(event: MouseEvent | FocusEvent) {
@@ -620,14 +622,14 @@ function handleHeaderToggleMouseEnter(event: MouseEvent | FocusEvent) {
     return
   }
 
-  showIconTooltip(
+  showTooltip(
     target,
     props.collapsed ? t('workbench').expandSidebar : t('workbench').collapseSidebar,
   )
 }
 
 function handleHeaderToggleMouseLeave() {
-  hideIconTooltip()
+  hideTooltip()
 }
 
 watch(searchQuery, () => {

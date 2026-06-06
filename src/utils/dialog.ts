@@ -46,6 +46,7 @@ import { skipCurrentOccurrence } from '@/services/recurringService'
 import { isMobileDevice } from '@/utils/isMobile'
 import { removePendingCompletion } from '@/utils/pomodoroStorage'
 import { getSharedPinia } from '@/utils/sharedPinia'
+import { hideTooltip } from '@/utils/tooltip'
 
 
 
@@ -62,157 +63,6 @@ import {
 const AMP_RE = /&/g
 const LT_RE = /</g
 const QUOT_RE = /"/g
-
-/** 链接名称最大显示长度，超出则截断并 hover 显示全部 */
-const LINK_NAME_MAX_LEN = 12
-
-/** 自定义 tooltip 挂载到 body，不受弹框 overflow 影响 */
-export const SY_LINK_TOOLTIP_ID = 'sy-dialog-link-tooltip'
-export const SY_ICON_TOOLTIP_ID = 'sy-icon-tooltip'
-
-let activeIconTooltipTrigger: HTMLElement | null = null
-let activeIconTooltipCleanup: (() => void) | null = null
-let activeIconTooltipObserver: MutationObserver | null = null
-
-function clearIconTooltipTracking(): void {
-  activeIconTooltipCleanup?.()
-  activeIconTooltipCleanup = null
-  activeIconTooltipObserver?.disconnect()
-  activeIconTooltipObserver = null
-  activeIconTooltipTrigger = null
-}
-
-function watchIconTooltipTrigger(trigger: HTMLElement): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined')
-    return
-
-  const hideOnInteraction = () => {
-    hideIconTooltip()
-  }
-
-  const hideWhenDocumentHidden = () => {
-    if (document.hidden) {
-      hideIconTooltip()
-    }
-  }
-
-  document.addEventListener('pointerdown', hideOnInteraction, true)
-  window.addEventListener('blur', hideOnInteraction)
-  window.addEventListener('resize', hideOnInteraction)
-  window.addEventListener('scroll', hideOnInteraction, true)
-  document.addEventListener('visibilitychange', hideWhenDocumentHidden)
-
-  activeIconTooltipCleanup = () => {
-    document.removeEventListener('pointerdown', hideOnInteraction, true)
-    window.removeEventListener('blur', hideOnInteraction)
-    window.removeEventListener('resize', hideOnInteraction)
-    window.removeEventListener('scroll', hideOnInteraction, true)
-    document.removeEventListener('visibilitychange', hideWhenDocumentHidden)
-  }
-
-  if (typeof MutationObserver !== 'undefined' && document.body) {
-    activeIconTooltipObserver = new MutationObserver(() => {
-      if (activeIconTooltipTrigger !== trigger)
-        return
-      if (!trigger.isConnected) {
-        hideIconTooltip()
-      }
-    })
-    activeIconTooltipObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-    })
-  }
-}
-
-/** 供 Vue 等组件使用：格式化链接显示，返回截断后的 display 和可选的 fullText（用于 tooltip） */
-export function formatLinkForDisplay(name: string): { display: string, fullText?: string } {
-  if (!name || name.length <= LINK_NAME_MAX_LEN) {
-    return { display: name }
-  }
-  return {
-    display: `${name.slice(0, LINK_NAME_MAX_LEN)}...`,
-    fullText: name,
-  }
-}
-
-/** 供 Vue 等组件使用：显示链接 tooltip */
-export function showLinkTooltip(el: HTMLElement, fullText: string): void {
-  let tip = document.getElementById(SY_LINK_TOOLTIP_ID)
-  if (!tip) {
-    tip = document.createElement('div')
-    tip.id = SY_LINK_TOOLTIP_ID
-    tip.className = 'sy-dialog-link-tooltip'
-    document.body.appendChild(tip)
-  }
-  tip.textContent = fullText
-  const rect = el.getBoundingClientRect()
-  const margin = 8
-  const left = rect.left + rect.width / 2
-  tip.style.left = `${left}px`
-  tip.style.top = `${rect.top - 4}px`
-  tip.style.transform = 'translate(-50%, -100%)'
-  tip.classList.add('visible')
-  requestAnimationFrame(() => {
-    const tipRect = tip!.getBoundingClientRect()
-    // 确保 tooltip 不会超出视口右边界
-    if (tipRect.right > window.innerWidth - margin) {
-      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
-    }
-    // 确保 tooltip 不会超出视口左边界
-    if (tipRect.left < margin) {
-      tip!.style.left = `${tipRect.width / 2 + margin}px`
-    }
-  })
-}
-
-/** 供 Vue 等组件使用：隐藏链接 tooltip */
-export function hideLinkTooltip(): void {
-  const tip = document.getElementById(SY_LINK_TOOLTIP_ID)
-  if (tip) tip.classList.remove('visible')
-}
-
-/** 供 SyButton 等图标按钮使用：显示 tooltip（挂载 body，不被 overflow 裁剪） */
-export function showIconTooltip(el: HTMLElement, text: string): void {
-  if (!text || typeof document === 'undefined') return
-  clearIconTooltipTracking()
-  let tip = document.getElementById(SY_ICON_TOOLTIP_ID)
-  if (!tip) {
-    tip = document.createElement('div')
-    tip.id = SY_ICON_TOOLTIP_ID
-    tip.className = 'sy-icon-tooltip'
-    document.body.appendChild(tip)
-  }
-  tip.textContent = text
-  const rect = el.getBoundingClientRect()
-  const margin = 8
-  const left = rect.left + rect.width / 2
-  tip.style.left = `${left}px`
-  tip.style.top = `${rect.top - 4}px`
-  tip.style.transform = 'translate(-50%, -100%)'
-  tip.classList.add('visible')
-  activeIconTooltipTrigger = el
-  watchIconTooltipTrigger(el)
-  requestAnimationFrame(() => {
-    const tipRect = tip!.getBoundingClientRect()
-    // 确保 tooltip 不会超出视口右边界
-    if (tipRect.right > window.innerWidth - margin) {
-      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`
-    }
-    // 确保 tooltip 不会超出视口左边界
-    if (tipRect.left < margin) {
-      tip!.style.left = `${tipRect.width / 2 + margin}px`
-    }
-  })
-}
-
-/** 供 SyButton 等图标按钮使用：隐藏 tooltip */
-export function hideIconTooltip(): void {
-  clearIconTooltipTracking()
-  if (typeof document === 'undefined') return
-  const tip = document.getElementById(SY_ICON_TOOLTIP_ID)
-  if (tip) tip.classList.remove('visible')
-}
 
 function focusDialogInitialElement(dialogElement: HTMLElement): void {
   const focusableEl
@@ -339,7 +189,7 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     width: '520px',
     destroyCallback: () => {
       app.unmount()
-      hideLinkTooltip()
+      hideTooltip()
     },
   })
 
@@ -510,7 +360,7 @@ export function showEventDetailModal(
         lastEventDetailDialog = null
       }
       app.unmount()
-      hideLinkTooltip()
+      hideTooltip()
     },
   })
   lastEventDetailDialog = dialog

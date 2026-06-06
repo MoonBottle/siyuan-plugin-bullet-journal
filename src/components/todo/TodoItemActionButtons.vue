@@ -44,9 +44,9 @@ import {
   onBeforeUnmount,
 } from 'vue'
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   hasReminder: boolean
@@ -77,15 +77,15 @@ function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
   const target = event.currentTarget
   if (!(target instanceof HTMLElement))
     return
-  showIconTooltip(target, text)
+  showTooltip(target, text)
 }
 
 function handleHideTooltip() {
-  hideIconTooltip()
+  hideTooltip()
 }
 
 onBeforeUnmount(() => {
-  hideIconTooltip()
+  hideTooltip()
 })
 </script>
 

@@ -87,11 +87,11 @@ import type {
 } from '@/utils/projectTaskTree'
 import { computed } from 'vue'
 import { PRIORITY_CONFIG } from '@/parser/priorityParser'
-import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
 import { getTaskItemProgress } from '@/utils/projectTaskTree'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   node: ProjectTaskTreeNode
@@ -129,11 +129,11 @@ function getItemMeta(entry: Item | MergedItem): string {
 function handlePriorityMouseEnter(event: MouseEvent, priority: PriorityLevel) {
   const el = event.currentTarget as HTMLElement | null
   if (!el) return
-  showIconTooltip(el, PRIORITY_CONFIG[priority].label)
+  showTooltip(el, PRIORITY_CONFIG[priority].label)
 }
 
 function handlePriorityMouseLeave() {
-  hideIconTooltip()
+  hideTooltip()
 }
 </script>
 

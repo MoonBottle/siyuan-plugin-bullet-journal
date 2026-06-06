@@ -40,13 +40,11 @@ import {
   computed,
   ref,
 } from 'vue'
+import { formatLinkForDisplay } from '@/utils/format'
 import {
-  formatLinkForDisplay,
-  hideIconTooltip,
-  hideLinkTooltip,
-  showIconTooltip,
-  showLinkTooltip,
-} from '@/utils/dialog'
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
   // 通用
@@ -107,24 +105,24 @@ function handleLinkClick(event: MouseEvent) {
 function handleIconMouseEnter() {
   const el = btnRef.value
   if (el && props.ariaLabel) {
-    showIconTooltip(el, props.ariaLabel)
+    showTooltip(el, props.ariaLabel)
   }
 }
 
 function handleIconMouseLeave() {
-  hideIconTooltip()
+  hideTooltip()
 }
 
 // 链接按钮 hover tooltip
 function handleLinkMouseEnter() {
   const el = linkRef.value
   if (el && needsTooltip.value) {
-    showLinkTooltip(el, props.text!)
+    showTooltip(el, props.text!, { wrap: true })
   }
 }
 
 function handleLinkMouseLeave() {
-  hideLinkTooltip()
+  hideTooltip()
 }
 </script>
 

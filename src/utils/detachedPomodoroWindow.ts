@@ -472,32 +472,40 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-btn.is-paused .floating-tomato-status {
         color: var(--b3-card-warning-color);
       }
-      .sy-icon-tooltip {
+      .sy-tooltip {
         position: fixed;
-        z-index: 2147483647;
-        max-width: min(300px, 90vw);
-        padding: 6px 10px;
-        background: var(--b3-tooltips-background, #2f2f2f);
-        color: var(--b3-tooltips-color, #fff);
+        z-index: 1000000;
+        padding: 4px 8px;
         font-size: 12px;
-        line-height: 1.4;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        white-space: nowrap;
+        font-weight: normal;
+        -webkit-font-smoothing: subpixel-antialiased;
+        color: var(--b3-tooltips-color);
+        word-wrap: break-word;
+        white-space: pre;
+        background-color: var(--b3-tooltips-background);
+        border-radius: var(--b3-border-radius);
+        line-height: 17px;
+        max-width: 60vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-sizing: border-box;
+        box-shadow: var(--b3-tooltips-shadow);
+        font-family: var(--b3-font-family);
         pointer-events: none;
         opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.15s, visibility 0.15s;
+        transform: scale(0.9);
+        transition: opacity 150ms cubic-bezier(0, 0, .2, 1),
+                    transform 150ms cubic-bezier(0, 0, .2, 1);
       }
-      .sy-icon-tooltip.visible {
+      .sy-tooltip.visible {
         opacity: 1;
-        visibility: visible;
+        transform: scale(1);
       }
     </style>
   </head>
   <body>
     <div id="${ROOT_ID}"></div>
-    <div id="bullet-journal-detached-tooltip" class="sy-icon-tooltip"></div>
+    <div id="bullet-journal-detached-tooltip" class="sy-tooltip"></div>
     <script>
       (() => {
         const root = document.getElementById('${ROOT_ID}');
@@ -518,20 +526,25 @@ function buildDetachedWindowHtml(): string {
           if (!tooltip || !text) return;
           activeTooltipTrigger = el;
           tooltip.textContent = text;
+          tooltip.className = 'sy-tooltip';
           const rect = el.getBoundingClientRect();
-          const margin = 8;
-          tooltip.style.left = rect.left + rect.width / 2 + 'px';
-          tooltip.style.top = rect.top - 4 + 'px';
-          tooltip.style.transform = 'translate(-50%, -100%)';
+          const margin = 5;
+          tooltip.style.bottom = (window.innerHeight - rect.top + margin) + 'px';
+          tooltip.style.right = (window.innerWidth - rect.left - rect.width / 2) + 'px';
+          tooltip.style.left = 'auto';
+          tooltip.style.top = 'auto';
+          tooltip.style.transform = 'translateX(50%)';
           tooltip.classList.add('visible');
           requestAnimationFrame(() => {
             if (activeTooltipTrigger !== el) return;
             const tipRect = tooltip.getBoundingClientRect();
-            if (tipRect.right > window.innerWidth - margin) {
-              tooltip.style.left = window.innerWidth - tipRect.width / 2 - margin + 'px';
+            if (tipRect.right > window.innerWidth - 8) {
+              tooltip.style.left = (window.innerWidth - tipRect.width - 8) + 'px';
+              tooltip.style.right = 'auto';
             }
-            if (tipRect.left < margin) {
-              tooltip.style.left = tipRect.width / 2 + margin + 'px';
+            if (tipRect.left < 8) {
+              tooltip.style.left = '8px';
+              tooltip.style.right = 'auto';
             }
           });
         };

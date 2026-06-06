@@ -88,10 +88,13 @@ vi.mock('@/i18n', () => {
 })
 
 vi.mock('@/utils/dialog', () => ({
-  hideIconTooltip: vi.fn(),
-  showIconTooltip: vi.fn(),
   showPomodoroTimerDialog: vi.fn(),
   showFocusPlanDialog: mockShowFocusPlanDialog,
+}))
+
+vi.mock('@/utils/tooltip', () => ({
+  hideTooltip: vi.fn(),
+  showTooltip: vi.fn(),
 }))
 
 vi.mock('@/utils/fileUtils', () => ({

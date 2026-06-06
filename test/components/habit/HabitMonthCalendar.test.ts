@@ -12,7 +12,7 @@ import {
   nextTick,
 } from 'vue'
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue'
-import { SY_ICON_TOOLTIP_ID } from '@/utils/dialog'
+import { WRAPPER_ID } from '@/utils/tooltip'
 
 function mountCalendar(habit: Habit, currentDate = '2026-04-30') {
   const container = document.createElement('div')
@@ -282,14 +282,15 @@ describe('habitMonthCalendar', () => {
     marker?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await nextTick()
 
-    const tooltip = document.getElementById(SY_ICON_TOOLTIP_ID)
-    expect(tooltip).not.toBeNull()
-    expect(tooltip?.textContent).toBe('点击可打卡，右键可更多操作')
-    expect(tooltip?.classList.contains('visible')).toBe(true)
+    const wrapper = document.getElementById(WRAPPER_ID)
+    expect(wrapper).not.toBeNull()
+    const inner = wrapper?.firstElementChild as HTMLElement | null
+    expect(inner?.getAttribute('aria-label')).toBe('点击可打卡，右键可更多操作')
+    expect(inner?.classList.contains('sy-tip-visible')).toBe(true)
 
     marker?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
     await nextTick()
-    expect(tooltip?.classList.contains('visible')).toBe(false)
+    expect(inner?.classList.contains('sy-tip-visible')).toBe(false)
 
     mounted.unmount()
   })

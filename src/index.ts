@@ -100,9 +100,7 @@ import {
 
 } from "@/utils/detachedPomodoroWindow"
 import {
-  hideIconTooltip,
   showConfirmDialog,
-  showIconTooltip,
   showItemDetailModal,
   showPomodoroCompleteDialog,
   showPomodoroTimerDialog,
@@ -165,6 +163,10 @@ import {
   createSlashCommands,
 
 } from "@/utils/slashCommands"
+import {
+  hideTooltip,
+  showTooltip,
+} from "@/utils/tooltip"
 import {
   mountVueAppInHost,
   unmountVueAppFromHost,
@@ -2539,10 +2541,10 @@ export default class TaskAssistantPlugin extends Plugin {
       el.addEventListener("mouseenter", () => {
         const text = el.dataset.tooltip
         if (text) {
-          showIconTooltip(el, text)
+          showTooltip(el, text)
         }
       })
-      el.addEventListener("mouseleave", hideIconTooltip)
+      el.addEventListener("mouseleave", hideTooltip)
     })
 
     btn.addEventListener("click", (e) => {
@@ -2806,9 +2808,9 @@ export default class TaskAssistantPlugin extends Plugin {
       if (el) {
         el.addEventListener("mouseenter", () => {
           const text = (el as HTMLElement).dataset.tooltip
-          if (text) showIconTooltip(el as HTMLElement, text)
+          if (text) showTooltip(el as HTMLElement, text)
         })
-        el.addEventListener("mouseleave", hideIconTooltip)
+        el.addEventListener("mouseleave", hideTooltip)
       }
     }
 

@@ -832,29 +832,49 @@
   padding: 0 !important;
 }
 
-/* 图标按钮 tooltip：挂载 body，不被 overflow 裁剪（SyButton 等使用） */
-.sy-icon-tooltip {
-  position: fixed;
-  z-index: 2147483647;
-  max-width: min(300px, 90vw);
-  padding: 6px 10px;
-  background: var(--b3-tooltips-background, #2f2f2f);
-  color: var(--b3-tooltips-color, #fff);
-  font-size: 12px;
-  line-height: 1.4;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.15s,
-    visibility 0.15s;
+/* 固定定位 tooltip：包装容器在 body 上，内部 .b3-tooltips 元素的 ::after 渲染内容 */
+/* 覆盖 .b3-tooltips 的 :hover 和 overflow 行为，改用类控制 */
 
-  &.visible {
-    opacity: 1;
-    visibility: visible;
+/* 包装容器 */
+#sy-tooltip-wrapper {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000000;
+}
+
+/* 内部 .b3-tooltips 元素的覆盖 */
+.sy-fixed-tooltip {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible !important;
+  cursor: default !important;
+
+  /* 覆盖 .b3-tooltips 的 :hover::after 规则，改用类控制可见性 */
+  &::after {
+    opacity: 0 !important;
+    transform: scale(0.9) !important;
+    transition:
+      opacity 150ms cubic-bezier(0, 0, 0.2, 1),
+      transform 150ms cubic-bezier(0, 0, 0.2, 1) !important;
+  }
+
+  &:hover::after {
+    opacity: 0 !important;
+    transform: scale(0.9) !important;
+  }
+
+  /* 类控制可见性 */
+  &.sy-tip-visible::after {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+
+  /* 换行修饰：用于链接等长文本 */
+  &--wrap::after {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    max-width: min(400px, 90vw) !important;
   }
 }
 
@@ -870,31 +890,4 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* 链接自定义 tooltip：挂载 body，不受弹框 overflow 影响，无滚动条 */
-.sy-dialog-link-tooltip {
-  position: fixed;
-  z-index: 2147483647;
-  max-width: min(400px, 90vw);
-  padding: 6px 10px;
-  background: var(--b3-tooltips-background, #2f2f2f);
-  color: var(--b3-tooltips-color, #fff);
-  font-size: 12px;
-  line-height: 1.4;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  word-wrap: break-word;
-  white-space: normal;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.15s,
-    visibility 0.15s;
-
-  &.visible {
-    opacity: 1;
-    visibility: visible;
-  }
 }

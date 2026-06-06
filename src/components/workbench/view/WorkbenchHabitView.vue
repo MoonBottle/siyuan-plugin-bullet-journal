@@ -13,8 +13,8 @@
             @click="showActiveHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconLeft"></use></svg>
           </button>
           <div
@@ -31,8 +31,8 @@
             @click="refreshHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconRefresh"></use></svg>
           </button>
         </template>
@@ -51,8 +51,8 @@
             @click="refreshHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconRefresh"></use></svg>
           </button>
           <button
@@ -62,8 +62,8 @@
             @click="showArchivedHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconInbox"></use></svg>
           </button>
         </template>
@@ -140,16 +140,16 @@ import {
   usePlugin,
 } from '@/main'
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
-import {
   DATA_REFRESH_CHANNEL,
   eventBus,
   Events,
 } from '@/utils/eventBus'
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 defineProps<{
   viewConfig?: Record<string, unknown>

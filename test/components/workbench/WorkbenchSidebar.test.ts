@@ -40,10 +40,13 @@ vi.mock('siyuan', () => ({
 }))
 
 vi.mock('@/utils/dialog', () => ({
-  hideIconTooltip: mockHideIconTooltip,
   showConfirmDialog: mockShowConfirmDialog,
-  showIconTooltip: mockShowIconTooltip,
   showInputDialog: mockShowInputDialog,
+}))
+
+vi.mock('@/utils/tooltip', () => ({
+  hideTooltip: mockHideIconTooltip,
+  showTooltip: mockShowIconTooltip,
 }))
 
 const entries: WorkbenchEntry[] = [

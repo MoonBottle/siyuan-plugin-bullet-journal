@@ -34,9 +34,9 @@ vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
 }))
 
-vi.mock('@/utils/dialog', () => ({
-  showIconTooltip: vi.fn(),
-  hideIconTooltip: vi.fn(),
+vi.mock('@/utils/tooltip', () => ({
+  showTooltip: vi.fn(),
+  hideTooltip: vi.fn(),
 }))
 
 vi.mock('@/main', () => ({

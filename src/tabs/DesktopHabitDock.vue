@@ -10,8 +10,8 @@
           @click="handleBackToList"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
         <div
@@ -28,8 +28,8 @@
           @click="refreshHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconRefresh"></use></svg>
         </button>
         <button
@@ -39,8 +39,8 @@
           @click="handleToggleArchiveSelectedHabit"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+            @mouseleave="hideTooltip"
           ><use :xlink:href="selectedHabit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
         </button>
         <button
@@ -50,8 +50,8 @@
           @click="handleOpenSelectedHabitDoc"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconFile"></use></svg>
         </button>
       </template>
@@ -63,8 +63,8 @@
           @click="handleBackToActiveList"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
         <div
@@ -81,8 +81,8 @@
           @click="refreshHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconRefresh"></use></svg>
         </button>
       </template>
@@ -101,8 +101,8 @@
           @click="refreshHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconRefresh"></use></svg>
         </button>
         <button
@@ -112,8 +112,8 @@
           @click="handleShowArchivedHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconInbox"></use></svg>
         </button>
       </template>
@@ -184,16 +184,16 @@ import {
   usePlugin,
 } from '@/main'
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
-import {
   DATA_REFRESH_CHANNEL,
   eventBus,
   Events,
 } from '@/utils/eventBus'
 import { consumePendingHabitDockTarget } from '@/utils/habitDockNavigation'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const plugin = usePlugin()
 const {
@@ -225,12 +225,12 @@ const {
 } = useHabitWorkspace()
 
 async function handleOpenSelectedHabitDoc() {
-  hideIconTooltip()
+  hideTooltip()
   await openSelectedHabitDoc()
 }
 
 async function handleToggleArchiveSelectedHabit() {
-  hideIconTooltip()
+  hideTooltip()
   if (selectedHabit.value?.archivedAt) {
     await unarchiveSelectedHabit()
     return
@@ -244,17 +244,17 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
 }
 
 function handleBackToList() {
-  hideIconTooltip()
+  hideTooltip()
   clearSelectedHabit()
 }
 
 function handleShowArchivedHabits() {
-  hideIconTooltip()
+  hideTooltip()
   showArchivedHabits()
 }
 
 function handleBackToActiveList() {
-  hideIconTooltip()
+  hideTooltip()
   showActiveHabits()
 }
 

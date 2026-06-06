@@ -38,8 +38,8 @@
               @click="handleArchiveAction"
             >
               <svg
-                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="showTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+                @mouseleave="hideTooltip"
               ><use :xlink:href="habit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
             </button>
 
@@ -50,8 +50,8 @@
               @click="handleClose"
             >
               <svg
-                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
+                @mouseleave="hideTooltip"
               ><use xlink:href="#iconCloseRound"></use></svg>
             </button>
           </div>
@@ -75,9 +75,9 @@ import type {
 } from '@/types/models'
 import { t } from '@/i18n'
 import {
-  hideIconTooltip,
-  showIconTooltip,
-} from '@/utils/dialog'
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   open: boolean
@@ -94,7 +94,7 @@ const emit = defineEmits<{
 }>()
 
 function handleArchiveAction() {
-  hideIconTooltip()
+  hideTooltip()
   if (props.habit?.archivedAt) {
     emit('unarchive')
     return
@@ -104,7 +104,7 @@ function handleArchiveAction() {
 }
 
 function handleClose() {
-  hideIconTooltip()
+  hideTooltip()
   emit('close')
 }
 </script>

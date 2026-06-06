@@ -106,8 +106,8 @@
             <div
               v-if="props.item.priority"
               class="priority-emoji"
-              @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
+              @mouseleave="hideTooltip"
             >
               {{ PRIORITY_CONFIG[props.item.priority].emoji }}
             </div>
@@ -125,14 +125,14 @@
             <span class="meta-item">
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').time)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').time)"
+                @mouseleave="hideTooltip"
               >📅</span>
               <span
                 class="meta-text"
                 :class="{ 'has-tooltip': timeDisplayNeedsTooltip }"
-                @mouseenter="(e) => timeDisplayNeedsTooltip && showIconTooltip(e.currentTarget as HTMLElement, timeDisplay)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => timeDisplayNeedsTooltip && showTooltip(e.currentTarget as HTMLElement, timeDisplay)"
+                @mouseleave="hideTooltip"
               >{{ timeDisplayTruncated }}</span>
             </span>
             <span
@@ -141,8 +141,8 @@
             >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
+                @mouseleave="hideTooltip"
               >⏱️</span>
               <span class="meta-text">{{ duration }}</span>
               <span
@@ -164,8 +164,8 @@
             >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
+                @mouseleave="hideTooltip"
               >🍅</span>
               <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
               <span
@@ -187,8 +187,8 @@
             >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                @mouseleave="hideTooltip"
               >⏳</span>
               <span class="meta-text">{{ focusPlanDisplay }}</span>
             </span>
@@ -198,8 +198,8 @@
             >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
+                @mouseleave="hideTooltip"
               >Δ</span>
               <span class="meta-text">{{ focusDeltaDisplay }}</span>
             </span>
@@ -305,8 +305,6 @@ import dayjs from '@/utils/dayjs'
 import {
   calculateTotalFocusMinutes,
   formatFocusDuration,
-  hideIconTooltip,
-  showIconTooltip,
 } from '@/utils/dialog'
 import { formatReminderDisplay } from '@/utils/displayUtils'
 import {
@@ -318,6 +316,10 @@ import {
   formatFocusPlanDisplay,
 } from '@/utils/focusPlanReview'
 import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
   item: Item

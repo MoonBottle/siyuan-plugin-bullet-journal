@@ -151,9 +151,7 @@ import { getNextOccurrenceDate } from '@/parser/recurringParser'
 import { usePomodoroStore } from '@/stores'
 import dayjs from '@/utils/dayjs'
 import {
-  hideIconTooltip,
   showFocusPlanDialog,
-  showIconTooltip,
   showPomodoroTimerDialog,
 } from '@/utils/dialog'
 import { openDocumentAtLine } from '@/utils/fileUtils'
@@ -163,6 +161,10 @@ import {
   migrateItem,
 } from '@/utils/itemActions'
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 type OpenDocMode = 'navigate' | 'preview'
 
@@ -235,11 +237,11 @@ const pinLabel = computed(() => {
 function handleTooltipEnter(event: MouseEvent, text: string) {
   const el = event.currentTarget as HTMLElement | null
   if (!el || !text) return
-  showIconTooltip(el, text)
+  showTooltip(el, text)
 }
 
 function handleTooltipLeave() {
-  hideIconTooltip()
+  hideTooltip()
 }
 
 async function handleComplete() {
