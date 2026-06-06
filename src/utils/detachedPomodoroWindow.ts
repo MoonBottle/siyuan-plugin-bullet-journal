@@ -555,6 +555,7 @@ function buildDetachedWindowHtml(): string {
         const hideTooltip = () => {
           activeTooltipTrigger = null;
           if (tooltipInner) {
+            // 先移除可见性类（opacity 立即变为 0），再清空内容
             tooltipInner.classList.remove('sy-tip-visible');
             tooltipInner.removeAttribute('aria-label');
           }
@@ -594,7 +595,11 @@ function buildDetachedWindowHtml(): string {
           currentState = payload.state || currentState;
           root.className = payload.className || '';
           root.innerHTML = payload.innerHTML || '';
-          hideTooltip();
+          // innerHTML 替换后触发元素可能被替换，隐藏 tooltip
+          // mouseover 事件会在新元素上重新触发 showTooltip
+          if (activeTooltipTrigger && !activeTooltipTrigger.isConnected) {
+            hideTooltip();
+          }
         };
         document.addEventListener('click', (event) => {
           const actionEl = event.target instanceof Element
