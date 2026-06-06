@@ -57,8 +57,8 @@ function handleOpenDoc() {
   emit('openDoc')
 }
 
-function handleOpenCalendar(_date: string) {
-  emit('close')
+function handleOpenCalendar(date: string) {
+  emit('openCalendar', date)
 }
 
 function handleSetReminder() {
