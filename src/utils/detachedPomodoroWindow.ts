@@ -555,14 +555,8 @@ function buildDetachedWindowHtml(): string {
         const hideTooltip = () => {
           activeTooltipTrigger = null;
           if (tooltipInner) {
-            // 只移除可见性类，保留 aria-label 让淡出期间文本仍可见
+            // 只移除可见性类，保留 aria-label 和位置让淡出动画在原位完成
             tooltipInner.classList.remove('sy-tip-visible');
-          }
-          if (tooltipWrapper) {
-            tooltipWrapper.style.left = '';
-            tooltipWrapper.style.top = '';
-            tooltipWrapper.style.width = '';
-            tooltipWrapper.style.height = '';
           }
         };
         const showTooltip = (el, text, skipHide = false) => {
