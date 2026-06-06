@@ -55,7 +55,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleSkipOccurrence"
     >
-      <svg><use xlink:href="#iconAfter"></use></svg>
+      <svg><use xlink:href="#iconRedo"></use></svg>
     </span>
 
     <span
