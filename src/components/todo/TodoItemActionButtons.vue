@@ -4,7 +4,7 @@
     class="todo-item-actions"
   >
     <button
-      v-if="showReminder"
+      v-if="showReminder && (!isReadonly || hasReminder)"
       class="action-btn"
       :class="{
         active: hasReminder, readonly: isReadonly,
@@ -20,7 +20,7 @@
     </button>
 
     <button
-      v-if="showRecurring"
+      v-if="showRecurring && (!isReadonly || hasRecurring)"
       class="action-btn"
       :class="{
         active: hasRecurring, readonly: isReadonly,
@@ -65,7 +65,11 @@ defineEmits<{
   setRecurring: []
 }>()
 
-const showActions = computed(() => props.showReminder || props.showRecurring)
+const showActions = computed(() => {
+  const showReminderBtn = props.showReminder && (!props.isReadonly || props.hasReminder)
+  const showRecurringBtn = props.showRecurring && (!props.isReadonly || props.hasRecurring)
+  return showReminderBtn || showRecurringBtn
+})
 
 function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
   if (!text)
@@ -118,7 +122,6 @@ onBeforeUnmount(() => {
 
   &.readonly {
     cursor: default;
-    opacity: 0.8;
 
     &:hover {
       background: var(--b3-theme-surface);

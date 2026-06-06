@@ -237,15 +237,15 @@
         </div>
 
         <div
-          v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring))"
+          v-if="showActionRow && ((!readonly && !isCompletedOrAbandoned) || hasReminder || hasRecurring)"
           class="item-actions-row"
         >
           <TodoItemActionButtons
             :has-reminder="hasReminder"
             :has-recurring="hasRecurring"
-            :is-readonly="isCompletedOrAbandoned"
-            :show-reminder="!isCompletedOrAbandoned || hasReminder"
-            :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
+            :is-readonly="readonly || isCompletedOrAbandoned"
+            :show-reminder="(!readonly && !isCompletedOrAbandoned) || hasReminder"
+            :show-recurring="((!readonly && !isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
             :reminder-text="reminderText"
             :recurring-text="recurringText"
             :reminder-tooltip="reminderButtonTooltip"
