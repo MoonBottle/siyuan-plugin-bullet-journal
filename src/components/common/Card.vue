@@ -85,7 +85,7 @@ const handleContextMenu = (event: MouseEvent) => {
   flex-direction: column;
   gap: 4px;
   padding: 8px 12px;
-  background: var(--b3-theme-background);
+  background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-border-color);
   transition: all 0.2s;

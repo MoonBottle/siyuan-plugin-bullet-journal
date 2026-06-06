@@ -733,33 +733,39 @@ async function handleLinkClick(link: Link) {
   font-size: 13px;
   font-weight: 500;
   height: 16px;
-  color: var(--b3-theme-on-primary);
   white-space: nowrap;
 
   &.status-pending {
-    background: var(--b3-theme-primary);
+    background: var(--b3-theme-primary-lightest);
+    color: var(--b3-theme-primary);
   }
   &.status-in-progress {
-    background: #ff9800;
+    background: var(--b3-card-warning-background);
+    color: var(--b3-card-warning-color);
   }
   &.status-completed {
-    background: var(--b3-theme-success);
+    background: var(--b3-card-success-background);
+    color: var(--b3-card-success-color);
   }
   &.status-abandoned {
-    background: var(--b3-theme-on-surface);
-    color: var(--b3-theme-background);
+    background: var(--b3-theme-surface-lighter);
+    color: var(--b3-theme-on-surface);
   }
   &.status-expired {
-    background: #f44336;
+    background: var(--b3-card-error-background);
+    color: var(--b3-card-error-color);
   }
   &.level-l1 {
-    background: #4caf50;
+    background: var(--b3-card-success-background);
+    color: var(--b3-card-success-color);
   }
   &.level-l2 {
-    background: #ff9800;
+    background: var(--b3-card-warning-background);
+    color: var(--b3-card-warning-color);
   }
   &.level-l3 {
-    background: #f44336;
+    background: var(--b3-card-error-background);
+    color: var(--b3-card-error-color);
   }
 }
 
