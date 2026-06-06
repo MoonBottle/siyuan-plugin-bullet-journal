@@ -744,7 +744,7 @@ watch(searchQuery, () => {
   padding: 8px;
   border: 1px solid var(--b3-border-color);
   border-radius: 12px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-menu-background);
   box-shadow: var(--b3-dialog-shadow);
   overflow-y: auto;
 }
@@ -759,7 +759,7 @@ watch(searchQuery, () => {
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-menu-on-background);
   text-align: left;
   cursor: pointer;
 }
@@ -771,7 +771,7 @@ watch(searchQuery, () => {
 .workbench-sidebar__search-result--highlighted,
 .workbench-sidebar__search-result:hover {
   border-color: var(--b3-border-color);
-  background: var(--b3-theme-background);
+  background: var(--b3-list-hover);
 }
 
 .workbench-sidebar__search-result-icon {
