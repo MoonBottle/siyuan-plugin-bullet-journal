@@ -566,9 +566,9 @@ function buildDetachedWindowHtml(): string {
             tooltipWrapper.style.height = '';
           }
         };
-        const showTooltip = (el, text) => {
+        const showTooltip = (el, text, skipHide = false) => {
           if (!tooltipWrapper || !tooltipInner || !text) return;
-          hideTooltip();
+          if (!skipHide) hideTooltip();
           activeTooltipTrigger = el;
           tooltipInner.setAttribute('aria-label', text);
           tooltipInner.className = 'b3-tooltips b3-tooltips__n sy-fixed-tooltip';
@@ -594,11 +594,18 @@ function buildDetachedWindowHtml(): string {
           document.documentElement.style.cssText = payload.themeStyleText || '';
           currentState = payload.state || currentState;
           root.className = payload.className || '';
+          // 保存当前 tooltip 状态，innerHTML 替换后恢复
+          const savedTooltipText = activeTooltipTrigger?.dataset?.tooltip || null;
           root.innerHTML = payload.innerHTML || '';
-          // innerHTML 替换后触发元素可能被替换，隐藏 tooltip
-          // mouseover 事件会在新元素上重新触发 showTooltip
-          if (activeTooltipTrigger && !activeTooltipTrigger.isConnected) {
-            hideTooltip();
+          // innerHTML 替换后触发元素被移除，在新 DOM 中查找同 data-tooltip 元素并恢复
+          if (savedTooltipText) {
+            const newEl = root.querySelector('[data-tooltip="' + savedTooltipText + '"]');
+            if (newEl instanceof HTMLElement) {
+              // 跳过 hide，直接更新位置和内容，避免闪烁
+              showTooltip(newEl, savedTooltipText, true);
+            } else {
+              hideTooltip();
+            }
           }
         };
         document.addEventListener('click', (event) => {
