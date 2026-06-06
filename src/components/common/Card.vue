@@ -105,17 +105,12 @@ const handleContextMenu = (event: MouseEvent) => {
   // 状态样式
   &.status-completed {
     border-left: 3px solid var(--b3-theme-success);
-
-    :deep(.ta-card__content) {
-      opacity: 0.6;
-    }
   }
 
   &.status-abandoned {
     border-left: 3px solid var(--b3-theme-on-surface);
 
     :deep(.ta-card__content) {
-      opacity: 0.6;
       color: var(--b3-theme-on-surface);
     }
   }
