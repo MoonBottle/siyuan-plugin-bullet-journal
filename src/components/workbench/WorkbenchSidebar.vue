@@ -886,6 +886,7 @@ watch(searchQuery, () => {
   justify-content: center;
   gap: 8px;
   width: 100%;
+  height: 30px;
   padding: 10px 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
@@ -913,7 +914,7 @@ watch(searchQuery, () => {
   padding: 0;
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
-  background: var(--b3-theme-background);
+  background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
   cursor: pointer;
   flex-shrink: 0;
