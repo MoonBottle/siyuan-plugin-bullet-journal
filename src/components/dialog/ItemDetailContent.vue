@@ -651,6 +651,7 @@ async function handleLinkClick(link: Link) {
 }
 
 .item-meta {
+  margin-top: 8px;
   margin-bottom: 8px;
 }
 
@@ -713,6 +714,7 @@ async function handleLinkClick(link: Link) {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
 }
