@@ -505,7 +505,7 @@ function buildDetachedWindowHtml(): string {
       #sy-tooltip-wrapper {
         position: fixed;
         pointer-events: none;
-        z-index: 1000000;
+        z-index: 2147483647;
       }
       /* .b3-tooltips 样式由主题注入（collectTooltipCssRules），以下仅覆盖自定义控制 */
       .sy-fixed-tooltip:hover::after {

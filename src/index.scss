@@ -839,7 +839,7 @@
 #sy-tooltip-wrapper {
   position: fixed;
   pointer-events: none;
-  z-index: 1000000;
+  z-index: 2147483647;
 }
 
 /* 内部 .b3-tooltips 元素的覆盖 */
