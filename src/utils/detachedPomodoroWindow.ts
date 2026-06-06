@@ -311,15 +311,19 @@ function buildDetachedWindowHtml(): string {
   <head>
     <meta charset="utf-8" />
     <style>
-      html, body {
+      html {
         margin: 0;
         padding: 0;
         background: transparent;
-        overflow: hidden;
         width: 100%;
         height: 100%;
       }
       body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -330,6 +334,7 @@ function buildDetachedWindowHtml(): string {
       }
       #${ROOT_ID} {
         display: block;
+        overflow: hidden;
       }
       .floating-tomato-btn {
         display: block;
@@ -472,8 +477,19 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-btn.is-paused .floating-tomato-status {
         color: var(--b3-card-warning-color);
       }
-      .sy-tooltip {
+      /* tooltip 包装容器：position: fixed 定位到触发元素位置，逃逸 overflow 裁剪 */
+      #sy-tooltip-wrapper {
         position: fixed;
+        pointer-events: none;
+        z-index: 1000000;
+      }
+      /* 内部 .b3-tooltips 元素：与思源 _tooltips.scss 对齐 */
+      .b3-tooltips {
+        position: relative;
+        cursor: pointer;
+        overflow: visible;
+      }
+      .b3-tooltips::after {
         z-index: 1000000;
         padding: 4px 8px;
         font-size: 12px;
@@ -482,9 +498,11 @@ function buildDetachedWindowHtml(): string {
         color: var(--b3-tooltips-color);
         word-wrap: break-word;
         white-space: pre;
+        content: attr(aria-label);
         background-color: var(--b3-tooltips-background);
         border-radius: var(--b3-border-radius);
         line-height: 17px;
+        transform: scale(.9);
         max-width: 60vw;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -492,24 +510,40 @@ function buildDetachedWindowHtml(): string {
         box-shadow: var(--b3-tooltips-shadow);
         font-family: var(--b3-font-family);
         pointer-events: none;
+        position: absolute;
         opacity: 0;
-        transform: scale(0.9);
-        transition: opacity 150ms cubic-bezier(0, 0, .2, 1),
-                    transform 150ms cubic-bezier(0, 0, .2, 1);
+        transition: opacity 150ms cubic-bezier(0, 0, .2, 1), transform 150ms cubic-bezier(0, 0, .2, 1);
       }
-      .sy-tooltip.visible {
+      /* 方向定位：__n（上方居中） */
+      .b3-tooltips__n::after {
+        right: 50%;
+        bottom: 100%;
+        margin-bottom: 5px;
+        transform: translateX(50%) scale(.9);
+      }
+      .b3-tooltips__n.sy-tip-visible::after {
         opacity: 1;
-        transform: scale(1);
+        transform: translateX(50%) scale(1);
+      }
+      /* 类控制可见性（覆盖 :hover） */
+      .sy-fixed-tooltip:hover::after {
+        opacity: 0;
+        transform: translateX(50%) scale(.9);
+      }
+      .sy-fixed-tooltip.sy-tip-visible::after {
+        opacity: 1;
+        transform: translateX(50%) scale(1);
       }
     </style>
   </head>
   <body>
     <div id="${ROOT_ID}"></div>
-    <div id="bullet-journal-detached-tooltip" class="sy-tooltip"></div>
+    <div id="sy-tooltip-wrapper"><span class="b3-tooltips b3-tooltips__n sy-fixed-tooltip"></span></div>
     <script>
       (() => {
         const root = document.getElementById('${ROOT_ID}');
-        const tooltip = document.getElementById('bullet-journal-detached-tooltip');
+        const tooltipWrapper = document.getElementById('sy-tooltip-wrapper');
+        const tooltipInner = tooltipWrapper?.firstElementChild;
         let currentState = { phase: 'focus', isPaused: false };
         let activeTooltipTrigger = null;
         const sendAction = (action) => {
@@ -520,31 +554,37 @@ function buildDetachedWindowHtml(): string {
         };
         const hideTooltip = () => {
           activeTooltipTrigger = null;
-          tooltip?.classList.remove('visible');
+          if (tooltipInner) {
+            tooltipInner.classList.remove('sy-tip-visible');
+            tooltipInner.removeAttribute('aria-label');
+          }
+          if (tooltipWrapper) {
+            tooltipWrapper.style.left = '';
+            tooltipWrapper.style.top = '';
+            tooltipWrapper.style.width = '';
+            tooltipWrapper.style.height = '';
+          }
         };
         const showTooltip = (el, text) => {
-          if (!tooltip || !text) return;
+          if (!tooltipWrapper || !tooltipInner || !text) return;
+          hideTooltip();
           activeTooltipTrigger = el;
-          tooltip.textContent = text;
-          tooltip.className = 'sy-tooltip';
+          tooltipInner.setAttribute('aria-label', text);
+          tooltipInner.className = 'b3-tooltips b3-tooltips__n sy-fixed-tooltip';
           const rect = el.getBoundingClientRect();
-          const margin = 5;
-          tooltip.style.bottom = (window.innerHeight - rect.top + margin) + 'px';
-          tooltip.style.right = (window.innerWidth - rect.left - rect.width / 2) + 'px';
-          tooltip.style.left = 'auto';
-          tooltip.style.top = 'auto';
-          tooltip.style.transform = 'translateX(50%)';
-          tooltip.classList.add('visible');
+          tooltipWrapper.style.left = rect.left + 'px';
+          tooltipWrapper.style.top = rect.top + 'px';
+          tooltipWrapper.style.width = rect.width + 'px';
+          tooltipWrapper.style.height = rect.height + 'px';
+          tooltipInner.classList.add('sy-tip-visible');
           requestAnimationFrame(() => {
             if (activeTooltipTrigger !== el) return;
-            const tipRect = tooltip.getBoundingClientRect();
+            const tipRect = tooltipInner.getBoundingClientRect();
             if (tipRect.right > window.innerWidth - 8) {
-              tooltip.style.left = (window.innerWidth - tipRect.width - 8) + 'px';
-              tooltip.style.right = 'auto';
+              tooltipWrapper.style.left = (window.innerWidth - tipRect.width - 8) + 'px';
             }
             if (tipRect.left < 8) {
-              tooltip.style.left = '8px';
-              tooltip.style.right = 'auto';
+              tooltipWrapper.style.left = '8px';
             }
           });
         };
