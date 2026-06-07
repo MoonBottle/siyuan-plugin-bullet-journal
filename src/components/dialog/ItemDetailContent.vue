@@ -189,8 +189,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
                 @mouseleave="hideTooltip"
-              >⏳</span>
-              <span class="meta-text">{{ focusPlanDisplay }}</span>
+              ><template v-if="focusPlanDisplay.type === 'pomodoro'">🍅x{{ focusPlanDisplay.value }}</template><template v-else>⏳{{ focusPlanDisplay.value }}</template></span>
             </span>
             <span
               v-if="focusPlanReview && !readonly"
@@ -313,9 +312,11 @@ import {
 } from '@/utils/fileUtils'
 import {
   buildFocusPlanReview,
-  formatFocusPlanDisplay,
 } from '@/utils/focusPlanReview'
-import { getFocusPlanTooltip } from '@/utils/format'
+import {
+  getFocusPlanDisplay,
+  getFocusPlanTooltip,
+} from '@/utils/format'
 import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 import {
   hideTooltip,
@@ -363,7 +364,7 @@ const itemLinks = computed(() => props.item.links || [])
 const itemContent = computed(() => props.item.content || '')
 const itemTags = computed(() => (props.item.tags ?? []).filter(Boolean))
 const taskTags = computed(() => (task.value?.tags ?? []).filter(Boolean))
-const focusPlanDisplay = computed(() => formatFocusPlanDisplay(props.item.focusPlan))
+const focusPlanDisplay = computed(() => getFocusPlanDisplay(props.item.focusPlan))
 const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []))
 const focusPlanReview = computed(() => {
   if (!props.item.focusPlan) return null
