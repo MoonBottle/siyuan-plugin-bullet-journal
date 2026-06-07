@@ -357,7 +357,7 @@ async function mountComponent() {
 async function selectSyOption(container: HTMLElement, selectSelector: string, optionText: string) {
   (container.querySelector(`${selectSelector} .sy-select__trigger`) as HTMLButtonElement).click()
   await nextTick()
-  const options = [...document.querySelectorAll('.sy-select__option')]
+  const options = [...document.querySelectorAll('.b3-menu__item')]
   const option = options.find((node) => node.textContent?.includes(optionText));
   (option as HTMLElement).click()
   await nextTick()

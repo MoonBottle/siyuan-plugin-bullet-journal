@@ -186,7 +186,7 @@ describe('workbenchStore', () => {
     expect(store.dashboards).toHaveLength(1)
     expect(entry.type).toBe('dashboard')
     expect(entry.title).toBe('My Dashboard')
-    expect(entry.icon).toBe('iconBoard')
+    expect(entry.icon).toBe('iconTaDashboard')
     expect(entry.dashboardId).toBe(store.dashboards[0].id)
     expect(store.dashboards[0]).toEqual(expect.objectContaining({
       id: entry.dashboardId,
