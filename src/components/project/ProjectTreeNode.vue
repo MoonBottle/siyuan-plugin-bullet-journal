@@ -6,19 +6,19 @@
       :class="[
         `project-task-row--${node.task.level.toLowerCase()}`,
         {
-          'project-task-row--active': selectedTaskId === node.task.id,
-          'project-task-row--matched': matchedTaskIds.has(node.task.id),
+          'project-task-row--active': selectedTaskBlockId === (node.task.blockId ?? node.task.id),
+          'project-task-row--matched': matchedTaskBlockIds.has(node.task.blockId ?? node.task.id),
         },
       ]"
-      :data-task-id="node.task.id"
+      :data-task-block-id="node.task.blockId ?? node.task.id"
       :data-depth="String(node.depth)"
       :style="{ paddingLeft: `${12 + node.depth * 18}px` }"
-      @click="$emit('selectTask', node.task.id)"
+      @click="$emit('selectTask', node.task.blockId ?? node.task.id)"
     >
       <span
         class="project-task-row__toggle"
-        :data-testid="`toggle-task-${node.task.id}`"
-        @click.stop="$emit('toggleTask', node.task.id)"
+        :data-testid="`toggle-task-${node.task.blockId ?? node.task.id}`"
+        @click.stop="$emit('toggleTask', node.task.blockId ?? node.task.id)"
       >
         {{ expanded ? '▾' : '▸' }}
       </span>
@@ -30,18 +30,18 @@
     <template v-if="expanded">
       <button
         v-for="entry in node.items"
-        :key="getItemId(entry)"
+        :key="getItemBlockId(entry)"
         type="button"
         class="project-item-row"
         :class="[
           {
-            'project-item-row--active': selectedItemId === getItemId(entry),
-            'project-item-row--matched': matchedItemIds.has(getItemId(entry)),
+            'project-item-row--active': selectedItemBlockId === getItemBlockId(entry),
+            'project-item-row--matched': matchedItemBlockIds.has(getItemBlockId(entry)),
           },
         ]"
-        :data-item-id="getItemId(entry)"
+        :data-item-block-id="getItemBlockId(entry)"
         :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
-        @click="$emit('selectItem', getItemId(entry))"
+        @click="$emit('selectItem', getItemBlockId(entry))"
       >
         <span
           class="project-item-row__status"
@@ -61,13 +61,13 @@
 
       <ProjectTreeNode
         v-for="child in node.children"
-        :key="child.task.id"
+        :key="child.task.blockId ?? child.task.id"
         :node="child"
-        :expanded-task-ids="expandedTaskIds"
-        :matched-task-ids="matchedTaskIds"
-        :matched-item-ids="matchedItemIds"
-        :selected-task-id="selectedTaskId"
-        :selected-item-id="selectedItemId"
+        :expanded-task-block-ids="expandedTaskBlockIds"
+        :matched-task-block-ids="matchedTaskBlockIds"
+        :matched-item-block-ids="matchedItemBlockIds"
+        :selected-task-block-id="selectedTaskBlockId"
+        :selected-item-block-id="selectedItemBlockId"
         @toggleTask="$emit('toggleTask', $event)"
         @selectTask="$emit('selectTask', $event)"
         @selectItem="$emit('selectItem', $event)"
@@ -95,24 +95,25 @@ import {
 
 const props = defineProps<{
   node: ProjectTaskTreeNode
-  expandedTaskIds: Set<string>
-  matchedTaskIds: Set<string>
-  matchedItemIds: Set<string>
-  selectedTaskId: string
-  selectedItemId: string
+  expandedTaskBlockIds: Set<string>
+  matchedTaskBlockIds: Set<string>
+  matchedItemBlockIds: Set<string>
+  selectedTaskBlockId: string
+  selectedItemBlockId: string
 }>()
 
 defineEmits<{
-  (event: 'toggleTask', taskId: string): void
-  (event: 'selectTask', taskId: string): void
-  (event: 'selectItem', itemId: string): void
+  (event: 'toggleTask', taskBlockId: string): void
+  (event: 'selectTask', taskBlockId: string): void
+  (event: 'selectItem', itemBlockId: string): void
 }>()
 
-const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id))
+const expanded = computed(() => props.expandedTaskBlockIds.has(props.node.task.blockId ?? props.node.task.id))
 const progress = computed(() => getTaskItemProgress(props.node.items))
 
-function getItemId(entry: Item | MergedItem): string {
-  return 'isMerged' in entry ? entry.firstItemId : entry.id
+function getItemBlockId(entry: Item | MergedItem): string {
+  if ('isMerged' in entry) return (entry as MergedItem).blockId
+  return (entry as Item).blockId ?? (entry as Item).id
 }
 
 function getItemPriority(entry: Item | MergedItem): PriorityLevel | undefined {

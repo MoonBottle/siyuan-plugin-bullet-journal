@@ -102,7 +102,7 @@ function makeItem(partial: Partial<Item>): Item {
     date: partial.date || '2026-05-15',
     lineNumber: partial.lineNumber ?? 1,
     docId: partial.docId || 'doc-1',
-    blockId: partial.blockId || 'block-1',
+    blockId: partial.blockId ?? (partial.id || 'item'),
     status: partial.status || 'pending',
     priority: partial.priority,
     startDateTime: partial.startDateTime,
@@ -120,7 +120,7 @@ function makeTask(partial: Partial<Task>): Task {
     items: partial.items || [],
     lineNumber: partial.lineNumber ?? 1,
     docId: partial.docId || 'doc-1',
-    blockId: partial.blockId || 'task-block',
+    blockId: partial.blockId ?? (partial.id || 'task'),
   } as Task
   base.items.forEach((row) => {
     row.task = base
@@ -250,10 +250,10 @@ describe('projectView', () => {
       }),
     ])
 
-    expect(mounted.container.querySelector('[data-task-id="l1"]')?.textContent).toContain('一级任务')
-    expect(mounted.container.querySelector('[data-task-id="l2"]')?.getAttribute('data-depth')).toBe('1')
-    expect(mounted.container.querySelector('[data-task-id="l3"]')?.getAttribute('data-depth')).toBe('2')
-    expect(mounted.container.querySelector('[data-item-id="item-1"]')?.textContent).toContain('交付事项')
+    expect(mounted.container.querySelector('[data-task-block-id="l1"]')?.textContent).toContain('一级任务')
+    expect(mounted.container.querySelector('[data-task-block-id="l2"]')?.getAttribute('data-depth')).toBe('1')
+    expect(mounted.container.querySelector('[data-task-block-id="l3"]')?.getAttribute('data-depth')).toBe('2')
+    expect(mounted.container.querySelector('[data-item-block-id="item-1"]')?.textContent).toContain('交付事项')
 
     mounted.unmount()
   })
@@ -292,15 +292,15 @@ describe('projectView', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await nextTick()
 
-    expect(mounted.container.querySelector('[data-task-id="l1"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-task-id="l2"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-item-id="target"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-task-id="other"]')).toBeNull()
+    expect(mounted.container.querySelector('[data-task-block-id="l1"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-task-block-id="l2"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-item-block-id="target"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-task-block-id="other"]')).toBeNull()
 
     mounted.container.querySelector('.project-pane-search-box__clear')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
 
-    expect(mounted.container.querySelector('[data-task-id="other"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-task-block-id="other"]')).not.toBeNull()
 
     mounted.unmount()
   })
@@ -324,10 +324,10 @@ describe('projectView', () => {
       }),
     ])
 
-    expect(mounted.container.querySelector('[data-item-id="item-1"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-item-block-id="item-1"]')).not.toBeNull()
     mounted.container.querySelector('[data-testid="toggle-task-l1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
-    expect(mounted.container.querySelector('[data-item-id="item-1"]')).toBeNull()
+    expect(mounted.container.querySelector('[data-item-block-id="item-1"]')).toBeNull()
 
     mounted.unmount()
   })
@@ -357,7 +357,7 @@ describe('projectView', () => {
       }),
     ])
 
-    mounted.container.querySelector('[data-task-id="task-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    mounted.container.querySelector('[data-task-block-id="task-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
 
     expect(mounted.container.querySelector('.project-detail-pane')?.textContent).toContain('设计任务')
@@ -385,7 +385,7 @@ describe('projectView', () => {
       }),
     ])
 
-    mounted.container.querySelector('[data-item-id="item-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    mounted.container.querySelector('[data-item-block-id="item-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
 
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('写实现计划')
@@ -415,7 +415,7 @@ describe('projectView', () => {
       }),
     ])
 
-    mounted.container.querySelector('[data-task-id="task-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    mounted.container.querySelector('[data-task-block-id="task-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
     mounted.container.querySelectorAll('.project-list-row')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
