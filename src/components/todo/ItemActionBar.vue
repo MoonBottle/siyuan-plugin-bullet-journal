@@ -23,7 +23,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleStartFocus"
     >
-      <svg><use xlink:href="#iconClock"></use></svg>
+      <svg><use xlink:href="#iconTaTimer"></use></svg>
     </span>
 
     <span
@@ -34,7 +34,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleFocusPlan"
     >
-      <svg><use xlink:href="#iconAttr"></use></svg>
+      <svg><use xlink:href="#iconTaClockPlus"></use></svg>
     </span>
 
     <span

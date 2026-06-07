@@ -43,6 +43,7 @@ import {
 import {
   ICON_AI_ASSISTANT,
   ICON_CALENDAR,
+  ICON_CLOCK_PLUS,
   ICON_DASHBOARD,
   ICON_GANTT,
   ICON_GRIP_HORIZONTAL,
@@ -50,6 +51,7 @@ import {
   ICON_POMODORO,
   ICON_POMODORO_STATS,
   ICON_PROJECT,
+  ICON_TIMER,
   ICON_TODO,
 } from "@/constants/icons"
 import { t } from "@/i18n"
@@ -344,6 +346,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
     this.addIcons(ICON_AI_ASSISTANT)
     this.addIcons(ICON_CALENDAR)
+    this.addIcons(ICON_CLOCK_PLUS)
     this.addIcons(ICON_DASHBOARD)
     this.addIcons(ICON_GANTT)
     this.addIcons(ICON_GRIP_HORIZONTAL)
@@ -351,6 +354,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
+    this.addIcons(ICON_TIMER)
     this.addIcons(ICON_TODO)
 
     // 注册 Dock
