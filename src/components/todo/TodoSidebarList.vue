@@ -1638,7 +1638,6 @@ const handleCreateExample = async () => {
   white-space: nowrap;
   color: var(--b3-theme-on-surface);
   font-size: 13px;
-  opacity: 0.6;
   flex-shrink: 0;
 }
 

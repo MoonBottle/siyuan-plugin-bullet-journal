@@ -17,6 +17,12 @@
           <div class="card-label">
             {{ t('todo').project }}
           </div>
+          <div
+            v-if="projectGroupName"
+            class="tag-badge group-tag"
+          >
+            {{ projectGroupName }}
+          </div>
         </template>
         <div class="card-content-row">
           <span class="card-text">{{ project.name }}</span>
@@ -354,6 +360,10 @@ const copiedState = reactive<Record<string, boolean>>({
 
 const project = computed<Project | null>(() => props.item.project || null)
 const projectLinks = computed(() => project.value?.links || [])
+const projectGroupName = computed(() => {
+  if (!project.value?.groupId) return ''
+  return settingsStore.groups.find((g) => g.id === project.value!.groupId)?.name || ''
+})
 const task = computed<Task | null>(() => props.item.task || null)
 const taskLinks = computed(() => task.value?.links || [])
 const itemLinks = computed(() => props.item.links || [])
@@ -728,6 +738,11 @@ async function handleLinkClick(link: Link) {
     background: color-mix(in srgb, var(--b3-card-error-background) 50%, transparent);
     color: var(--b3-card-error-color);
   }
+}
+
+.group-tag {
+  background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
+  color: var(--b3-card-warning-color);
 }
 
 .priority-emoji {
