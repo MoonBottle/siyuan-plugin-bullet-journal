@@ -191,10 +191,10 @@ function updateMenuPosition() {
 }
 
 let resizeObserver: ResizeObserver | null = null
-let scrollListeners: { element: Element, listener: EventListener }[] = []
+let scrollListeners: { element: Element | Document, listener: EventListener }[] = []
 
-function getScrollableAncestors(element: HTMLElement): Element[] {
-  const ancestors: Element[] = []
+function getScrollableAncestors(element: HTMLElement): (Element | Document)[] {
+  const ancestors: (Element | Document)[] = []
   let current = element.parentElement
 
   while (current) {
