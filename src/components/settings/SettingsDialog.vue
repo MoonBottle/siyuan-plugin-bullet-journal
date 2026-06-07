@@ -105,7 +105,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'dir',
       title: settings.dirConfig?.title ?? '目录配置',
-      icon: 'iconFolder',
+      icon: 'iconTaProject',
     },
     {
       key: 'group',
@@ -115,22 +115,22 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'pomodoro',
       title: settings.pomodoro?.title ?? '番茄钟',
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
     },
     {
       key: 'calendar',
       title: settings.calendar?.title ?? '日历',
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
     },
     {
       key: 'habit',
       title: settings.habitSettings?.title ?? '习惯',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
     },
     {
       key: 'lunch',
       title: settings.lunchBreak?.title ?? '午休时间',
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
     },
     {
       key: 'slash',
@@ -140,7 +140,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'ai',
       title: settings.ai?.title ?? 'AI 服务配置',
-      icon: 'iconSparkles',
+      icon: 'iconTaAiAssistant',
     },
     {
       key: 'skill',

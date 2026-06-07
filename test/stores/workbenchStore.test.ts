@@ -30,7 +30,7 @@ const {
   mockGetWidgetDefinition: vi.fn((type: string) => ({
     type,
     name: type === 'todoList' ? 'Todo List' : type,
-    icon: 'iconList',
+    icon: 'iconTaTodo',
     defaultSize: {
       w: 6,
       h: 4,
@@ -89,7 +89,7 @@ function createEntry(overrides: Partial<WorkbenchEntry> = {}): WorkbenchEntry {
     id: 'entry-1',
     type: 'view',
     title: 'Todo',
-    icon: 'iconList',
+    icon: 'iconTaTodo',
     order: 0,
     viewType: 'todo',
     ...overrides,
@@ -155,7 +155,7 @@ describe('workbenchStore', () => {
     const second = createEntry({
       id: 'entry-2',
       title: 'Habit',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       order: 1,
       viewType: 'habit',
     })
@@ -204,13 +204,13 @@ describe('workbenchStore', () => {
   })
 
   it.each([
-    ['todo', 'Todo', 'iconList'],
-    ['habit', 'Habit Check-in', 'iconCheck'],
+    ['todo', 'Todo', 'iconTaTodo'],
+    ['habit', 'Habit Check-in', 'iconTaHabit'],
     ['quadrant', 'Quadrant', 'iconLayout'],
-    ['pomodoroStats', 'Focus Statistics', 'iconClock'],
-    ['calendar', 'Calendar', 'iconCalendar'],
-    ['gantt', 'Gantt Chart', 'iconGraph'],
-    ['project', 'Project Workbench', 'iconFolder'],
+    ['pomodoroStats', 'Focus Statistics', 'iconTaPomodoro'],
+    ['calendar', 'Calendar', 'iconTaCalendar'],
+    ['gantt', 'Gantt Chart', 'iconTaGantt'],
+    ['project', 'Project Workbench', 'iconTaProject'],
   ] satisfies Array<[WorkbenchViewType, string, string]>)(
     'createViewEntry creates %s view metadata and activates it',
     async (viewType, title, icon) => {
@@ -286,7 +286,7 @@ describe('workbenchStore', () => {
     const viewEntry = createEntry({
       id: 'entry-view',
       title: 'Todo',
-      icon: 'iconList',
+      icon: 'iconTaTodo',
       order: 1,
       viewType: 'todo',
     })
@@ -348,7 +348,7 @@ describe('workbenchStore', () => {
     const second = createEntry({
       id: 'entry-2',
       title: 'Habit',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       order: 1,
       viewType: 'habit',
     })
@@ -373,7 +373,7 @@ describe('workbenchStore', () => {
     const second = createEntry({
       id: 'entry-2',
       title: 'Habit',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       order: 1,
       viewType: 'habit',
     })
@@ -808,14 +808,14 @@ describe('workbenchStore', () => {
     const second = createEntry({
       id: 'entry-2',
       title: 'Habit',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       order: 1,
       viewType: 'habit',
     })
     const third = createEntry({
       id: 'entry-3',
       title: 'Calendar',
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
       order: 2,
       viewType: 'calendar',
     })
@@ -842,7 +842,7 @@ describe('workbenchStore', () => {
     const second = createEntry({
       id: 'entry-2',
       title: 'Habit',
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       order: 1,
       viewType: 'habit',
     })

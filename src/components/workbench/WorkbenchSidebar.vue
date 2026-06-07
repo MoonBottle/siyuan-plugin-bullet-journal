@@ -185,7 +185,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconList"></use></svg>
+          <svg><use xlink:href="#iconTaTodo"></use></svg>
         </span>
         <span>{{ t('todo').title }}</span>
       </button>
@@ -199,7 +199,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconCheck"></use></svg>
+          <svg><use xlink:href="#iconTaHabit"></use></svg>
         </span>
         <span>{{ t('habit').title }}</span>
       </button>
@@ -227,7 +227,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconClock"></use></svg>
+          <svg><use xlink:href="#iconTaPomodoro"></use></svg>
         </span>
         <span>{{ t('pomodoroStats').statsTitle }}</span>
       </button>
@@ -241,7 +241,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconClock"></use></svg>
+          <svg><use xlink:href="#iconTaPomodoro"></use></svg>
         </span>
         <span>{{ t('focusWorkbench').title }}</span>
       </button>
@@ -255,7 +255,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconFolder"></use></svg>
+          <svg><use xlink:href="#iconTaProject"></use></svg>
         </span>
         <span>{{ t('project').title }}</span>
       </button>
@@ -269,7 +269,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconCalendar"></use></svg>
+          <svg><use xlink:href="#iconTaCalendar"></use></svg>
         </span>
         <span>{{ t('calendar').title }}</span>
       </button>
@@ -283,7 +283,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconClock"></use></svg>
+          <svg><use xlink:href="#iconTaGantt"></use></svg>
         </span>
         <span>{{ t('gantt').title }}</span>
       </button>
@@ -297,7 +297,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconSparkles"></use></svg>
+          <svg><use xlink:href="#iconTaAiAssistant"></use></svg>
         </span>
         <span>{{ t('aiChat').title }}</span>
       </button>

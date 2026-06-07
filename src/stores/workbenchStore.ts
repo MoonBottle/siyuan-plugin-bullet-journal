@@ -35,11 +35,11 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
   const definitions: Record<WorkbenchViewType, ViewEntryDefinition> = {
     calendar: {
       title: t('calendar').title,
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
     },
     gantt: {
       title: t('gantt').title,
-      icon: 'iconGraph',
+      icon: 'iconTaGantt',
     },
     quadrant: {
       title: t('quadrant').title,
@@ -47,27 +47,27 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
     },
     project: {
       title: t('project').title,
-      icon: 'iconFolder',
+      icon: 'iconTaProject',
     },
     todo: {
       title: t('todo').title,
-      icon: 'iconList',
+      icon: 'iconTaTodo',
     },
     habit: {
       title: t('habit').title,
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
     },
     pomodoroStats: {
       title: t('pomodoroStats').statsTitle,
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
     },
     focusWorkbench: {
       title: t('focusWorkbench').title,
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
     },
     aiChat: {
       title: t('aiChat').title,
-      icon: 'iconSparkles',
+      icon: 'iconTaAiAssistant',
     },
   }
 

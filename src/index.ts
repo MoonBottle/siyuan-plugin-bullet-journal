@@ -1669,7 +1669,7 @@ export default class TaskAssistantPlugin extends Plugin {
         })
         if (!this.isMobile) {
           menu.addItem({
-            icon: "iconClock",
+            icon: "iconTaPomodoro",
             label: t("focusWorkbench").title,
             click: () => {
               this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH)
@@ -1751,7 +1751,7 @@ export default class TaskAssistantPlugin extends Plugin {
                   click: () => this.openHelpDoc("views.md"),
                 },
                 {
-                  icon: "iconClock",
+                  icon: "iconTaPomodoro",
                   label: t("helpMenu").pomodoro,
                   click: () => this.openHelpDoc("pomodoro.md"),
                 },
@@ -1776,7 +1776,7 @@ export default class TaskAssistantPlugin extends Plugin {
                   click: () => this.openHelpDoc("examples.md"),
                 },
                 {
-                  icon: "iconSparkles",
+                  icon: "iconTaAiAssistant",
                   label: t("helpMenu").mcp,
                   click: () => this.openHelpDoc("mcp.md"),
                 },
@@ -1902,8 +1902,8 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.WORKBENCH]: "iconWorkspace",
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconTaProject",
-      [TAB_TYPES.POMODORO_STATS]: "iconGraph",
-      [TAB_TYPES.FOCUS_WORKBENCH]: "iconClock",
+      [TAB_TYPES.POMODORO_STATS]: "iconTaPomodoro",
+      [TAB_TYPES.FOCUS_WORKBENCH]: "iconTaPomodoro",
     }
     return icons[type] || "iconFile"
   }

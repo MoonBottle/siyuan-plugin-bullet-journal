@@ -44,7 +44,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     todoList: {
       type: 'todoList',
       name: t('todo').title,
-      icon: 'iconList',
+      icon: 'iconTaTodo',
       defaultSize: {
         w: 6,
         h: 4,
@@ -110,7 +110,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     habitWeek: {
       type: 'habitWeek',
       name: t('habit').title,
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       defaultSize: {
         w: 6,
         h: 4,
@@ -144,7 +144,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     miniCalendar: {
       type: 'miniCalendar',
       name: t('calendar').title,
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
       defaultSize: {
         w: 6,
         h: 4,
@@ -178,7 +178,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     pomodoroStats: {
       type: 'pomodoroStats',
       name: t('pomodoroStats').statsTitle,
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
       defaultSize: {
         w: 6,
         h: 4,
@@ -210,7 +210,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     datePicker: {
       type: 'datePicker',
       name: t('datePicker').title,
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
       defaultSize: {
         w: 4,
         h: 3,

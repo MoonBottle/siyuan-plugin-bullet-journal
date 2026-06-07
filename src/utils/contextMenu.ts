@@ -112,14 +112,14 @@ export function createItemMenu(
   if (isPending) {
     items.push({
       label: t('todo').complete,
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
       click: handlers.onComplete,
     })
 
     if (!isFocusing) {
       items.push({
         label: t('pomodoro').startFocus,
-        icon: 'iconClock',
+        icon: 'iconTaPomodoro',
         click: handlers.onStartPomodoro,
       })
     }
@@ -134,20 +134,20 @@ export function createItemMenu(
         if (item.date !== todayStr) {
           submenu.push({
             label: t('todo').migrateToday,
-            icon: 'iconCalendar',
+            icon: 'iconTaCalendar',
             click: handlers.onMigrateToday,
           })
         }
         if (item.date !== tomorrowStr) {
           submenu.push({
             label: t('todo').migrateTomorrow,
-            icon: 'iconCalendar',
+            icon: 'iconTaCalendar',
             click: handlers.onMigrateTomorrow,
           })
         }
         submenu.push({
           label: t('todo').chooseDate,
-          icon: 'iconCalendar',
+          icon: 'iconTaCalendar',
           click: handlers.onMigrateCustom,
         })
         return submenu
@@ -206,7 +206,7 @@ export function createItemMenu(
   if (showCalendarMenu && handlers.onShowCalendar) {
     items.push({
       label: t('todo').viewCalendar,
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
       click: handlers.onShowCalendar,
     })
   }

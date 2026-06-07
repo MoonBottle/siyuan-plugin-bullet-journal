@@ -42,22 +42,22 @@ const tabs: Array<{ value: MobileMainTab, label: string, icon: string }> = [
   {
     value: 'todo',
     label: '待办',
-    icon: 'iconList',
+    icon: 'iconTaTodo',
   },
   {
     value: 'ai',
     label: '对话',
-    icon: 'iconSparkles',
+    icon: 'iconTaAiAssistant',
   },
   {
     value: 'pomodoro',
     label: '番茄钟',
-    icon: 'iconClock',
+    icon: 'iconTaPomodoro',
   },
   {
     value: 'habit',
     label: '习惯',
-    icon: 'iconCheck',
+    icon: 'iconTaHabit',
   },
   {
     value: 'more',
