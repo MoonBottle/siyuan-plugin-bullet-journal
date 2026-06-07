@@ -1600,6 +1600,7 @@ const handleCreateExample = async () => {
 .item-header-left {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-width: 0;
   height: 20px;
@@ -1639,7 +1640,6 @@ const handleCreateExample = async () => {
 
 .item-time {
   color: var(--b3-theme-on-surface);
-  opacity: 0.7;
   flex-shrink: 0;
   font-size: 13px;
   font-weight: 600;
