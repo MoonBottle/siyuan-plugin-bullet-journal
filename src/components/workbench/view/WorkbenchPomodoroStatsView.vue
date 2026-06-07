@@ -1,9 +1,11 @@
 <template>
   <div class="workbench-pomodoro-stats-view">
-    <PomodoroStatsTab
-      :embedded="true"
-      :view-config="viewConfig"
-    />
+    <div class="workbench-pomodoro-stats-view__scroll">
+      <PomodoroStatsTab
+        :embedded="true"
+        :view-config="viewConfig"
+      />
+    </div>
   </div>
 </template>
 
@@ -24,5 +26,15 @@ defineProps<{
   border-radius: 8px;
   background: var(--b3-theme-surface);
   overflow: hidden;
+
+  :deep(.pomodoro-stats-tab) {
+    padding: 16px;
+  }
+}
+
+.workbench-pomodoro-stats-view__scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
 }
 </style>

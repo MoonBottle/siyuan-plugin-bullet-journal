@@ -110,8 +110,8 @@ function handleMenuClick(event: MouseEvent) {
 }
 
 .workbench-widget-card__title {
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
+  font-weight: 600;
+  color: var(--b3-theme-on-surface);
 }
 
 .workbench-widget-card__subtitle {
