@@ -183,6 +183,9 @@ onMounted(async () => {
   padding: 8px;
   overflow: hidden;
   box-sizing: border-box;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  background: var(--b3-theme-surface);
 
   &__sidebar {
     width: 260px;

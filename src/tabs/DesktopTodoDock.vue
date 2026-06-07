@@ -702,7 +702,7 @@ watch(
 .todo-dock-body {
   display: flex;
   flex-direction: column;
-  padding: 8px;
+  padding: 0 8px 8px 8px;
   gap: 8px;
   min-height: 0;
   overflow: hidden;
