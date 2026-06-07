@@ -102,13 +102,7 @@ const handleContextMenu = (event: MouseEvent) => {
     }
   }
 
-  // 状态样式
-  &.status-completed {
-    border-left: 3px solid var(--b3-theme-success);
-  }
-
   &.status-abandoned {
-    border-left: 3px solid var(--b3-theme-on-surface);
 
     :deep(.ta-card__content) {
       color: var(--b3-theme-on-surface);
@@ -116,19 +110,12 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 
   &.status-expired {
-    border-left: 3px solid #f44336;
 
     :deep(.card-time) {
       color: #f44336;
     }
   }
 
-  &.status-today,
-  &.status-tomorrow,
-  &.status-future,
-  &.status-pending {
-    border-left: 3px solid var(--b3-theme-primary);
-  }
 }
 
 .ta-card__header {
@@ -140,7 +127,11 @@ const handleContextMenu = (event: MouseEvent) => {
   margin: -8px -12px 0 -12px;
   padding: 6px 12px;
   font-size: 12px;
-  background: color-mix(in srgb, var(--b3-theme-surface-lighter) 35%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--b3-theme-primary) 4%, transparent),
+    color-mix(in srgb, var(--b3-theme-surface-lighter) 20%, transparent)
+  );
   border-bottom: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }
