@@ -207,7 +207,7 @@ describe('workbenchStore', () => {
     ['todo', 'Todo', 'iconTaTodo'],
     ['habit', 'Habit Check-in', 'iconTaHabit'],
     ['quadrant', 'Quadrant', 'iconLayout'],
-    ['pomodoroStats', 'Focus Statistics', 'iconTaPomodoro'],
+    ['pomodoroStats', 'Focus Statistics', 'iconTaPomodoroStats'],
     ['calendar', 'Calendar', 'iconTaCalendar'],
     ['gantt', 'Gantt Chart', 'iconTaGantt'],
     ['project', 'Project Workbench', 'iconTaProject'],

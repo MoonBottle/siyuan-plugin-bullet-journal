@@ -178,7 +178,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
     pomodoroStats: {
       type: 'pomodoroStats',
       name: t('pomodoroStats').statsTitle,
-      icon: 'iconTaPomodoro',
+      icon: 'iconTaPomodoroStats',
       defaultSize: {
         w: 6,
         h: 4,

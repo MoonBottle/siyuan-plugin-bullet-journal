@@ -46,6 +46,7 @@ import {
   ICON_GANTT,
   ICON_HABIT,
   ICON_POMODORO,
+  ICON_POMODORO_STATS,
   ICON_PROJECT,
   ICON_TODO,
 } from "@/constants/icons"
@@ -344,6 +345,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_GANTT)
     this.addIcons(ICON_HABIT)
     this.addIcons(ICON_POMODORO)
+    this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
     this.addIcons(ICON_TODO)
 
@@ -1675,6 +1677,13 @@ export default class TaskAssistantPlugin extends Plugin {
               this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH)
             },
           })
+          menu.addItem({
+            icon: "iconTaPomodoroStats",
+            label: t("pomodoroStats").statsTitle,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.POMODORO_STATS)
+            },
+          })
         }
         menu.addItem({
           icon: "iconTaPomodoro",
@@ -1902,7 +1911,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.WORKBENCH]: "iconWorkspace",
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconTaProject",
-      [TAB_TYPES.POMODORO_STATS]: "iconTaPomodoro",
+      [TAB_TYPES.POMODORO_STATS]: "iconTaPomodoroStats",
       [TAB_TYPES.FOCUS_WORKBENCH]: "iconTaPomodoro",
     }
     return icons[type] || "iconFile"

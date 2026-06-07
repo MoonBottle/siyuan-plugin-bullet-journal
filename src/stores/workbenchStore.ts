@@ -59,7 +59,7 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
     },
     pomodoroStats: {
       title: t('pomodoroStats').statsTitle,
-      icon: 'iconTaPomodoro',
+      icon: 'iconTaPomodoroStats',
     },
     focusWorkbench: {
       title: t('focusWorkbench').title,

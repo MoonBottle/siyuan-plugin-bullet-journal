@@ -18,7 +18,7 @@
         :aria-label="t('pomodoro').stats"
         @click="openStatsTab"
       >
-        <svg><use xlink:href="#iconGraph"></use></svg>
+        <svg><use xlink:href="#iconTaPomodoroStats"></use></svg>
       </span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
