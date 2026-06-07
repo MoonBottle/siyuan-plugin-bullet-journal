@@ -46,11 +46,11 @@
         v-model:search-query="treeSearchQuery"
         :project="selectedProject"
         :nodes="visibleTaskNodes"
-        :expanded-task-ids="effectiveExpandedTaskIds"
-        :matched-task-ids="filteredTaskTree.matchedTaskBlockIds"
-        :matched-item-ids="filteredTaskTree.matchedItemBlockIds"
-        :selected-task-id="selectedTaskId"
-        :selected-item-id="selectedItemId"
+        :expanded-task-block-ids="effectiveExpandedTaskBlockIds"
+        :matched-task-block-ids="filteredTaskTree.matchedTaskBlockIds"
+        :matched-item-block-ids="filteredTaskTree.matchedItemBlockIds"
+        :selected-task-block-id="selectedTaskBlockId"
+        :selected-item-block-id="selectedItemBlockId"
         :tag-query="treeTagQuery"
         :selected-tags="treeSelectedTags"
         :tag-options="projectTagOptions"
@@ -108,13 +108,13 @@ const emit = defineEmits<{
 }>()
 
 const selectedProjectId = ref('')
-const selectedTaskId = ref('')
-const selectedItemId = ref('')
+const selectedTaskBlockId = ref('')
+const selectedItemBlockId = ref('')
 const projectSearchQuery = ref('')
 const treeSearchQuery = ref('')
 const treeTagQuery = ref('')
 const treeSelectedTags = ref<string[]>([])
-const expandedTaskIds = ref<Set<string>>(new Set())
+const expandedTaskBlockIds = ref<Set<string>>(new Set())
 
 const workbenchRef = ref<HTMLElement>()
 
@@ -149,9 +149,9 @@ const selectedProject = computed(() => filteredProjects.value.find((project) => 
 const taskTree = computed(() => buildProjectTaskTree(selectedProject.value))
 const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value))
 const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes)
-const effectiveExpandedTaskIds = computed(() => {
-  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value
-  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskBlockIds])
+const effectiveExpandedTaskBlockIds = computed(() => {
+  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskBlockIds.value
+  return new Set([...expandedTaskBlockIds.value, ...filteredTaskTree.value.autoExpandedTaskBlockIds])
 })
 
 interface TagOption { name: string, count: number }
@@ -174,8 +174,8 @@ const projectTagOptions = computed<TagOption[]>(() => {
     }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 })
-const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value))
-const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value))
+const selectedTask = computed(() => findTaskByBlockId(selectedProject.value, selectedTaskBlockId.value))
+const selectedItem = computed(() => findItemByBlockId(selectedProject.value, selectedItemBlockId.value))
 const detailTask = computed(() => selectedItem.value ? null : selectedTask.value)
 
 watch(filteredProjects, (projects) => {
@@ -184,44 +184,64 @@ watch(filteredProjects, (projects) => {
 }, { immediate: true })
 
 watch(selectedProject, (project, previousProject) => {
-  if (project?.id === previousProject?.id) return
-  selectedTaskId.value = ''
-  selectedItemId.value = ''
+  if (project?.id === previousProject?.id) {
+    // 同项目刷新 — 智能合并折叠状态
+    const prevExpanded = expandedTaskBlockIds.value
+    const newTaskBlockIds = new Set(
+      project?.tasks.map((task) => task.blockId).filter(Boolean) ?? [],
+    )
+    const merged = new Set<string>()
+    for (const blockId of newTaskBlockIds) {
+      if (!prevExpanded.has(blockId)) merged.add(blockId)
+    }
+    for (const blockId of prevExpanded) {
+      if (newTaskBlockIds.has(blockId)) merged.add(blockId)
+    }
+    expandedTaskBlockIds.value = merged
+    return
+  }
+  // 不同项目 — 完全重置
+  selectedTaskBlockId.value = ''
+  selectedItemBlockId.value = ''
   treeSearchQuery.value = ''
   treeTagQuery.value = ''
   treeSelectedTags.value = []
-  expandedTaskIds.value = new Set(project?.tasks.map((task) => task.id) ?? [])
+  expandedTaskBlockIds.value = new Set(
+    project?.tasks.map((task) => task.blockId).filter(Boolean) ?? [],
+  )
 }, { immediate: true })
 
 function selectProject(projectId: string) {
   selectedProjectId.value = projectId
 }
 
-function toggleTask(taskId: string) {
-  const next = new Set(expandedTaskIds.value)
-  if (next.has(taskId)) next.delete(taskId)
-  else next.add(taskId)
-  expandedTaskIds.value = next
+function toggleTask(taskBlockId: string) {
+  const next = new Set(expandedTaskBlockIds.value)
+  if (next.has(taskBlockId)) next.delete(taskBlockId)
+  else next.add(taskBlockId)
+  expandedTaskBlockIds.value = next
 }
 
-function selectTask(taskId: string) {
-  selectedTaskId.value = taskId
-  selectedItemId.value = ''
+function selectTask(taskBlockId: string) {
+  selectedTaskBlockId.value = taskBlockId
+  selectedItemBlockId.value = ''
 }
 
-function selectItem(itemId: string) {
-  const item = findItemById(selectedProject.value, itemId)
-  selectedItemId.value = itemId
-  selectedTaskId.value = item?.task?.id || ''
+function selectItem(itemBlockId: string) {
+  const item = findItemByBlockId(selectedProject.value, itemBlockId)
+  selectedItemBlockId.value = itemBlockId
+  selectedTaskBlockId.value = item?.task?.blockId ?? ''
 }
 
-function findTaskById(project: Project | null, taskId: string): Task | null {
-  return project?.tasks.find((task) => task.id === taskId) || null
+function findTaskByBlockId(project: Project | null, blockId: string): Task | null {
+  if (!blockId) return null
+  return project?.tasks.find((task) => task.blockId === blockId) || null
 }
 
-function findItemById(project: Project | null, itemId: string): Item | null {
+function findItemByBlockId(project: Project | null, blockId: string): Item | null {
+  if (!blockId) return null
   for (const task of project?.tasks ?? []) {
-    const item = task.items.find((row) => row.id === itemId)
+    const item = task.items.find((row) => row.blockId === blockId)
     if (item) return item
   }
   return null
@@ -229,18 +249,23 @@ function findItemById(project: Project | null, itemId: string): Item | null {
 
 const allCollapsed = computed(() => {
   if (!selectedProject.value) return true
-  return selectedProject.value.tasks.every((task) => !expandedTaskIds.value.has(task.id))
+  return selectedProject.value.tasks.every((task) => {
+    const bid = task.blockId
+    return !bid || !expandedTaskBlockIds.value.has(bid)
+  })
 })
 
 function toggleCollapseAll() {
   if (!selectedProject.value) return
-  const currentTaskIds = new Set(selectedProject.value.tasks.map((task) => task.id))
+  const currentTaskBlockIds = selectedProject.value.tasks
+    .map((task) => task.blockId)
+    .filter((id): id is string => Boolean(id))
   if (allCollapsed.value) {
-    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds])
+    expandedTaskBlockIds.value = new Set([...expandedTaskBlockIds.value, ...currentTaskBlockIds])
   } else {
-    const next = new Set(expandedTaskIds.value)
-    currentTaskIds.forEach((id) => next.delete(id))
-    expandedTaskIds.value = next
+    const next = new Set(expandedTaskBlockIds.value)
+    currentTaskBlockIds.forEach((id) => next.delete(id))
+    expandedTaskBlockIds.value = next
   }
 }
 
