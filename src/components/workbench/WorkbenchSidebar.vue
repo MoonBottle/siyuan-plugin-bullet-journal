@@ -343,7 +343,7 @@ function handleCreateTriggerClick(event: MouseEvent) {
   }
   menu.open({
     x: event.clientX,
-    y: rect.bottom - 22
+    y: rect.bottom - 22,
   })
 }
 
