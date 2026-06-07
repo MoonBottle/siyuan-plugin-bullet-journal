@@ -103,19 +103,16 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 
   &.status-abandoned {
-
     :deep(.ta-card__content) {
       color: var(--b3-theme-on-surface);
     }
   }
 
   &.status-expired {
-
     :deep(.card-time) {
       color: #f44336;
     }
   }
-
 }
 
 .ta-card__header {
