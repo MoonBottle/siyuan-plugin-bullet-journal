@@ -40,6 +40,10 @@ import {
   DOCK_TYPES,
   TAB_TYPES,
 } from "@/constants"
+import {
+  ICON_AI_ASSISTANT,
+  ICON_POMODORO,
+} from "@/constants/icons"
 import { t } from "@/i18n"
 import {
   destroy,
@@ -328,6 +332,10 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 注册自定义 Tab
     this.registerTabs()
+
+    // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
+    this.addIcons(ICON_AI_ASSISTANT)
+    this.addIcons(ICON_POMODORO)
 
     // 注册 Dock
     this.registerDocks()
@@ -1511,7 +1519,7 @@ export default class TaskAssistantPlugin extends Plugin {
             width: 360,
             height: 500,
           },
-          icon: "iconSparkles",
+          icon: "iconTaAiAssistant",
           title: t("aiChat").title,
         },
         data: {},
@@ -1538,7 +1546,7 @@ export default class TaskAssistantPlugin extends Plugin {
             width: 320,
             height: 500,
           },
-          icon: "iconClock",
+          icon: "iconTaPomodoro",
           title: t("pomodoro").dockTitle,
         },
         data: {},
@@ -1659,7 +1667,7 @@ export default class TaskAssistantPlugin extends Plugin {
           })
         }
         menu.addItem({
-          icon: "iconClock",
+          icon: "iconTaPomodoro",
           label: t("pomodoro").dockTitle,
           click: () => {
             this.openPomodoroDock()
@@ -1673,7 +1681,7 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         })
         menu.addItem({
-          icon: "iconSparkles",
+          icon: "iconTaAiAssistant",
           label: t("aiChat").title,
           click: () => {
             this.openAiChatDock()
@@ -2531,7 +2539,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 创建悬浮番茄按钮 DOM
-   * 使用 TomatoIcon 组件的 SVG 内容
+   * 使用 PomodoroIcon 组件的 SVG 内容
    */
   private createFloatingTomatoButton(): HTMLElement {
     const btn = document.createElement("div")

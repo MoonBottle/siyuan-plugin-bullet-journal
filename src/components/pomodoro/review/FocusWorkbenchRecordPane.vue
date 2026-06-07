@@ -39,7 +39,7 @@
               @click="handleRecordClick(record, $event)"
             >
               <div class="focus-workbench-record-pane__icon">
-                <TomatoIcon
+                <PomodoroIcon
                   :width="16"
                   :height="16"
                 />
@@ -77,7 +77,7 @@ import {
   onMounted,
   watch,
 } from 'vue'
-import TomatoIcon from '@/components/icons/TomatoIcon.vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
 import { t } from '@/i18n'
 import {

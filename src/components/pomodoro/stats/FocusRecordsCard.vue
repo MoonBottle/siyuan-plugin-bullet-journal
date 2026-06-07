@@ -27,7 +27,7 @@
               @click="handleRecordClick(r.record)"
             >
               <div class="record-icon">
-                <TomatoIcon
+                <PomodoroIcon
                   :width="16"
                   :height="16"
                 />
@@ -60,7 +60,7 @@
 <script setup lang="ts">
 import type { PomodoroRecord } from '@/types/models'
 import { computed } from 'vue'
-import TomatoIcon from '@/components/icons/TomatoIcon.vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { useProjectStore } from '@/stores'

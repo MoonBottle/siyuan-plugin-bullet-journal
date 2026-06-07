@@ -9,7 +9,7 @@
         class="empty-guide"
       >
         <div class="empty-guide-icon">
-          <TomatoIcon
+          <PomodoroIcon
             :width="48"
             :height="48"
           />
@@ -46,7 +46,7 @@
             @click="handleRecordClick(record)"
           >
             <div class="record-icon">
-              <TomatoIcon
+              <PomodoroIcon
                 :width="16"
                 :height="16"
               />
@@ -81,7 +81,7 @@ import {
   computed,
   ref,
 } from 'vue'
-import TomatoIcon from '@/components/icons/TomatoIcon.vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import {

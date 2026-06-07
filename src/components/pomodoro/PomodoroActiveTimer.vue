@@ -1,7 +1,7 @@
 <template>
   <div class="pomodoro-active-timer">
     <div class="timer-header">
-      <TomatoIcon
+      <PomodoroIcon
         :width="20"
         :height="20"
         class="timer-icon"
@@ -315,8 +315,8 @@ import {
 } from 'vue'
 import Card from '@/components/common/Card.vue'
 import PlayIcon from '@/components/icons/PlayIcon.vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import StopIcon from '@/components/icons/StopIcon.vue'
-import TomatoIcon from '@/components/icons/TomatoIcon.vue'
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
 import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
