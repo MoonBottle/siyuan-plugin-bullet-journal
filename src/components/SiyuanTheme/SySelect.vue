@@ -26,17 +26,24 @@
       <div
         v-if="isOpen"
         ref="menuRef"
-        class="sy-select__menu"
+        class="b3-menu sy-select__menu"
         :style="menuStyle"
       >
-        <div
-          v-for="option in options"
-          :key="getOptionValue(option)"
-          class="sy-select__option"
-          :class="{ 'is-active': isOptionActive(option) }"
-          @click="selectOption(option)"
-        >
-          {{ getOptionLabel(option) }}
+        <div class="b3-menu__items">
+          <div
+            v-for="option in options"
+            :key="getOptionValue(option)"
+            class="b3-menu__item"
+            :class="{
+              'b3-menu__item--selected': isOptionActive(option),
+              'b3-menu__item--current': isCurrent(option),
+            }"
+            @click="selectOption(option)"
+            @mouseenter="setCurrent(option)"
+            @mouseleave="clearCurrent"
+          >
+            <span class="b3-menu__label">{{ getOptionLabel(option) }}</span>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -79,6 +86,7 @@ const isOpen = ref(false)
 const menuRef = ref<HTMLElement>()
 const triggerRef = ref<HTMLElement>()
 const menuStyle = ref<Record<string, string>>({})
+const currentValue = ref<string | number | null>(null)
 
 function getOptionLabel(option: SySelectOption): string {
   return option.label || ''
@@ -90,6 +98,18 @@ function getOptionValue(option: SySelectOption): string | number {
 
 function isOptionActive(option: SySelectOption): boolean {
   return getOptionValue(option) === props.modelValue
+}
+
+function isCurrent(option: SySelectOption): boolean {
+  return getOptionValue(option) === currentValue.value
+}
+
+function setCurrent(option: SySelectOption): void {
+  currentValue.value = getOptionValue(option)
+}
+
+function clearCurrent(): void {
+  currentValue.value = null
 }
 
 const displayLabel = computed(() => {
@@ -108,6 +128,7 @@ async function toggleDropdown() {
 
 function closeDropdown() {
   isOpen.value = false
+  currentValue.value = null
 }
 
 function selectOption(option: SySelectOption) {
@@ -187,6 +208,7 @@ function updateMenuPosition() {
     width: `${menuWidth}px`,
     maxHeight: '200px',
     zIndex: '9999',
+    overflow: 'hidden',
   }
 }
 
@@ -334,44 +356,11 @@ const vClickOutside = {
   }
 
   &__menu {
-    overflow-y: auto;
-    background: var(--b3-menu-background);
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: 8px;
-    box-shadow:
-      0 8px 24px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 4px;
-    min-width: 100px;
-  }
-
-  &__option {
-    padding: 6px 12px;
-    margin: 2px 0;
-    font-size: 13px;
-    border-radius: 6px;
-    color: var(--b3-menu-on-background);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
 
-    &:hover {
-      background: var(--b3-list-hover);
-    }
-
-    &.is-active {
-      color: var(--b3-theme-primary);
-      font-weight: 500;
-    }
-
-    &:first-child {
-      margin-top: 0;
-    }
-
-    &:last-child {
-      margin-bottom: 0;
+    .b3-menu__items {
+      overflow-y: auto;
+      max-height: inherit;
     }
   }
 }
