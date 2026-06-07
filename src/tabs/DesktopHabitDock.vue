@@ -23,17 +23,6 @@
         <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
-          data-testid="habit-dock-refresh-button"
-          :aria-label="t('common').refresh"
-          @click="refreshHabits"
-        >
-          <svg
-            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideTooltip"
-          ><use xlink:href="#iconRefresh"></use></svg>
-        </button>
-        <button
-          class="block__icon"
           :data-testid="selectedHabit.archivedAt ? 'habit-detail-unarchive' : 'habit-detail-archive'"
           :aria-label="selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive"
           @click="handleToggleArchiveSelectedHabit"
@@ -53,6 +42,17 @@
             @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
             @mouseleave="hideTooltip"
           ><use xlink:href="#iconFile"></use></svg>
+        </button>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
         </button>
       </template>
       <template v-else-if="listMode === 'archived'">
@@ -96,17 +96,6 @@
         <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
-          data-testid="habit-dock-refresh-button"
-          :aria-label="t('common').refresh"
-          @click="refreshHabits"
-        >
-          <svg
-            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideTooltip"
-          ><use xlink:href="#iconRefresh"></use></svg>
-        </button>
-        <button
-          class="block__icon"
           data-testid="habit-dock-open-archived"
           :aria-label="t('habit').viewArchived"
           @click="handleShowArchivedHabits"
@@ -115,6 +104,17 @@
             @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
             @mouseleave="hideTooltip"
           ><use xlink:href="#iconInbox"></use></svg>
+        </button>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
         </button>
       </template>
     </div>
