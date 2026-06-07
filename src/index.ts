@@ -42,7 +42,12 @@ import {
 } from "@/constants"
 import {
   ICON_AI_ASSISTANT,
+  ICON_CALENDAR,
+  ICON_GANTT,
+  ICON_HABIT,
   ICON_POMODORO,
+  ICON_PROJECT,
+  ICON_TODO,
 } from "@/constants/icons"
 import { t } from "@/i18n"
 import {
@@ -335,7 +340,12 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
     this.addIcons(ICON_AI_ASSISTANT)
+    this.addIcons(ICON_CALENDAR)
+    this.addIcons(ICON_GANTT)
+    this.addIcons(ICON_HABIT)
     this.addIcons(ICON_POMODORO)
+    this.addIcons(ICON_PROJECT)
+    this.addIcons(ICON_TODO)
 
     // 注册 Dock
     this.registerDocks()
@@ -1091,7 +1101,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // detail.menu.addSeparator();
 
     detail.menu.addItem({
-      icon: "iconFolder",
+      icon: "iconTaProject",
       label: t("settings").projectGroups.setAsTaskDir,
       click: async () => {
         console.log(
@@ -1188,7 +1198,7 @@ export default class TaskAssistantPlugin extends Plugin {
       click: () => showItemDetailModal(item, { showAllDates: true }),
     })
     detail.menu.addItem({
-      icon: "iconCalendar",
+      icon: "iconTaCalendar",
       label: t("todo").viewInCalendar,
       click: () =>
         this.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date }),
@@ -1463,7 +1473,7 @@ export default class TaskAssistantPlugin extends Plugin {
     //     config: {
     //       position: 'RightBottom',
     //       size: { width: 360, height: 500 },
-    //       icon: 'iconCalendar',
+    //       icon: 'iconTaCalendar',
     //       title: t('calendar').title
     //     },
     //     data: {},
@@ -1490,7 +1500,7 @@ export default class TaskAssistantPlugin extends Plugin {
           width: 320,
           height: 400,
         },
-        icon: "iconList",
+        icon: "iconTaTodo",
         title: this.isMobile ? t("title") : t("todo").title,
       },
       data: {},
@@ -1576,7 +1586,7 @@ export default class TaskAssistantPlugin extends Plugin {
             width: 320,
             height: 400,
           },
-          icon: "iconCheck",
+          icon: "iconTaHabit",
           title: t("habit")?.title || "习惯打卡",
         },
         data: {},
@@ -1604,12 +1614,12 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerTopBar() {
     // 子弹笔记主菜单按钮
     this.addTopBar({
-      icon: "iconCalendar",
+      icon: "iconTaCalendar",
       title: t("title"),
       callback: (event: MouseEvent) => {
         const menu = new Menu("bullet-journal-menu")
         menu.addItem({
-          icon: "iconCalendar",
+          icon: "iconTaCalendar",
           label: t("calendar").title,
           click: () => {
             if (this.isMobile) {
@@ -1620,14 +1630,14 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         })
         menu.addItem({
-          icon: "iconFolder",
+          icon: "iconTaProject",
           label: t("project").title,
           click: () => {
             this.openCustomTab(TAB_TYPES.PROJECT)
           },
         })
         menu.addItem({
-          icon: "iconGraph",
+          icon: "iconTaGantt",
           label: t("gantt").title,
           click: () => {
             this.openCustomTab(TAB_TYPES.GANTT)
@@ -1651,7 +1661,7 @@ export default class TaskAssistantPlugin extends Plugin {
         }
         menu.addSeparator()
         menu.addItem({
-          icon: "iconList",
+          icon: "iconTaTodo",
           label: t("todo").title,
           click: () => {
             this.openTodoDock()
@@ -1674,7 +1684,7 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         })
         menu.addItem({
-          icon: "iconCheck",
+          icon: "iconTaHabit",
           label: t("habit")?.title || "习惯打卡",
           click: () => {
             this.openHabitDock()
@@ -1736,7 +1746,7 @@ export default class TaskAssistantPlugin extends Plugin {
                   click: () => this.openHelpDoc("data-format.md"),
                 },
                 {
-                  icon: "iconCalendar",
+                  icon: "iconTaCalendar",
                   label: t("helpMenu").views,
                   click: () => this.openHelpDoc("views.md"),
                 },
@@ -1746,7 +1756,7 @@ export default class TaskAssistantPlugin extends Plugin {
                   click: () => this.openHelpDoc("pomodoro.md"),
                 },
                 {
-                  icon: "iconCheck",
+                  icon: "iconTaHabit",
                   label: t("helpMenu").habitCheckin,
                   click: () => this.openHelpDoc("habit-checkin.md"),
                 },
@@ -1887,11 +1897,11 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private getTabIcon(type: string): string {
     const icons: Record<string, string> = {
-      [TAB_TYPES.CALENDAR]: "iconCalendar",
-      [TAB_TYPES.GANTT]: "iconGraph",
+      [TAB_TYPES.CALENDAR]: "iconTaCalendar",
+      [TAB_TYPES.GANTT]: "iconTaGantt",
       [TAB_TYPES.WORKBENCH]: "iconWorkspace",
       [TAB_TYPES.QUADRANT]: "iconLayout",
-      [TAB_TYPES.PROJECT]: "iconFolder",
+      [TAB_TYPES.PROJECT]: "iconTaProject",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
       [TAB_TYPES.FOCUS_WORKBENCH]: "iconClock",
     }
