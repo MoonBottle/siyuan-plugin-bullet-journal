@@ -690,7 +690,7 @@ async function handleLinkClick(link: Link) {
 
 .item-content-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
