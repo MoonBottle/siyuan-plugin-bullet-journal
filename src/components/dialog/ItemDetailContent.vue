@@ -111,12 +111,7 @@
             >
               {{ PRIORITY_CONFIG[props.item.priority].emoji }}
             </div>
-            <div
-              class="tag-badge"
-              :class="`status-${statusInfo.class}`"
-            >
-              {{ statusInfo.text }}
-            </div>
+            <ItemStatusTag :item="props.item" />
           </div>
         </template>
 
@@ -280,6 +275,7 @@ import {
   reactive,
 } from 'vue'
 import Card from '@/components/common/Card.vue'
+import ItemStatusTag from '@/components/common/ItemStatusTag.vue'
 import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue'
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
 import { t } from '@/i18n'
@@ -472,32 +468,6 @@ const itemStatus = computed(() => {
   const timeStatus = getTimeRangeStatus(props.item, dayjs().format('YYYY-MM-DD HH:mm:ss'))
   if (timeStatus) return timeStatus
   return getEffectiveDate(props.item) < todayStr ? 'expired' : 'pending'
-})
-
-const statusInfo = computed(() => {
-  const statusMap: Record<string, { text: string, class: string }> = {
-    pending: {
-      text: t('todo').pending,
-      class: 'pending',
-    },
-    in_progress: {
-      text: t('todo').inProgress,
-      class: 'in-progress',
-    },
-    completed: {
-      text: t('todo').completed,
-      class: 'completed',
-    },
-    abandoned: {
-      text: t('todo').abandoned,
-      class: 'abandoned',
-    },
-    expired: {
-      text: t('todo').expired,
-      class: 'expired',
-    },
-  }
-  return statusMap[itemStatus.value] || statusMap.pending
 })
 
 const isCompletedOrAbandoned = computed(() => itemStatus.value === 'completed' || itemStatus.value === 'abandoned')
@@ -746,26 +716,6 @@ async function handleLinkClick(link: Link) {
   height: 16px;
   white-space: nowrap;
 
-  &.status-pending {
-    background: color-mix(in srgb, var(--b3-theme-primary-lightest) 50%, transparent);
-    color: var(--b3-theme-primary);
-  }
-  &.status-in-progress {
-    background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
-    color: var(--b3-card-warning-color);
-  }
-  &.status-completed {
-    background: color-mix(in srgb, var(--b3-card-success-background) 50%, transparent);
-    color: var(--b3-card-success-color);
-  }
-  &.status-abandoned {
-    background: color-mix(in srgb, var(--b3-theme-surface-lighter) 50%, transparent);
-    color: var(--b3-theme-on-surface);
-  }
-  &.status-expired {
-    background: color-mix(in srgb, var(--b3-card-error-background) 50%, transparent);
-    color: var(--b3-card-error-color);
-  }
   &.level-l1 {
     background: color-mix(in srgb, var(--b3-card-success-background) 50%, transparent);
     color: var(--b3-card-success-color);

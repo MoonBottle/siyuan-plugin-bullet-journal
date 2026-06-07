@@ -114,7 +114,7 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
@@ -127,7 +127,8 @@
                     class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
                 </div>
               </template>
               <div
@@ -214,7 +215,7 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
@@ -223,11 +224,12 @@
                     <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
-                    v-if="getPriorityEmoji(item)"
+                  v-if="getPriorityEmoji(item)"
                     class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
                 </div>
               </template>
               <div
@@ -314,8 +316,8 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
-                    class="item-focus-plan-badge"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
+                  class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
@@ -327,7 +329,8 @@
                     class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
                 </div>
               </template>
               <div
@@ -414,7 +417,7 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
@@ -427,8 +430,9 @@
                     class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
-                </div>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
+                  </div>
               </template>
               <div
                 v-if="item.task || item.project"
@@ -625,7 +629,7 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
@@ -634,11 +638,12 @@
                     <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
-                    v-if="getPriorityEmoji(item)"
-                    class="item-priority"
+                  v-if="getPriorityEmoji(item)"
+                  class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
                 </div>
               </template>
               <div
@@ -722,7 +727,7 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item.focusPlan)"
+                  v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
@@ -731,11 +736,12 @@
                     <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
-                    v-if="getPriorityEmoji(item)"
+                  v-if="getPriorityEmoji(item)"
                     class="item-priority"
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
-                  >{{ getPriorityEmoji(item) }}</span>
+                    >{{ getPriorityEmoji(item) }}</span>
+                  <ItemStatusTag :item="item" />
                 </div>
               </template>
               <div
@@ -799,6 +805,7 @@ import {
 } from 'vue'
 
 import Card from '@/components/common/Card.vue'
+import ItemStatusTag from '@/components/common/ItemStatusTag.vue'
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue'
 import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue'
@@ -1595,6 +1602,8 @@ const handleCreateExample = async () => {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  height: 20px;
+  line-height: 20px;
 }
 
 .item-header-right {
