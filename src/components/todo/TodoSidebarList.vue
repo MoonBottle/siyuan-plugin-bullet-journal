@@ -141,7 +141,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -242,7 +242,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -343,7 +343,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -444,7 +444,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -553,7 +553,7 @@
                     >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
                   </div>
                   <div class="item-content">
-                    {{ getStatusEmoji(item) }} {{ item.content }}
+                    {{ item.content }}
                   </div>
                   <div
                     v-if="item.tags?.length"
@@ -656,7 +656,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -754,7 +754,7 @@
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
-                {{ getStatusEmoji(item) }} {{ item.content }}
+                {{ item.content }}
               </div>
               <div
                 v-if="item.tags?.length"
@@ -824,10 +824,7 @@ import {
   showContextMenu,
 } from '@/utils/contextMenu'
 import {
-  dateRangeStatusToEmoji,
-  getDateRangeStatus,
   getEffectiveDate,
-  getTimeRangeStatus,
 } from '@/utils/dateRangeUtils'
 import {
   formatDateLabel as formatDateLabelUtil,
@@ -921,26 +918,6 @@ const getPriorityLabel = (item: Item): string => {
 const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
 const plugin = usePlugin()
-
-const getStatusEmoji = (item: Item): string => {
-  if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return '🍅'
-  }
-  if (item.status === 'completed') return '✅'
-  if (item.status === 'abandoned') return '❌'
-  const todayStr = dayjs().format('YYYY-MM-DD')
-  if (item.dateRangeStart && item.dateRangeEnd) {
-    const rangeStatus = getDateRangeStatus(item, todayStr)
-    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus)
-  }
-  if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
-    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'))
-    if (timeStatus) return dateRangeStatusToEmoji(timeStatus)
-  }
-  const isExpired = item.date && item.date < todayStr
-  if (isExpired) return '⚠️'
-  return '⏳'
-}
 
 // 防止重复点击的执行锁
 const isProcessing = ref(false)

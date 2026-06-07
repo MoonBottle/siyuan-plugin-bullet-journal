@@ -510,7 +510,7 @@ describe('todoSidebarList', () => {
     expect(headerRightEl?.textContent?.trim()).toContain('🔥')
     expect(headerRightEl?.textContent?.trim()).not.toContain('项目A')
     expect(taskEl?.textContent?.trim()).toContain('项目A')
-    expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级')
+    expect(contentEl?.textContent?.trim()).toBe('处理优先级')
 
     mounted.unmount()
   })
