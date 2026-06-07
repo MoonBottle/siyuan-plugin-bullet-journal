@@ -983,16 +983,24 @@ watch(searchQuery, () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
+  width: 0;
+  min-width: 0;
   height: 14px;
   flex-shrink: 0;
+  overflow: hidden;
+  margin-right: -8px;
   opacity: 0;
   color: var(--b3-theme-on-surface);
   cursor: grab;
-  transition: opacity 150ms ease;
+  transition:
+    width 150ms ease,
+    opacity 150ms ease,
+    margin-right 150ms ease;
 }
 
 .workbench-sidebar__entry:hover .workbench-sidebar__entry-drag {
+  width: 14px;
+  margin-right: 0;
   opacity: 0.5;
 }
 
