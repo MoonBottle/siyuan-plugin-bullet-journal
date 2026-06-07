@@ -1699,9 +1699,8 @@ const handleCreateExample = async () => {
 
 .item-task {
   width: 100%;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--b3-theme-on-surface);
-  opacity: 0.5;
   word-break: break-all;
   line-height: 1.3;
   margin: 2px 0;
@@ -1709,7 +1708,7 @@ const handleCreateExample = async () => {
 
 .item-content {
   width: 100%;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
   word-break: break-all;

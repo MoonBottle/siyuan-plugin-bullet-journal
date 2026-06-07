@@ -56,7 +56,6 @@ const status = computed(() => {
 .item-task {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
-  opacity: 0.6;
   margin-bottom: 4px;
 }
 
