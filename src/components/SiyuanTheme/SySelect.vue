@@ -334,7 +334,7 @@ const vClickOutside = {
 
   &__menu {
     overflow-y: auto;
-    background: var(--b3-theme-surface);
+    background: var(--b3-menu-background);
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 8px;
     box-shadow:
@@ -349,7 +349,7 @@ const vClickOutside = {
     margin: 2px 0;
     font-size: 13px;
     border-radius: 6px;
-    color: var(--b3-theme-on-surface);
+    color: var(--b3-menu-on-background);
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
@@ -357,13 +357,14 @@ const vClickOutside = {
     text-overflow: ellipsis;
 
     &:hover {
-      background: var(--b3-theme-primary-lightest);
-      color: var(--b3-theme-primary);
+      // background: var(--b3-list-hover);
+      background-color: var(--neo-menu-item-primary);
+      // color: var(--b3-theme-primary);
     }
 
     &.is-active {
-      background: var(--b3-theme-primary-lightest);
-      color: var(--b3-theme-primary);
+      // background: var(--b3-theme-primary-lightest);
+      color: var(--b3-theme-accent);
       font-weight: 500;
     }
 
