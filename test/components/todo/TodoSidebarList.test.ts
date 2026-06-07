@@ -61,9 +61,14 @@ const mockPomodoroStore = {
   restorePomodoro: vi.fn(() => Promise.resolve(false)),
 }
 
+const mockSettingsStore = {
+  groups: [] as Array<{ id: string, name: string }>,
+}
+
 vi.mock('@/stores', () => ({
   useProjectStore: () => mockProjectStore,
   usePomodoroStore: () => mockPomodoroStore,
+  useSettingsStore: () => mockSettingsStore,
 }))
 
 vi.mock('@/main', () => ({

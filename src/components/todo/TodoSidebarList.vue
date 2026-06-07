@@ -136,6 +136,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -237,6 +240,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -338,6 +344,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -439,6 +448,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -651,6 +663,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -749,6 +764,9 @@
                 class="item-task"
               >
                 <span
+                  v-if="getGroupName(item)"
+                  class="item-group-name"
+                >{{ getGroupName(item) }} · </span><span
                   v-if="item.project"
                   class="item-project-name"
                 >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
@@ -817,6 +835,7 @@ import { skipCurrentOccurrence } from '@/services/recurringService'
 import {
   usePomodoroStore,
   useProjectStore,
+  useSettingsStore,
 } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
 import {
@@ -917,7 +936,14 @@ const getPriorityLabel = (item: Item): string => {
 
 const projectStore = useProjectStore()
 const pomodoroStore = usePomodoroStore()
+const settingsStore = useSettingsStore()
 const plugin = usePlugin()
+
+const getGroupName = (item: Item): string | undefined => {
+  const groupId = item.project?.groupId
+  if (!groupId) return undefined
+  return settingsStore.groups.find((g) => g.id === groupId)?.name
+}
 
 // 防止重复点击的执行锁
 const isProcessing = ref(false)
@@ -1603,6 +1629,16 @@ const handleCreateExample = async () => {
   color: var(--b3-theme-on-surface);
   opacity: 0.8;
   cursor: help;
+  flex-shrink: 0;
+}
+
+.item-group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
