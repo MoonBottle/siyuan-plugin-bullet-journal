@@ -26,9 +26,9 @@ export interface ProjectTaskTreeNode {
 
 export interface ProjectTaskTreeFilterResult {
   nodes: ProjectTaskTreeNode[]
-  matchedTaskIds: Set<string>
-  matchedItemIds: Set<string>
-  autoExpandedTaskIds: Set<string>
+  matchedTaskBlockIds: Set<string>
+  matchedItemBlockIds: Set<string>
+  autoExpandedTaskBlockIds: Set<string>
 }
 
 export interface TaskItemProgress {
@@ -97,28 +97,28 @@ export function filterProjectTaskTree(
   const normalizedQuery = normalizeSearchText(query)
   const normalizedTags = normalizeSelectedTags(selectedTags)
   const hasTagFilter = normalizedTags.size > 0
-  const matchedTaskIds = new Set<string>()
-  const matchedItemIds = new Set<string>()
-  const autoExpandedTaskIds = new Set<string>()
+  const matchedTaskBlockIds = new Set<string>()
+  const matchedItemBlockIds = new Set<string>()
+  const autoExpandedTaskBlockIds = new Set<string>()
 
   if (!normalizedQuery && !hasTagFilter) {
     return {
       nodes,
-      matchedTaskIds,
-      matchedItemIds,
-      autoExpandedTaskIds,
+      matchedTaskBlockIds,
+      matchedItemBlockIds,
+      autoExpandedTaskBlockIds,
     }
   }
 
   const filteredNodes = nodes
-    .map((node) => filterNode(node, normalizedQuery, normalizedTags, hasTagFilter, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
+    .map((node) => filterNode(node, normalizedQuery, normalizedTags, hasTagFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
     .filter(Boolean) as ProjectTaskTreeNode[]
 
   return {
     nodes: filteredNodes,
-    matchedTaskIds,
-    matchedItemIds,
-    autoExpandedTaskIds,
+    matchedTaskBlockIds,
+    matchedItemBlockIds,
+    autoExpandedTaskBlockIds,
   }
 }
 
@@ -146,9 +146,9 @@ function filterNode(
   query: string,
   normalizedTags: Set<string>,
   hasTagFilter: boolean,
-  matchedTaskIds: Set<string>,
-  matchedItemIds: Set<string>,
-  autoExpandedTaskIds: Set<string>,
+  matchedTaskBlockIds: Set<string>,
+  matchedItemBlockIds: Set<string>,
+  autoExpandedTaskBlockIds: Set<string>,
 ): ProjectTaskTreeNode | null {
   const taskMatches = !query || normalizeSearchText([
     node.task.name,
@@ -173,22 +173,22 @@ function filterNode(
       && (!hasTagFilter || itemMatchesTags(it, normalizedTags))
   })
   const children = node.children
-    .map((child) => filterNode(child, query, normalizedTags, hasTagFilter, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
+    .map((child) => filterNode(child, query, normalizedTags, hasTagFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
     .filter(Boolean) as ProjectTaskTreeNode[]
 
   if (taskMatches && !hasTagFilter) {
-    matchedTaskIds.add(node.task.id)
-    collectTaskIds(node, autoExpandedTaskIds)
+    matchedTaskBlockIds.add(node.task.blockId ?? node.task.id)
+    collectTaskBlockIds(node, autoExpandedTaskBlockIds)
     return cloneNode(node)
   }
 
   if (matchedItems.length > 0 || children.length > 0) {
-    autoExpandedTaskIds.add(node.task.id)
+    autoExpandedTaskBlockIds.add(node.task.blockId ?? node.task.id)
     matchedItems.forEach((entry) => {
       if ('isMerged' in entry) {
-        matchedItemIds.add((entry as MergedItem).firstItemId)
+        matchedItemBlockIds.add((entry as MergedItem).blockId)
       } else {
-        matchedItemIds.add((entry as Item).id)
+        matchedItemBlockIds.add((entry as Item).blockId ?? (entry as Item).id)
       }
     })
     return {
@@ -209,9 +209,9 @@ function cloneNode(node: ProjectTaskTreeNode): ProjectTaskTreeNode {
   }
 }
 
-function collectTaskIds(node: ProjectTaskTreeNode, ids: Set<string>) {
-  ids.add(node.task.id)
-  node.children.forEach((child) => collectTaskIds(child, ids))
+function collectTaskBlockIds(node: ProjectTaskTreeNode, ids: Set<string>) {
+  ids.add(node.task.blockId ?? node.task.id)
+  node.children.forEach((child) => collectTaskBlockIds(child, ids))
 }
 
 function itemMatchesQuery(item: Item, query: string): boolean {

@@ -47,8 +47,8 @@
         :project="selectedProject"
         :nodes="visibleTaskNodes"
         :expanded-task-ids="effectiveExpandedTaskIds"
-        :matched-task-ids="filteredTaskTree.matchedTaskIds"
-        :matched-item-ids="filteredTaskTree.matchedItemIds"
+        :matched-task-ids="filteredTaskTree.matchedTaskBlockIds"
+        :matched-item-ids="filteredTaskTree.matchedItemBlockIds"
         :selected-task-id="selectedTaskId"
         :selected-item-id="selectedItemId"
         :tag-query="treeTagQuery"
@@ -151,7 +151,7 @@ const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, tr
 const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes)
 const effectiveExpandedTaskIds = computed(() => {
   if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value
-  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds])
+  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskBlockIds])
 })
 
 interface TagOption { name: string, count: number }

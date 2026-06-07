@@ -132,8 +132,8 @@ describe('projectTaskTree', () => {
     expect(result.nodes[0].task.id).toBe('l1')
     expect(result.nodes[0].children[0].task.id).toBe('l2')
     expect(result.nodes[0].children[0].children[0].task.id).toBe('l3')
-    expect(result.matchedTaskIds).toEqual(new Set(['l3']))
-    expect(result.autoExpandedTaskIds).toEqual(new Set(['l1', 'l2', 'l3']))
+    expect(result.matchedTaskBlockIds).toEqual(new Set(['l3']))
+    expect(result.autoExpandedTaskBlockIds).toEqual(new Set(['l1', 'l2', 'l3']))
   })
 
   it('搜索命中事项时只显示事项和所属任务父级链路', () => {
@@ -159,8 +159,8 @@ describe('projectTaskTree', () => {
     const result = filterProjectTaskTree(tree, '评审')
 
     expect(result.nodes[0].items.map((row) => (row as any).id || (row as any).firstItemId)).toEqual(['keep'])
-    expect(result.matchedItemIds).toEqual(new Set(['keep']))
-    expect(result.autoExpandedTaskIds).toEqual(new Set(['l1']))
+    expect(result.matchedItemBlockIds).toEqual(new Set(['keep']))
+    expect(result.autoExpandedTaskBlockIds).toEqual(new Set(['l1']))
   })
 
   it('统计任务事项进度', () => {
@@ -337,7 +337,7 @@ describe('projectTaskTree', () => {
     const merged = result.nodes[0].items[0] as MergedItem
     expect(merged.isMerged).toBe(true)
     expect(merged.dateRange).toBe('2026-05-19 ~ 26')
-    expect(result.matchedItemIds).toContain('i1')
+    expect(result.matchedItemBlockIds).toContain('blk-a')
   })
 })
 
