@@ -267,6 +267,25 @@ export function cancelNativeNotification(id: number): void {
 }
 
 /**
+ * 显示休息结束通知
+ * @param breakMinutes 休息时长（分钟）
+ * @param onClick 点击回调
+ */
+export async function showBreakEndNotification(
+  breakMinutes: number,
+  onClick?: () => void,
+): Promise<UnifiedNotificationResult> {
+  const title = t('pomodoro').breakEndNotifyTitle
+  const body = t('pomodoro').breakEndNotifyBody.replace('{minutes}', String(breakMinutes))
+
+  return showSystemNotification(title, body, {
+    tag: 'pomodoro-break-end',
+    icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+    onClick,
+  })
+}
+
+/**
  * 显示专注完成通知
  * @param itemContent 事项内容
  * @param durationMinutes 专注时长（分钟）

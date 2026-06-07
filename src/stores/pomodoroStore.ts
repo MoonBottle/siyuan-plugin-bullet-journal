@@ -26,7 +26,10 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
-import { showPomodoroCompleteNotification } from '@/utils/notification'
+import {
+  showBreakEndNotification,
+  showPomodoroCompleteNotification,
+} from '@/utils/notification'
 import {
   loadActivePomodoro,
   loadPendingCompletion,
@@ -1099,9 +1102,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
         })
         if (this.breakRemainingSeconds <= 0) {
           if (!kernelAvailable.value) {
+            const breakMinutes = Math.round(this.breakTotalSeconds / 60)
             this.stopBreak(plugin ?? usePlugin())
             showMessage(t('settings').pomodoro.breakEndMessage)
             this.playNotificationSound()
+            void showBreakEndNotification(breakMinutes, () => {
+              if (typeof window !== 'undefined' && (window as any).require) {
+                try {
+                  const { ipcRenderer } = (window as any).require('electron')
+                  ipcRenderer.send('focus-window')
+                } catch {
+                  // 忽略
+                }
+              }
+            }).catch((error) => {
+              console.error('[Pomodoro] 显示休息结束通知失败:', error)
+            })
           }
         }
       }, 1000)
@@ -1187,9 +1203,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
         })
         if (this.breakRemainingSeconds <= 0) {
           if (!kernelAvailable.value) {
+            const breakMinutes = Math.round(this.breakTotalSeconds / 60)
             this.stopBreak(plugin)
             showMessage(t('settings').pomodoro.breakEndMessage)
             this.playNotificationSound()
+            void showBreakEndNotification(breakMinutes, () => {
+              if (typeof window !== 'undefined' && (window as any).require) {
+                try {
+                  const { ipcRenderer } = (window as any).require('electron')
+                  ipcRenderer.send('focus-window')
+                } catch {
+                  // 忽略
+                }
+              }
+            }).catch((error) => {
+              console.error('[Pomodoro] 显示休息结束通知失败:', error)
+            })
           }
         }
       }, 1000)
@@ -1208,9 +1237,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (params.type === 'break' && this.isBreakActive) {
           console.log('[Pomodoro] kernel break expired, calling stopBreak')
           const plugin = usePlugin()
+          const breakMinutes = Math.round(this.breakTotalSeconds / 60)
           this.stopBreak(plugin)
           showMessage(t('settings').pomodoro.breakEndMessage)
           this.playNotificationSound()
+          void showBreakEndNotification(breakMinutes, () => {
+            if (typeof window !== 'undefined' && (window as any).require) {
+              try {
+                const { ipcRenderer } = (window as any).require('electron')
+                ipcRenderer.send('focus-window')
+              } catch {
+                // 忽略
+              }
+            }
+          }).catch((error) => {
+            console.error('[Pomodoro] 显示休息结束通知失败:', error)
+          })
         }
       })
       this._kernelNotificationUnsubscribe = unsubscribe

@@ -573,6 +573,8 @@
     "completeMessage": "✅ 专注完成「{content}」· 实际专注 {minutes} 分钟",
     "completeNotifyTitle": "🎉 专注完成！",
     "completeNotifyBody": "「{content}」专注了 {minutes} 分钟",
+    "breakEndNotifyTitle": "☕ 休息结束！",
+    "breakEndNotifyBody": "休息了 {minutes} 分钟，请继续专注",
     "saveFailed": "保存记录失败"
   },
   "pomodoroStats": {

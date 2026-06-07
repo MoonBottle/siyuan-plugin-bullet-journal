@@ -573,6 +573,8 @@
     "completeMessage": "✅ Focus complete「{content}」· {minutes} min",
     "completeNotifyTitle": "🎉 Focus complete!",
     "completeNotifyBody": "「{content}」focused for {minutes} min",
+    "breakEndNotifyTitle": "☕ Break over!",
+    "breakEndNotifyBody": "Rested for {minutes} min, time to focus again",
     "saveFailed": "Failed to save record"
   },
   "pomodoroStats": {
