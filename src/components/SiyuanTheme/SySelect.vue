@@ -357,14 +357,11 @@ const vClickOutside = {
     text-overflow: ellipsis;
 
     &:hover {
-      // background: var(--b3-list-hover);
-      background-color: var(--neo-menu-item-primary);
-      // color: var(--b3-theme-primary);
+      background: var(--b3-list-hover);
     }
 
     &.is-active {
-      // background: var(--b3-theme-primary-lightest);
-      color: var(--b3-theme-accent);
+      color: var(--b3-theme-primary);
       font-weight: 500;
     }
 

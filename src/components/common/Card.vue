@@ -96,7 +96,7 @@ const handleContextMenu = (event: MouseEvent) => {
 
   &.has-hover-effect {
     &:hover {
-      background: var(--b3-theme-surface);
+      // background: var(--b3-theme-surface);
       border-color: var(--b3-theme-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
