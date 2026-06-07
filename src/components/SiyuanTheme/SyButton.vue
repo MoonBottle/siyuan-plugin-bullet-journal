@@ -174,7 +174,6 @@ function handleLinkMouseLeave() {
 }
 
 .sy-link-btn:hover {
-  background: var(--b3-theme-primary-light);
   color: var(--b3-theme-primary);
   z-index: 1;
 }

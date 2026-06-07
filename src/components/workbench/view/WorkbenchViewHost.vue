@@ -93,15 +93,15 @@ import type { WorkbenchEntry } from '@/types/workbench'
 import { computed } from 'vue'
 import WorkbenchAiChatView from '@/components/workbench/view/WorkbenchAiChatView.vue'
 import WorkbenchCalendarView from '@/components/workbench/view/WorkbenchCalendarView.vue'
+import WorkbenchFocusWorkbenchView from '@/components/workbench/view/WorkbenchFocusWorkbenchView.vue'
 import WorkbenchGanttView from '@/components/workbench/view/WorkbenchGanttView.vue'
 import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue'
+import WorkbenchPomodoroStatsView from '@/components/workbench/view/WorkbenchPomodoroStatsView.vue'
 import WorkbenchProjectView from '@/components/workbench/view/WorkbenchProjectView.vue'
+import WorkbenchQuadrantView from '@/components/workbench/view/WorkbenchQuadrantView.vue'
 import WorkbenchTodoView from '@/components/workbench/view/WorkbenchTodoView.vue'
 import { t } from '@/i18n'
 import { useWorkbenchStore } from '@/stores'
-import WorkbenchFocusWorkbenchView from '@/components/workbench/view/WorkbenchFocusWorkbenchView.vue'
-import WorkbenchPomodoroStatsView from '@/components/workbench/view/WorkbenchPomodoroStatsView.vue'
-import WorkbenchQuadrantView from '@/components/workbench/view/WorkbenchQuadrantView.vue'
 
 const props = defineProps<{
   entry: WorkbenchEntry
