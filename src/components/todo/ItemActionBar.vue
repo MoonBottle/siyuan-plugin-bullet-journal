@@ -411,5 +411,9 @@ function handleOpenCalendar() {
     color: var(--b3-theme-primary);
     opacity: 1;
   }
+
+  &--active {
+    color: var(--b3-theme-primary);
+  }
 }
 </style>
