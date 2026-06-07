@@ -171,7 +171,7 @@
           class="workbench-create-popup__icon"
           aria-hidden="true"
         >
-          <svg><use xlink:href="#iconBoard"></use></svg>
+          <svg><use xlink:href="#iconTaDashboard"></use></svg>
         </span>
         <span>{{ t('workbench').newDashboard }}</span>
       </button>

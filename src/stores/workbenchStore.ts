@@ -29,7 +29,7 @@ interface ViewEntryDefinition {
   icon: string
 }
 
-const DASHBOARD_ICON = 'iconBoard'
+const DASHBOARD_ICON = 'iconTaDashboard'
 
 function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinition {
   const definitions: Record<WorkbenchViewType, ViewEntryDefinition> = {
@@ -140,13 +140,21 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     const settings = await loadWorkbenchSettings(plugin)
     entries.value = normalizeOrders(
       (settings.entries ?? []).map((entry) => {
+        // 图标不持久化，始终从 viewType 动态计算
+        const icon = entry.type === 'view' && entry.viewType
+          ? getViewEntryDefinition(entry.viewType).icon
+          : DASHBOARD_ICON
         if (entry.type === 'view' && entry.viewType && !entry.config) {
           return {
             ...entry,
+            icon,
             config: getViewDefinition(entry.viewType).createDefaultConfig(),
           }
         }
-        return entry
+        return {
+          ...entry,
+          icon,
+        }
       }),
     )
     dashboards.value = settings.dashboards ?? []

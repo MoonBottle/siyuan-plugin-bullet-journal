@@ -43,6 +43,7 @@ import {
 import {
   ICON_AI_ASSISTANT,
   ICON_CALENDAR,
+  ICON_DASHBOARD,
   ICON_GANTT,
   ICON_HABIT,
   ICON_POMODORO,
@@ -342,6 +343,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
     this.addIcons(ICON_AI_ASSISTANT)
     this.addIcons(ICON_CALENDAR)
+    this.addIcons(ICON_DASHBOARD)
     this.addIcons(ICON_GANTT)
     this.addIcons(ICON_HABIT)
     this.addIcons(ICON_POMODORO)
