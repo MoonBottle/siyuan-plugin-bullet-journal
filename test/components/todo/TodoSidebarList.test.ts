@@ -495,7 +495,7 @@ describe('todoSidebarList', () => {
     mounted.unmount()
   })
 
-  it('renders priority emoji and project name in header and keeps status emoji in content line', async () => {
+  it('renders priority emoji in header and project name in task line and keeps status emoji in content line', async () => {
     const mounted = mountList({
       items: [pendingItem],
       hasAnyItemsRaw: true,
@@ -504,10 +504,12 @@ describe('todoSidebarList', () => {
     await nextTick()
 
     const headerRightEl = mounted.container.querySelector('.item-header-right') as HTMLDivElement | null
+    const taskEl = mounted.container.querySelector('.item-task') as HTMLDivElement | null
     const contentEl = mounted.container.querySelector('.item-content') as HTMLDivElement | null
 
     expect(headerRightEl?.textContent?.trim()).toContain('🔥')
-    expect(headerRightEl?.textContent?.trim()).toContain('项目A')
+    expect(headerRightEl?.textContent?.trim()).not.toContain('项目A')
+    expect(taskEl?.textContent?.trim()).toContain('项目A')
     expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级')
 
     mounted.unmount()

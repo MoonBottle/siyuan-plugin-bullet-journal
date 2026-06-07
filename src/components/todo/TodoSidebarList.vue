@@ -128,17 +128,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -229,17 +228,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -330,17 +328,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -431,17 +428,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -541,17 +537,16 @@
                         @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                         @mouseleave="hideTooltip"
                       >{{ getPriorityEmoji(item) }}</span>
-                      <span
-                        v-if="item.project"
-                        class="item-project-name"
-                      >{{ item.project.name }}</span>
                     </div>
                   </template>
                   <div
-                    v-if="item.task"
+                    v-if="item.task || item.project"
                     class="item-task"
                   >
-                    {{ item.task.name }}
+                    <span
+                      v-if="item.project"
+                      class="item-project-name"
+                    >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
                   </div>
                   <div class="item-content">
                     {{ getStatusEmoji(item) }} {{ item.content }}
@@ -644,17 +639,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -742,17 +736,16 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getPriorityLabel(item))"
                     @mouseleave="hideTooltip"
                   >{{ getPriorityEmoji(item) }}</span>
-                  <span
-                    v-if="item.project"
-                    class="item-project-name"
-                  >{{ item.project.name }}</span>
                 </div>
               </template>
               <div
-                v-if="item.task"
+                v-if="item.task || item.project"
                 class="item-task"
               >
-                {{ item.task.name }}
+                <span
+                  v-if="item.project"
+                  class="item-project-name"
+                >{{ item.project.name }}<span v-if="item.task"> · </span></span>{{ item.task?.name }}
               </div>
               <div class="item-content">
                 {{ getStatusEmoji(item) }} {{ item.content }}
@@ -1682,6 +1675,9 @@ const handleCreateExample = async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .item-time {
