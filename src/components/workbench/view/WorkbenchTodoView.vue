@@ -25,5 +25,9 @@ defineProps<{
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
   background: var(--b3-theme-surface);
+
+  :deep(.todo-content) {
+    padding: 0 8px 8px 8px;
+  }
 }
 </style>

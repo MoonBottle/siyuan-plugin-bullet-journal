@@ -1469,7 +1469,7 @@ const handleCreateExample = async () => {
 }
 
 .todo-content {
-  padding: 0 8px 8px 8px;
+  padding: 8px;
 }
 
 .empty {

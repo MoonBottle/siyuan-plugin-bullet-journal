@@ -180,7 +180,7 @@ onMounted(async () => {
   flex-direction: row;
   gap: 12px;
   height: 100%;
-  padding: 8px;
+  padding: 16px;
   overflow: hidden;
   box-sizing: border-box;
   border: 1px solid var(--b3-border-color);

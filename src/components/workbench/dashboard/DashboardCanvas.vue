@@ -380,6 +380,7 @@ function handleDeleteWidget(widgetId: string) {
 
 .workbench-dashboard-canvas__layout {
   min-height: 420px;
+  margin: -16px;
 }
 
 .workbench-dashboard-canvas__layout :deep(.vgl-item) {

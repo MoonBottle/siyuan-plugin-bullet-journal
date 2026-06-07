@@ -25,5 +25,9 @@ defineProps<{
   background: var(--b3-theme-surface);
   overflow: hidden;
   padding: 8px;
+
+  :deep(.quadrant-panel) {
+    background: var(--b3-theme-background);
+  }
 }
 </style>
