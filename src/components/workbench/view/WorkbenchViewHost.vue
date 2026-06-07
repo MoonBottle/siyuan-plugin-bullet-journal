@@ -25,30 +25,21 @@
       class="workbench-view-host__surface"
       data-testid="workbench-view-quadrant"
     >
-      <QuadrantTab
-        :embedded="true"
-        :view-config="entry.config"
-      />
+      <WorkbenchQuadrantView :view-config="entry.config" />
     </div>
     <div
       v-else-if="viewType === 'pomodoroStats'"
       class="workbench-view-host__surface"
       data-testid="workbench-view-pomodoro-stats"
     >
-      <PomodoroStatsTab
-        :embedded="true"
-        :view-config="entry.config"
-      />
+      <WorkbenchPomodoroStatsView :view-config="entry.config" />
     </div>
     <div
       v-else-if="viewType === 'focusWorkbench'"
       class="workbench-view-host__surface"
       data-testid="workbench-view-focus-workbench"
     >
-      <FocusWorkbenchTab
-        :embedded="true"
-        :view-config="entry.config"
-      />
+      <WorkbenchFocusWorkbenchView :view-config="entry.config" />
     </div>
     <div
       v-else-if="viewType === 'project'"
@@ -108,9 +99,9 @@ import WorkbenchProjectView from '@/components/workbench/view/WorkbenchProjectVi
 import WorkbenchTodoView from '@/components/workbench/view/WorkbenchTodoView.vue'
 import { t } from '@/i18n'
 import { useWorkbenchStore } from '@/stores'
-import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue'
-import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue'
-import QuadrantTab from '@/tabs/QuadrantTab.vue'
+import WorkbenchFocusWorkbenchView from '@/components/workbench/view/WorkbenchFocusWorkbenchView.vue'
+import WorkbenchPomodoroStatsView from '@/components/workbench/view/WorkbenchPomodoroStatsView.vue'
+import WorkbenchQuadrantView from '@/components/workbench/view/WorkbenchQuadrantView.vue'
 
 const props = defineProps<{
   entry: WorkbenchEntry

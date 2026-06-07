@@ -33,5 +33,6 @@ const config = computed(() => (props.viewConfig ?? {}) as WorkbenchGanttViewConf
   border-radius: 8px;
   background: var(--b3-theme-surface);
   overflow: hidden;
+  padding: 0 16px 16px 16px;
 }
 </style>
