@@ -103,13 +103,13 @@
       >
         <ProjectTreeNode
           v-for="node in nodes"
-          :key="node.task.id"
+          :key="node.task.blockId ?? node.task.id"
           :node="node"
-          :expanded-task-ids="expandedTaskIds"
-          :matched-task-ids="matchedTaskIds"
-          :matched-item-ids="matchedItemIds"
-          :selected-task-id="selectedTaskId"
-          :selected-item-id="selectedItemId"
+          :expanded-task-block-ids="expandedTaskBlockIds"
+          :matched-task-block-ids="matchedTaskBlockIds"
+          :matched-item-block-ids="matchedItemBlockIds"
+          :selected-task-block-id="selectedTaskBlockId"
+          :selected-item-block-id="selectedItemBlockId"
           @toggleTask="$emit('toggleTask', $event)"
           @selectTask="handleSelectTask"
           @selectItem="handleSelectItem"
@@ -144,11 +144,11 @@ const props = defineProps<{
   project: Project | null
   nodes: ProjectTaskTreeNode[]
   searchQuery: string
-  expandedTaskIds: Set<string>
-  matchedTaskIds: Set<string>
-  matchedItemIds: Set<string>
-  selectedTaskId: string
-  selectedItemId: string
+  expandedTaskBlockIds: Set<string>
+  matchedTaskBlockIds: Set<string>
+  matchedItemBlockIds: Set<string>
+  selectedTaskBlockId: string
+  selectedItemBlockId: string
   tagQuery?: string
   selectedTags?: string[]
   tagOptions?: TagOption[]
@@ -156,9 +156,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:searchQuery', value: string): void
-  (event: 'toggleTask', taskId: string): void
-  (event: 'selectTask', taskId: string): void
-  (event: 'selectItem', itemId: string): void
+  (event: 'toggleTask', taskBlockId: string): void
+  (event: 'selectTask', taskBlockId: string): void
+  (event: 'selectItem', itemBlockId: string): void
   (event: 'update:tagQuery', value: string): void
   (event: 'update:selectedTags', value: string[]): void
 }>()
@@ -300,23 +300,23 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocument
 const visibleNodes = computed(() => {
   const result: Array<{
     type: 'task' | 'item'
-    id: string
-    parentTaskId?: string
+    blockId: string
+    parentTaskBlockId?: string
   }> = []
 
   function traverse(nodes: ProjectTaskTreeNode[]) {
     for (const node of nodes) {
       result.push({
         type: 'task',
-        id: node.task.id,
+        blockId: node.task.blockId ?? node.task.id,
       })
-      if (props.expandedTaskIds.has(node.task.id)) {
+      if (props.expandedTaskBlockIds.has(node.task.blockId ?? node.task.id)) {
         for (const item of node.items) {
-          const itemId = 'isMerged' in item ? (item as MergedItem).firstItemId : (item as Item).id
+          const itemBlockId = 'isMerged' in item ? (item as MergedItem).blockId : ((item as Item).blockId ?? (item as Item).id)
           result.push({
             type: 'item',
-            id: itemId,
-            parentTaskId: node.task.id,
+            blockId: itemBlockId,
+            parentTaskBlockId: node.task.blockId ?? node.task.id,
           })
         }
         traverse(node.children)
@@ -332,17 +332,17 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
 
   const currentIndex = visibleNodes.value.findIndex((node) => {
-    if (node.type === 'task') return node.id === props.selectedTaskId && !props.selectedItemId
-    return node.id === props.selectedItemId
+    if (node.type === 'task') return node.blockId === props.selectedTaskBlockId && !props.selectedItemBlockId
+    return node.blockId === props.selectedItemBlockId
   })
 
   if (currentIndex === -1) {
     if (visibleNodes.value.length > 0) {
       const first = visibleNodes.value[0]
       if (first.type === 'task') {
-        emit('selectTask', first.id)
+        emit('selectTask', first.blockId)
       } else {
-        emit('selectItem', first.id)
+        emit('selectItem', first.blockId)
       }
     }
     event.preventDefault()
@@ -355,21 +355,21 @@ function handleKeydown(event: KeyboardEvent) {
 
   const next = visibleNodes.value[nextIndex]
   if (next.type === 'task') {
-    emit('selectTask', next.id)
+    emit('selectTask', next.blockId)
   } else {
-    emit('selectItem', next.id)
+    emit('selectItem', next.blockId)
   }
 
   event.preventDefault()
 }
 
-function handleSelectTask(taskId: string) {
-  emit('selectTask', taskId)
+function handleSelectTask(taskBlockId: string) {
+  emit('selectTask', taskBlockId)
   treeRef.value?.focus()
 }
 
-function handleSelectItem(itemId: string) {
-  emit('selectItem', itemId)
+function handleSelectItem(itemBlockId: string) {
+  emit('selectItem', itemBlockId)
   treeRef.value?.focus()
 }
 </script>
