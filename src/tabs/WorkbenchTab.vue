@@ -33,42 +33,15 @@
           v-if="isDashboardActive"
           class="workbench-tab__toolbar-actions"
         >
-          <div
-            ref="widgetMenuWrapRef"
-            class="workbench-tab__toolbar-menu-wrap"
+          <button
+            ref="addWidgetTriggerRef"
+            class="workbench-tab__toolbar-button"
+            data-testid="workbench-add-widget-trigger"
+            type="button"
+            @click.stop="handleAddWidgetMenu"
           >
-            <button
-              class="workbench-tab__toolbar-button"
-              data-testid="workbench-add-widget-trigger"
-              type="button"
-              @click="toggleWidgetMenu"
-            >
-              {{ t('workbench').addWidget }}
-            </button>
-
-            <div
-              v-if="isWidgetMenuOpen"
-              class="workbench-tab__toolbar-menu"
-              data-testid="workbench-widget-menu"
-            >
-              <button
-                v-for="definition in widgetDefinitions"
-                :key="definition.type"
-                class="workbench-tab__toolbar-menu-item"
-                :data-testid="`workbench-add-widget-${definition.type}`"
-                type="button"
-                @click="handleAddWidget(definition.type)"
-              >
-                <span
-                  class="workbench-tab__toolbar-menu-icon"
-                  aria-hidden="true"
-                >
-                  <svg><use :xlink:href="`#${definition.icon}`"></use></svg>
-                </span>
-                <span>{{ definition.name }}</span>
-              </button>
-            </div>
-          </div>
+            {{ t('workbench').addWidget }}
+          </button>
         </div>
 
         <div
@@ -98,13 +71,13 @@ import type {
   WorkbenchViewType,
   WorkbenchWidgetType,
 } from '@/types/workbench'
+import { Menu } from 'siyuan'
 import {
   computed,
   nextTick,
   onMounted,
   onUnmounted,
   ref,
-  watch,
 } from 'vue'
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue'
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue'
@@ -140,8 +113,7 @@ const canConfigureActiveView = computed(() => {
 
   return Boolean(getViewDefinition(entry.viewType).openConfigDialog)
 })
-const isWidgetMenuOpen = ref(false)
-const widgetMenuWrapRef = ref<HTMLElement>()
+const addWidgetTriggerRef = ref<HTMLElement>()
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()))
 let unsubscribeRefresh: (() => void) | null = null
 let refreshChannel: BroadcastChannel | null = null
@@ -175,31 +147,28 @@ async function handleToggleSidebar() {
   await workbenchStore.toggleSidebar()
 }
 
-function toggleWidgetMenu() {
-  isWidgetMenuOpen.value = !isWidgetMenuOpen.value
+function handleAddWidgetMenu(event: MouseEvent) {
+  event.stopPropagation()
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const menu = new Menu('workbench-add-widget-menu')
+  for (const definition of widgetDefinitions.value) {
+    menu.addItem({
+      icon: definition.icon,
+      label: definition.name,
+      click: () => handleAddWidget(definition.type),
+    })
+  }
+  menu.open({
+    x: rect.left,
+    y: rect.bottom + 4,
+    isLeft: true,
+  })
 }
 
 function openWidgetMenu() {
-  isWidgetMenuOpen.value = true
+  addWidgetTriggerRef.value?.click()
 }
-
-function handleWidgetMenuClickOutside(e: MouseEvent) {
-  if (!widgetMenuWrapRef.value?.contains(e.target as Node)) {
-    isWidgetMenuOpen.value = false
-  }
-}
-
-watch(isWidgetMenuOpen, (val) => {
-  if (val) {
-    document.addEventListener('mousedown', handleWidgetMenuClickOutside)
-  } else {
-    document.removeEventListener('mousedown', handleWidgetMenuClickOutside)
-  }
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleWidgetMenuClickOutside)
-})
 
 async function handleAddWidget(type: WorkbenchWidgetType) {
   if (currentActiveEntry.value?.type !== 'dashboard' || !currentActiveEntry.value.dashboardId) {
@@ -207,7 +176,6 @@ async function handleAddWidget(type: WorkbenchWidgetType) {
   }
 
   await workbenchStore.addWidget(currentActiveEntry.value.dashboardId, type)
-  isWidgetMenuOpen.value = false
 }
 
 async function openViewConfigDialog() {
@@ -338,10 +306,6 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.workbench-tab__toolbar-menu-wrap {
-  position: relative;
-}
-
 .workbench-tab__toolbar-button {
   padding: 6px 12px;
   border: 1px solid var(--b3-border-color);
@@ -349,53 +313,5 @@ onUnmounted(() => {
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-background);
   cursor: pointer;
-}
-
-.workbench-tab__toolbar-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 10;
-  min-width: 220px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  background: var(--b3-menu-background);
-  box-shadow: var(--b3-dialog-shadow);
-}
-
-.workbench-tab__toolbar-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--b3-menu-on-background);
-  text-align: left;
-  cursor: pointer;
-}
-
-.workbench-tab__toolbar-menu-item:hover {
-  border-color: var(--b3-border-color);
-  background: var(--b3-list-hover);
-}
-
-.workbench-tab__toolbar-menu-icon {
-  display: inline-flex;
-  width: 16px;
-  height: 16px;
-  align-items: center;
-  justify-content: center;
-}
-
-.workbench-tab__toolbar-menu-icon svg {
-  width: 16px;
-  height: 16px;
 }
 </style>

@@ -6,6 +6,7 @@ import {
   createPinia,
   setActivePinia,
 } from 'pinia'
+import { Menu } from 'siyuan'
 import {
   beforeEach,
   describe,
@@ -437,11 +438,10 @@ describe('workbenchTab shell', () => {
     addWidgetTrigger.click()
     await nextTick()
 
-    const addWidgetButton = mounted.container.querySelector('[data-testid="workbench-add-widget-todoList"]') as HTMLButtonElement
-    expect(addWidgetButton).not.toBeNull()
-
-    addWidgetButton.click()
-    await nextTick()
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+    const menu = MockMenu.lastInstance
+    const todoListItem = menu.items.find((i: any) => i.icon === 'iconTaTodo')
+    todoListItem.click()
 
     expect(mockAddWidget).toHaveBeenCalledWith('dashboard-1', 'todoList')
 
@@ -454,12 +454,15 @@ describe('workbenchTab shell', () => {
     (mounted.container.querySelector('[data-testid="workbench-add-widget-trigger"]') as HTMLButtonElement).click()
     await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="workbench-widget-menu"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-todoList"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-quadrantSummary"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-habitWeek"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-miniCalendar"]')).not.toBeNull()
-    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-pomodoroStats"]')).not.toBeNull()
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+    const menu = MockMenu.lastInstance
+    const menuIcons = menu.items.map((i: any) => i.icon)
+
+    expect(menuIcons).toContain('iconTaTodo')
+    expect(menuIcons).toContain('iconLayout')
+    expect(menuIcons).toContain('iconTaHabit')
+    expect(menuIcons).toContain('iconTaCalendar')
+    expect(menuIcons).toContain('iconTaPomodoroStats')
 
     mounted.unmount()
   })
