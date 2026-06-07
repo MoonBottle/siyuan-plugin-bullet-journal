@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .project-detail-pane {
   min-width: 0;
-  padding: 12px;
+  padding: 8px;
   overflow: hidden;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);

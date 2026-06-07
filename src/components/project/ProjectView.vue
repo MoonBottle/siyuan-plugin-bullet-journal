@@ -127,6 +127,7 @@ const {
 } = useResizableColumns({
   containerRef: workbenchRef,
   initialRatios: props.columnRatios,
+  handleWidth: 8,
   onChange: (ratios) => emit('update:columnRatios', ratios),
 })
 

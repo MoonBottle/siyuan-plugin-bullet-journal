@@ -59,7 +59,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 12px;
+  padding: 8px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
