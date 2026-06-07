@@ -114,13 +114,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -214,13 +214,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -314,13 +314,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -414,13 +414,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -523,13 +523,13 @@
                     </div>
                     <div class="item-header-right">
                       <span
-                        v-if="getFocusPlanDisplay(item)"
+                        v-if="getFocusPlanDisplay(item.focusPlan)"
                         class="item-focus-plan-badge"
-                        @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                        @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                         @mouseleave="hideTooltip"
                       >
-                        <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                        <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                        <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                        <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                       </span>
                       <span
                         v-if="getPriorityEmoji(item)"
@@ -625,13 +625,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -722,13 +722,13 @@
                 </div>
                 <div class="item-header-right">
                   <span
-                    v-if="getFocusPlanDisplay(item)"
+                    v-if="getFocusPlanDisplay(item.focusPlan)"
                     class="item-focus-plan-badge"
-                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item))"
+                    @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item)?.value }}</template>
+                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -839,6 +839,10 @@ import {
 } from '@/utils/eventBus'
 import { createExampleDocument } from '@/utils/exampleDocUtils'
 import { openDocumentAtLine } from '@/utils/fileUtils'
+import {
+  getFocusPlanDisplay,
+  getFocusPlanTooltip,
+} from '@/utils/format'
 
 import {
   abandonItem,
@@ -905,62 +909,6 @@ const getPriorityLabel = (item: Item): string => {
     return PRIORITY_CONFIG[item.priority].label
   }
   return ''
-}
-
-const getFocusPlanDisplay = (item: Item): { type: 'pomodoro', value: number } | { type: 'duration', value: string, minutes: number } | null => {
-  if (!item.focusPlan) return null
-  if (item.focusPlan.type === 'pomodoro') {
-    return {
-      type: 'pomodoro',
-      value: item.focusPlan.rawValue,
-    }
-  }
-  // duration type: format compact minutes
-  const minutes = item.focusPlan.rawValue
-  if (minutes < 60) {
-    return {
-      type: 'duration',
-      value: `${minutes}m`,
-      minutes,
-    }
-  }
-  const hours = Math.floor(minutes / 60)
-  const restMinutes = minutes % 60
-  if (restMinutes === 0) {
-    return {
-      type: 'duration',
-      value: `${hours}h`,
-      minutes,
-    }
-  }
-  return {
-    type: 'duration',
-    value: `${hours}h${restMinutes}m`,
-    minutes,
-  }
-}
-
-const getFocusPlanTooltip = (item: Item): string => {
-  const display = getFocusPlanDisplay(item)
-  if (!display) return ''
-
-  const fp = t('focusPlan')
-
-  if (display.type === 'pomodoro') {
-    return fp.tooltipPomodoro?.replace('{count}', String(display.value)).replace('{minutes}', String(display.value * 25)) || ''
-  }
-
-  // duration type
-  const minutes = display.minutes
-  if (minutes < 60) {
-    return fp.tooltipDurationMinutes?.replace('{minutes}', String(minutes)) || ''
-  }
-  const hours = Math.floor(minutes / 60)
-  const restMinutes = minutes % 60
-  if (restMinutes === 0) {
-    return fp.tooltipDurationHours?.replace('{hours}', String(hours)) || ''
-  }
-  return fp.tooltipDurationHoursMinutes?.replace('{hours}', String(hours)).replace('{minutes}', String(restMinutes)) || ''
 }
 
 const projectStore = useProjectStore()

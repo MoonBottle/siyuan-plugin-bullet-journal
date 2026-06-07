@@ -187,7 +187,7 @@
             >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
                 @mouseleave="hideTooltip"
               >⏳</span>
               <span class="meta-text">{{ focusPlanDisplay }}</span>
@@ -315,6 +315,7 @@ import {
   buildFocusPlanReview,
   formatFocusPlanDisplay,
 } from '@/utils/focusPlanReview'
+import { getFocusPlanTooltip } from '@/utils/format'
 import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 import {
   hideTooltip,
