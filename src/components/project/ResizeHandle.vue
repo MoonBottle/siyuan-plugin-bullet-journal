@@ -47,7 +47,7 @@ function handleMouseDown(event: MouseEvent) {
     width: 1px;
     height: 100%;
     background-color: var(--b3-border-color);
-    opacity: 0.5;
+    opacity: 0;
     transition:
       opacity 0.15s,
       background-color 0.15s;

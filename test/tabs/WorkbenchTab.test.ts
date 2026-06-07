@@ -81,7 +81,7 @@ const mockSettingsStore = {
   loadFromPlugin: mockSettingsLoadFromPlugin,
   $patch: vi.fn((patch: Record<string, unknown>) => Object.assign(mockSettingsStore, patch)),
 }
-const mockProjectStore = {}
+const mockProjectStore = { projects: [] }
 
 vi.mock('@/main', async () => {
   const actual = await vi.importActual<typeof import('@/main')>('@/main')
