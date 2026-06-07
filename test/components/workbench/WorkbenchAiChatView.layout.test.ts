@@ -9,7 +9,7 @@ import {
 describe('aiChatView layout guards', () => {
   it('keeps the conversation list from overflowing horizontally', () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/components/workbench/view/AiChatView.vue'),
+      path.resolve(process.cwd(), 'src/components/workbench/view/WorkbenchAiChatView.vue'),
       'utf-8',
     )
 
@@ -24,7 +24,7 @@ describe('aiChatView layout guards', () => {
 
   it('keeps the search box shrinkable so the new-conversation button stays visible', () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/components/workbench/view/AiChatView.vue'),
+      path.resolve(process.cwd(), 'src/components/workbench/view/WorkbenchAiChatView.vue'),
       'utf-8',
     )
 

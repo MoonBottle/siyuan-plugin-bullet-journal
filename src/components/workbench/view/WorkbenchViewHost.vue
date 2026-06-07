@@ -85,7 +85,7 @@
       class="workbench-view-host__surface"
       data-testid="workbench-view-ai-chat"
     >
-      <AiChatView :view-config="entry.config" />
+      <WorkbenchAiChatView :view-config="entry.config" />
     </div>
     <div
       v-else
@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import type { WorkbenchEntry } from '@/types/workbench'
 import { computed } from 'vue'
-import AiChatView from '@/components/workbench/view/AiChatView.vue'
+import WorkbenchAiChatView from '@/components/workbench/view/WorkbenchAiChatView.vue'
 import WorkbenchCalendarView from '@/components/workbench/view/WorkbenchCalendarView.vue'
 import WorkbenchGanttView from '@/components/workbench/view/WorkbenchGanttView.vue'
 import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue'

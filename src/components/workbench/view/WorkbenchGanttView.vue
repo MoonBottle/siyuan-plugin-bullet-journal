@@ -1,12 +1,14 @@
 <template>
-  <GanttTab
-    embedded
-    :view-mode="config.viewMode"
-    :show-items="config.showItems"
-    :start-date="config.startDate"
-    :end-date="config.endDate"
-    :group-id="config.groupId"
-  />
+  <div class="workbench-gantt-view">
+    <GanttTab
+      embedded
+      :view-mode="config.viewMode"
+      :show-items="config.showItems"
+      :start-date="config.startDate"
+      :end-date="config.endDate"
+      :group-id="config.groupId"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -21,3 +23,15 @@ const props = defineProps<{
 
 const config = computed(() => (props.viewConfig ?? {}) as WorkbenchGanttViewConfig)
 </script>
+
+<style scoped>
+.workbench-gantt-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  background: var(--b3-theme-surface);
+  overflow: hidden;
+}
+</style>

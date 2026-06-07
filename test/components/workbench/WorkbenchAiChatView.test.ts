@@ -152,7 +152,7 @@ describe('aiChatView', () => {
   })
 
   async function mountView() {
-    const { default: AiChatView } = await import('@/components/workbench/view/AiChatView.vue')
+    const { default: AiChatView } = await import('@/components/workbench/view/WorkbenchAiChatView.vue')
     const container = document.createElement('div')
     document.body.appendChild(container)
 
