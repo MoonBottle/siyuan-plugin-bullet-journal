@@ -616,7 +616,7 @@ async function handleLinkClick(link: Link) {
   color: var(--b3-theme-on-background);
   word-break: break-word;
   flex: 1;
-  height: 20px;
+  min-height: 20px;
   line-height: 20px;
   display: flex;
 }
