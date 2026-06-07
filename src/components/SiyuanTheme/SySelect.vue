@@ -311,6 +311,7 @@ const vClickOutside = {
   &__label {
     flex: 1;
     text-align: left;
+    line-height: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
