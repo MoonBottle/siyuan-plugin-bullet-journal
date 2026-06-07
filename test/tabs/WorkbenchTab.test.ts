@@ -396,18 +396,22 @@ describe('workbenchTab shell', () => {
 
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement)
       .click()
-    await nextTick();
+    await nextTick()
 
-    (document.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
-      .click()
-    await nextTick();
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+    const menu = MockMenu.lastInstance
+    const dashboardItem = menu.items.find((i: any) => i.icon === 'iconTaDashboard')
+    dashboardItem.click()
+    await nextTick()
 
-    (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement)
+    // Click again for todo view
+    ;(mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement)
       .click()
-    await nextTick();
+    await nextTick()
 
-    (document.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
-      .click()
+    const menu2 = MockMenu.lastInstance
+    const todoItem = menu2.items.find((i: any) => i.icon === 'iconTaTodo')
+    todoItem.click()
     await nextTick()
 
     expect(mockCreateDashboardEntry).toHaveBeenCalledWith('New Dashboard')

@@ -143,166 +143,21 @@
         class="workbench-sidebar__create-trigger"
         data-testid="workbench-create-trigger"
         type="button"
-        @click="handleCreateTriggerClick"
+        @click.stop="handleCreateTriggerClick"
+        @mouseenter="handleCreateTriggerMouseEnter"
+        @mouseleave="handleCreateTriggerMouseLeave"
       >
         <span
           class="workbench-sidebar__create-trigger-icon"
           aria-hidden="true"
-        >+</span>
+        >
+          <svg><use xlink:href="#iconAdd"></use></svg>
+        </span>
         <span v-if="!collapsed">{{ t('workbench').newView }}</span>
       </button>
     </div>
 
   </aside>
-  <Teleport to="body">
-    <div
-      v-if="isCreateMenuOpen"
-      class="workbench-create-popup"
-      :style="createMenuStyle"
-      data-testid="workbench-create-menu"
-    >
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-dashboard"
-        type="button"
-        @click="handleCreateDashboard"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaDashboard"></use></svg>
-        </span>
-        <span>{{ t('workbench').newDashboard }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-todo-view"
-        type="button"
-        @click="handleCreateView('todo')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaTodo"></use></svg>
-        </span>
-        <span>{{ t('todo').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-habit-view"
-        type="button"
-        @click="handleCreateView('habit')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaHabit"></use></svg>
-        </span>
-        <span>{{ t('habit').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-quadrant-view"
-        type="button"
-        @click="handleCreateView('quadrant')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconLayout"></use></svg>
-        </span>
-        <span>{{ t('quadrant').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-pomodoro-stats-view"
-        type="button"
-        @click="handleCreateView('pomodoroStats')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaPomodoro"></use></svg>
-        </span>
-        <span>{{ t('pomodoroStats').statsTitle }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-focus-workbench-view"
-        type="button"
-        @click="handleCreateView('focusWorkbench')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaPomodoro"></use></svg>
-        </span>
-        <span>{{ t('focusWorkbench').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-project-view"
-        type="button"
-        @click="handleCreateView('project')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaProject"></use></svg>
-        </span>
-        <span>{{ t('project').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-calendar-view"
-        type="button"
-        @click="handleCreateView('calendar')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaCalendar"></use></svg>
-        </span>
-        <span>{{ t('calendar').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-gantt-view"
-        type="button"
-        @click="handleCreateView('gantt')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaGantt"></use></svg>
-        </span>
-        <span>{{ t('gantt').title }}</span>
-      </button>
-      <button
-        class="workbench-create-popup__option"
-        data-testid="workbench-create-ai-chat-view"
-        type="button"
-        @click="handleCreateView('aiChat')"
-      >
-        <span
-          class="workbench-create-popup__icon"
-          aria-hidden="true"
-        >
-          <svg><use xlink:href="#iconTaAiAssistant"></use></svg>
-        </span>
-        <span>{{ t('aiChat').title }}</span>
-      </button>
-    </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -351,36 +206,10 @@ const entriesContainerRef = ref<HTMLElement | null>(null)
 const searchContainerRef = ref<HTMLElement | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const createTriggerRef = ref<HTMLElement | null>(null)
-const isCreateMenuOpen = ref(false)
-const lastClickEvent = ref<MouseEvent | null>(null)
 const isSearchOpen = ref(false)
 const searchQuery = ref('')
 const highlightedSearchIndex = ref(0)
 let sortableInstance: Sortable | null = null
-
-const createMenuStyle = ref<Record<string, string>>({})
-
-function updateCreateMenuPosition() {
-  const trigger = createTriggerRef.value
-  if (!trigger) return
-  const gap = 8
-  if (props.collapsed) {
-    const evt = lastClickEvent.value
-    if (!evt) return
-    createMenuStyle.value = {
-      position: 'fixed',
-      left: `${evt.clientX}px`,
-      bottom: `${window.innerHeight - evt.clientY}px`,
-    }
-  } else {
-    const rect = trigger.getBoundingClientRect()
-    createMenuStyle.value = {
-      position: 'fixed',
-      left: `${rect.left}px`,
-      bottom: `${window.innerHeight - rect.top + gap}px`,
-    }
-  }
-}
 const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase())
 const filteredEntries = computed(() => {
   const query = normalizedSearchQuery.value
@@ -441,33 +270,92 @@ onUnmounted(() => {
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
-  document.addEventListener('keydown', handleDocumentKeydown)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown)
-  document.removeEventListener('keydown', handleDocumentKeydown)
 })
 
-function toggleCreateMenu() {
-  isCreateMenuOpen.value = !isCreateMenuOpen.value
-  if (isCreateMenuOpen.value) {
-    nextTick(() => {
-      updateCreateMenuPosition()
-      // 确保 DOM 完全渲染后再次更新位置
-      nextTick(() => updateCreateMenuPosition())
+function handleCreateTriggerClick(event: MouseEvent) {
+  event.stopPropagation()
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const menu = new Menu('workbench-create-menu')
+  menu.addItem({
+    icon: 'iconTaDashboard',
+    label: t('workbench').newDashboard,
+    click: () => emit('createDashboard'),
+  })
+  menu.addSeparator()
+  const viewTypes: { type: WorkbenchViewType, icon: string, label: string }[] = [
+    {
+      type: 'todo',
+      icon: 'iconTaTodo',
+      label: t('todo').title,
+    },
+    {
+      type: 'habit',
+      icon: 'iconTaHabit',
+      label: t('habit').title,
+    },
+    {
+      type: 'quadrant',
+      icon: 'iconLayout',
+      label: t('quadrant').title,
+    },
+    {
+      type: 'pomodoroStats',
+      icon: 'iconTaPomodoroStats',
+      label: t('pomodoroStats').statsTitle,
+    },
+    {
+      type: 'focusWorkbench',
+      icon: 'iconTaPomodoro',
+      label: t('focusWorkbench').title,
+    },
+    {
+      type: 'project',
+      icon: 'iconTaProject',
+      label: t('project').title,
+    },
+    {
+      type: 'calendar',
+      icon: 'iconTaCalendar',
+      label: t('calendar').title,
+    },
+    {
+      type: 'gantt',
+      icon: 'iconTaGantt',
+      label: t('gantt').title,
+    },
+    {
+      type: 'aiChat',
+      icon: 'iconTaAiAssistant',
+      label: t('aiChat').title,
+    },
+  ]
+  for (const view of viewTypes) {
+    menu.addItem({
+      icon: view.icon,
+      label: view.label,
+      click: () => emit('createView', view.type),
     })
+  }
+  menu.open({
+    x: event.clientX,
+    y: rect.bottom - 22
+  })
+}
+
+function handleCreateTriggerMouseEnter(event: MouseEvent) {
+  if (props.collapsed) {
+    showTooltip(event.currentTarget as HTMLElement, t('workbench').newView)
   }
 }
 
-function handleCreateTriggerClick(event: MouseEvent) {
-  lastClickEvent.value = event
-  toggleCreateMenu()
-}
-
-function handleDocumentKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isCreateMenuOpen.value) {
-    isCreateMenuOpen.value = false
+function handleCreateTriggerMouseLeave() {
+  if (props.collapsed) {
+    hideTooltip()
   }
 }
 
@@ -538,32 +426,11 @@ function handleDocumentPointerDown(event: PointerEvent) {
     return
   }
 
-  if (isCreateMenuOpen.value) {
-    if (createTriggerRef.value?.contains(target)) {
-      return
-    }
-    const popup = document.querySelector('.workbench-create-popup')
-    if (popup?.contains(target)) {
-      return
-    }
-    isCreateMenuOpen.value = false
-  }
-
   if (searchContainerRef.value?.contains(target)) {
     return
   }
 
   closeSearch()
-}
-
-function handleCreateDashboard() {
-  isCreateMenuOpen.value = false
-  emit('createDashboard')
-}
-
-function handleCreateView(viewType: WorkbenchViewType) {
-  isCreateMenuOpen.value = false
-  emit('createView', viewType)
 }
 
 function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
@@ -947,8 +814,11 @@ watch(searchQuery, () => {
   justify-content: center;
   width: 16px;
   height: 16px;
-  font-size: 16px;
-  line-height: 1;
+}
+
+.workbench-sidebar__create-trigger-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .workbench-sidebar__entry {
@@ -1057,54 +927,5 @@ watch(searchQuery, () => {
 
 .sortable-chosen {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-</style>
-
-<style lang="scss">
-.workbench-create-popup {
-  z-index: 999;
-  min-width: 220px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 10px;
-  background: var(--b3-menu-background);
-  box-shadow: var(--b3-dialog-shadow);
-}
-
-.workbench-create-popup__option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--b3-menu-on-background);
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.workbench-create-popup__option:hover {
-  border-color: var(--b3-border-color);
-  background: var(--b3-list-hover);
-}
-
-.workbench-create-popup__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.workbench-create-popup__icon svg {
-  width: 16px;
-  height: 16px;
 }
 </style>

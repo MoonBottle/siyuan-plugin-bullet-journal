@@ -35,6 +35,7 @@ const {
 vi.mock('siyuan', () => ({
   Menu: class {
     addItem = mockMenuAddItem
+    addSeparator = vi.fn()
     open = mockMenuOpen
   },
 }))
@@ -146,15 +147,23 @@ describe('workbenchSidebar', () => {
 
     (mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement).click();
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (document.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement).click();
-    (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (document.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement).click()
     await nextTick()
+
+    // Find the dashboard item in the menu and click it
+    const dashboardItem = mockMenuAddItem.mock.calls.find((call: any[]) => call[0]?.icon === 'iconTaDashboard')
+    dashboardItem?.[0]?.click()
 
     expect(mounted.onSelect).toHaveBeenCalledWith('entry-todo')
     expect(mounted.onCreateDashboard).toHaveBeenCalledTimes(1)
+
+    // Click again for todo view
+    mockMenuAddItem.mockClear();
+    (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const todoItem = mockMenuAddItem.mock.calls.find((call: any[]) => call[0]?.icon === 'iconTaTodo')
+    todoItem?.[0]?.click()
+
     expect(mounted.onCreateView).toHaveBeenCalledWith('todo')
 
     mounted.unmount()
@@ -166,13 +175,12 @@ describe('workbenchSidebar', () => {
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click()
     await nextTick()
 
-    expect(document.querySelector('[data-testid="workbench-create-menu"]')).not.toBeNull();
+    expect(mockMenuOpen).toHaveBeenCalled()
 
-    (document.querySelector('[data-testid="workbench-create-quadrant-view"]') as HTMLButtonElement).click()
-    await nextTick()
+    const quadrantItem = mockMenuAddItem.mock.calls.find((call: any[]) => call[0]?.icon === 'iconLayout')
+    quadrantItem?.[0]?.click()
 
     expect(mounted.onCreateView).toHaveBeenCalledWith('quadrant')
-    expect(document.querySelector('[data-testid="workbench-create-menu"]')).toBeNull()
 
     mounted.unmount()
   })
