@@ -868,6 +868,7 @@
   &.sy-tip-visible::after {
     opacity: 1 !important;
     transform: scale(1) !important;
+    z-index: 2147483647 !important;
   }
 
   /* 换行修饰：用于链接等长文本 */
