@@ -16,51 +16,15 @@
         >{{ subtitle }}</span>
       </div>
       <div class="workbench-widget-card__controls">
-        <div
-          ref="menuWrapRef"
-          class="workbench-widget-card__menu-wrap"
+        <button
+          class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
+          data-testid="workbench-widget-menu-trigger"
+          type="button"
+          :aria-label="t('common').more"
+          @click.stop="handleMenuClick"
         >
-          <button
-            class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
-            data-testid="workbench-widget-menu-trigger"
-            type="button"
-            :aria-label="t('common').more"
-            @click="toggleMenu"
-          >
-            <svg><use xlink:href="#iconMore"></use></svg>
-          </button>
-          <div
-            v-if="isMenuOpen"
-            class="workbench-widget-card__menu"
-            data-testid="workbench-widget-menu"
-          >
-            <button
-              v-if="showConfigure"
-              class="workbench-widget-card__menu-item"
-              data-testid="workbench-widget-configure"
-              type="button"
-              @click="handleConfigure"
-            >
-              {{ t('workbench').configure }}
-            </button>
-            <button
-              class="workbench-widget-card__menu-item"
-              data-testid="workbench-widget-rename"
-              type="button"
-              @click="handleRename"
-            >
-              {{ t('workbench').rename }}
-            </button>
-            <button
-              class="workbench-widget-card__menu-item"
-              data-testid="workbench-widget-delete"
-              type="button"
-              @click="handleDelete"
-            >
-              {{ t('workbench').delete }}
-            </button>
-          </div>
-        </div>
+          <svg><use xlink:href="#iconMore"></use></svg>
+        </button>
       </div>
     </header>
     <div class="workbench-widget-card__body">
@@ -70,14 +34,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  onUnmounted,
-  ref,
-  watch,
-} from 'vue'
+import { Menu } from 'siyuan'
 import { t } from '@/i18n'
 
-defineProps<{
+const props = defineProps<{
   title: string
   subtitle?: string
   showConfigure?: boolean
@@ -89,45 +49,34 @@ const emit = defineEmits<{
   (event: 'delete'): void
 }>()
 
-const isMenuOpen = ref(false)
-const menuWrapRef = ref<HTMLElement>()
-
-function toggleMenu() {
-  isMenuOpen.value = !isMenuOpen.value
-}
-
-function handleRename() {
-  isMenuOpen.value = false
-  emit('rename')
-}
-
-function handleConfigure() {
-  isMenuOpen.value = false
-  emit('configure')
-}
-
-function handleDelete() {
-  isMenuOpen.value = false
-  emit('delete')
-}
-
-function handleClickOutside(e: MouseEvent) {
-  if (!menuWrapRef.value?.contains(e.target as Node)) {
-    isMenuOpen.value = false
+function handleMenuClick(event: MouseEvent) {
+  event.stopPropagation()
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const menu = new Menu('workbench-widget-card-menu')
+  if (props.showConfigure) {
+    menu.addItem({
+      icon: 'iconSettings',
+      label: t('workbench').configure,
+      click: () => emit('configure'),
+    })
   }
+  menu.addItem({
+    icon: 'iconEdit',
+    label: t('workbench').rename,
+    click: () => emit('rename'),
+  })
+  menu.addItem({
+    icon: 'iconTrashcan',
+    label: t('workbench').delete,
+    click: () => emit('delete'),
+  })
+  menu.open({
+    x: rect.left,
+    y: rect.bottom + 4,
+    isLeft: true,
+  })
 }
-
-watch(isMenuOpen, (val) => {
-  if (val) {
-    document.addEventListener('mousedown', handleClickOutside)
-  } else {
-    document.removeEventListener('mousedown', handleClickOutside)
-  }
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleClickOutside)
-})
 </script>
 
 <style lang="scss" scoped>
@@ -206,10 +155,6 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.workbench-widget-card__menu-wrap {
-  position: relative;
-}
-
 .workbench-widget-card__menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -230,38 +175,6 @@ onUnmounted(() => {
     height: 14px;
     fill: currentColor;
   }
-}
-
-.workbench-widget-card__menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 5;
-  min-width: 120px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  background: var(--b3-theme-surface);
-  box-shadow: var(--b3-dialog-shadow);
-}
-
-.workbench-widget-card__menu-item {
-  width: 100%;
-  padding: 7px 8px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--b3-theme-on-background);
-  text-align: left;
-  cursor: pointer;
-}
-
-.workbench-widget-card__menu-item:hover {
-  border-color: var(--b3-border-color);
-  background: var(--b3-theme-background);
 }
 
 .workbench-widget-card__body {

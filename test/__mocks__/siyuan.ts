@@ -32,3 +32,18 @@ export class Dialog {
 export const showMessage = vi.fn()
 export const fetchSyncPost = vi.fn()
 export const fetchPost = vi.fn()
+
+export class Menu {
+  private static _lastInstance: Menu | null = null
+  items: any[] = []
+
+  static get lastInstance() { return Menu._lastInstance }
+
+  constructor(_id: string) {
+    Menu._lastInstance = this
+  }
+
+  addItem(item: any) { this.items.push(item) }
+  addSeparator() { this.items.push({ type: 'separator' }) }
+  open(_position: { x: number, y: number }) {}
+}

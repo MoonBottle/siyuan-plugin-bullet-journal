@@ -6,6 +6,7 @@ import {
   getActivePinia,
   setActivePinia,
 } from 'pinia'
+import { Menu } from 'siyuan'
 import {
   beforeEach,
   describe,
@@ -289,8 +290,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-rename"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const renameItem = menu.items.find((i: any) => i.icon === 'iconEdit')
+    renameItem.click()
 
     expect(mockShowInputDialog).toHaveBeenCalledWith(
       'Rename',
@@ -304,8 +310,11 @@ describe('dashboardCanvas', () => {
     expect(store.renameWidget).toHaveBeenCalledWith('dashboard-1', 'widget-1', 'Today Todos');
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-delete"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const menu2 = MockMenu.lastInstance
+    const deleteItem = menu2.items.find((i: any) => i.icon === 'iconTrashcan')
+    deleteItem.click()
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       'Delete',
@@ -358,8 +367,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const configureItem = menu.items.find((i: any) => i.icon === 'iconSettings')
+    configureItem.click()
 
     expect(mockShowInputDialog).not.toHaveBeenCalled()
     expect(mockOpenTodoWidgetConfigDialog).toHaveBeenCalledWith({
@@ -430,8 +444,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const configureItem = menu.items.find((i: any) => i.icon === 'iconSettings')
+    configureItem.click()
 
     expect(mockOpenCalendarWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
@@ -491,8 +510,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const configureItem = menu.items.find((i: any) => i.icon === 'iconSettings')
+    configureItem.click()
 
     expect(mockOpenQuadrantWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
@@ -552,8 +576,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const configureItem = menu.items.find((i: any) => i.icon === 'iconSettings')
+    configureItem.click()
 
     expect(mockOpenHabitWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
@@ -612,8 +641,13 @@ describe('dashboardCanvas', () => {
     });
 
     (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click()
-    await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click()
+    await nextTick()
+
+    const MockMenu = Menu as typeof Menu & { lastInstance: { items: any[] } }
+
+    const menu = MockMenu.lastInstance
+    const configureItem = menu.items.find((i: any) => i.icon === 'iconSettings')
+    configureItem.click()
 
     expect(mockOpenPomodoroWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
