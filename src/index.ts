@@ -45,6 +45,7 @@ import {
   ICON_CALENDAR,
   ICON_DASHBOARD,
   ICON_GANTT,
+  ICON_GRIP_HORIZONTAL,
   ICON_HABIT,
   ICON_POMODORO,
   ICON_POMODORO_STATS,
@@ -345,6 +346,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_CALENDAR)
     this.addIcons(ICON_DASHBOARD)
     this.addIcons(ICON_GANTT)
+    this.addIcons(ICON_GRIP_HORIZONTAL)
     this.addIcons(ICON_HABIT)
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)

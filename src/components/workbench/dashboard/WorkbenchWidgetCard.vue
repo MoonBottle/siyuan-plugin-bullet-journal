@@ -6,7 +6,7 @@
     <span
       class="workbench-widget-card__drag"
       aria-hidden="true"
-    >::</span>
+    ><svg><use xlink:href="#iconTaGripHorizontal"></use></svg></span>
     <header class="workbench-widget-card__header">
       <div class="workbench-widget-card__title-wrap">
         <span class="workbench-widget-card__title">{{ title }}</span>
@@ -183,16 +183,21 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  padding: 2px 8px;
+  width: 16px;
+  height: 16px;
+  padding: 2px;
   color: var(--b3-theme-on-surface);
-  font-size: 14px;
-  letter-spacing: 0;
-  line-height: 1;
   opacity: 0;
   pointer-events: none;
   cursor: move;
   user-select: none;
   transition: opacity 0.18s ease;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .workbench-widget-card:hover .workbench-widget-card__drag,
