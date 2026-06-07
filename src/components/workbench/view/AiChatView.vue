@@ -206,6 +206,10 @@ onMounted(async () => {
     padding-bottom: 8px;
     border-bottom: 1px solid var(--b3-theme-surface-lighter);
     flex-shrink: 0;
+
+    :deep(.project-pane-search-box) {
+      min-height: 30px;
+    }
   }
 
   &__sidebar-search {
@@ -216,17 +220,21 @@ onMounted(async () => {
 
   &__sidebar-header-btn {
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    border: 1px solid var(--b3-border-color);
     border-radius: var(--b3-border-radius);
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
     transition: background-color 0.15s;
 
     &:hover {
-      background: var(--b3-theme-hover);
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-primary);
     }
 
     svg {

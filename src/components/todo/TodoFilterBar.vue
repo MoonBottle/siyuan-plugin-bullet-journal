@@ -103,8 +103,8 @@
         :model-value="dateFilterType"
         :options="dateFilterOptions"
         class="date-filter-select"
-        @update:model-value="value => $emit('update:dateFilterType', value)"
-        @change="value => $emit('changeDateFilterType', value)"
+        @update:model-value="value => $emit('update:dateFilterType', value as TodoDateFilterType)"
+        @change="value => $emit('changeDateFilterType', value as TodoDateFilterType)"
       />
 
       <button
