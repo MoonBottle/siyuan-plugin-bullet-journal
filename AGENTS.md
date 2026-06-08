@@ -90,3 +90,20 @@ Vue 3.5 + Pinia 3 + TypeScript 5.8 + Vite 8 + SASS | FullCalendar 6 | dhtmlx-gan
 - 修改后需要验证 npm run lint 是否成功
 - 修改后需要验证 npm run typecheck 是否成功
 - PowerShell 不支持 heredoc 语法
+
+反例：
+```
+git add src/components/pomodoro/PomodoroTimerDialog.vue && git commit -m "$(cat <<'EOF'
+style(pomodoro): 移除待办事项列表的最大高度限制
+
+左侧待办事项列表高度现在可以自适应右侧内容高度，
+避免在右侧内容较高时出现不必要的滚动条。
+
+EOF
+)"
+```
+
+正例：
+```
+git add src/components/pomodoro/PomodoroTimerDialog.vue; git commit -m "style(pomodoro): 移除待办事项列表的最大高度限制`n`n左侧待办事项列表高度现在可以自适应右侧内容高度，`n避免在右侧内容较高时出现不必要的滚动条。"
+```
