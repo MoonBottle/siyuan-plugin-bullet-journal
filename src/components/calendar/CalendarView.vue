@@ -163,53 +163,83 @@ const renderEventContent = (arg: any) => {
 
   const isItem = arg.event.extendedProps?.item !== undefined
 
+  // 计算事件持续时间（分钟）
+  const eventStart = arg.event.start
+  const eventEnd = arg.event.end
+  let durationMinutes = 0
+  if (eventStart && eventEnd) {
+    durationMinutes = (eventEnd.getTime() - eventStart.getTime()) / 60000
+  }
+  const isCompact = durationMinutes > 0 && durationMinutes <= 30
+
   const container = document.createElement('div')
-  container.className = 'fc-event-custom'
+  container.className = isCompact ? 'fc-event-custom fc-event-compact' : 'fc-event-custom'
 
-  // 第一行：时间 + 任务名（若有）
-  const line1 = document.createElement('div')
-  line1.className = 'fc-event-line1'
-  if (startTime) {
-    const timeEl = document.createElement('span')
-    timeEl.className = 'fc-event-time'
-    timeEl.textContent = `${startTime} `
-    line1.appendChild(timeEl)
+  if (isCompact) {
+    // 紧凑单行布局：时间 + 任务名 + 状态emoji + 标题
+    if (startTime) {
+      const timeEl = document.createElement('span')
+      timeEl.className = 'fc-event-time'
+      timeEl.textContent = `${startTime} `
+      container.appendChild(timeEl)
+    }
+    if (isItem && taskName && taskName !== title) {
+      const taskEl = document.createElement('span')
+      taskEl.className = 'fc-event-task'
+      taskEl.textContent = `${taskName} `
+      container.appendChild(taskEl)
+    }
+    const titleEl = document.createElement('span')
+    titleEl.className = 'fc-event-title-text'
+    titleEl.textContent = statusEmoji + title
+    container.appendChild(titleEl)
   }
-  if (isItem && taskName && taskName !== title) {
-    const taskEl = document.createElement('span')
-    taskEl.className = 'fc-event-task'
-    taskEl.textContent = taskName
-    line1.appendChild(taskEl)
-  }
-  container.appendChild(line1)
+  else {
+    // 第一行：时间 + 任务名（若有）
+    const line1 = document.createElement('div')
+    line1.className = 'fc-event-line1'
+    if (startTime) {
+      const timeEl = document.createElement('span')
+      timeEl.className = 'fc-event-time'
+      timeEl.textContent = `${startTime} `
+      line1.appendChild(timeEl)
+    }
+    if (isItem && taskName && taskName !== title) {
+      const taskEl = document.createElement('span')
+      taskEl.className = 'fc-event-task'
+      taskEl.textContent = taskName
+      line1.appendChild(taskEl)
+    }
+    container.appendChild(line1)
 
-  // 第二行：状态emoji + 事项内容/标题
-  const line2 = document.createElement('div')
-  line2.className = 'fc-event-line2'
-  const titleEl = document.createElement('span')
-  titleEl.className = 'fc-event-title-text'
-  titleEl.textContent = statusEmoji + title
-  line2.appendChild(titleEl)
+    // 第二行：状态emoji + 事项内容/标题
+    const line2 = document.createElement('div')
+    line2.className = 'fc-event-line2'
+    const titleEl = document.createElement('span')
+    titleEl.className = 'fc-event-title-text'
+    titleEl.textContent = statusEmoji + title
+    line2.appendChild(titleEl)
 
-  // 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
-  if (isItem && settingsStore.showPomodoroTotal) {
-    const pomodoros = arg.event.extendedProps?.pomodoros
-    if (pomodoros && pomodoros.length > 0) {
-      const totalMinutes = pomodoros.reduce(
-        (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes),
-        0,
-      )
-      if (totalMinutes > 0) {
-        const totalEl = document.createElement('span')
-        totalEl.className = 'fc-event-pomodoro-total'
-        const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min'
-        totalEl.textContent = ` ${label.replace('{minutes}', String(totalMinutes))}`
-        line2.appendChild(totalEl)
+    // 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
+    if (isItem && settingsStore.showPomodoroTotal) {
+      const pomodoros = arg.event.extendedProps?.pomodoros
+      if (pomodoros && pomodoros.length > 0) {
+        const totalMinutes = pomodoros.reduce(
+          (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes),
+          0,
+        )
+        if (totalMinutes > 0) {
+          const totalEl = document.createElement('span')
+          totalEl.className = 'fc-event-pomodoro-total'
+          const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min'
+          totalEl.textContent = ` ${label.replace('{minutes}', String(totalMinutes))}`
+          line2.appendChild(totalEl)
+        }
       }
     }
-  }
 
-  container.appendChild(line2)
+    container.appendChild(line2)
+  }
 
   return { domNodes: [container] }
 }
@@ -776,6 +806,14 @@ defineExpose({
     min-height: 2.6em;
     line-height: 1.3;
 
+    &.fc-event-compact {
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      min-height: auto;
+      white-space: nowrap;
+    }
+
     .fc-event-line1 {
       display: flex;
       align-items: center;
@@ -797,6 +835,11 @@ defineExpose({
       opacity: 0.9;
       flex-shrink: 0;
       white-space: nowrap;
+
+      // 覆盖 FullCalendar 的 .fc-timegrid-event-short .fc-event-time:after { content: " - " }
+      &::after {
+        content: none;
+      }
     }
 
     .fc-event-title-text {
