@@ -541,6 +541,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGrou
     if (mountEl) {
       timerDialogApp = createApp(PomodoroTimerDialog, {
         closeDialog,
+        preselectedBlockId,
         initialGroupId,
       })
       timerDialogApp.mount(mountEl)
