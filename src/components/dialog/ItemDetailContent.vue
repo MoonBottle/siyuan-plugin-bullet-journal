@@ -693,7 +693,7 @@ async function handleLinkClick(link: Link) {
   padding: 2px 10px;
   border-radius: 999px;
   background: var(--b3-theme-primary-lightest);
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-on-surface);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.6;

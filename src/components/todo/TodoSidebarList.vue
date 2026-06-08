@@ -1689,13 +1689,13 @@ const handleCreateExample = async () => {
 
 .item-tag-chip {
   border: none;
-  background: var(--b3-theme-background);
+  background: var(--b3-theme-primary-lightest);
   color: var(--b3-theme-on-surface);
-  opacity: 0.82;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 12px;
-  line-height: 1.5;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
   cursor: pointer;
 
   &:hover {
