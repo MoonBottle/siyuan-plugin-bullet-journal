@@ -6,7 +6,7 @@
   >
     <span
       v-if="canComplete"
-      class="block__icon"
+      class="block__icon block__icon--lg"
       :aria-label="t('todo').complete"
       @mouseenter="handleTooltipEnter($event, t('todo').complete)"
       @mouseleave="handleTooltipLeave"
@@ -51,7 +51,7 @@
 
     <span
       v-if="canSkipOccurrence"
-      class="block__icon"
+      class="block__icon block__icon--lg"
       :aria-label="t('recurring.skipThis')"
       @mouseenter="handleTooltipEnter($event, skipTooltip)"
       @mouseleave="handleTooltipLeave"
@@ -62,7 +62,7 @@
 
     <span
       v-if="canAbandon"
-      class="block__icon"
+      class="block__icon block__icon--lg"
       :aria-label="t('todo').abandon"
       @mouseenter="handleTooltipEnter($event, t('todo').abandon)"
       @mouseleave="handleTooltipLeave"
@@ -417,6 +417,13 @@ function handleOpenCalendar() {
 
   &--active {
     color: var(--b3-theme-primary);
+  }
+
+  &--lg {
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 }
 </style>
