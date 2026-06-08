@@ -189,13 +189,31 @@ function updateMenuPosition() {
   if (!trigger) return
 
   const triggerRect = getElementViewportRect(trigger)
-  let menuHeight = 200
+
+  // 先获取菜单的实际内容高度
+  let contentHeight = 0
+  let contentWidth = 0
   if (menu) {
     const menuRect = menu.getBoundingClientRect()
-    menuHeight = Math.min(menuRect.height || 200, 200)
+    contentHeight = menuRect.height || 0
+    contentWidth = menuRect.width || 0
   }
 
-  const menuWidth = Math.max(triggerRect.width, 160)
+  // 如果没有获取到高度，根据选项数量估算
+  if (contentHeight === 0 && props.options.length > 0) {
+    const estimatedItemHeight = 32 // 每个选项大约32px
+    contentHeight = props.options.length * estimatedItemHeight
+  }
+
+  // 计算最大可用高度（视口高度减去边距）
+  const viewportHeight = window.innerHeight
+  const gap = 4
+  const maxAvailableHeight = viewportHeight - gap * 2
+
+  // 使用内容高度，但不超过视口可用高度
+  const menuHeight = Math.min(contentHeight || 200, maxAvailableHeight)
+  const menuWidth = Math.max(Math.max(triggerRect.width, contentWidth), 160)
+
   const {
     top,
     left,
@@ -206,7 +224,7 @@ function updateMenuPosition() {
     top: `${top}px`,
     left: `${left}px`,
     width: `${menuWidth}px`,
-    maxHeight: '200px',
+    maxHeight: `${maxAvailableHeight}px`,
     zIndex: '9999',
     overflow: 'hidden',
   }
@@ -361,6 +379,11 @@ const vClickOutside = {
     .b3-menu__items {
       overflow-y: auto;
       max-height: inherit;
+
+      // 确保内容宽度自适应，不被截断
+      .b3-menu__item {
+        white-space: nowrap;
+      }
     }
   }
 }
