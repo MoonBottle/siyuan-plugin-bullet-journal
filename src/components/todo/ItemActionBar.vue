@@ -45,7 +45,8 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleMigrate"
     >
-      <svg><use xlink:href="#iconForward"></use></svg>
+      <svg v-if="isMigrateToToday"><use xlink:href="#iconTaSun"></use></svg>
+      <svg v-else><use xlink:href="#iconTaSunrise"></use></svg>
     </span>
 
     <span
@@ -56,7 +57,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleSkipOccurrence"
     >
-      <svg><use xlink:href="#iconRedo"></use></svg>
+      <svg><use xlink:href="#iconTaSkipForward"></use></svg>
     </span>
 
     <span
@@ -228,6 +229,7 @@ const migrateLabel = computed(() => {
     ? t('todo').migrateToToday
     : t('todo').migrateToTomorrow
 })
+const isMigrateToToday = computed(() => !!props.item && props.item.date < dayjs().format('YYYY-MM-DD'))
 
 const hasFixedRow = computed(() => props.showPin || props.showDetail)
 const pinLabel = computed(() => {

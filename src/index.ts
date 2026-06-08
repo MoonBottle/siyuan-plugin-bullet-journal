@@ -51,6 +51,9 @@ import {
   ICON_POMODORO,
   ICON_POMODORO_STATS,
   ICON_PROJECT,
+  ICON_SKIP_FORWARD,
+  ICON_SUN,
+  ICON_SUNRISE,
   ICON_TIMER,
   ICON_TODO,
 } from "@/constants/icons"
@@ -354,6 +357,9 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
+    this.addIcons(ICON_SKIP_FORWARD)
+    this.addIcons(ICON_SUN)
+    this.addIcons(ICON_SUNRISE)
     this.addIcons(ICON_TIMER)
     this.addIcons(ICON_TODO)
 
@@ -2946,8 +2952,6 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 直接打开弹框，无需等待 Dock 挂载
     showPomodoroTimerDialog(undefined, initialGroupId)
-    // 同时打开番茄 Dock，便于用户查看计时
-    this.openPomodoroDock()
   }
 
   /**
