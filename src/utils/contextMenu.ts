@@ -112,21 +112,21 @@ export function createItemMenu(
   if (isPending) {
     items.push({
       label: t('todo').complete,
-      icon: 'iconTaHabit',
+      icon: 'iconCheck',
       click: handlers.onComplete,
     })
 
     if (!isFocusing) {
       items.push({
         label: t('pomodoro').startFocus,
-        icon: 'iconTaPomodoro',
+        icon: 'iconTaTimer',
         click: handlers.onStartPomodoro,
       })
     }
 
     items.push({
       label: t('todo').migrate,
-      icon: 'iconForward',
+      icon: 'iconTaSun',
       submenu: (() => {
         const todayStr = getTodayISO()
         const tomorrowStr = getTomorrowISO()
@@ -134,14 +134,14 @@ export function createItemMenu(
         if (item.date !== todayStr) {
           submenu.push({
             label: t('todo').migrateToday,
-            icon: 'iconTaCalendar',
+            icon: 'iconTaSun',
             click: handlers.onMigrateToday,
           })
         }
         if (item.date !== tomorrowStr) {
           submenu.push({
             label: t('todo').migrateTomorrow,
-            icon: 'iconTaCalendar',
+            icon: 'iconTaSunrise',
             click: handlers.onMigrateTomorrow,
           })
         }
