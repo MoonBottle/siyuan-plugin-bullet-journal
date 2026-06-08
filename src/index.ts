@@ -43,15 +43,23 @@ import {
 import {
   ICON_AI_ASSISTANT,
   ICON_CALENDAR,
+  ICON_CALENDAR_DAYS,
+  ICON_CALENDAR_RANGE,
   ICON_CLOCK_PLUS,
   ICON_DASHBOARD,
+  ICON_FILE_TEXT,
+  ICON_FLAG,
   ICON_GANTT,
   ICON_GRIP_HORIZONTAL,
   ICON_HABIT,
+  ICON_INFO,
+  ICON_MESSAGE_SQUARE_TEXT,
   ICON_POMODORO,
   ICON_POMODORO_STATS,
   ICON_PROJECT,
   ICON_SKIP_FORWARD,
+  ICON_SQUARE_CHECK,
+  ICON_SQUARE_X,
   ICON_SUN,
   ICON_SUNRISE,
   ICON_TIMER,
@@ -349,15 +357,23 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
     this.addIcons(ICON_AI_ASSISTANT)
     this.addIcons(ICON_CALENDAR)
+    this.addIcons(ICON_CALENDAR_DAYS)
+    this.addIcons(ICON_CALENDAR_RANGE)
     this.addIcons(ICON_CLOCK_PLUS)
     this.addIcons(ICON_DASHBOARD)
+    this.addIcons(ICON_FILE_TEXT)
+    this.addIcons(ICON_FLAG)
     this.addIcons(ICON_GANTT)
     this.addIcons(ICON_GRIP_HORIZONTAL)
     this.addIcons(ICON_HABIT)
+    this.addIcons(ICON_INFO)
+    this.addIcons(ICON_MESSAGE_SQUARE_TEXT)
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
     this.addIcons(ICON_SKIP_FORWARD)
+    this.addIcons(ICON_SQUARE_CHECK)
+    this.addIcons(ICON_SQUARE_X)
     this.addIcons(ICON_SUN)
     this.addIcons(ICON_SUNRISE)
     this.addIcons(ICON_TIMER)

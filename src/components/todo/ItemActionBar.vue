@@ -12,7 +12,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleComplete"
     >
-      <svg><use xlink:href="#iconCheck"></use></svg>
+      <svg><use xlink:href="#iconTaSquareCheck"></use></svg>
     </span>
 
     <span
@@ -68,7 +68,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleAbandon"
     >
-      <svg><use xlink:href="#iconCloseRound"></use></svg>
+      <svg><use xlink:href="#iconTaSquareX"></use></svg>
     </span>
 
     <span
@@ -79,7 +79,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleOpenDocClick"
     >
-      <svg><use xlink:href="#iconFile"></use></svg>
+      <svg><use xlink:href="#iconTaFileText"></use></svg>
     </span>
 
     <span
@@ -90,7 +90,7 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleOpenCalendar"
     >
-      <svg><use xlink:href="#iconCalendar"></use></svg>
+      <svg><use xlink:href="#iconTaCalendarRange"></use></svg>
     </span>
 
     <template
@@ -117,7 +117,7 @@
         @mouseleave="handleTooltipLeave"
         @click.stop="handleOpenDetail"
       >
-        <svg><use xlink:href="#iconInfo"></use></svg>
+        <svg><use xlink:href="#iconTaInfo"></use></svg>
       </span>
 
       <span
@@ -127,7 +127,7 @@
         @mouseleave="handleTooltipLeave"
         @click.stop="handleOpenCalendar"
       >
-        <svg><use xlink:href="#iconCalendar"></use></svg>
+        <svg><use xlink:href="#iconTaCalendarRange"></use></svg>
       </span>
     </template>
   </div>

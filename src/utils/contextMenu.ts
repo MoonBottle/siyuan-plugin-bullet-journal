@@ -112,7 +112,7 @@ export function createItemMenu(
   if (isPending) {
     items.push({
       label: t('todo').complete,
-      icon: 'iconCheck',
+      icon: 'iconTaSquareCheck',
       click: handlers.onComplete,
     })
 
@@ -147,7 +147,7 @@ export function createItemMenu(
         }
         submenu.push({
           label: t('todo').chooseDate,
-          icon: 'iconTaCalendar',
+          icon: 'iconTaCalendarDays',
           click: handlers.onMigrateCustom,
         })
         return submenu
@@ -156,13 +156,13 @@ export function createItemMenu(
 
     items.push({
       label: t('todo').abandon,
-      icon: 'iconCloseRound',
+      icon: 'iconTaSquareX',
       click: handlers.onAbandon,
     })
 
     items.push({
       label: t('todo').priority.setPriority,
-      icon: 'iconMark',
+      icon: 'iconTaFlag',
       submenu: [
         {
           iconHTML: '🔥',
@@ -193,20 +193,20 @@ export function createItemMenu(
 
   items.push({
     label: t('todo').openDoc,
-    icon: 'iconOpen',
+    icon: 'iconTaFileText',
     click: handlers.onOpenDoc,
   })
 
   items.push({
     label: t('todo').viewDetail,
-    icon: 'iconInfo',
+    icon: 'iconTaInfo',
     click: handlers.onShowDetail,
   })
 
   if (showCalendarMenu && handlers.onShowCalendar) {
     items.push({
       label: t('todo').viewCalendar,
-      icon: 'iconTaCalendar',
+      icon: 'iconTaCalendarRange',
       click: handlers.onShowCalendar,
     })
   }
