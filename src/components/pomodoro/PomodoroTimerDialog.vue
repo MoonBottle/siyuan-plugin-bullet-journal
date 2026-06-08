@@ -484,7 +484,6 @@ watch(selectedGroup, () => {
 .item-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 360px;
 }
 
 .item-group {
