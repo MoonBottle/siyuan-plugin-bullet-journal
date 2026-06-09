@@ -121,6 +121,10 @@ const buildCalendarEventFromGanttTask = (task: any): CalendarEvent => {
       dateRangeStart: props.dateRangeStart,
       dateRangeEnd: props.dateRangeEnd,
       pomodoros: props.pomodoros,
+      priority: props.priority,
+      reminder: props.reminder,
+      repeatRule: props.repeatRule,
+      endCondition: props.endCondition,
     },
   }
 }
