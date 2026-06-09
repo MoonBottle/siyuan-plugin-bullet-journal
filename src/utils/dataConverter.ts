@@ -397,6 +397,7 @@ export class DataConverter {
    */
   private static calculateTaskDates(
     task: Task,
+    items?: Item[],
   ): { start: Date | undefined, end: Date | undefined } {
     if (task.date || task.startDateTime) {
       const startStr = task.startDateTime || task.date
@@ -419,11 +420,13 @@ export class DataConverter {
       }
     }
 
-    if (task.items && task.items.length > 0) {
+    const effectiveItems = items ?? task.items
+
+    if (effectiveItems && effectiveItems.length > 0) {
       let minDate: Date | null = null
       let maxDate: Date | null = null
 
-      for (const item of task.items) {
+      for (const item of effectiveItems) {
         const itemStart = item.startDateTime || item.date
         const itemEnd = item.endDateTime || item.startDateTime || item.date
 

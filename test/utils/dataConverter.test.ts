@@ -311,6 +311,70 @@ describe('dataConverter.projectsToGanttTasks', () => {
     expect(item!.extendedProps?.isMultiDate).toBeFalsy()
     expect(item!.extendedProps?.segments).toBeUndefined()
   })
+
+  it('calculateTaskDates 使用传入的 items 计算日期', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'pending',
+            },
+            {
+              id: 'item-2',
+              content: '3月10号',
+              date: '2026-03-10',
+              docId: 'doc-1',
+              lineNumber: 3,
+              status: 'pending',
+            },
+            {
+              id: 'item-3',
+              content: '3月20号',
+              date: '2026-03-20',
+              docId: 'doc-1',
+              lineNumber: 4,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], true, {
+      start: '2026-03-05',
+      end: '2026-03-15',
+    })
+
+    const task = tasks.find((t) => t.id === 'task-task-1')
+    expect(task).toBeDefined()
+
+    // 任务日期应基于过滤后的事项（3月10号），而非全部事项
+    expect(localParts(task!.start_date)).toMatchObject({
+      year: 2026,
+      month: 3,
+      day: 10,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
+    expect(localParts(task!.end_date)).toEqual({
+      year: 2026,
+      month: 3,
+      day: 10,
+      hour: 23,
+      minute: 59,
+      second: 59,
+      millisecond: 999,
+    })
+  })
 })
 
 describe('dataConverter.mergeItemsToSegments', () => {
