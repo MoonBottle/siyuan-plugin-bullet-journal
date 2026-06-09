@@ -9,12 +9,14 @@
         class="gantt-inner"
       ></div>
     </div>
-    <div
-      ref="eventTooltipEl"
-      class="gantt-event-tooltip"
-      :class="{ 'gantt-event-tooltip--visible': eventTooltipVisible }"
-      :style="eventTooltipStyle"
-    />
+    <Teleport to="body">
+      <div
+        ref="eventTooltipEl"
+        class="gantt-event-tooltip"
+        :class="{ 'gantt-event-tooltip--visible': eventTooltipVisible }"
+        :style="eventTooltipStyle"
+      />
+    </Teleport>
   </div>
 </template>
 
