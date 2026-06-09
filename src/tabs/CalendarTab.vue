@@ -493,7 +493,7 @@ watch(currentView, (newView) => {
   .block__icons {
     padding: 6px 0;
   }
-  
+
   .tab-content {
     padding: 0;
   }

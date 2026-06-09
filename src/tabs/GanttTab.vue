@@ -23,7 +23,7 @@
         :placeholder="t('gantt').displayLevel"
       />
       <div class="date-filter">
-        <span>{{ showItems ? t('gantt').itemDateFilter : t('gantt').taskDateFilter }}</span>
+        <span class="label">{{ showItems ? t('gantt').itemDateFilter : t('gantt').taskDateFilter }}</span>
         <input
           v-model="startDate"
           type="date"
@@ -410,7 +410,7 @@ const handleRefresh = async () => {
   .block__icons {
     padding: 6px 0;
   }
-  
+
   .tab-content {
     padding: 0;
   }
@@ -426,7 +426,6 @@ const handleRefresh = async () => {
   gap: 8px;
   flex-wrap: wrap;
   padding: 6px 12px;
-  // background: var(--b3-theme-surface);
 
   .block__icon {
     opacity: 1;
@@ -437,6 +436,10 @@ const handleRefresh = async () => {
     align-items: center;
     gap: 6px;
     font-size: 12px;
+
+    .label {
+      font-size: 14px;
+    }
 
     input[type='date'] {
       padding: 5px 10px;
