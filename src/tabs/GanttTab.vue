@@ -6,6 +6,18 @@
     <div class="block__icons">
       <!-- 左侧：甘特图控件 -->
       <SySelect
+        v-if="settingsStore.groups.length > 0"
+        v-model="selectedGroup"
+        :options="groupOptions"
+        :placeholder="t('settings').projectGroups.allGroups"
+      />
+      <SySelect
+        v-model="selectedStatuses"
+        multiple
+        :options="statusOptions"
+        :placeholder="t('common').statusFilter"
+      />
+      <SySelect
         v-model="displayLevel"
         :options="displayLevelOptions"
         :placeholder="t('gantt').displayLevel"
@@ -22,24 +34,12 @@
           type="date"
         />
       </div>
-      <SySelect
-        v-model="selectedStatuses"
-        multiple
-        :options="statusOptions"
-        :placeholder="t('common').statusFilter"
-      />
+      <span class="fn__flex-1 fn__space"></span>
+      <!-- 右侧：刷新 -->
       <SySelect
         v-model="viewMode"
         :options="viewModeOptions"
         :placeholder="t('gantt').day"
-      />
-      <span class="fn__flex-1 fn__space"></span>
-      <!-- 右侧：分组、刷新 -->
-      <SySelect
-        v-if="settingsStore.groups.length > 0"
-        v-model="selectedGroup"
-        :options="groupOptions"
-        :placeholder="t('settings').projectGroups.allGroups"
       />
       <span
         class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
@@ -403,7 +403,7 @@ const handleRefresh = async () => {
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--b3-theme-surface);
+  // background: var(--b3-theme-surface);
 }
 
 .gantt-tab--embedded {
@@ -426,7 +426,7 @@ const handleRefresh = async () => {
   gap: 8px;
   flex-wrap: wrap;
   padding: 6px 12px;
-  background: var(--b3-theme-surface);
+  // background: var(--b3-theme-surface);
 
   .block__icon {
     opacity: 1;
