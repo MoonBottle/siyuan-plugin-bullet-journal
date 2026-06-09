@@ -99,7 +99,7 @@ onUnmounted(() => {
   min-width: 350px;
   max-width: 440px;
   overflow: visible;
-  padding: 12px;
+  padding: 10px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
