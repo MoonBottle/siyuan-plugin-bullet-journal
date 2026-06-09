@@ -15,11 +15,13 @@
         @back="handleBack"
       />
       <span class="fn__flex-1 fn__space"></span>
-      <!-- 视图切换 -->
+      <!-- 分组选择 -->
       <SySelect
-        v-model="currentView"
-        :options="viewOptions"
-      />
+        v-if="settingsStore.groups.length > 0"
+        v-model="selectedGroup"
+        :options="groupOptions"
+        :placeholder="t('settings').projectGroups.allGroups"
+        />
       <!-- 状态筛选 -->
       <SySelect
         v-model="selectedStatuses"
@@ -27,12 +29,10 @@
         :options="statusOptions"
         :placeholder="t('common').statusFilter"
       />
-      <!-- 分组选择 -->
+      <!-- 视图切换 -->
       <SySelect
-        v-if="settingsStore.groups.length > 0"
-        v-model="selectedGroup"
-        :options="groupOptions"
-        :placeholder="t('settings').projectGroups.allGroups"
+        v-model="currentView"
+        :options="viewOptions"
       />
       <!-- 刷新按钮 -->
       <span
