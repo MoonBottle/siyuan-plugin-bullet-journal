@@ -4,14 +4,7 @@
       ref="calendarEl"
       class="calendar-container"
     ></div>
-    <Teleport to="body">
-      <div
-        ref="eventTooltipEl"
-        class="calendar-event-tooltip"
-        :class="{ 'calendar-event-tooltip--visible': eventTooltipVisible }"
-        :style="eventTooltipStyle"
-      />
-    </Teleport>
+    <EventDetailTooltip ref="eventTooltipRef" />
   </div>
 </template>
 
@@ -36,6 +29,7 @@ import {
   ref,
   watch,
 } from 'vue'
+import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 
 import {
@@ -60,7 +54,6 @@ import {
 } from '@/utils/dateRangeUtils'
 import dayjs from '@/utils/dayjs'
 import {
-  buildEventDetailContent,
   createDialog,
   showDatePickerDialog,
   showEventDetailModal,
@@ -71,7 +64,6 @@ import {
 } from '@/utils/eventBus'
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import { isMobileDevice } from '@/utils/isMobile'
-import { computeTooltipPosition } from '@/utils/tooltipPosition'
 
 const props = defineProps<Props>()
 
@@ -253,55 +245,13 @@ interface Props {
 }
 
 const calendarEl = ref<HTMLElement | null>(null)
-const eventTooltipEl = ref<HTMLElement | null>(null)
-const eventTooltipVisible = ref(false)
-const eventTooltipStyle = ref<{ left?: string, top?: string }>({})
-let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null
+const eventTooltipRef = ref<InstanceType<typeof EventDetailTooltip> | null>(null)
 let calendarInstance: Calendar | null = null
 let resizeObserver: ResizeObserver | null = null
 /** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
 let pendingNavigateDate: string | null = null
 let lastDateClickTime = 0
 let lastDateClickStr = ''
-
-// 悬浮预览：显示
-const showEventTooltip = (info: any) => {
-  if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer)
-    eventTooltipTimer = null
-  }
-  eventTooltipTimer = setTimeout(() => {
-    eventTooltipTimer = null
-    const eventData: CalendarEvent = {
-      id: info.event.id,
-      title: info.event.title,
-      start: info.event.startStr,
-      end: info.event.endStr,
-      allDay: info.event.allDay,
-      extendedProps: info.event.extendedProps,
-    }
-    const html = buildEventDetailContent(eventData)
-    if (eventTooltipEl.value) {
-      eventTooltipEl.value.innerHTML = html
-      nextTick(() => {
-        if (eventTooltipEl.value) {
-          const rect = info.el.getBoundingClientRect()
-          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4)
-          eventTooltipVisible.value = true
-        }
-      })
-    }
-  }, 300)
-}
-
-// 悬浮预览：隐藏
-const hideEventTooltip = () => {
-  if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer)
-    eventTooltipTimer = null
-  }
-  eventTooltipVisible.value = false
-}
 
 // 打开番茄钟弹框
 const openPomodoroDialog = (item: Item) => {
@@ -571,8 +521,20 @@ onMounted(async () => {
           e.stopPropagation()
           handleCalendarEventContextMenu(info, e)
         }, true)
-        info.el.addEventListener('mouseenter', () => showEventTooltip(info))
-        info.el.addEventListener('mouseleave', () => hideEventTooltip())
+        info.el.addEventListener('mouseenter', () => {
+          const eventData: CalendarEvent = {
+            id: info.event.id,
+            title: info.event.title,
+            start: info.event.startStr,
+            end: info.event.endStr,
+            allDay: info.event.allDay,
+            extendedProps: info.event.extendedProps as CalendarEvent['extendedProps'],
+          }
+          eventTooltipRef.value?.show(eventData, info.el)
+        })
+        info.el.addEventListener('mouseleave', () => {
+          eventTooltipRef.value?.hide()
+        })
       },
 
       eventDrop: (info) => {
@@ -711,45 +673,6 @@ defineExpose({
 .calendar-container {
   height: 100%;
   width: 100%;
-}
-</style>
-
-<style lang="scss">
-/* Teleport 到 body 的 tooltip，不能用 scoped */
-.calendar-event-tooltip {
-  position: fixed;
-  z-index: 10000;
-  max-width: 440px;
-  overflow: visible;
-  padding: 12px;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-
-  &.calendar-event-tooltip--visible {
-    opacity: 1;
-  }
-
-  .sy-dialog-content {
-    padding: 0;
-  }
-
-  .sy-dialog-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sy-dialog-card {
-    font-size: 12px;
-    padding: 10px 14px;
-    border-radius: 4px;
-    border: 1px solid var(--b3-border-color);
-  }
 }
 </style>
 
