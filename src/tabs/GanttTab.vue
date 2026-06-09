@@ -28,7 +28,7 @@
           v-model="startDate"
           type="date"
         />
-        <span>{{ t('gantt').to }}</span>
+        <span class="label">{{ t('gantt').to }}</span>
         <input
           v-model="endDate"
           type="date"
@@ -438,7 +438,7 @@ const handleRefresh = async () => {
     font-size: 12px;
 
     .label {
-      font-size: 14px;
+      font-size: 13px;
     }
 
     input[type='date'] {
