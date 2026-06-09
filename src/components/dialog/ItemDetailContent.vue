@@ -200,7 +200,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
                 @mouseleave="hideTooltip"
-              >Δ</span>
+              >📊</span>
               <span class="meta-text">{{ focusDeltaDisplay }}</span>
             </span>
           </div>
