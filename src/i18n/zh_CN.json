@@ -72,7 +72,17 @@
     "projectName": "项目名称",
     "taskName": "任务名称",
     "startTime": "开始日期",
-    "endTime": "结束日期"
+    "endTime": "结束日期",
+    "datePresetLabel": "日期范围",
+    "datePresetToday": "今天",
+    "datePresetThisWeek": "本周",
+    "datePresetThisMonth": "本月",
+    "datePresetRecent7": "近7天",
+    "datePresetRecent30": "近30天",
+    "datePresetRecent90": "近90天",
+    "datePresetRecent180": "近180天",
+    "datePresetAll": "全部",
+    "datePresetCustom": "自定义"
   },
   "workbench": {
     "title": "工作台",

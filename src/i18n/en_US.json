@@ -72,7 +72,17 @@
     "projectName": "Project Name",
     "taskName": "Task Name",
     "startTime": "Start Date",
-    "endTime": "End Date"
+    "endTime": "End Date",
+    "datePresetLabel": "Date Range",
+    "datePresetToday": "Today",
+    "datePresetThisWeek": "This Week",
+    "datePresetThisMonth": "This Month",
+    "datePresetRecent7": "Recent 7 Days",
+    "datePresetRecent30": "Recent 30 Days",
+    "datePresetRecent90": "Recent 90 Days",
+    "datePresetRecent180": "Recent 180 Days",
+    "datePresetAll": "All",
+    "datePresetCustom": "Custom"
   },
   "workbench": {
     "title": "Workbench",
