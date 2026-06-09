@@ -13,7 +13,7 @@ interface HolidayApiEntry {
 }
 
 interface HolidayApiPayload {
-  Years?: HolidayApiEntry[] | Record<string, HolidayApiEntry>
+  Years?: HolidayApiEntry[] | Record<string, HolidayApiEntry[]>
 }
 
 type PersistenceAdapter = Pick<Plugin, 'loadData' | 'saveData'>
@@ -107,7 +107,7 @@ function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendar
   const entries = Array.isArray(years)
     ? years
     : years && typeof years === 'object'
-      ? Object.values(years)
+      ? Object.values(years).flat()
       : []
 
   if (!entries.length) {

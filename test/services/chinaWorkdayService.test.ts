@@ -86,11 +86,11 @@ describe('chinaWorkdayService', () => {
       ok: true,
       json: async () => ({
         Years: {
-          2026: {
+          2026: [{
             StartDate: '2026-10-01',
             EndDate: '2026-10-03',
             CompDays: ['2026-10-10'],
-          },
+          }],
         },
       }),
     }))
@@ -155,11 +155,11 @@ describe('chinaWorkdayService', () => {
       ok: true,
       json: async () => ({
         Years: {
-          2026: {
+          2026: [{
             StartDate: '2026-10-01',
             EndDate: '2026-10-03',
             CompDays: ['2026-10-10'],
-          },
+          }],
         },
       }),
     }))
@@ -201,11 +201,11 @@ describe('chinaWorkdayService', () => {
       ok: true,
       json: async () => ({
         Years: {
-          2026: {
+          2026: [{
             StartDate: '2026-10-01',
             EndDate: '2026-10-03',
             CompDays: ['2026-10-10'],
-          },
+          }],
         },
       }),
     }))
