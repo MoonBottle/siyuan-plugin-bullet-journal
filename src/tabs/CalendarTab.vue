@@ -326,10 +326,22 @@ let refreshChannel: BroadcastChannel | null = null
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 // 初始化数据
-// defaultView 仅用于初始化，不 watch：用户在视图内切换月/周/日后不应被配置覆盖
+// defaultView：嵌入模式下 watch 以响应配置变更；独立模式下不 watch，避免覆盖用户手动切换
 watch(() => props.groupId, (val) => {
   if (val !== undefined && val !== selectedGroup.value) {
     selectedGroup.value = val
+  }
+})
+
+watch(() => props.itemStatusFilter, (val) => {
+  if (val !== undefined) {
+    selectedStatuses.value = [...val]
+  }
+})
+
+watch(() => props.defaultView, (val) => {
+  if (props.embedded && val && val !== currentView.value) {
+    currentView.value = val
   }
 })
 
