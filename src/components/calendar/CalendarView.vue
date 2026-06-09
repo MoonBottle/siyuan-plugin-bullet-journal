@@ -534,7 +534,7 @@ onMounted(async () => {
           e.stopPropagation()
           handleCalendarEventContextMenu(info, e)
         }, true)
-        info.el.addEventListener('mouseenter', () => {
+        info.el.addEventListener('mouseenter', (e: MouseEvent) => {
           const eventData: CalendarEvent = {
             id: info.event.id,
             title: info.event.title,
@@ -543,7 +543,7 @@ onMounted(async () => {
             allDay: info.event.allDay,
             extendedProps: info.event.extendedProps as CalendarEvent['extendedProps'],
           }
-          eventTooltipRef.value?.show(eventData, info.el)
+          eventTooltipRef.value?.show(eventData, info.el, 300, e)
         })
         info.el.addEventListener('mouseleave', () => {
           eventTooltipRef.value?.hide()

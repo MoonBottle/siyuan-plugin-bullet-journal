@@ -42,7 +42,7 @@ const currentItem = ref<Item | null>(null)
 let timer: ReturnType<typeof setTimeout> | null = null
 let isHoveringTooltip = false
 
-const show = (event: CalendarEvent, anchorEl: HTMLElement, delay = 300) => {
+const show = (event: CalendarEvent, anchorEl: HTMLElement, delay = 300, mouseEvent?: MouseEvent) => {
   if (timer) {
     clearTimeout(timer)
     timer = null
@@ -53,7 +53,7 @@ const show = (event: CalendarEvent, anchorEl: HTMLElement, delay = 300) => {
     nextTick(() => {
       if (tooltipEl.value) {
         const rect = anchorEl.getBoundingClientRect()
-        positionStyle.value = computeTooltipPosition(rect, tooltipEl.value, 4)
+        positionStyle.value = computeTooltipPosition(rect, tooltipEl.value, 4, 8, mouseEvent?.clientX)
         visible.value = true
       }
     })

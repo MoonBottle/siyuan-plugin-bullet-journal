@@ -1,13 +1,14 @@
 /**
  * 根据锚点位置和弹框尺寸，计算弹框的 fixed 定位坐标。
  * 垂直方向：优先下方，空间不足时改为上方。
- * 水平方向：左对齐锚点，超出视口时做边界约束。
+ * 水平方向：有鼠标坐标时以鼠标位置为基准，否则左对齐锚点，超出视口时做边界约束。
  */
 export function computeTooltipPosition(
   anchorRect: DOMRect,
   tooltipEl: HTMLElement,
   gap = 4,
   viewportPadding = 8,
+  mouseX?: number,
 ): { left: string, top: string } {
   const tooltipHeight = tooltipEl.offsetHeight
   const tooltipWidth = tooltipEl.offsetWidth
@@ -28,8 +29,8 @@ export function computeTooltipPosition(
     top = spaceBelow >= spaceAbove ? anchorRect.bottom + gap : anchorRect.top - tooltipHeight - gap
   }
 
-  // 水平：左对齐锚点，做边界约束
-  let left = anchorRect.left
+  // 水平：有鼠标坐标时以鼠标位置为基准，否则左对齐锚点
+  let left = mouseX != null ? mouseX + 12 : anchorRect.left
   if (left + tooltipWidth > vw - viewportPadding) {
     left = vw - tooltipWidth - viewportPadding
   }

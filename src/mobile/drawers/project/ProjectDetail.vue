@@ -156,7 +156,7 @@
             >
               <div class="priority-header low">
                 <div class="priority-icon">
-                  <svg><use xlink:href="#iconCoffee"></use></svg>
+                  <svg><use xlink:href="#iconTaCoffee"></use></svg>
                 </div>
                 <span class="priority-name">{{ t('mobile.priority.low') || '低优先级' }}</span>
                 <span class="priority-count">{{ lowPriorityTasks.length }}</span>
