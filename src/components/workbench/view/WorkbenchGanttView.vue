@@ -4,6 +4,7 @@
       embedded
       :view-mode="config.viewMode"
       :show-items="config.showItems"
+      :date-preset="config.datePreset"
       :start-date="config.startDate"
       :end-date="config.endDate"
       :group-id="config.groupId"
