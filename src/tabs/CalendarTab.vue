@@ -21,17 +21,12 @@
         :options="viewOptions"
       />
       <!-- 状态筛选 -->
-      <div class="status-filter">
-        <button
-          v-for="s in statusOptions"
-          :key="s.value"
-          class="status-btn"
-          :class="[{ active: isStatusActive(s.value) }]"
-          @click="toggleStatusFilter(s.value)"
-        >
-          {{ s.label }}
-        </button>
-      </div>
+      <SySelect
+        v-model="selectedStatuses"
+        multiple
+        :options="statusOptions"
+        :placeholder="t('common').statusFilter"
+      />
       <!-- 分组选择 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
@@ -135,42 +130,32 @@ const previousViewStack = ref<string[]>([])
 /** 设置是否已加载，用于控制 CalendarView 的渲染 */
 const isSettingsLoaded = ref(false)
 
-// 状态筛选：内部维护已选状态列表，undefined 表示全部选中
+// 状态筛选：SySelect 多选
 const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
-const internalStatusFilter = ref<ItemStatus[] | undefined>(props.itemStatusFilter)
+const selectedStatuses = ref<(string | number)[]>(
+  props.itemStatusFilter ? [...props.itemStatusFilter] : [...ALL_STATUSES],
+)
 
-const statusOptions: Array<{ value: ItemStatus, label: string }> = [
+const statusOptions = [
   {
-    value: 'pending',
+    value: 'pending' as string,
     label: t('common').statusPending,
   },
   {
-    value: 'completed',
+    value: 'completed' as string,
     label: t('common').statusCompleted,
   },
   {
-    value: 'abandoned',
+    value: 'abandoned' as string,
     label: t('common').statusAbandoned,
   },
 ]
 
-function isStatusActive(status: ItemStatus): boolean {
-  return !internalStatusFilter.value || internalStatusFilter.value.includes(status)
-}
-
-function toggleStatusFilter(status: ItemStatus) {
-  if (!internalStatusFilter.value) {
-    internalStatusFilter.value = ALL_STATUSES.filter((s) => s !== status)
-  } else if (internalStatusFilter.value.includes(status)) {
-    const next = internalStatusFilter.value.filter((s) => s !== status)
-    internalStatusFilter.value = next.length === 0 ? undefined : next
-  } else {
-    const next = [...internalStatusFilter.value, status]
-    internalStatusFilter.value = next.length === ALL_STATUSES.length ? undefined : next
-  }
-}
-
-const effectiveStatusFilter = computed(() => internalStatusFilter.value)
+// 计算传给 CalendarView 的 itemStatusFilter
+const effectiveStatusFilter = computed(() => {
+  if (selectedStatuses.value.length === ALL_STATUSES.length) return undefined
+  return selectedStatuses.value as ItemStatus[]
+})
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -348,9 +333,9 @@ watch(() => props.groupId, (val) => {
   }
 })
 
-watch(internalStatusFilter, (val) => {
-  emit('update:itemStatusFilter', val ?? [])
-})
+watch(selectedStatuses, (val) => {
+  emit('update:itemStatusFilter', val as ItemStatus[])
+}, { deep: true })
 
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted')
@@ -511,32 +496,6 @@ watch(currentView, (newView) => {
 .block__icons {
   .block__icon {
     opacity: 1;
-  }
-
-  .status-filter {
-    display: flex;
-    gap: 4px;
-  }
-
-  .status-btn {
-    padding: 5px 10px;
-    border: 1px solid var(--b3-border-color);
-    background: var(--b3-theme-background);
-    color: var(--b3-theme-on-surface);
-    cursor: pointer;
-    border-radius: var(--b3-border-radius);
-    font-size: 12px;
-    transition: all 0.2s;
-
-    &:hover {
-      background: var(--b3-theme-surface-light);
-    }
-
-    &.active {
-      background: var(--b3-theme-primary);
-      border-color: var(--b3-theme-primary);
-      color: var(--b3-theme-on-primary);
-    }
   }
 
   select.b3-select {

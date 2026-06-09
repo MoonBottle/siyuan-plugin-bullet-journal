@@ -42,6 +42,13 @@
             @mouseenter="setCurrent(option)"
             @mouseleave="clearCurrent"
           >
+            <svg
+              v-if="multiple"
+              class="sy-select__check"
+              :class="{ 'is-checked': isOptionActive(option) }"
+            >
+              <use xlink:href="#iconSelect"></use>
+            </svg>
             <span class="b3-menu__label">{{ getOptionLabel(option) }}</span>
           </div>
         </div>
@@ -64,22 +71,24 @@ export interface SySelectOption {
 }
 
 interface Props {
-  modelValue: string | number
+  modelValue: string | number | (string | number)[]
   options: SySelectOption[]
   placeholder?: string
   disabled?: boolean
   placement?: 'top' | 'bottom'
+  multiple?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择',
   disabled: false,
   placement: 'bottom',
+  multiple: false,
 })
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number]
-  "change": [value: string | number]
+  'update:modelValue': [value: string | number | (string | number)[]]
+  'change': [value: string | number | (string | number)[]]
 }>()
 
 const isOpen = ref(false)
@@ -97,7 +106,11 @@ function getOptionValue(option: SySelectOption): string | number {
 }
 
 function isOptionActive(option: SySelectOption): boolean {
-  return getOptionValue(option) === props.modelValue
+  const value = getOptionValue(option)
+  if (props.multiple) {
+    return Array.isArray(props.modelValue) && props.modelValue.includes(value)
+  }
+  return value === props.modelValue
 }
 
 function isCurrent(option: SySelectOption): boolean {
@@ -113,6 +126,19 @@ function clearCurrent(): void {
 }
 
 const displayLabel = computed(() => {
+  if (props.multiple) {
+    if (!Array.isArray(props.modelValue) || props.modelValue.length === 0) {
+      return props.placeholder
+    }
+    if (props.modelValue.length === props.options.length) {
+      return props.placeholder
+    }
+    const labels = props.modelValue
+      .map((val) => props.options.find((opt) => getOptionValue(opt) === val))
+      .filter(Boolean)
+      .map((opt) => getOptionLabel(opt!))
+    return labels.join(', ')
+  }
   const selected = props.options.find((opt) => isOptionActive(opt))
   return selected ? getOptionLabel(selected) : props.placeholder
 })
@@ -133,9 +159,21 @@ function closeDropdown() {
 
 function selectOption(option: SySelectOption) {
   const value = getOptionValue(option)
-  emit('update:modelValue', value)
-  emit('change', value)
-  isOpen.value = false
+  if (props.multiple) {
+    const current = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+    const index = current.indexOf(value)
+    if (index >= 0) {
+      current.splice(index, 1)
+    } else {
+      current.push(value)
+    }
+    emit('update:modelValue', current)
+    emit('change', current)
+  } else {
+    emit('update:modelValue', value)
+    emit('change', value)
+    isOpen.value = false
+  }
 }
 
 function getElementViewportRect(element: HTMLElement): DOMRect {
@@ -373,6 +411,20 @@ const vClickOutside = {
     }
   }
 
+  &__check {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    fill: var(--b3-theme-on-surface);
+    opacity: 0.3;
+    margin-right: 4px;
+
+    &.is-checked {
+      fill: var(--b3-theme-primary);
+      opacity: 1;
+    }
+  }
+
   &__menu {
     overflow: hidden;
 
@@ -383,6 +435,9 @@ const vClickOutside = {
       // 确保内容宽度自适应，不被截断
       .b3-menu__item {
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
     }
   }

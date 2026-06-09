@@ -27,17 +27,12 @@
         <label class="gantt-config-dialog__label">
           {{ t('common').statusFilter }}
         </label>
-        <div class="gantt-config-dialog__status-buttons">
-          <button
-            v-for="s in statusOptions"
-            :key="s.value"
-            class="gantt-config-dialog__status-btn"
-            :class="[{ active: selectedStatuses.includes(s.value) }]"
-            @click="toggleStatus(s.value)"
-          >
-            {{ s.label }}
-          </button>
-        </div>
+        <SySelect
+          v-model="selectedStatuses"
+          multiple
+          :options="statusOptions"
+          :placeholder="t('common').statusFilter"
+        />
       </div>
       <div class="gantt-config-dialog__field">
         <label class="gantt-config-dialog__label">
@@ -139,28 +134,21 @@ const customStartDate = ref(props.initialConfig.startDate ?? '')
 const customEndDate = ref(props.initialConfig.endDate ?? '')
 
 const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
-const selectedStatuses = ref<ItemStatus[]>(props.initialConfig.itemStatusFilter ?? ALL_STATUSES)
-
-function toggleStatus(status: ItemStatus) {
-  const index = selectedStatuses.value.indexOf(status)
-  if (index >= 0) {
-    selectedStatuses.value.splice(index, 1)
-  } else {
-    selectedStatuses.value.push(status)
-  }
-}
+const selectedStatuses = ref<(string | number)[]>(
+  props.initialConfig.itemStatusFilter ? [...props.initialConfig.itemStatusFilter] : [...ALL_STATUSES],
+)
 
 const statusOptions = [
   {
-    value: 'pending' as ItemStatus,
+    value: 'pending' as string,
     label: t('common').statusPending,
   },
   {
-    value: 'completed' as ItemStatus,
+    value: 'completed' as string,
     label: t('common').statusCompleted,
   },
   {
-    value: 'abandoned' as ItemStatus,
+    value: 'abandoned' as string,
     label: t('common').statusAbandoned,
   },
 ]
@@ -245,7 +233,7 @@ function handleConfirm() {
     datePreset: selectedDatePreset.value,
     startDate: selectedDatePreset.value === 'custom' ? customStartDate.value : undefined,
     endDate: selectedDatePreset.value === 'custom' ? customEndDate.value : undefined,
-    itemStatusFilter: selectedStatuses.value.length < ALL_STATUSES.length ? [...selectedStatuses.value] : undefined,
+    itemStatusFilter: selectedStatuses.value.length < ALL_STATUSES.length ? [...selectedStatuses.value] as ItemStatus[] : undefined,
     groupId: selectedGroup.value || undefined,
   })
 }
@@ -304,27 +292,5 @@ function handleConfirm() {
   background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
   font-size: 13px;
-}
-
-.gantt-config-dialog__status-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.gantt-config-dialog__status-btn {
-  padding: 4px 10px;
-  border: 1px solid var(--b3-border-color);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-surface);
-  cursor: pointer;
-  border-radius: var(--b3-border-radius);
-  font-size: 12px;
-  transition: all 0.2s;
-
-  &.active {
-    background: var(--b3-theme-primary);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-  }
 }
 </style>
