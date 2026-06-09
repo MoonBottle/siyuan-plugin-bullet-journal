@@ -403,10 +403,21 @@ const handleRefresh = async () => {
   width: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--b3-theme-surface);
 }
 
 .gantt-tab--embedded {
-  // 嵌入模式下无需额外样式，预留扩展点
+  .block__icons {
+    padding: 6px 0;
+  }
+  
+  .tab-content {
+    padding: 0;
+  }
+}
+
+:deep(.gantt_task_vscroll) {
+  background: var(--b3-theme-surface);
 }
 
 .block__icons {
@@ -415,7 +426,6 @@ const handleRefresh = async () => {
   gap: 8px;
   flex-wrap: wrap;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
 
   .block__icon {
@@ -453,5 +463,6 @@ const handleRefresh = async () => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  padding: 0 12px;
 }
 </style>
