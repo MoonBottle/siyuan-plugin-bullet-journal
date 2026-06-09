@@ -1,4 +1,8 @@
 import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
+import {
+  ICON_COFFEE,
+  ICON_TOMATO,
+} from '@/constants/icons'
 
 export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete'
 
@@ -400,6 +404,7 @@ function buildDetachedWindowHtml(): string {
         width: 16px;
         height: 16px;
         fill: currentColor;
+        stroke: currentColor;
       }
       .floating-tomato-summary {
         min-width: 0;
@@ -531,6 +536,7 @@ function buildDetachedWindowHtml(): string {
     </style>
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">${ICON_TOMATO}${ICON_COFFEE}</svg>
     <div id="${ROOT_ID}"></div>
     <div id="sy-tooltip-wrapper"><span class="b3-tooltips b3-tooltips__n sy-fixed-tooltip"></span></div>
     <script>
