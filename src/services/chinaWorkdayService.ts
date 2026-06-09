@@ -3,7 +3,7 @@ import type { ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback'
 import { reactive } from 'vue'
 import { CHINA_WORKDAY_FALLBACK } from '@/constants/chinaWorkdayFallback'
 
-const HOLIDAY_API_URL = 'https://raw.githubusercontent.com/lanceliao/china-holiday-calender/master/holidayAPI.json'
+const HOLIDAY_API_URL = 'https://cdn.jsdelivr.net/gh/lanceliao/china-holiday-calender@master/holidayAPI.json'
 const CACHE_KEY = 'china-workday-calendar.json'
 
 interface HolidayApiEntry {
