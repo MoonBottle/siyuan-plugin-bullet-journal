@@ -312,7 +312,7 @@ describe('dataConverter.projectsToGanttTasks', () => {
     expect(item!.extendedProps?.segments).toBeUndefined()
   })
 
-  it('calculateTaskDates 使用传入的 items 计算日期', () => {
+  it('showItems=true + 日期过滤：任务日期精确到毫秒级边界', () => {
     const tasks = DataConverter.projectsToGanttTasks([
       projectWithTasks([
         {
