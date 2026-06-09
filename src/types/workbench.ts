@@ -104,9 +104,21 @@ export interface WorkbenchCalendarViewConfig {
   groupId?: string
 }
 
+export type GanttDatePreset =
+  | 'today'
+  | 'thisWeek'
+  | 'thisMonth'
+  | 'recent7'
+  | 'recent30'
+  | 'recent90'
+  | 'recent180'
+  | 'all'
+  | 'custom'
+
 export interface WorkbenchGanttViewConfig {
   viewMode?: 'day' | 'week' | 'month'
   showItems?: boolean
+  datePreset?: GanttDatePreset
   startDate?: string
   endDate?: string
   groupId?: string
