@@ -490,11 +490,18 @@ watch(currentView, (newView) => {
 }
 
 .calendar-tab--embedded {
-  // 嵌入模式下无需额外样式，预留扩展点
+  .block__icons {
+    padding: 6px 0;
+  }
+  
+  .tab-content {
+    padding: 0;
+  }
 }
 
 .block__icons {
   gap: 8px;
+  padding: 6px 12px;
   .block__icon {
     opacity: 1;
   }
@@ -505,5 +512,6 @@ watch(currentView, (newView) => {
   min-height: 0;
   overflow: hidden;
   display: flex;
+  padding: 0 12px;
 }
 </style>
