@@ -494,24 +494,9 @@ watch(currentView, (newView) => {
 }
 
 .block__icons {
+  gap: 8px;
   .block__icon {
     opacity: 1;
-  }
-
-  select.b3-select {
-    width: auto !important;
-    min-width: 60px;
-    margin-left: 8px;
-    padding: 4px 24px 4px 8px;
-  }
-
-  /* 两个下拉框之间的间距 */
-  .sy-select + .sy-select {
-    margin-left: 12px;
-  }
-
-  .refresh-btn {
-    margin-left: 6px;
   }
 }
 
