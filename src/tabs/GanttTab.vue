@@ -13,7 +13,7 @@
         {{ t('gantt').showItems }}
       </label>
       <div class="date-filter">
-        <span>{{ t('gantt').dateFilter }}</span>
+        <span>{{ showItems ? t('gantt').itemDateFilter : t('gantt').taskDateFilter }}</span>
         <input
           v-model="startDate"
           type="date"
@@ -30,17 +30,11 @@
         :options="statusOptions"
         :placeholder="t('common').statusFilter"
       />
-      <div class="view-modes">
-        <button
-          v-for="mode in viewModes"
-          :key="mode.value"
-          class="view-mode-btn"
-          :class="[{ active: viewMode === mode.value }]"
-          @click="viewMode = mode.value"
-        >
-          {{ mode.label }}
-        </button>
-      </div>
+      <SySelect
+        v-model="viewMode"
+        :options="viewModeOptions"
+        :placeholder="t('gantt').day"
+      />
       <span class="fn__flex-1 fn__space"></span>
       <!-- 右侧：分组、刷新 -->
       <SySelect
@@ -169,7 +163,7 @@ const effectiveStatusFilter = computed(() => {
   return selectedStatuses.value as ItemStatus[]
 })
 
-const viewModes: Array<{ value: 'day' | 'week' | 'month', label: string }> = [
+const viewModeOptions = [
   {
     value: 'day',
     label: t('gantt').day,
@@ -432,32 +426,6 @@ const handleRefresh = async () => {
       border-radius: var(--b3-border-radius);
       background: var(--b3-theme-background);
       color: var(--b3-theme-on-background);
-    }
-  }
-
-  .view-modes {
-    display: flex;
-    gap: 4px;
-  }
-
-  .view-mode-btn {
-    padding: 5px 12px;
-    border: 1px solid var(--b3-border-color);
-    background: var(--b3-theme-background);
-    color: var(--b3-theme-on-surface);
-    cursor: pointer;
-    border-radius: var(--b3-border-radius);
-    font-size: 12px;
-    transition: all 0.2s;
-
-    &:hover {
-      background: var(--b3-theme-surface-light);
-    }
-
-    &.active {
-      background: var(--b3-theme-primary);
-      border-color: var(--b3-theme-primary);
-      color: var(--b3-theme-on-primary);
     }
   }
 

@@ -62,6 +62,8 @@
     "showItems": "显示事项",
     "showWorkItems": "显示事项",
     "dateFilter": "日期筛选",
+    "itemDateFilter": "事项日期",
+    "taskDateFilter": "任务日期",
     "start": "开始",
     "end": "结束",
     "day": "日",

@@ -62,6 +62,8 @@
     "showItems": "Show Items",
     "showWorkItems": "Show items",
     "dateFilter": "Date filter",
+    "itemDateFilter": "Item Date",
+    "taskDateFilter": "Task Date",
     "start": "Start",
     "end": "End",
     "day": "Day",
