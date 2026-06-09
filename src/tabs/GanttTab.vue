@@ -5,13 +5,11 @@
   >
     <div class="block__icons">
       <!-- 左侧：甘特图控件 -->
-      <label class="show-items">
-        <input
-          v-model="showItems"
-          type="checkbox"
-        />
-        {{ t('gantt').showItems }}
-      </label>
+      <SySelect
+        v-model="displayLevel"
+        :options="displayLevelOptions"
+        :placeholder="t('gantt').displayLevel"
+      />
       <div class="date-filter">
         <span>{{ showItems ? t('gantt').itemDateFilter : t('gantt').taskDateFilter }}</span>
         <input
@@ -135,6 +133,25 @@ const showItems = ref(props.showItems)
 const startDate = ref(props.startDate)
 const endDate = ref(props.endDate)
 const viewMode = ref<'day' | 'week' | 'month'>(props.viewMode)
+
+// 显示层级：SySelect 单选，桥接 showItems boolean
+const displayLevelOptions = [
+  {
+    value: 'task',
+    label: t('gantt').tasksOnly,
+  },
+  {
+    value: 'item',
+    label: t('gantt').withItems,
+  },
+]
+
+const displayLevel = computed({
+  get: () => showItems.value ? 'item' : 'task',
+  set: (val: string | number | (string | number)[]) => {
+    showItems.value = val === 'item'
+  },
+})
 
 // 状态筛选：SySelect 多选
 const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
@@ -403,15 +420,6 @@ const handleRefresh = async () => {
 
   .block__icon {
     opacity: 1;
-  }
-
-  .show-items {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    min-height: 28px;
   }
 
   .date-filter {

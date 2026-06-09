@@ -21,7 +21,7 @@
         v-model="selectedGroup"
         :options="groupOptions"
         :placeholder="t('settings').projectGroups.allGroups"
-        />
+      />
       <!-- 状态筛选 -->
       <SySelect
         v-model="selectedStatuses"
