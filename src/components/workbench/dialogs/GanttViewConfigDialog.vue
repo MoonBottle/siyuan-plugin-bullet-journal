@@ -13,15 +13,12 @@
       </div>
       <div class="gantt-config-dialog__field">
         <label class="gantt-config-dialog__label">
-          {{ t('gantt').showItems }}
+          {{ t('gantt').displayLevel }}
         </label>
-        <label class="gantt-config-dialog__checkbox">
-          <input
-            v-model="showItems"
-            type="checkbox"
-          />
-          {{ t('gantt').showWorkItems }}
-        </label>
+        <SySelect
+          v-model="displayLevel"
+          :options="displayLevelOptions"
+        />
       </div>
       <div class="gantt-config-dialog__field">
         <label class="gantt-config-dialog__label">
@@ -128,6 +125,25 @@ const props = defineProps<{
 const settingsStore = useSettingsStore()
 const selectedViewMode = ref<'day' | 'week' | 'month'>(props.initialConfig.viewMode ?? 'day')
 const showItems = ref(props.initialConfig.showItems ?? false)
+
+const displayLevelOptions = [
+  {
+    value: 'task',
+    label: t('gantt').tasksOnly,
+  },
+  {
+    value: 'item',
+    label: t('gantt').withItems,
+  },
+]
+
+const displayLevel = computed({
+  get: () => showItems.value ? 'item' : 'task',
+  set: (val: string | number | (string | number)[]) => {
+    showItems.value = val === 'item'
+  },
+})
+
 const selectedGroup = ref(props.initialConfig.groupId ?? '')
 const selectedDatePreset = ref<GanttDatePreset>(props.initialConfig.datePreset ?? 'all')
 const customStartDate = ref(props.initialConfig.startDate ?? '')
@@ -257,14 +273,6 @@ function handleConfirm() {
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
-}
-
-.gantt-config-dialog__checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  cursor: pointer;
 }
 
 .gantt-config-dialog__custom-dates {
