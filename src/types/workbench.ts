@@ -1,3 +1,4 @@
+import type { ItemStatus } from '@/types/models'
 import type { TodoViewPreset } from '@/types/todoView'
 
 export type WorkbenchViewType =
@@ -97,11 +98,13 @@ export interface WorkbenchFocusWorkbenchViewConfig {
 export interface WorkbenchProjectViewConfig {
   groupId?: string
   columnRatios?: [number, number, number]
+  itemStatusFilter?: ItemStatus[]
 }
 
 export interface WorkbenchCalendarViewConfig {
   defaultView?: string
   groupId?: string
+  itemStatusFilter?: ItemStatus[]
 }
 
 export type GanttDatePreset =
@@ -122,6 +125,7 @@ export interface WorkbenchGanttViewConfig {
   startDate?: string
   endDate?: string
   groupId?: string
+  itemStatusFilter?: ItemStatus[]
 }
 
 export interface WorkbenchWidgetInstance {

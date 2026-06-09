@@ -12,6 +12,7 @@
 import type {
   CalendarEvent,
   Item,
+  ItemStatus,
   PriorityLevel,
 
 } from '@/types/models'
@@ -22,6 +23,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import {
+  computed,
   createApp,
   nextTick,
   onMounted,
@@ -242,6 +244,7 @@ interface Props {
   events: CalendarEvent[]
   initialView?: string
   dateClickBehavior?: 'click' | 'dblclick'
+  itemStatusFilter?: ItemStatus[]
 }
 
 const calendarEl = ref<HTMLElement | null>(null)
@@ -379,10 +382,20 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   showContextMenu(menuOptions)
 }
 
+// 根据事项状态筛选事件
+const filteredEvents = computed(() => {
+  if (!props.itemStatusFilter || props.itemStatusFilter.length === 0) return props.events
+  return props.events.filter((e) => {
+    const status = e.extendedProps?.itemStatus as ItemStatus | undefined
+    if (!status) return true // 非事项事件（任务级、番茄钟块）不受筛选影响
+    return props.itemStatusFilter!.includes(status)
+  })
+})
+
 const updateEvents = () => {
   if (!calendarInstance) return
   calendarInstance.removeAllEvents()
-  calendarInstance.addEventSource(props.events)
+  calendarInstance.addEventSource(filteredEvents.value)
   calendarInstance.updateSize()
 }
 
@@ -639,7 +652,7 @@ onUnmounted(() => {
   }
 })
 
-watch(() => props.events, () => {
+watch(filteredEvents, () => {
   updateEvents()
 }, { deep: true })
 

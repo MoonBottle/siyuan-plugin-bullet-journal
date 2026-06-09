@@ -24,6 +24,17 @@
           type="date"
         />
       </div>
+      <div class="status-filter">
+        <button
+          v-for="s in statusOptions"
+          :key="s.value"
+          class="status-btn"
+          :class="[{ active: isStatusActive(s.value) }]"
+          @click="toggleStatusFilter(s.value)"
+        >
+          {{ s.label }}
+        </button>
+      </div>
       <div class="view-modes">
         <button
           v-for="mode in viewModes"
@@ -58,12 +69,14 @@
         :start-date="startDate"
         :end-date="endDate"
         :view-mode="viewMode"
+        :item-status-filter="effectiveStatusFilter"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { ItemStatus } from '@/types/models'
 import type { GanttDatePreset } from '@/types/workbench'
 import {
   computed,
@@ -103,6 +116,7 @@ const props = withDefaults(defineProps<{
   startDate?: string
   endDate?: string
   groupId?: string
+  itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
   viewMode: 'day',
@@ -120,6 +134,7 @@ const emit = defineEmits<{
   (event: 'update:startDate', value: string): void
   (event: 'update:endDate', value: string): void
   (event: 'update:groupId', value: string): void
+  (event: 'update:itemStatusFilter', value: ItemStatus[]): void
 }>()
 
 const plugin = usePlugin() as any
@@ -131,6 +146,47 @@ const showItems = ref(props.showItems)
 const startDate = ref(props.startDate)
 const endDate = ref(props.endDate)
 const viewMode = ref<'day' | 'week' | 'month'>(props.viewMode)
+
+// 状态筛选：内部维护已选状态列表，undefined 表示全部选中
+const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
+const internalStatusFilter = ref<ItemStatus[] | undefined>(props.itemStatusFilter)
+
+const statusOptions: Array<{ value: ItemStatus, label: string }> = [
+  {
+    value: 'pending',
+    label: t('common').statusPending,
+  },
+  {
+    value: 'completed',
+    label: t('common').statusCompleted,
+  },
+  {
+    value: 'abandoned',
+    label: t('common').statusAbandoned,
+  },
+]
+
+function isStatusActive(status: ItemStatus): boolean {
+  return !internalStatusFilter.value || internalStatusFilter.value.includes(status)
+}
+
+function toggleStatusFilter(status: ItemStatus) {
+  if (!internalStatusFilter.value) {
+    // 当前全部选中，点击某个则取消该状态
+    internalStatusFilter.value = ALL_STATUSES.filter((s) => s !== status)
+  } else if (internalStatusFilter.value.includes(status)) {
+    // 取消选中
+    const next = internalStatusFilter.value.filter((s) => s !== status)
+    internalStatusFilter.value = next.length === 0 ? undefined : next
+  } else {
+    // 选中
+    const next = [...internalStatusFilter.value, status]
+    internalStatusFilter.value = next.length === ALL_STATUSES.length ? undefined : next
+  }
+}
+
+// 计算传给 GanttView 的 itemStatusFilter
+const effectiveStatusFilter = computed(() => internalStatusFilter.value)
 
 const viewModes: Array<{ value: 'day' | 'week' | 'month', label: string }> = [
   {
@@ -274,6 +330,10 @@ watch(selectedGroup, (val) => {
   emit('update:groupId', val)
 })
 
+watch(internalStatusFilter, (val) => {
+  emit('update:itemStatusFilter', val ?? [])
+})
+
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('GanttTab', plugin))
@@ -391,6 +451,32 @@ const handleRefresh = async () => {
       border-radius: var(--b3-border-radius);
       background: var(--b3-theme-background);
       color: var(--b3-theme-on-background);
+    }
+  }
+
+  .status-filter {
+    display: flex;
+    gap: 4px;
+  }
+
+  .status-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--b3-border-color);
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    cursor: pointer;
+    border-radius: var(--b3-border-radius);
+    font-size: 12px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-surface-light);
+    }
+
+    &.active {
+      background: var(--b3-theme-primary);
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
     }
   }
 

@@ -20,6 +20,18 @@
         v-model="currentView"
         :options="viewOptions"
       />
+      <!-- 状态筛选 -->
+      <div class="status-filter">
+        <button
+          v-for="s in statusOptions"
+          :key="s.value"
+          class="status-btn"
+          :class="[{ active: isStatusActive(s.value) }]"
+          @click="toggleStatusFilter(s.value)"
+        >
+          {{ s.label }}
+        </button>
+      </div>
       <!-- 分组选择 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
@@ -43,6 +55,7 @@
         :events="calendarEvents"
         :initial-view="currentView"
         :date-click-behavior="settingsStore.calendarDateClickBehavior"
+        :item-status-filter="effectiveStatusFilter"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -55,7 +68,10 @@
 </template>
 
 <script setup lang="ts">
-import type { PomodoroRecord } from '@/types/models'
+import type {
+  ItemStatus,
+  PomodoroRecord,
+} from '@/types/models'
 import {
   computed,
   nextTick,
@@ -96,9 +112,14 @@ const props = withDefaults(defineProps<{
   embedded?: boolean
   defaultView?: string
   groupId?: string
+  itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
 })
+
+const emit = defineEmits<{
+  (event: 'update:itemStatusFilter', value: ItemStatus[]): void
+}>()
 
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
@@ -113,6 +134,43 @@ const selectedGroup = ref(props.groupId ?? '')
 const previousViewStack = ref<string[]>([])
 /** 设置是否已加载，用于控制 CalendarView 的渲染 */
 const isSettingsLoaded = ref(false)
+
+// 状态筛选：内部维护已选状态列表，undefined 表示全部选中
+const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
+const internalStatusFilter = ref<ItemStatus[] | undefined>(props.itemStatusFilter)
+
+const statusOptions: Array<{ value: ItemStatus, label: string }> = [
+  {
+    value: 'pending',
+    label: t('common').statusPending,
+  },
+  {
+    value: 'completed',
+    label: t('common').statusCompleted,
+  },
+  {
+    value: 'abandoned',
+    label: t('common').statusAbandoned,
+  },
+]
+
+function isStatusActive(status: ItemStatus): boolean {
+  return !internalStatusFilter.value || internalStatusFilter.value.includes(status)
+}
+
+function toggleStatusFilter(status: ItemStatus) {
+  if (!internalStatusFilter.value) {
+    internalStatusFilter.value = ALL_STATUSES.filter((s) => s !== status)
+  } else if (internalStatusFilter.value.includes(status)) {
+    const next = internalStatusFilter.value.filter((s) => s !== status)
+    internalStatusFilter.value = next.length === 0 ? undefined : next
+  } else {
+    const next = [...internalStatusFilter.value, status]
+    internalStatusFilter.value = next.length === ALL_STATUSES.length ? undefined : next
+  }
+}
+
+const effectiveStatusFilter = computed(() => internalStatusFilter.value)
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -290,6 +348,10 @@ watch(() => props.groupId, (val) => {
   }
 })
 
+watch(internalStatusFilter, (val) => {
+  emit('update:itemStatusFilter', val ?? [])
+})
+
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted')
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
@@ -449,6 +511,32 @@ watch(currentView, (newView) => {
 .block__icons {
   .block__icon {
     opacity: 1;
+  }
+
+  .status-filter {
+    display: flex;
+    gap: 4px;
+  }
+
+  .status-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--b3-border-color);
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    cursor: pointer;
+    border-radius: var(--b3-border-radius);
+    font-size: 12px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-surface-light);
+    }
+
+    &.active {
+      background: var(--b3-theme-primary);
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+    }
   }
 
   select.b3-select {

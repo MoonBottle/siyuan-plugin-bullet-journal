@@ -698,7 +698,11 @@
     "defaultTask": "Default Task",
     "help": "Help",
     "notebookName": "Task Assistant",
-    "notebookCreateFailed": "Failed to create notebook"
+    "notebookCreateFailed": "Failed to create notebook",
+    "statusPending": "Pending",
+    "statusCompleted": "Completed",
+    "statusAbandoned": "Abandoned",
+    "statusFilter": "Status Filter"
   },
   "helpMenu": {
     "title": "Help",

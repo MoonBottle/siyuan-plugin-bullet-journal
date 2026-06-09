@@ -17,6 +17,7 @@
 import type {
   CalendarEvent,
   Item,
+  ItemStatus,
   Project,
 } from '@/types/models'
 
@@ -74,6 +75,7 @@ interface Props {
   startDate?: string
   endDate?: string
   viewMode?: 'day' | 'week' | 'month'
+  itemStatusFilter?: ItemStatus[]
 }
 
 const pomodoroStore = usePomodoroStore()
@@ -312,7 +314,7 @@ const ganttData = computed(() => {
         end: props.endDate,
       }
     : undefined
-  return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter)
+  return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter, props.itemStatusFilter)
 })
 
 // 动态加载甘特图主题样式

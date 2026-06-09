@@ -6,6 +6,7 @@ import type {
   CalendarEvent,
   GanttTask,
   Item,
+  ItemStatus,
   PomodoroRecord,
   Project,
   Task,
@@ -50,7 +51,7 @@ export class DataConverter {
   /**
    * 将项目列表转换为日历事件
    */
-  public static projectsToCalendarEvents(projects: Project[]): CalendarEvent[] {
+  public static projectsToCalendarEvents(projects: Project[], itemStatusFilter?: ItemStatus[]): CalendarEvent[] {
     const events: CalendarEvent[] = []
 
     for (const project of projects) {
@@ -62,7 +63,10 @@ export class DataConverter {
         }
 
         // 为每个工作事项添加事件
-        for (const item of task.items) {
+        const filteredItems = itemStatusFilter && itemStatusFilter.length > 0
+          ? task.items.filter((item) => itemStatusFilter.includes(item.status))
+          : task.items
+        for (const item of filteredItems) {
           const itemEvent = this.itemToCalendarEvent(item, task, project)
           events.push(itemEvent)
         }
@@ -198,6 +202,7 @@ export class DataConverter {
     projects: Project[],
     showItems: boolean = false,
     dateFilter?: { start?: string, end?: string },
+    itemStatusFilter?: ItemStatus[],
   ): GanttTask[] {
     const ganttTasks: GanttTask[] = []
 
@@ -259,8 +264,12 @@ export class DataConverter {
 
         // 添加工作事项
         if (showItems && task.items.length > 0) {
+          const filteredItems = itemStatusFilter && itemStatusFilter.length > 0
+            ? task.items.filter((item) => itemStatusFilter.includes(item.status))
+            : task.items
+          if (filteredItems.length === 0) continue
           const itemGroups = new Map<string, Item[]>()
-          for (const item of task.items) {
+          for (const item of filteredItems) {
             const key = item.blockId ?? item.id
             if (!itemGroups.has(key)) itemGroups.set(key, [])
             itemGroups.get(key)!.push(item)

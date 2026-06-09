@@ -149,11 +149,14 @@ function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendar
     return null
   }
 
-  return normalizeCalendarData({
+  const normalized = normalizeCalendarData({
     holidays: [...holidays],
     workdays: [...workdays],
-    inferredYearRange: yearKeys.length > 0 ? formatYearRange(yearKeys) : undefined,
   })
+  return {
+    ...normalized,
+    inferredYearRange: yearKeys.length > 0 ? formatYearRange(yearKeys) : undefined,
+  }
 }
 
 async function loadCachedCalendar(): Promise<ChinaWorkdayCalendarData | null> {

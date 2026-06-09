@@ -4,6 +4,7 @@
       embedded
       :default-view="config.defaultView"
       :group-id="config.groupId"
+      :item-status-filter="config.itemStatusFilter"
     />
   </div>
 </template>

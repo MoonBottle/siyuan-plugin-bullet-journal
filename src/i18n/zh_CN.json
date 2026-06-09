@@ -700,7 +700,11 @@
     "defaultTask": "默认任务",
     "help": "帮助",
     "notebookName": "任务助手",
-    "notebookCreateFailed": "创建笔记本失败"
+    "notebookCreateFailed": "创建笔记本失败",
+    "statusPending": "待办",
+    "statusCompleted": "已完成",
+    "statusAbandoned": "已放弃",
+    "statusFilter": "状态筛选"
   },
   "helpMenu": {
     "title": "帮助",

@@ -138,7 +138,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
     },
     project: {
       type: 'project',
-      createDefaultConfig: () => ({}) as Record<string, unknown>,
+      createDefaultConfig: () => ({ itemStatusFilter: undefined }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
         onUpdateConfig,
@@ -148,11 +148,13 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           initialConfig: {
             groupId: config?.groupId,
             columnRatios: config?.columnRatios,
+            itemStatusFilter: config?.itemStatusFilter,
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               columnRatios: nextConfig.columnRatios,
+              itemStatusFilter: nextConfig.itemStatusFilter,
             })
           },
         })
@@ -163,6 +165,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: () => ({
         defaultView: 'timeGridDay',
         groupId: '',
+        itemStatusFilter: undefined,
       }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
@@ -173,11 +176,13 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           initialConfig: {
             defaultView: config?.defaultView,
             groupId: config?.groupId,
+            itemStatusFilter: config?.itemStatusFilter,
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               defaultView: nextConfig.defaultView,
               groupId: nextConfig.groupId,
+              itemStatusFilter: nextConfig.itemStatusFilter,
             })
           },
         })
@@ -192,6 +197,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         startDate: '',
         endDate: '',
         groupId: '',
+        itemStatusFilter: undefined,
       }) as Record<string, unknown>,
       openConfigDialog: ({
         entry,
@@ -206,6 +212,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             startDate: config?.startDate,
             endDate: config?.endDate,
             groupId: config?.groupId,
+            itemStatusFilter: config?.itemStatusFilter,
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
@@ -215,6 +222,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
               startDate: nextConfig.startDate,
               endDate: nextConfig.endDate,
               groupId: nextConfig.groupId,
+              itemStatusFilter: nextConfig.itemStatusFilter,
             })
           },
         })

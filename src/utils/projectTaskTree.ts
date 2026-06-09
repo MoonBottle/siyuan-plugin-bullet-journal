@@ -93,15 +93,17 @@ export function filterProjectTaskTree(
   nodes: ProjectTaskTreeNode[],
   query: string,
   selectedTags?: string[],
+  itemStatusFilter?: ItemStatus[],
 ): ProjectTaskTreeFilterResult {
   const normalizedQuery = normalizeSearchText(query)
   const normalizedTags = normalizeSelectedTags(selectedTags)
   const hasTagFilter = normalizedTags.size > 0
+  const hasStatusFilter = itemStatusFilter && itemStatusFilter.length > 0
   const matchedTaskBlockIds = new Set<string>()
   const matchedItemBlockIds = new Set<string>()
   const autoExpandedTaskBlockIds = new Set<string>()
 
-  if (!normalizedQuery && !hasTagFilter) {
+  if (!normalizedQuery && !hasTagFilter && !hasStatusFilter) {
     return {
       nodes,
       matchedTaskBlockIds,
@@ -111,7 +113,7 @@ export function filterProjectTaskTree(
   }
 
   const filteredNodes = nodes
-    .map((node) => filterNode(node, normalizedQuery, normalizedTags, hasTagFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
+    .map((node) => filterNode(node, normalizedQuery, normalizedTags, hasTagFilter, hasStatusFilter, itemStatusFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
     .filter(Boolean) as ProjectTaskTreeNode[]
 
   return {
@@ -146,6 +148,8 @@ function filterNode(
   query: string,
   normalizedTags: Set<string>,
   hasTagFilter: boolean,
+  hasStatusFilter: boolean | undefined,
+  itemStatusFilter: ItemStatus[] | undefined,
   matchedTaskBlockIds: Set<string>,
   matchedItemBlockIds: Set<string>,
   autoExpandedTaskBlockIds: Set<string>,
@@ -166,17 +170,19 @@ function filterNode(
         || mi.dateRange.toLowerCase().includes(query)
         || mi.items.some((it) => itemMatchesQuery(it, query))
       const matchTags = !hasTagFilter || mi.items.some((it) => itemMatchesTags(it, normalizedTags))
-      return matchQuery && matchTags
+      const matchStatus = !hasStatusFilter || mi.items.some((it) => itemMatchesStatus(it, itemStatusFilter!))
+      return matchQuery && matchTags && matchStatus
     }
     const it = entry as Item
     return (!query || itemMatchesQuery(it, query))
       && (!hasTagFilter || itemMatchesTags(it, normalizedTags))
+      && (!hasStatusFilter || itemMatchesStatus(it, itemStatusFilter!))
   })
   const children = node.children
-    .map((child) => filterNode(child, query, normalizedTags, hasTagFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
+    .map((child) => filterNode(child, query, normalizedTags, hasTagFilter, hasStatusFilter, itemStatusFilter, matchedTaskBlockIds, matchedItemBlockIds, autoExpandedTaskBlockIds))
     .filter(Boolean) as ProjectTaskTreeNode[]
 
-  if (taskMatches && !hasTagFilter) {
+  if (taskMatches && !hasTagFilter && !hasStatusFilter) {
     matchedTaskBlockIds.add(node.task.blockId ?? node.task.id)
     collectTaskBlockIds(node, autoExpandedTaskBlockIds)
     return cloneNode(node)
@@ -238,6 +244,10 @@ function normalizeSelectedTags(tags?: string[]): Set<string> {
 function itemMatchesTags(item: Item, normalizedTags: Set<string>): boolean {
   if (!item.tags || item.tags.length === 0) return false
   return item.tags.some((tag) => normalizedTags.has(tag.trim().toLocaleLowerCase()))
+}
+
+function itemMatchesStatus(item: Item, statusFilter: ItemStatus[]): boolean {
+  return statusFilter.includes(item.status)
 }
 
 export function formatDateRange(start: string, end: string): string {

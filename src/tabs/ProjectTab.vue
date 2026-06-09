@@ -10,6 +10,17 @@
         :options="groupOptions"
         :placeholder="t('settings').projectGroups.allGroups"
       />
+      <div class="status-filter">
+        <button
+          v-for="s in statusOptions"
+          :key="s.value"
+          class="status-btn"
+          :class="[{ active: isStatusActive(s.value) }]"
+          @click="toggleStatusFilter(s.value)"
+        >
+          {{ s.label }}
+        </button>
+      </div>
       <span class="fn__flex-1 fn__space"></span>
       <span
         v-if="projectStore.projects.length > 0"
@@ -40,6 +51,7 @@
         :projects="filteredProjects"
         :embedded="embedded"
         :column-ratios="columnRatios"
+        :item-status-filter="effectiveStatusFilter"
         @update:column-ratios="handleColumnRatiosChange"
       />
     </div>
@@ -47,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ItemStatus } from '@/types/models'
 import {
   computed,
   nextTick,
@@ -79,9 +92,14 @@ const props = withDefaults(defineProps<{
   embedded?: boolean
   groupId?: string
   columnRatios?: [number, number, number]
+  itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
 })
+
+const emit = defineEmits<{
+  (event: 'update:itemStatusFilter', value: ItemStatus[]): void
+}>()
 
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
@@ -103,6 +121,47 @@ function handleColumnRatiosChange(newRatios: [number, number, number]) {
 function handleResetColumnRatios() {
   columnRatios.value = [...DEFAULT_COLUMN_RATIOS]
 }
+
+// 状态筛选：内部维护已选状态列表，undefined 表示全部选中
+const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
+const internalStatusFilter = ref<ItemStatus[] | undefined>(props.itemStatusFilter)
+
+const statusOptions: Array<{ value: ItemStatus, label: string }> = [
+  {
+    value: 'pending',
+    label: t('common').statusPending,
+  },
+  {
+    value: 'completed',
+    label: t('common').statusCompleted,
+  },
+  {
+    value: 'abandoned',
+    label: t('common').statusAbandoned,
+  },
+]
+
+function isStatusActive(status: ItemStatus): boolean {
+  return !internalStatusFilter.value || internalStatusFilter.value.includes(status)
+}
+
+function toggleStatusFilter(status: ItemStatus) {
+  if (!internalStatusFilter.value) {
+    internalStatusFilter.value = ALL_STATUSES.filter((s) => s !== status)
+  } else if (internalStatusFilter.value.includes(status)) {
+    const next = internalStatusFilter.value.filter((s) => s !== status)
+    internalStatusFilter.value = next.length === 0 ? undefined : next
+  } else {
+    const next = [...internalStatusFilter.value, status]
+    internalStatusFilter.value = next.length === ALL_STATUSES.length ? undefined : next
+  }
+}
+
+const effectiveStatusFilter = computed(() => internalStatusFilter.value)
+
+watch(internalStatusFilter, (val) => {
+  emit('update:itemStatusFilter', val ?? [])
+})
 
 const filteredProjects = computed(() => {
   return projectStore.getFilteredProjects(selectedGroup.value)
@@ -244,6 +303,32 @@ const handleRefresh = async () => {
 
   .sy-select {
     margin-left: 8px;
+  }
+
+  .status-filter {
+    display: flex;
+    gap: 4px;
+  }
+
+  .status-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--b3-border-color);
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    cursor: pointer;
+    border-radius: var(--b3-border-radius);
+    font-size: 12px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-surface-light);
+    }
+
+    &.active {
+      background: var(--b3-theme-primary);
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+    }
   }
 }
 

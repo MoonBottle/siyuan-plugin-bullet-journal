@@ -76,6 +76,7 @@
 <script setup lang="ts">
 import type {
   Item,
+  ItemStatus,
   Project,
   Task,
 } from '@/types/models'
@@ -99,6 +100,7 @@ const props = withDefaults(defineProps<{
   projects: Project[]
   embedded?: boolean
   columnRatios?: [number, number, number]
+  itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
 })
@@ -148,7 +150,7 @@ const filteredProjects = computed(() => {
 
 const selectedProject = computed(() => filteredProjects.value.find((project) => project.id === selectedProjectId.value) || null)
 const taskTree = computed(() => buildProjectTaskTree(selectedProject.value))
-const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value))
+const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value, props.itemStatusFilter))
 const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes)
 const effectiveExpandedTaskBlockIds = computed(() => {
   if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskBlockIds.value

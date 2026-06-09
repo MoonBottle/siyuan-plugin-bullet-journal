@@ -4,6 +4,7 @@
       embedded
       :group-id="config.groupId"
       :column-ratios="config.columnRatios"
+      :item-status-filter="config.itemStatusFilter"
     />
   </div>
 </template>

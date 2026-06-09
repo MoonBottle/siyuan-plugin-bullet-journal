@@ -8,6 +8,7 @@
       :start-date="config.startDate"
       :end-date="config.endDate"
       :group-id="config.groupId"
+      :item-status-filter="config.itemStatusFilter"
     />
   </div>
 </template>
