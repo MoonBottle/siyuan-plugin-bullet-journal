@@ -4,12 +4,14 @@
       ref="calendarEl"
       class="calendar-container"
     ></div>
-    <div
-      ref="eventTooltipEl"
-      class="calendar-event-tooltip"
-      :class="{ 'calendar-event-tooltip--visible': eventTooltipVisible }"
-      :style="eventTooltipStyle"
-    />
+    <Teleport to="body">
+      <div
+        ref="eventTooltipEl"
+        class="calendar-event-tooltip"
+        :class="{ 'calendar-event-tooltip--visible': eventTooltipVisible }"
+        :style="eventTooltipStyle"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -710,7 +712,10 @@ defineExpose({
   height: 100%;
   width: 100%;
 }
+</style>
 
+<style lang="scss">
+/* Teleport 到 body 的 tooltip，不能用 scoped */
 .calendar-event-tooltip {
   position: fixed;
   z-index: 10000;
@@ -729,17 +734,17 @@ defineExpose({
     opacity: 1;
   }
 
-  :deep(.sy-dialog-content) {
+  .sy-dialog-content {
     padding: 0;
   }
 
-  :deep(.sy-dialog-cards) {
+  .sy-dialog-cards {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  :deep(.sy-dialog-card) {
+  .sy-dialog-card {
     font-size: 12px;
     padding: 10px 14px;
     border-radius: 4px;
