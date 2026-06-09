@@ -324,6 +324,7 @@ const loadGanttStyles = () => {
   style.textContent = `
     /* 思源主题覆盖 */
     .gantt_container {
+      --dhx-gantt-font-family: var(--b3-font-family) !important;
       font-family: var(--b3-font-family) !important;
       background-color: var(--b3-theme-background) !important;
     }

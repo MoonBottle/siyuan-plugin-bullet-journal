@@ -17,6 +17,23 @@ const pluginInfo = require("./plugin.json")
 const PI_REGISTER_BUILTINS_ID = 'pi-ai/dist/providers/register-builtins.js'
 const PI_ENV_API_KEYS_ID = 'pi-ai/dist/env-api-keys.js'
 
+const FONT_FACE_RE = /@font-face\{[^}]+\}/g
+
+function removeGanttFontFace() {
+  return {
+    name: 'remove-gantt-font-face',
+    enforce: 'pre',
+    transform(code: string, id: string) {
+      if (id.includes('dhtmlx-gantt') && id.endsWith('.css')) {
+        return {
+          code: code.replace(FONT_FACE_RE, ''),
+          map: null,
+        }
+      }
+    },
+  }
+}
+
 function piProviderOptimizer() {
   return {
     name: 'pi-provider-optimizer',
@@ -114,6 +131,7 @@ export default defineConfig(({
     },
 
     plugins: [
+      removeGanttFontFace(),
       piProviderOptimizer(),
       vue(),
       viteStaticCopy({
