@@ -102,7 +102,7 @@ function parseCalendarData(raw: unknown): ChinaWorkdayCalendarData | null {
   }
 }
 
-function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendarData | null {
+function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendarData & { inferredYearRange?: string } | null {
   const years = payload.Years
   const entries = Array.isArray(years)
     ? years
@@ -113,6 +113,12 @@ function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendar
   if (!entries.length) {
     return null
   }
+
+  // Extract year range from API keys (e.g. "2023-2026") rather than from expanded dates,
+  // because cross-year holidays (e.g. 2023 元旦 starts 2022-12-31) would include wrong years.
+  const yearKeys = !Array.isArray(years) && years && typeof years === 'object'
+    ? Object.keys(years).map(Number).filter((y) => y > 2000 && y < 2100).sort()
+    : []
 
   const holidays = new Set<string>()
   const workdays = new Set<string>()
@@ -138,6 +144,7 @@ function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendar
   return normalizeCalendarData({
     holidays: [...holidays],
     workdays: [...workdays],
+    inferredYearRange: yearKeys.length > 0 ? yearKeys.join('-') : undefined,
   })
 }
 
@@ -233,9 +240,13 @@ export async function refreshChinaWorkdayCalendar(): Promise<boolean> {
     }
 
     const now = new Date().toISOString()
-    const yearRange = inferYearRange(converted)
+    const yearRange = converted.inferredYearRange || inferYearRange(converted)
+    const {
+      inferredYearRange: _,
+      ...dataWithoutInferred
+    } = converted
     const dataWithMeta: ChinaWorkdayCalendarData = {
-      ...converted,
+      ...dataWithoutInferred,
       meta: {
         lastUpdated: now,
         source: 'remote',
