@@ -276,18 +276,17 @@ const handleRefresh = async () => {
 }
 
 .project-tab--embedded {
-  .block__icons .sy-select {
-    margin-left: 0px;
-  }
 }
 
 .block__icons {
+  gap: 8px;
+
   .block__icon {
     opacity: 1;
   }
 
   .sy-select {
-    margin-left: 8px;
+    margin-left: 0;
   }
 }
 
