@@ -9,14 +9,7 @@
         class="gantt-inner"
       ></div>
     </div>
-    <Teleport to="body">
-      <div
-        ref="eventTooltipEl"
-        class="gantt-event-tooltip"
-        :class="{ 'gantt-event-tooltip--visible': eventTooltipVisible }"
-        :style="eventTooltipStyle"
-      />
-    </Teleport>
+    <EventDetailTooltip ref="eventTooltipRef" />
   </div>
 </template>
 
@@ -38,6 +31,7 @@ import {
   watch,
 } from 'vue'
 
+import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import {
   getCurrentLocale,
@@ -56,13 +50,11 @@ import {
 import { DataConverter } from '@/utils/dataConverter'
 import dayjs from '@/utils/dayjs'
 import {
-  buildEventDetailContent,
   createDialog,
   showDatePickerDialog,
   showEventDetailModal,
 } from '@/utils/dialog'
 import { openDocumentAtLine } from '@/utils/fileUtils'
-import { computeTooltipPosition } from '@/utils/tooltipPosition'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 
 const props = withDefaults(defineProps<Props>(), {
@@ -88,6 +80,7 @@ const pomodoroStore = usePomodoroStore()
 const plugin = usePlugin() as any
 
 const ganttEl = ref<HTMLElement | null>(null)
+const eventTooltipRef = ref<InstanceType<typeof EventDetailTooltip> | null>(null)
 
 let ganttInitialized = false
 let resizeObserver: ResizeObserver | null = null
@@ -97,128 +90,12 @@ const ganttReady = ref(false)
 
 const GANTT_TOOLTIP_HOVER_DELAY = 300
 
-const eventTooltipEl = ref<HTMLElement | null>(null)
-const eventTooltipVisible = ref(false)
-const eventTooltipStyle = ref<{ left?: string, top?: string }>({})
-let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null
-
-const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
-  if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer)
-    eventTooltipTimer = null
-  }
-  eventTooltipTimer = setTimeout(() => {
-    eventTooltipTimer = null
-    const taskId = gantt.locate(e)
-    if (taskId == null || !gantt.isTaskExists(taskId)) return
-    const task = gantt.getTask(taskId)
-    if (!task?.extendedProps?.item) return
-
-    const props = task.extendedProps
-    const start = props.originalStartDateTime || props.date || ''
-    const end = props.originalEndDateTime || props.originalStartDateTime || props.date || ''
-    const allDay = !props.originalStartDateTime
-
-    const eventData: CalendarEvent = {
-      id: String(task.id),
-      title: task.text,
-      start,
-      end: end !== start ? end : undefined,
-      allDay,
-      extendedProps: {
-        project: props.project,
-        projectLinks: props.projectLinks,
-        task: props.task,
-        taskLinks: props.taskLinks,
-        level: props.level,
-        item: props.item,
-        itemStatus: props.itemStatus,
-        itemLinks: props.itemLinks,
-        hasItems: props.hasItems ?? true,
-        docId: props.docId ?? '',
-        lineNumber: props.lineNumber ?? 0,
-        blockId: props.blockId,
-        date: props.date,
-        originalStartDateTime: props.originalStartDateTime,
-        originalEndDateTime: props.originalEndDateTime,
-        siblingItems: props.siblingItems,
-        dateRangeStart: props.dateRangeStart,
-        dateRangeEnd: props.dateRangeEnd,
-        pomodoros: props.pomodoros,
-      },
-    }
-
-    const html = buildEventDetailContent(eventData)
-    if (eventTooltipEl.value) {
-      eventTooltipEl.value.innerHTML = html
-      nextTick(() => {
-        if (eventTooltipEl.value) {
-          const rect = anchorEl.getBoundingClientRect()
-          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4)
-          eventTooltipVisible.value = true
-        }
-      })
-    }
-  }, GANTT_TOOLTIP_HOVER_DELAY)
-}
-
-const hideGanttEventTooltip = () => {
-  if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer)
-    eventTooltipTimer = null
-  }
-  eventTooltipVisible.value = false
-}
-
-const handleGanttTooltipMouseOver = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  const bar = target.closest('.gantt_task_line')
-  const rightsideText = target.closest('.gantt-rightside-text')
-  const anchor = bar || rightsideText
-  if (anchor) {
-    showGanttEventTooltip(e, anchor as HTMLElement)
-  } else {
-    hideGanttEventTooltip()
-  }
-}
-
-const handleGanttTooltipMouseOut = (e: MouseEvent) => {
-  const related = e.relatedTarget as HTMLElement
-  if (related?.closest('.gantt-event-tooltip') || related?.closest('.gantt_task_line') || related?.closest('.gantt-rightside-text')) return
-  hideGanttEventTooltip()
-}
-
-const openPomodoroDialog = (item: Item) => {
-  const dialog = createDialog({
-    title: t('pomodoro').startFocusTitle,
-    content: '<div id="pomodoro-timer-dialog-mount"></div>',
-    width: '400px',
-    height: 'auto',
-  })
-
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
-  if (mountEl) {
-    const app = createApp(PomodoroTimerDialog, {
-      closeDialog: () => {
-        dialog.destroy()
-      },
-      preselectedBlockId: item.blockId,
-      hideItemList: true,
-    })
-    app.mount(mountEl)
-  }
-}
-
-const handleGanttTaskClick = (id: string | number) => {
-  const task = gantt.getTask(id)
-  if (!task?.extendedProps?.item) return
-
+const buildCalendarEventFromGanttTask = (task: any): CalendarEvent => {
   const props = task.extendedProps
   const start = props.originalStartDateTime || props.date || ''
   const end = props.originalEndDateTime || props.originalStartDateTime || props.date || ''
   const allDay = !props.originalStartDateTime
-
-  const eventData: CalendarEvent = {
+  return {
     id: String(task.id),
     title: task.text,
     start,
@@ -246,6 +123,58 @@ const handleGanttTaskClick = (id: string | number) => {
       pomodoros: props.pomodoros,
     },
   }
+}
+
+const handleGanttTooltipMouseOver = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  const bar = target.closest('.gantt_task_line')
+  const rightsideText = target.closest('.gantt-rightside-text')
+  const anchor = bar || rightsideText
+  if (anchor) {
+    const taskId = gantt.locate(e)
+    if (taskId != null && gantt.isTaskExists(taskId)) {
+      const task = gantt.getTask(taskId)
+      if (task?.extendedProps?.item) {
+        const eventData = buildCalendarEventFromGanttTask(task)
+        eventTooltipRef.value?.show(eventData, anchor as HTMLElement, GANTT_TOOLTIP_HOVER_DELAY)
+      }
+    }
+  } else {
+    eventTooltipRef.value?.hide()
+  }
+}
+
+const handleGanttTooltipMouseOut = (e: MouseEvent) => {
+  const related = e.relatedTarget as HTMLElement
+  if (related?.closest('.event-detail-tooltip') || related?.closest('.gantt_task_line') || related?.closest('.gantt-rightside-text')) return
+  eventTooltipRef.value?.hide()
+}
+
+const openPomodoroDialog = (item: Item) => {
+  const dialog = createDialog({
+    title: t('pomodoro').startFocusTitle,
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '400px',
+    height: 'auto',
+  })
+
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
+  if (mountEl) {
+    const app = createApp(PomodoroTimerDialog, {
+      closeDialog: () => {
+        dialog.destroy()
+      },
+      preselectedBlockId: item.blockId,
+      hideItemList: true,
+    })
+    app.mount(mountEl)
+  }
+}
+
+const handleGanttTaskClick = (id: string | number) => {
+  const task = gantt.getTask(id)
+  if (!task?.extendedProps?.item) return
+  const eventData = buildCalendarEventFromGanttTask(task)
   showEventDetailModal(eventData)
 }
 
@@ -356,18 +285,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         }
       },
       onShowDetail: () => {
-        const eventData: CalendarEvent = {
-          id: item.id,
-          title: item.content,
-          start: item.date,
-          allDay: true,
-          extendedProps: {
-            ...props,
-            hasItems: props.hasItems ?? true,
-            docId: props.docId ?? '',
-            lineNumber: props.lineNumber ?? 0,
-          },
-        }
+        const eventData = buildCalendarEventFromGanttTask(gantt.getTask(taskId))
         showEventDetailModal(eventData)
       },
     },
@@ -744,10 +662,6 @@ onUnmounted(() => {
     ganttEl.value.removeEventListener('mouseover', handleGanttTooltipMouseOver)
     ganttEl.value.removeEventListener('mouseout', handleGanttTooltipMouseOut)
   }
-  if (eventTooltipTimer) {
-    clearTimeout(eventTooltipTimer)
-    eventTooltipTimer = null
-  }
   if (ganttInitialized) {
     gantt.clearAll()
   }
@@ -804,42 +718,5 @@ watch(() => props.viewMode, (newMode) => {
 /* DHTMLX Gantt 容器样式 */
 .gantt_container {
   height: 100% !important;
-}
-
-/* 悬浮事项详情弹框（与日历样式一致，无滚动条） */
-.gantt-event-tooltip {
-  position: fixed;
-  z-index: 10000;
-  max-width: 440px;
-  overflow: visible;
-  padding: 12px;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-
-  &.gantt-event-tooltip--visible {
-    opacity: 1;
-  }
-
-  .sy-dialog-content {
-    padding: 0 !important;
-  }
-
-  .sy-dialog-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sy-dialog-card {
-    font-size: 12px;
-    padding: 10px 14px;
-    border-radius: 4px;
-    border: 1px solid var(--b3-border-color);
-  }
 }
 </style>
