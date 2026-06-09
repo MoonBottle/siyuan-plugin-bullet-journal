@@ -467,7 +467,10 @@ export class DataConverter {
     task: Task,
     items?: Item[],
   ): { start: Date | undefined, end: Date | undefined } {
-    if (task.date || task.startDateTime) {
+    const effectiveItems = items ?? task.items
+
+    // 传入 items 时，优先使用传入的 items 计算日期（跳过任务自身日期）
+    if (!items && (task.date || task.startDateTime)) {
       const startStr = task.startDateTime || task.date
       const endStr = task.endDateTime || task.startDateTime || task.date
 
@@ -487,8 +490,6 @@ export class DataConverter {
         }
       }
     }
-
-    const effectiveItems = items ?? task.items
 
     if (effectiveItems && effectiveItems.length > 0) {
       let minDate: Date | null = null
