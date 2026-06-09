@@ -109,6 +109,14 @@ const props = withDefaults(defineProps<{
   groupId: '',
 })
 
+const emit = defineEmits<{
+  (event: 'update:viewMode', value: string): void
+  (event: 'update:showItems', value: boolean): void
+  (event: 'update:startDate', value: string): void
+  (event: 'update:endDate', value: string): void
+  (event: 'update:groupId', value: string): void
+}>()
+
 const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 const projectStore = useProjectStore()
