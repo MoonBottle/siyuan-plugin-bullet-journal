@@ -209,91 +209,163 @@ export class DataConverter {
     for (const project of projects) {
       const projectId = `proj-${project.id}`
 
-      // 过滤任务
-      const filteredTasks = project.tasks.filter((task) => {
-        if (!dateFilter) return true
-        return this.isTaskInDateRange(task, dateFilter.start, dateFilter.end)
-      })
+      if (showItems) {
+        // showItems=true：先过滤事项，再从过滤后的事项计算任务日期
+        const tasksWithFilteredItems: Array<{ task: Task, filteredItems: Item[] }> = []
 
-      if (filteredTasks.length === 0) continue
+        for (const task of project.tasks) {
+          // 先按日期过滤事项
+          let filteredItems = this.filterItemsByDate(task.items, dateFilter)
+          // 再按状态过滤事项
+          if (itemStatusFilter && itemStatusFilter.length > 0) {
+            filteredItems = filteredItems.filter((item) => itemStatusFilter.includes(item.status))
+          }
+          // 过滤后事项为空则跳过该任务
+          if (filteredItems.length === 0) continue
 
-      // 添加项目节点
-      ganttTasks.push({
-        id: projectId,
-        text: project.name,
-        type: 'project',
-        open: true,
-        progress: 0,
-      })
-
-      // 层级追踪
-      let lastL1Id: string | null = null
-      let lastL2Id: string | null = null
-
-      for (const task of filteredTasks) {
-        const taskId = `task-${task.id}`
-        let parentId = projectId
-
-        // 确定层级
-        if (task.level === 'L1') {
-          parentId = projectId
-          lastL1Id = taskId
-          lastL2Id = null
-        } else if (task.level === 'L2') {
-          parentId = lastL1Id || projectId
-          lastL2Id = taskId
-        } else if (task.level === 'L3') {
-          parentId = lastL2Id || lastL1Id || projectId
+          tasksWithFilteredItems.push({
+            task,
+            filteredItems,
+          })
         }
 
-        const {
-          start,
-          end,
-        } = this.calculateTaskDates(task)
+        if (tasksWithFilteredItems.length === 0) continue
 
+        // 添加项目节点
         ganttTasks.push({
-          id: taskId,
-          text: task.name,
-          start_date: start,
-          end_date: end,
-          parent: parentId,
-          type: 'task',
+          id: projectId,
+          text: project.name,
+          type: 'project',
           open: true,
           progress: 0,
         })
 
-        // 添加工作事项
-        if (showItems && task.items.length > 0) {
-          const filteredItems = itemStatusFilter && itemStatusFilter.length > 0
-            ? task.items.filter((item) => itemStatusFilter.includes(item.status))
-            : task.items
-          if (filteredItems.length === 0) continue
-          const itemGroups = new Map<string, Item[]>()
-          for (const item of filteredItems) {
-            const key = item.blockId ?? item.id
-            if (!itemGroups.has(key)) itemGroups.set(key, [])
-            itemGroups.get(key)!.push(item)
+        // 层级追踪
+        let lastL1Id: string | null = null
+        let lastL2Id: string | null = null
+
+        for (const {
+          task,
+          filteredItems,
+        } of tasksWithFilteredItems) {
+          const taskId = `task-${task.id}`
+          let parentId = projectId
+
+          // 确定层级
+          if (task.level === 'L1') {
+            parentId = projectId
+            lastL1Id = taskId
+            lastL2Id = null
+          } else if (task.level === 'L2') {
+            parentId = lastL1Id || projectId
+            lastL2Id = taskId
+          } else if (task.level === 'L3') {
+            parentId = lastL2Id || lastL1Id || projectId
           }
 
-          for (const [, group] of itemGroups) {
-            if (group.length === 1) {
-              const item = group[0]
-              const itemStart = item.startDateTime || item.date
-              const itemEnd = item.endDateTime || item.startDateTime || item.date
+          const {
+            start,
+            end,
+          } = this.calculateTaskDates(task, filteredItems)
 
-              if (itemStart) {
-                const startDate = this.parseGanttDate(itemStart, 'start')
-                let endDate = itemEnd
-                  ? this.parseGanttDate(itemEnd, 'end')
-                  : this.parseGanttDate(itemStart, 'end')
+          ganttTasks.push({
+            id: taskId,
+            text: task.name,
+            start_date: start,
+            end_date: end,
+            parent: parentId,
+            type: 'task',
+            open: true,
+            progress: 0,
+          })
 
+          // 添加工作事项（使用已过滤的 filteredItems）
+          if (filteredItems.length > 0) {
+            const itemGroups = new Map<string, Item[]>()
+            for (const item of filteredItems) {
+              const key = item.blockId ?? item.id
+              if (!itemGroups.has(key)) itemGroups.set(key, [])
+              itemGroups.get(key)!.push(item)
+            }
+
+            for (const [, group] of itemGroups) {
+              if (group.length === 1) {
+                const item = group[0]
+                const itemStart = item.startDateTime || item.date
+                const itemEnd = item.endDateTime || item.startDateTime || item.date
+
+                if (itemStart) {
+                  const startDate = this.parseGanttDate(itemStart, 'start')
+                  let endDate = itemEnd
+                    ? this.parseGanttDate(itemEnd, 'end')
+                    : this.parseGanttDate(itemStart, 'end')
+
+                  if (startDate.getTime() === endDate.getTime()) {
+                    endDate = this.getGanttEndDate(itemStart)
+                  }
+
+                  ganttTasks.push({
+                    id: `item-${item.id}`,
+                    text: item.content,
+                    start_date: startDate,
+                    end_date: endDate,
+                    parent: taskId,
+                    type: 'task',
+                    progress: 0,
+                    extendedProps: {
+                      project: project.name,
+                      projectLinks: project.links,
+                      task: task.name,
+                      taskLinks: task.links,
+                      level: task.level,
+                      item: item.content,
+                      itemStatus: item.status,
+                      itemLinks: item.links,
+                      hasItems: true,
+                      docId: item.docId,
+                      lineNumber: item.lineNumber,
+                      blockId: item.blockId,
+                      date: item.date,
+                      originalStartDateTime: item.startDateTime,
+                      originalEndDateTime: item.endDateTime,
+                      timePrecision: item.timePrecision,
+                      siblingItems: item.siblingItems,
+                      dateRangeStart: item.dateRangeStart,
+                      dateRangeEnd: item.dateRangeEnd,
+                      pomodoros: item.pomodoros,
+                    },
+                  })
+                }
+              } else {
+                const segments = this.mergeItemsToSegments(group)
+                const firstItem = group[0]
+
+                const allDates = group.map((i) => i.startDateTime || i.date).filter(Boolean) as string[]
+                const minDate = allDates.reduce((a, b) => a < b ? a : b)
+                const maxDate = (group.map((i) => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
+
+                const ganttSegments: GanttSegment[] = segments.map((seg) => {
+                  const segFirst = seg.items[0]
+                  const segLast = seg.items.at(-1)!
+                  const segStart = segFirst.startDateTime || segFirst.date
+                  const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
+                  return {
+                    startTs: this.parseGanttDate(segStart, 'start').getTime(),
+                    endTs: segEnd
+                      ? (this.parseGanttDate(segEnd, 'end').getTime())
+                      : this.parseGanttDate(segStart, 'end').getTime(),
+                  }
+                })
+
+                const startDate = this.parseGanttDate(minDate, 'start')
+                let endDate = this.parseGanttDate(maxDate, 'end')
                 if (startDate.getTime() === endDate.getTime()) {
-                  endDate = this.getGanttEndDate(itemStart)
+                  endDate = this.getGanttEndDate(maxDate)
                 }
 
                 ganttTasks.push({
-                  id: `item-${item.id}`,
-                  text: item.content,
+                  id: `item-${firstItem.id}`,
+                  text: firstItem.content,
                   start_date: startDate,
                   end_date: endDate,
                   parent: taskId,
@@ -305,86 +377,82 @@ export class DataConverter {
                     task: task.name,
                     taskLinks: task.links,
                     level: task.level,
-                    item: item.content,
-                    itemStatus: item.status,
-                    itemLinks: item.links,
+                    item: firstItem.content,
+                    itemStatus: firstItem.status,
+                    itemLinks: firstItem.links,
                     hasItems: true,
-                    docId: item.docId,
-                    lineNumber: item.lineNumber,
-                    blockId: item.blockId,
-                    date: item.date,
-                    originalStartDateTime: item.startDateTime,
-                    originalEndDateTime: item.endDateTime,
-                    timePrecision: item.timePrecision,
-                    siblingItems: item.siblingItems,
-                    dateRangeStart: item.dateRangeStart,
-                    dateRangeEnd: item.dateRangeEnd,
-                    pomodoros: item.pomodoros,
+                    docId: firstItem.docId,
+                    lineNumber: firstItem.lineNumber,
+                    blockId: firstItem.blockId,
+                    date: firstItem.date,
+                    originalStartDateTime: firstItem.startDateTime,
+                    originalEndDateTime: firstItem.endDateTime,
+                    timePrecision: firstItem.timePrecision,
+                    siblingItems: firstItem.siblingItems,
+                    dateRangeStart: firstItem.dateRangeStart,
+                    dateRangeEnd: firstItem.dateRangeEnd,
+                    pomodoros: firstItem.pomodoros,
+                    isMultiDate: true,
+                    segments: ganttSegments,
                   },
                 })
               }
-            } else {
-              const segments = this.mergeItemsToSegments(group)
-              const firstItem = group[0]
-
-              const allDates = group.map((i) => i.startDateTime || i.date).filter(Boolean) as string[]
-              const minDate = allDates.reduce((a, b) => a < b ? a : b)
-              const maxDate = (group.map((i) => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
-
-              const ganttSegments: GanttSegment[] = segments.map((seg) => {
-                const segFirst = seg.items[0]
-                const segLast = seg.items.at(-1)!
-                const segStart = segFirst.startDateTime || segFirst.date
-                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
-                return {
-                  startTs: this.parseGanttDate(segStart, 'start').getTime(),
-                  endTs: segEnd
-                    ? (this.parseGanttDate(segEnd, 'end').getTime())
-                    : this.parseGanttDate(segStart, 'end').getTime(),
-                }
-              })
-
-              const startDate = this.parseGanttDate(minDate, 'start')
-              let endDate = this.parseGanttDate(maxDate, 'end')
-              if (startDate.getTime() === endDate.getTime()) {
-                endDate = this.getGanttEndDate(maxDate)
-              }
-
-              ganttTasks.push({
-                id: `item-${firstItem.id}`,
-                text: firstItem.content,
-                start_date: startDate,
-                end_date: endDate,
-                parent: taskId,
-                type: 'task',
-                progress: 0,
-                extendedProps: {
-                  project: project.name,
-                  projectLinks: project.links,
-                  task: task.name,
-                  taskLinks: task.links,
-                  level: task.level,
-                  item: firstItem.content,
-                  itemStatus: firstItem.status,
-                  itemLinks: firstItem.links,
-                  hasItems: true,
-                  docId: firstItem.docId,
-                  lineNumber: firstItem.lineNumber,
-                  blockId: firstItem.blockId,
-                  date: firstItem.date,
-                  originalStartDateTime: firstItem.startDateTime,
-                  originalEndDateTime: firstItem.endDateTime,
-                  timePrecision: firstItem.timePrecision,
-                  siblingItems: firstItem.siblingItems,
-                  dateRangeStart: firstItem.dateRangeStart,
-                  dateRangeEnd: firstItem.dateRangeEnd,
-                  pomodoros: firstItem.pomodoros,
-                  isMultiDate: true,
-                  segments: ganttSegments,
-                },
-              })
             }
           }
+        }
+      } else {
+        // showItems=false：保持现有逻辑
+        const filteredTasks = project.tasks.filter((task) => {
+          if (!dateFilter) return true
+          return this.isTaskInDateRange(task, dateFilter.start, dateFilter.end)
+        })
+
+        if (filteredTasks.length === 0) continue
+
+        // 添加项目节点
+        ganttTasks.push({
+          id: projectId,
+          text: project.name,
+          type: 'project',
+          open: true,
+          progress: 0,
+        })
+
+        // 层级追踪
+        let lastL1Id: string | null = null
+        let lastL2Id: string | null = null
+
+        for (const task of filteredTasks) {
+          const taskId = `task-${task.id}`
+          let parentId = projectId
+
+          // 确定层级
+          if (task.level === 'L1') {
+            parentId = projectId
+            lastL1Id = taskId
+            lastL2Id = null
+          } else if (task.level === 'L2') {
+            parentId = lastL1Id || projectId
+            lastL2Id = taskId
+          } else if (task.level === 'L3') {
+            parentId = lastL2Id || lastL1Id || projectId
+          }
+
+          const {
+            start,
+            end,
+          } = this.calculateTaskDates(task)
+
+          ganttTasks.push({
+            id: taskId,
+            text: task.name,
+            start_date: start,
+            end_date: end,
+            parent: parentId,
+            type: 'task',
+            open: true,
+            progress: 0,
+          })
         }
       }
     }

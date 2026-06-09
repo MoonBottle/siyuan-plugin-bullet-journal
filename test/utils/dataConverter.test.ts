@@ -375,6 +375,207 @@ describe('dataConverter.projectsToGanttTasks', () => {
       millisecond: 999,
     })
   })
+
+  it('showItems=true + 日期过滤：事项和任务日期范围一致', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'pending',
+            },
+            {
+              id: 'item-2',
+              content: '3月10号',
+              date: '2026-03-10',
+              docId: 'doc-1',
+              lineNumber: 3,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], true, {
+      start: '2026-03-05',
+      end: '2026-03-15',
+    })
+
+    const task = tasks.find((t) => t.id === 'task-task-1')
+    expect(task).toBeDefined()
+
+    // 任务日期应基于过滤后的事项（3月10号），而非全部事项
+    expect(localParts(task!.start_date)).toMatchObject({
+      year: 2026,
+      month: 3,
+      day: 10,
+    })
+    expect(localParts(task!.end_date)).toMatchObject({
+      year: 2026,
+      month: 3,
+      day: 10,
+    })
+
+    // 只有过滤后的事项节点
+    const itemNodes = tasks.filter((t) => t.id.startsWith('item-'))
+    expect(itemNodes).toHaveLength(1)
+    expect(itemNodes[0].id).toBe('item-item-2')
+  })
+
+  it('showItems=true + 日期过滤后事项为空：任务不显示', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], true, {
+      start: '2026-03-10',
+      end: '2026-03-15',
+    })
+
+    expect(tasks.some((t) => t.id === 'task-task-1')).toBe(false)
+    expect(tasks.some((t) => t.id === 'item-item-1')).toBe(false)
+  })
+
+  it('showItems=true + 日期过滤后所有任务事项为空：项目不显示', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], true, {
+      start: '2026-03-10',
+      end: '2026-03-15',
+    })
+
+    expect(tasks.some((t) => t.id === 'proj-project-1')).toBe(false)
+  })
+
+  it('showItems=false + 日期过滤：保持现有逻辑', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'pending',
+            },
+            {
+              id: 'item-2',
+              content: '3月10号',
+              date: '2026-03-10',
+              docId: 'doc-1',
+              lineNumber: 3,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], false, {
+      start: '2026-03-05',
+      end: '2026-03-15',
+    })
+
+    // showItems=false 时，任务日期仍基于全部事项（3月1号~3月10号）
+    const task = tasks.find((t) => t.id === 'task-task-1')
+    expect(task).toBeDefined()
+    expect(localParts(task!.start_date)).toMatchObject({
+      year: 2026,
+      month: 3,
+      day: 1,
+    })
+    expect(localParts(task!.end_date)).toMatchObject({
+      year: 2026,
+      month: 3,
+      day: 10,
+    })
+  })
+
+  it('showItems=true + 日期过滤 + 状态过滤叠加', () => {
+    const tasks = DataConverter.projectsToGanttTasks([
+      projectWithTasks([
+        {
+          id: 'task-1',
+          name: '任务',
+          level: 'L1',
+          items: [
+            {
+              id: 'item-1',
+              content: '3月1号已完成',
+              date: '2026-03-01',
+              docId: 'doc-1',
+              lineNumber: 2,
+              status: 'completed',
+            },
+            {
+              id: 'item-2',
+              content: '3月10号待办',
+              date: '2026-03-10',
+              docId: 'doc-1',
+              lineNumber: 3,
+              status: 'pending',
+            },
+          ],
+          lineNumber: 1,
+        },
+      ]),
+    ], true, {
+      start: '2026-03-05',
+      end: '2026-03-15',
+    }, ['pending'])
+
+    const task = tasks.find((t) => t.id === 'task-task-1')
+    expect(task).toBeDefined()
+
+    // 只有 pending + 日期范围内的事项
+    const itemNodes = tasks.filter((t) => t.id.startsWith('item-'))
+    expect(itemNodes).toHaveLength(1)
+    expect(itemNodes[0].id).toBe('item-item-2')
+  })
 })
 
 describe('dataConverter.mergeItemsToSegments', () => {
