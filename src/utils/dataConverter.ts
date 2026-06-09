@@ -279,93 +279,33 @@ export class DataConverter {
             progress: 0,
           })
 
-          // 添加工作事项（使用已过滤的 filteredItems）
-          if (filteredItems.length > 0) {
-            const itemGroups = new Map<string, Item[]>()
-            for (const item of filteredItems) {
-              const key = item.blockId ?? item.id
-              if (!itemGroups.has(key)) itemGroups.set(key, [])
-              itemGroups.get(key)!.push(item)
-            }
+          // 添加工作事项（使用已过滤的 filteredItems，此时 filteredItems 必不为空）
+          const itemGroups = new Map<string, Item[]>()
+          for (const item of filteredItems) {
+            const key = item.blockId ?? item.id
+            if (!itemGroups.has(key)) itemGroups.set(key, [])
+            itemGroups.get(key)!.push(item)
+          }
 
-            for (const [, group] of itemGroups) {
-              if (group.length === 1) {
-                const item = group[0]
-                const itemStart = item.startDateTime || item.date
-                const itemEnd = item.endDateTime || item.startDateTime || item.date
+          for (const [, group] of itemGroups) {
+            if (group.length === 1) {
+              const item = group[0]
+              const itemStart = item.startDateTime || item.date
+              const itemEnd = item.endDateTime || item.startDateTime || item.date
 
-                if (itemStart) {
-                  const startDate = this.parseGanttDate(itemStart, 'start')
-                  let endDate = itemEnd
-                    ? this.parseGanttDate(itemEnd, 'end')
-                    : this.parseGanttDate(itemStart, 'end')
+              if (itemStart) {
+                const startDate = this.parseGanttDate(itemStart, 'start')
+                let endDate = itemEnd
+                  ? this.parseGanttDate(itemEnd, 'end')
+                  : this.parseGanttDate(itemStart, 'end')
 
-                  if (startDate.getTime() === endDate.getTime()) {
-                    endDate = this.getGanttEndDate(itemStart)
-                  }
-
-                  ganttTasks.push({
-                    id: `item-${item.id}`,
-                    text: item.content,
-                    start_date: startDate,
-                    end_date: endDate,
-                    parent: taskId,
-                    type: 'task',
-                    progress: 0,
-                    extendedProps: {
-                      project: project.name,
-                      projectLinks: project.links,
-                      task: task.name,
-                      taskLinks: task.links,
-                      level: task.level,
-                      item: item.content,
-                      itemStatus: item.status,
-                      itemLinks: item.links,
-                      hasItems: true,
-                      docId: item.docId,
-                      lineNumber: item.lineNumber,
-                      blockId: item.blockId,
-                      date: item.date,
-                      originalStartDateTime: item.startDateTime,
-                      originalEndDateTime: item.endDateTime,
-                      timePrecision: item.timePrecision,
-                      siblingItems: item.siblingItems,
-                      dateRangeStart: item.dateRangeStart,
-                      dateRangeEnd: item.dateRangeEnd,
-                      pomodoros: item.pomodoros,
-                    },
-                  })
-                }
-              } else {
-                const segments = this.mergeItemsToSegments(group)
-                const firstItem = group[0]
-
-                const allDates = group.map((i) => i.startDateTime || i.date).filter(Boolean) as string[]
-                const minDate = allDates.reduce((a, b) => a < b ? a : b)
-                const maxDate = (group.map((i) => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
-
-                const ganttSegments: GanttSegment[] = segments.map((seg) => {
-                  const segFirst = seg.items[0]
-                  const segLast = seg.items.at(-1)!
-                  const segStart = segFirst.startDateTime || segFirst.date
-                  const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
-                  return {
-                    startTs: this.parseGanttDate(segStart, 'start').getTime(),
-                    endTs: segEnd
-                      ? (this.parseGanttDate(segEnd, 'end').getTime())
-                      : this.parseGanttDate(segStart, 'end').getTime(),
-                  }
-                })
-
-                const startDate = this.parseGanttDate(minDate, 'start')
-                let endDate = this.parseGanttDate(maxDate, 'end')
                 if (startDate.getTime() === endDate.getTime()) {
-                  endDate = this.getGanttEndDate(maxDate)
+                  endDate = this.getGanttEndDate(itemStart)
                 }
 
                 ganttTasks.push({
-                  id: `item-${firstItem.id}`,
-                  text: firstItem.content,
+                  id: `item-${item.id}`,
+                  text: item.content,
                   start_date: startDate,
                   end_date: endDate,
                   parent: taskId,
@@ -377,26 +317,84 @@ export class DataConverter {
                     task: task.name,
                     taskLinks: task.links,
                     level: task.level,
-                    item: firstItem.content,
-                    itemStatus: firstItem.status,
-                    itemLinks: firstItem.links,
+                    item: item.content,
+                    itemStatus: item.status,
+                    itemLinks: item.links,
                     hasItems: true,
-                    docId: firstItem.docId,
-                    lineNumber: firstItem.lineNumber,
-                    blockId: firstItem.blockId,
-                    date: firstItem.date,
-                    originalStartDateTime: firstItem.startDateTime,
-                    originalEndDateTime: firstItem.endDateTime,
-                    timePrecision: firstItem.timePrecision,
-                    siblingItems: firstItem.siblingItems,
-                    dateRangeStart: firstItem.dateRangeStart,
-                    dateRangeEnd: firstItem.dateRangeEnd,
-                    pomodoros: firstItem.pomodoros,
-                    isMultiDate: true,
-                    segments: ganttSegments,
+                    docId: item.docId,
+                    lineNumber: item.lineNumber,
+                    blockId: item.blockId,
+                    date: item.date,
+                    originalStartDateTime: item.startDateTime,
+                    originalEndDateTime: item.endDateTime,
+                    timePrecision: item.timePrecision,
+                    siblingItems: item.siblingItems,
+                    dateRangeStart: item.dateRangeStart,
+                    dateRangeEnd: item.dateRangeEnd,
+                    pomodoros: item.pomodoros,
                   },
                 })
               }
+            } else {
+              const segments = this.mergeItemsToSegments(group)
+              const firstItem = group[0]
+
+              const allDates = group.map((i) => i.startDateTime || i.date).filter(Boolean) as string[]
+              const minDate = allDates.reduce((a, b) => a < b ? a : b)
+              const maxDate = (group.map((i) => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b)
+
+              const ganttSegments: GanttSegment[] = segments.map((seg) => {
+                const segFirst = seg.items[0]
+                const segLast = seg.items.at(-1)!
+                const segStart = segFirst.startDateTime || segFirst.date
+                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date
+                return {
+                  startTs: this.parseGanttDate(segStart, 'start').getTime(),
+                  endTs: segEnd
+                    ? (this.parseGanttDate(segEnd, 'end').getTime())
+                    : this.parseGanttDate(segStart, 'end').getTime(),
+                }
+              })
+
+              const startDate = this.parseGanttDate(minDate, 'start')
+              let endDate = this.parseGanttDate(maxDate, 'end')
+              if (startDate.getTime() === endDate.getTime()) {
+                endDate = this.getGanttEndDate(maxDate)
+              }
+
+              ganttTasks.push({
+                id: `item-${firstItem.id}`,
+                text: firstItem.content,
+                start_date: startDate,
+                end_date: endDate,
+                parent: taskId,
+                type: 'task',
+                progress: 0,
+                extendedProps: {
+                  project: project.name,
+                  projectLinks: project.links,
+                  task: task.name,
+                  taskLinks: task.links,
+                  level: task.level,
+                  item: firstItem.content,
+                  itemStatus: firstItem.status,
+                  itemLinks: firstItem.links,
+                  hasItems: true,
+                  docId: firstItem.docId,
+                  lineNumber: firstItem.lineNumber,
+                  blockId: firstItem.blockId,
+                  date: firstItem.date,
+                  originalStartDateTime: firstItem.startDateTime,
+                  originalEndDateTime: firstItem.endDateTime,
+                  timePrecision: firstItem.timePrecision,
+                  siblingItems: firstItem.siblingItems,
+                  dateRangeStart: firstItem.dateRangeStart,
+                  dateRangeEnd: firstItem.dateRangeEnd,
+                  pomodoros: firstItem.pomodoros,
+                  isMultiDate: true,
+                  segments: ganttSegments,
+                },
+              })
             }
           }
         }
