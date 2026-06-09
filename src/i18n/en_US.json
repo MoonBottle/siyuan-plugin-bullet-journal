@@ -514,7 +514,14 @@
       "createBtn": "Create",
       "emptyMarket": "No templates available",
       "searchPlaceholder": "Search templates...",
-      "openFolder": "Open Folder"
+      "openFolder": "Open Folder",
+      "skillName": "Skill Name",
+      "skillNamePlaceholder": "Enter skill name",
+      "skillNameRequired": "Skill name is required",
+      "skillNameExists": "Skill name already exists",
+      "skillDescription": "Skill Description",
+      "skillDescriptionPlaceholder": "Enter skill description",
+      "skillContent": "Skill Content"
     },
     "slashCommands": {
       "title": "Slash Commands",

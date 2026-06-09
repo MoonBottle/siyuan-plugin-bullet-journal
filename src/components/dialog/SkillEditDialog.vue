@@ -2,10 +2,10 @@
   <div class="ta-skill-edit-dialog">
     <div class="skill-form">
       <div class="form-item form-item-full">
-        <label class="form-label">{{ t('slash').skillName }}</label>
+        <label class="form-label">{{ t('settings').aiSkills.skillName }}</label>
         <SyInput
           v-model="form.name"
-          :placeholder="t('slash').skillNamePlaceholder"
+          :placeholder="t('settings').aiSkills.skillNamePlaceholder"
           :disabled="mode === 'edit'"
           @blur="validateName"
         />
@@ -16,16 +16,16 @@
       </div>
 
       <div class="form-item form-item-full">
-        <label class="form-label">{{ t('slash').skillDescription }}</label>
+        <label class="form-label">{{ t('settings').aiSkills.skillDescription }}</label>
         <SyInput
           v-model="form.description"
-          :placeholder="t('slash').skillDescriptionPlaceholder"
+          :placeholder="t('settings').aiSkills.skillDescriptionPlaceholder"
           :disabled="mode === 'view'"
         />
       </div>
 
       <div class="form-item form-item-full">
-        <label class="form-label">{{ t('settings').aiSkills?.editSkill ?? '技能内容' }}</label>
+        <label class="form-label">{{ t('settings').aiSkills.skillContent }}</label>
         <div
           v-if="isLoaded && mode === 'view'"
           class="bytemd-viewer"
@@ -166,14 +166,14 @@ function validateName() {
   errors.name = ''
 
   if (!name) {
-    errors.name = t('slash').skillNameRequired
+    errors.name = t('settings').aiSkills.skillNameRequired
     return
   }
 
   if (props.mode === 'create') {
     const existing = skillStore.getSkillByName(name)
     if (existing && existing.source === 'user') {
-      errors.name = t('slash').skillNameExists
+      errors.name = t('settings').aiSkills.skillNameExists
     }
   }
 }

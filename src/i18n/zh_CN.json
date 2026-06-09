@@ -450,7 +450,14 @@
       "createBtn": "创建",
       "emptyMarket": "暂无可用模板",
       "searchPlaceholder": "搜索模板...",
-      "openFolder": "打开目录"
+      "openFolder": "打开目录",
+      "skillName": "技能名称",
+      "skillNamePlaceholder": "输入技能名称",
+      "skillNameRequired": "技能名称不能为空",
+      "skillNameExists": "技能名称已存在",
+      "skillDescription": "技能描述",
+      "skillDescriptionPlaceholder": "输入技能描述",
+      "skillContent": "技能内容"
     },
     "projectDirectories": {
       "title": "项目目录",
