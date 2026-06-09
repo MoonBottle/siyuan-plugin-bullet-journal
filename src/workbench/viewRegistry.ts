@@ -188,6 +188,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: () => ({
         viewMode: 'day',
         showItems: false,
+        datePreset: 'all',
         startDate: '',
         endDate: '',
         groupId: '',
@@ -201,6 +202,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           initialConfig: {
             viewMode: config?.viewMode,
             showItems: config?.showItems,
+            datePreset: config?.datePreset,
             startDate: config?.startDate,
             endDate: config?.endDate,
             groupId: config?.groupId,
@@ -209,6 +211,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               viewMode: nextConfig.viewMode,
               showItems: nextConfig.showItems,
+              datePreset: nextConfig.datePreset,
               startDate: nextConfig.startDate,
               endDate: nextConfig.endDate,
               groupId: nextConfig.groupId,
