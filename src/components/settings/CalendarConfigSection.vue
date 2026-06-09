@@ -46,6 +46,47 @@
         </SySettingItem>
       </SySettingItemList>
     </SySettingsSection>
+
+    <!-- Holiday Data Section -->
+    <SySettingsSection
+      icon="iconRefresh"
+      :title="t('settings').calendar.holidayData.title"
+    >
+      <SySettingItemList>
+        <SySettingItem
+          :label="t('settings').calendar.holidayData.source"
+        >
+          <span class="holiday-source">
+            {{ sourceLabel }}
+          </span>
+        </SySettingItem>
+        <SySettingItem
+          :label="t('settings').calendar.holidayData.yearRange"
+        >
+          <span>{{ holidaySyncState.yearRange || '-' }}</span>
+        </SySettingItem>
+        <SySettingItem
+          :label="t('settings').calendar.holidayData.lastUpdated"
+        >
+          <span>{{ formattedLastUpdated }}</span>
+        </SySettingItem>
+        <SySettingItem
+          :label="t('settings').calendar.holidayData.syncStatus"
+        >
+          <span
+            class="sync-status"
+            :class="syncStatusClass"
+          >
+            {{ syncStatusLabel }}
+          </span>
+        </SySettingItem>
+      </SySettingItemList>
+      <SySettingsActionButton
+        :text="isRefreshing ? t('settings').calendar.holidayData.refreshing : t('settings').calendar.holidayData.refresh"
+        :disabled="isRefreshing"
+        @click="handleRefreshHoliday"
+      />
+    </SySettingsSection>
   </template>
 
   <!-- iOS Mobile Version -->
@@ -175,16 +216,95 @@
           {{ t('settings').calendar.dateClickBehaviorDesc }}
         </div>
       </div>
+
+      <!-- Holiday Data Group -->
+      <div class="ios-group-header">
+        <div class="header-icon">
+          📊
+        </div>
+        <div class="header-info">
+          <div class="header-title">
+            {{ t('settings').calendar.holidayData.title }}
+          </div>
+        </div>
+      </div>
+
+      <div class="ios-group">
+        <div class="ios-cell">
+          <div class="cell-content">
+            <div class="cell-title">
+              {{ t('settings').calendar.holidayData.source }}
+            </div>
+          </div>
+          <div class="cell-accessory">
+            <span class="holiday-source">{{ sourceLabel }}</span>
+          </div>
+        </div>
+        <div class="ios-cell">
+          <div class="cell-content">
+            <div class="cell-title">
+              {{ t('settings').calendar.holidayData.yearRange }}
+            </div>
+          </div>
+          <div class="cell-accessory">
+            <span>{{ holidaySyncState.yearRange || '-' }}</span>
+          </div>
+        </div>
+        <div class="ios-cell">
+          <div class="cell-content">
+            <div class="cell-title">
+              {{ t('settings').calendar.holidayData.lastUpdated }}
+            </div>
+          </div>
+          <div class="cell-accessory">
+            <span>{{ formattedLastUpdated }}</span>
+          </div>
+        </div>
+        <div class="ios-cell">
+          <div class="cell-content">
+            <div class="cell-title">
+              {{ t('settings').calendar.holidayData.syncStatus }}
+            </div>
+          </div>
+          <div class="cell-accessory">
+            <span
+              class="sync-status"
+              :class="syncStatusClass"
+            >
+              {{ syncStatusLabel }}
+            </span>
+          </div>
+        </div>
+        <div class="ios-cell ios-cell-action">
+          <button
+            class="ios-refresh-btn"
+            :disabled="isRefreshing"
+            @click="handleRefreshHoliday"
+          >
+            {{ isRefreshing ? t('settings').calendar.holidayData.refreshing : t('settings').calendar.holidayData.refresh }}
+          </button>
+        </div>
+      </div>
     </div>
   </template>
 </template>
 
 <script setup lang="ts">
+import {
+  computed,
+  ref,
+} from 'vue'
+import SySettingsActionButton from '@/components/settings/SySettingsActionButton.vue'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
 import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
+import {
+  holidaySyncState,
+  refreshChinaWorkdayCalendar,
+} from '@/services/chinaWorkdayService'
+import { showMessage } from '@/utils/dialog'
 import SySettingsSection from './SySettingsSection.vue'
 
 defineProps<{
@@ -231,6 +351,51 @@ const clickBehaviorOptions = [
     label: t('settings').calendar.clickBehaviorDouble,
   },
 ]
+
+const isRefreshing = ref(false)
+
+async function handleRefreshHoliday() {
+  isRefreshing.value = true
+  const success = await refreshChinaWorkdayCalendar()
+  isRefreshing.value = false
+  const h = t('settings').calendar.holidayData
+  showMessage(success ? h.refreshSuccess : h.refreshFailed)
+}
+
+const sourceLabel = computed(() => {
+  const h = t('settings').calendar.holidayData
+  switch (holidaySyncState.source) {
+    case 'remote': return h.sourceRemote
+    case 'cache': return h.sourceCache
+    case 'fallback': return h.sourceFallback
+    default: return h.sourceFallback
+  }
+})
+
+const formattedLastUpdated = computed(() => {
+  if (!holidaySyncState.lastUpdated) return '-'
+  const d = new Date(holidaySyncState.lastUpdated)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+})
+
+const syncStatusLabel = computed(() => {
+  const h = t('settings').calendar.holidayData
+  switch (holidaySyncState.status) {
+    case 'idle': return h.statusIdle
+    case 'syncing': return h.statusSyncing
+    case 'success': return h.statusSuccess
+    case 'error': return h.statusError
+    default: return h.statusIdle
+  }
+})
+
+const syncStatusClass = computed(() => {
+  return {
+    'sync-status--success': holidaySyncState.status === 'success',
+    'sync-status--syncing': holidaySyncState.status === 'syncing',
+    'sync-status--error': holidaySyncState.status === 'error',
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -361,6 +526,47 @@ const clickBehaviorOptions = [
     left: 2px;
     transition: transform 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Holiday Data Styles
+.holiday-source {
+  color: var(--b3-theme-on-surface);
+  font-size: 14px;
+}
+
+.sync-status {
+  font-size: 14px;
+
+  &--success {
+    color: var(--b3-theme-success, #65b84f);
+  }
+
+  &--syncing {
+    color: var(--b3-theme-on-surface-light, #999);
+  }
+
+  &--error {
+    color: var(--b3-theme-error, #d23f31);
+  }
+}
+
+.ios-cell-action {
+  justify-content: center;
+  padding: 8px 16px;
+}
+
+.ios-refresh-btn {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 16px;
+
+  &:disabled {
+    color: #c7c7cc;
+    cursor: not-allowed;
   }
 }
 

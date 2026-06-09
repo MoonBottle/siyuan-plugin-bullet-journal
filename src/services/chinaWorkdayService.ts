@@ -1,5 +1,6 @@
 import type { Plugin } from 'siyuan'
 import type { ChinaWorkdayCalendarData } from '@/constants/chinaWorkdayFallback'
+import { reactive } from 'vue'
 import { CHINA_WORKDAY_FALLBACK } from '@/constants/chinaWorkdayFallback'
 
 const HOLIDAY_API_URL = 'https://raw.githubusercontent.com/lanceliao/china-holiday-calender/master/holidayAPI.json'
@@ -20,6 +21,14 @@ type PersistenceAdapter = Pick<Plugin, 'loadData' | 'saveData'>
 let activeCalendar: ChinaWorkdayCalendarData = CHINA_WORKDAY_FALLBACK
 let persistenceAdapter: PersistenceAdapter | null = null
 
+export const holidaySyncState = reactive({
+  status: 'idle' as 'idle' | 'syncing' | 'success' | 'error',
+  lastUpdated: null as string | null,
+  source: 'fallback' as 'remote' | 'cache' | 'fallback',
+  yearRange: inferYearRange(CHINA_WORKDAY_FALLBACK),
+  errorMessage: '',
+})
+
 function formatDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -30,6 +39,18 @@ function formatDate(date: Date): string {
 function isWeekend(date: Date): boolean {
   const day = date.getDay()
   return day === 0 || day === 6
+}
+
+function inferYearRange(data: { holidays: string[], workdays: string[] }): string {
+  const years = new Set<number>()
+  for (const d of [...data.holidays, ...data.workdays]) {
+    const year = Number(d.substring(0, 4))
+    if (year > 2000 && year < 2100) {
+      years.add(year)
+    }
+  }
+  const sorted = [...years].sort()
+  return sorted.length > 0 ? sorted.join('-') : ''
 }
 
 function enumerateDateRange(start: string, end: string): string[] {
@@ -49,6 +70,7 @@ function normalizeCalendarData(data: ChinaWorkdayCalendarData): ChinaWorkdayCale
   return {
     holidays: [...new Set(data.holidays)].sort(),
     workdays: [...new Set(data.workdays)].sort(),
+    meta: data.meta,
   }
 }
 
@@ -67,6 +89,13 @@ function parseCalendarData(raw: unknown): ChinaWorkdayCalendarData | null {
     return normalizeCalendarData({
       holidays: parsed.holidays.filter((item: unknown): item is string => typeof item === 'string'),
       workdays: parsed.workdays.filter((item: unknown): item is string => typeof item === 'string'),
+      meta: parsed.meta?.lastUpdated !== undefined
+        ? {
+            lastUpdated: typeof parsed.meta.lastUpdated === 'string' ? parsed.meta.lastUpdated : null,
+            source: ['remote', 'cache', 'fallback'].includes(parsed.meta.source) ? parsed.meta.source : 'fallback',
+            yearRange: typeof parsed.meta.yearRange === 'string' ? parsed.meta.yearRange : '',
+          }
+        : undefined,
     })
   } catch {
     return null
@@ -170,30 +199,74 @@ export async function initializeChinaWorkdayCalendar(plugin?: PersistenceAdapter
   }
 
   const cached = await loadCachedCalendar()
-  activeCalendar = cached || CHINA_WORKDAY_FALLBACK
+  if (cached) {
+    activeCalendar = cached
+    holidaySyncState.source = cached.meta?.source === 'remote' ? 'cache' : (cached.meta?.source ?? 'cache')
+    holidaySyncState.lastUpdated = cached.meta?.lastUpdated ?? null
+    holidaySyncState.yearRange = cached.meta?.yearRange || inferYearRange(cached)
+  } else {
+    activeCalendar = CHINA_WORKDAY_FALLBACK
+    holidaySyncState.source = 'fallback'
+    holidaySyncState.lastUpdated = null
+    holidaySyncState.yearRange = inferYearRange(CHINA_WORKDAY_FALLBACK)
+  }
 }
 
-export async function refreshChinaWorkdayCalendar(): Promise<void> {
+export async function refreshChinaWorkdayCalendar(): Promise<boolean> {
+  holidaySyncState.status = 'syncing'
+  holidaySyncState.errorMessage = ''
+
   try {
     const response = await fetch(HOLIDAY_API_URL)
     if (!response.ok) {
-      return
+      holidaySyncState.status = 'error'
+      holidaySyncState.errorMessage = `HTTP ${response.status}`
+      return false
     }
 
     const payload = await response.json() as HolidayApiPayload
     const converted = convertHolidayPayload(payload)
     if (!converted) {
-      return
+      holidaySyncState.status = 'error'
+      holidaySyncState.errorMessage = 'Invalid data format'
+      return false
     }
 
-    activeCalendar = converted
-    await saveCachedCalendar(converted)
+    const now = new Date().toISOString()
+    const yearRange = inferYearRange(converted)
+    const dataWithMeta: ChinaWorkdayCalendarData = {
+      ...converted,
+      meta: {
+        lastUpdated: now,
+        source: 'remote',
+        yearRange,
+      },
+    }
+
+    activeCalendar = dataWithMeta
+    await saveCachedCalendar(dataWithMeta)
+
+    holidaySyncState.status = 'success'
+    holidaySyncState.source = 'remote'
+    holidaySyncState.lastUpdated = now
+    holidaySyncState.yearRange = yearRange
+
+    return true
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    holidaySyncState.status = 'error'
+    holidaySyncState.errorMessage = msg
     console.warn('[ChinaWorkdayService] Failed to refresh remote calendar:', error)
+    return false
   }
 }
 
 export async function __resetChinaWorkdayStateForTest(): Promise<void> {
   activeCalendar = CHINA_WORKDAY_FALLBACK
   persistenceAdapter = null
+  holidaySyncState.status = 'idle'
+  holidaySyncState.lastUpdated = null
+  holidaySyncState.source = 'fallback'
+  holidaySyncState.yearRange = inferYearRange(CHINA_WORKDAY_FALLBACK)
+  holidaySyncState.errorMessage = ''
 }

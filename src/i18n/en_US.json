@@ -302,7 +302,25 @@
       "dateClickBehavior": "Date Click to Enter Day View",
       "dateClickBehaviorDesc": "How to enter day view by clicking a date cell in month or week view",
       "clickBehaviorSingle": "Single click",
-      "clickBehaviorDouble": "Double click"
+      "clickBehaviorDouble": "Double click",
+      "holidayData": {
+        "title": "Holiday Data",
+        "source": "Data Source",
+        "sourceRemote": "Remote Sync",
+        "sourceCache": "Local Cache",
+        "sourceFallback": "Built-in Data",
+        "yearRange": "Coverage",
+        "lastUpdated": "Last Updated",
+        "syncStatus": "Sync Status",
+        "statusIdle": "Not synced",
+        "statusSyncing": "Syncing...",
+        "statusSuccess": "Synced",
+        "statusError": "Sync failed",
+        "refresh": "Refresh Data",
+        "refreshing": "Refreshing...",
+        "refreshSuccess": "Holiday data updated",
+        "refreshFailed": "Holiday data sync failed"
+      }
     },
     "lunchBreak": {
       "title": "Lunch Break",

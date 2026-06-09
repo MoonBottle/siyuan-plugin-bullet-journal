@@ -2,6 +2,7 @@
   <button
     type="button"
     class="sy-settings-action-btn b3-button b3-button--outline fn__flex-center"
+    :disabled="disabled"
     @click="$emit('click', $event)"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -23,6 +24,7 @@ import {
 } from '@/utils/tooltip'
 
 const props = defineProps<{
+  disabled?: boolean
   icon?: string
   text: string
   title?: string

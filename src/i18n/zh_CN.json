@@ -302,7 +302,25 @@
       "dateClickBehavior": "日期点击进入方式",
       "dateClickBehaviorDesc": "在月视图或周视图中，点击日期格子进入日视图的方式",
       "clickBehaviorSingle": "单击",
-      "clickBehaviorDouble": "双击"
+      "clickBehaviorDouble": "双击",
+      "holidayData": {
+        "title": "节假日数据",
+        "source": "数据来源",
+        "sourceRemote": "远程同步",
+        "sourceCache": "本地缓存",
+        "sourceFallback": "内置数据",
+        "yearRange": "覆盖范围",
+        "lastUpdated": "上次更新",
+        "syncStatus": "同步状态",
+        "statusIdle": "未同步",
+        "statusSyncing": "同步中...",
+        "statusSuccess": "已同步",
+        "statusError": "同步失败",
+        "refresh": "刷新数据",
+        "refreshing": "刷新中...",
+        "refreshSuccess": "节假日数据已更新",
+        "refreshFailed": "节假日数据同步失败"
+      }
     },
     "lunchBreak": {
       "title": "午休时间",
