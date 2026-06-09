@@ -85,6 +85,6 @@ export const CHINA_WORKDAY_FALLBACK: ChinaWorkdayCalendarData = {
   meta: {
     lastUpdated: null,
     source: 'fallback',
-    yearRange: '2025-2026',
+    yearRange: '2025~2026',
   },
 }

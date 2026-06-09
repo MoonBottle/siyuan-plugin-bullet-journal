@@ -112,7 +112,7 @@ describe('chinaWorkdayService', () => {
     expect(service.holidaySyncState.status).toBe('idle')
     expect(service.holidaySyncState.source).toBe('fallback')
     expect(service.holidaySyncState.lastUpdated).toBeNull()
-    expect(service.holidaySyncState.yearRange).toBe('2025-2026')
+    expect(service.holidaySyncState.yearRange).toBe('2025~2026')
     expect(service.holidaySyncState.errorMessage).toBe('')
   })
 

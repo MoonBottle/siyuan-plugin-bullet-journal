@@ -41,6 +41,15 @@ function isWeekend(date: Date): boolean {
   return day === 0 || day === 6
 }
 
+function formatYearRange(years: number[]): string {
+  if (years.length === 0) return ''
+  const sorted = [...years].sort((a, b) => a - b)
+  if (sorted.length === 1) return `${sorted[0]}`
+  // Check if years are consecutive
+  const isConsecutive = sorted.every((y, i) => i === 0 || y === sorted[i - 1]! + 1)
+  return isConsecutive ? `${sorted[0]}~${sorted.at(-1)}` : sorted.join('-')
+}
+
 function inferYearRange(data: { holidays: string[], workdays: string[] }): string {
   const years = new Set<number>()
   for (const d of [...data.holidays, ...data.workdays]) {
@@ -49,8 +58,7 @@ function inferYearRange(data: { holidays: string[], workdays: string[] }): strin
       years.add(year)
     }
   }
-  const sorted = [...years].sort()
-  return sorted.length > 0 ? sorted.join('-') : ''
+  return formatYearRange([...years])
 }
 
 function enumerateDateRange(start: string, end: string): string[] {
@@ -144,7 +152,7 @@ function convertHolidayPayload(payload: HolidayApiPayload): ChinaWorkdayCalendar
   return normalizeCalendarData({
     holidays: [...holidays],
     workdays: [...workdays],
-    inferredYearRange: yearKeys.length > 0 ? yearKeys.join('-') : undefined,
+    inferredYearRange: yearKeys.length > 0 ? formatYearRange(yearKeys) : undefined,
   })
 }
 
