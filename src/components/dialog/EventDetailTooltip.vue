@@ -25,6 +25,7 @@ import type {
 } from '@/types/models'
 import {
   nextTick,
+  onUnmounted,
   ref,
 } from 'vue'
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
@@ -82,6 +83,13 @@ defineExpose({
   show,
   hide,
 })
+
+onUnmounted(() => {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+})
 </script>
 
 <style lang="scss">
@@ -97,11 +105,12 @@ defineExpose({
   border-radius: var(--b3-border-radius);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   opacity: 0;
-  pointer-events: auto;
+  pointer-events: none;
   transition: opacity 0.15s ease;
 
   &.event-detail-tooltip--visible {
     opacity: 1;
+    pointer-events: auto;
   }
 
   .sy-dialog-content {
