@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import type { GanttDatePreset } from '@/types/workbench'
 import {
   computed,
   nextTick,
@@ -90,6 +91,7 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
+import { buildGanttDateRange } from '@/utils/ganttDateFilter'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
@@ -97,6 +99,7 @@ const props = withDefaults(defineProps<{
   embedded?: boolean
   viewMode?: 'day' | 'week' | 'month'
   showItems?: boolean
+  datePreset?: GanttDatePreset
   startDate?: string
   endDate?: string
   groupId?: string
@@ -104,6 +107,7 @@ const props = withDefaults(defineProps<{
   embedded: false,
   viewMode: 'day',
   showItems: false,
+  datePreset: 'all',
   startDate: '',
   endDate: '',
   groupId: '',
@@ -112,6 +116,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'update:viewMode', value: string): void
   (event: 'update:showItems', value: boolean): void
+  (event: 'update:datePreset', value: GanttDatePreset): void
   (event: 'update:startDate', value: string): void
   (event: 'update:endDate', value: string): void
   (event: 'update:groupId', value: string): void
@@ -237,6 +242,17 @@ watch(() => props.groupId, (val) => {
   }
 })
 
+watch(() => props.datePreset, (val) => {
+  const range = buildGanttDateRange(val, props.startDate, props.endDate)
+  if (range) {
+    startDate.value = range.start
+    endDate.value = range.end
+  } else {
+    startDate.value = ''
+    endDate.value = ''
+  }
+})
+
 // 状态变更时 emit 事件
 watch(viewMode, (val) => {
   emit('update:viewMode', val)
@@ -263,6 +279,12 @@ onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('GanttTab', plugin))
   // 从插件加载设置
   settingsStore.loadFromPlugin()
+
+  const range = buildGanttDateRange(props.datePreset, props.startDate, props.endDate)
+  if (range) {
+    startDate.value = range.start
+    endDate.value = range.end
+  }
 
   if (!selectedGroup.value && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup
