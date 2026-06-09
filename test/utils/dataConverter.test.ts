@@ -403,3 +403,77 @@ describe('dataConverter.mergeItemsToSegments', () => {
     expect(segments).toHaveLength(0)
   })
 })
+
+describe('dataConverter.filterItemsByDate', () => {
+  const mkItem = (date: string, startDateTime?: string, endDateTime?: string) => ({
+    id: `item-${date}`,
+    content: '事项',
+    date,
+    startDateTime,
+    endDateTime,
+    docId: 'doc-1',
+    lineNumber: 1,
+    status: 'pending' as const,
+  })
+
+  it('无 dateFilter 时返回全部事项', () => {
+    const items = [mkItem('2026-03-01'), mkItem('2026-03-10')]
+    const result = DataConverter.filterItemsByDate(items)
+    expect(result).toHaveLength(2)
+  })
+
+  it('过滤掉完全在范围外的事项', () => {
+    const items = [mkItem('2026-03-01'), mkItem('2026-03-10'), mkItem('2026-03-20')]
+    const result = DataConverter.filterItemsByDate(items, {
+      start: '2026-03-05',
+      end: '2026-03-15',
+    })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('item-2026-03-10')
+  })
+
+  it('保留与范围有交集的事项', () => {
+    const items = [mkItem('2026-03-01'), mkItem('2026-03-10')]
+    const result = DataConverter.filterItemsByDate(items, {
+      start: '2026-03-01',
+      end: '2026-03-01',
+    })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('item-2026-03-01')
+  })
+
+  it('带时间的事项与范围有交集时保留', () => {
+    const items = [
+      mkItem('2026-03-10', '2026-03-10 14:00:00', '2026-03-10 15:00:00'),
+      mkItem('2026-03-20', '2026-03-20 09:00:00', '2026-03-20 10:00:00'),
+    ]
+    const result = DataConverter.filterItemsByDate(items, {
+      start: '2026-03-10',
+      end: '2026-03-10',
+    })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('item-2026-03-10')
+  })
+
+  it('只有 start 过滤时保留开始日期 >= start 的事项', () => {
+    const items = [mkItem('2026-03-01'), mkItem('2026-03-10')]
+    const result = DataConverter.filterItemsByDate(items, { start: '2026-03-05' })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('item-2026-03-10')
+  })
+
+  it('只有 end 过滤时保留结束日期 <= end 的事项', () => {
+    const items = [mkItem('2026-03-01'), mkItem('2026-03-10')]
+    const result = DataConverter.filterItemsByDate(items, { end: '2026-03-05' })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('item-2026-03-01')
+  })
+
+  it('空数组返回空', () => {
+    const result = DataConverter.filterItemsByDate([], {
+      start: '2026-03-01',
+      end: '2026-03-10',
+    })
+    expect(result).toHaveLength(0)
+  })
+})

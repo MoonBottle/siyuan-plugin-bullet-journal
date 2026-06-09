@@ -485,6 +485,36 @@ export class DataConverter {
     return taskStartInRange && taskEndInRange
   }
 
+  /**
+   * 按日期范围过滤事项（交集判断）
+   */
+  public static filterItemsByDate(
+    items: Item[],
+    dateFilter?: { start?: string, end?: string },
+  ): Item[] {
+    if (!dateFilter?.start && !dateFilter?.end) return items
+
+    const filterStart = dateFilter.start ? this.parseGanttDate(dateFilter.start, 'start') : null
+    const filterEnd = dateFilter.end ? this.parseGanttDate(dateFilter.end, 'end') : null
+
+    return items.filter((item) => {
+      const itemStartStr = item.startDateTime || item.date
+      const itemEndStr = item.endDateTime || item.startDateTime || item.date
+
+      if (!itemStartStr) return true
+
+      const itemStart = this.parseGanttDate(itemStartStr, 'start')
+      const itemEnd = itemEndStr
+        ? this.parseGanttDate(itemEndStr, 'end')
+        : this.parseGanttDate(itemStartStr, 'end')
+
+      const startInRange = !filterEnd || itemStart <= filterEnd
+      const endInRange = !filterStart || itemEnd >= filterStart
+
+      return startInRange && endInRange
+    })
+  }
+
   public static mergeItemsToSegments(items: Item[]): ItemSegment[] {
     if (items.length === 0) return []
 
