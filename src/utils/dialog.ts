@@ -21,7 +21,6 @@ import {
 } from 'siyuan'
 import { createApp } from 'vue'
 import * as siyuanAPI from '@/api'
-import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
 import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue'
 import FocusPlanItemPickerDialog from '@/components/dialog/FocusPlanItemPickerDialog.vue'
 import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue'
@@ -269,27 +268,6 @@ export function buildItemFromEventProps(event: CalendarEvent): Item {
     repeatRule: props.repeatRule,
     endCondition: props.endCondition,
   }
-}
-
-/**
- * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
- * @param event 日历事件
- */
-export function buildEventDetailContent(
-  event: CalendarEvent,
-): string {
-  const item = buildItemFromEventProps(event)
-
-  const container = document.createElement('div')
-  const app = createApp(EventDetailTooltip, { item })
-
-  app.use(getSharedPinia())
-  app.mount(container)
-
-  const html = container.innerHTML
-  app.unmount()
-
-  return html
 }
 
 /**
