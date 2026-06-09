@@ -52,6 +52,7 @@ import {
   ICON_GANTT,
   ICON_GRIP_HORIZONTAL,
   ICON_HABIT,
+  ICON_HOLIDAY,
   ICON_INFO,
   ICON_MESSAGE_SQUARE_TEXT,
   ICON_POMODORO,
@@ -377,6 +378,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_SUN)
     this.addIcons(ICON_SUNRISE)
     this.addIcons(ICON_TIMER)
+    this.addIcons(ICON_HOLIDAY)
     this.addIcons(ICON_TODO)
 
     // 注册 Dock

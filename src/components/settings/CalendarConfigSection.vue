@@ -49,7 +49,7 @@
 
     <!-- Holiday Data Section -->
     <SySettingsSection
-      icon="iconRefresh"
+      :svg-icon="ICON_HOLIDAY"
       :title="t('settings').calendar.holidayData.title"
     >
       <SySettingItemList>
@@ -299,6 +299,7 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue'
 import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { ICON_HOLIDAY } from '@/constants/icons'
 import { t } from '@/i18n'
 import {
   holidaySyncState,
