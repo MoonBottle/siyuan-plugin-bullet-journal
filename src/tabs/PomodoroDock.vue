@@ -11,7 +11,7 @@
         :aria-label="t('pomodoro').startFocus"
         @click="openTimerDialog"
       >
-        <svg><use xlink:href="#iconPlay"></use></svg>
+        <svg><use xlink:href="#iconTaPlay"></use></svg>
       </span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
