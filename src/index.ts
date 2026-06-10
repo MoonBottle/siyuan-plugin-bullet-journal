@@ -56,6 +56,7 @@ import {
   ICON_HABIT,
   ICON_HOLIDAY,
   ICON_INFO,
+  ICON_MAXIMIZE,
   ICON_MESSAGE_SQUARE_TEXT,
   ICON_PAUSE,
   ICON_PLAY,
@@ -390,6 +391,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_PAUSE)
     this.addIcons(ICON_CHECK)
     this.addIcons(ICON_HOLIDAY)
+    this.addIcons(ICON_MAXIMIZE)
     this.addIcons(ICON_TODO)
     this.addIcons(ICON_TOMATO)
 
