@@ -225,7 +225,7 @@ const showBreakOverlay = () => {
   border: 1px solid var(--b3-border-color);
 
   &:hover {
-    background: var(--b3-theme-surface-lighter);
+    background: var(--b3-theme-surface-light);
     border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
   }

@@ -491,7 +491,7 @@
   display: flex !important;
   align-items: center;
   gap: 4px;
-  padding: 4px 6px !important;
+  padding: 3px 6px !important;
   background: transparent;
   border-radius: var(--b3-border-radius);
   color: var(--b3-theme-on-surface);
@@ -522,13 +522,13 @@
     }
 
     svg {
-      width: 15px;
-      height: 15px;
+      width: 14px;
+      height: 14px;
     }
 
     // 专注状态：红色脉冲动画
     &.is-focusing {
-      color: #e74c3c;
+      color: var(--b3-card-error-color);
       animation: tomato-pulse 2s ease-in-out infinite;
 
       &:hover {
@@ -536,9 +536,10 @@
       }
     }
 
-    // 休息状态：绿色
+    // 休息状态：绿色脉冲动画
     &.is-breaking {
-      color: #27ae60;
+      color: var(--b3-card-success-color);
+      animation: coffee 2s ease-in-out infinite;
 
       &:hover {
         background: rgba(39, 174, 96, 0.1);
@@ -549,14 +550,27 @@
   @keyframes tomato-pulse {
     0%,
     100% {
-      color: #e74c3c;
+      color: var(--b3-card-error-color);
       opacity: 1;
     }
     50% {
-      color: #ff6b6b;
+      color: var(--b3-card-error-color);
       opacity: 0.7;
     }
   }
+
+  @keyframes coffee {
+    0%,
+    100% {
+      color: var(--b3-card-success-color);
+      opacity: 1;
+    }
+    50% {
+      color: var(--b3-card-success-color);
+      opacity: 0.7;
+    }
+  }
+
 
   .timer-text {
     padding-top: 2px;

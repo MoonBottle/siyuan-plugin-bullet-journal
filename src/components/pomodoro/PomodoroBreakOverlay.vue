@@ -80,6 +80,17 @@
               class="action-btn secondary"
               @click="closeOverlay"
             >
+              <svg
+                class="btn-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <use xlink:href="#iconTaMinimize" />
+              </svg>
               {{ t('settings').pomodoro.breakOverlayClose }}
             </button>
             <button
