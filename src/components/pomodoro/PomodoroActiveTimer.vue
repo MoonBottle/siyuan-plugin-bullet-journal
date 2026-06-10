@@ -310,7 +310,6 @@ import {
   ref,
 } from 'vue'
 import Card from '@/components/common/Card.vue'
-import PlayIcon from '@/components/icons/PlayIcon.vue'
 import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import StopIcon from '@/components/icons/StopIcon.vue'
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
@@ -567,13 +566,13 @@ const handleLinkClick = async (link: Link) => {
   const docId = currentItem.value?.docId
   const targetBlockId = resolveAttachmentTargetBlockId(link, currentItem.value?.blockId)
   if (!docId || !targetBlockId) {
-    showMessage(t('common').blockIdError, 'error')
+    showMessage(t('common').blockIdError, 2000, 'error')
     return
   }
 
   const opened = await openDocumentAtLine(docId, undefined, targetBlockId)
   if (!opened) {
-    showMessage(t('common').blockIdError, 'error')
+    showMessage(t('common').blockIdError, 2000, 'error')
   }
 }
 </script>
