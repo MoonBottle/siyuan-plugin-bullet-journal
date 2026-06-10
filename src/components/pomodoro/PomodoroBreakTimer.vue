@@ -63,11 +63,13 @@
         <svg
           class="btn-icon"
           viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <path
-            d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"
-            fill="currentColor"
-          />
+          <use xlink:href="#iconTaSkipBreak" />
         </svg>
         {{ t('settings').pomodoro.skipBreak }}
       </button>
@@ -231,5 +233,6 @@ const showBreakOverlay = () => {
   width: 16px;
   height: 16px;
   fill: currentColor;
+  stroke: currentColor;
 }
 </style>
