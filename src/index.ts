@@ -45,6 +45,7 @@ import {
   ICON_CALENDAR,
   ICON_CALENDAR_DAYS,
   ICON_CALENDAR_RANGE,
+  ICON_CHECK,
   ICON_CLOCK_PLUS,
   ICON_COFFEE,
   ICON_DASHBOARD,
@@ -56,9 +57,12 @@ import {
   ICON_HOLIDAY,
   ICON_INFO,
   ICON_MESSAGE_SQUARE_TEXT,
+  ICON_PAUSE,
+  ICON_PLAY,
   ICON_POMODORO,
   ICON_POMODORO_STATS,
   ICON_PROJECT,
+  ICON_SKIP_BREAK,
   ICON_SKIP_FORWARD,
   ICON_SQUARE_CHECK,
   ICON_SQUARE_X,
@@ -375,12 +379,16 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
+    this.addIcons(ICON_SKIP_BREAK)
     this.addIcons(ICON_SKIP_FORWARD)
     this.addIcons(ICON_SQUARE_CHECK)
     this.addIcons(ICON_SQUARE_X)
     this.addIcons(ICON_SUN)
     this.addIcons(ICON_SUNRISE)
     this.addIcons(ICON_TIMER)
+    this.addIcons(ICON_PLAY)
+    this.addIcons(ICON_PAUSE)
+    this.addIcons(ICON_CHECK)
     this.addIcons(ICON_HOLIDAY)
     this.addIcons(ICON_TODO)
     this.addIcons(ICON_TOMATO)
@@ -2850,17 +2858,17 @@ export default class TaskAssistantPlugin extends Plugin {
       <div class="timer-icon" data-tooltip="${t("pomodoro").dockTitle}"></div>
       <div class="timer-text"></div>
       <div class="timer-skip-btn" style="display:none" data-tooltip="${t("settings").pomodoro.skipBreak}">
-        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use xlink:href="#iconTaSkipBreak" /></svg>
       </div>
       <div class="timer-end-btn" style="display:none" data-tooltip="${t("pomodoroActive").endFocus}">
-        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14"><use xlink:href="#iconTaCheck" /></svg>
       </div>
       <div class="timer-control" data-tooltip="${t("pomodoro").startFocus}">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
-          <path fill="currentColor" d="M8 5v14l11-7z"/>
+          <use xlink:href="#iconTaPlay" />
         </svg>
         <svg class="timer-pause-icon" viewBox="0 0 24 24" width="14" height="14" style="display:none">
-          <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          <use xlink:href="#iconTaPause" />
         </svg>
       </div>
     `

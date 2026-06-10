@@ -511,7 +511,7 @@
     height: 18px;
     padding: 0;
     border-radius: 3px;
-    color: var(--b3-theme-primary);
+    // color: var(--b3-theme-primary);
     cursor: pointer;
     transition:
       background 0.2s,
@@ -522,8 +522,8 @@
     }
 
     svg {
-      width: 14px;
-      height: 14px;
+      width: 15px;
+      height: 15px;
     }
 
     // 专注状态：红色脉冲动画
@@ -559,8 +559,9 @@
   }
 
   .timer-text {
-    font-size: 13px;
-    font-weight: 500;
+    padding-top: 2px;
+    font-size: 14px;
+    font-weight: 600;
     font-family: var(--b3-font-family);
     min-width: 36px;
     text-align: center;
@@ -582,8 +583,8 @@
     }
 
     svg {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       fill: currentColor;
     }
   }
@@ -603,8 +604,8 @@
     }
 
     svg {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       fill: currentColor;
     }
   }
@@ -717,7 +718,7 @@
     justify-content: center;
     width: 18px;
     height: 18px;
-    color: var(--b3-theme-primary);
+    // color: var(--b3-theme-primary);
     flex: 0 0 auto;
 
     svg {
@@ -817,7 +818,7 @@
   }
 
   .floating-tomato-action--complete {
-    color: var(--b3-theme-primary);
+    color: var(--b3-theme-on-surface);
     background: color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface) 88%);
   }
 

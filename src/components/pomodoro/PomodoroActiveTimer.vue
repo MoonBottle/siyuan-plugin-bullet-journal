@@ -248,21 +248,13 @@
           <svg
             class="btn-icon"
             viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <rect
-              x="6"
-              y="4"
-              width="4"
-              height="16"
-              fill="currentColor"
-            />
-            <rect
-              x="14"
-              y="4"
-              width="4"
-              height="16"
-              fill="currentColor"
-            />
+            <use xlink:href="#iconTaPause" />
           </svg>
           {{ t('pomodoroActive').pause }}
         </button>
@@ -275,11 +267,13 @@
           <svg
             class="btn-icon"
             viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <polygon
-              points="5,3 19,12 5,21"
-              fill="currentColor"
-            />
+            <use xlink:href="#iconTaPlay" />
           </svg>
           {{ t('pomodoroActive').resume }}
         </button>
@@ -291,11 +285,13 @@
         <svg
           class="btn-icon"
           viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <path
-            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-            fill="currentColor"
-          />
+          <use xlink:href="#iconTaCheck" />
         </svg>
         {{ t('pomodoroActive').endFocus }}
       </button>
@@ -947,6 +943,7 @@ const handleLinkClick = async (link: Link) => {
   width: 16px;
   height: 16px;
   fill: currentColor;
+  stroke: currentColor;
 }
 
 // 事项卡片底部操作区域

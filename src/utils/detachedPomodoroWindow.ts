@@ -1,6 +1,10 @@
 import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 import {
+  ICON_CHECK,
   ICON_COFFEE,
+  ICON_PAUSE,
+  ICON_PLAY,
+  ICON_SKIP_BREAK,
   ICON_TOMATO,
 } from '@/constants/icons'
 
@@ -397,7 +401,6 @@ function buildDetachedWindowHtml(): string {
         justify-content: center;
         width: 18px;
         height: 18px;
-        color: var(--b3-theme-primary);
         flex: 0 0 auto;
       }
       .floating-tomato-icon svg {
@@ -487,7 +490,7 @@ function buildDetachedWindowHtml(): string {
         display: none !important;
       }
       .floating-tomato-action--complete {
-        color: var(--b3-theme-primary);
+        color: var(--b3-theme-on-surface);
         background: color-mix(
           in srgb,
           var(--b3-theme-primary) 12%,
@@ -536,7 +539,7 @@ function buildDetachedWindowHtml(): string {
     </style>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">${ICON_TOMATO}${ICON_COFFEE}</svg>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">${ICON_TOMATO}${ICON_COFFEE}${ICON_PLAY}${ICON_PAUSE}${ICON_CHECK}${ICON_SKIP_BREAK}</svg>
     <div id="${ROOT_ID}"></div>
     <div id="sy-tooltip-wrapper"><span class="b3-tooltips b3-tooltips__n sy-fixed-tooltip"></span></div>
     <script>

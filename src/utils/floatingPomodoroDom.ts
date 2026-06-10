@@ -9,27 +9,19 @@ const BREAK_ICON = `
 `
 
 const PLAY_ICON = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-    <path d="M8 5v14l11-7z"/>
-  </svg>
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use xlink:href="#iconTaPlay" /></svg>
 `
 
 const PAUSE_ICON = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-  </svg>
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use xlink:href="#iconTaPause" /></svg>
 `
 
 const COMPLETE_ICON = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-  </svg>
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use xlink:href="#iconTaCheck" /></svg>
 `
 
 const SKIP_ICON = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-  </svg>
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use xlink:href="#iconTaSkipBreak" /></svg>
 `
 
 export function createFloatingPomodoroMarkup(): string {
