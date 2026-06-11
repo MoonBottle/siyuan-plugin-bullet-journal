@@ -130,7 +130,6 @@ import {
   watch,
 } from 'vue'
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
-import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import {
   useApp,
@@ -139,19 +138,7 @@ import {
 import { getNextOccurrenceDate } from '@/parser/recurringParser'
 import { usePomodoroStore } from '@/stores'
 import dayjs from '@/utils/dayjs'
-import {
-  showFocusPlanDialog,
-  showItemDetailModal,
-  showPomodoroTimerDialog,
-} from '@/utils/dialog'
-import { openDocumentAtLine } from '@/utils/fileUtils'
-import {
-  abandonItem,
-  completeItem,
-  migrateItem,
-  skipOccurrenceItem,
-} from '@/utils/itemActions'
-import { toggleItemPinned } from '@/utils/itemSettingUtils'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 import {
   hideTooltip,
@@ -169,9 +156,7 @@ const props = withDefaults(defineProps<{
   showDetail?: boolean
   showSeparator?: boolean
   showActions?: ActionName[]
-  afterOpenDoc?: () => void
-  afterOpenCalendar?: () => void
-  afterSkipOccurrence?: () => void
+  afterAction?: () => void
 }>(), {
   openDocMode: 'navigate',
   showPin: false,
@@ -182,8 +167,12 @@ const props = withDefaults(defineProps<{
 const app = useApp()
 const plugin = usePlugin() as any
 const pomodoroStore = usePomodoroStore()
-const isProcessing = ref(false)
 const docIconRef = ref<HTMLElement | null>(null)
+
+const handlers = computed(() => {
+  if (!props.item) return null
+  return getItemActionHandlers(props.item, plugin, { afterAction: props.afterAction })
+})
 
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
@@ -240,84 +229,47 @@ function handleTooltipLeave() {
 }
 
 async function handleComplete() {
-  if (!props.item || isProcessing.value) return
-  isProcessing.value = true
-  try {
-    await completeItem(props.item)
-  } finally {
-    isProcessing.value = false
-  }
+  await handlers.value?.complete()
 }
 
 async function handleAbandon() {
-  if (!props.item || isProcessing.value) return
-  isProcessing.value = true
-  try {
-    await abandonItem(props.item)
-  } finally {
-    isProcessing.value = false
-  }
+  await handlers.value?.abandon()
 }
 
 function handleStartFocus() {
-  if (!props.item?.blockId || isProcessing.value) return
-  showPomodoroTimerDialog(props.item.blockId)
+  handlers.value?.startFocus()
 }
 
 function handleFocusPlan() {
-  if (!props.item || isProcessing.value) return
-  showFocusPlanDialog(props.item)
+  handlers.value?.focusPlan()
 }
 
 async function handleMigrate() {
-  if (!props.item || isProcessing.value) return
-  isProcessing.value = true
-  try {
-    await migrateItem(props.item)
-  } finally {
-    isProcessing.value = false
-  }
+  await handlers.value?.migrate()
 }
 
 async function handleSkipOccurrence() {
-  if (!props.item || isProcessing.value) return
-  isProcessing.value = true
-  try {
-    await skipOccurrenceItem(plugin, props.item)
-    props.afterSkipOccurrence?.()
-  } finally {
-    isProcessing.value = false
-  }
+  await handlers.value?.skipOccurrence()
 }
 
 async function handleTogglePinned() {
-  if (!props.item || isProcessing.value) return
-  isProcessing.value = true
-  try {
-    await toggleItemPinned(props.item)
-  } finally {
-    isProcessing.value = false
-  }
+  await handlers.value?.togglePinned()
 }
 
 function handleOpenDetail() {
-  if (!props.item || isProcessing.value) return
-  showItemDetailModal(props.item, { showAllDates: true })
+  handlers.value?.openDetail()
 }
 
 function handleOpenDocClick() {
-  if (!props.item?.blockId || isProcessing.value) return
+  if (!props.item?.blockId) return
 
   if (props.openDocMode === 'preview') {
     openBlockPreview(props.item.blockId)
-    props.afterOpenDoc?.()
+    props.afterAction?.()
     return
   }
 
-  if (props.item.docId) {
-    openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId)
-    props.afterOpenDoc?.()
-  }
+  handlers.value?.openDoc()
 }
 
 function openBlockPreview(blockId: string) {
@@ -369,11 +321,7 @@ onBeforeUnmount(() => {
 })
 
 function handleOpenCalendar() {
-  if (!props.item || isProcessing.value) return
-  if (plugin?.openCustomTab) {
-    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date })
-  }
-  props.afterOpenCalendar?.()
+  handlers.value?.openCalendar()
 }
 </script>
 

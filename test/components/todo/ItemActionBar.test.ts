@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import type { ItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   afterEach,
   beforeEach,
@@ -13,13 +14,22 @@ import {
   nextTick,
 } from 'vue'
 
-const mockShowFocusPlanDialog = vi.fn()
-const mockCompleteItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-const mockAbandonItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-const mockMigrateItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-const mockSkipOccurrenceItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-const mockShowItemDetailModal = vi.fn()
+const mockHandlers: ItemActionHandlers = {
+  isProcessing: { value: false } as any,
+  complete: vi.fn(() => Promise.resolve()),
+  abandon: vi.fn(() => Promise.resolve()),
+  migrate: vi.fn(() => Promise.resolve()),
+  migrateToToday: vi.fn(() => Promise.resolve()),
+  migrateCustom: vi.fn(),
+  startFocus: vi.fn(),
+  focusPlan: vi.fn(),
+  openDoc: vi.fn(),
+  openDetail: vi.fn(),
+  openCalendar: vi.fn(),
+  togglePinned: vi.fn(() => Promise.resolve()),
+  skipOccurrence: vi.fn(() => Promise.resolve()),
+  setPriority: vi.fn(() => Promise.resolve()),
+}
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => ({
@@ -87,30 +97,13 @@ vi.mock('@/i18n', () => {
   }
 })
 
-vi.mock('@/utils/dialog', () => ({
-  showPomodoroTimerDialog: vi.fn(),
-  showFocusPlanDialog: mockShowFocusPlanDialog,
-  showItemDetailModal: mockShowItemDetailModal,
+vi.mock('@/utils/itemActionHandlers', () => ({
+  getItemActionHandlers: vi.fn(() => mockHandlers),
 }))
 
 vi.mock('@/utils/tooltip', () => ({
   hideTooltip: vi.fn(),
   showTooltip: vi.fn(),
-}))
-
-vi.mock('@/utils/fileUtils', () => ({
-  openDocumentAtLine: vi.fn(),
-}))
-
-vi.mock('@/utils/itemActions', () => ({
-  completeItem: mockCompleteItem,
-  abandonItem: mockAbandonItem,
-  migrateItem: mockMigrateItem,
-  skipOccurrenceItem: mockSkipOccurrenceItem,
-}))
-
-vi.mock('@/utils/itemSettingUtils', () => ({
-  toggleItemPinned: mockToggleItemPinned,
 }))
 
 vi.mock('@/parser/recurringParser', () => ({
@@ -148,7 +141,7 @@ describe('itemActionBar', () => {
     vi.useRealTimers()
   })
 
-  it('shows set-focus-plan action and opens dialog for the current item', async () => {
+  it('shows set-focus-plan action and calls handlers.focusPlan', async () => {
     const mounted = await mountComponent({
       id: 'item-1',
       blockId: 'block-1',
@@ -163,9 +156,7 @@ describe('itemActionBar', () => {
 
     (planButton as HTMLElement).click()
 
-    expect(mockShowFocusPlanDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'item-1' }),
-    )
+    expect(mockHandlers.focusPlan).toHaveBeenCalled()
 
     mounted.unmount()
   })
@@ -187,7 +178,7 @@ describe('itemActionBar', () => {
     mounted.unmount()
   })
 
-  it('calls completeItem when clicking complete', async () => {
+  it('calls handlers.complete when clicking complete', async () => {
     const mounted = await mountComponent({
       id: 'item-3',
       blockId: 'block-3',
@@ -202,14 +193,12 @@ describe('itemActionBar', () => {
     completeButton?.click()
     await nextTick()
 
-    expect(mockCompleteItem).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'item-3' }),
-    )
+    expect(mockHandlers.complete).toHaveBeenCalled()
 
     mounted.unmount()
   })
 
-  it('calls migrateItem when migrating an overdue item', async () => {
+  it('calls handlers.migrate when migrating an overdue item', async () => {
     const mounted = await mountComponent({
       id: 'item-4',
       blockId: 'block-4',
@@ -227,9 +216,7 @@ describe('itemActionBar', () => {
     migrateButton?.click()
     await nextTick()
 
-    expect(mockMigrateItem).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'item-4' }),
-    )
+    expect(mockHandlers.migrate).toHaveBeenCalled()
 
     mounted.unmount()
   })
@@ -327,8 +314,6 @@ describe('itemActionBar', () => {
       status: 'pending',
     }, { showDetail: true })
 
-    // When hasFixedRow is true, calendar is rendered in the fixed-row template area
-    // (not in the v-if="!hasFixedRow" slot), so there should be exactly one calendar icon
     const allCalendarIcons = [...mounted.container.querySelectorAll('.block__icon')]
       .filter((node) => node.getAttribute('aria-label') === '日历')
     expect(allCalendarIcons.length).toBe(1)
@@ -352,7 +337,7 @@ describe('itemActionBar', () => {
     mounted.unmount()
   })
 
-  it('calls toggleItemPinned when pin icon is clicked', async () => {
+  it('calls handlers.togglePinned when pin icon is clicked', async () => {
     const mounted = await mountComponent({
       id: 'item-12',
       blockId: 'block-12',
@@ -367,14 +352,12 @@ describe('itemActionBar', () => {
     pinButton?.click()
     await nextTick()
 
-    expect(mockToggleItemPinned).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'item-12' }),
-    )
+    expect(mockHandlers.togglePinned).toHaveBeenCalled()
 
     mounted.unmount()
   })
 
-  it('calls showItemDetailModal when detail icon is clicked', async () => {
+  it('calls handlers.openDetail when detail icon is clicked', async () => {
     const mounted = await mountComponent({
       id: 'item-13',
       blockId: 'block-13',
@@ -389,10 +372,7 @@ describe('itemActionBar', () => {
     detailButton?.click()
     await nextTick()
 
-    expect(mockShowItemDetailModal).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'item-13' }),
-      { showAllDates: true },
-    )
+    expect(mockHandlers.openDetail).toHaveBeenCalled()
 
     mounted.unmount()
   })
