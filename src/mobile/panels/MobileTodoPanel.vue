@@ -141,7 +141,6 @@ import {
   useProjectStore,
   useSettingsStore,
 } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
 import { showMessage } from '@/utils/dialog'
 import {
@@ -149,6 +148,7 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
+import { completeItem } from '@/utils/itemActions'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 import {
   buildCompletedTodoDateRange,
@@ -269,15 +269,8 @@ const openQuickCreate = () => {
 }
 
 const handleQuickComplete = async (item: Item) => {
-  if (!item.blockId)
-    return
-  await writeBlock({
-    blockId: item.blockId,
-    listItemBlockId: item.listItemBlockId,
-  }, {
-    type: 'setStatus',
-    status: 'completed',
-  })
+  if (!item.blockId) return
+  await completeItem(item)
   showMessage(t('todo').complete)
 }
 
