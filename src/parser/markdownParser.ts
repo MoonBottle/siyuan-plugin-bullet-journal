@@ -402,6 +402,7 @@ export class MarkdownParser {
           if (attrRecords.length > 0) {
             for (const r of attrRecords) {
               r.itemId = item.id
+              r.itemBlockId = item.blockId
               r.taskId = task.id
               r.projectId = project.id
             }

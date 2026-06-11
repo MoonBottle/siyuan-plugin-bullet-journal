@@ -29,6 +29,7 @@ export interface PomodoroRecord {
   projectId?: string // 所属项目 ID
   taskId?: string // 所属任务 ID
   itemId?: string // 所属事项 ID
+  itemBlockId?: string // 所属事项 blockId（新增）
   status?: PomodoroStatus // 专注状态（新增）
   itemContent?: string // 关联事项内容（新增）
 }
@@ -351,6 +352,7 @@ export interface CalendarEvent {
     isPomodoroBlock?: boolean
     pomodoroDurationMinutes?: number
     pomodoroDescription?: string
+    itemBlockId?: string
   }
 }
 

@@ -41,6 +41,7 @@ import {
 import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
+  useProjectStore,
   useSettingsStore,
 } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
@@ -59,6 +60,7 @@ import {
   createDialog,
   showDatePickerDialog,
   showEventDetailModal,
+  showItemDetailModal,
 } from '@/utils/dialog'
 import {
   eventBus,
@@ -86,6 +88,7 @@ const WEEK_NUMBER_RE = /week\s+(\d+)/i
 
 const settingsStore = useSettingsStore()
 const pomodoroStore = usePomodoroStore()
+const projectStore = useProjectStore()
 const plugin = usePlugin()
 
 // 格式化时间显示
@@ -511,7 +514,17 @@ onMounted(async () => {
       snapDuration: '00:15:00',
 
       eventClick: (info) => {
-        if (info.event.extendedProps?.isPomodoroBlock) return
+        // 番茄钟块：通过 itemBlockId 查找完整 Item 显示详情弹框
+        if (info.event.extendedProps?.isPomodoroBlock) {
+          const itemBlockId = info.event.extendedProps?.itemBlockId as string | undefined
+          if (itemBlockId) {
+            const item = projectStore.getItemByBlockId(itemBlockId)
+            if (item) {
+              showItemDetailModal(item, { showAllDates: true })
+              return
+            }
+          }
+        }
         const eventData: CalendarEvent = {
           id: info.event.id,
           title: info.event.title,

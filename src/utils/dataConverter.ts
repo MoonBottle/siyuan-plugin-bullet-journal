@@ -183,11 +183,14 @@ export class DataConverter {
         allDay: false,
         extendedProps: {
           hasItems: false,
-          docId: record.id ?? '',
+          docId: record.blockId ?? record.id ?? '',
           lineNumber: 0,
           isPomodoroBlock: true,
           pomodoroDurationMinutes: durationMinutes,
           pomodoroDescription: record.description,
+          blockId: record.blockId,
+          item: record.itemContent,
+          itemBlockId: record.itemBlockId,
         },
       })
     }

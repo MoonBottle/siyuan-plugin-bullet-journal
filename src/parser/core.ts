@@ -300,6 +300,7 @@ export function parseKramdown(
             currentItem.pomodoros = []
           }
           pomodoro.itemId = currentItem.id
+          pomodoro.itemBlockId = currentItem.blockId
           currentItem.pomodoros.push(pomodoro)
         } else if (lastBlockType === 'task' && currentTask) {
           // 关联到当前任务
