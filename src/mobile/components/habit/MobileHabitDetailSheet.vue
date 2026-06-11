@@ -52,7 +52,7 @@
               <svg
                 @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
                 @mouseleave="hideTooltip"
-              ><use xlink:href="#iconCloseRound"></use></svg>
+              ><use xlink:href="#iconTaSquareX"></use></svg>
             </button>
           </div>
 
