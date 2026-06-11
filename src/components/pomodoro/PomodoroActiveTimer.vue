@@ -369,7 +369,7 @@ const endPomodoro = () => {
 // 打开详情
 function handleOpenDetail() {
   if (!currentItem.value) return
-  showItemDetailModal(currentItem.value)
+  showItemDetailModal(currentItem.value, { showAllDates: true })
 }
 </script>
 

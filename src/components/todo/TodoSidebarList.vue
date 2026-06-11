@@ -1283,7 +1283,7 @@ const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
 }
 
 const openDetail = (item: Item) => {
-  showItemDetailModal(item)
+  showItemDetailModal(item, { showAllDates: true })
 }
 
 // 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
