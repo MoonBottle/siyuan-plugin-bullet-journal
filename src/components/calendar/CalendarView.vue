@@ -536,10 +536,12 @@ onMounted(async () => {
           const duration = info.event.extendedProps?.pomodoroDurationMinutes
           const startTime = info.event.startStr?.split('T')[1]?.substring(0, 5)
           const endTime = info.event.endStr?.split('T')[1]?.substring(0, 5)
-          if (duration) {
+          if (typeof duration === 'number') {
             const label = document.createElement('span')
             label.className = 'pomodoro-block-label'
-            const timeStr = startTime && endTime ? `${startTime} ~ ${endTime}` : ''
+            const timeStr = startTime && endTime
+              ? `${startTime} ~ ${endTime}`
+              : (startTime || endTime || '')
             label.textContent = `🍅 ${formatShortDuration(duration)} ${timeStr}`
             label.style.fontSize = '11px'
             label.style.fontWeight = '600'
