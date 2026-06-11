@@ -13,9 +13,7 @@
     <ItemActionBar
       :item="reactiveItem"
       :show-separator="true"
-      :after-open-doc="handleAfterNavigate"
-      :after-open-calendar="handleAfterNavigate"
-      :after-skip-occurrence="handleAfterNavigate"
+      :after-action="handleAfterNavigate"
     />
   </div>
 </template>
