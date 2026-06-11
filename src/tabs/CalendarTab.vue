@@ -503,7 +503,7 @@ watch(currentView, (newView) => {
 
 .calendar-tab--embedded {
   .block__icons {
-    padding: 6px 0;
+    padding: 6px 0 6px 3px;
   }
 
   .tab-content {
