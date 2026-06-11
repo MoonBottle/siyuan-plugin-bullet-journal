@@ -120,7 +120,7 @@
                   @click="handleEditDate"
                 >
                   <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
+                    <svg class="info-icon"><use xlink:href="#iconTaCalendar"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.date') || '日期' }}</span>
                   </div>
                   <div class="info-right">
@@ -220,7 +220,7 @@
                   @click="handleSetRecurring"
                 >
                   <div class="action-icon-wrapper">
-                    <svg><use xlink:href="#iconRefresh"></use></svg>
+                    <svg><use xlink:href="#iconTaClockPlus"></use></svg>
                   </div>
                   <span class="action-text">{{ recurringText }}</span>
                   <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -390,7 +390,7 @@
                   class="migrate-option"
                   @click="handleMigrateCustomDate"
                 >
-                  <svg><use xlink:href="#iconCalendar"></use></svg>
+                  <svg><use xlink:href="#iconTaCalendar"></use></svg>
                   <span>{{ (t('todo').chooseDate || '选择日期...') as string }}</span>
                 </button>
               </div>
