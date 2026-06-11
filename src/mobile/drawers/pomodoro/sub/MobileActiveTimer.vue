@@ -62,7 +62,7 @@
           <span class="info-card-label">{{ t('todo').project }}</span>
         </div>
         <div class="info-card-content">
-          <svg><use xlink:href="#iconFolder"></use></svg>
+          <svg><use xlink:href="#iconTaProject"></use></svg>
           <span>{{ currentItem.project.name }}</span>
         </div>
       </div>
@@ -83,7 +83,7 @@
           </span>
         </div>
         <div class="info-card-content">
-          <svg><use xlink:href="#iconList"></use></svg>
+          <svg><use xlink:href="#iconTaTodo"></use></svg>
           <span>{{ currentItem.task.name }}</span>
         </div>
       </div>
