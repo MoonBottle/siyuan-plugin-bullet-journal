@@ -197,7 +197,7 @@
             >
               <div class="priority-header none">
                 <div class="priority-icon">
-                  <svg><use xlink:href="#iconList"></use></svg>
+                  <svg><use xlink:href="#iconTaTodo"></use></svg>
                 </div>
                 <span class="priority-name">{{ t('mobile.priority.none') || '未设置优先级' }}</span>
                 <span class="priority-count">{{ unprioritizedTasks.length }}</span>
@@ -237,7 +237,7 @@
               class="empty-state"
             >
               <div class="empty-icon">
-                <svg><use xlink:href="#iconList"></use></svg>
+                <svg><use xlink:href="#iconTaTodo"></use></svg>
               </div>
               <span class="empty-text">{{ t('mobile.project.noTasks') || '暂无任务' }}</span>
               <button
