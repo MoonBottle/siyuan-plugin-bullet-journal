@@ -130,113 +130,22 @@
       </div>
     </div>
 
-    <!-- 事项信息卡片 - 使用 Card 组件 -->
-    <div class="item-info-section">
-      <!-- 项目卡片 -->
-      <Card
-        v-if="currentItem?.project"
-        :show-header="true"
-        :show-footer="currentItem.project.links?.length > 0"
-        :hover-effect="false"
-      >
-        <template #header>
-          <span class="info-card-label">{{ t('todo').project }}</span>
-        </template>
-        <div class="info-card-content">
-          <span>{{ currentItem.project.name }}</span>
-        </div>
-        <template #footer>
-          <TodoTypedLinks
-            :links="currentItem.project.links || []"
-            @link-click="handleLinkClick"
-          />
-        </template>
-      </Card>
-
-      <!-- 任务卡片 -->
-      <Card
-        v-if="currentItem?.task"
-        :show-header="true"
-        :show-footer="currentItem.task.links?.length > 0"
-        :hover-effect="false"
-      >
-        <template #header>
-          <span class="info-card-label">{{ t('todo').task }}</span>
-          <span
-            v-if="currentItem.task.level"
-            class="task-level-badge"
-            :class="`level-${currentItem.task.level.toLowerCase()}`"
-          >
-            {{ currentItem.task.level }}
-          </span>
-        </template>
-        <div class="info-card-content">
-          <span>{{ currentItem.task.name }}</span>
-        </div>
-        <template #footer>
-          <TodoTypedLinks
-            :links="currentItem.task.links || []"
-            @link-click="handleLinkClick"
-          />
-        </template>
-      </Card>
-
-      <!-- 事项卡片 -->
-      <Card
-        status="pending"
-        :show-header="true"
-        :show-footer="true"
-        :clickable="true"
-        @click="openItemDocument"
-      >
-        <template #header>
-          <span class="info-card-label">{{ t('todo').item }}</span>
-        </template>
-        <div class="info-card-content">
-          <span>{{ itemContent }}</span>
-        </div>
-        <template #footer>
-          <div class="item-footer-content">
-            <TodoTypedLinks
-              :links="currentItem?.links || []"
-              align="right"
-              @link-click="handleLinkClick"
-            />
-            <div class="item-actions">
-              <span
-                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
-                class="block__icon b3-tooltips b3-tooltips__nw"
-                :aria-label="t('todo').complete"
-                @click.stop="handleDone"
-              >
-                <svg><use xlink:href="#iconCheck"></use></svg>
-              </span>
-              <span
-                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
-                class="block__icon b3-tooltips b3-tooltips__nw"
-                :aria-label="t('todo').abandon"
-                @click.stop="handleAbandon"
-              >
-                <svg><use xlink:href="#iconCloseRound"></use></svg>
-              </span>
-              <span
-                class="block__icon b3-tooltips b3-tooltips__nw"
-                :aria-label="t('todo').detail"
-                @click.stop="openDetail"
-              >
-                <svg><use xlink:href="#iconInfo"></use></svg>
-              </span>
-              <span
-                class="block__icon b3-tooltips b3-tooltips__nw"
-                :aria-label="t('todo').calendar"
-                @click.stop="openCalendar"
-              >
-                <svg><use xlink:href="#iconCalendar"></use></svg>
-              </span>
-            </div>
-          </div>
-        </template>
-      </Card>
+    <!-- 事项信息卡片 - 复用 ItemDetailContent + ItemActionBar -->
+    <div
+      v-if="currentItem"
+      class="item-info-section"
+    >
+      <ItemDetailContent
+        :item="currentItem"
+        :embedded="true"
+        :show-action-row="false"
+      />
+      <ItemActionBar
+        :item="currentItem"
+        :show-separator="true"
+        :show-actions="['complete', 'abandon', 'openDoc', 'detail', 'calendar']"
+        @openDetail="handleOpenDetail"
+      />
     </div>
 
     <div class="timer-actions">
@@ -300,46 +209,34 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  Item,
-  Link,
-} from '@/types/models'
-import { showMessage } from 'siyuan'
+import type { Item } from '@/types/models'
 import {
   computed,
-  ref,
 } from 'vue'
-import Card from '@/components/common/Card.vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
 import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import StopIcon from '@/components/icons/StopIcon.vue'
-import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
-import { TAB_TYPES } from '@/constants'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
   useProjectStore,
 } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
 import {
   showConfirmDialog,
   showItemDetailModal,
 } from '@/utils/dialog'
-import { openDocumentAtLine } from '@/utils/fileUtils'
 import {
   formatFocusPlanDisplay,
   formatFocusPlanProgress,
 } from '@/utils/focusPlanReview'
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 import { getProgressDirection } from '@/utils/progressDirection'
 
 const plugin = usePlugin() as any
 const pomodoroStore = usePomodoroStore()
 const projectStore = useProjectStore()
-
-// 防止重复点击的执行锁
-const isProcessing = ref(false)
 
 // 圆周长
 const radius = 54
@@ -353,9 +250,6 @@ const currentItem = computed<Item | undefined>(() => {
 })
 
 // 当前专注的事项内容（优先使用 store 中的，但用 currentItem 作为后备）
-const itemContent = computed(() => {
-  return currentItem.value?.content || pomodoroStore.activePomodoro?.itemContent || '未知事项'
-})
 const focusPlanDisplay = computed(() => formatFocusPlanDisplay(currentItem.value?.focusPlan))
 const currentItemHistoricalFocusMinutes = computed(() => {
   return (currentItem.value?.pomodoros ?? []).reduce((sum, record) => {
@@ -472,108 +366,10 @@ const endPomodoro = () => {
   )
 }
 
-// 打开事项所在文档
-const openItemDocument = async () => {
-  if (!currentItem.value) return
-  const {
-    docId,
-    lineNumber,
-    blockId,
-  } = currentItem.value
-  if (docId) {
-    await openDocumentAtLine(docId, lineNumber, blockId)
-  }
-}
-
-// 标记完成
-const handleDone = async () => {
-  if (!currentItem.value?.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  isProcessing.value = true
-  try {
-    const success = await writeBlock(
-      {
-        blockId: currentItem.value.blockId,
-        listItemBlockId: currentItem.value.listItemBlockId,
-      },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
-    )
-
-    // 注意：重复事项的自动创建由 WebSocket 处理器处理
-
-    if (success && plugin) {
-      await plugin.requestRefresh?.({
-        type: 'full',
-        reason: 'pomodoro-active:complete-item',
-      })
-    }
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// 标记放弃
-const handleAbandon = async () => {
-  if (!currentItem.value?.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  isProcessing.value = true
-  try {
-    const success = await writeBlock(
-      {
-        blockId: currentItem.value.blockId,
-        listItemBlockId: currentItem.value.listItemBlockId,
-      },
-      {
-        type: 'setStatus',
-        status: 'abandoned',
-      },
-    )
-    if (success && plugin) {
-      await plugin.requestRefresh?.({
-        type: 'full',
-        reason: 'pomodoro-active:abandon-item',
-      })
-    }
-  } finally {
-    isProcessing.value = false
-  }
-}
-
 // 打开详情
-const openDetail = () => {
+function handleOpenDetail() {
   if (!currentItem.value) return
   showItemDetailModal(currentItem.value)
-}
-
-// 在日历中打开
-const openCalendar = () => {
-  if (!currentItem.value?.date) return
-  if (plugin && plugin.openCustomTab) {
-    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date })
-  }
-}
-
-const handleLinkClick = async (link: Link) => {
-  if (link.type !== 'attachment') {
-    return
-  }
-
-  const docId = currentItem.value?.docId
-  const targetBlockId = resolveAttachmentTargetBlockId(link, currentItem.value?.blockId)
-  if (!docId || !targetBlockId) {
-    showMessage(t('common').blockIdError, 2000, 'error')
-    return
-  }
-
-  const opened = await openDocumentAtLine(docId, undefined, targetBlockId)
-  if (!opened) {
-    showMessage(t('common').blockIdError, 2000, 'error')
-  }
 }
 </script>
 
@@ -829,65 +625,14 @@ const handleLinkClick = async (link: Link) => {
   transition: left 1s linear;
 }
 
-// 事项信息区域 - 参考 dialog.ts 的卡片式设计
+// 事项信息区域
 .item-info-section {
   width: 100%;
   max-width: 400px;
   padding: 12px 16px;
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   box-sizing: border-box;
-}
-
-.info-card-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--b3-theme-on-surface);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  line-height: 1;
-}
-
-.info-card-content {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-  line-height: 1.4;
-  word-break: break-word;
-
-  span {
-    display: inline;
-  }
-}
-
-// 任务层级标签样式 - 与 dialog.ts 保持一致
-.task-level-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  margin-left: 4px;
-
-  &.level-l1 {
-    background: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
-  }
-
-  &.level-l2 {
-    background: rgba(255, 152, 0, 0.15);
-    color: #ff9800;
-  }
-
-  &.level-l3 {
-    background: rgba(33, 150, 243, 0.15);
-    color: #2196f3;
-  }
 }
 
 .timer-actions {
@@ -943,31 +688,5 @@ const handleLinkClick = async (link: Link) => {
   height: 16px;
   fill: currentColor;
   stroke: currentColor;
-}
-
-// 事项卡片底部操作区域
-.item-footer-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-
-.item-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-
-  .block__icon {
-    opacity: 1;
-    cursor: pointer;
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
 }
 </style>

@@ -66,6 +66,10 @@ import {
 } from '@/utils/eventBus'
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import { isMobileDevice } from '@/utils/isMobile'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<Props>()
 
@@ -92,6 +96,26 @@ const formatEventTime = (startStr: string, allDay: boolean): string => {
     return time.substring(0, 5) // HH:mm
   }
   return ''
+}
+
+// 简写时长：65 -> '1h5m', 60 -> '1h', 30 -> '30m'
+const formatShortDuration = (minutes: number): string => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h > 0 && m > 0) return `${h}h${m}m`
+  if (h > 0) return `${h}h`
+  return `${m}m`
+}
+
+// 完整国际化时长
+const formatFullDuration = (minutes: number): string => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  const hoursLabel = t('common').hours
+  const minutesLabel = t('common').minutes
+  if (h > 0 && m > 0) return `${h}${hoursLabel}${m}${minutesLabel}`
+  if (h > 0) return `${h}${hoursLabel}`
+  return `${m}${minutesLabel}`
 }
 
 // 自定义事件内容渲染
@@ -172,39 +196,39 @@ const renderEventContent = (arg: any) => {
   container.className = isCompact ? 'fc-event-custom fc-event-compact' : 'fc-event-custom'
 
   if (isCompact) {
-    // 紧凑单行布局：时间 + 任务名 + 状态emoji + 标题
-    if (startTime) {
-      const timeEl = document.createElement('span')
-      timeEl.className = 'fc-event-time'
-      timeEl.textContent = `${startTime} `
-      container.appendChild(timeEl)
-    }
+    // 紧凑单行布局：状态emoji + 标题 + 任务名 + 时间
+    const titleEl = document.createElement('span')
+    titleEl.className = 'fc-event-title-text'
+    titleEl.textContent = statusEmoji + title
+    container.appendChild(titleEl)
     if (isItem && taskName && taskName !== title) {
       const taskEl = document.createElement('span')
       taskEl.className = 'fc-event-task'
       taskEl.textContent = `${taskName} `
       container.appendChild(taskEl)
     }
-    const titleEl = document.createElement('span')
-    titleEl.className = 'fc-event-title-text'
-    titleEl.textContent = statusEmoji + title
-    container.appendChild(titleEl)
-  }
-  else {
-    // 第一行：时间 + 任务名（若有）
-    const line1 = document.createElement('div')
-    line1.className = 'fc-event-line1'
     if (startTime) {
       const timeEl = document.createElement('span')
       timeEl.className = 'fc-event-time'
-      timeEl.textContent = `${startTime} `
-      line1.appendChild(timeEl)
+      timeEl.textContent = startTime
+      container.appendChild(timeEl)
     }
+  }
+  else {
+    // 第一行：任务名（若有）+ 时间
+    const line1 = document.createElement('div')
+    line1.className = 'fc-event-line1'
     if (isItem && taskName && taskName !== title) {
       const taskEl = document.createElement('span')
       taskEl.className = 'fc-event-task'
       taskEl.textContent = taskName
       line1.appendChild(taskEl)
+    }
+    if (startTime) {
+      const timeEl = document.createElement('span')
+      timeEl.className = 'fc-event-time'
+      timeEl.textContent = startTime
+      line1.appendChild(timeEl)
     }
     container.appendChild(line1)
 
@@ -515,13 +539,23 @@ onMounted(async () => {
             const label = document.createElement('span')
             label.className = 'pomodoro-block-label'
             const timeStr = startTime && endTime ? `${startTime} ~ ${endTime}` : ''
-            label.textContent = `🍅 ${duration}${t('common').minutes} ${timeStr}`
+            label.textContent = `🍅 ${formatShortDuration(duration)} ${timeStr}`
             label.style.fontSize = '11px'
             label.style.fontWeight = '600'
             label.style.color = 'var(--fc-event-text-color)'
             label.style.whiteSpace = 'pre-line'
             label.style.pointerEvents = 'none'
             el.appendChild(label)
+
+            // hover 显示国际化完整专注信息
+            const fullDuration = formatFullDuration(duration)
+            const tooltipText = `${t('pomodoroStats').focusDuration}: ${fullDuration}${timeStr ? ` (${timeStr})` : ''}`
+            el.addEventListener('mouseenter', () => {
+              showTooltip(el, tooltipText, { direction: 'w' })
+            })
+            el.addEventListener('mouseleave', () => {
+              hideTooltip()
+            })
           }
           return
         }
@@ -776,6 +810,7 @@ defineExpose({
       opacity: 0.9;
       flex-shrink: 0;
       white-space: nowrap;
+      margin-left: auto;
 
       // 覆盖 FullCalendar 的 .fc-timegrid-event-short .fc-event-time:after { content: " - " }
       &::after {

@@ -5,7 +5,7 @@
     :class="{ 'item-action-bar--separator': showSeparator }"
   >
     <span
-      v-if="canComplete"
+      v-if="canComplete && isActionVisible('complete')"
       class="block__icon block__icon--lg"
       :aria-label="t('todo').complete"
       @mouseenter="handleTooltipEnter($event, t('todo').complete)"
@@ -16,7 +16,7 @@
     </span>
 
     <span
-      v-if="!pomodoroStore.isFocusing && canStartFocus"
+      v-if="!pomodoroStore.isFocusing && canStartFocus && isActionVisible('startFocus')"
       class="block__icon"
       :aria-label="t('todo').startFocusAria"
       @mouseenter="handleTooltipEnter($event, t('todo').startFocusAria)"
@@ -27,7 +27,7 @@
     </span>
 
     <span
-      v-if="canSetFocusPlan"
+      v-if="canSetFocusPlan && isActionVisible('focusPlan')"
       class="block__icon"
       :aria-label="focusPlanLabel"
       @mouseenter="handleTooltipEnter($event, focusPlanLabel)"
@@ -38,7 +38,7 @@
     </span>
 
     <span
-      v-if="canMigrate"
+      v-if="canMigrate && isActionVisible('migrate')"
       class="block__icon"
       :aria-label="migrateLabel"
       @mouseenter="handleTooltipEnter($event, migrateLabel)"
@@ -50,7 +50,7 @@
     </span>
 
     <span
-      v-if="canSkipOccurrence"
+      v-if="canSkipOccurrence && isActionVisible('skipOccurrence')"
       class="block__icon block__icon--lg"
       :aria-label="t('recurring.skipThis')"
       @mouseenter="handleTooltipEnter($event, skipTooltip)"
@@ -61,7 +61,7 @@
     </span>
 
     <span
-      v-if="canAbandon"
+      v-if="canAbandon && isActionVisible('abandon')"
       class="block__icon block__icon--lg"
       :aria-label="t('todo').abandon"
       @mouseenter="handleTooltipEnter($event, t('todo').abandon)"
@@ -72,6 +72,7 @@
     </span>
 
     <span
+      v-if="isActionVisible('openDoc')"
       ref="docIconRef"
       class="block__icon"
       :aria-label="t('todo').openDoc"
@@ -83,7 +84,31 @@
     </span>
 
     <span
-      v-if="!hasFixedRow"
+      v-if="isActionVisible('pin', showPin)"
+      class="block__icon"
+      :class="{ 'block__icon--active': item?.pinned }"
+      :aria-label="pinLabel"
+      @mouseenter="handleTooltipEnter($event, pinLabel)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleTogglePinned"
+    >
+      <svg v-if="item.pinned"><use xlink:href="#iconUnpin"></use></svg>
+      <svg v-else><use xlink:href="#iconPin"></use></svg>
+    </span>
+
+    <span
+      v-if="isActionVisible('detail', showDetail)"
+      class="block__icon"
+      :aria-label="t('todo').detail"
+      @mouseenter="handleTooltipEnter($event, t('todo').detail)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleOpenDetail"
+    >
+      <svg><use xlink:href="#iconTaInfo"></use></svg>
+    </span>
+
+    <span
+      v-if="isActionVisible('calendar')"
       class="block__icon"
       :aria-label="t('todo').calendar"
       @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
@@ -92,44 +117,6 @@
     >
       <svg><use xlink:href="#iconTaCalendarRange"></use></svg>
     </span>
-
-    <template
-      v-if="hasFixedRow && item"
-    >
-      <span
-        v-if="showPin"
-        class="block__icon"
-        :class="{ 'block__icon--active': item?.pinned }"
-        :aria-label="pinLabel"
-        @mouseenter="handleTooltipEnter($event, pinLabel)"
-        @mouseleave="handleTooltipLeave"
-        @click.stop="handleTogglePinned"
-      >
-        <svg v-if="item.pinned"><use xlink:href="#iconUnpin"></use></svg>
-        <svg v-else><use xlink:href="#iconPin"></use></svg>
-      </span>
-
-      <span
-        v-if="showDetail"
-        class="block__icon"
-        :aria-label="t('todo').detail"
-        @mouseenter="handleTooltipEnter($event, t('todo').detail)"
-        @mouseleave="handleTooltipLeave"
-        @click.stop="handleOpenDetail"
-      >
-        <svg><use xlink:href="#iconTaInfo"></use></svg>
-      </span>
-
-      <span
-        class="block__icon"
-        :aria-label="t('todo').calendar"
-        @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
-        @mouseleave="handleTooltipLeave"
-        @click.stop="handleOpenCalendar"
-      >
-        <svg><use xlink:href="#iconTaCalendarRange"></use></svg>
-      </span>
-    </template>
   </div>
 </template>
 
@@ -170,12 +157,15 @@ import {
 
 type OpenDocMode = 'navigate' | 'preview'
 
+export type ActionName = 'complete' | 'startFocus' | 'focusPlan' | 'migrate' | 'skipOccurrence' | 'abandon' | 'openDoc' | 'calendar' | 'pin' | 'detail'
+
 const props = withDefaults(defineProps<{
   item: Item | null
   openDocMode?: OpenDocMode
   showPin?: boolean
   showDetail?: boolean
   showSeparator?: boolean
+  showActions?: ActionName[]
 }>(), {
   openDocMode: 'navigate',
   showPin: false,
@@ -231,11 +221,15 @@ const migrateLabel = computed(() => {
 })
 const isMigrateToToday = computed(() => !!props.item && props.item.date < dayjs().format('YYYY-MM-DD'))
 
-const hasFixedRow = computed(() => props.showPin || props.showDetail)
 const pinLabel = computed(() => {
   if (!props.item) return ''
   return props.item.pinned ? t('todo').unpin : t('todo').pin
 })
+
+function isActionVisible(name: ActionName, legacyShow = true): boolean {
+  if (props.showActions !== undefined) return props.showActions.includes(name)
+  return legacyShow
+}
 
 function handleTooltipEnter(event: MouseEvent, text: string) {
   const el = event.currentTarget as HTMLElement | null

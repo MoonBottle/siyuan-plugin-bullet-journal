@@ -10,86 +10,92 @@
     </div>
     <div class="dialog-content">
       <template v-if="!saved">
-        <!-- 左侧：卡片区域 -->
+        <!-- 左侧：事项信息卡片 -->
         <div class="dialog-left-column">
-          <!-- 项目卡片 -->
-          <Card
-            v-if="pending?.projectName"
-            :show-header="true"
-            :show-footer="pending.projectLinks && pending.projectLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').project }}</span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending.projectName }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.projectLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+          <ItemDetailContent
+            v-if="currentItem"
+            :item="currentItem"
+            :embedded="true"
+            :show-action-row="false"
+            :readonly="true"
+          />
+          <template v-else>
+            <Card
+              v-if="pending?.projectName"
+              :show-header="true"
+              :show-footer="pending.projectLinks && pending.projectLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').project }}</span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending.projectName }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.projectLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
 
-          <!-- 任务卡片 -->
-          <Card
-            v-if="pending?.taskName"
-            :show-header="true"
-            :show-footer="pending.taskLinks && pending.taskLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').task }}</span>
-              <span
-                v-if="pending.taskLevel"
-                class="task-level-badge"
-                :class="`level-${pending.taskLevel.toLowerCase()}`"
-              >
-                {{ pending.taskLevel }}
-              </span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending.taskName }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.taskLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+            <Card
+              v-if="pending?.taskName"
+              :show-header="true"
+              :show-footer="pending.taskLinks && pending.taskLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').task }}</span>
+                <span
+                  v-if="pending.taskLevel"
+                  class="task-level-badge"
+                  :class="`level-${pending.taskLevel.toLowerCase()}`"
+                >
+                  {{ pending.taskLevel }}
+                </span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending.taskName }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.taskLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
 
-          <!-- 事项卡片 -->
-          <Card
-            status="pending"
-            :show-header="true"
-            :show-footer="pending.itemLinks && pending.itemLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').item }}</span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending?.itemContent }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.itemLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+            <Card
+              status="pending"
+              :show-header="true"
+              :show-footer="pending.itemLinks && pending.itemLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').item }}</span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending?.itemContent }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.itemLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
+          </template>
         </div>
 
         <!-- 右侧：计时信息区域 -->
@@ -212,11 +218,15 @@ import {
   watch,
 } from 'vue'
 import Card from '@/components/common/Card.vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
 import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { defaultPomodoroSettings } from '@/settings'
-import { usePomodoroStore } from '@/stores'
+import {
+  usePomodoroStore,
+  useProjectStore,
+} from '@/stores'
 import dayjs from '@/utils/dayjs'
 import {
   eventBus,
@@ -230,7 +240,14 @@ const props = defineProps<{
 }>()
 
 const pomodoroStore = usePomodoroStore()
+const projectStore = useProjectStore()
 const plugin = usePlugin() as any
+
+// 通过 blockId 从 projectStore 获取真实 Item，复用 ItemDetailContent
+const currentItem = computed(() => {
+  if (!props.pending?.blockId) return undefined
+  return projectStore.getItemByBlockId(props.pending.blockId)
+})
 
 const description = ref('')
 const saved = ref(false)

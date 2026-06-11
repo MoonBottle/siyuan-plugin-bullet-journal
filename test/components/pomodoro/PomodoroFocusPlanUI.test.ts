@@ -199,6 +199,23 @@ vi.mock('@/components/todo/TodoTypedLinks.vue', () => ({
   },
 }))
 
+vi.mock('@/components/dialog/ItemDetailContent.vue', () => ({
+  default: {
+    name: 'ItemDetailContentStub',
+    props: ['item', 'embedded', 'showActionRow'],
+    template: '<div data-testid="item-detail-content-stub">{{ item.content }}</div>',
+  },
+}))
+
+vi.mock('@/components/todo/ItemActionBar.vue', () => ({
+  default: {
+    name: 'ItemActionBarStub',
+    props: ['item', 'showSeparator', 'showActions'],
+    emits: ['openDetail'],
+    template: '<div data-testid="item-action-bar-stub"><button aria-label="完成" @click="$emit(\'complete\')" /><button aria-label="放弃" @click="$emit(\'abandon\')" /></div>',
+  },
+}))
+
 vi.mock('@/components/icons/TomatoIcon.vue', () => ({ default: { template: '<i></i>' } }))
 vi.mock('@/components/icons/PlayIcon.vue', () => ({ default: { template: '<i></i>' } }))
 vi.mock('@/components/icons/StopIcon.vue', () => ({ default: { template: '<i></i>' } }))
@@ -207,28 +224,13 @@ vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(() => Promise.resolve(true)),
 }))
 
-const mockWriteBlock = vi.fn(() => Promise.resolve(true))
-
-vi.mock('@/utils/blockWriter', () => ({
-  writeBlock: mockWriteBlock,
-}))
-
 vi.mock('@/utils/dialog', () => ({
   showConfirmDialog: vi.fn(),
   showItemDetailModal: vi.fn(),
 }))
 
-vi.mock('@/utils/linkNavigation', () => ({
-  resolveAttachmentTargetBlockId: vi.fn(),
-}))
-
 vi.mock('@/utils/progressDirection', () => ({
   getProgressDirection: vi.fn(() => 'shrink'),
-}))
-
-vi.mock('@/constants', () => ({
-  DOCK_TYPES: { POMODORO: 'pomodoro' },
-  TAB_TYPES: { CALENDAR: 'calendar' },
 }))
 
 function mountComponent(component: any, props: Record<string, unknown>) {
@@ -339,7 +341,7 @@ describe('pomodoro focus plan UI', () => {
     mounted.unmount()
   })
 
-  it('pomodoroActiveTimer 的完成按钮走 writeBlock', async () => {
+  it('pomodoroActiveTimer 渲染 ItemActionBar 并传递 showActions', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -357,21 +359,13 @@ describe('pomodoro focus plan UI', () => {
 
     await nextTick()
 
-    mounted.container.querySelector('[aria-label="完成"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await nextTick()
-
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
-    )
+    const actionBar = mounted.container.querySelector('[data-testid="item-action-bar-stub"]')
+    expect(actionBar).toBeTruthy()
 
     mounted.unmount()
   })
 
-  it('pomodoroActiveTimer 的放弃按钮走 writeBlock', async () => {
+  it('pomodoroActiveTimer 渲染 ItemDetailContent 并传递 item', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -389,16 +383,9 @@ describe('pomodoro focus plan UI', () => {
 
     await nextTick()
 
-    mounted.container.querySelector('[aria-label="放弃"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await nextTick()
-
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      {
-        type: 'setStatus',
-        status: 'abandoned',
-      },
-    )
+    const detailContent = mounted.container.querySelector('[data-testid="item-detail-content-stub"]')
+    expect(detailContent).toBeTruthy()
+    expect(detailContent?.textContent).toContain('整理日报')
 
     mounted.unmount()
   })
