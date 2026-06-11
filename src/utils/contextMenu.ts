@@ -1,9 +1,10 @@
-import type { PriorityLevel } from '@/types/models'
+import type { RepeatRule } from '@/types/models'
 import {
   IMenu,
   Menu,
 } from 'siyuan'
 import { t } from '@/i18n'
+import type { ItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   getTodayISO,
   getTomorrowISO,
@@ -83,19 +84,10 @@ export function createItemMenu(
     lineNumber?: number
     status?: string
     task?: { name: string }
+    pinned?: boolean
+    repeatRule?: RepeatRule
   },
-  handlers: {
-    onComplete?: () => void
-    onMigrateToday?: () => void
-    onMigrateTomorrow?: () => void
-    onMigrateCustom?: () => void
-    onAbandon?: () => void
-    onOpenDoc?: () => void
-    onShowDetail?: () => void
-    onShowCalendar?: () => void
-    onStartPomodoro?: () => void
-    onSetPriority?: (priority: PriorityLevel | undefined) => void
-  },
+  handlers: ItemActionHandlers,
   options: {
     showCalendarMenu?: boolean
     isFocusing?: boolean
@@ -113,14 +105,19 @@ export function createItemMenu(
     items.push({
       label: t('todo').complete,
       icon: 'iconTaSquareCheck',
-      click: handlers.onComplete,
+      click: () => handlers.complete(),
     })
 
     if (!isFocusing) {
       items.push({
         label: t('pomodoro').startFocus,
         icon: 'iconTaTimer',
-        click: handlers.onStartPomodoro,
+        click: () => handlers.startFocus(),
+      })
+      items.push({
+        label: t('todo').setFocusPlan,
+        icon: 'iconTaTarget',
+        click: () => handlers.focusPlan(),
       })
     }
 
@@ -135,20 +132,20 @@ export function createItemMenu(
           submenu.push({
             label: t('todo').migrateToday,
             icon: 'iconTaSun',
-            click: handlers.onMigrateToday,
+            click: () => handlers.migrateToToday(),
           })
         }
         if (item.date !== tomorrowStr) {
           submenu.push({
             label: t('todo').migrateTomorrow,
             icon: 'iconTaSunrise',
-            click: handlers.onMigrateTomorrow,
+            click: () => handlers.migrate(),
           })
         }
         submenu.push({
           label: t('todo').chooseDate,
           icon: 'iconTaCalendarDays',
-          click: handlers.onMigrateCustom,
+          click: () => handlers.migrateCustom(),
         })
         return submenu
       })(),
@@ -157,7 +154,7 @@ export function createItemMenu(
     items.push({
       label: t('todo').abandon,
       icon: 'iconTaSquareX',
-      click: handlers.onAbandon,
+      click: () => handlers.abandon(),
     })
 
     items.push({
@@ -167,26 +164,42 @@ export function createItemMenu(
         {
           iconHTML: '🔥',
           label: t('todo').priority.high,
-          click: () => handlers.onSetPriority?.('high'),
+          click: () => handlers.setPriority('high'),
         },
         {
           iconHTML: '🌱',
           label: t('todo').priority.medium,
-          click: () => handlers.onSetPriority?.('medium'),
+          click: () => handlers.setPriority('medium'),
         },
         {
           iconHTML: '🍃',
           label: t('todo').priority.low,
-          click: () => handlers.onSetPriority?.('low'),
+          click: () => handlers.setPriority('low'),
         },
         { type: 'separator' },
         {
           iconHTML: '⚪',
           label: t('todo').priority.clear,
-          click: () => handlers.onSetPriority?.(undefined),
+          click: () => handlers.setPriority(undefined),
         },
       ],
     })
+
+    items.push({ type: 'separator' })
+
+    items.push({
+      label: item.pinned ? t('todo').unpin : t('todo').pin,
+      icon: item.pinned ? 'iconTaPin' : 'iconTaPin',
+      click: () => handlers.togglePinned(),
+    })
+
+    if (item.repeatRule) {
+      items.push({
+        label: t('recurring').skipThis,
+        icon: 'iconTaForward',
+        click: () => handlers.skipOccurrence(),
+      })
+    }
 
     items.push({ type: 'separator' })
   }
@@ -194,20 +207,20 @@ export function createItemMenu(
   items.push({
     label: t('todo').openDoc,
     icon: 'iconTaFileText',
-    click: handlers.onOpenDoc,
+    click: () => handlers.openDoc(),
   })
 
   items.push({
     label: t('todo').viewDetail,
     icon: 'iconTaInfo',
-    click: handlers.onShowDetail,
+    click: () => handlers.openDetail(),
   })
 
-  if (showCalendarMenu && handlers.onShowCalendar) {
+  if (showCalendarMenu) {
     items.push({
       label: t('todo').viewCalendar,
       icon: 'iconTaCalendarRange',
-      click: handlers.onShowCalendar,
+      click: () => handlers.openCalendar(),
     })
   }
 
