@@ -388,7 +388,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           allDay: true,
           extendedProps: props,
         }
-        showEventDetailModal(eventData, { plugin: plugin as any })
+        showEventDetailModal(eventData)
       },
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return
@@ -533,7 +533,7 @@ onMounted(async () => {
           allDay: info.event.allDay,
           extendedProps: info.event.extendedProps as CalendarEvent['extendedProps'],
         }
-        showEventDetailModal(eventData, { plugin: plugin as any })
+        showEventDetailModal(eventData)
       },
 
       eventDidMount: (info) => {

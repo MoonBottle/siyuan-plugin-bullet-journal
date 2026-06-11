@@ -10,16 +10,16 @@ import {
 } from 'vitest'
 import {
   createApp,
-  defineComponent,
-  h,
   nextTick,
-  ref,
 } from 'vue'
 
 const mockShowFocusPlanDialog = vi.fn()
 const mockCompleteItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 const mockAbandonItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 const mockMigrateItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockSkipOccurrenceItem = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+const mockShowItemDetailModal = vi.fn()
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => ({
@@ -90,6 +90,7 @@ vi.mock('@/i18n', () => {
 vi.mock('@/utils/dialog', () => ({
   showPomodoroTimerDialog: vi.fn(),
   showFocusPlanDialog: mockShowFocusPlanDialog,
+  showItemDetailModal: mockShowItemDetailModal,
 }))
 
 vi.mock('@/utils/tooltip', () => ({
@@ -105,6 +106,11 @@ vi.mock('@/utils/itemActions', () => ({
   completeItem: mockCompleteItem,
   abandonItem: mockAbandonItem,
   migrateItem: mockMigrateItem,
+  skipOccurrenceItem: mockSkipOccurrenceItem,
+}))
+
+vi.mock('@/utils/itemSettingUtils', () => ({
+  toggleItemPinned: mockToggleItemPinned,
 }))
 
 vi.mock('@/parser/recurringParser', () => ({
@@ -124,42 +130,6 @@ async function mountComponent(item: any, extraProps: Record<string, any> = {}) {
 
   return {
     container,
-    unmount() {
-      app.unmount()
-      container.remove()
-    },
-  }
-}
-
-async function mountWithEmitCapture(item: any, extraProps: Record<string, any> = {}) {
-  const { default: ItemActionBar } = await import('@/components/todo/ItemActionBar.vue')
-  const emitted: Record<string, any[]> = {}
-  const Wrapper = defineComponent({
-    setup() {
-      const itemRef = ref(item)
-      return () => h(ItemActionBar, {
-        item: itemRef.value,
-        ...extraProps,
-        onTogglePinned: (...args: any[]) => {
-          if (!emitted.togglePinned) emitted.togglePinned = []
-          emitted.togglePinned.push(args)
-        },
-        onOpenDetail: (...args: any[]) => {
-          if (!emitted.openDetail) emitted.openDetail = []
-          emitted.openDetail.push(args)
-        },
-      })
-    },
-  })
-  const container = document.createElement('div')
-  document.body.appendChild(container)
-  const app = createApp(Wrapper)
-  app.mount(container)
-  await nextTick()
-
-  return {
-    container,
-    emitted,
     unmount() {
       app.unmount()
       container.remove()
@@ -382,8 +352,8 @@ describe('itemActionBar', () => {
     mounted.unmount()
   })
 
-  it('emits togglePinned when pin icon is clicked', async () => {
-    const mounted = await mountWithEmitCapture({
+  it('calls toggleItemPinned when pin icon is clicked', async () => {
+    const mounted = await mountComponent({
       id: 'item-12',
       blockId: 'block-12',
       content: '置顶点击事项',
@@ -397,13 +367,15 @@ describe('itemActionBar', () => {
     pinButton?.click()
     await nextTick()
 
-    expect(mounted.emitted.togglePinned).toBeTruthy()
+    expect(mockToggleItemPinned).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'item-12' }),
+    )
 
     mounted.unmount()
   })
 
-  it('emits openDetail when detail icon is clicked', async () => {
-    const mounted = await mountWithEmitCapture({
+  it('calls showItemDetailModal when detail icon is clicked', async () => {
+    const mounted = await mountComponent({
       id: 'item-13',
       blockId: 'block-13',
       content: '详情点击事项',
@@ -417,7 +389,10 @@ describe('itemActionBar', () => {
     detailButton?.click()
     await nextTick()
 
-    expect(mounted.emitted.openDetail).toBeTruthy()
+    expect(mockShowItemDetailModal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'item-13' }),
+      { showAllDates: true },
+    )
 
     mounted.unmount()
   })

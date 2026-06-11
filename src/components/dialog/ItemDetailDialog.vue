@@ -13,9 +13,9 @@
     <ItemActionBar
       :item="reactiveItem"
       :show-separator="true"
-      @openDoc="handleOpenDoc"
-      @openCalendar="handleOpenCalendar"
-      @skipOccurrence="handleSkipOccurrence"
+      :after-open-doc="handleAfterNavigate"
+      :after-open-calendar="handleAfterNavigate"
+      :after-skip-occurrence="handleAfterNavigate"
     />
   </div>
 </template>
@@ -39,11 +39,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   close: []
-  openDoc: []
-  openCalendar: [date: string]
   setReminder: []
   setRecurring: []
-  skipOccurrence: []
 }>()
 
 const projectStore = useProjectStore()
@@ -54,12 +51,8 @@ function handleClose() {
   emit('close')
 }
 
-function handleOpenDoc() {
-  emit('openDoc')
-}
-
-function handleOpenCalendar(date: string) {
-  emit('openCalendar', date)
+function handleAfterNavigate() {
+  emit('close')
 }
 
 function handleSetReminder() {
@@ -68,10 +61,6 @@ function handleSetReminder() {
 
 function handleSetRecurring() {
   emit('setRecurring')
-}
-
-function handleSkipOccurrence() {
-  emit('skipOccurrence')
 }
 
 </script>

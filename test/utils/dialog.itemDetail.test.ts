@@ -55,7 +55,7 @@ describe('showItemDetailModal', () => {
       },
       links: [],
       pomodoros: [],
-    } as any, { plugin: null })
+    } as any)
 
     await nextTick()
 

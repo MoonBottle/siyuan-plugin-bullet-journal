@@ -2,7 +2,6 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
-import type { Plugin } from 'siyuan'
 import type { ItemSettingWriteOptions } from './itemSettingUtils'
 import type {
   CalendarEvent,
@@ -33,11 +32,9 @@ import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue'
 import SettingsDialog from '@/components/settings/SettingsDialog.vue'
-import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue'
-import { skipCurrentOccurrence } from '@/services/recurringService'
 
 
 
@@ -51,7 +48,6 @@ import { hideTooltip } from '@/utils/tooltip'
 
 
 import dayjs from './dayjs'
-import { openDocumentAtLine } from './fileUtils'
 import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave'
 import { buildFocusPlanCandidateSections } from './focusPlanWorkbench'
 import {
@@ -139,8 +135,7 @@ function createButtons(buttons: Array<{ text: string, class: string, action: str
 /**
  * 显示事项详情弹框
  */
-export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean, plugin?: Plugin | null }): Dialog {
-  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
+export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
   const showAllDates = options?.showAllDates ?? false
 
   // 创建容器元素
@@ -154,17 +149,6 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     onClose: () => {
       dialog.destroy()
     },
-    onOpenDoc: async () => {
-      if (!plugin) return
-      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId)
-      dialog.destroy()
-    },
-    onOpenCalendar: (date: string) => {
-      if (plugin && (plugin as any).openCustomTab) {
-        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date })
-      }
-      dialog.destroy()
-    },
     onSetReminder: () => {
       dialog.destroy()
       showReminderSettingDialog(item)
@@ -172,10 +156,6 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     onSetRecurring: () => {
       dialog.destroy()
       showRecurringSettingDialog(item)
-    },
-    onSkipOccurrence: () => {
-      dialog.destroy()
-      void skipCurrentOccurrence(plugin, item)
     },
   })
 
@@ -275,12 +255,8 @@ export function buildItemFromEventProps(event: CalendarEvent): Item {
  */
 export function showEventDetailModal(
   event: CalendarEvent,
-  options?: { plugin?: Plugin | null },
 ): Dialog {
-  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null
   const item = buildItemFromEventProps(event)
-  const rawDate = item.date
-  const dateStr = rawDate || dayjs().format('YYYY-MM-DD')
 
   // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
   if (lastEventDetailDialog) {
@@ -301,17 +277,6 @@ export function showEventDetailModal(
     onClose: () => {
       dialog.destroy()
     },
-    onOpenDoc: async () => {
-      if (!plugin) return
-      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId)
-      dialog.destroy()
-    },
-    onOpenCalendar: () => {
-      if (plugin && (plugin as any).openCustomTab) {
-        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr })
-      }
-      dialog.destroy()
-    },
     onSetReminder: () => {
       dialog.destroy()
       showReminderSettingDialog(item)
@@ -319,10 +284,6 @@ export function showEventDetailModal(
     onSetRecurring: () => {
       dialog.destroy()
       showRecurringSettingDialog(item)
-    },
-    onSkipOccurrence: () => {
-      dialog.destroy()
-      void skipCurrentOccurrence(plugin, item)
     },
   })
 

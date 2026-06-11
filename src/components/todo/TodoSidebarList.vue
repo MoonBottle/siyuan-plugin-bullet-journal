@@ -166,10 +166,6 @@
                   :item="item"
                   :show-pin="true"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
-                  @togglePinned="handleTogglePinned(item)"
-                  @skipOccurrence="handleSkipOccurrence(item)"
                 />
               </template>
             </Card>
@@ -270,10 +266,6 @@
                   :item="item"
                   :show-pin="true"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
-                  @togglePinned="handleTogglePinned(item)"
-                  @skipOccurrence="handleSkipOccurrence(item)"
                 />
               </template>
             </Card>
@@ -374,10 +366,6 @@
                   :item="item"
                   :show-pin="true"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
-                  @togglePinned="handleTogglePinned(item)"
-                  @skipOccurrence="handleSkipOccurrence(item)"
                 />
               </template>
             </Card>
@@ -478,10 +466,6 @@
                   :item="item"
                   :show-pin="true"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
-                  @togglePinned="handleTogglePinned(item)"
-                  @skipOccurrence="handleSkipOccurrence(item)"
                 />
               </template>
             </Card>
@@ -587,10 +571,6 @@
                       :item="item"
                       :show-pin="true"
                       :show-detail="true"
-                      @openCalendar="openCalendar(item)"
-                      @openDetail="openDetail(item)"
-                      @togglePinned="handleTogglePinned(item)"
-                      @skipOccurrence="handleSkipOccurrence(item)"
                     />
                   </template>
                 </Card>
@@ -692,8 +672,6 @@
                 <ItemActionBar
                   :item="item"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
                 />
               </template>
             </Card>
@@ -793,8 +771,6 @@
                 <ItemActionBar
                   :item="item"
                   :show-detail="true"
-                  @openCalendar="openCalendar(item)"
-                  @openDetail="openDetail(item)"
                 />
               </template>
             </Card>
@@ -831,7 +807,6 @@ import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { PRIORITY_CONFIG } from '@/parser/priorityParser'
-import { skipCurrentOccurrence } from '@/services/recurringService'
 import {
   usePomodoroStore,
   useProjectStore,
@@ -874,7 +849,6 @@ import {
   migrateItemToDate,
   migrateItemToToday,
 } from '@/utils/itemActions'
-import { toggleItemPinned } from '@/utils/itemSettingUtils'
 import {
   hideTooltip,
   showTooltip,
@@ -1117,17 +1091,6 @@ function handleAddTagFilter(tag: string) {
   emit('addTagFilter', tag)
 }
 
-async function handleTogglePinned(item: Item) {
-  if (isProcessing.value) return
-
-  isProcessing.value = true
-  try {
-    await toggleItemPinned(item)
-  } finally {
-    isProcessing.value = false
-  }
-}
-
 // 按日期分组的未来待办事项（基于筛选后的数据）
 const groupedFutureItems = computed(() => {
   const grouped = new Map<string, Item[]>()
@@ -1307,18 +1270,6 @@ const handleMigrateCustom = (item: Item) => {
       isProcessing.value = false
     }
   })
-}
-
-// 跳过当前重复事项
-async function handleSkipOccurrence(item: Item) {
-  if (isProcessing.value) return
-  if (!item.repeatRule || !item.blockId) return
-  isProcessing.value = true
-  try {
-    await skipCurrentOccurrence(plugin as any, item)
-  } finally {
-    isProcessing.value = false
-  }
 }
 
 // 右键菜单处理

@@ -141,6 +141,7 @@ import { usePomodoroStore } from '@/stores'
 import dayjs from '@/utils/dayjs'
 import {
   showFocusPlanDialog,
+  showItemDetailModal,
   showPomodoroTimerDialog,
 } from '@/utils/dialog'
 import { openDocumentAtLine } from '@/utils/fileUtils'
@@ -148,7 +149,9 @@ import {
   abandonItem,
   completeItem,
   migrateItem,
+  skipOccurrenceItem,
 } from '@/utils/itemActions'
+import { toggleItemPinned } from '@/utils/itemSettingUtils'
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 import {
   hideTooltip,
@@ -166,20 +169,15 @@ const props = withDefaults(defineProps<{
   showDetail?: boolean
   showSeparator?: boolean
   showActions?: ActionName[]
+  afterOpenDoc?: () => void
+  afterOpenCalendar?: () => void
+  afterSkipOccurrence?: () => void
 }>(), {
   openDocMode: 'navigate',
   showPin: false,
   showDetail: false,
   showSeparator: false,
 })
-
-const emit = defineEmits<{
-  (event: 'openDoc', docId: string, blockId: string): void
-  (event: 'openCalendar', date: string): void
-  (event: 'skipOccurrence'): void
-  (event: 'openDetail'): void
-  (event: 'togglePinned'): void
-}>()
 
 const app = useApp()
 const plugin = usePlugin() as any
@@ -281,33 +279,44 @@ async function handleMigrate() {
   }
 }
 
-function handleSkipOccurrence() {
+async function handleSkipOccurrence() {
   if (!props.item || isProcessing.value) return
-  emit('skipOccurrence')
+  isProcessing.value = true
+  try {
+    await skipOccurrenceItem(plugin, props.item)
+    props.afterSkipOccurrence?.()
+  } finally {
+    isProcessing.value = false
+  }
 }
 
-function handleTogglePinned() {
+async function handleTogglePinned() {
   if (!props.item || isProcessing.value) return
-  emit('togglePinned')
+  isProcessing.value = true
+  try {
+    await toggleItemPinned(props.item)
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 function handleOpenDetail() {
   if (!props.item || isProcessing.value) return
-  emit('openDetail')
+  showItemDetailModal(props.item, { showAllDates: true })
 }
 
 function handleOpenDocClick() {
   if (!props.item?.blockId || isProcessing.value) return
 
-  emit('openDoc', props.item.docId, props.item.blockId)
-
   if (props.openDocMode === 'preview') {
     openBlockPreview(props.item.blockId)
+    props.afterOpenDoc?.()
     return
   }
 
   if (props.item.docId) {
     openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId)
+    props.afterOpenDoc?.()
   }
 }
 
@@ -361,10 +370,10 @@ onBeforeUnmount(() => {
 
 function handleOpenCalendar() {
   if (!props.item || isProcessing.value) return
-  emit('openCalendar', props.item.date)
   if (plugin?.openCustomTab) {
     plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date })
   }
+  props.afterOpenCalendar?.()
 }
 </script>
 

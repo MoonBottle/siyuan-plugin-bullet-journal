@@ -144,7 +144,6 @@
         :item="currentItem"
         :show-separator="true"
         :show-actions="['complete', 'abandon', 'openDoc', 'detail', 'calendar']"
-        @openDetail="handleOpenDetail"
       />
     </div>
 
@@ -226,7 +225,6 @@ import {
 import dayjs from '@/utils/dayjs'
 import {
   showConfirmDialog,
-  showItemDetailModal,
 } from '@/utils/dialog'
 import {
   formatFocusPlanDisplay,
@@ -364,12 +362,6 @@ const endPomodoro = () => {
       await pomodoroStore.completePomodoro(plugin)
     },
   )
-}
-
-// 打开详情
-function handleOpenDetail() {
-  if (!currentItem.value) return
-  showItemDetailModal(currentItem.value, { showAllDates: true })
 }
 </script>
 
