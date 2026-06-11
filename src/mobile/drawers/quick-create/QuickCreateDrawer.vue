@@ -139,7 +139,7 @@
                     @click="handleSetRecurring"
                   >
                     <div class="action-icon-wrapper">
-                      <svg><use xlink:href="#iconRefresh"></use></svg>
+                      <svg><use xlink:href="#iconTaClockPlus"></use></svg>
                     </div>
                     <span class="action-text">{{ recurringText }}</span>
                     <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -205,7 +205,7 @@
                 @click="selectProject(project.id)"
               >
                 <div class="option-icon">
-                  <svg><use xlink:href="#iconFolder"></use></svg>
+                  <svg><use xlink:href="#iconTaProject"></use></svg>
                 </div>
                 <span class="option-text">{{ project.name }}</span>
                 <svg
