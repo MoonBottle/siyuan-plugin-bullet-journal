@@ -221,6 +221,13 @@ vi.mock('@/utils/itemActions', () => ({
   migrateItemToDate: mockMigrateItemToDate,
 }))
 
+vi.mock('@/utils/itemActionHandlers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/itemActionHandlers')>()
+  return {
+    ...actual,
+  }
+})
+
 vi.mock('@/services/recurringService', () => ({
   skipCurrentOccurrence: vi.fn(() => Promise.resolve(true)),
 }))

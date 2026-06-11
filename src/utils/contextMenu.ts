@@ -1,10 +1,10 @@
 import type { RepeatRule } from '@/types/models'
+import type { ItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   IMenu,
   Menu,
 } from 'siyuan'
 import { t } from '@/i18n'
-import type { ItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   getTodayISO,
   getTomorrowISO,

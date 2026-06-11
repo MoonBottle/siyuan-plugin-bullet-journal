@@ -787,10 +787,7 @@ import type {
   TodoSidebarHoverPayload,
   TodoSidebarPreviewTriggerMode,
 } from './todoSidebarTypes'
-import type {
-  Item,
-  PriorityLevel,
-} from '@/types/models'
+import type { Item } from '@/types/models'
 import {
   computed,
   onMounted,
@@ -803,7 +800,6 @@ import ItemStatusTag from '@/components/common/ItemStatusTag.vue'
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue'
 import ItemActionBar from '@/components/todo/ItemActionBar.vue'
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue'
-import { TAB_TYPES } from '@/constants'
 import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { PRIORITY_CONFIG } from '@/parser/priorityParser'
@@ -812,7 +808,6 @@ import {
   useProjectStore,
   useSettingsStore,
 } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
 import {
   createItemMenu,
   showContextMenu,
@@ -826,12 +821,6 @@ import {
 } from '@/utils/dateUtils'
 import dayjs from '@/utils/dayjs'
 import {
-  showDatePickerDialog,
-  showItemDetailModal,
-  showPomodoroTimerDialog,
-} from '@/utils/dialog'
-
-import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
@@ -841,14 +830,7 @@ import {
   getFocusPlanDisplay,
   getFocusPlanTooltip,
 } from '@/utils/format'
-
-import {
-  abandonItem,
-  completeItem,
-  migrateItem,
-  migrateItemToDate,
-  migrateItemToToday,
-} from '@/utils/itemActions'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   hideTooltip,
   showTooltip,
@@ -1245,35 +1227,9 @@ const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
   })
 }
 
-const openDetail = (item: Item) => {
-  showItemDetailModal(item, { showAllDates: true })
-}
-
-// 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
-const openCalendar = (item: Item) => {
-  if (plugin && (plugin as any).openCustomTab) {
-    (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date })
-  }
-}
-
-// 迁移到自定义日期
-const handleMigrateCustom = (item: Item) => {
-  if (!item.blockId) return
-  if (isProcessing.value) return // 防止重复点击
-
-  showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-    if (isProcessing.value) return // 防止在回调中重复点击
-    isProcessing.value = true
-    try {
-      await migrateItemToDate(item, newDate)
-    } finally {
-      isProcessing.value = false
-    }
-  })
-}
-
 // 右键菜单处理
 const handleContextMenu = (event: MouseEvent, item: Item) => {
+  const handlers = getItemActionHandlers(item, plugin)
   const menuOptions = createItemMenu(
     {
       id: item.id,
@@ -1285,59 +1241,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       status: item.status,
       task: item.task,
     },
-    {
-      onComplete: () => {
-        if (isProcessing.value) return
-        isProcessing.value = true
-        completeItem(item).finally(() => {
-          isProcessing.value = false
-        })
-      },
-      onStartPomodoro: () => {
-        if (isProcessing.value) return
-        if (!item.blockId) return
-        showPomodoroTimerDialog(item.blockId)
-      },
-      onMigrateToday: () => {
-        if (isProcessing.value) return
-        isProcessing.value = true
-        migrateItemToToday(item).finally(() => {
-          isProcessing.value = false
-        })
-      },
-      onMigrateTomorrow: () => {
-        if (isProcessing.value) return
-        isProcessing.value = true
-        migrateItem(item).finally(() => {
-          isProcessing.value = false
-        })
-      },
-      onMigrateCustom: () => {
-        if (isProcessing.value) return
-        handleMigrateCustom(item)
-      },
-      onAbandon: () => {
-        if (isProcessing.value) return
-        isProcessing.value = true
-        abandonItem(item).finally(() => {
-          isProcessing.value = false
-        })
-      },
-      onOpenDoc: () => openItem(item),
-      onShowDetail: () => openDetail(item),
-      onShowCalendar: () => openCalendar(item),
-      onSetPriority: (priority: PriorityLevel | undefined) => {
-        if (!item.blockId) return
-        writeBlock({ blockId: item.blockId }, {
-          type: 'setPriority',
-          priority,
-        }).then((success) => {
-          if (success) {
-            item.priority = priority
-          }
-        })
-      },
-    },
+    handlers,
     {
       showCalendarMenu: true,
       isFocusing: pomodoroStore.isFocusing,
