@@ -13,7 +13,6 @@ import type {
   CalendarEvent,
   Item,
   ItemStatus,
-  PriorityLevel,
 
 } from '@/types/models'
 
@@ -24,7 +23,6 @@ import listPlugin from '@fullcalendar/list'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import {
   computed,
-  createApp,
   nextTick,
   onMounted,
   onUnmounted,
@@ -32,7 +30,6 @@ import {
   watch,
 } from 'vue'
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 
 import {
   getCurrentLocale,
@@ -44,8 +41,6 @@ import {
   useProjectStore,
   useSettingsStore,
 } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
 import {
   createItemMenu,
   showContextMenu,
@@ -57,8 +52,6 @@ import {
 } from '@/utils/dateRangeUtils'
 import dayjs from '@/utils/dayjs'
 import {
-  createDialog,
-  showDatePickerDialog,
   showEventDetailModal,
   showItemDetailModal,
 } from '@/utils/dialog'
@@ -66,8 +59,8 @@ import {
   eventBus,
   Events,
 } from '@/utils/eventBus'
-import { openDocumentAtLine } from '@/utils/fileUtils'
 import { isMobileDevice } from '@/utils/isMobile'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 import {
   hideTooltip,
   showTooltip,
@@ -283,28 +276,6 @@ let pendingNavigateDate: string | null = null
 let lastDateClickTime = 0
 let lastDateClickStr = ''
 
-// 打开番茄钟弹框
-const openPomodoroDialog = (item: Item) => {
-  const dialog = createDialog({
-    title: t('pomodoro').startFocusTitle,
-    content: '<div id="pomodoro-timer-dialog-mount"></div>',
-    width: '400px',
-    height: 'auto',
-  })
-
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
-  if (mountEl) {
-    const app = createApp(PomodoroTimerDialog, {
-      closeDialog: () => {
-        dialog.destroy()
-      },
-      preselectedBlockId: item.blockId,
-      hideItemList: true,
-    })
-    app.mount(mountEl)
-  }
-}
-
 // 日历事件右键菜单
 const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   const props = info.event.extendedProps
@@ -324,80 +295,12 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
     listItemBlockId: props.listItemBlockId,
-  }
+  } as Item
 
+  const handlers = getItemActionHandlers(item, plugin)
   const menuOptions = createItemMenu(
     item,
-    {
-      onComplete: async () => {
-        if (!item.blockId) return
-        await writeBlock({
-          blockId: item.blockId,
-          listItemBlockId: item.listItemBlockId,
-        }, {
-          type: 'setStatus',
-          status: 'completed',
-        })
-      },
-      onStartPomodoro: () => openPomodoroDialog(item as Item),
-      onMigrateToday: async () => {
-        if (!item.blockId) return
-        const todayStr = dayjs().format('YYYY-MM-DD')
-        await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
-        )
-      },
-      onMigrateTomorrow: async () => {
-        if (!item.blockId) return
-        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
-        await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
-        )
-      },
-      onMigrateCustom: async () => {
-        if (!item.blockId) return
-        showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await writeBlock(
-            { blockId: item.blockId },
-            buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
-          )
-        })
-      },
-      onAbandon: async () => {
-        if (!item.blockId) return
-        await writeBlock({
-          blockId: item.blockId,
-          listItemBlockId: item.listItemBlockId,
-        }, {
-          type: 'setStatus',
-          status: 'abandoned',
-        })
-      },
-      onOpenDoc: () => {
-        if (plugin && item.docId && item.lineNumber) {
-          openDocumentAtLine(plugin, item.docId, item.lineNumber)
-        }
-      },
-      onShowDetail: () => {
-        const eventData: CalendarEvent = {
-          id: item.id,
-          title: item.content,
-          start: item.date,
-          allDay: true,
-          extendedProps: props,
-        }
-        showEventDetailModal(eventData)
-      },
-      onSetPriority: (priority: PriorityLevel | undefined) => {
-        if (!item.blockId) return
-        writeBlock({ blockId: item.blockId }, {
-          type: 'setPriority',
-          priority,
-        })
-      },
-    },
+    handlers,
     {
       showCalendarMenu: false,
       isFocusing: pomodoroStore.isFocusing,
