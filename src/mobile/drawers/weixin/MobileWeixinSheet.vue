@@ -52,7 +52,7 @@
                     v-else-if="loginStatus === 'scaned'"
                     class="is-green"
                   >
-                    <use xlink:href="#iconCheck"></use>
+                    <use xlink:href="#iconTaCheck"></use>
                   </svg>
                 </div>
                 <div class="weixin-sheet__status-text">
@@ -89,7 +89,7 @@
                 class="weixin-sheet__connected"
               >
                 <div class="weixin-sheet__success-icon">
-                  <svg><use xlink:href="#iconCheck"></use></svg>
+                  <svg><use xlink:href="#iconTaCheck"></use></svg>
                 </div>
                 <div class="weixin-sheet__success-text">
                   已连接到微信
