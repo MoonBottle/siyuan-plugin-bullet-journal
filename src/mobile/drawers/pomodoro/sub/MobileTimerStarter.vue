@@ -23,7 +23,7 @@
           v-if="selectedItem.task"
           class="item-task"
         >
-          <svg><use xlink:href="#iconList"></use></svg>
+          <svg><use xlink:href="#iconTaTodo"></use></svg>
           {{ selectedItem.task.name }}
           <span
             v-if="selectedItem.task.level"
