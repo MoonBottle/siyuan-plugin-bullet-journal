@@ -163,6 +163,13 @@ describe('getItemActionHandlers', () => {
     expect(afterAction).toHaveBeenCalled()
   })
 
+  it('migrateToDate 调用 migrateItemToDate', async () => {
+    const { getItemActionHandlers } = await import('@/utils/itemActionHandlers')
+    const handlers = getItemActionHandlers(mockItem, mockPlugin)
+    await handlers.migrateToDate('2026-06-15')
+    expect(mockMigrateItemToDate).toHaveBeenCalledWith(mockItem, '2026-06-15')
+  })
+
   it('isProcessing 在异步操作期间为 true', async () => {
     let resolveComplete!: (value: boolean) => void
     mockCompleteItem.mockReturnValueOnce(

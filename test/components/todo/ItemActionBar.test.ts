@@ -21,6 +21,7 @@ const mockHandlers: ItemActionHandlers = {
   migrate: vi.fn(() => Promise.resolve()),
   migrateToToday: vi.fn(() => Promise.resolve()),
   migrateCustom: vi.fn(),
+  migrateToDate: vi.fn(() => Promise.resolve()),
   startFocus: vi.fn(),
   focusPlan: vi.fn(),
   openDoc: vi.fn(),

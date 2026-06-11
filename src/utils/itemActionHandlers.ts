@@ -27,6 +27,7 @@ export interface ItemActionHandlers {
   migrate: () => Promise<void>
   migrateToToday: () => Promise<void>
   migrateCustom: () => void
+  migrateToDate: (date: string) => Promise<void>
   startFocus: () => void
   focusPlan: () => void
   openDoc: () => void
@@ -89,6 +90,10 @@ export function getItemActionHandlers(
           isProcessing.value = false
         }
       })
+    },
+
+    async migrateToDate(date: string) {
+      await withProcessing(() => migrateItemToDate(item, date))
     },
 
     startFocus() {
