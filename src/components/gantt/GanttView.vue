@@ -24,7 +24,6 @@ import type {
 import { gantt } from 'dhtmlx-gantt'
 import {
   computed,
-  createApp,
   nextTick,
   onMounted,
   onUnmounted,
@@ -33,7 +32,6 @@ import {
 } from 'vue'
 
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue'
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import {
   getCurrentLocale,
   t,
@@ -42,20 +40,14 @@ import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
 } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
 import {
   createItemMenu,
   showContextMenu,
 } from '@/utils/contextMenu'
 import { DataConverter } from '@/utils/dataConverter'
 import dayjs from '@/utils/dayjs'
-import {
-  createDialog,
-  showDatePickerDialog,
-  showEventDetailModal,
-} from '@/utils/dialog'
-import { openDocumentAtLine } from '@/utils/fileUtils'
+import { showEventDetailModal } from '@/utils/dialog'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 
 const props = withDefaults(defineProps<Props>(), {
@@ -156,27 +148,6 @@ const handleGanttTooltipMouseOut = (e: MouseEvent) => {
   eventTooltipRef.value?.hide()
 }
 
-const openPomodoroDialog = (item: Item) => {
-  const dialog = createDialog({
-    title: t('pomodoro').startFocusTitle,
-    content: '<div id="pomodoro-timer-dialog-mount"></div>',
-    width: '400px',
-    height: 'auto',
-  })
-
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
-  if (mountEl) {
-    const app = createApp(PomodoroTimerDialog, {
-      closeDialog: () => {
-        dialog.destroy()
-      },
-      preselectedBlockId: item.blockId,
-      hideItemList: true,
-    })
-    app.mount(mountEl)
-  }
-}
-
 const handleGanttTaskClick = (id: string | number) => {
   const task = gantt.getTask(id)
   if (!task?.extendedProps?.item) return
@@ -205,96 +176,18 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     listItemBlockId: props.listItemBlockId,
   }
 
+  const handlers = getItemActionHandlers(item as Item, plugin, {
+    afterAction: () => {
+      plugin?.requestRefresh?.({
+        type: 'full',
+        reason: 'gantt-view:action',
+      })
+    },
+  })
+
   const menuOptions = createItemMenu(
     item,
-    {
-      onComplete: async () => {
-        if (!item.blockId) return
-        const success = await writeBlock({
-          blockId: item.blockId,
-          listItemBlockId: item.listItemBlockId,
-        }, {
-          type: 'setStatus',
-          status: 'completed',
-        })
-        // 注意：重复事项的自动创建由 WebSocket 处理器处理
-        if (success && plugin) {
-          await plugin.requestRefresh?.({
-            type: 'full',
-            reason: 'gantt-view:complete',
-          })
-        }
-      },
-      onStartPomodoro: () => openPomodoroDialog(item as Item),
-      onMigrateToday: async () => {
-        if (!item.blockId) return
-        const todayStr = dayjs().format('YYYY-MM-DD')
-        await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
-        )
-        if (plugin) {
-          await plugin.requestRefresh?.({
-            type: 'full',
-            reason: 'gantt-view:migrate-today',
-          })
-        }
-      },
-      onMigrateTomorrow: async () => {
-        if (!item.blockId) return
-        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
-        await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
-        )
-        if (plugin) {
-          await plugin.requestRefresh?.({
-            type: 'full',
-            reason: 'gantt-view:migrate-tomorrow',
-          })
-        }
-      },
-      onMigrateCustom: async () => {
-        if (!item.blockId) return
-        showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await writeBlock(
-            { blockId: item.blockId },
-            buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
-          )
-          if (plugin) {
-            await plugin.requestRefresh?.({
-              type: 'full',
-              reason: 'gantt-view:migrate-custom',
-            })
-          }
-        })
-      },
-      onAbandon: async () => {
-        if (!item.blockId) return
-        const success = await writeBlock({
-          blockId: item.blockId,
-          listItemBlockId: item.listItemBlockId,
-        }, {
-          type: 'setStatus',
-          status: 'abandoned',
-        })
-        if (success && plugin) {
-          await plugin.requestRefresh?.({
-            type: 'full',
-            reason: 'gantt-view:abandon',
-          })
-        }
-      },
-      onOpenDoc: () => {
-        if (item.docId && item.lineNumber) {
-          openDocumentAtLine(item.docId, item.lineNumber)
-        }
-      },
-      onShowDetail: () => {
-        const eventData = buildCalendarEventFromGanttTask(gantt.getTask(taskId))
-        showEventDetailModal(eventData)
-      },
-    },
+    handlers,
     {
       showCalendarMenu: false,
       isFocusing: pomodoroStore.isFocusing,
