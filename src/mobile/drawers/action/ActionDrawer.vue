@@ -83,7 +83,7 @@
                 @click="handleAbandon"
               >
                 <div class="action-icon-wrapper">
-                  <svg><use xlink:href="#iconCloseRound"></use></svg>
+                  <svg><use xlink:href="#iconTaSquareX"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.abandon') || '放弃' }}</span>
               </button>
@@ -93,7 +93,7 @@
                 @click="handleDetail"
               >
                 <div class="action-icon-wrapper">
-                  <svg><use xlink:href="#iconInfo"></use></svg>
+                  <svg><use xlink:href="#iconTaInfo"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.detail') || '详情' }}</span>
               </button>
