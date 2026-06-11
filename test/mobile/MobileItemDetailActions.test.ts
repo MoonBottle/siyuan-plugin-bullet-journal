@@ -16,6 +16,7 @@ import {
 } from 'vue'
 
 const mockWriteBlock = vi.hoisted(() => vi.fn(async () => true))
+const mockMigrateToDate = vi.hoisted(() => vi.fn(async () => {}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn(() => ''),
@@ -53,6 +54,28 @@ vi.mock('@/stores', () => ({
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
+}))
+
+vi.mock('@/main', () => ({
+  usePlugin: () => ({ name: 'test-plugin' }),
+}))
+
+vi.mock('@/utils/itemActionHandlers', () => ({
+  getItemActionHandlers: (_item: any, _plugin: any, options?: { afterAction?: () => void }) => {
+    const afterAction = options?.afterAction
+    mockMigrateToDate.mockImplementation(async () => {
+      afterAction?.()
+    })
+    return {
+      isProcessing: { value: false },
+      complete: vi.fn(async () => { afterAction?.() }),
+      migrate: vi.fn(async () => { afterAction?.() }),
+      abandon: vi.fn(async () => { afterAction?.() }),
+      migrateToToday: vi.fn(async () => { afterAction?.() }),
+      migrateToDate: mockMigrateToDate,
+      setPriority: vi.fn(async () => { afterAction?.() }),
+    }
+  },
 }))
 
 vi.mock('@/mobile/components/pickers/MobilePriorityPicker.vue', () => ({
@@ -178,7 +201,7 @@ describe('mobileItemDetail actions', () => {
     mounted.unmount()
   })
 
-  it('uses BlockWriter addDate when changing the item date', async () => {
+  it('calls migrateToDate when changing the item date', async () => {
     const mounted = await mountItemDetail({
       modelValue: true,
       item: {
@@ -201,28 +224,7 @@ describe('mobileItemDetail actions', () => {
     await Promise.resolve()
     await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-2' },
-      {
-        type: 'addDate',
-        date: '2026-05-05',
-        status: 'pending',
-        startTime: '14:00',
-        endTime: '15:00',
-        allDay: false,
-        originalDate: '2026-05-01',
-        siblingItems: [
-          { date: '2026-05-03' },
-          {
-            date: '2026-05-01',
-            startDateTime: '2026-05-01 14:00',
-            endDateTime: '2026-05-01 15:00',
-            timePrecision: undefined,
-          },
-        ],
-        timePrecision: undefined,
-      },
-    )
+    expect(mockMigrateToDate).toHaveBeenCalledWith('2026-05-05')
     expect(mounted.events).toContainEqual({
       name: 'refresh',
       payload: undefined,

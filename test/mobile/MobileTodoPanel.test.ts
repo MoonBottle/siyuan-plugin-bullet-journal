@@ -21,6 +21,7 @@ const {
   mockShowMessage,
   mockBuildTodoDateRange,
   mockWriteBlock,
+  mockCompleteItem,
 } = vi.hoisted(() => ({
   mockLoadFromPlugin: vi.fn(),
   mockRefresh: vi.fn(async () => {}),
@@ -30,6 +31,7 @@ const {
     end: '2026-05-01',
   })),
   mockWriteBlock: vi.fn(async () => true),
+  mockCompleteItem: vi.fn(async () => true),
 }))
 
 vi.mock('@/mobile/components/todo/MobileFilterBar.vue', () => ({
@@ -220,6 +222,14 @@ vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
 }))
 
+vi.mock('@/utils/itemActions', () => ({
+  completeItem: mockCompleteItem,
+  migrateItem: vi.fn(async () => true),
+  migrateItemToToday: vi.fn(async () => true),
+  migrateItemToDate: vi.fn(async () => true),
+  abandonItem: vi.fn(async () => true),
+}))
+
 vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
   Events: {
@@ -352,19 +362,18 @@ describe('mobileTodoPanel', () => {
     mounted.unmount()
   })
 
-  it('uses BlockWriter for quick complete from the list', async () => {
+  it('uses completeItem for quick complete from the list', async () => {
     const mounted = mountPanel()
     await nextTick();
 
     (mounted.container.querySelector('[data-testid="todo-list-complete"]') as HTMLButtonElement | null)?.click()
     await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'panel-item' },
-      {
-        type: 'setStatus',
-        status: 'completed',
-      },
+    expect(mockCompleteItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'panel-item',
+        status: 'pending',
+      }),
     )
     expect(mockShowMessage).toHaveBeenCalledWith('Complete')
 

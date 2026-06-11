@@ -223,8 +223,7 @@ describe('mobileTodoList', () => {
       { blockId: 'block-expired' },
       {
         type: 'addDate',
-        date: '2026-05-02',
-        status: 'pending',
+        date: '2026-05-01',
         startTime: '09:00',
         endTime: '10:30',
         allDay: false,
@@ -235,10 +234,8 @@ describe('mobileTodoList', () => {
             date: '2026-04-30',
             startDateTime: '2026-04-30 09:00',
             endDateTime: '2026-04-30 10:30',
-            timePrecision: undefined,
           },
         ],
-        timePrecision: undefined,
       },
     )
 

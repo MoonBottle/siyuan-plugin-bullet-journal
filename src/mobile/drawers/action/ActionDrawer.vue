@@ -129,8 +129,8 @@
 import type { Item } from '@/types/models'
 import { computed } from 'vue'
 import { t } from '@/i18n'
+import { usePlugin } from '@/main'
 import { getItemActionHandlers } from '@/utils/itemActionHandlers'
-import { usePlugin } from '@/utils/plugin'
 
 const props = defineProps<{
   modelValue: boolean
