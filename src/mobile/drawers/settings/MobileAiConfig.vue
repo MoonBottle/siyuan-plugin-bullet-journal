@@ -82,7 +82,7 @@
               class="action-btn"
               @click="editProvider(provider)"
             >
-              <svg><use xlink:href="#iconEdit"></use></svg>
+              <svg><use xlink:href="#iconTaFileText"></use></svg>
             </button>
             <button
               class="action-btn delete"
