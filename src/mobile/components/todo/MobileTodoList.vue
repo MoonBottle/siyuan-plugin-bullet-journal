@@ -524,13 +524,12 @@ import {
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue'
 import { t } from '@/i18n'
 import { useProjectStore } from '@/stores'
-import { writeBlock } from '@/utils/blockWriter'
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
 import { getEffectiveDate } from '@/utils/dateRangeUtils'
 import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils'
 import dayjs from '@/utils/dayjs'
 import { showMessage } from '@/utils/dialog'
 import { createExampleDocument } from '@/utils/exampleDocUtils'
+import { migrateItem } from '@/utils/itemActions'
 
 const props = defineProps<{
   groupId?: string
@@ -751,19 +750,13 @@ const handleTouchMove = () => {
 
 // Postpone all expired items
 const handlePostponeAll = async (items: Item[]) => {
-  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD')
   let successCount = 0
 
   for (const item of items) {
     if (item.blockId) {
       try {
-        const success = await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, tomorrow, { includeCurrentItemInSiblings: true }),
-        )
-        if (success) {
-          successCount++
-        }
+        const success = await migrateItem(item)
+        if (success) successCount++
       } catch (e) {
         console.error('Failed to postpone item:', e)
       }
