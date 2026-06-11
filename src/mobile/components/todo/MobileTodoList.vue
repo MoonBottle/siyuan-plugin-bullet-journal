@@ -143,7 +143,7 @@
                   <svg
                     v-if="item.reminder?.enabled"
                     class="meta-icon"
-                  ><use xlink:href="#iconClock"></use></svg>
+                  ><use xlink:href="#iconTaTimer"></use></svg>
                 </div>
               </div>
               <div
@@ -225,7 +225,7 @@
                   <svg
                     v-if="item.reminder?.enabled"
                     class="meta-icon"
-                  ><use xlink:href="#iconClock"></use></svg>
+                  ><use xlink:href="#iconTaTimer"></use></svg>
                 </div>
               </div>
               <div
