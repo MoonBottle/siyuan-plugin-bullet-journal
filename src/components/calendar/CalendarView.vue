@@ -527,11 +527,12 @@ onMounted(async () => {
         // 番茄钟背景时间块：显示标签，不绑定右键菜单和悬浮提示
         if (info.event.extendedProps?.isPomodoroBlock) {
           const el = info.el
-          el.style.opacity = '1'
-          el.style.width = '15%'
-          el.style.left = '85%'
-          el.style.backgroundColor = 'var(--fc-event-bg-color)'
-          el.style.borderLeft = '3px solid var(--fc-event-border-color)'
+          el.classList.add('pomodoro-block-event')
+          el.style.setProperty('opacity', '1', 'important')
+          el.style.setProperty('width', '15%', 'important')
+          el.style.setProperty('left', '85%', 'important')
+          el.style.setProperty('background-color', 'var(--fc-event-bg-color)', 'important')
+          el.style.setProperty('border-left', '3px solid var(--fc-event-border-color)', 'important')
           const duration = info.event.extendedProps?.pomodoroDurationMinutes
           const startTime = info.event.startStr?.split('T')[1]?.substring(0, 5)
           const endTime = info.event.endStr?.split('T')[1]?.substring(0, 5)
@@ -543,8 +544,14 @@ onMounted(async () => {
             label.style.fontSize = '11px'
             label.style.fontWeight = '600'
             label.style.color = 'var(--fc-event-text-color)'
-            label.style.whiteSpace = 'pre-line'
+            label.style.whiteSpace = 'nowrap'
             label.style.pointerEvents = 'none'
+            label.style.position = 'absolute'
+            label.style.top = '2px'
+            label.style.left = '2px'
+            label.style.right = '2px'
+            label.style.overflow = 'hidden'
+            label.style.textOverflow = 'ellipsis'
             el.appendChild(label)
 
             // hover 显示国际化完整专注信息
@@ -557,6 +564,10 @@ onMounted(async () => {
               hideTooltip()
             })
           }
+          // 隐藏 resize 手柄，防止鼠标变为双向箭头
+          el.querySelectorAll('.fc-event-resizer').forEach((r) => {
+            (r as HTMLElement).style.display = 'none'
+          })
           return
         }
         // 显示番茄钟块时，事项块缩窄为85%给番茄块留位
@@ -882,6 +893,22 @@ defineExpose({
     flex-shrink: 0;
     margin-left: auto;
     color: var(--fc-event-text-color);
+  }
+
+  /* 番茄钟背景块 */
+  .fc-event.pomodoro-block-event {
+    width: 15% !important;
+    left: 85% !important;
+    opacity: 1 !important;
+    background-color: var(--fc-event-bg-color) !important;
+    border-left: 3px solid var(--fc-event-border-color) !important;
+
+    .pomodoro-block-label {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 </style>
