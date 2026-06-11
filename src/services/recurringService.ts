@@ -23,6 +23,13 @@ import {
 } from '@/utils/blockWriter'
 import { extractTimePart } from '@/utils/blockWriter/intent/itemPatches'
 import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier'
+import {
+  insertMarkerBeforeFirst,
+  normalizeMarkerLine,
+  parseMarkerLine,
+  removeMarker,
+  upsertMarker,
+} from '@/utils/blockWriter/render/markerCluster'
 import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks'
 
 const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/gu
@@ -68,33 +75,56 @@ function decrementEndCondition(endCondition?: Item['endCondition']) {
   return endCondition
 }
 
-function buildNextOccurrenceBlockFallback(item: Item, nextDate: string): string {
-  const {
-    reminder,
-    repeatRule,
-  } = item
-  const endCondition = decrementEndCondition(item.endCondition)
-
-  const content = stripRecurringMarkers(stripReminderMarker(item.content))
+function buildNextOccurrenceBlockFallback(item: Item, nextDate: string, nextEndCondition?: Item['endCondition']): string {
+  // Strip status and date markers from content, keep all other markers (📌, 🔥, etc.)
+  const cleanedContent = stripRecurringMarkers(stripReminderMarker(item.content))
     .replace(DATE_MARKER_RE, '')
     .replace(STATUS_ICON_RE, '')
     .trim()
 
-  let datePart = `📅${nextDate}`
+  // Build new date expression
+  let dateExpr = `📅${nextDate}`
   if (item.startDateTime && item.endDateTime) {
     const startTime = item.startDateTime.split(' ')[1]
     const endTime = item.endDateTime.split(' ')[1]
-    datePart = `📅${nextDate} ${startTime}~${endTime}`
+    dateExpr = `📅${nextDate} ${startTime}~${endTime}`
   } else if (item.startDateTime) {
     const startTime = item.startDateTime.split(' ')[1]
-    datePart = `📅${nextDate} ${startTime}`
+    dateExpr = `📅${nextDate} ${startTime}`
   }
 
-  const reminderPart = reminder?.enabled ? ` ${generateReminderMarker(reminder)}` : ''
-  const repeatPart = repeatRule ? ` ${generateRepeatRuleMarker(repeatRule)}` : ''
-  const endConditionPart = endCondition ? ` ${generateEndConditionMarker(endCondition)}` : ''
+  // Use markerCluster to preserve original marker order
+  let parsed = parseMarkerLine(cleanedContent)
 
-  let result = `${content} ${datePart}${reminderPart}${repeatPart}${endConditionPart}`.trim()
+  // Remove status markers
+  parsed = removeMarker(parsed, 'status')
+
+  // Insert/update date marker (preserve position if exists, otherwise insert before first marker)
+  const hasDateMarker = parsed.markers.some((m) => m.kind === 'date')
+  if (hasDateMarker) {
+    parsed = upsertMarker(parsed, 'date', dateExpr)
+  } else {
+    parsed = insertMarkerBeforeFirst(parsed, 'date', dateExpr)
+  }
+
+  // Insert/update reminder marker
+  if (item.reminder?.enabled) {
+    const reminderExpr = generateReminderMarker(item.reminder)
+    parsed = upsertMarker(parsed, 'reminder', reminderExpr)
+  } else {
+    parsed = removeMarker(parsed, 'reminder')
+  }
+
+  // Insert/update recurring marker
+  if (item.repeatRule) {
+    let recurringExpr = generateRepeatRuleMarker(item.repeatRule)
+    if (nextEndCondition) {
+      recurringExpr += ` ${generateEndConditionMarker(nextEndCondition)}`
+    }
+    parsed = upsertMarker(parsed, 'recurring', recurringExpr)
+  }
+
+  let result = normalizeMarkerLine(parsed)
   if (item.isTaskList) {
     result = `- [ ] ${result}`
   }
@@ -124,7 +154,60 @@ export async function createNextOccurrence(
   }
 
   try {
-    const newBlockContent = await buildNextOccurrenceBlock(item, nextDate)
+    const nextEndCondition = decrementEndCondition(item.endCondition)
+    const startTime = extractTimePart(item.startDateTime)
+    const endTime = extractTimePart(item.endDateTime)
+
+    // Get source kramdown to preserve original marker order
+    const sourceKramdown = item.blockId
+      ? (await getBlockKramdown(item.blockId))?.kramdown ?? null
+      : null
+
+    let newBlockContent: string
+    if (sourceKramdown) {
+      // Use applyBlockPatch to preserve original marker order
+      let markdown = applyBlockPatch(
+        splitKramdownBlock(sourceKramdown),
+        {
+          type: 'setStatus',
+          status: 'pending',
+        },
+      )
+
+      markdown = applyBlockPatch(
+        splitKramdownBlock(markdown),
+        {
+          type: 'addDate',
+          date: nextDate,
+          originalDate: item.date,
+          startTime,
+          endTime,
+          allDay: !startTime && !endTime,
+          timePrecision: item.timePrecision,
+        },
+      )
+
+      markdown = applyBlockPatch(
+        splitKramdownBlock(markdown),
+        {
+          type: 'setReminder',
+          reminder: item.reminder?.enabled ? item.reminder : undefined,
+        },
+      )
+
+      markdown = applyBlockPatch(
+        splitKramdownBlock(markdown),
+        {
+          type: 'setRecurring',
+          repeatRule: item.repeatRule,
+          endCondition: nextEndCondition,
+        },
+      )
+
+      newBlockContent = markdown
+    } else {
+      newBlockContent = buildNextOccurrenceBlockFallback(item, nextDate, nextEndCondition)
+    }
 
     // 确定插入点：
     // 1. 对于任务列表事项，使用 listItemBlockId（在列表项后面插入，保持平级）
@@ -158,60 +241,6 @@ export async function createNextOccurrence(
   }
 }
 
-async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<string> {
-  const sourceKramdown = item.blockId
-    ? (await getBlockKramdown(item.blockId))?.kramdown ?? null
-    : null
-
-  if (!sourceKramdown) {
-    return buildNextOccurrenceBlockFallback(item, nextDate)
-  }
-
-  const nextEndCondition = decrementEndCondition(item.endCondition)
-  const startTime = extractTimePart(item.startDateTime)
-  const endTime = extractTimePart(item.endDateTime)
-
-  let markdown = applyBlockPatch(
-    splitKramdownBlock(sourceKramdown),
-    {
-      type: 'setStatus',
-      status: 'pending',
-    },
-  )
-
-  markdown = applyBlockPatch(
-    splitKramdownBlock(markdown),
-    {
-      type: 'addDate',
-      date: nextDate,
-      originalDate: item.date,
-      startTime,
-      endTime,
-      allDay: !startTime && !endTime,
-      timePrecision: item.timePrecision,
-    },
-  )
-
-  markdown = applyBlockPatch(
-    splitKramdownBlock(markdown),
-    {
-      type: 'setReminder',
-      reminder: item.reminder?.enabled ? item.reminder : undefined,
-    },
-  )
-
-  markdown = applyBlockPatch(
-    splitKramdownBlock(markdown),
-    {
-      type: 'setRecurring',
-      repeatRule: item.repeatRule,
-      endCondition: nextEndCondition,
-    },
-  )
-
-  return markdown
-}
-
 /**
  * 跳过本次（直接修改当前事项日期）
  * @param _plugin 插件实例
@@ -224,19 +253,38 @@ export async function skipCurrentOccurrence(
 ): Promise<boolean> {
   if (!item.repeatRule || !item.blockId) return false
 
-  // 计算下次日期
   const nextDate = getNextOccurrenceDate(item.date, item.repeatRule)
+  const nextEndCondition = decrementEndCondition(item.endCondition)
+  const startTime = extractTimePart(item.startDateTime)
+  const endTime = extractTimePart(item.endDateTime)
 
   try {
-    const newBlockContent = await buildNextOccurrenceBlock(item, nextDate)
-
-    // 更新当前 block
     const result = await writeBlock(
       { blockId: item.blockId },
-      {
-        type: 'replaceMarkdown',
-        markdown: newBlockContent,
-      },
+      [
+        {
+          type: 'setStatus',
+          status: 'pending',
+        },
+        {
+          type: 'addDate',
+          date: nextDate,
+          originalDate: item.date,
+          startTime,
+          endTime,
+          allDay: !startTime && !endTime,
+          timePrecision: item.timePrecision,
+        },
+        {
+          type: 'setReminder',
+          reminder: item.reminder?.enabled ? item.reminder : undefined,
+        },
+        {
+          type: 'setRecurring',
+          repeatRule: item.repeatRule,
+          endCondition: nextEndCondition,
+        },
+      ],
     )
 
     if (result) {

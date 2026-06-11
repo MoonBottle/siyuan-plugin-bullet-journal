@@ -264,10 +264,12 @@ describe('recurringService', () => {
       expect(result).toBe(true)
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-03-18'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-03-18',
+          }),
+        ]),
       )
     })
 
@@ -289,10 +291,12 @@ describe('recurringService', () => {
       expect(result).toBe(true)
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-03-24'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-03-24',
+          }),
+        ]),
       )
     })
 
@@ -314,10 +318,12 @@ describe('recurringService', () => {
       expect(result).toBe(true)
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-04-17'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-04-17',
+          }),
+        ]),
       )
     })
 
@@ -340,13 +346,14 @@ describe('recurringService', () => {
 
       const result = await skipCurrentOccurrence({} as any, item)
       expect(result).toBe(true)
-      // 3月17日 -> 4月15日（指定日期）
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-04-15'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-04-15',
+          }),
+        ]),
       )
     })
 
@@ -370,10 +377,15 @@ describe('recurringService', () => {
       expect(result).toBe(true)
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-03-18 09:00:00~10:00:00'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-03-18',
+            startTime: '09:00:00',
+            endTime: '10:00:00',
+            allDay: false,
+          }),
+        ]),
       )
     })
 
@@ -395,17 +407,18 @@ describe('recurringService', () => {
       expect(result).toBe(true)
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-05-06'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-05-06',
+          }),
+        ]),
       )
     })
 
     it('用户具体案例：每月3日重复，当前28日，应跳到4月3日', async () => {
       mockWriteBlock.mockResolvedValue(true)
 
-      // 这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月:3日🔚2026-05-31
       const item: Item = {
         id: '1',
         content: '这是一个带时间的事项',
@@ -428,18 +441,22 @@ describe('recurringService', () => {
 
       const result = await skipCurrentOccurrence({} as any, item)
       expect(result).toBe(true)
-      // 3月28日 -> 4月3日（每月3日）
       expect(mockWriteBlock).toHaveBeenCalledWith(
         { blockId: 'block123' },
-        {
-          type: 'replaceMarkdown',
-          markdown: expect.stringContaining('📅2026-04-03 09:00:00~10:00:00'),
-        },
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'addDate',
+            date: '2026-04-03',
+          }),
+          expect.objectContaining({
+            type: 'setRecurring',
+            repeatRule: {
+              type: 'monthly',
+              dayOfMonth: 3,
+            },
+          }),
+        ]),
       )
-      // 验证重复规则和结束条件保留（新格式）
-      const callArg = mockWriteBlock.mock.calls[0][1] as { markdown: string }
-      expect(callArg.markdown).toContain('🔁每月3日')
-      expect(callArg.markdown).toContain('截止到2026-05-31')
     })
 
     it('更新失败时应返回 false', async () => {
@@ -637,7 +654,7 @@ describe('recurringService', () => {
       mockInsertBlockAfter.mockResolvedValue(true)
       mockGetBlockKramdown.mockResolvedValueOnce({
         id: 'block123',
-        kramdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-18 17:00:00~18:00:00 ✅',
+        kramdown: '填工时 📅2026-05-18 17:00:00~18:00:00 🔁工作日 ⏰17:01 📌 ✅',
       })
 
       const item: Item = {
@@ -657,6 +674,7 @@ describe('recurringService', () => {
         },
         startDateTime: '2026-05-18 17:00:00',
         endDateTime: '2026-05-18 18:00:00',
+        pinned: true,
       }
 
       const result = await createNextOccurrence({} as any, item)
@@ -666,9 +684,19 @@ describe('recurringService', () => {
         'block123',
         {
           type: 'replaceMarkdown',
-          markdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-19 17:00:00~18:00:00',
+          markdown: expect.stringContaining('📅2026-05-19 17:00:00~18:00:00'),
         },
       )
+      // Verify marker order is preserved: 📅 before 🔁 before ⏰ before 📌
+      const callArg = mockInsertBlockAfter.mock.calls[0][1] as { markdown: string }
+      const dateIdx = callArg.markdown.indexOf('📅')
+      const repeatIdx = callArg.markdown.indexOf('🔁')
+      const reminderIdx = callArg.markdown.indexOf('⏰')
+      const pinIdx = callArg.markdown.indexOf('📌')
+      expect(dateIdx).toBeGreaterThan(-1)
+      expect(repeatIdx).toBeGreaterThan(dateIdx)
+      expect(reminderIdx).toBeGreaterThan(repeatIdx)
+      expect(pinIdx).toBeGreaterThan(reminderIdx)
     })
 
     it('次数结束条件应递减', async () => {
