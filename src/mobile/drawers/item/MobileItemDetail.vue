@@ -480,13 +480,13 @@ import type {
   PomodoroRecord,
   PriorityLevel,
 } from '@/types/models'
-import dayjs from 'dayjs'
 import {
   computed,
   ref,
   watch,
 } from 'vue'
 import { t } from '@/i18n'
+import { usePlugin } from '@/main'
 import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue'
 import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue'
 import { TimeSettingDrawer } from '@/mobile/components/time-picker'
@@ -497,13 +497,13 @@ import {
 } from '@/parser/recurringParser'
 import { useSettingsStore } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
 import {
   calculateDuration,
   formatDateLabel,
   formatTimeRange,
 } from '@/utils/dateUtils'
 import { formatReminderDisplay } from '@/utils/displayUtils'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue'
 
 const props = defineProps<{
@@ -528,7 +528,14 @@ const close = () => {
 }
 
 const settingsStore = useSettingsStore()
+const plugin = usePlugin()
 const showPomodoroList = ref(false)
+
+const handlers = computed(() =>
+  props.item
+    ? getItemActionHandlers(props.item, plugin, { afterAction: () => emit('refresh') })
+    : null,
+)
 
 // Content editing
 const showContentEdit = ref(false)
@@ -760,14 +767,8 @@ const handleLinkClick = (url: string) => {
 }
 
 const handleComplete = async () => {
-  if (!props.item?.blockId) return
-  await writeBlock({
-    blockId: props.item.blockId,
-    listItemBlockId: props.item.listItemBlockId,
-  }, {
-    type: 'setStatus',
-    status: 'completed',
-  })
+  if (!handlers.value) return
+  await handlers.value.complete()
   close()
 }
 
@@ -777,14 +778,8 @@ const handleAbandon = () => {
 }
 
 const handleConfirmAbandon = async () => {
-  if (!props.item?.blockId) return
-  await writeBlock({
-    blockId: props.item.blockId,
-    listItemBlockId: props.item.listItemBlockId,
-  }, {
-    type: 'setStatus',
-    status: 'abandoned',
-  })
+  if (!handlers.value) return
+  await handlers.value.abandon()
   close()
 }
 
@@ -804,31 +799,17 @@ const handleMigrateCustomDate = () => {
 
 // 迁移到今天
 const handleMigrateToToday = async () => {
-  if (!props.item?.blockId) return
+  if (!handlers.value) return
   showMigrateDrawer.value = false
-
-  const todayStr = dayjs().format('YYYY-MM-DD')
-
-  await writeBlock(
-    { blockId: props.item.blockId },
-    buildDatePatchFromItem(props.item, todayStr, { includeCurrentItemInSiblings: true }),
-  )
-
+  await handlers.value.migrateToToday()
   close()
 }
 
 // 迁移到明天
 const handleMigrateToTomorrow = async () => {
-  if (!props.item?.blockId) return
+  if (!handlers.value) return
   showMigrateDrawer.value = false
-
-  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
-
-  await writeBlock(
-    { blockId: props.item.blockId },
-    buildDatePatchFromItem(props.item, tomorrowStr, { includeCurrentItemInSiblings: true }),
-  )
-
+  await handlers.value.migrate()
   close()
 }
 
@@ -891,20 +872,8 @@ const handleEditTime = () => {
 }
 
 const onDateChange = async (newDate: string) => {
-  if (!props.item || newDate === props.item.date) return
-
-  try {
-    const success = await writeBlock(
-      { blockId: props.item.blockId },
-      buildDatePatchFromItem(props.item, newDate, { includeCurrentItemInSiblings: true }),
-    )
-
-    if (success) {
-      emit('refresh')
-    }
-  } catch (error) {
-    console.error('[MobileItemDetail] Failed to update date:', error)
-  }
+  if (!handlers.value || newDate === props.item?.date) return
+  await handlers.value.migrateToDate(newDate)
 }
 
 // Edit priority handler
@@ -913,23 +882,8 @@ const handleEditPriority = () => {
 }
 
 const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
-  if (!props.item || newPriority === props.item.priority) return
-
-  try {
-    const success = await writeBlock(
-      { blockId: props.item.blockId },
-      {
-        type: 'setPriority',
-        priority: newPriority,
-      },
-    )
-
-    if (success) {
-      emit('refresh')
-    }
-  } catch (error) {
-    console.error('[MobileItemDetail] Failed to update priority:', error)
-  }
+  if (!handlers.value || newPriority === props.item?.priority) return
+  await handlers.value.setPriority(newPriority)
 }
 
 // 处理时间设置保存
