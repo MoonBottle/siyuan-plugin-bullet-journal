@@ -127,10 +127,10 @@
 
 <script setup lang="ts">
 import type { Item } from '@/types/models'
+import { computed } from 'vue'
 import { t } from '@/i18n'
-import { writeBlock } from '@/utils/blockWriter'
-import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
-import dayjs from '@/utils/dayjs'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
+import { usePlugin } from '@/utils/plugin'
 
 const props = defineProps<{
   modelValue: boolean
@@ -147,16 +147,11 @@ const close = () => {
   emit('update:modelValue', false)
 }
 
+const plugin = usePlugin() as any
+const handlers = computed(() => props.item ? getItemActionHandlers(props.item, plugin, { afterAction: close }) : null)
+
 const handleComplete = async () => {
-  if (!props.item?.blockId) return
-  await writeBlock({
-    blockId: props.item.blockId,
-    listItemBlockId: props.item.listItemBlockId,
-  }, {
-    type: 'setStatus',
-    status: 'completed',
-  })
-  close()
+  await handlers.value?.complete()
 }
 
 const handlePomodoro = () => {
@@ -166,26 +161,11 @@ const handlePomodoro = () => {
 }
 
 const handleMigrate = async () => {
-  if (!props.item?.blockId) return
-  const dateStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
-
-  await writeBlock(
-    { blockId: props.item.blockId },
-    buildDatePatchFromItem(props.item, dateStr, { includeCurrentItemInSiblings: true }),
-  )
-  close()
+  await handlers.value?.migrate()
 }
 
 const handleAbandon = async () => {
-  if (!props.item?.blockId) return
-  await writeBlock({
-    blockId: props.item.blockId,
-    listItemBlockId: props.item.listItemBlockId,
-  }, {
-    type: 'setStatus',
-    status: 'abandoned',
-  })
-  close()
+  await handlers.value?.abandon()
 }
 
 const handleDetail = () => {
