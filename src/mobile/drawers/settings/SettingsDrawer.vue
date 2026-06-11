@@ -60,7 +60,7 @@
                 >
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconCloseRound"></use></svg>
+                      <svg><use xlink:href="#iconTaSquareX"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.hideAbandoned') || '隐藏已放弃' }}</span>
                   </div>
@@ -126,7 +126,7 @@
                 <div class="setting-item version-item">
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconInfo"></use></svg>
+                      <svg><use xlink:href="#iconTaInfo"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.version') || '版本' }}</span>
                   </div>
