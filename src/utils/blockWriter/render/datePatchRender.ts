@@ -11,6 +11,13 @@ import {
 } from '@/parser/core'
 import { isStandaloneBlockRefLine } from '@/parser/lineParser'
 import {
+  insertMarkerBeforeFirst,
+  normalizeMarkerLine,
+  parseMarkerLine,
+  removeMarker,
+  upsertMarker,
+} from '@/utils/blockWriter/render/markerCluster'
+import {
   isTaskListFormat,
   statusToLabel,
 } from '@/utils/blockWriter/shared/itemLineMarkers'
@@ -293,9 +300,7 @@ function rebuildSingleLineContent(
 ): string {
   let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS)
   itemContent = stripListAndBlockAttr(itemContent)
-    .replace(DATE_MARKER_REGEX, '')
     .replace(STATUS_MARKERS_RE, '')
-    .replace(RESIDUAL_DATE_MARKER_REGEX, '')
     .trim()
 
   const dedupedItems = buildUpdatedDateItems(patch, formattedStartTime, formattedEndTime)
@@ -305,7 +310,24 @@ function rebuildSingleLineContent(
   const taskListMarker = taskList ? buildTaskListMarker(status) : ''
   const statusSuffix = buildStatusSuffix(status, taskList)
 
-  return `${taskListMarker}${itemContent} ${optimizedExpr}${statusSuffix}`.trim()
+  const parsed = parseMarkerLine(itemContent)
+  const hasDateMarker = parsed.markers.some((m) => m.kind === 'date')
+
+  let normalizedContent: string
+  if (!optimizedExpr) {
+    normalizedContent = normalizeMarkerLine(removeMarker(parsed, 'date'))
+  } else if (hasDateMarker) {
+    normalizedContent = normalizeMarkerLine(upsertMarker(parsed, 'date', optimizedExpr))
+  } else {
+    const strippedContent = itemContent
+      .replace(DATE_MARKER_REGEX, '')
+      .replace(RESIDUAL_DATE_MARKER_REGEX, '')
+      .trim()
+    const strippedParsed = parseMarkerLine(strippedContent)
+    normalizedContent = normalizeMarkerLine(insertMarkerBeforeFirst(strippedParsed, 'date', optimizedExpr))
+  }
+
+  return `${taskListMarker}${normalizedContent}${statusSuffix}`.trim()
 }
 
 export function renderDatePatch(
@@ -367,9 +389,7 @@ export function renderDatePatch(
   const itemLine = lines[itemLineIndex]
   const cleanedItemLine = stripListAndBlockAttr(itemLine)
   let itemContent = cleanedItemLine
-    .replace(DATE_MARKER_REGEX, '')
     .replace(STATUS_MARKERS_RE, '')
-    .replace(RESIDUAL_DATE_MARKER_REGEX, '')
     .trim()
   itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS)
 
@@ -386,7 +406,25 @@ export function renderDatePatch(
   } else {
     const taskListMarker = taskList ? buildTaskListMarker(status) : ''
     const statusSuffix = buildStatusSuffix(status, taskList)
-    newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr}${statusSuffix}`.trim()
+
+    const parsed = parseMarkerLine(itemContent)
+    const hasDateMarker = parsed.markers.some((m) => m.kind === 'date')
+
+    let normalizedContent: string
+    if (!optimizedExpr) {
+      normalizedContent = normalizeMarkerLine(removeMarker(parsed, 'date'))
+    } else if (hasDateMarker) {
+      normalizedContent = normalizeMarkerLine(upsertMarker(parsed, 'date', optimizedExpr))
+    } else {
+      const strippedContent = itemContent
+        .replace(DATE_MARKER_REGEX, '')
+        .replace(RESIDUAL_DATE_MARKER_REGEX, '')
+        .trim()
+      const strippedParsed = parseMarkerLine(strippedContent)
+      normalizedContent = normalizeMarkerLine(insertMarkerBeforeFirst(strippedParsed, 'date', optimizedExpr))
+    }
+
+    newItemLine = `${taskListMarker}${normalizedContent}${statusSuffix}`.trim()
   }
 
   lines[itemLineIndex] = newItemLine

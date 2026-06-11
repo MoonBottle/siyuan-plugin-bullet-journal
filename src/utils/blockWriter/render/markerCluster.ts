@@ -173,6 +173,37 @@ export function upsertMarker(parsed: ParsedMarkerLine, kind: MarkerKind, raw?: s
   return buildParsedLine(nextSegments)
 }
 
+export function insertMarkerBeforeFirst(parsed: ParsedMarkerLine, kind: MarkerKind, raw: string): ParsedMarkerLine {
+  const nextSegments = parsed.segments.map((segment) => ({ ...segment }))
+  const existingIndex = nextSegments.findIndex((segment) => segment.type === 'marker' && segment.kind === kind)
+
+  if (existingIndex >= 0) {
+    nextSegments[existingIndex] = {
+      type: 'marker',
+      kind,
+      raw,
+    }
+    return buildParsedLine(nextSegments)
+  }
+
+  const firstMarkerIndex = nextSegments.findIndex((segment) => segment.type === 'marker')
+  if (firstMarkerIndex >= 0) {
+    nextSegments.splice(firstMarkerIndex, 0, {
+      type: 'marker',
+      kind,
+      raw,
+    })
+  } else {
+    nextSegments.push({
+      type: 'marker',
+      kind,
+      raw,
+    })
+  }
+
+  return buildParsedLine(nextSegments)
+}
+
 export function removeMarker(parsed: ParsedMarkerLine, kind: MarkerKind): ParsedMarkerLine {
   return buildParsedLine(
     parsed.segments
