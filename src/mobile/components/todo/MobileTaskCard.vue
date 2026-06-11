@@ -54,7 +54,7 @@
         :class="statusClass"
       >
         <svg v-if="item.status === 'completed'"><use xlink:href="#iconCheck"></use></svg>
-        <svg v-else-if="item.status === 'abandoned'"><use xlink:href="#iconCloseRound"></use></svg>
+        <svg v-else-if="item.status === 'abandoned'"><use xlink:href="#iconTaSquareX"></use></svg>
         <svg v-else-if="isExpired"><use xlink:href="#iconWarning"></use></svg>
         <svg
           viewBox="0 0 24 24"
