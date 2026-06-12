@@ -303,7 +303,7 @@
                 @click="showMigrateMenu"
               >
                 <div class="footer-icon-wrapper">
-                  <svg><use xlink:href="#iconForward"></use></svg>
+                  <svg><use xlink:href="#iconTaSunrise"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.migrate') || '迁移' }}</span>
               </button>
@@ -376,21 +376,21 @@
                   class="migrate-option"
                   @click="handleMigrateToToday"
                 >
-                  <svg><use xlink:href="#iconForward"></use></svg>
+                  <svg><use xlink:href="#iconTaSun"></use></svg>
                   <span>{{ (t('todo').today || '今天') as string }}</span>
                 </button>
                 <button
                   class="migrate-option"
                   @click="handleMigrateToTomorrow"
                 >
-                  <svg><use xlink:href="#iconForward"></use></svg>
+                  <svg><use xlink:href="#iconTaSunrise"></use></svg>
                   <span>{{ (t('todo').tomorrow || '明天') as string }}</span>
                 </button>
                 <button
                   class="migrate-option"
                   @click="handleMigrateCustomDate"
                 >
-                  <svg><use xlink:href="#iconTaCalendar"></use></svg>
+                  <svg><use xlink:href="#iconTaCalendarDays"></use></svg>
                   <span>{{ (t('todo').chooseDate || '选择日期...') as string }}</span>
                 </button>
               </div>
