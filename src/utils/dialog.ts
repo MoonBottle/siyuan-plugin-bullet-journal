@@ -138,6 +138,16 @@ function createButtons(buttons: Array<{ text: string, class: string, action: str
 export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
   const showAllDates = options?.showAllDates ?? false
 
+  // 查找同一 Task 下的所有 Item 的 blockId 列表
+  const siblingBlockIds = (() => {
+    const taskItems = item.task?.items
+    if (!taskItems?.length) return undefined
+    const blockIds = taskItems
+      .filter(i => i.blockId)
+      .map(i => i.blockId!)
+    return blockIds.length > 1 ? blockIds : undefined
+  })()
+
   // 创建容器元素
   const container = document.createElement('div')
 
@@ -146,6 +156,7 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     blockId: item.blockId,
     fallbackItem: item,
     showAllDates,
+    siblingBlockIds,
     onClose: () => {
       dialog.destroy()
     },
@@ -274,6 +285,7 @@ export function showEventDetailModal(
     blockId: item.blockId,
     fallbackItem: item,
     showAllDates: hasSiblingItems,
+    siblingBlockIds: event.extendedProps.siblingBlockIds,
     onClose: () => {
       dialog.destroy()
     },
