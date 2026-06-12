@@ -353,6 +353,8 @@ export interface CalendarEvent {
     pomodoroDurationMinutes?: number
     pomodoroDescription?: string
     itemBlockId?: string
+    /** 同一 Task 下所有 Item 的 blockId 列表（有序），用于弹框内左右切换 */
+    siblingBlockIds?: string[]
   }
 }
 
@@ -381,6 +383,10 @@ export interface GanttTaskExtendedProps {
   isMultiDate?: boolean
   segments?: Array<{ startTs: number, endTs: number }>
   priority?: PriorityLevel
+  /** Task 级别节点：该 Task 下第一个 Item 的 blockId */
+  firstItemBlockId?: string
+  /** Task 级别节点：该 Task 下所有 Item 的 blockId 列表（有序） */
+  siblingBlockIds?: string[]
 }
 
 // 甘特图数据
