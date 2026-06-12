@@ -257,6 +257,7 @@
                 v-if="pomodoroRecords.length > 0"
                 class="info-card"
               >
+              <div class=info-item>
                 <div
                   class="section-header"
                   @click="togglePomodoroList"
@@ -999,7 +1000,7 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 .info-card {
   background: var(--b3-theme-surface);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 5px 14px;
   margin-bottom: 6px;
 }
 
@@ -1056,7 +1057,7 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   align-items: center;
   justify-content: space-between;
   min-height: 32px;
-  padding: 6px 0;
+  padding: 3px 0;
   cursor: pointer;
   transition: opacity 0.2s;
 
