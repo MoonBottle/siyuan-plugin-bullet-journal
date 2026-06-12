@@ -367,7 +367,7 @@ function handleOpenCalendar() {
   }
 
   &--active {
-    color: var(--b3-theme-primary);
+    // color: var(--b3-theme-primary);
   }
 
   &--lg {
