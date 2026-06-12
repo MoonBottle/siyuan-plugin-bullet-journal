@@ -229,7 +229,7 @@ function navigateNextItem() {
 
 function findNodeByTaskBlockId(nodes: ProjectTaskTreeNode[], blockId: string): ProjectTaskTreeNode | undefined {
   for (const node of nodes) {
-    if (node.task.blockId === blockId) return node
+    if ((node.task.blockId ?? node.task.id) === blockId) return node
     const found = findNodeByTaskBlockId(node.children, blockId)
     if (found) return found
   }
@@ -291,12 +291,12 @@ function selectTask(taskBlockId: string) {
 function selectItem(itemBlockId: string) {
   const item = findItemByBlockId(selectedProject.value, itemBlockId)
   selectedItemBlockId.value = itemBlockId
-  selectedTaskBlockId.value = item?.task?.blockId ?? ''
+  selectedTaskBlockId.value = item?.task?.blockId ?? item?.task?.id ?? ''
 }
 
 function findTaskByBlockId(project: Project | null, blockId: string): Task | null {
   if (!blockId) return null
-  return project?.tasks.find((task) => task.blockId === blockId) || null
+  return project?.tasks.find((task) => (task.blockId ?? task.id) === blockId) || null
 }
 
 function findItemByBlockId(project: Project | null, blockId: string): Item | null {
