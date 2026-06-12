@@ -324,6 +324,8 @@ export interface CalendarEvent {
   start: string
   end?: string
   allDay: boolean
+  durationEditable?: boolean
+  startEditable?: boolean
   extendedProps: {
     project?: string
     projectLinks?: Link[]
@@ -355,6 +357,10 @@ export interface CalendarEvent {
     itemBlockId?: string
     /** 同一 Task 下所有 Item 的 blockId 列表（有序），用于弹框内左右切换 */
     siblingBlockIds?: string[]
+    /** 仅任务模式下，Task 下首个 Item 的 blockId，用于点击打开详情 */
+    firstItemBlockId?: string
+    /** 仅任务模式下，Task 的进度信息 */
+    taskProgress?: { completed: number, total: number }
   }
 }
 

@@ -111,6 +111,8 @@ export class DataConverter {
       start,
       end,
       allDay,
+      durationEditable: showItems ? undefined : false,
+      startEditable: showItems ? undefined : false,
       extendedProps: {
         project: project.name,
         projectLinks: project.links,
