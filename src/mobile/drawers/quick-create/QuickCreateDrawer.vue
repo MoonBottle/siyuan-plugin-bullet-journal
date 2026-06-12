@@ -1006,7 +1006,8 @@ const handleSubmit = async () => {
 .selector-icon {
   width: 20px;
   height: 20px;
-  // fill: var(--b3-theme-primary);
+  fill: currentColor;
+  stroke: currentColor;
   color: var(--b3-theme-on-surface);
 }
 
