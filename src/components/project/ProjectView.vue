@@ -83,6 +83,7 @@ import type {
   Project,
   Task,
 } from '@/types/models'
+import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree'
 import {
   computed,
   ref,
@@ -184,11 +185,18 @@ const selectedTask = computed(() => findTaskByBlockId(selectedProject.value, sel
 const selectedItem = computed(() => findItemByBlockId(selectedProject.value, selectedItemBlockId.value))
 const detailTask = computed(() => selectedItem.value ? null : selectedTask.value)
 
-// 导航：同 Task 下 Item 切换
+// 导航：同 Task 下 Item 切换（使用过滤后的 items）
+const selectedFilteredNode = computed(() => {
+  const nodes = filteredTaskTree.value.nodes
+  return findNodeByTaskBlockId(nodes, selectedTaskBlockId.value)
+})
+
 const siblingItemBlockIds = computed(() => {
-  const task = selectedTask.value
-  if (!task) return []
-  return task.items.filter((i) => i.blockId).map((i) => i.blockId!)
+  const node = selectedFilteredNode.value
+  if (!node) return []
+  return node.items
+    .map((entry) => ('isMerged' in entry ? entry.blockId : entry.blockId))
+    .filter((blockId): blockId is string => !!blockId)
 })
 
 const itemNavigationInfo = computed(() => {
@@ -217,6 +225,15 @@ function navigateNextItem() {
   if (idx >= 0 && idx < blockIds.length - 1) {
     selectedItemBlockId.value = blockIds[idx + 1]
   }
+}
+
+function findNodeByTaskBlockId(nodes: ProjectTaskTreeNode[], blockId: string): ProjectTaskTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.task.blockId === blockId) return node
+    const found = findNodeByTaskBlockId(node.children, blockId)
+    if (found) return found
+  }
+  return undefined
 }
 
 watch(filteredProjects, (projects) => {

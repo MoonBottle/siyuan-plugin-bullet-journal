@@ -271,7 +271,7 @@ export class DataConverter {
             end,
           } = this.calculateTaskDates(task, filteredItems)
 
-          const taskItemBlockIds = task.items
+          const taskItemBlockIds = filteredItems
             .filter((item) => item.blockId)
             .map((item) => item.blockId!)
 
