@@ -321,7 +321,7 @@
               <!-- 完成 -->
               <button
                 v-if="!isCompletedOrAbandoned"
-                class="footer-btn primary"
+                class="footer-btn"
                 @click="handleComplete"
               >
                 <div class="footer-icon-wrapper">

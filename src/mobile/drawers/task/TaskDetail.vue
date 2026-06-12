@@ -615,23 +615,24 @@ const close = () => {
   transition: all 0.2s ease;
 
   &.checked {
-    background: #22c55e;
-    border-color: #22c55e;
+    // background: #22c55e;
+    // border-color: #22c55e;
+    border: none;
 
     svg {
-      width: 12px;
-      height: 12px;
+      width: 16px;
+      height: 16px;
       fill: white;
     }
   }
 
   &.abandoned {
-    background: #6b7280;
-    border-color: #6b7280;
+    // background: #6b7280;
+    border: none;
 
     svg {
-      width: 10px;
-      height: 10px;
+      width: 16px;
+      height: 16px;
       fill: white;
     }
   }
