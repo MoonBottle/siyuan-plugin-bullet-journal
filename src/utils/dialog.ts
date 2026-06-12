@@ -143,8 +143,8 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     const taskItems = item.task?.items
     if (!taskItems?.length) return undefined
     const blockIds = taskItems
-      .filter(i => i.blockId)
-      .map(i => i.blockId!)
+      .filter((i) => i.blockId)
+      .map((i) => i.blockId!)
     return blockIds.length > 1 ? blockIds : undefined
   })()
 
