@@ -261,7 +261,10 @@
                   class="section-header"
                   @click="togglePomodoroList"
                 >
-                  <span class="section-title">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconTaTomato"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
+                  </div>
                   <div class="section-right">
                     <span class="total-duration">{{ totalPomodoroDuration }}</span>
                     <svg
@@ -1154,8 +1157,8 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
-  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-on-surface-lighter);
+  background: var(--b3-theme-surface-lighter);
   border-radius: 4px;
   flex-shrink: 0;
 }
@@ -1230,8 +1233,8 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 
 .link-item {
   padding: 8px 14px;
-  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.08);
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-on-surface-lighter);
+  background: var(--b3-theme-surface-lighter);
   border-radius: 8px;
   font-size: 13px;
   text-decoration: none;
@@ -1252,8 +1255,8 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 .total-duration {
   font-size: 13px;
   font-weight: 500;
-  color: var(--b3-theme-primary);
-  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  color: var(--b3-theme-on-surface-lighter);
+  background: var(--b3-theme-surface-lighter);
   padding: 4px 10px;
   border-radius: 12px;
 }

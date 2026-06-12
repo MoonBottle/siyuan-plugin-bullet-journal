@@ -272,8 +272,8 @@ export class DataConverter {
           } = this.calculateTaskDates(task, filteredItems)
 
           const taskItemBlockIds = task.items
-            .filter(item => item.blockId)
-            .map(item => item.blockId!)
+            .filter((item) => item.blockId)
+            .map((item) => item.blockId!)
 
           ganttTasks.push({
             id: taskId,
@@ -455,8 +455,8 @@ export class DataConverter {
           } = this.calculateTaskDates(task)
 
           const taskItemBlockIds = task.items
-            .filter(item => item.blockId)
-            .map(item => item.blockId!)
+            .filter((item) => item.blockId)
+            .map((item) => item.blockId!)
 
           ganttTasks.push({
             id: taskId,
