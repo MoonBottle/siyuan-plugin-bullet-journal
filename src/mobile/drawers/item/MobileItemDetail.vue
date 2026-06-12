@@ -1220,6 +1220,10 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 
   &:hover {
     opacity: 0.7;
+
+    .action-arrow {
+      opacity: 0.4;
+    }
   }
 
   &:not(:last-child) {
@@ -1266,7 +1270,7 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   width: 16px;
   height: 16px;
   fill: var(--b3-theme-on-surface);
-  opacity: 0.4;
+  opacity: 0;
   flex-shrink: 0;
 }
 
