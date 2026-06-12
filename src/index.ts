@@ -65,6 +65,7 @@ import {
   ICON_POMODORO,
   ICON_POMODORO_STATS,
   ICON_PROJECT,
+  ICON_REPEAT,
   ICON_SKIP_BREAK,
   ICON_SKIP_FORWARD,
   ICON_SQUARE_CHECK,
@@ -383,6 +384,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_POMODORO)
     this.addIcons(ICON_POMODORO_STATS)
     this.addIcons(ICON_PROJECT)
+    this.addIcons(ICON_REPEAT)
     this.addIcons(ICON_SKIP_BREAK)
     this.addIcons(ICON_SKIP_FORWARD)
     this.addIcons(ICON_SQUARE_CHECK)

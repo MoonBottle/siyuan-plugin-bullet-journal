@@ -220,7 +220,7 @@
                   @click="handleSetRecurring"
                 >
                   <div class="action-icon-wrapper">
-                    <svg><use xlink:href="#iconTaClockPlus"></use></svg>
+                    <svg><use xlink:href="#iconTaRepeat"></use></svg>
                   </div>
                   <span class="action-text">{{ recurringText }}</span>
                   <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
