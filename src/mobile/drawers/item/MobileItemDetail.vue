@@ -257,7 +257,6 @@
                 v-if="pomodoroRecords.length > 0"
                 class="info-card"
               >
-              <div class=info-item>
                 <div
                   class="section-header"
                   @click="togglePomodoroList"
