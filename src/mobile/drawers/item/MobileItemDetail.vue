@@ -1250,10 +1250,10 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 }
 
 // Active 状态下的 icon 保持主题色
-.action-item.active .action-icon-wrapper svg {
-  fill: var(--b3-theme-primary);
-  opacity: 1;
-}
+// .action-item.active .action-icon-wrapper svg {
+//   fill: var(--b3-theme-primary);
+//   opacity: 1;
+// }
 
 .action-text {
   flex: 1;

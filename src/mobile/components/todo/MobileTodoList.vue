@@ -139,7 +139,7 @@
                   <svg
                     v-if="item.repeatRule"
                     class="meta-icon"
-                  ><use xlink:href="#iconRefresh"></use></svg>
+                  ><use xlink:href="#iconTaRepeat"></use></svg>
                   <svg
                     v-if="item.reminder?.enabled"
                     class="meta-icon"
@@ -221,7 +221,7 @@
                   <svg
                     v-if="item.repeatRule"
                     class="meta-icon"
-                  ><use xlink:href="#iconRefresh"></use></svg>
+                  ><use xlink:href="#iconTaRepeat"></use></svg>
                   <svg
                     v-if="item.reminder?.enabled"
                     class="meta-icon"
