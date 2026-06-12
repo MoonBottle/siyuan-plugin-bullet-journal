@@ -88,7 +88,8 @@ export class DataConverter {
       const dates = this.calculateTaskDates(task)
       if (!dates.start) return null
       start = dayjs(dates.start).format('YYYY-MM-DD')
-      end = dates.end ? dayjs(dates.end).format('YYYY-MM-DD') : undefined
+      // FullCalendar allDay 事件的 end 是 exclusive 的，需要 +1 天才能包含最后一天
+      end = dates.end ? dayjs(dates.end).add(1, 'day').format('YYYY-MM-DD') : undefined
       allDay = true
     } else {
       start = task.startDateTime || task.date || ''
