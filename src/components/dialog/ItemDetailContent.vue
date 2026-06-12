@@ -118,6 +118,26 @@
               {{ PRIORITY_CONFIG[props.item.priority].emoji }}
             </div>
             <ItemStatusTag :item="props.item" />
+            <div
+              v-if="navigationInfo && navigationInfo.total > 1"
+              class="item-nav"
+            >
+              <button
+                class="item-nav-btn"
+                :disabled="!navigationInfo.canPrev"
+                @click="emit('navigatePrev')"
+              >
+                <svg><use xlink:href="#iconLeft"></use></svg>
+              </button>
+              <span class="item-nav-indicator">{{ navigationInfo.currentIndex + 1 }} / {{ navigationInfo.total }}</span>
+              <button
+                class="item-nav-btn"
+                :disabled="!navigationInfo.canNext"
+                @click="emit('navigateNext')"
+              >
+                <svg><use xlink:href="#iconRight"></use></svg>
+              </button>
+            </div>
           </div>
         </template>
 
@@ -332,6 +352,7 @@ const props = withDefaults(defineProps<{
   closeOnSiyuanLink?: boolean
   embedded?: boolean
   readonly?: boolean
+  navigationInfo?: { currentIndex: number, total: number, canPrev: boolean, canNext: boolean }
 }>(), {
   showAllDates: false,
   showActionRow: true,
@@ -344,6 +365,8 @@ const emit = defineEmits<{
   close: []
   setReminder: []
   setRecurring: []
+  navigatePrev: []
+  navigateNext: []
 }>()
 
 const DATETIME_PREFIX_RE = /^(?:@|📅)/
@@ -712,6 +735,52 @@ async function handleLinkClick(link: Link) {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.item-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.item-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--b3-theme-background);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+}
+
+.item-nav-indicator {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  min-width: 32px;
+  text-align: center;
+  user-select: none;
 }
 
 .tag-badge {
