@@ -35,7 +35,7 @@
         v-if="item.project"
         class="project-tag"
       >
-        <svg class="project-icon"><use xlink:href="#iconFolder"></use></svg>
+        <svg class="project-icon"><use xlink:href="#iconTaProject"></use></svg>
         {{ item.project.name }}
       </span>
     </div>

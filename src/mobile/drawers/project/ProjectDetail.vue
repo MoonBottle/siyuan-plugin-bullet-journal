@@ -30,7 +30,7 @@
           <div class="project-info-section">
             <div class="project-name-row">
               <div class="project-icon">
-                <svg><use xlink:href="#iconFolder"></use></svg>
+                <svg><use xlink:href="#iconTaProject"></use></svg>
               </div>
               <h2 class="project-name">
                 {{ project.name }}

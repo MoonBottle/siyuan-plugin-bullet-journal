@@ -33,7 +33,7 @@
                 v-if="item.project || item.task"
                 class="item-breadcrumb"
               >
-                <svg class="breadcrumb-icon"><use xlink:href="#iconFolder"></use></svg>
+                <svg class="breadcrumb-icon"><use xlink:href="#iconTaProject"></use></svg>
                 <span
                   v-if="item.project"
                   class="breadcrumb-project"

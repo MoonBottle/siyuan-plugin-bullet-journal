@@ -77,7 +77,7 @@
                   @click="goToProject"
                 >
                   <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconFolder"></use></svg>
+                    <svg class="info-icon"><use xlink:href="#iconTaProject"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.project') || '项目' }}</span>
                   </div>
                   <div class="info-right">

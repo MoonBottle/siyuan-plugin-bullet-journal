@@ -149,7 +149,7 @@
                 @click="selectGroup('')"
               >
                 <div class="option-icon">
-                  <svg><use xlink:href="#iconFolder"></use></svg>
+                  <svg><use xlink:href="#iconTaProject"></use></svg>
                 </div>
                 <span class="option-text">{{ t('settings').projectGroups?.allGroups || '全部分组' }}</span>
                 <svg
@@ -165,7 +165,7 @@
                 @click="selectGroup(group.id)"
               >
                 <div class="option-icon">
-                  <svg><use xlink:href="#iconFolder"></use></svg>
+                  <svg><use xlink:href="#iconTaProject"></use></svg>
                 </div>
                 <span class="option-text">{{ group.name }}</span>
                 <svg

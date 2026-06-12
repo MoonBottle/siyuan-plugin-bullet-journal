@@ -16,7 +16,7 @@
           v-if="selectedItem.project"
           class="item-project"
         >
-          <svg><use xlink:href="#iconFolder"></use></svg>
+          <svg><use xlink:href="#iconTaProject"></use></svg>
           {{ selectedItem.project.name }}
         </div>
         <div
