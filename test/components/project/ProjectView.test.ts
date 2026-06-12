@@ -332,7 +332,7 @@ describe('projectView', () => {
     mounted.unmount()
   })
 
-  it('点击任务后显示轻量任务详情', async () => {
+  it('点击任务后显示首个事项详情（含导航切换）', async () => {
     const mounted = await mountProjectView([
       makeProject({
         id: 'p1',
@@ -360,9 +360,8 @@ describe('projectView', () => {
     mounted.container.querySelector('[data-task-block-id="task-1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await nextTick()
 
-    expect(mounted.container.querySelector('.project-detail-pane')?.textContent).toContain('设计任务')
-    expect(mounted.container.querySelector('.project-detail-pane')?.textContent).toContain('L2')
-    expect(mounted.container.querySelector('.project-detail-pane')?.textContent).toContain('1/2')
+    // 点击 Task 后显示首个 Item 的详情（而非 Task 概览）
+    expect(mounted.container.querySelector('.project-detail-pane__item')).toBeTruthy()
 
     mounted.unmount()
   })

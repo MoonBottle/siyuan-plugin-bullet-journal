@@ -56,6 +56,9 @@
           :show-action-row="false"
           :close-on-siyuan-link="false"
           :embedded="true"
+          :navigation-info="navigationInfo"
+          @navigatePrev="emit('navigatePrev')"
+          @navigateNext="emit('navigateNext')"
         />
         <ItemActionBar
           :show-separator="true"
@@ -105,6 +108,12 @@ const props = defineProps<{
   project: Project | null
   task: Task | null
   item: Item | null
+  navigationInfo?: { currentIndex: number, total: number, canPrev: boolean, canNext: boolean }
+}>()
+
+const emit = defineEmits<{
+  navigatePrev: []
+  navigateNext: []
 }>()
 
 const app = useApp()

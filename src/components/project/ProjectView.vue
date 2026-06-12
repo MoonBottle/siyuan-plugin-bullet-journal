@@ -68,6 +68,9 @@
         :project="selectedProject"
         :task="detailTask"
         :item="selectedItem"
+        :navigation-info="itemNavigationInfo"
+        @navigatePrev="navigatePrevItem"
+        @navigateNext="navigateNextItem"
       />
     </div>
   </div>
@@ -181,6 +184,41 @@ const selectedTask = computed(() => findTaskByBlockId(selectedProject.value, sel
 const selectedItem = computed(() => findItemByBlockId(selectedProject.value, selectedItemBlockId.value))
 const detailTask = computed(() => selectedItem.value ? null : selectedTask.value)
 
+// 导航：同 Task 下 Item 切换
+const siblingItemBlockIds = computed(() => {
+  const task = selectedTask.value
+  if (!task) return []
+  return task.items.filter((i) => i.blockId).map((i) => i.blockId!)
+})
+
+const itemNavigationInfo = computed(() => {
+  const blockIds = siblingItemBlockIds.value
+  if (blockIds.length <= 1) return undefined
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  return {
+    currentIndex: idx >= 0 ? idx : 0,
+    total: blockIds.length,
+    canPrev: idx > 0,
+    canNext: idx >= 0 && idx < blockIds.length - 1,
+  }
+})
+
+function navigatePrevItem() {
+  const blockIds = siblingItemBlockIds.value
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  if (idx > 0) {
+    selectedItemBlockId.value = blockIds[idx - 1]
+  }
+}
+
+function navigateNextItem() {
+  const blockIds = siblingItemBlockIds.value
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  if (idx >= 0 && idx < blockIds.length - 1) {
+    selectedItemBlockId.value = blockIds[idx + 1]
+  }
+}
+
 watch(filteredProjects, (projects) => {
   if (projects.some((project) => project.id === selectedProjectId.value)) return
   selectedProjectId.value = projects[0]?.id || ''
@@ -227,7 +265,10 @@ function toggleTask(taskBlockId: string) {
 
 function selectTask(taskBlockId: string) {
   selectedTaskBlockId.value = taskBlockId
-  selectedItemBlockId.value = ''
+  // 选中 Task 时，自动选中其下第一个 Item，支持导航切换
+  const task = findTaskByBlockId(selectedProject.value, taskBlockId)
+  const firstItemBlockId = task?.items.find((i) => i.blockId)?.blockId ?? ''
+  selectedItemBlockId.value = firstItemBlockId
 }
 
 function selectItem(itemBlockId: string) {
