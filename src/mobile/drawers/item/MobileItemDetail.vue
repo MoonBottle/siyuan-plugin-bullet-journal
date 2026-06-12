@@ -199,32 +199,36 @@
               <!-- Quick Actions -->
               <div
                 v-if="!isCompletedOrAbandoned"
-                class="actions-card"
+                class="info-card"
               >
-                <button
-                  class="action-item"
+                <div
+                  class="info-item editable"
                   :class="{ active: hasReminder }"
                   @click="handleSetReminder"
                 >
-                  <div class="action-icon-wrapper">
-                    <svg><use xlink:href="#iconTaAlarmClock"></use></svg>
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconTaAlarmClock"></use></svg>
+                    <span class="info-label">{{ reminderText }}</span>
                   </div>
-                  <span class="action-text">{{ reminderText }}</span>
-                  <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
-                </button>
+                  <div class="info-right">
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
 
-                <button
+                <div
                   v-if="canSetRecurring"
-                  class="action-item"
+                  class="info-item editable"
                   :class="{ active: hasRecurring }"
                   @click="handleSetRecurring"
                 >
-                  <div class="action-icon-wrapper">
-                    <svg><use xlink:href="#iconTaRepeat"></use></svg>
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconTaRepeat"></use></svg>
+                    <span class="info-label">{{ recurringText }}</span>
                   </div>
-                  <span class="action-text">{{ recurringText }}</span>
-                  <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
-                </button>
+                  <div class="info-right">
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
               </div>
 
               <!-- Links -->
@@ -988,8 +992,7 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 
 // Cards - 更紧凑
 .content-card,
-.info-card,
-.actions-card {
+.info-card {
   background: var(--b3-theme-surface);
   border-radius: 10px;
   padding: 10px 14px;
@@ -1072,6 +1075,12 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   &.editable {
     .arrow-icon {
       opacity: 0.4;
+    }
+  }
+
+  &.active {
+    .info-label {
+      color: var(--b3-theme-primary);
     }
   }
 }
@@ -1208,73 +1217,6 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 
   &.expanded {
     transform: rotate(180deg);
-  }
-}
-
-.action-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 0.7;
-  }
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--b3-border-color);
-  }
-
-  &.active {
-    .action-text {
-      color: var(--b3-theme-primary);
-    }
-  }
-}
-
-.action-icon-wrapper {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--b3-theme-on-surface);
-    opacity: 0.7;
-  }
-}
-
-// Active 状态下的 icon 保持主题色
-// .action-item.active .action-icon-wrapper svg {
-//   fill: var(--b3-theme-primary);
-//   opacity: 1;
-// }
-
-.action-text {
-  flex: 1;
-  font-size: 14px;
-  color: var(--b3-theme-on-surface);
-  text-align: left;
-}
-
-.action-arrow {
-  width: 16px;
-  height: 16px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.4;
-  flex-shrink: 0;
-
-  svg {
-    fill: currentColor;
   }
 }
 
