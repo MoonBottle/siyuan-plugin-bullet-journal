@@ -115,6 +115,10 @@ export class DataConverter {
     const start = item.startDateTime || item.date
     const end = item.endDateTime || item.startDateTime || item.date
 
+    const taskItemBlockIds = [...new Set(task.items
+      .filter((i) => i.blockId)
+      .map((i) => i.blockId!))]
+
     return {
       id: item.id,
       title: item.content,
@@ -139,6 +143,7 @@ export class DataConverter {
         originalEndDateTime: item.endDateTime,
         timePrecision: item.timePrecision,
         siblingItems: item.siblingItems,
+        siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
         dateRangeStart: item.dateRangeStart,
         dateRangeEnd: item.dateRangeEnd,
         pomodoros: item.pomodoros,
@@ -271,9 +276,9 @@ export class DataConverter {
             end,
           } = this.calculateTaskDates(task, filteredItems)
 
-          const taskItemBlockIds = filteredItems
+          const taskItemBlockIds = [...new Set(filteredItems
             .filter((item) => item.blockId)
-            .map((item) => item.blockId!)
+            .map((item) => item.blockId!))]
 
           ganttTasks.push({
             id: taskId,
@@ -456,9 +461,9 @@ export class DataConverter {
             end,
           } = this.calculateTaskDates(task)
 
-          const taskItemBlockIds = task.items
+          const taskItemBlockIds = [...new Set(task.items
             .filter((item) => item.blockId)
-            .map((item) => item.blockId!)
+            .map((item) => item.blockId!))]
 
           ganttTasks.push({
             id: taskId,
