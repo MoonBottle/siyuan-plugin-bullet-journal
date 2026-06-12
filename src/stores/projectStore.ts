@@ -7,6 +7,7 @@ import type {
   CheckInRecord,
   Habit,
   Item,
+  ItemStatus,
   PomodoroRecord,
   PriorityLevel,
   Project,
@@ -403,6 +404,10 @@ export const useProjectStore = defineStore('project', {
     // 从 projects 计算日历事件（自动缓存）
     calendarEvents: (state): CalendarEvent[] => {
       return DataConverter.projectsToCalendarEvents(state.projects)
+    },
+
+    getCalendarEvents: (state) => (showItems: boolean, itemStatusFilter?: ItemStatus[]) => {
+      return DataConverter.projectsToCalendarEvents(state.projects, itemStatusFilter, showItems)
     },
 
     // blockId -> Item 索引（用于快速查找）

@@ -66,7 +66,9 @@ import {
   showTooltip,
 } from '@/utils/tooltip'
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showItems: true,
+})
 
 const emit = defineEmits<{
   (e: 'eventClick', event: any): void
@@ -178,6 +180,7 @@ const renderEventContent = (arg: any) => {
   )
 
   const isItem = arg.event.extendedProps?.item !== undefined
+  const taskProgress = arg.event.extendedProps?.taskProgress
 
   // 计算事件持续时间（分钟）
   const eventStart = arg.event.start
@@ -219,6 +222,16 @@ const renderEventContent = (arg: any) => {
       taskEl.className = 'fc-event-task'
       taskEl.textContent = taskName
       line1.appendChild(taskEl)
+    }
+    if (!isItem && taskProgress) {
+      const progressEl = document.createElement('span')
+      progressEl.className = 'fc-event-progress'
+      progressEl.textContent = ` ${taskProgress.completed}/${taskProgress.total}`
+      if (line1) {
+        line1.appendChild(progressEl)
+      } else {
+        container.appendChild(progressEl)
+      }
     }
     if (startTime) {
       const timeEl = document.createElement('span')
@@ -265,6 +278,7 @@ interface Props {
   initialView?: string
   dateClickBehavior?: 'click' | 'dblclick'
   itemStatusFilter?: ItemStatus[]
+  showItems?: boolean
 }
 
 const calendarEl = ref<HTMLElement | null>(null)
@@ -403,6 +417,7 @@ onMounted(async () => {
       eventDisplay: 'block',
       eventAllow: (dropInfo: any, event: any) => {
         if (event.extendedProps?.isPomodoroBlock) return false
+        if (!props.showItems && event.extendedProps?.item === undefined) return false
         return true
       },
       selectable: true,
@@ -424,6 +439,40 @@ onMounted(async () => {
             const item = projectStore.getItemByBlockId(itemBlockId)
             if (item) {
               showItemDetailModal(item, { showAllDates: true })
+              return
+            }
+          }
+        }
+        // 仅任务模式下，Task 事件点击打开首个 Item 详情
+        if (!props.showItems && info.event.extendedProps?.item === undefined) {
+          const firstItemBlockId = info.event.extendedProps?.firstItemBlockId as string | undefined
+          if (firstItemBlockId) {
+            const firstItem = projectStore.getItemByBlockId(firstItemBlockId)
+            if (firstItem) {
+              const eventData: CalendarEvent = {
+                id: firstItemBlockId,
+                title: firstItem.content || info.event.title,
+                start: firstItem.startDateTime || firstItem.date,
+                end: firstItem.endDateTime || firstItem.startDateTime || firstItem.date,
+                allDay: !firstItem.startDateTime,
+                extendedProps: {
+                  ...info.event.extendedProps,
+                  item: firstItem.content,
+                  itemStatus: firstItem.status,
+                  itemLinks: firstItem.links,
+                  hasItems: true,
+                  docId: firstItem.docId,
+                  lineNumber: firstItem.lineNumber,
+                  blockId: firstItem.blockId,
+                  date: firstItem.date,
+                  originalStartDateTime: firstItem.startDateTime,
+                  originalEndDateTime: firstItem.endDateTime,
+                  siblingItems: firstItem.siblingItems,
+                  pomodoros: firstItem.pomodoros,
+                  priority: firstItem.priority,
+                },
+              }
+              showEventDetailModal(eventData)
               return
             }
           }
@@ -763,6 +812,12 @@ defineExpose({
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .fc-event-progress {
+      font-size: 0.85em;
+      opacity: 0.7;
+      margin-left: 4px;
     }
   }
 
