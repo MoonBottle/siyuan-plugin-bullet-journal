@@ -257,34 +257,36 @@
                 v-if="pomodoroRecords.length > 0"
                 class="info-card"
               >
-                <div
-                  class="section-header"
-                  @click="togglePomodoroList"
-                >
-                  <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconTaTomato"></use></svg>
-                    <span class="info-label">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
-                  </div>
-                  <div class="section-right">
-                    <span class="total-duration">{{ totalPomodoroDuration }}</span>
-                    <svg
-                      class="toggle-icon"
-                      :class="{ expanded: showPomodoroList }"
-                    ><use xlink:href="#iconDown"></use></svg>
-                  </div>
-                </div>
-                <div
-                  v-show="showPomodoroList"
-                  class="pomodoro-list"
-                >
+                <div class="item-info">
                   <div
-                    v-for="p in pomodoroRecords"
-                    :key="p.id"
-                    class="pomodoro-item"
+                    class="section-header"
+                    @click="togglePomodoroList"
                   >
-                    <span class="pomodoro-date">{{ p.date }}</span>
-                    <span class="pomodoro-time">{{ formatPomodoroTime(p) }}</span>
-                    <span class="pomodoro-duration">{{ formatPomodoroDuration(p) }}</span>
+                    <div class="info-left">
+                      <svg class="info-icon"><use xlink:href="#iconTaTomato"></use></svg>
+                      <span class="info-label">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
+                    </div>
+                    <div class="section-right">
+                      <span class="total-duration">{{ totalPomodoroDuration }}</span>
+                      <svg
+                        class="toggle-icon"
+                        :class="{ expanded: showPomodoroList }"
+                      ><use xlink:href="#iconDown"></use></svg>
+                    </div>
+                  </div>
+                  <div
+                    v-show="showPomodoroList"
+                    class="pomodoro-list"
+                  >
+                    <div
+                      v-for="p in pomodoroRecords"
+                      :key="p.id"
+                      class="pomodoro-item"
+                    >
+                      <span class="pomodoro-date">{{ p.date }}</span>
+                      <span class="pomodoro-time">{{ formatPomodoroTime(p) }}</span>
+                      <span class="pomodoro-duration">{{ formatPomodoroDuration(p) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1051,7 +1053,8 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 }
 
 // Info items - 更紧凑
-.info-item {
+.info-item,
+.item-info {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1085,6 +1088,25 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
   &.active {
     .info-label {
       color: var(--b3-theme-primary);
+    }
+  }
+}
+
+// item-info - 可展开的包裹容器
+.item-info {
+  flex-direction: column;
+  align-items: stretch;
+  cursor: default;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .section-header {
+    cursor: pointer;
+
+    &:active {
+      opacity: 0.7;
     }
   }
 }
