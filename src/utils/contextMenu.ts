@@ -116,14 +116,14 @@ export function createItemMenu(
       })
       items.push({
         label: t('todo').setFocusPlan,
-        icon: 'iconTaTarget',
+        icon: 'iconTaClockPlus',
         click: () => handlers.focusPlan(),
       })
     }
 
     items.push({
       label: t('todo').migrate,
-      icon: 'iconTaSun',
+      icon: 'iconTaCalendarDays',
       submenu: (() => {
         const todayStr = getTodayISO()
         const tomorrowStr = getTomorrowISO()
@@ -189,7 +189,7 @@ export function createItemMenu(
 
     items.push({
       label: item.pinned ? t('todo').unpin : t('todo').pin,
-      icon: item.pinned ? 'iconTaPin' : 'iconTaPin',
+      icon: item.pinned ? 'iconUnpin' : 'iconPin',
       click: () => handlers.togglePinned(),
     })
 

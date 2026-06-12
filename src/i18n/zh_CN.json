@@ -249,6 +249,7 @@
     "showReminderRecurring": "显示提醒与重复",
     "hideReminderRecurring": "隐藏提醒与重复",
     "startFocusAria": "开始专注",
+    "setFocusPlan": "设置预计",
     "collapseAll": "全部折叠",
     "expandAll": "全部展开",
     "searchPlaceholder": "搜索事项...",

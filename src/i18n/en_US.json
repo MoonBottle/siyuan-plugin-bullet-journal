@@ -249,6 +249,7 @@
     "showReminderRecurring": "Show reminder & recurring",
     "hideReminderRecurring": "Hide reminder & recurring",
     "startFocusAria": "Start Focus",
+    "setFocusPlan": "Set Focus Plan",
     "collapseAll": "Collapse All",
     "expandAll": "Expand All",
     "searchPlaceholder": "Search items...",
