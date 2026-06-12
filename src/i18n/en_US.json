@@ -53,7 +53,8 @@
     "weekNumber": "W{num}",
     "navLinkHint": "Go to $0",
     "weekDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    "yearMonthFormat": "{year}/{month}"
+    "yearMonthFormat": "{year}/{month}",
+    "itemsOnly": "Items Only"
   },
   "gantt": {
     "title": "Gantt Chart",
