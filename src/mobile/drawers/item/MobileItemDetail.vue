@@ -207,7 +207,7 @@
                   @click="handleSetReminder"
                 >
                   <div class="action-icon-wrapper">
-                    <svg><use xlink:href="#iconClock"></use></svg>
+                    <svg><use xlink:href="#iconTaAlarmClock"></use></svg>
                   </div>
                   <span class="action-text">{{ reminderText }}</span>
                   <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
