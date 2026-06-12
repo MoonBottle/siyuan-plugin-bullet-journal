@@ -105,19 +105,10 @@
         :hover-effect="false"
       >
         <template #header>
-          <div class="card-label">
-            {{ t('todo').item }}
-          </div>
-          <div class="header-tags">
-            <div
-              v-if="props.item.priority"
-              class="priority-emoji"
-              @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
-              @mouseleave="hideTooltip"
-            >
-              {{ PRIORITY_CONFIG[props.item.priority].emoji }}
+          <div class="card-label-row">
+            <div class="card-label">
+              {{ t('todo').item }}
             </div>
-            <ItemStatusTag :item="props.item" />
             <div
               v-if="navigationInfo && navigationInfo.total > 1"
               class="item-nav"
@@ -138,6 +129,17 @@
                 <svg><use xlink:href="#iconRight"></use></svg>
               </button>
             </div>
+          </div>
+          <div class="header-tags">
+            <div
+              v-if="props.item.priority"
+              class="priority-emoji"
+              @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
+              @mouseleave="hideTooltip"
+            >
+              {{ PRIORITY_CONFIG[props.item.priority].emoji }}
+            </div>
+            <ItemStatusTag :item="props.item" />
           </div>
         </template>
 
@@ -596,6 +598,12 @@ async function handleLinkClick(link: Link) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-label {
