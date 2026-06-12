@@ -501,6 +501,7 @@ import {
 } from '@/parser/recurringParser'
 import { useSettingsStore } from '@/stores'
 import { writeBlock } from '@/utils/blockWriter'
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches'
 import {
   calculateDuration,
   formatDateLabel,

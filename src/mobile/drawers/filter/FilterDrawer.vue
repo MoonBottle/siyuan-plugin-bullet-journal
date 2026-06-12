@@ -400,7 +400,7 @@ watch(() => props.modelValue, (val) => {
   }
 })
 
-const dateOptions = [
+const dateOptions: { value: TodoDateFilterType, label: string }[] = [
   {
     value: 'today',
     label: t('todo').dateFilter?.today || '今天',
