@@ -271,6 +271,10 @@ export class DataConverter {
             end,
           } = this.calculateTaskDates(task, filteredItems)
 
+          const taskItemBlockIds = task.items
+            .filter(item => item.blockId)
+            .map(item => item.blockId!)
+
           ganttTasks.push({
             id: taskId,
             text: task.name,
@@ -280,6 +284,12 @@ export class DataConverter {
             type: 'task',
             open: true,
             progress: 0,
+            extendedProps: {
+              task: task.name,
+              docId: task.items[0]?.docId ?? '',
+              firstItemBlockId: taskItemBlockIds[0],
+              siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
+            },
           })
 
           // 添加工作事项（使用已过滤的 filteredItems，此时 filteredItems 必不为空）
@@ -444,6 +454,10 @@ export class DataConverter {
             end,
           } = this.calculateTaskDates(task)
 
+          const taskItemBlockIds = task.items
+            .filter(item => item.blockId)
+            .map(item => item.blockId!)
+
           ganttTasks.push({
             id: taskId,
             text: task.name,
@@ -453,6 +467,12 @@ export class DataConverter {
             type: 'task',
             open: true,
             progress: 0,
+            extendedProps: {
+              task: task.name,
+              docId: task.items[0]?.docId ?? '',
+              firstItemBlockId: taskItemBlockIds[0],
+              siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
+            },
           })
         }
       }
