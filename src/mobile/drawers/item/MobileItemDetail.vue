@@ -176,7 +176,7 @@
                   @click="handleEditPriority"
                 >
                   <div class="info-left">
-                    <svg class="info-icon priority-icon"><use xlink:href="#iconMark"></use></svg>
+                    <svg class="info-icon priority-icon"><use xlink:href="#iconTaFlag"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.priority') || '优先级' }}</span>
                   </div>
                   <div class="info-right">
