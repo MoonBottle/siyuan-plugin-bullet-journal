@@ -29,6 +29,11 @@
         :options="statusOptions"
         :placeholder="t('common').statusFilter"
       />
+      <!-- 层级切换 -->
+      <SySelect
+        v-model="displayLevel"
+        :options="displayLevelOptions"
+      />
       <!-- 视图切换 -->
       <SySelect
         v-model="currentView"
@@ -51,6 +56,7 @@
         :initial-view="currentView"
         :date-click-behavior="settingsStore.calendarDateClickBehavior"
         :item-status-filter="effectiveStatusFilter"
+        :show-items="showItems"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -157,11 +163,28 @@ const effectiveStatusFilter = computed(() => {
   return selectedStatuses.value as ItemStatus[]
 })
 
+const displayLevelOptions = [
+  {
+    value: 'item',
+    label: t('calendar').itemsOnly,
+  },
+  {
+    value: 'task',
+    label: t('gantt').tasksOnly,
+  },
+]
+
+const displayLevel = ref<string | number>('item')
+const showItems = computed(() => displayLevel.value === 'item')
+
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
-  const events = projectStore.getFilteredCalendarEvents(selectedGroup.value)
-  console.log('[Task Assistant] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value)
-  return events
+  const events = projectStore.getCalendarEvents(showItems.value, effectiveStatusFilter.value)
+  if (!selectedGroup.value) return events
+  return events.filter((e) => {
+    const project = projectStore.projects.find((p) => p.id === e.extendedProps.docId)
+    return project?.groupId === selectedGroup.value
+  })
 })
 
 // 当前日历显示的日期（YYYY-MM-DD）
