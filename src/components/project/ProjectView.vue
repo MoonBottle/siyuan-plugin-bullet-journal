@@ -282,10 +282,12 @@ function toggleTask(taskBlockId: string) {
 
 function selectTask(taskBlockId: string) {
   selectedTaskBlockId.value = taskBlockId
-  // 选中 Task 时，自动选中其下第一个 Item，支持导航切换
-  const task = findTaskByBlockId(selectedProject.value, taskBlockId)
-  const firstItemBlockId = task?.items.find((i) => i.blockId)?.blockId ?? ''
-  selectedItemBlockId.value = firstItemBlockId
+  // 从过滤后的节点中获取第一个 Item 的 blockId，确保与导航列表一致
+  const node = findNodeByTaskBlockId(filteredTaskTree.value.nodes, taskBlockId)
+  const firstBlockId = node?.items
+    ?.map((entry) => ('isMerged' in entry ? entry.blockId : entry.blockId))
+    ?.find((blockId): blockId is string => !!blockId) ?? ''
+  selectedItemBlockId.value = firstBlockId
 }
 
 function selectItem(itemBlockId: string) {
