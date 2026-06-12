@@ -103,6 +103,7 @@ export interface WorkbenchProjectViewConfig {
 
 export interface WorkbenchCalendarViewConfig {
   defaultView?: string
+  showItems?: boolean
   groupId?: string
   itemStatusFilter?: ItemStatus[]
 }

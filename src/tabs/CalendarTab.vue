@@ -112,6 +112,7 @@ import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 const props = withDefaults(defineProps<{
   embedded?: boolean
   defaultView?: string
+  showItems?: boolean
   groupId?: string
   itemStatusFilter?: ItemStatus[]
 }>(), {
@@ -174,7 +175,7 @@ const displayLevelOptions = [
   },
 ]
 
-const displayLevel = ref<string | number>('item')
+const displayLevel = ref<string | number>(props.showItems === false ? 'task' : 'item')
 const showItems = computed(() => displayLevel.value === 'item')
 
 // 当前分组下的日历事件
@@ -365,6 +366,12 @@ watch(() => props.itemStatusFilter, (val) => {
 watch(() => props.defaultView, (val) => {
   if (props.embedded && val && val !== currentView.value) {
     currentView.value = val
+  }
+})
+
+watch(() => props.showItems, (val) => {
+  if (val !== undefined) {
+    displayLevel.value = val ? 'item' : 'task'
   }
 })
 

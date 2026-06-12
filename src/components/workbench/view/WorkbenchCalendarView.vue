@@ -3,6 +3,7 @@
     <CalendarTab
       embedded
       :default-view="config.defaultView"
+      :show-items="config.showItems"
       :group-id="config.groupId"
       :item-status-filter="config.itemStatusFilter"
     />

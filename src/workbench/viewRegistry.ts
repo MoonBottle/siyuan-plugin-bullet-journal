@@ -164,6 +164,7 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       type: 'calendar',
       createDefaultConfig: () => ({
         defaultView: 'timeGridDay',
+        showItems: true,
         groupId: '',
         itemStatusFilter: undefined,
       }) as Record<string, unknown>,
@@ -175,12 +176,14 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         openCalendarViewConfigDialog({
           initialConfig: {
             defaultView: config?.defaultView,
+            showItems: config?.showItems,
             groupId: config?.groupId,
             itemStatusFilter: config?.itemStatusFilter,
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               defaultView: nextConfig.defaultView,
+              showItems: nextConfig.showItems,
               groupId: nextConfig.groupId,
               itemStatusFilter: nextConfig.itemStatusFilter,
             })

@@ -127,7 +127,7 @@
                     @click="handleSetReminder"
                   >
                     <div class="action-icon-wrapper">
-                      <svg><use xlink:href="#iconClock"></use></svg>
+                      <svg><use xlink:href="#iconTaAlarmClock"></use></svg>
                     </div>
                     <span class="action-text">{{ reminderText }}</span>
                     <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -139,7 +139,7 @@
                     @click="handleSetRecurring"
                   >
                     <div class="action-icon-wrapper">
-                      <svg><use xlink:href="#iconTaClockPlus"></use></svg>
+                      <svg><use xlink:href="#iconTaRepeat"></use></svg>
                     </div>
                     <span class="action-text">{{ recurringText }}</span>
                     <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -1273,7 +1273,7 @@ const handleSubmit = async () => {
   svg {
     width: 18px;
     height: 18px;
-    fill: var(--b3-theme-primary);
+    fill: var(--b3-theme-on-surface);
   }
 }
 

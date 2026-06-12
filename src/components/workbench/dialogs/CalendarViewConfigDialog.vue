@@ -13,6 +13,15 @@
       </div>
       <div class="calendar-config-dialog__field">
         <label class="calendar-config-dialog__label">
+          {{ t('gantt').displayLevel }}
+        </label>
+        <SySelect
+          v-model="displayLevel"
+          :options="displayLevelOptions"
+        />
+      </div>
+      <div class="calendar-config-dialog__field">
+        <label class="calendar-config-dialog__label">
           {{ t('settings').projectGroups.title }}
         </label>
         <SySelect
@@ -77,7 +86,26 @@ const props = defineProps<{
 
 const settingsStore = useSettingsStore()
 const selectedView = ref(props.initialConfig.defaultView ?? 'timeGridDay')
+const showItems = ref(props.initialConfig.showItems ?? true)
 const selectedGroup = ref(props.initialConfig.groupId ?? '')
+
+const displayLevelOptions = [
+  {
+    value: 'item',
+    label: t('calendar').itemsOnly,
+  },
+  {
+    value: 'task',
+    label: t('gantt').tasksOnly,
+  },
+]
+
+const displayLevel = computed({
+  get: () => showItems.value ? 'item' : 'task',
+  set: (val: string | number | (string | number)[]) => {
+    showItems.value = val === 'item'
+  },
+})
 
 const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
 const selectedStatuses = ref<(string | number)[]>(
@@ -138,6 +166,7 @@ const groupOptions = computed(() => [
 function handleConfirm() {
   props.onConfirm({
     defaultView: selectedView.value || undefined,
+    showItems: showItems.value,
     groupId: selectedGroup.value || undefined,
     itemStatusFilter: selectedStatuses.value.length < ALL_STATUSES.length ? [...selectedStatuses.value] as ItemStatus[] : undefined,
   })
