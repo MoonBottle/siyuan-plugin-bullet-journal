@@ -345,6 +345,7 @@ export class DataConverter {
                     dateRangeStart: item.dateRangeStart,
                     dateRangeEnd: item.dateRangeEnd,
                     pomodoros: item.pomodoros,
+                    siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
                   },
                 })
               }
@@ -406,6 +407,7 @@ export class DataConverter {
                   pomodoros: firstItem.pomodoros,
                   isMultiDate: true,
                   segments: ganttSegments,
+                  siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
                 },
               })
             }

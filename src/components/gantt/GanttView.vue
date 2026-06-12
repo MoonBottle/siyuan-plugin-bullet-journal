@@ -114,6 +114,7 @@ const buildCalendarEventFromGanttTask = (task: any): CalendarEvent => {
       originalStartDateTime: props.originalStartDateTime,
       originalEndDateTime: props.originalEndDateTime,
       siblingItems: props.siblingItems,
+      siblingBlockIds: props.siblingBlockIds,
       dateRangeStart: props.dateRangeStart,
       dateRangeEnd: props.dateRangeEnd,
       pomodoros: props.pomodoros,
