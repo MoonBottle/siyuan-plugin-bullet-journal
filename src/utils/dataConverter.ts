@@ -83,9 +83,10 @@ export class DataConverter {
     let start: string
     let end: string | undefined
     let allDay: boolean
+    let dates: { start: Date | undefined, end: Date | undefined } | undefined
 
     if (!showItems) {
-      const dates = this.calculateTaskDates(task)
+      dates = this.calculateTaskDates(task)
       if (!dates.start) return null
       start = dayjs(dates.start).format('YYYY-MM-DD')
       // FullCalendar allDay 事件的 end 是 exclusive 的
@@ -106,6 +107,14 @@ export class DataConverter {
       .filter((i) => i.blockId)
       .map((i) => i.blockId!))]
     const completedCount = task.items.filter((i) => i.status === 'completed').length
+
+    // 仅任务模式下的日期范围（用于 tooltip 显示）
+    const taskDateRange = dates?.start
+      ? {
+          dateRangeStart: dayjs(dates.start).format('YYYY-MM-DD'),
+          dateRangeEnd: dates.end ? dayjs(dates.end).format('YYYY-MM-DD') : undefined,
+        }
+      : {}
 
     return {
       id: task.id,
@@ -134,6 +143,7 @@ export class DataConverter {
               total: task.items.length,
             }
           : undefined,
+        ...taskDateRange,
       },
     }
   }

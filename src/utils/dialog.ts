@@ -219,6 +219,11 @@ export function buildItemFromEventProps(event: CalendarEvent): Item {
     || (!event.allDay && (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : '')))
     || ''
 
+  // Task 级别事件：item 为空，content 留空；日期范围从 extendedProps 获取
+  const isTaskEvent = !props.item
+  const dateRangeStart = isTaskEvent ? (props.dateRangeStart || undefined) : props.dateRangeStart
+  const dateRangeEnd = isTaskEvent ? (props.dateRangeEnd || undefined) : props.dateRangeEnd
+
   return {
     id: props.blockId || '',
     content: props.item || '',
@@ -253,8 +258,8 @@ export function buildItemFromEventProps(event: CalendarEvent): Item {
     startDateTime: startForTime || undefined,
     endDateTime: endForTime || undefined,
     siblingItems: props.siblingItems,
-    dateRangeStart: props.dateRangeStart,
-    dateRangeEnd: props.dateRangeEnd,
+    dateRangeStart,
+    dateRangeEnd,
     reminder: props.reminder,
     repeatRule: props.repeatRule,
     endCondition: props.endCondition,

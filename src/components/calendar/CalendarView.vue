@@ -547,13 +547,45 @@ onMounted(async () => {
           handleCalendarEventContextMenu(info, e)
         }, true)
         info.el.addEventListener('mouseenter', (e: MouseEvent) => {
-          const eventData: CalendarEvent = {
+          let eventData: CalendarEvent = {
             id: info.event.id,
             title: info.event.title,
             start: info.event.startStr,
             end: info.event.endStr,
             allDay: info.event.allDay,
             extendedProps: info.event.extendedProps as CalendarEvent['extendedProps'],
+          }
+          // 仅任务模式下，Task 事件 tooltip 显示首个 Item 详情
+          if (!props.showItems && info.event.extendedProps?.item === undefined) {
+            const firstItemBlockId = info.event.extendedProps?.firstItemBlockId as string | undefined
+            if (firstItemBlockId) {
+              const firstItem = projectStore.getItemByBlockId(firstItemBlockId)
+              if (firstItem) {
+                eventData = {
+                  id: firstItemBlockId,
+                  title: firstItem.content || info.event.title,
+                  start: firstItem.startDateTime || firstItem.date,
+                  end: firstItem.endDateTime || firstItem.startDateTime || firstItem.date,
+                  allDay: !firstItem.startDateTime,
+                  extendedProps: {
+                    ...info.event.extendedProps,
+                    item: firstItem.content,
+                    itemStatus: firstItem.status,
+                    itemLinks: firstItem.links,
+                    hasItems: true,
+                    docId: firstItem.docId,
+                    lineNumber: firstItem.lineNumber,
+                    blockId: firstItem.blockId,
+                    date: firstItem.date,
+                    originalStartDateTime: firstItem.startDateTime,
+                    originalEndDateTime: firstItem.endDateTime,
+                    siblingItems: firstItem.siblingItems,
+                    pomodoros: firstItem.pomodoros,
+                    priority: firstItem.priority,
+                  },
+                }
+              }
+            }
           }
           eventTooltipRef.value?.show(eventData, info.el, 300, e)
         })
