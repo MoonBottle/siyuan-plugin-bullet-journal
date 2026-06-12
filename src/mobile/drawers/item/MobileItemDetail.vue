@@ -1126,9 +1126,13 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 .arrow-icon {
   width: 16px;
   height: 16px;
-  fill: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-surface);
   opacity: 0;
   flex-shrink: 0;
+
+  svg {
+    fill: currentColor;
+  }
 
   .info-item.editable &,
   .info-item:not(.readonly) & {
@@ -1220,10 +1224,6 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 
   &:hover {
     opacity: 0.7;
-
-    .action-arrow {
-      opacity: 0.4;
-    }
   }
 
   &:not(:last-child) {
@@ -1269,9 +1269,13 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean, startTime?: strin
 .action-arrow {
   width: 16px;
   height: 16px;
-  fill: var(--b3-theme-on-surface);
-  opacity: 0;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.4;
   flex-shrink: 0;
+
+  svg {
+    fill: currentColor;
+  }
 }
 
 // Links
