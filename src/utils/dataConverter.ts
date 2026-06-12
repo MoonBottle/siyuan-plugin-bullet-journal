@@ -88,8 +88,10 @@ export class DataConverter {
       const dates = this.calculateTaskDates(task)
       if (!dates.start) return null
       start = dayjs(dates.start).format('YYYY-MM-DD')
-      // FullCalendar allDay 事件的 end 是 exclusive 的，需要 +1 天才能包含最后一天
-      end = dates.end ? dayjs(dates.end).add(1, 'day').format('YYYY-MM-DD') : undefined
+      // FullCalendar allDay 事件的 end 是 exclusive 的
+      // calculateTaskDates 返回的 end 是最后一天的 endOf('day')（23:59:59）
+      // 需要取 end 所在日期的下一天作为 exclusive end
+      end = dates.end ? dayjs(dates.end).add(1, 'day').startOf('day').format('YYYY-MM-DD') : undefined
       allDay = true
     } else {
       start = task.startDateTime || task.date || ''

@@ -881,7 +881,10 @@ describe('projectsToCalendarEvents - showItems', () => {
 
     const events = DataConverter.projectsToCalendarEvents(projects, undefined, false)
 
-    expect(events[0].start).toBeTruthy()
+    expect(events[0].start).toBe('2026-06-12')
+    // FullCalendar allDay 事件的 end 是 exclusive 的，需要 +1 天
+    // 最后一天 06-15 → end 应为 06-16
+    expect(events[0].end).toBe('2026-06-16')
     expect(events[0].allDay).toBe(true)
   })
 

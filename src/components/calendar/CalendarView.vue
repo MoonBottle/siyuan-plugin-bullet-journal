@@ -537,8 +537,8 @@ onMounted(async () => {
           })
           return
         }
-        // 显示番茄钟块时，事项块缩窄为85%给番茄块留位
-        if (settingsStore.showPomodoroBlocks) {
+        // 显示番茄钟块时，事项块缩窄为85%给番茄块留位（仅事项模式）
+        if (settingsStore.showPomodoroBlocks && props.showItems) {
           info.el.style.width = '85%'
         }
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
