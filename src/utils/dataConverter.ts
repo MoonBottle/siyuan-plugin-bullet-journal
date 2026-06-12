@@ -51,24 +51,24 @@ export class DataConverter {
   /**
    * 将项目列表转换为日历事件
    */
-  public static projectsToCalendarEvents(projects: Project[], itemStatusFilter?: ItemStatus[]): CalendarEvent[] {
+  public static projectsToCalendarEvents(projects: Project[], itemStatusFilter?: ItemStatus[], showItems: boolean = true): CalendarEvent[] {
     const events: CalendarEvent[] = []
 
     for (const project of projects) {
       for (const task of project.tasks) {
-        // 为每个任务添加事件
-        if (task.date || task.startDateTime) {
-          const event = this.taskToCalendarEvent(task, project)
-          events.push(event)
-        }
-
-        // 为每个工作事项添加事件
-        const filteredItems = itemStatusFilter && itemStatusFilter.length > 0
-          ? task.items.filter((item) => itemStatusFilter.includes(item.status))
-          : task.items
-        for (const item of filteredItems) {
-          const itemEvent = this.itemToCalendarEvent(item, task, project)
-          events.push(itemEvent)
+        if (showItems) {
+          // showItems=true：只生成 Item 事件（当前默认行为）
+          const filteredItems = itemStatusFilter && itemStatusFilter.length > 0
+            ? task.items.filter((item) => itemStatusFilter.includes(item.status))
+            : task.items
+          for (const item of filteredItems) {
+            const itemEvent = this.itemToCalendarEvent(item, task, project)
+            events.push(itemEvent)
+          }
+        } else {
+          // showItems=false：只生成 Task 事件
+          const taskEvent = this.taskToCalendarEvent(task, project, false)
+          if (taskEvent) events.push(taskEvent)
         }
       }
     }
@@ -79,16 +79,37 @@ export class DataConverter {
   /**
    * 将任务转换为日历事件
    */
-  private static taskToCalendarEvent(task: Task, project: Project): CalendarEvent {
-    const start = task.startDateTime || task.date
-    const end = task.endDateTime || task.startDateTime || task.date
+  private static taskToCalendarEvent(task: Task, project: Project, showItems: boolean = true): CalendarEvent | null {
+    let start: string
+    let end: string | undefined
+    let allDay: boolean
+
+    if (!showItems) {
+      const dates = this.calculateTaskDates(task)
+      if (!dates.start) return null
+      start = dayjs(dates.start).format('YYYY-MM-DD')
+      end = dates.end ? dayjs(dates.end).format('YYYY-MM-DD') : undefined
+      allDay = true
+    } else {
+      start = task.startDateTime || task.date || ''
+      const endStr = task.endDateTime || task.startDateTime || task.date
+      end = endStr !== start ? endStr : undefined
+      allDay = !task.startDateTime
+    }
+
+    if (!start) return null
+
+    const taskItemBlockIds = [...new Set(task.items
+      .filter((i) => i.blockId)
+      .map((i) => i.blockId!))]
+    const completedCount = task.items.filter((i) => i.status === 'completed').length
 
     return {
       id: task.id,
       title: task.name,
-      start: start || '',
-      end: end !== start ? end : undefined,
-      allDay: !task.startDateTime,
+      start,
+      end,
+      allDay,
       extendedProps: {
         project: project.name,
         projectLinks: project.links,
@@ -100,6 +121,14 @@ export class DataConverter {
         docId: project.id,
         lineNumber: task.lineNumber,
         blockId: task.blockId,
+        firstItemBlockId: taskItemBlockIds[0],
+        siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
+        taskProgress: !showItems
+          ? {
+              completed: completedCount,
+              total: task.items.length,
+            }
+          : undefined,
       },
     }
   }

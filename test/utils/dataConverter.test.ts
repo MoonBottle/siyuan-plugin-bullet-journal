@@ -1,4 +1,8 @@
-import type { Project } from '@/types/models'
+import type {
+  Item,
+  Project,
+  Task,
+} from '@/types/models'
 import {
   describe,
   expect,
@@ -740,5 +744,162 @@ describe('dataConverter.filterItemsByDate', () => {
       end: '2026-03-10',
     })
     expect(result).toHaveLength(0)
+  })
+})
+
+function makeItem(partial: Partial<Item>): Item {
+  return {
+    id: partial.id || 'item',
+    content: partial.content || '事项',
+    date: partial.date || '2026-05-15',
+    lineNumber: partial.lineNumber ?? 1,
+    docId: partial.docId || 'doc-1',
+    blockId: partial.blockId ?? (partial.id || 'item'),
+    status: partial.status || 'pending',
+    priority: partial.priority,
+    startDateTime: partial.startDateTime,
+    endDateTime: partial.endDateTime,
+    task: partial.task,
+    project: partial.project,
+  } as Item
+}
+
+function makeTask(partial: Partial<Task>): Task {
+  const base = {
+    id: partial.id || 'task',
+    name: partial.name || '任务',
+    level: partial.level || 'L1',
+    items: partial.items || [],
+    lineNumber: partial.lineNumber ?? 1,
+    docId: partial.docId || 'doc-1',
+    blockId: partial.blockId ?? (partial.id || 'task'),
+  } as Task
+  base.items.forEach((row) => {
+    row.task = base
+  })
+  return base
+}
+
+function makeProject(partial: Partial<Project>): Project {
+  const base = {
+    id: partial.id || 'project',
+    name: partial.name || '项目',
+    description: partial.description,
+    path: partial.path || '工作安排/2026/项目',
+    tasks: partial.tasks || [],
+    habits: [],
+    links: partial.links,
+  } as Project
+  base.tasks.forEach((task) => {
+    task.items.forEach((row) => {
+      row.project = base
+      row.task = task
+    })
+  })
+  return base
+}
+
+describe('projectsToCalendarEvents - showItems', () => {
+  it('showItems=false 时只生成 Task 级别事件', () => {
+    const projects = [makeProject({
+      id: 'p1',
+      tasks: [makeTask({
+        id: 'task-1',
+        name: '设计任务',
+        items: [
+          makeItem({
+            id: 'item-1',
+            date: '2026-06-12',
+            status: 'pending',
+          }),
+          makeItem({
+            id: 'item-2',
+            date: '2026-06-13',
+            status: 'completed',
+          }),
+        ],
+      })],
+    })]
+
+    const events = DataConverter.projectsToCalendarEvents(projects, undefined, false)
+
+    expect(events.every((e) => e.extendedProps.item === undefined)).toBe(true)
+    expect(events.length).toBe(1)
+    expect(events[0].title).toBe('设计任务')
+  })
+
+  it('showItems=false 时 Task 事件包含 firstItemBlockId 和 taskProgress', () => {
+    const projects = [makeProject({
+      id: 'p1',
+      tasks: [makeTask({
+        id: 'task-1',
+        name: '设计任务',
+        items: [
+          makeItem({
+            id: 'item-1',
+            date: '2026-06-12',
+            status: 'pending',
+            blockId: 'b1',
+          }),
+          makeItem({
+            id: 'item-2',
+            date: '2026-06-13',
+            status: 'completed',
+            blockId: 'b2',
+          }),
+        ],
+      })],
+    })]
+
+    const events = DataConverter.projectsToCalendarEvents(projects, undefined, false)
+
+    expect(events[0].extendedProps.firstItemBlockId).toBe('b1')
+    expect(events[0].extendedProps.taskProgress).toEqual({
+      completed: 1,
+      total: 2,
+    })
+  })
+
+  it('showItems=false 时 Task 无自身日期则从子 Items 推算', () => {
+    const projects = [makeProject({
+      id: 'p1',
+      tasks: [makeTask({
+        id: 'task-1',
+        name: '设计任务',
+        items: [
+          makeItem({
+            id: 'item-1',
+            date: '2026-06-12',
+          }),
+          makeItem({
+            id: 'item-2',
+            date: '2026-06-15',
+          }),
+        ],
+      })],
+    })]
+
+    const events = DataConverter.projectsToCalendarEvents(projects, undefined, false)
+
+    expect(events[0].start).toBeTruthy()
+    expect(events[0].allDay).toBe(true)
+  })
+
+  it('showItems=true（默认）保持当前行为，只生成 Item 事件', () => {
+    const projects = [makeProject({
+      id: 'p1',
+      tasks: [makeTask({
+        id: 'task-1',
+        name: '设计任务',
+        items: [makeItem({
+          id: 'item-1',
+          date: '2026-06-12',
+        })],
+      })],
+    })]
+
+    const events = DataConverter.projectsToCalendarEvents(projects)
+
+    expect(events.every((e) => e.extendedProps.item !== undefined)).toBe(true)
   })
 })
