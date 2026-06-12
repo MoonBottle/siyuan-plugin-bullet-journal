@@ -39,6 +39,7 @@ import {
 import { usePlugin } from '@/main'
 import {
   usePomodoroStore,
+  useProjectStore,
 } from '@/stores'
 import {
   createItemMenu,
@@ -71,6 +72,7 @@ interface Props {
 }
 
 const pomodoroStore = usePomodoroStore()
+const projectStore = useProjectStore()
 const plugin = usePlugin() as any
 
 const ganttEl = ref<HTMLElement | null>(null)
@@ -150,8 +152,52 @@ const handleGanttTooltipMouseOut = (e: MouseEvent) => {
 
 const handleGanttTaskClick = (id: string | number) => {
   const task = gantt.getTask(id)
-  if (!task?.extendedProps?.item) return
-  const eventData = buildCalendarEventFromGanttTask(task)
+  if (!task?.extendedProps) return
+
+  // Item 级别：直接打开详情
+  if (task.extendedProps.item) {
+    const eventData = buildCalendarEventFromGanttTask(task)
+    showEventDetailModal(eventData)
+    return
+  }
+
+  // Task 级别：打开首个 Item 的详情
+  const firstItemBlockId = task.extendedProps.firstItemBlockId
+  if (!firstItemBlockId) return
+
+  const firstItem = projectStore.getItemByBlockId(firstItemBlockId)
+  if (!firstItem) return
+
+  const eventData: CalendarEvent = {
+    id: firstItemBlockId,
+    title: firstItem.content || task.text,
+    start: firstItem.startDateTime || firstItem.date,
+    end: firstItem.endDateTime || firstItem.startDateTime || firstItem.date,
+    allDay: !firstItem.startDateTime,
+    extendedProps: {
+      project: firstItem.project?.name,
+      projectLinks: firstItem.project?.links,
+      task: firstItem.task?.name,
+      taskLinks: firstItem.task?.links,
+      level: firstItem.task?.level,
+      item: firstItem.content,
+      itemStatus: firstItem.status,
+      itemLinks: firstItem.links,
+      hasItems: true,
+      docId: firstItem.docId,
+      lineNumber: firstItem.lineNumber,
+      blockId: firstItem.blockId,
+      date: firstItem.date,
+      originalStartDateTime: firstItem.startDateTime,
+      originalEndDateTime: firstItem.endDateTime,
+      siblingItems: firstItem.siblingItems,
+      dateRangeStart: firstItem.dateRangeStart,
+      dateRangeEnd: firstItem.dateRangeEnd,
+      pomodoros: firstItem.pomodoros,
+      priority: firstItem.priority,
+      siblingBlockIds: task.extendedProps.siblingBlockIds,
+    },
+  }
   showEventDetailModal(eventData)
 }
 
