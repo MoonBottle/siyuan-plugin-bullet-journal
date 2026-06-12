@@ -120,7 +120,7 @@
                   @click="handleEditDate"
                 >
                   <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconTaCalendar"></use></svg>
+                    <svg class="info-icon"><use xlink:href="#iconTaCalendarDays"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.date') || '日期' }}</span>
                   </div>
                   <div class="info-right">
@@ -323,7 +323,7 @@
                 @click="handleStartPomodoro"
               >
                 <div class="footer-icon-wrapper">
-                  <svg><use xlink:href="#iconClock"></use></svg>
+                  <svg><use xlink:href="#iconTaTimer"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.pomodoro') || '专注' }}</span>
               </button>

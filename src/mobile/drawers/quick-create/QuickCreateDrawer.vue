@@ -86,7 +86,7 @@
                     <span class="date-weekday">{{ formatWeekday(itemForm.date) }}</span>
                     <span class="date-value">{{ formatDate(itemForm.date) }}</span>
                   </div>
-                  <svg class="selector-icon"><use xlink:href="#iconCalendar"></use></svg>
+                  <svg class="selector-icon"><use xlink:href="#iconTaCalendarDays"></use></svg>
                 </button>
               </div>
 
@@ -1006,7 +1006,8 @@ const handleSubmit = async () => {
 .selector-icon {
   width: 20px;
   height: 20px;
-  fill: var(--b3-theme-primary);
+  // fill: var(--b3-theme-primary);
+  color: var(--b3-theme-on-surface);
 }
 
 // Task Input with suggestions
@@ -1266,14 +1267,15 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--b3-theme-surface-lighter);
+  // background: var(--b3-theme-surface-lighter);
+  color: var(--b3-theme-on-surface);
   border-radius: 10px;
   flex-shrink: 0;
 
   svg {
     width: 18px;
     height: 18px;
-    fill: var(--b3-theme-on-surface);
+    // fill: var(--b3-theme-on-surface);
   }
 }
 
