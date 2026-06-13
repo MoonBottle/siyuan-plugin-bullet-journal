@@ -150,7 +150,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').time)"
                 @mouseleave="hideTooltip"
-              >📅</span>
+              ><svg><use xlink:href="#iconTaCalendarDays"></use></svg></span>
               <span
                 class="meta-text"
                 :class="{ 'has-tooltip': timeDisplayNeedsTooltip }"
@@ -166,7 +166,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
                 @mouseleave="hideTooltip"
-              >⏱️</span>
+              ><svg><use xlink:href="#iconTaClockCheck"></use></svg></span>
               <span
                 class="meta-text copyable"
                 :class="{ copied: copiedState.duration }"
@@ -181,10 +181,12 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
                 @mouseleave="hideTooltip"
-              >🍅</span>
+              ><svg><use xlink:href="#iconTaTomato"></use></svg></span>
               <span
                 class="meta-text copyable"
                 :class="{ copied: copiedState.focusTime }"
+                @mouseenter="(e) => focusTotalTimeTooltip && showTooltip(e.currentTarget as HTMLElement, focusTotalTimeTooltip)"
+                @mouseleave="hideTooltip"
                 @click="!readonly && handleCopy(focusTotalTimeDisplay, 'focusTime')"
               >{{ focusTotalTimeDisplay }}</span>
             </span>
@@ -196,7 +198,8 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
                 @mouseleave="hideTooltip"
-              ><template v-if="focusPlanDisplay.type === 'pomodoro'">🍅x{{ focusPlanDisplay.value }}</template><template v-else>⏳{{ focusPlanDisplay.value }}</template></span>
+              ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
+              <span class="meta-text"><template v-if="focusPlanDisplay.type === 'pomodoro'">🍅x{{ focusPlanDisplay.value }}</template><template v-else>{{ focusPlanDurationShort }}</template></span>
             </span>
             <span
               v-if="focusPlanReview && !readonly"
@@ -206,8 +209,12 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
                 @mouseleave="hideTooltip"
-              >📊</span>
-              <span class="meta-text">{{ focusDeltaDisplay }}</span>
+              ><svg><use xlink:href="#iconTaDiff"></use></svg></span>
+              <span
+                class="meta-text"
+                @mouseenter="(e) => focusDeltaTooltip && showTooltip(e.currentTarget as HTMLElement, focusDeltaTooltip)"
+                @mouseleave="hideTooltip"
+              >{{ focusDeltaDisplay }}</span>
             </span>
           </div>
         </div>
@@ -312,6 +319,7 @@ import dayjs from '@/utils/dayjs'
 import {
   calculateTotalFocusMinutes,
   formatFocusDuration,
+  formatFocusDurationShort,
 } from '@/utils/dialog'
 import { formatReminderDisplay } from '@/utils/displayUtils'
 import {
@@ -393,7 +401,17 @@ const focusDeltaDisplay = computed(() => {
   if (!focusPlanReview.value) return ''
   const absValue = Math.abs(focusPlanReview.value.deltaMinutes)
   const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : ''
+  return `${prefix}${formatFocusDurationShort(absValue)}`
+})
+const focusDeltaTooltip = computed(() => {
+  if (!focusPlanReview.value) return ''
+  const absValue = Math.abs(focusPlanReview.value.deltaMinutes)
+  const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : ''
   return `${prefix}${formatFocusDuration(absValue)}`
+})
+const focusPlanDurationShort = computed(() => {
+  if (!focusPlanDisplay.value || focusPlanDisplay.value.type === 'pomodoro') return ''
+  return formatFocusDurationShort(Number(focusPlanDisplay.value.value))
 })
 
 const timeDisplay = computed(() => {
@@ -469,6 +487,13 @@ function filterPomodorosByDate(pomodoros: PomodoroRecord[] | undefined, date: st
 }
 
 const focusTotalTimeDisplay = computed(() => {
+  const pomodorosToCount = props.showAllDates
+    ? [...(props.item.pomodoros ?? [])]
+    : filterPomodorosByDate(props.item.pomodoros, props.item.date)
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount)
+  return totalFocusMinutes > 0 ? formatFocusDurationShort(totalFocusMinutes) : ''
+})
+const focusTotalTimeTooltip = computed(() => {
   const pomodorosToCount = props.showAllDates
     ? [...(props.item.pomodoros ?? [])]
     : filterPomodorosByDate(props.item.pomodoros, props.item.date)
@@ -664,8 +689,18 @@ async function handleLinkClick(link: Link) {
 }
 
 .meta-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
   cursor: help;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .meta-text {

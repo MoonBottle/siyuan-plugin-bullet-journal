@@ -90,8 +90,8 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleTogglePinned"
     >
-      <svg v-if="item.pinned"><use xlink:href="#iconUnpin"></use></svg>
-      <svg v-else><use xlink:href="#iconPin"></use></svg>
+      <svg v-if="item.pinned"><use xlink:href="#iconTaPinOff"></use></svg>
+      <svg v-else><use xlink:href="#iconTaPin"></use></svg>
     </span>
 
     <span

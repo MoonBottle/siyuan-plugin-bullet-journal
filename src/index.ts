@@ -47,9 +47,11 @@ import {
   ICON_CALENDAR_DAYS,
   ICON_CALENDAR_RANGE,
   ICON_CHECK,
+  ICON_CLOCK_CHECK,
   ICON_CLOCK_PLUS,
   ICON_COFFEE,
   ICON_DASHBOARD,
+  ICON_DIFF,
   ICON_FILE_TEXT,
   ICON_FLAG,
   ICON_GANTT,
@@ -61,6 +63,8 @@ import {
   ICON_MESSAGE_SQUARE_TEXT,
   ICON_MINIMIZE,
   ICON_PAUSE,
+  ICON_PIN,
+  ICON_PIN_OFF,
   ICON_PLAY,
   ICON_POMODORO,
   ICON_POMODORO_STATS,
@@ -371,9 +375,12 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_CALENDAR)
     this.addIcons(ICON_CALENDAR_DAYS)
     this.addIcons(ICON_CALENDAR_RANGE)
+    this.addIcons(ICON_CHECK)
+    this.addIcons(ICON_CLOCK_CHECK)
     this.addIcons(ICON_CLOCK_PLUS)
     this.addIcons(ICON_COFFEE)
     this.addIcons(ICON_DASHBOARD)
+    this.addIcons(ICON_DIFF)
     this.addIcons(ICON_FILE_TEXT)
     this.addIcons(ICON_FLAG)
     this.addIcons(ICON_GANTT)
@@ -394,6 +401,8 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_TIMER)
     this.addIcons(ICON_PLAY)
     this.addIcons(ICON_PAUSE)
+    this.addIcons(ICON_PIN)
+    this.addIcons(ICON_PIN_OFF)
     this.addIcons(ICON_CHECK)
     this.addIcons(ICON_HOLIDAY)
     this.addIcons(ICON_MAXIMIZE)

@@ -199,7 +199,7 @@ export function createItemMenu(
 
     items.push({
       label: item.pinned ? t('todo').unpin : t('todo').pin,
-      icon: item.pinned ? 'iconUnpin' : 'iconPin',
+      icon: item.pinned ? 'iconTaPinOff' : 'iconTaPin',
       click: () => handlers.togglePinned(),
     })
 

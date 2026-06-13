@@ -15,7 +15,7 @@
       @mouseleave="handleHideTooltip"
       @click.stop="$emit('setReminder')"
     >
-      <span class="action-icon">⏰</span>
+      <span class="action-icon"><svg><use xlink:href="#iconTaAlarmClock"></use></svg></span>
       <span class="action-text">{{ reminderText }}</span>
     </button>
 
@@ -31,7 +31,7 @@
       @mouseleave="handleHideTooltip"
       @click.stop="$emit('setRecurring')"
     >
-      <span class="action-icon">🔁</span>
+      <span class="action-icon"><svg><use xlink:href="#iconTaRepeat"></use></svg></span>
       <span class="action-text">{{ recurringText }}</span>
     </button>
 
@@ -135,6 +135,16 @@ onBeforeUnmount(() => {
 }
 
 .action-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 </style>
