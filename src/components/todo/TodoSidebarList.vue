@@ -127,7 +127,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -234,7 +234,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -341,7 +341,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -448,7 +448,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -564,7 +564,7 @@
                         @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                         @mouseleave="hideTooltip"
                       >
-                        <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                        <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                       </span>
                       <span
                         v-if="getPriorityEmoji(item)"
@@ -669,7 +669,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -775,7 +775,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, formatFocusDuration(calculateTotalFocusMinutes(item.pomodoros)))"
                     @mouseleave="hideTooltip"
                   >
-                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTomato"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaTimer"></use></svg>{{ formatFocusDurationShort(calculateTotalFocusMinutes(item.pomodoros)) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"

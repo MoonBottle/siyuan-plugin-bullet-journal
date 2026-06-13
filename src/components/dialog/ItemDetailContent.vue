@@ -192,7 +192,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
                 @mouseleave="hideTooltip"
-              ><svg><use xlink:href="#iconTaTomato"></use></svg></span>
+              ><svg><use xlink:href="#iconTaTimer"></use></svg></span>
               <span
                 class="meta-text copyable"
                 :class="{ copied: copiedState.focusTime }"
