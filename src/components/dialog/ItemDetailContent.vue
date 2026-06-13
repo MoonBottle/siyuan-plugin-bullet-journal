@@ -182,7 +182,11 @@
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
                 @mouseleave="hideTooltip"
               ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
-              <span class="meta-text">{{ focusPlanDurationShort }}</span>
+              <span
+                class="meta-text"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
+                @mouseleave="hideTooltip"
+              >{{ focusPlanDurationShort }}</span>
             </span>
             <span
               v-if="focusTotalTimeDisplay"
