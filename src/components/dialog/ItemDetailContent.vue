@@ -199,7 +199,7 @@
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
                 @mouseleave="hideTooltip"
               ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
-              <span class="meta-text"><template v-if="focusPlanDisplay.type === 'pomodoro'">🍅x{{ focusPlanDisplay.value }}</template><template v-else>{{ focusPlanDurationShort }}</template></span>
+              <span class="meta-text">{{ focusPlanDurationShort }}</span>
             </span>
             <span
               v-if="focusPlanReview && !readonly"
@@ -410,8 +410,8 @@ const focusDeltaTooltip = computed(() => {
   return `${prefix}${formatFocusDuration(absValue)}`
 })
 const focusPlanDurationShort = computed(() => {
-  if (!focusPlanDisplay.value || focusPlanDisplay.value.type === 'pomodoro') return ''
-  return formatFocusDurationShort(Number(focusPlanDisplay.value.value))
+  if (!focusPlanDisplay.value) return ''
+  return formatFocusDurationShort(focusPlanDisplay.value.minutes)
 })
 
 const timeDisplay = computed(() => {

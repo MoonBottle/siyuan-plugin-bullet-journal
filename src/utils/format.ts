@@ -15,38 +15,32 @@ export function formatLinkForDisplay(name: string): { display: string, fullText?
   }
 }
 
-export type FocusPlanDisplayResult = { type: 'pomodoro', value: number } | { type: 'duration', value: string, minutes: number } | null
+export type FocusPlanDisplayResult = { type: 'pomodoro', value: number, minutes: number } | { type: 'duration', value: string, minutes: number } | null
+
+/** 格式化专注时长为短格式（如 1h15m） */
+export function formatFocusDurationShort(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h${m}m` : `${h}h`
+}
 
 /** 格式化专注计划显示 */
 export function getFocusPlanDisplay(plan?: FocusPlan): FocusPlanDisplayResult {
   if (!plan) return null
   if (plan.type === 'pomodoro') {
+    const totalMinutes = plan.rawValue * 25
     return {
       type: 'pomodoro',
       value: plan.rawValue,
+      minutes: totalMinutes,
     }
   }
-  // duration type: format compact minutes
+  // duration type
   const minutes = plan.rawValue
-  if (minutes < 60) {
-    return {
-      type: 'duration',
-      value: `${minutes}m`,
-      minutes,
-    }
-  }
-  const hours = Math.floor(minutes / 60)
-  const restMinutes = minutes % 60
-  if (restMinutes === 0) {
-    return {
-      type: 'duration',
-      value: `${hours}h`,
-      minutes,
-    }
-  }
   return {
     type: 'duration',
-    value: `${hours}h${restMinutes}m`,
+    value: formatFocusDurationShort(minutes),
     minutes,
   }
 }
@@ -59,7 +53,7 @@ export function getFocusPlanTooltip(plan?: FocusPlan): string {
   const fp = t('focusPlan')
 
   if (display.type === 'pomodoro') {
-    return fp.tooltipPomodoro?.replace('{count}', String(display.value)).replace('{minutes}', String(display.value * 25)) || ''
+    return fp.tooltipPomodoro?.replace('{count}', String(display.value)).replace('{minutes}', String(display.minutes)) || ''
   }
 
   // duration type

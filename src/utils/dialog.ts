@@ -125,13 +125,9 @@ export function formatFocusDuration(minutes: number): string {
 
 /**
  * 格式化专注时长为短格式（如 1h15m）
+ * @deprecated 从 format.ts 导入
  */
-export function formatFocusDurationShort(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m > 0 ? `${h}h${m}m` : `${h}h`
-}
+export { formatFocusDurationShort } from '@/utils/format'
 
 /**
  * 生成按钮 HTML

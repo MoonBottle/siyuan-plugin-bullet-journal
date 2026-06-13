@@ -386,7 +386,7 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    expect(mounted.container.textContent).toContain('⏳1h10m')
+    expect(mounted.container.textContent).toContain('1h10m')
 
     mounted.unmount()
   })
@@ -407,7 +407,7 @@ describe('todoSidebarList', () => {
 
     await nextTick()
 
-    expect(mounted.container.textContent).toContain('🍅x3')
+    expect(mounted.container.textContent).toContain('1h15m')
 
     mounted.unmount()
   })

@@ -119,8 +119,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -219,8 +218,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -319,8 +317,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -419,8 +416,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -528,8 +524,7 @@
                         @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                         @mouseleave="hideTooltip"
                       >
-                        <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                        <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                        <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                       </span>
                       <span
                         v-if="getPriorityEmoji(item)"
@@ -626,8 +621,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -725,8 +719,7 @@
                     @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(item.focusPlan))"
                     @mouseleave="hideTooltip"
                   >
-                    <template v-if="getFocusPlanDisplay(item.focusPlan)?.type === 'pomodoro'">🍅x{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
-                    <template v-else>⏳{{ getFocusPlanDisplay(item.focusPlan)?.value }}</template>
+                    <svg class="focus-plan-icon"><use xlink:href="#iconTaClockPlus"></use></svg>{{ formatFocusDurationShort(getFocusPlanDisplay(item.focusPlan)!.minutes) }}
                   </span>
                   <span
                     v-if="getPriorityEmoji(item)"
@@ -827,6 +820,7 @@ import {
 import { createExampleDocument } from '@/utils/exampleDocUtils'
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import {
+  formatFocusDurationShort,
   getFocusPlanDisplay,
   getFocusPlanTooltip,
 } from '@/utils/format'
@@ -1482,11 +1476,19 @@ const handleCreateExample = async () => {
 .item-focus-plan-badge {
   display: inline-flex;
   align-items: center;
+  gap: 2px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.8;
   cursor: help;
   flex-shrink: 0;
+
+  .focus-plan-icon {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
 }
 
 .item-group-name {
