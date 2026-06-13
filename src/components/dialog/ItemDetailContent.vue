@@ -559,10 +559,10 @@ async function handleCopy(text: string, key: string) {
   try {
     await navigator.clipboard.writeText(text)
     copiedState[key] = true
-    showMessage(t('common').copySuccess, 2000, 'info')
+    showMessage(t('common').copySuccess, 1000, 'info')
     setTimeout(() => {
       copiedState[key] = false
-    }, 2000)
+    }, 1000)
   } catch (err) {
     console.error('复制失败:', err)
   }
