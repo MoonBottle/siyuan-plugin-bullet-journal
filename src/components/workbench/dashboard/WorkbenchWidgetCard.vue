@@ -17,10 +17,11 @@
       </div>
       <div class="workbench-widget-card__controls">
         <button
-          class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
+          class="workbench-widget-card__menu-trigger block__icon"
           data-testid="workbench-widget-menu-trigger"
           type="button"
-          :aria-label="t('common').more"
+          @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+          @mouseleave="hideTooltip"
           @click.stop="handleMenuClick"
         >
           <svg><use xlink:href="#iconMore"></use></svg>
@@ -36,6 +37,10 @@
 <script setup lang="ts">
 import { Menu } from 'siyuan'
 import { t } from '@/i18n'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
   title: string
@@ -50,6 +55,7 @@ const emit = defineEmits<{
 }>()
 
 function handleMenuClick(event: MouseEvent) {
+  hideTooltip()
   event.stopPropagation()
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
