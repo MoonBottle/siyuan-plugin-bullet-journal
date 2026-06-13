@@ -117,6 +117,7 @@ const props = withDefaults(defineProps<{
   itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
+  showItems: true,
 })
 
 const emit = defineEmits<{
