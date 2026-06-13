@@ -690,6 +690,7 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "copy": "Copy",
+    "copySuccess": "Copied to clipboard",
     "save": "Save",
     "saveSuccess": "Saved successfully",
     "dataRefreshed": "Data refreshed",

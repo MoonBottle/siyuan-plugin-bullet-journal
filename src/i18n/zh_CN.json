@@ -692,6 +692,7 @@
     "create": "创建",
     "creating": "创建中...",
     "copy": "复制",
+    "copySuccess": "已复制到剪贴板",
     "save": "保存",
     "saveSuccess": "保存成功",
     "dataRefreshed": "数据已刷新",

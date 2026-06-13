@@ -167,19 +167,11 @@
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
                 @mouseleave="hideTooltip"
               >⏱️</span>
-              <span class="meta-text">{{ duration }}</span>
               <span
-                v-if="!readonly"
-                class="copy-btn small b3-tooltips b3-tooltips__nw"
-                :aria-label="t('common').copy"
-                @click.stop="handleCopy(duration, 'duration')"
-              >
-                <svg
-                  v-if="copiedState.duration"
-                  class="copied-icon"
-                ><use xlink:href="#iconCheck"></use></svg>
-                <svg v-else><use xlink:href="#iconCopy"></use></svg>
-              </span>
+                class="meta-text copyable"
+                :class="{ copied: copiedState.duration }"
+                @click="!readonly && handleCopy(duration, 'duration')"
+              >{{ duration }}</span>
             </span>
             <span
               v-if="focusTotalTimeDisplay"
@@ -190,19 +182,11 @@
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
                 @mouseleave="hideTooltip"
               >🍅</span>
-              <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
               <span
-                v-if="!readonly"
-                class="copy-btn small b3-tooltips b3-tooltips__nw"
-                :aria-label="t('common').copy"
-                @click.stop="handleCopy(focusTotalTimeDisplay, 'focusTime')"
-              >
-                <svg
-                  v-if="copiedState.focusTime"
-                  class="copied-icon"
-                ><use xlink:href="#iconCheck"></use></svg>
-                <svg v-else><use xlink:href="#iconCopy"></use></svg>
-              </span>
+                class="meta-text copyable"
+                :class="{ copied: copiedState.focusTime }"
+                @click="!readonly && handleCopy(focusTotalTimeDisplay, 'focusTime')"
+              >{{ focusTotalTimeDisplay }}</span>
             </span>
             <span
               v-if="focusPlanDisplay && !readonly"
@@ -546,6 +530,7 @@ async function handleCopy(text: string, key: string) {
   try {
     await navigator.clipboard.writeText(text)
     copiedState[key] = true
+    showMessage(t('common').copySuccess, 2000, 'info')
     setTimeout(() => {
       copiedState[key] = false
     }, 2000)
@@ -655,16 +640,6 @@ async function handleLinkClick(link: Link) {
     fill: currentColor;
   }
 
-  &.small {
-    width: 16px;
-    height: 16px;
-
-    svg {
-      width: 12px;
-      height: 12px;
-    }
-  }
-
   .copied-icon {
     color: var(--b3-theme-success);
   }
@@ -698,6 +673,22 @@ async function handleLinkClick(link: Link) {
 
   &.has-tooltip {
     cursor: help;
+  }
+
+  &.copyable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0 4px;
+    margin: 0 -4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--b3-theme-background);
+    }
+
+    &.copied {
+      color: var(--b3-theme-success);
+    }
   }
 }
 
