@@ -43,6 +43,7 @@ import {
 import {
   ICON_AI_ASSISTANT,
   ICON_ALARM_CLOCK,
+  ICON_BRUSH_CLEANING,
   ICON_CALENDAR,
   ICON_CALENDAR_DAYS,
   ICON_CALENDAR_RANGE,
@@ -372,6 +373,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册自定义 Dock 图标（ta 前缀防止与其他插件冲突）
     this.addIcons(ICON_AI_ASSISTANT)
     this.addIcons(ICON_ALARM_CLOCK)
+    this.addIcons(ICON_BRUSH_CLEANING)
     this.addIcons(ICON_CALENDAR)
     this.addIcons(ICON_CALENDAR_DAYS)
     this.addIcons(ICON_CALENDAR_RANGE)
