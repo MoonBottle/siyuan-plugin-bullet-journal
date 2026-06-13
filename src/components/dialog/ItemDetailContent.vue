@@ -174,6 +174,17 @@
               >{{ duration }}</span>
             </span>
             <span
+              v-if="focusPlanDisplay && !readonly"
+              class="meta-item"
+            >
+              <span
+                class="meta-icon"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
+              <span class="meta-text">{{ focusPlanDurationShort }}</span>
+            </span>
+            <span
               v-if="focusTotalTimeDisplay"
               class="meta-item"
             >
@@ -189,17 +200,6 @@
                 @mouseleave="hideTooltip"
                 @click="!readonly && handleCopy(focusTotalTimeDisplay, 'focusTime')"
               >{{ focusTotalTimeDisplay }}</span>
-            </span>
-            <span
-              v-if="focusPlanDisplay && !readonly"
-              class="meta-item"
-            >
-              <span
-                class="meta-icon"
-                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
-                @mouseleave="hideTooltip"
-              ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
-              <span class="meta-text">{{ focusPlanDurationShort }}</span>
             </span>
             <span
               v-if="focusPlanReview && !readonly"

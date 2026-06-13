@@ -190,7 +190,7 @@ export function createItemMenu(
         },
         { type: 'separator' },
         {
-          iconHTML: '⚪',
+          icon: 'iconTrashcan',
           label: t('todo').priority.clear,
           click: () => handlers.setPriority(undefined),
         },
