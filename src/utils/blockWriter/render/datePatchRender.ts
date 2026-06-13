@@ -45,20 +45,6 @@ export interface DatePatchRenderContext {
   finalTargetBlockId: string
 }
 
-function addOneHour(timeStr: string): string {
-  const match = timeStr.match(TIME_FORMAT_RE)
-  if (!match) return timeStr
-
-  let hours = Number.parseInt(match[1], 10)
-  const minutes = match[2]
-  const seconds = match[3] || '00'
-
-  hours = (hours + 1) % 24
-  const hoursStr = hours.toString().padStart(2, '0')
-
-  return `${hoursStr}:${minutes}:${seconds}`
-}
-
 function formatTimeToSeconds(timeStr: string): string {
   const match = timeStr.match(TIME_FORMAT_RE)
   if (!match) return timeStr
@@ -351,7 +337,7 @@ export function renderDatePatch(
   const formattedStartTime = patch.startTime ? formatTimeToSeconds(patch.startTime) : undefined
   const formattedEndTime = patch.endTime
     ? formatTimeToSeconds(patch.endTime)
-    : (formattedStartTime ? addOneHour(formattedStartTime) : undefined)
+    : undefined
 
   if (!hasTomatoClock && !useMultiLineForStructure) {
     const attrSuffix = (kramdown.match(BLOCK_ATTR_SUFFIX_RE) || []).join('')

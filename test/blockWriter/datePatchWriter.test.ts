@@ -119,3 +119,60 @@ describe('renderDatePatch — marker order', () => {
     expect(result).toBe('任务 📅2026-06-12 🔁每天 ⏰10:00 📌')
   })
 })
+
+describe('renderDatePatch — endTime handling', () => {
+  it('does not add end time when patch has only startTime (no addOneHour)', () => {
+    const kramdown = '填工时 ⏰17:01 🔁工作日 📅2026-06-12 17:00'
+    const result = renderDatePatch(kramdown, {
+      type: 'addDate',
+      date: '2026-06-15',
+      startTime: '17:00:00',
+      endTime: undefined,
+      allDay: false,
+      originalDate: '2026-06-12',
+      timePrecision: 'minute',
+      siblingItems: [{
+        date: '2026-06-12',
+        startDateTime: '2026-06-12 17:00:00',
+        timePrecision: 'minute' as const,
+      }],
+    })
+    expect(result).toContain('📅2026-06-15 17:00')
+    expect(result).not.toContain('~18:00')
+    expect(result).not.toContain('~')
+  })
+
+  it('preserves endTime when explicitly provided', () => {
+    const kramdown = '会议 📅2026-06-12 09:00~10:00'
+    const result = renderDatePatch(kramdown, {
+      type: 'addDate',
+      date: '2026-06-15',
+      startTime: '09:00:00',
+      endTime: '10:00:00',
+      allDay: false,
+      originalDate: '2026-06-12',
+      timePrecision: 'minute',
+      siblingItems: [{
+        date: '2026-06-12',
+        startDateTime: '2026-06-12 09:00:00',
+        endDateTime: '2026-06-12 10:00:00',
+        timePrecision: 'minute' as const,
+      }],
+    })
+    expect(result).toContain('📅2026-06-15 09:00~10:00')
+  })
+
+  it('renders allDay date without time when no startTime', () => {
+    const kramdown = '全天事项 📅2026-06-12'
+    const result = renderDatePatch(kramdown, {
+      type: 'addDate',
+      date: '2026-06-15',
+      allDay: true,
+      originalDate: '2026-06-12',
+      siblingItems: [{ date: '2026-06-12' }],
+    })
+    expect(result).toContain('📅2026-06-15')
+    expect(result).not.toContain('17:00')
+    expect(result).not.toContain('~')
+  })
+})
