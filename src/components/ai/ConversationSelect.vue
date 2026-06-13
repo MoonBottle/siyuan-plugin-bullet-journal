@@ -5,10 +5,11 @@
   >
     <span
       ref="triggerRef"
-      class="block__icon b3-tooltips b3-tooltips__sw"
-      :aria-label="t('aiChat').conversations"
+      class="block__icon"
       :class="{ 'is-open': isOpen }"
-      @click="toggleDropdown"
+      @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('aiChat').conversations)"
+      @mouseleave="hideTooltip"
+      @click="handleToggleDropdown"
     >
       <svg>
         <use xlink:href="#iconHistory"></use>
@@ -70,6 +71,10 @@ import {
 } from 'vue'
 import { t } from '@/i18n'
 import { useAIStore } from '@/stores'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 interface ConversationListItem {
   id: string
@@ -104,7 +109,8 @@ function getWeixinStatus(userId: string) {
 }
 
 // 切换下拉
-async function toggleDropdown() {
+async function handleToggleDropdown() {
+  hideTooltip()
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     await nextTick()
