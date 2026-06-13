@@ -151,11 +151,23 @@ export function createItemMenu(
       })(),
     })
 
+    if (item.repeatRule) {
+      items.push({
+        label: t('recurring').skipThis,
+        icon: 'iconTaSkipForward',
+        click: () => handlers.skipOccurrence(),
+      })
+    }
+
+    items.push({ type: 'separator' })
+
     items.push({
       label: t('todo').abandon,
       icon: 'iconTaSquareX',
       click: () => handlers.abandon(),
     })
+
+    items.push({ type: 'separator' })
 
     items.push({
       label: t('todo').priority.setPriority,
@@ -185,21 +197,11 @@ export function createItemMenu(
       ],
     })
 
-    items.push({ type: 'separator' })
-
     items.push({
       label: item.pinned ? t('todo').unpin : t('todo').pin,
       icon: item.pinned ? 'iconUnpin' : 'iconPin',
       click: () => handlers.togglePinned(),
     })
-
-    if (item.repeatRule) {
-      items.push({
-        label: t('recurring').skipThis,
-        icon: 'iconTaSkipForward',
-        click: () => handlers.skipOccurrence(),
-      })
-    }
 
     items.push({ type: 'separator' })
   }

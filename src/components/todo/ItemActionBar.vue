@@ -62,6 +62,11 @@
 
     <span
       v-if="canAbandon && isActionVisible('abandon')"
+      class="block__icon-separator"
+    ></span>
+
+    <span
+      v-if="canAbandon && isActionVisible('abandon')"
       class="block__icon block__icon--lg"
       :aria-label="t('todo').abandon"
       @mouseenter="handleTooltipEnter($event, t('todo').abandon)"
@@ -72,16 +77,9 @@
     </span>
 
     <span
-      v-if="isActionVisible('openDoc')"
-      ref="docIconRef"
-      class="block__icon"
-      :aria-label="t('todo').openDoc"
-      @mouseenter="handleTooltipEnter($event, t('todo').openDoc)"
-      @mouseleave="handleTooltipLeave"
-      @click.stop="handleOpenDocClick"
-    >
-      <svg><use xlink:href="#iconTaFileText"></use></svg>
-    </span>
+      v-if="isActionVisible('pin', showPin)"
+      class="block__icon-separator"
+    ></span>
 
     <span
       v-if="isActionVisible('pin', showPin)"
@@ -94,6 +92,22 @@
     >
       <svg v-if="item.pinned"><use xlink:href="#iconUnpin"></use></svg>
       <svg v-else><use xlink:href="#iconPin"></use></svg>
+    </span>
+
+    <span
+      v-if="isActionVisible('openDoc')"
+      class="block__icon-separator"
+    ></span>
+
+    <span
+      ref="docIconRef"
+      class="block__icon"
+      :aria-label="t('todo').openDoc"
+      @mouseenter="handleTooltipEnter($event, t('todo').openDoc)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleOpenDocClick"
+    >
+      <svg><use xlink:href="#iconTaFileText"></use></svg>
     </span>
 
     <span
@@ -376,5 +390,13 @@ function handleOpenCalendar() {
       height: 16px;
     }
   }
+}
+
+.block__icon-separator {
+  width: 1px;
+  height: 14px;
+  background: var(--b3-border-color);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 </style>
