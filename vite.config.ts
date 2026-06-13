@@ -25,8 +25,9 @@ function removeGanttFontFace() {
     enforce: 'pre',
     transform(code: string, id: string) {
       if (id.includes('dhtmlx-gantt') && id.endsWith('.css')) {
+        // 只删除非图标字体的 @font-face（如 Inter），保留 dhx-gantt-icons
         return {
-          code: code.replace(FONT_FACE_RE, ''),
+          code: code.replace(FONT_FACE_RE, (match) => match.includes('dhx-gantt-icons') ? match : ''),
           map: null,
         }
       }
