@@ -65,6 +65,11 @@ export async function persistCalendarEventChange(
     newEndTime = time.substring(0, 8)
   }
 
+  // 移动操作且原始无结束时间时，不写入 FullCalendar 自动生成的结束时间
+  if (action === 'move' && !originalEndDateTime) {
+    newEndTime = ''
+  }
+
   const timePrecision
     = eventInfo.timePrecision
       || eventInfo.extendedProps?.timePrecision

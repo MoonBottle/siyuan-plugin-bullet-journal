@@ -89,4 +89,89 @@ describe('persistCalendarEventChange', () => {
     expect(mockWriteBlock).not.toHaveBeenCalled()
     expect(mockShowMessage).toHaveBeenCalledTimes(1)
   })
+
+  it('does not write endTime when moving event without original endDateTime', async () => {
+    mockWriteBlock.mockResolvedValue(true)
+
+    const result = await persistCalendarEventChange({
+      blockId: 'block-1',
+      allDay: false,
+      start: '2026-05-02T17:00:00',
+      end: '2026-05-02T18:00:00',
+      date: '2026-05-01',
+      originalStartDateTime: '2026-05-01 17:00:00',
+      originalEndDateTime: undefined,
+      timePrecision: 'minute',
+      siblingItems: [],
+      status: 'pending',
+    }, 'move')
+
+    expect(result).toBe(true)
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      expect.objectContaining({
+        type: 'addDate',
+        startTime: '17:00:00',
+        endTime: undefined,
+        allDay: false,
+        timePrecision: 'minute',
+      }),
+    )
+  })
+
+  it('writes endTime when resizing event without original endDateTime', async () => {
+    mockWriteBlock.mockResolvedValue(true)
+
+    const result = await persistCalendarEventChange({
+      blockId: 'block-1',
+      allDay: false,
+      start: '2026-05-02T17:00:00',
+      end: '2026-05-02T18:30:00',
+      date: '2026-05-01',
+      originalStartDateTime: '2026-05-01 17:00:00',
+      originalEndDateTime: undefined,
+      timePrecision: 'minute',
+      siblingItems: [],
+      status: 'pending',
+    }, 'resize')
+
+    expect(result).toBe(true)
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      expect.objectContaining({
+        type: 'addDate',
+        startTime: '17:00:00',
+        endTime: '18:30:00',
+        allDay: false,
+        timePrecision: 'minute',
+      }),
+    )
+  })
+
+  it('writes endTime when moving event with original endDateTime', async () => {
+    mockWriteBlock.mockResolvedValue(true)
+
+    const result = await persistCalendarEventChange({
+      blockId: 'block-1',
+      allDay: false,
+      start: '2026-05-02T09:00:00',
+      end: '2026-05-02T10:30:00',
+      date: '2026-05-01',
+      originalStartDateTime: '2026-05-01 09:00:00',
+      originalEndDateTime: '2026-05-01 10:00:00',
+      siblingItems: [],
+      status: 'pending',
+    }, 'move')
+
+    expect(result).toBe(true)
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      expect.objectContaining({
+        type: 'addDate',
+        startTime: '09:00:00',
+        endTime: '10:30:00',
+        allDay: false,
+      }),
+    )
+  })
 })
