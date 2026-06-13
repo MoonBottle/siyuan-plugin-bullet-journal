@@ -68,7 +68,7 @@ export const ICON_REPEAT = `<symbol id="iconTaRepeat" viewBox="0 0 24 24" fill="
 
 export const ICON_CLOCK_CHECK = `<symbol id="iconTaClockCheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><path d="M22 12a10 10 0 1 0-11 9.95"/><path d="m22 16-5.5 5.5L14 19"/></symbol>`
 
-export const ICON_CLOCK_DIFF = `<symbol id="iconTaClockDiff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l3.644 1.822"/><path d="M16 19h6"/><path d="M19 16v3"/><path d="M21.92 13.267a10 10 0 1 0-8.653 8.653"/></symbol>`
+export const ICON_CLOCK_DIFF = `<symbol id="iconTaClockDiff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l3.644 1.822"/><path d="M21.92 13.267a10 10 0 1 0-8.653 8.653"/><path d="M16 18h6"/><path d="M19 16v4"/><path d="M16 22.5h6"/></symbol>`
 
 export const ICON_PIN = `<symbol id="iconTaPin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>`
 
