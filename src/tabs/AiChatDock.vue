@@ -31,8 +31,9 @@
       <!-- 新建对话按钮 -->
       <span
         v-if="!props.embedded"
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('aiChat').newConversation"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('aiChat').newConversation)"
+        @mouseleave="hideTooltip"
         @click="handleNewConversation"
       >
         <svg>
@@ -42,8 +43,9 @@
 
       <!-- 技能管理按钮 -->
       <!-- <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('settings').aiSkills?.title ?? 'AI 技能配置'"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('settings').aiSkills?.title ?? 'AI 技能配置')"
+        @mouseleave="hideTooltip"
         @click="openSkillManager"
       >
         <SkillIcon />
@@ -52,11 +54,12 @@
       <!-- 微信连接按钮 -->
       <span
         v-if="!isMobile"
-        class="block__icon b3-tooltips b3-tooltips__sw weixin-btn"
+        class="block__icon weixin-btn"
         :class="{
           'is-active': isClawBotConnected, 'has-unread': hasUnreadWeixin,
         }"
-        :aria-label="clawBotTooltip"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, clawBotTooltip)"
+        @mouseleave="hideTooltip"
         @click="handleWeixinClick"
       >
         <WeixinIcon :is-connected="isClawBotConnected" />
@@ -68,8 +71,9 @@
 
       <!-- 更多操作按钮 -->
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('common').more"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+        @mouseleave="hideTooltip"
         @click="handleMoreClick"
       >
         <svg>
@@ -138,6 +142,10 @@ import {
 } from '@/utils/eventBus'
 import { isMobileDevice } from '@/utils/isMobile'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = defineProps<{
@@ -223,6 +231,7 @@ const clawBotTooltip = computed(() => {
 
 // 微信按钮点击
 function handleWeixinClick(event: MouseEvent) {
+  hideTooltip()
   if (isMobile.value) {
     return
   }
@@ -305,6 +314,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 
 // 新建对话
 const handleNewConversation = async () => {
+  hideTooltip()
   aiStore.startNewConversationDraft()
   nextTick(() => {
     chatPanelRef.value?.focusInput()
@@ -334,6 +344,7 @@ const handleOpenSettings = () => {
 
 // 更多按钮点击事件
 const handleMoreClick = (event: MouseEvent) => {
+  hideTooltip()
   event.stopPropagation()
   event.preventDefault()
 

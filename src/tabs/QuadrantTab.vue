@@ -21,17 +21,19 @@
       <span class="fn__flex-1 fn__space"></span>
 
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="quadrant-refresh-button"
-        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, projectStore.loading ? t('common').loading : t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="quadrant-more-button"
-        :aria-label="t('common').more"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+        @mouseleave="hideTooltip"
         @click="handleMoreClick"
       >
         <svg><use xlink:href="#iconMore"></use></svg>
@@ -57,9 +59,10 @@
             <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
           </div>
           <span
-            class="block__icon b3-tooltips b3-tooltips__sw quadrant-panel__more"
+            class="block__icon quadrant-panel__more"
             :data-testid="`quadrant-edit-button-${panel.id}`"
-            :aria-label="t('common').more"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+            @mouseleave="hideTooltip"
             @click="openQuadrantEditor(panel)"
           >
             <svg><use xlink:href="#iconMore"></use></svg>
@@ -128,6 +131,10 @@ import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
 import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant'
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
@@ -204,6 +211,7 @@ const selectedGroupModel = computed({
 })
 
 function openQuadrantEditor(panel: QuadrantPanelConfig) {
+  hideTooltip()
   openQuadrantRuleDialog({
     panel: JSON.parse(JSON.stringify(panel)),
     onSave: async (nextPanel) => {
@@ -339,6 +347,7 @@ function syncSelectedGroupWithDefault() {
 }
 
 async function handleRefresh() {
+  hideTooltip()
   if (!plugin) return
   await plugin.requestRefresh?.({
     type: 'full',
@@ -348,6 +357,7 @@ async function handleRefresh() {
 }
 
 function handleMoreClick(event: MouseEvent) {
+  hideTooltip()
   event.stopPropagation()
   event.preventDefault()
 

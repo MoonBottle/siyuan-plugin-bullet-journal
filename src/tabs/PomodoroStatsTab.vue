@@ -9,8 +9,9 @@
       </h2>
       <span class="fn__flex-1 fn__space"></span>
       <span
-        class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
-        :aria-label="t('common').refresh"
+        class="block__icon refresh-btn"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -63,6 +64,10 @@ import {
   Events,
 } from '@/utils/eventBus'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
@@ -81,6 +86,7 @@ const plugin = usePlugin() as any
 const settingsStore = useSettingsStore()
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',

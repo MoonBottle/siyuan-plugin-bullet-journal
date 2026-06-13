@@ -6,24 +6,28 @@
       </div>
       <span class="fn__flex-1 fn__space"></span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="todoContentPane?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
-        @click="todoContentPane?.toggleCollapseAll()"
+        class="block__icon"
+        :data-testid="todoContentPane?.allCollapsed ? 'todo-dock-expand-button' : 'todo-dock-collapse-button'"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, todoContentPane?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll)"
+        @mouseleave="hideTooltip"
+        @click="handleToggleCollapseAll()"
       >
         <svg><use :xlink:href="todoContentPane?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="todo-dock-refresh-button"
-        :aria-label="t('common').refresh"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="todo-dock-more-button"
-        :aria-label="t('common').more"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+        @mouseleave="hideTooltip"
         @click="handleMoreClick"
       >
         <svg><use xlink:href="#iconMore"></use></svg>
@@ -133,6 +137,10 @@ import {
   buildTodoDateRange,
 
 } from '@/utils/todoDateFilter'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
@@ -498,6 +506,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 
 // 手动刷新
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
@@ -507,8 +516,14 @@ const handleRefresh = async () => {
   }
 }
 
+function handleToggleCollapseAll() {
+  hideTooltip()
+  todoContentPane.value?.toggleCollapseAll()
+}
+
 // 更多按钮点击事件
 const handleMoreClick = (event: MouseEvent) => {
+  hideTooltip()
   event.stopPropagation()
   event.preventDefault()
 

@@ -124,10 +124,9 @@ describe('projectTab', () => {
     const mounted = await mountProjectTab()
 
     expect(mounted.container.querySelector('.sy-select')).not.toBeNull()
-    expect(mounted.container.querySelector('[aria-label="刷新"]')).not.toBeNull()
+    // 刷新按钮现在使用 tooltip 而不是 aria-label
+    expect(mounted.container.querySelector('.block__icons .block__icon')).not.toBeNull()
     expect(mounted.container.querySelector('.search-box')).toBeNull()
-    expect(mounted.container.querySelector('[aria-label="卡片视图"]')).toBeNull()
-    expect(mounted.container.querySelector('[aria-label="表格视图"]')).toBeNull()
 
     mounted.unmount()
   })

@@ -42,8 +42,9 @@
         :placeholder="t('gantt').day"
       />
       <span
-        class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
-        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
+        class="block__icon refresh-btn"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, projectStore.loading ? t('common').loading : t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -93,6 +94,10 @@ import {
 } from '@/utils/eventBus'
 import { buildGanttDateRange } from '@/utils/ganttDateFilter'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
@@ -387,6 +392,7 @@ onUnmounted(() => {
 })
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',

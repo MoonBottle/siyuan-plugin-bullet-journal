@@ -7,22 +7,25 @@
       <span class="fn__flex-1 fn__space"></span>
       <span
         v-if="!pomodoroStore.isFocusing"
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('pomodoro').startFocus"
-        @click="openTimerDialog"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('pomodoro').startFocus)"
+        @mouseleave="hideTooltip"
+        @click="handleOpenTimerDialog"
       >
         <svg><use xlink:href="#iconTaPlay"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('pomodoro').stats"
-        @click="openStatsTab"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('pomodoro').stats)"
+        @mouseleave="hideTooltip"
+        @click="handleOpenStatsTab"
       >
         <svg><use xlink:href="#iconTaPomodoroStats"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('common').refresh"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -84,6 +87,10 @@ import { requestNotificationPermission } from '@/utils/notification'
 import { removePendingCompletion } from '@/utils/pomodoroStorage'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
 import { getSharedPinia } from '@/utils/sharedPinia'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const plugin = usePlugin() as any
@@ -99,6 +106,7 @@ const handleDataRefresh = async () => {
 
 // 手动刷新
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
@@ -109,14 +117,16 @@ const handleRefresh = async () => {
 }
 
 // 打开番茄统计 Tab
-const openStatsTab = () => {
+const handleOpenStatsTab = () => {
+  hideTooltip()
   if (plugin?.openCustomTab) {
     plugin.openCustomTab(TAB_TYPES.POMODORO_STATS)
   }
 }
 
 // 打开开始专注弹框（使用共享函数，与底栏等调用方一致）
-const openTimerDialog = () => {
+const handleOpenTimerDialog = () => {
+  hideTooltip()
   showPomodoroTimerDialog(undefined, settingsStore.todoDock.selectedGroup)
 }
 

@@ -19,22 +19,25 @@
       <span class="fn__flex-1 fn__space"></span>
       <span
         v-if="projectStore.projects.length > 0"
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="t('project').resetColumnWidthsTooltip"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('project').resetColumnWidthsTooltip)"
+        @mouseleave="hideTooltip"
         @click="handleResetColumnRatios"
       >
         <svg><use xlink:href="#iconFullscreen"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="projectViewRef?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
-        @click="projectViewRef?.toggleCollapseAll()"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, projectViewRef?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll)"
+        @mouseleave="hideTooltip"
+        @click="handleToggleCollapseAll()"
       >
         <svg><use :xlink:href="projectViewRef?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
+        class="block__icon"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, projectStore.loading ? t('common').loading : t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -81,6 +84,10 @@ import {
   Events,
 } from '@/utils/eventBus'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
@@ -114,7 +121,13 @@ function handleColumnRatiosChange(newRatios: [number, number, number]) {
 }
 
 function handleResetColumnRatios() {
+  hideTooltip()
   columnRatios.value = [...DEFAULT_COLUMN_RATIOS]
+}
+
+function handleToggleCollapseAll() {
+  hideTooltip()
+  projectViewRef.value?.toggleCollapseAll()
 }
 
 // 状态筛选：SySelect 多选
@@ -257,6 +270,7 @@ onUnmounted(() => {
 })
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',

@@ -41,8 +41,9 @@
       />
       <!-- 刷新按钮 -->
       <span
-        class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
-        :aria-label="t('common').refresh"
+        class="block__icon refresh-btn"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -108,6 +109,10 @@ import {
 } from '@/utils/eventBus'
 import { openDocumentAtLine } from '@/utils/fileUtils'
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
@@ -444,6 +449,7 @@ onUnmounted(() => {
 })
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
