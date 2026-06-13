@@ -196,7 +196,7 @@ export function createItemMenu(
     if (item.repeatRule) {
       items.push({
         label: t('recurring').skipThis,
-        icon: 'iconTaForward',
+        icon: 'iconTaSkipForward',
         click: () => handlers.skipOccurrence(),
       })
     }
