@@ -11,6 +11,7 @@ function buildDatePatch(item: Item, targetDate: string) {
           date: item.date,
           startDateTime: item.startDateTime,
           endDateTime: item.endDateTime,
+          timePrecision: item.timePrecision,
         }]
       : []),
   ]
@@ -23,6 +24,7 @@ function buildDatePatch(item: Item, targetDate: string) {
     allDay: !item.startDateTime,
     originalDate: item.date,
     siblingItems: completeSiblingItems,
+    timePrecision: item.timePrecision,
   }
 }
 

@@ -133,8 +133,10 @@ describe('itemActions', () => {
               date: '2026-05-13',
               startDateTime: '2026-05-13 09:00',
               endDateTime: '2026-05-13 10:30',
+              timePrecision: undefined,
             },
           ],
+          timePrecision: undefined,
         },
       )
     })
@@ -160,6 +162,46 @@ describe('itemActions', () => {
       const result = await migrateItem(item)
       expect(result).toBe(false)
       expect(mockWriteBlock).not.toHaveBeenCalled()
+    })
+
+    it('preserves timePrecision when migrating timed item', async () => {
+      const item = createItem({
+        blockId: 'block-1',
+        date: '2026-05-13',
+        startDateTime: '2026-05-13 17:00:00',
+        timePrecision: 'minute',
+        siblingItems: [],
+      })
+      const result = await migrateItem(item)
+      expect(result).toBe(true)
+      expect(mockWriteBlock).toHaveBeenCalledWith(
+        { blockId: 'block-1' },
+        expect.objectContaining({
+          type: 'addDate',
+          startTime: '17:00:00',
+          allDay: false,
+          timePrecision: 'minute',
+        }),
+      )
+    })
+
+    it('preserves timePrecision as second when item has second precision', async () => {
+      const item = createItem({
+        blockId: 'block-1',
+        date: '2026-05-13',
+        startDateTime: '2026-05-13 17:00:30',
+        timePrecision: 'second',
+        siblingItems: [],
+      })
+      const result = await migrateItem(item)
+      expect(result).toBe(true)
+      expect(mockWriteBlock).toHaveBeenCalledWith(
+        { blockId: 'block-1' },
+        expect.objectContaining({
+          type: 'addDate',
+          timePrecision: 'second',
+        }),
+      )
     })
   })
 
