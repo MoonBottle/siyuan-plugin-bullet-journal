@@ -209,7 +209,7 @@
                 class="meta-icon"
                 @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
                 @mouseleave="hideTooltip"
-              ><svg><use xlink:href="#iconTaDiff"></use></svg></span>
+              ><svg><use xlink:href="#iconTaClockDiff"></use></svg></span>
               <span
                 class="meta-text"
                 @mouseenter="(e) => focusDeltaTooltip && showTooltip(e.currentTarget as HTMLElement, focusDeltaTooltip)"

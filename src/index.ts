@@ -49,10 +49,10 @@ import {
   ICON_CALENDAR_RANGE,
   ICON_CHECK,
   ICON_CLOCK_CHECK,
+  ICON_CLOCK_DIFF,
   ICON_CLOCK_PLUS,
   ICON_COFFEE,
   ICON_DASHBOARD,
-  ICON_DIFF,
   ICON_FILE_TEXT,
   ICON_FLAG,
   ICON_GANTT,
@@ -379,10 +379,10 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_CALENDAR_RANGE)
     this.addIcons(ICON_CHECK)
     this.addIcons(ICON_CLOCK_CHECK)
+    this.addIcons(ICON_CLOCK_DIFF)
     this.addIcons(ICON_CLOCK_PLUS)
     this.addIcons(ICON_COFFEE)
     this.addIcons(ICON_DASHBOARD)
-    this.addIcons(ICON_DIFF)
     this.addIcons(ICON_FILE_TEXT)
     this.addIcons(ICON_FLAG)
     this.addIcons(ICON_GANTT)
