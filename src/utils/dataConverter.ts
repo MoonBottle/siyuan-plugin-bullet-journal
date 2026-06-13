@@ -195,6 +195,7 @@ export class DataConverter {
         repeatRule: item.repeatRule,
         endCondition: item.endCondition,
         priority: item.priority,
+        pinned: item.pinned,
       },
     }
   }
@@ -395,6 +396,8 @@ export class DataConverter {
                     dateRangeEnd: item.dateRangeEnd,
                     pomodoros: item.pomodoros,
                     siblingBlockIds: taskItemBlockIds.length > 1 ? taskItemBlockIds : undefined,
+                    pinned: item.pinned,
+                    repeatRule: item.repeatRule,
                   },
                 })
               }

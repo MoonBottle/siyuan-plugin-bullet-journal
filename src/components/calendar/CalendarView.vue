@@ -309,6 +309,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
     listItemBlockId: props.listItemBlockId,
+    pinned: props.pinned,
+    repeatRule: props.repeatRule,
   } as Item
 
   const handlers = getItemActionHandlers(item, plugin)

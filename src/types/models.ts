@@ -351,6 +351,7 @@ export interface CalendarEvent {
     reminder?: ReminderConfig
     repeatRule?: RepeatRule
     endCondition?: EndCondition
+    pinned?: boolean
     isPomodoroBlock?: boolean
     pomodoroDurationMinutes?: number
     pomodoroDescription?: string
@@ -389,6 +390,8 @@ export interface GanttTaskExtendedProps {
   isMultiDate?: boolean
   segments?: Array<{ startTs: number, endTs: number }>
   priority?: PriorityLevel
+  pinned?: boolean
+  repeatRule?: RepeatRule
   /** Task 级别节点：该 Task 下第一个 Item 的 blockId */
   firstItemBlockId?: string
   /** Task 级别节点：该 Task 下所有 Item 的 blockId 列表（有序） */

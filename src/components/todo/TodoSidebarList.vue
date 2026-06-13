@@ -1240,6 +1240,8 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       lineNumber: item.lineNumber,
       status: item.status,
       task: item.task,
+      pinned: item.pinned,
+      repeatRule: item.repeatRule,
     },
     handlers,
     {

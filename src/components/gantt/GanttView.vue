@@ -221,6 +221,8 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     siblingItems: props.siblingItems,
     timePrecision: props.timePrecision,
     listItemBlockId: props.listItemBlockId,
+    pinned: props.pinned,
+    repeatRule: props.repeatRule,
   }
 
   const handlers = getItemActionHandlers(item as Item, plugin, {
