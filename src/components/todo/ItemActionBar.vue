@@ -196,7 +196,7 @@ const preview = useBlockFocusPreview({
 const nativePreview = createNativeBlockPreviewController()
 
 const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
-const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed')
+const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
 const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
