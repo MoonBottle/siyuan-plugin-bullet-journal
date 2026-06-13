@@ -1477,15 +1477,15 @@ const handleCreateExample = async () => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--b3-theme-on-surface);
   opacity: 0.8;
   cursor: help;
   flex-shrink: 0;
 
   .focus-plan-icon {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     fill: currentColor;
     flex-shrink: 0;
   }
