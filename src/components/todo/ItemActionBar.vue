@@ -84,7 +84,6 @@
     <span
       v-if="isActionVisible('pin', showPin)"
       class="block__icon"
-      :class="{ 'block__icon--active': item?.pinned }"
       :aria-label="pinLabel"
       @mouseenter="handleTooltipEnter($event, pinLabel)"
       @mouseleave="handleTooltipLeave"
@@ -378,10 +377,6 @@ function handleOpenCalendar() {
   &:hover {
     color: var(--b3-theme-primary);
     opacity: 1;
-  }
-
-  &--active {
-    // color: var(--b3-theme-primary);
   }
 
   &--lg {
