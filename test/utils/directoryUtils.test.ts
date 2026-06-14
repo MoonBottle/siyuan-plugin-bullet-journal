@@ -4,7 +4,10 @@ import {
   expect,
   it,
 } from 'vitest'
-import { matchGroupId } from '@/utils/directoryUtils'
+import {
+  isExcludedByDisabledDirectories,
+  matchGroupId,
+} from '@/utils/directoryUtils'
 
 describe('matchGroupId', () => {
   const createDir = (path: string, groupId: string, enabled = true): ProjectDirectory => ({
@@ -65,5 +68,57 @@ describe('matchGroupId', () => {
     }]
     const result = matchGroupId('工作/项目A', dirs)
     expect(result).toBeUndefined()
+  })
+})
+
+describe('isExcludedByDisabledDirectories', () => {
+  const createDir = (path: string, enabled = true): ProjectDirectory => ({
+    id: `dir-${path}`,
+    path,
+    enabled,
+  })
+
+  it('should return false when no directories provided', () => {
+    expect(isExcludedByDisabledDirectories('工作/项目A', [])).toBe(false)
+  })
+
+  it('should return false when all directories are enabled', () => {
+    const dirs = [createDir('工作', true), createDir('学习', true)]
+    expect(isExcludedByDisabledDirectories('工作/项目A', dirs)).toBe(false)
+  })
+
+  it('should return true when doc path matches a disabled directory', () => {
+    const dirs = [createDir('归档', false)]
+    expect(isExcludedByDisabledDirectories('归档/2024/项目A', dirs)).toBe(true)
+  })
+
+  it('should return false when doc path matches only enabled directories', () => {
+    const dirs = [createDir('工作', true)]
+    expect(isExcludedByDisabledDirectories('工作/项目A', dirs)).toBe(false)
+  })
+
+  it('should use longest path first matching', () => {
+    const dirs = [
+      createDir('工作', true),
+      createDir('工作/归档', false),
+    ]
+    expect(isExcludedByDisabledDirectories('工作/归档/项目A', dirs)).toBe(true)
+    expect(isExcludedByDisabledDirectories('工作/进行中/项目A', dirs)).toBe(false)
+  })
+
+  it('should return false when doc path does not match any disabled directory', () => {
+    const dirs = [createDir('归档', false)]
+    expect(isExcludedByDisabledDirectories('工作/项目A', dirs)).toBe(false)
+  })
+
+  it('should handle multiple disabled directories', () => {
+    const dirs = [
+      createDir('归档', false),
+      createDir('模板', false),
+      createDir('工作', true),
+    ]
+    expect(isExcludedByDisabledDirectories('归档/2024/项目A', dirs)).toBe(true)
+    expect(isExcludedByDisabledDirectories('模板/日报', dirs)).toBe(true)
+    expect(isExcludedByDisabledDirectories('工作/项目A', dirs)).toBe(false)
   })
 })
