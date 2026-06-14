@@ -12,7 +12,7 @@
       <div class="focus-plan-item-picker__section-list">
         <button
           v-for="item in section.items"
-          :key="item.id"
+          :key="item.blockId ? `${item.blockId}-${item.date}` : item.id"
           class="focus-plan-item-picker__item"
           type="button"
           @click="emit('select', item)"

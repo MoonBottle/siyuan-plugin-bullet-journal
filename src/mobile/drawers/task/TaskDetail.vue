@@ -83,7 +83,7 @@
               <div class="item-list">
                 <div
                   v-for="item in pendingItemsList"
-                  :key="item.id"
+                  :key="item.blockId ? `${item.blockId}-${item.date}` : item.id"
                   class="item-row"
                   @click="handleItemClick(item)"
                 >
@@ -124,7 +124,7 @@
               <div class="item-list">
                 <div
                   v-for="item in completedItemsList"
-                  :key="item.id"
+                  :key="item.blockId ? `${item.blockId}-${item.date}` : item.id"
                   class="item-row completed"
                   @click="handleItemClick(item)"
                 >
@@ -167,7 +167,7 @@
               <div class="item-list">
                 <div
                   v-for="item in abandonedItemsList"
-                  :key="item.id"
+                  :key="item.blockId ? `${item.blockId}-${item.date}` : item.id"
                   class="item-row abandoned"
                   @click="handleItemClick(item)"
                 >

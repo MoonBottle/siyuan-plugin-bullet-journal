@@ -88,7 +88,7 @@
                 </div>
                 <div
                   v-for="item in expiredItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="item-row"
                   :class="{ selected: selectedItem?.id === item.id }"
                   @click="selectItem(item)"
@@ -109,7 +109,7 @@
                 </div>
                 <div
                   v-for="item in todayItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="item-row"
                   :class="{ selected: selectedItem?.id === item.id }"
                   @click="selectItem(item)"

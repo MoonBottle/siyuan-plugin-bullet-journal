@@ -93,7 +93,7 @@
           >
             <Card
               v-for="item in pinnedItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="today"
               :show-header="true"
               :show-footer="true"
@@ -200,7 +200,7 @@
           >
             <Card
               v-for="item in expiredItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="expired"
               :show-header="true"
               :show-footer="true"
@@ -307,7 +307,7 @@
           >
             <Card
               v-for="item in todayItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="today"
               :show-header="true"
               :show-footer="true"
@@ -414,7 +414,7 @@
           >
             <Card
               v-for="item in tomorrowItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="tomorrow"
               :show-header="true"
               :show-footer="true"
@@ -530,7 +530,7 @@
               <div class="todo-items">
                 <Card
                   v-for="item in groupedFutureItems.get(date)"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   status="future"
                   :show-header="true"
                   :show-footer="true"
@@ -635,7 +635,7 @@
           >
             <Card
               v-for="item in completedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="completed"
               :show-header="true"
               :show-footer="true"
@@ -741,7 +741,7 @@
           >
             <Card
               v-for="item in abandonedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               status="abandoned"
               :show-header="true"
               :show-footer="true"

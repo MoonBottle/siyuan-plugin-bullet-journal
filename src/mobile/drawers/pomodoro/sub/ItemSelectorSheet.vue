@@ -43,7 +43,7 @@
                 </div>
                 <button
                   v-for="item in expiredItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="sheet-option"
                   @click="selectItem(item)"
                 >
@@ -71,7 +71,7 @@
                 </div>
                 <button
                   v-for="item in todayItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="sheet-option"
                   @click="selectItem(item)"
                 >

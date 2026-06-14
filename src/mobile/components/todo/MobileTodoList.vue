@@ -108,7 +108,7 @@
           >
             <div
               v-for="(item, index) in expiredItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === expiredItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -183,7 +183,7 @@
           >
             <div
               v-for="(item, index) in todayItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === todayItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -265,7 +265,7 @@
           >
             <div
               v-for="(item, index) in tomorrowItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === tomorrowItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -347,7 +347,7 @@
               </div>
               <div
                 v-for="(item, index) in groupedFutureItems.get(date)"
-                :key="item.id"
+                :key="item.blockId || item.id"
                 class="todo-item"
                 :class="{ 'is-last': index === groupedFutureItems.get(date)!.length - 1 }"
                 @touchstart="handleTouchStart(item)"
@@ -422,7 +422,7 @@
           >
             <div
               v-for="(item, index) in completedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item completed-item"
               :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -478,7 +478,7 @@
           >
             <div
               v-for="(item, index) in abandonedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item abandoned-item"
               :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
               @touchstart="handleTouchStart(item)"
