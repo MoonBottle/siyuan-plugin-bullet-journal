@@ -15,6 +15,7 @@ import {
   sql,
 } from '@/api'
 import { defaultPomodoroSettings } from '@/settings'
+import { isExcludedByDisabledDirectories } from '@/utils/directoryUtils'
 import { parseKramdown } from './core'
 import { LineParser } from './lineParser'
 
@@ -23,9 +24,11 @@ const HPATH_DEBUG_PREFIX = '[Task Assistant][HPathDebug]'
 
 export class MarkdownParser {
   private directories: ProjectDirectory[]
+  private allDirectories: ProjectDirectory[]
   private scanMode: ScanMode
 
   constructor(directories: ProjectDirectory[], scanMode: ScanMode = 'full') {
+    this.allDirectories = directories || []
     this.directories = directories?.filter((d) => d.enabled) || []
     this.scanMode = scanMode
   }
@@ -44,6 +47,8 @@ export class MarkdownParser {
       for (const doc of docs) {
         if (processedDocIds.has(doc.id)) continue
         processedDocIds.add(doc.id)
+        // 排除未启用目录下的文档
+        if (isExcludedByDisabledDirectories(doc.path, this.allDirectories)) continue
         try {
           const project = await this.parseProjectDocument(
             doc.id,
@@ -279,6 +284,8 @@ export class MarkdownParser {
       for (const doc of docs) {
         if (processedDocIds.has(doc.id)) continue
         processedDocIds.add(doc.id)
+        // 排除未启用目录下的文档
+        if (isExcludedByDisabledDirectories(doc.path, this.allDirectories)) continue
         try {
           const project = await this.parseAndProcessSingleDocument(
             doc.id,
