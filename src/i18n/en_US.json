@@ -389,7 +389,7 @@
       "scanModeDirectories": "Directories Only",
       "scanModeFullHint": "Scan all documents in the workspace",
       "scanModeDirectoriesHint": "Only scan documents in configured directories and their subdirectories",
-      "fullScanDirectoriesHint": "Directory configuration is only used for grouping in full scan mode"
+      "fullScanDirectoriesHint": "Directory configuration is used for grouping and filtering. Disabled directories are excluded in full scan mode"
     },
     "scanMode": {
       "label": "Scan Scope",

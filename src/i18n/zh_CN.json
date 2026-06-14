@@ -389,7 +389,7 @@
       "scanModeDirectories": "指定目录",
       "scanModeFullHint": "扫描整个工作空间中的所有文档",
       "scanModeDirectoriesHint": "仅扫描下方配置的目录及其子目录中的文档",
-      "fullScanDirectoriesHint": "以下目录配置仅用于分组归类"
+      "fullScanDirectoriesHint": "以下目录配置用于分组归类和过滤。未启用的目录在全库扫描时将被排除"
     },
     "scanMode": {
       "label": "扫描范围",
