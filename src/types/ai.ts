@@ -61,6 +61,8 @@ export interface AIProviderConfig {
   enabled: boolean
 }
 
+export type AIErrorType = 'auth' | 'model_not_found' | 'rate_limit' | 'network' | 'unknown'
+
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
 export interface ToolCall {
