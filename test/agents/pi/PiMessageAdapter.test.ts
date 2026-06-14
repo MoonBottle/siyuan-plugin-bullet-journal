@@ -151,6 +151,45 @@ describe('piMessageAdapter', () => {
       })
     })
 
+    it('should convert assistant message with error (stopReason=error)', () => {
+      const piMsg = {
+        role: 'assistant' as const,
+        content: [] as Array<{ type: 'text', text: string }>,
+        stopReason: 'error',
+        errorMessage: '404 This model is unavailable for free',
+        timestamp: 1700000000,
+      }
+
+      const result = PiMessageAdapter.toChatMessage(piMsg)
+
+      expect(result.role).toBe('assistant')
+      expect(result.error).toBeDefined()
+      expect(result.error).not.toBeInstanceOf(String)
+      expect(typeof result.error).toBe('object')
+      expect((result.error as any).type).toBe('model_not_found')
+      expect((result.error as any).title).toBeTruthy()
+      expect((result.error as any).retryable).toBe(false)
+      expect(result.loading).toBeFalsy()
+    })
+
+    it('should not set error for normal assistant message (stopReason=end_turn)', () => {
+      const piMsg = {
+        role: 'assistant' as const,
+        content: [
+          {
+            type: 'text' as const,
+            text: 'Hello!',
+          },
+        ],
+        stopReason: 'end_turn',
+        timestamp: 1700000000,
+      }
+
+      const result = PiMessageAdapter.toChatMessage(piMsg)
+
+      expect(result.error).toBeUndefined()
+    })
+
     it('should convert toolResult message', () => {
       const piMsg = {
         role: 'toolResult' as const,

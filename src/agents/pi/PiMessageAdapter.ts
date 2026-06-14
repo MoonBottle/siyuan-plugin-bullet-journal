@@ -4,6 +4,8 @@ import type {
   UsageInfo,
 } from '@/types/ai'
 
+import { classifyAIError } from '@/utils/aiErrorClassifier'
+
 export interface PiTextBlock {
   type: 'text'
   text: string
@@ -42,6 +44,7 @@ export interface PiAssistantMessage {
     cost: Record<string, unknown>
   }
   stopReason?: string
+  errorMessage?: string
   timestamp: number
 }
 
@@ -120,6 +123,19 @@ export class PiMessageAdapter {
             completion_tokens: msg.usage.output,
             total_tokens: msg.usage.totalTokens,
           } satisfies UsageInfo
+        }
+
+        // 处理 API 错误：pi-ai 不抛出异常，而是将错误信息放在 errorMessage 上
+        if (msg.stopReason === 'error' && msg.errorMessage) {
+          const aiError = classifyAIError(new Error(msg.errorMessage))
+          chatMsg.error = {
+            type: aiError.type,
+            title: aiError.title,
+            message: aiError.message,
+            suggestion: aiError.suggestion,
+            retryable: aiError.retryable,
+          }
+          chatMsg.loading = false
         }
 
         return chatMsg

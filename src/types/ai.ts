@@ -63,6 +63,14 @@ export interface AIProviderConfig {
 
 export type AIErrorType = 'auth' | 'model_not_found' | 'rate_limit' | 'network' | 'unknown'
 
+export interface AIErrorInfo {
+  type: AIErrorType
+  title: string
+  message: string
+  suggestion: string
+  retryable: boolean
+}
+
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
 export interface ToolCall {
@@ -100,7 +108,7 @@ export interface ChatMessage {
   content: string
   timestamp: number
   loading?: boolean
-  error?: string
+  error?: string | AIErrorInfo
 
   toolCalls?: ToolCall[]
   toolCallId?: string

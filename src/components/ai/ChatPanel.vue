@@ -61,6 +61,8 @@
                   :show-footer="message.showFooter"
                   :show-insert-btn="message.showInsertBtn"
                   @insert-to-note="handleInsertToNote"
+                  @retry="handleRetry"
+                  @open-settings="handleOpenSettings"
                 />
               </div>
             </template>
@@ -78,6 +80,8 @@
                 :show-footer="message.showFooter"
                 :show-insert-btn="message.showInsertBtn"
                 @insert-to-note="handleInsertToNote"
+                @retry="handleRetry"
+                @open-settings="handleOpenSettings"
               />
             </template>
           </div>
@@ -536,6 +540,10 @@ function handleExampleClick(example: string) {
 
 function handleOpenSettings() {
   emit('openSettings')
+}
+
+function handleRetry() {
+  aiStore.retryLastMessage()
 }
 
 function focusInput() {

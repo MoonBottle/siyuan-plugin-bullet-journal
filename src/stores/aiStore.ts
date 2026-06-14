@@ -4,6 +4,7 @@ import type {
   ConversationIndexItem,
 } from '@/services/conversationStorageService'
 import type {
+  AIErrorInfo,
   AIProviderConfig,
   ChatConversation,
   ChatMessage,
@@ -47,6 +48,7 @@ import {
   useConversationStorage,
 } from '@/services/conversationStorageService'
 import { SkillService } from '@/services/skillService'
+import { classifyAIError } from '@/utils/aiErrorClassifier'
 import { useProjectStore } from './projectStore'
 import { useSettingsStore } from './settingsStore'
 
@@ -631,7 +633,7 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 发送消息（基于 Pi Agent）
    */
-  async function sendMessage(content: string, skillNames?: string[]): Promise<void> {
+  async function sendMessage(content: string, skillNames?: string[], _retryCount?: number): Promise<void> {
     // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用'
@@ -745,7 +747,10 @@ export const useAIStore = defineStore('ai', () => {
           const streamingMsg = PiMessageAdapter.toChatMessage(
             agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
           )
-          streamingMsg.loading = true
+          // 仅在无错误时标记为 loading（pi-ai 错误通过 stopReason='error' 传递，不抛异常）
+          if (!streamingMsg.error) {
+            streamingMsg.loading = true
+          }
           committedMsgs.push(streamingMsg)
         }
 
@@ -813,8 +818,80 @@ export const useAIStore = defineStore('ai', () => {
 
     } catch (err) {
       console.error('[AIStore] Send message error:', err)
-      error.value = err instanceof Error ? err.message : '发送消息失败'
+      const aiError = classifyAIError(err)
+      const retryCount = _retryCount ?? 0
 
+      // 自动重试：仅对可重试错误，最多 2 次
+      if (aiError.retryable && retryCount < 2) {
+        const backoff = 2 ** retryCount * 1000 // 1s, 2s
+        console.log(`[AIStore] 自动重试 (${retryCount + 1}/2)，${backoff}ms 后重试`)
+
+        // 更新 streamingMessage 显示重试提示
+        if (currentConversation.value) {
+          const msgs = [...currentConversation.value.messages]
+          const lastMsg = msgs.at(-1)
+          if (lastMsg?.loading) {
+            lastMsg.content = t('aiChat').errorRetrying.replace('{n}', String(retryCount + 1))
+            currentConversation.value = {
+              ...currentConversation.value,
+              messages: msgs,
+            }
+          }
+        }
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, backoff)
+        })
+        return sendMessage(content, skillNames, retryCount + 1)
+      }
+
+      // 不可重试或重试次数用尽，插入错误消息
+      const errorInfo: AIErrorInfo = {
+        type: aiError.type,
+        title: aiError.title,
+        message: aiError.message,
+        suggestion: aiError.suggestion,
+        retryable: aiError.retryable,
+      }
+
+      if (currentConversation.value) {
+        const msgs = [...currentConversation.value.messages]
+        // 查找并处理 streamingMessage（loading 状态的消息）
+        const lastMsg = msgs.at(-1)
+        if (lastMsg?.loading) {
+          if (lastMsg.content?.trim()) {
+            // 流式中断：保留已接收内容，追加错误消息
+            lastMsg.loading = false
+            msgs.push({
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: '',
+              timestamp: Date.now(),
+              error: errorInfo,
+            })
+          } else {
+            // 无内容：将 streamingMessage 转为错误消息
+            lastMsg.loading = false
+            lastMsg.error = errorInfo
+          }
+        } else {
+          // 无 streamingMessage：创建新的错误消息
+          msgs.push({
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: '',
+            timestamp: Date.now(),
+            error: errorInfo,
+          })
+        }
+        currentConversation.value = {
+          ...currentConversation.value,
+          messages: msgs,
+        }
+      }
+
+      // 错误已转移到消息中，清除全局 error
+      error.value = null
       await forceSaveConversation()
     } finally {
       isLoading.value = false
@@ -823,6 +900,36 @@ export const useAIStore = defineStore('ai', () => {
       }
       currentAgent = null
     }
+  }
+
+  async function retryLastMessage(): Promise<void> {
+    if (!currentConversation.value) return
+    const msgs = currentConversation.value.messages
+
+    // 找到最后一条用户消息
+    let lastUserMsgIndex = -1
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === 'user') {
+        lastUserMsgIndex = i
+        break
+      }
+    }
+
+    if (lastUserMsgIndex === -1) return
+
+    const lastUserMsg = msgs[lastUserMsgIndex]
+    const content = lastUserMsg.content
+    const skillNames = lastUserMsg.skillNames
+
+    // 移除最后的错误 assistant 消息（从末尾开始，直到遇到用户消息）
+    const trimmedMsgs = msgs.slice(0, lastUserMsgIndex + 1)
+    currentConversation.value = {
+      ...currentConversation.value,
+      messages: trimmedMsgs,
+    }
+
+    // 重新发送
+    await sendMessage(content, skillNames, 0)
   }
 
   // ==================== Export Data ====================
@@ -1726,6 +1833,7 @@ export const useAIStore = defineStore('ai', () => {
     deleteConversation,
     clearCurrentConversation,
     sendMessage,
+    retryLastMessage,
     setToolContext,
     getExportData,
     getChatHistoryData,

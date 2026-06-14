@@ -68,7 +68,38 @@
           v-if="message.error"
           class="chat-message__error-text"
         >
-          {{ message.error }}
+          <template v-if="isStructuredError">
+            <div class="ai-chat-error">
+              <div class="ai-chat-error__title">
+                {{ (message.error as any).title }}
+              </div>
+              <div class="ai-chat-error__message">
+                {{ (message.error as any).message }}
+              </div>
+              <div class="ai-chat-error__suggestion">
+                {{ (message.error as any).suggestion }}
+              </div>
+              <div class="ai-chat-error__actions">
+                <button
+                  v-if="(message.error as any).retryable"
+                  class="ai-chat-error__btn ai-chat-error__btn--retry"
+                  @click="handleRetry"
+                >
+                  {{ t('aiChat').errorRetry }}
+                </button>
+                <button
+                  v-if="showSettingsBtn"
+                  class="ai-chat-error__btn ai-chat-error__btn--settings"
+                  @click="handleOpenSettings"
+                >
+                  {{ t('aiChat').errorOpenSettings }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            {{ message.error }}
+          </template>
         </div>
 
         <!-- 工具调用消息 -->
@@ -187,7 +218,10 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage } from '@/types/ai'
+import type {
+  AIErrorInfo,
+  ChatMessage,
+} from '@/types/ai'
 import {
   computed,
 } from 'vue'
@@ -215,7 +249,27 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   insertToNote: [message: ChatMessage]
+  retry: []
+  openSettings: []
 }>()
+
+const isStructuredError = computed(() => {
+  return typeof props.message.error === 'object' && props.message.error !== null
+})
+
+const showSettingsBtn = computed(() => {
+  if (!isStructuredError.value) return false
+  const err = props.message.error as AIErrorInfo
+  return err.type === 'auth' || err.type === 'model_not_found' || err.type === 'unknown'
+})
+
+function handleRetry() {
+  emit('retry')
+}
+
+function handleOpenSettings() {
+  emit('openSettings')
+}
 
 // 用于去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
 const MARKDOWN_CODE_BLOCK_RE = /^```(?:markdown)?\n([\s\S]*?)\n```$/
@@ -445,7 +499,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--error {
-    border: 1px solid var(--b3-theme-error);
+    // border: 1px solid var(--b3-theme-error);
   }
 
   &__avatar {
@@ -736,6 +790,62 @@ function formatTime(timestamp: number): string {
   &__error-text {
     color: var(--b3-theme-error);
     font-size: 13px;
+  }
+
+  .ai-chat-error {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &__title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    &__message {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    &__suggestion {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    &__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    &__btn {
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--b3-theme-on-surface-light);
+      background: transparent;
+      color: var(--b3-theme-on-surface);
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--b3-theme-surface-lighter);
+      }
+
+      &--retry {
+        border-color: var(--b3-theme-primary);
+        color: var(--b3-theme-primary);
+
+        &:hover {
+          background: var(--b3-theme-primary-lightest);
+        }
+      }
+
+      &--settings {
+        border-color: var(--b3-theme-on-surface-light);
+      }
+    }
   }
 
   &__text {

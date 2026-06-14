@@ -98,8 +98,74 @@ describe('classifyAIError', () => {
   })
 
   it('应将包含 "model" 和 "unavailable" 的错误分类为 model_not_found', () => {
-    const err = new Error('The model is unavailable')
+    const err = new Error('The model unavailable for free')
     const result = classifyAIError(err)
     expect(result.type).toBe('model_not_found')
+  })
+
+  it('应将包含 "unauthorized" 的错误分类为 auth', () => {
+    const err = new Error('Unauthorized access')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('auth')
+  })
+
+  it('应将包含 "authentication" 的错误分类为 auth', () => {
+    const err = new Error('Authentication failed')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('auth')
+  })
+
+  it('应将包含 "model not found" 的错误分类为 model_not_found', () => {
+    const err = new Error('Model not found: gpt-5')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('model_not_found')
+  })
+
+  it('应将包含 "not available for free" 的错误分类为 model_not_found', () => {
+    const err = new Error('This model is not available for free')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('model_not_found')
+  })
+
+  it('应将包含 "quota" 的错误分类为 rate_limit', () => {
+    const err = new Error('Quota exceeded for this month')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('rate_limit')
+  })
+
+  it('应将包含 "too many requests" 的错误分类为 rate_limit', () => {
+    const err = new Error('Too many requests, please slow down')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('rate_limit')
+  })
+
+  it('应将包含 "network" 的错误分类为 network', () => {
+    const err = new Error('Network error occurred')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('network')
+  })
+
+  it('应将包含 "dns" 的错误分类为 network', () => {
+    const err = new Error('DNS resolution failed')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('network')
+  })
+
+  it('应从 err.statusCode 提取 HTTP 状态码', () => {
+    const err = new Error('Forbidden')
+    ;(err as any).statusCode = 403
+    const result = classifyAIError(err)
+    expect(result.type).toBe('auth')
+  })
+
+  it('应返回完整的 AIError 结构', () => {
+    const err = new Error('Invalid API key provided')
+    const result = classifyAIError(err)
+    expect(result.type).toBe('auth')
+    expect(result.title).toBe('认证失败')
+    expect(result.message).toBe('API Key 无效或已过期')
+    expect(result.suggestion).toBe('请在设置中检查 API Key 或更换供应商')
+    expect(result.retryable).toBe(false)
+    expect(result.originalError).toBe(err)
   })
 })

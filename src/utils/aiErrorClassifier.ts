@@ -1,5 +1,7 @@
 import type { AIErrorType } from '@/types/ai'
 
+import { t } from '@/i18n'
+
 export interface AIError {
   type: AIErrorType
   title: string
@@ -46,7 +48,7 @@ function classifyByMessage(message: string): AIErrorType | null {
     return 'auth'
   }
 
-  if ((lower.includes('model') && lower.includes('unavailable')) || lower.includes('model not found') || lower.includes('model is not available') || lower.includes('not available for free')) {
+  if (lower.includes('model unavailable') || lower.includes('model not found') || lower.includes('not available for free')) {
     return 'model_not_found'
   }
 
@@ -54,7 +56,7 @@ function classifyByMessage(message: string): AIErrorType | null {
     return 'rate_limit'
   }
 
-  if (lower.includes('fetch failed') || lower.includes('econnrefused') || lower.includes('network') || lower.includes('timeout') || lower.includes('enetunreach') || lower.includes('dns')) {
+  if (lower.includes('fetch failed') || lower.includes('econnrefused') || lower.includes('network') || lower.includes('timeout') || lower.includes('dns')) {
     return 'network'
   }
 
@@ -62,27 +64,27 @@ function classifyByMessage(message: string): AIErrorType | null {
 }
 
 const ERROR_TITLES: Record<AIErrorType, string> = {
-  auth: '认证失败',
-  model_not_found: '模型不可用',
-  rate_limit: '请求过于频繁',
-  network: '网络连接失败',
-  unknown: '请求失败',
+  auth: t('aiChat').errorAuth,
+  model_not_found: t('aiChat').errorModelNotFound,
+  rate_limit: t('aiChat').errorRateLimit,
+  network: t('aiChat').errorNetwork,
+  unknown: t('aiChat').errorUnknown,
 }
 
 const ERROR_MESSAGES: Record<AIErrorType, string> = {
-  auth: 'API Key 无效或已过期',
-  model_not_found: '当前模型不可用或不存在',
-  rate_limit: '已达到 API 调用频率限制',
-  network: '无法连接到 AI 服务',
-  unknown: '请求处理失败',
+  auth: t('aiChat').errorAuthMessage,
+  model_not_found: t('aiChat').errorModelNotFoundMessage,
+  rate_limit: t('aiChat').errorRateLimitMessage,
+  network: t('aiChat').errorNetworkMessage,
+  unknown: t('aiChat').errorUnknownMessage,
 }
 
 const ERROR_SUGGESTIONS: Record<AIErrorType, string> = {
-  auth: '请在设置中检查 API Key 或更换供应商',
-  model_not_found: '请在设置中更换模型或切换供应商',
-  rate_limit: '请稍后重试，或升级 API 套餐',
-  network: '请检查网络连接和 API 地址是否正确',
-  unknown: '请稍后重试或检查设置',
+  auth: t('aiChat').errorAuthSuggestion,
+  model_not_found: t('aiChat').errorModelNotFoundSuggestion,
+  rate_limit: t('aiChat').errorRateLimitSuggestion,
+  network: t('aiChat').errorNetworkSuggestion,
+  unknown: t('aiChat').errorUnknownSuggestion,
 }
 
 const RETRYABLE_TYPES: Set<AIErrorType> = new Set(['rate_limit', 'network'])
