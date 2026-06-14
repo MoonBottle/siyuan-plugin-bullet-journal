@@ -4,7 +4,10 @@ import type {
   ProjectDirectory,
   ScanMode,
 } from '@/types/models'
-import { matchGroupId } from '@/utils/directoryUtils'
+import {
+  isExcludedByDisabledDirectories,
+  matchGroupId,
+} from '@/utils/directoryUtils'
 import { parseKramdown } from '../parser/core'
 import {
   loadPluginSettingsFromSiYuan,
@@ -103,6 +106,8 @@ export async function loadProjectsAndItems(
     for (const doc of docs) {
       if (processedDocIds.has(doc.id)) continue
       processedDocIds.add(doc.id)
+      // 排除未启用目录下的文档
+      if (isExcludedByDisabledDirectories(doc.path || '', directories)) continue
       const kramdown = await client.getBlockKramdown(doc.id)
       if (kramdown) {
         const project = parseKramdown(kramdown, doc.id, undefined, doc.path || doc.notebookId)
