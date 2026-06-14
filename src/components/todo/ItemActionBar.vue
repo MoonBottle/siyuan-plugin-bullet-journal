@@ -94,7 +94,7 @@
     </span>
 
     <span
-      v-if="isActionVisible('openDoc')"
+      v-if="isActionVisible('openDoc') && hasLeftButtons"
       class="block__icon-separator"
     ></span>
 
@@ -224,6 +224,31 @@ const isMigrateToToday = computed(() => !!props.item && props.item.date < dayjs(
 const pinLabel = computed(() => {
   if (!props.item) return ''
   return props.item.pinned ? t('todo').unpin : t('todo').pin
+})
+
+const hasLeftButtons = computed(() => {
+  // 检查 openDoc 左边是否有任何可见按钮
+  const leftActions: ActionName[] = ['complete', 'startFocus', 'focusPlan', 'migrate', 'skipOccurrence', 'abandon', 'pin']
+  return leftActions.some((action) => {
+    switch (action) {
+      case 'complete':
+        return canComplete.value && isActionVisible('complete')
+      case 'startFocus':
+        return !pomodoroStore.isFocusing && canStartFocus.value && isActionVisible('startFocus')
+      case 'focusPlan':
+        return canSetFocusPlan.value && isActionVisible('focusPlan')
+      case 'migrate':
+        return canMigrate.value && isActionVisible('migrate')
+      case 'skipOccurrence':
+        return canSkipOccurrence.value && isActionVisible('skipOccurrence')
+      case 'abandon':
+        return canAbandon.value && isActionVisible('abandon')
+      case 'pin':
+        return isActionVisible('pin', props.showPin)
+      default:
+        return false
+    }
+  })
 })
 
 function isActionVisible(name: ActionName, legacyShow = true): boolean {
