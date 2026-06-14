@@ -87,11 +87,12 @@ import WebhookConfigSection from './WebhookConfigSection.vue'
 const props = defineProps<{
   plugin: any
   closeDialog: () => void
+  initialSection?: string
 }>()
 
 const settingsStore = useSettingsStore()
 const searchQuery = ref('')
-const activeSection = ref('dir')
+const activeSection = ref(props.initialSection || 'dir')
 
 interface MenuItem {
   key: string

@@ -336,9 +336,9 @@ const handleConversationDelete = async (conversationId: string) => {
 }
 
 // 打开设置
-const handleOpenSettings = () => {
+const handleOpenSettings = (section?: string) => {
   if (plugin?.openSetting) {
-    plugin.openSetting()
+    plugin.openSetting(section)
   }
 }
 

@@ -235,7 +235,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  openSettings: []
+  openSettings: [section?: string]
 }>()
 
 const NEWLINE_RE = /\n/g
@@ -538,8 +538,8 @@ function handleExampleClick(example: string) {
   handleSend(example)
 }
 
-function handleOpenSettings() {
-  emit('openSettings')
+function handleOpenSettings(section?: string) {
+  emit('openSettings', section)
 }
 
 function handleRetry() {

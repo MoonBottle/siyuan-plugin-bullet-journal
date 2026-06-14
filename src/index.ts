@@ -1294,13 +1294,13 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 打开设置（Vue 重构版）
    */
-  openSetting(): void {
+  openSetting(initialSection?: string): void {
     void this.loadSettings().then(() => {
       if (this.isMobile) {
         this.openMobilePluginDock(DOCK_TYPES.TODO, "todo")
         return
       }
-      showSettingsDialog(this)
+      showSettingsDialog(this, initialSection)
     })
   }
 

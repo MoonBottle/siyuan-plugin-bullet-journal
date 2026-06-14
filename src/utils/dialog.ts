@@ -565,7 +565,7 @@ function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroup
 /**
  * 显示设置弹框（Vue 重构版）- 支持移动端适配
  */
-export function showSettingsDialog(plugin: any): Dialog | null {
+export function showSettingsDialog(plugin: any, initialSection?: string): Dialog | null {
   // 移动端使用抽屉式设置面板
   if (isMobileDevice()) {
     return showMobileSettingsDrawer(plugin)
@@ -597,6 +597,7 @@ export function showSettingsDialog(plugin: any): Dialog | null {
       settingsDialogApp = createApp(SettingsDialog, {
         plugin,
         closeDialog,
+        initialSection: initialSection ?? undefined,
       })
       const pinia = getSharedPinia()
       if (pinia) {

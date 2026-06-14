@@ -250,7 +250,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   insertToNote: [message: ChatMessage]
   retry: []
-  openSettings: []
+  openSettings: [section?: string]
 }>()
 
 const isStructuredError = computed(() => {
@@ -268,7 +268,7 @@ function handleRetry() {
 }
 
 function handleOpenSettings() {
-  emit('openSettings')
+  emit('openSettings', 'ai')
 }
 
 // 用于去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
