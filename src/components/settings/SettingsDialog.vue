@@ -66,6 +66,7 @@ import type { AIProviderConfig } from '@/types/ai'
 import { showMessage } from 'siyuan'
 import {
   computed,
+  onMounted,
   onUnmounted,
   ref,
   watch,
@@ -360,10 +361,17 @@ function handleAiUpdate(newAi: {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
+let storeReady = false
+
+onMounted(() => {
+  settingsStore.loadFromPlugin()
+  storeReady = true
+})
 
 watch(
   () => settingsStore.$state,
   () => {
+    if (!storeReady) return
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       const plugin = props.plugin

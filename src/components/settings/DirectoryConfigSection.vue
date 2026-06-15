@@ -16,40 +16,38 @@
             class="sy-scan-mode__option"
             :class="{ 'is-active': scanMode === 'full' }"
           >
+            <div class="sy-scan-mode__content">
+              <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaGlobe"></use></svg></span>
+              <div class="sy-scan-mode__text">
+                <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeFull || '全库扫描' }}</span>
+                <span class="sy-scan-mode__hint">{{ t('settings').dirConfig.scanModeFullHint || '扫描整个工作空间中的所有文档' }}</span>
+              </div>
+            </div>
             <input
               type="radio"
               value="full"
               :checked="scanMode === 'full'"
               @change="emit('update:scanMode', 'full')"
             />
-            <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaGlobe"></use></svg></span>
-            <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeFull || '全库扫描' }}</span>
           </label>
           <label
             class="sy-scan-mode__option"
             :class="{ 'is-active': scanMode === 'directories' }"
           >
+            <div class="sy-scan-mode__content">
+              <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaFolderSearch"></use></svg></span>
+              <div class="sy-scan-mode__text">
+                <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeDirectories || '指定目录' }}</span>
+                <span class="sy-scan-mode__hint">{{ t('settings').dirConfig.scanModeDirectoriesHint || '仅扫描下方配置的目录及其子目录中的文档' }}</span>
+              </div>
+            </div>
             <input
               type="radio"
               value="directories"
               :checked="scanMode === 'directories'"
               @change="emit('update:scanMode', 'directories')"
             />
-            <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaFolderSearch"></use></svg></span>
-            <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeDirectories || '指定目录' }}</span>
           </label>
-        </div>
-        <div
-          v-if="scanMode === 'full'"
-          class="sy-scan-mode__hint"
-        >
-          {{ t('settings').dirConfig.scanModeFullHint || '扫描整个工作空间中的所有文档' }}
-        </div>
-        <div
-          v-else
-          class="sy-scan-mode__hint"
-        >
-          {{ t('settings').dirConfig.scanModeDirectoriesHint || '仅扫描下方配置的目录及其子目录中的文档' }}
         </div>
       </div>
 
@@ -332,7 +330,8 @@ function toggleDirEnabled(index: number) {
 .sy-scan-mode__option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 14px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 6px;
@@ -348,10 +347,26 @@ function toggleDirEnabled(index: number) {
 
 .sy-scan-mode__option input[type='radio'] {
   margin: 0;
+  flex-shrink: 0;
+}
+
+.sy-scan-mode__content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.sy-scan-mode__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .sy-scan-mode__icon {
   font-size: 18px;
+  display: flex;
+  align-items: center;
 
   svg {
     width: 18px;
@@ -365,10 +380,9 @@ function toggleDirEnabled(index: number) {
 }
 
 .sy-scan-mode__hint {
-  margin-top: 8px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .sy-directory-hint {
