@@ -37,7 +37,7 @@
         :title="(t('settings') as any).mcp?.httpTooltip ?? '思源版本 3.7.0 以上可用'"
         @click="copyHttpMcpConfig"
       >
-        🧪 {{ (t('settings') as any).mcp?.httpCopyButton ?? '复制 HTTP MCP 配置（实验性）' }}
+        🧪 {{ (t('settings') as any).mcp?.httpCopyButton ?? '复制 HTTP MCP 配置' }}
       </button>
     </div>
   </div>
