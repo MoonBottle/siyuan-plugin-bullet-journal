@@ -260,6 +260,7 @@ function getTaskAssistantDebugState(): TaskAssistantDebugState {
 
 // 全局设置
 let settings: SettingsData = { ...defaultSettings }
+let settingsLoaded = false
 
 // 全局聊天记录（单独存储）
 let chatHistory: AIChatHistory = { ...defaultChatHistory }
@@ -834,6 +835,7 @@ export default class TaskAssistantPlugin extends Plugin {
       }
       // 加载聊天记录（从单独的文件）
       await this.loadAIChatHistory()
+      settingsLoaded = true
     } catch (error) {
       console.error("[Task Assistant] Failed to load settings:", error)
     }
@@ -861,6 +863,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 保存设置
    */
   public async saveSettings() {
+    if (!settingsLoaded) return
     if (Date.now() - this.lastAISettingsSaveTime < 400) {
       this.lastAISettingsSaveTime = 0
       return
