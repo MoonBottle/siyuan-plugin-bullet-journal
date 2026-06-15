@@ -11,7 +11,7 @@ describe('taskAssistantPlugin mobile openSetting behavior', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8')
 
     expect(indexSource).toMatch(
-      /openSetting\(\): void \{\s*void this\.loadSettings\(\)\.then\(\(\) => \{\s*if \(this\.isMobile\) \{\s*this\.openMobilePluginDock\(DOCK_TYPES\.TODO,\s*"todo"\)\s*return\s*\}\s*showSettingsDialog\(this\)\s*\}\)\s*\}/,
+      /openSetting\(initialSection\?: string\): void \{\s*void this\.loadSettings\(\)\.then\(\(\) => \{\s*if \(this\.isMobile\) \{\s*this\.openMobilePluginDock\(DOCK_TYPES\.TODO,\s*"todo"\)\s*return\s*\}\s*showSettingsDialog\(this,\s*initialSection\)\s*\}\)\s*\}/,
     )
   })
 })
