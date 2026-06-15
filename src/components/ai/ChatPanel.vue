@@ -171,7 +171,7 @@
           <button
             v-if="!isMobile"
             class="chat-panel__settings-btn"
-            @click="handleOpenSettings()"
+            @click="handleOpenSettings('ai')"
           >
             <svg><use xlink:href="#iconSettings"></use></svg>
           </button>

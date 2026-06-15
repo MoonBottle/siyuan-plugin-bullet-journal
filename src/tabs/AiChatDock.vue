@@ -387,7 +387,7 @@ const handleMoreClick = (event: MouseEvent) => {
       icon: 'iconSettings',
       label: t('settings').title,
       click: () => {
-        handleOpenSettings()
+        handleOpenSettings('ai')
       },
     })
   }
