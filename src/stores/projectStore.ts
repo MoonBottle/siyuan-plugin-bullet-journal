@@ -999,7 +999,7 @@ export const useProjectStore = defineStore('project', {
       this.projects = []
 
       try {
-        const parser = new MarkdownParser(enabledDirs, scanMode)
+        const parser = new MarkdownParser(directories, scanMode)
         let pendingProjects: Project[] = []
 
         await parser.parseAllProjectsWithCallback(_plugin, (project) => {
@@ -1137,8 +1137,7 @@ export const useProjectStore = defineStore('project', {
         dirtyDocsBeforeClear: dirtyDocTracker.getDirtyDocs(),
       })
 
-      const enabledDirs = directories.filter((d) => d.enabled)
-      const parser = new MarkdownParser(enabledDirs, scanMode)
+      const parser = new MarkdownParser(directories, scanMode)
       const nextProjects = await this.buildProjectsFromParser(
         parser,
         _plugin,
@@ -1172,8 +1171,7 @@ export const useProjectStore = defineStore('project', {
         enabledDirsCount: directories.filter((d) => d.enabled).length,
       })
 
-      const enabledDirs = directories.filter((d) => d.enabled)
-      const parser = new MarkdownParser(enabledDirs, scanMode)
+      const parser = new MarkdownParser(directories, scanMode)
 
       // 只解析脏文档，而不是整个目录
       for (const docId of dirtyDocIds) {
@@ -1212,6 +1210,7 @@ export const useProjectStore = defineStore('project', {
 
           // 全扫描模式下重新匹配分组
           let finalGroupId = groupId
+          const enabledDirs = directories.filter((d) => d.enabled)
           if (scanMode === 'full' && enabledDirs.length > 0 && path) {
             finalGroupId = matchGroupId(path, enabledDirs)
           }

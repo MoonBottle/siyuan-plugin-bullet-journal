@@ -55,7 +55,9 @@ import {
   ICON_DASHBOARD,
   ICON_FILE_TEXT,
   ICON_FLAG,
+  ICON_FOLDER_SEARCH,
   ICON_GANTT,
+  ICON_GLOBE,
   ICON_GRIP_HORIZONTAL,
   ICON_HABIT,
   ICON_HOLIDAY,
@@ -411,6 +413,8 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_MINIMIZE)
     this.addIcons(ICON_TODO)
     this.addIcons(ICON_TOMATO)
+    this.addIcons(ICON_GLOBE)
+    this.addIcons(ICON_FOLDER_SEARCH)
 
     // 注册 Dock
     this.registerDocks()

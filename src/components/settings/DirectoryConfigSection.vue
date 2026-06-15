@@ -22,7 +22,7 @@
               :checked="scanMode === 'full'"
               @change="emit('update:scanMode', 'full')"
             />
-            <span class="sy-scan-mode__icon">🌐</span>
+            <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaGlobe"></use></svg></span>
             <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeFull || '全库扫描' }}</span>
           </label>
           <label
@@ -35,7 +35,7 @@
               :checked="scanMode === 'directories'"
               @change="emit('update:scanMode', 'directories')"
             />
-            <span class="sy-scan-mode__icon">📁</span>
+            <span class="sy-scan-mode__icon"><svg><use xlink:href="#iconTaFolderSearch"></use></svg></span>
             <span class="sy-scan-mode__label">{{ t('settings').dirConfig.scanModeDirectories || '指定目录' }}</span>
           </label>
         </div>
@@ -86,7 +86,10 @@
             :aria-label="t('settings').projectGroups.deleteButton"
             @click="removeDir(index)"
           />
-          <SySwitch v-model="dir.enabled" />
+          <SySwitch
+            :model-value="dir.enabled"
+            @update:model-value="toggleDirEnabled(index)"
+          />
         </div>
       </div>
       <SySettingsActionButton
@@ -103,7 +106,7 @@
       <!-- Header -->
       <div class="ios-group-header">
         <div class="header-icon">
-          📁
+          <svg class="ios-header-icon"><use xlink:href="#iconTaFolderSearch"></use></svg>
         </div>
         <div class="header-info">
           <div class="header-title">
@@ -273,7 +276,12 @@ function removeDir(index: number) {
 function toggleDirEnabled(index: number) {
   const dir = props.directories[index]
   if (dir) {
-    dir.enabled = !dir.enabled
+    const updated = [...props.directories]
+    updated[index] = {
+      ...dir,
+      enabled: !dir.enabled,
+    }
+    emit('update:directories', updated)
   }
 }
 </script>
@@ -344,6 +352,11 @@ function toggleDirEnabled(index: number) {
 
 .sy-scan-mode__icon {
   font-size: 18px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .sy-scan-mode__label {
@@ -391,6 +404,11 @@ function toggleDirEnabled(index: number) {
 
   .header-icon {
     font-size: 36px;
+
+    .ios-header-icon {
+      width: 36px;
+      height: 36px;
+    }
   }
 
   .header-info {
