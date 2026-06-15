@@ -107,7 +107,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'dir',
       title: settings.dirConfig?.title ?? '目录配置',
-      icon: 'iconTaProject',
+      icon: 'iconTaFolderSearch',
     },
     {
       key: 'group',

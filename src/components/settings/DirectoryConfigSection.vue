@@ -2,7 +2,7 @@
   <!-- Desktop Version -->
   <template v-if="!isMobile">
     <SySettingsSection
-      icon="iconFolder"
+      icon="iconTaFolderSearch"
       :title="t('settings').dirConfig.title"
       :description="t('settings').dirConfig.description"
     >
@@ -324,7 +324,8 @@ function toggleDirEnabled(index: number) {
 
 .sy-scan-mode__options {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sy-scan-mode__option {
@@ -337,12 +338,11 @@ function toggleDirEnabled(index: number) {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
 }
 
 .sy-scan-mode__option.is-active {
   border-color: var(--b3-theme-primary);
-  background: var(--b3-theme-primary-light);
+  background: var(--b3-theme-surface-light);
 }
 
 .sy-scan-mode__option input[type='radio'] {
