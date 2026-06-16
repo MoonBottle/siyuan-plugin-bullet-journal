@@ -53,6 +53,7 @@ import {
   ICON_CLOCK_PLUS,
   ICON_COFFEE,
   ICON_DASHBOARD,
+  ICON_FILE_PLUS,
   ICON_FILE_TEXT,
   ICON_FLAG,
   ICON_FOLDER_SEARCH,
@@ -386,6 +387,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_CLOCK_PLUS)
     this.addIcons(ICON_COFFEE)
     this.addIcons(ICON_DASHBOARD)
+    this.addIcons(ICON_FILE_PLUS)
     this.addIcons(ICON_FILE_TEXT)
     this.addIcons(ICON_FLAG)
     this.addIcons(ICON_GANTT)
