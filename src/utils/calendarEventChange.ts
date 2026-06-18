@@ -65,8 +65,9 @@ export async function persistCalendarEventChange(
     newEndTime = time.substring(0, 8)
   }
 
-  // 移动操作且原始无结束时间时，不写入 FullCalendar 自动生成的结束时间
-  if (action === 'move' && !originalEndDateTime) {
+  // 移动操作且原始有开始时间但无结束时间时，不写入 FullCalendar 自动生成的结束时间
+  // 全天事项（无开始时间）拖拽到非全天时，保留自动生成的结束时间（开始时间+1小时）
+  if (action === 'move' && originalStartDateTime && !originalEndDateTime) {
     newEndTime = ''
   }
 

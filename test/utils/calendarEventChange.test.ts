@@ -148,6 +148,35 @@ describe('persistCalendarEventChange', () => {
     )
   })
 
+  it('writes endTime when moving all-day event to timed slot', async () => {
+    mockWriteBlock.mockResolvedValue(true)
+
+    const result = await persistCalendarEventChange({
+      blockId: 'block-1',
+      allDay: false,
+      start: '2026-05-02T17:00:00',
+      end: '2026-05-02T18:00:00',
+      date: '2026-05-01',
+      originalStartDateTime: undefined,
+      originalEndDateTime: undefined,
+      timePrecision: 'minute',
+      siblingItems: [],
+      status: 'pending',
+    }, 'move')
+
+    expect(result).toBe(true)
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      expect.objectContaining({
+        type: 'addDate',
+        startTime: '17:00:00',
+        endTime: '18:00:00',
+        allDay: false,
+        timePrecision: 'minute',
+      }),
+    )
+  })
+
   it('writes endTime when moving event with original endDateTime', async () => {
     mockWriteBlock.mockResolvedValue(true)
 
