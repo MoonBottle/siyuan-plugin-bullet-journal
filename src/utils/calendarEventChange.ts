@@ -7,6 +7,19 @@ import { t } from '@/i18n'
 import { writeBlock } from '@/utils/blockWriter'
 import { showMessage } from '@/utils/dialog'
 
+const TIME_RE = /^(\d{2}):(\d{2})(?::(\d{2}))?$/
+
+function addOneHour(timeStr: string): string {
+  const match = timeStr.match(TIME_RE)
+  if (!match) return timeStr
+  let hours = Number.parseInt(match[1], 10)
+  const minutes = match[2]
+  const seconds = match[3] || '00'
+  hours = (hours + 1) % 24
+  const hoursStr = String(hours).padStart(2, '0')
+  return `${hoursStr}:${minutes}:${seconds}`
+}
+
 export interface CalendarEventChangePayload {
   blockId?: string
   allDay?: boolean
@@ -65,8 +78,12 @@ export async function persistCalendarEventChange(
     newEndTime = time.substring(0, 8)
   }
 
+  // 全天事项拖拽到非全天时，FullCalendar 可能不提供 end，需自动计算结束时间（开始时间+1小时）
+  if (!allDay && newStartTime && !newEndTime && !originalStartDateTime) {
+    newEndTime = addOneHour(newStartTime)
+  }
+
   // 移动操作且原始有开始时间但无结束时间时，不写入 FullCalendar 自动生成的结束时间
-  // 全天事项（无开始时间）拖拽到非全天时，保留自动生成的结束时间（开始时间+1小时）
   if (action === 'move' && originalStartDateTime && !originalEndDateTime) {
     newEndTime = ''
   }
