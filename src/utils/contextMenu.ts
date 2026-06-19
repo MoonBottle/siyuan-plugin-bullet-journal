@@ -174,17 +174,17 @@ export function createItemMenu(
       icon: 'iconTaFlag',
       submenu: [
         {
-          iconHTML: '🔥',
+          iconHTML: '🔥&nbsp;&nbsp;',
           label: t('todo').priority.high,
           click: () => handlers.setPriority('high'),
         },
         {
-          iconHTML: '🌱',
+          iconHTML: '🌱&nbsp;&nbsp;',
           label: t('todo').priority.medium,
           click: () => handlers.setPriority('medium'),
         },
         {
-          iconHTML: '🍃',
+          iconHTML: '🍃&nbsp;&nbsp;',
           label: t('todo').priority.low,
           click: () => handlers.setPriority('low'),
         },
