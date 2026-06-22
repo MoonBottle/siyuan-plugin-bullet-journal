@@ -122,7 +122,7 @@ vi.mock('@/tabs/AiChatDock.vue', () => ({
 
 describe('aiChatView', () => {
   beforeEach(async () => {
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     mockGetConversationsList.mockResolvedValue([
       {

@@ -268,7 +268,7 @@ describe('executeFilterItems - groupId 过滤', () => {
   })
 
   it('全库扫描时应发现只有独立事项的文档', async () => {
-    initI18n('en_US')
+    initI18n('en')
 
     const client = {
       sql: vi.fn().mockResolvedValue([
@@ -296,6 +296,6 @@ describe('executeFilterItems - groupId 过滤', () => {
       projectName: 'Daily Note',
     })
 
-    initI18n('zh_CN')
+    initI18n('zh-CN')
   })
 })

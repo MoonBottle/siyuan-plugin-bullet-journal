@@ -108,7 +108,7 @@ function createDashboard(overrides: Partial<WorkbenchDashboard> = {}): Workbench
 describe('workbenchStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     mockLoadWorkbenchSettings.mockResolvedValue({
       entries: [],

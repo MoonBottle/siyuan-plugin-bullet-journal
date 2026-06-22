@@ -1905,8 +1905,8 @@ export default class TaskAssistantPlugin extends Plugin {
    * 打开帮助文档（支持国际化）
    */
   private openHelpDoc(docName: string) {
-    const lang = (window as any).siyuan?.config?.lang || "zh_CN"
-    const isEnglish = lang === "en_US"
+    const lang = (window as any).siyuan?.config?.lang || "zh-CN"
+    const isEnglish = lang === "en"
     const baseUrl =
       "https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main"
     const docPath = isEnglish

@@ -106,7 +106,7 @@ async function mountDialog() {
 
 describe('habitWidgetDetailDialog', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     vi.clearAllMocks()
     document.body.innerHTML = ''

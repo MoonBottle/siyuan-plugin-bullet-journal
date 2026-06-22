@@ -174,7 +174,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
 
 describe('pomodoroWidgetConfigDialog', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     document.body.innerHTML = ''
     vi.clearAllMocks()
@@ -204,7 +204,7 @@ describe('pomodoroWidgetConfigDialog', () => {
 
 describe('pomodoroStatsWidget', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     document.body.innerHTML = ''
     vi.clearAllMocks()

@@ -68,7 +68,7 @@ async function mountDialog(options?: {
 
 describe('todoWidgetConfigDialog', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     document.body.innerHTML = ''
     vi.clearAllMocks()

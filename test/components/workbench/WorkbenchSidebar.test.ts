@@ -71,7 +71,7 @@ const entries: WorkbenchEntry[] = [
 
 describe('workbenchSidebar', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
   })
 

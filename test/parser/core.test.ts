@@ -1402,7 +1402,7 @@ describe('parseKramdown 独立事项解析', () => {
   })
 
   it('英文 locale 下默认任务名应使用国际化文案', () => {
-    initI18n('en_US')
+    initI18n('en')
 
     const kramdown = `## Daily Note
 {: id="doc-block" type="doc" }
@@ -1414,7 +1414,7 @@ Write summary @2026-05-09
     expect(project).not.toBeNull()
     expect(project!.tasks[0].name).toBe('Default Task')
 
-    initI18n('zh_CN')
+    initI18n('zh-CN')
   })
 
 })

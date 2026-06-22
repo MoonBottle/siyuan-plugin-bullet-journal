@@ -253,7 +253,7 @@ describe('workbench tab constants', () => {
 describe('workbenchTab shell', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     mockSettingsStore.loaded = true
     mockSettingsStore.scanMode = 'all'
@@ -547,8 +547,8 @@ describe('workbench registration', () => {
   })
 
   it('defines required workbench i18n labels', () => {
-    const zh = JSON.parse(readFileSync(resolve(process.cwd(), 'src/i18n/zh_CN.json'), 'utf-8'))
-    const en = JSON.parse(readFileSync(resolve(process.cwd(), 'src/i18n/en_US.json'), 'utf-8'))
+    const zh = JSON.parse(readFileSync(resolve(process.cwd(), 'src/i18n/zh-CN.json'), 'utf-8'))
+    const en = JSON.parse(readFileSync(resolve(process.cwd(), 'src/i18n/en.json'), 'utf-8'))
 
     expect(en.workbench).toMatchObject({
       title: 'Workbench',

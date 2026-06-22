@@ -135,7 +135,7 @@ async function mountComponent(component: any, props: Record<string, unknown>) {
 
 describe('workbenchViewHost', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     setActivePinia(createPinia())
   })
@@ -253,7 +253,7 @@ describe('workbenchViewHost', () => {
 
 describe('workbenchContentHost routing', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
   })
 

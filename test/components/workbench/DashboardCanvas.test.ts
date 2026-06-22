@@ -223,7 +223,7 @@ async function mountCanvas(entry: WorkbenchEntry) {
 describe('dashboardCanvas', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    initI18n('en_US')
+    initI18n('en')
     document.body.innerHTML = ''
     vi.clearAllMocks()
   })

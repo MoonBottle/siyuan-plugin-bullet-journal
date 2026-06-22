@@ -184,7 +184,7 @@ async function mountReactiveWidget(initialWidgetConfig: Record<string, unknown>,
 
 describe('todoListWidget', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     document.body.innerHTML = ''
     vi.clearAllMocks()
   })

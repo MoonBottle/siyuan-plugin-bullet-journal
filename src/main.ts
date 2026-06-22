@@ -34,7 +34,7 @@ export async function init(pluginInstance: Plugin) {
   const langFromConfig = win?.siyuan?.config?.lang
   const appWithI18n = pluginInstance.app as typeof pluginInstance.app & { i18n?: Record<string, string> }
   const pluginWithLangs = pluginInstance as Plugin & { languages?: string[] }
-  const language = langFromConfig || appWithI18n?.i18n?.core || pluginWithLangs?.languages?.[0] || 'zh_CN'
+  const language = langFromConfig || appWithI18n?.i18n?.core || pluginWithLangs?.languages?.[0] || 'zh-CN'
 
   console.log('[Bullet Journal i18n] main.ts init:', {
     hasSiyuan: !!win?.siyuan,

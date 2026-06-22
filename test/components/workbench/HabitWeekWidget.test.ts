@@ -179,7 +179,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
 
 describe('habitWidgetConfigDialog', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     document.body.innerHTML = ''
     vi.clearAllMocks()
@@ -262,7 +262,7 @@ describe('habitWidgetConfigDialog', () => {
 
 describe('habitWeekWidget', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     document.body.innerHTML = ''
     vi.clearAllMocks()
   })

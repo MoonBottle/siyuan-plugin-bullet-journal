@@ -103,7 +103,7 @@ async function mountFilterBar(extraProps: Record<string, unknown> = {}) {
 describe('todoFilterBar', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    initI18n('en_US')
+    initI18n('en')
   })
 
   it('renders the same todo search and filter controls', async () => {

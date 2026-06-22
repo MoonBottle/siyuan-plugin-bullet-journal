@@ -334,7 +334,7 @@ function getLatestTodoSidebarProps() {
 describe('quadrantTab', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     nativePreviewOpenCalls.length = 0
     nativePreviewContainsTarget.mockReturnValue(false)

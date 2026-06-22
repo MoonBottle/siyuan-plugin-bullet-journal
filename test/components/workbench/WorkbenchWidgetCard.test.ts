@@ -37,7 +37,7 @@ async function mountCard(props: Record<string, unknown>) {
 
 describe('workbenchWidgetCard', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     document.body.innerHTML = ''
   })
 

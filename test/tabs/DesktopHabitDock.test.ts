@@ -220,7 +220,7 @@ function mountDock() {
 
 describe('desktopHabitDock', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     vi.clearAllMocks()
     document.body.innerHTML = ''
     archiveHabit.mockResolvedValue(false)

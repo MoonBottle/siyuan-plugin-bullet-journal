@@ -1,19 +1,13 @@
-import enUS from './en_US.json'
-import zhCN from './zh_CN.json'
+import enUS from './en.json'
+import zhCN from './zh-CN.json'
 
-const UNDERSCORE_RE = /_/g
-const DASH_RE = /-/g
 const TEMPLATE_PARAM_RE = /\{(\w+)\}/g
 
 type Translations = typeof zhCN
 
 const locales: Record<string, Translations> = {
   'zh-CN': zhCN,
-  'zh_CN': zhCN,
-  'zh': zhCN,
   'en': enUS as unknown as Translations,
-  'en-US': enUS as unknown as Translations,
-  'en_US': enUS as unknown as Translations,
 }
 
 let currentLocale: Translations = zhCN
@@ -22,26 +16,17 @@ let currentLocale: Translations = zhCN
  * 初始化国际化
  */
 function findLocale(lang: string): Translations | undefined {
-  const normalized = lang?.toLowerCase().replace(UNDERSCORE_RE, '-') || ''
-  const normalizedAlt = normalized.replace(DASH_RE, '_')
-  const key = Object.keys(locales).find(
-    (k) =>
-      k.toLowerCase().replace(UNDERSCORE_RE, '-') === normalized
-      || k.toLowerCase().replace(DASH_RE, '_') === normalizedAlt,
-  )
+  const normalized = lang?.toLowerCase() || ''
+  const key = Object.keys(locales).find((k) => k.toLowerCase() === normalized)
   return key ? locales[key] : undefined
 }
 
 export function initI18n(language?: string) {
-  const lang = language?.toLowerCase().replace('_', '-') || 'zh-cn'
-  const langAlt = lang.replace('-', '_')
   const found = findLocale(language || '')
   currentLocale = found || zhCN
 
   console.log('[Bullet Journal i18n] initI18n:', {
     input: language,
-    normalized: lang,
-    langAlt,
     matched: !!found,
     usingLocale: currentLocale === zhCN ? 'zhCN' : 'enUS',
   })
@@ -77,7 +62,7 @@ export function t(key: string, params?: Record<string, string | number>): any {
  * 获取当前语言
  */
 export function getCurrentLocale(): string {
-  return Object.keys(locales).find((key) => locales[key] === currentLocale) || 'zh_CN'
+  return Object.keys(locales).find((key) => locales[key] === currentLocale) || 'zh-CN'
 }
 
 export type { Translations }

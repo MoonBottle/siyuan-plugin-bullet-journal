@@ -26,7 +26,7 @@ vi.mock('@/utils/blockWriter', () => ({
 
 describe('persistCalendarEventChange', () => {
   beforeEach(() => {
-    initI18n('zh_CN')
+    initI18n('zh-CN')
     vi.clearAllMocks()
   })
 

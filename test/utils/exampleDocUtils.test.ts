@@ -18,7 +18,7 @@ const {
   expandDocTree,
 } = vi.hoisted(() => ({
   currentLocale: {
-    value: 'zh_CN',
+    value: 'zh-CN',
   },
   mockFormat: vi.fn(() => '2026-05-12'),
   mockAddFormat: vi.fn(() => '2026-05-13'),
@@ -89,7 +89,7 @@ vi.mock('siyuan', () => ({
 
 describe('exampleDocUtils', () => {
   beforeEach(() => {
-    currentLocale.value = 'zh_CN'
+    currentLocale.value = 'zh-CN'
     createDocWithMd.mockClear()
     pushMsg.mockClear()
     openDocument.mockClear()
@@ -189,7 +189,7 @@ describe('exampleDocUtils', () => {
   })
 
   it('builds a layered English onboarding example', async () => {
-    currentLocale.value = 'en_US'
+    currentLocale.value = 'en'
     const { generateExampleContent } = await import('@/utils/exampleDocUtils')
 
     const content = generateExampleContent()

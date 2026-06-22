@@ -24,7 +24,7 @@ vi.mock('@/main', () => ({
 describe('showItemDetailModal', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    initI18n('en_US')
+    initI18n('en')
     setSharedPinia(createPinia())
   })
 

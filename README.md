@@ -2,7 +2,7 @@
 
 ![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![Changelog](https://img.shields.io/badge/Changelog-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/changelog.md) | [![User Guide](https://img.shields.io/badge/docs-User%20Guide-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
 
-[简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
+[简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.zh-CN.md)
 
 Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro for execution, with AI chat support; documents as tasks, bidirectional links, real-time sync.
 

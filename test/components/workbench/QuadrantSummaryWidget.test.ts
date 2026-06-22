@@ -295,7 +295,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
 
 describe('quadrantWidgetConfigDialog', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     setActivePinia(createPinia())
     document.body.innerHTML = ''
     vi.clearAllMocks()
@@ -362,7 +362,7 @@ describe('quadrantWidgetConfigDialog', () => {
 
 describe('quadrantSummaryWidget', () => {
   beforeEach(() => {
-    initI18n('en_US')
+    initI18n('en')
     document.body.innerHTML = ''
     vi.clearAllMocks()
   })

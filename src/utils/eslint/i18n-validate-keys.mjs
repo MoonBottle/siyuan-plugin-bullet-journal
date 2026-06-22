@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const zhCNPath = resolve(__dirname, '../../i18n/zh_CN.json')
+const zhCNPath = resolve(__dirname, '../../i18n/zh-CN.json')
 let zhCN
 try {
   zhCN = JSON.parse(readFileSync(zhCNPath, 'utf-8'))
@@ -36,10 +36,10 @@ export default {
       meta: {
         type: 'problem',
         docs: {
-          description: 'Validate i18n translation keys exist in zh_CN.json',
+          description: 'Validate i18n translation keys exist in zh-CN.json',
         },
         messages: {
-          missingKey: "i18n key '{{key}}' does not exist in zh_CN.json",
+          missingKey: "i18n key '{{key}}' does not exist in zh-CN.json",
         },
       },
       create(context) {

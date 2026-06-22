@@ -145,7 +145,7 @@ function createHabit(overrides: Partial<Habit> = {}): Habit {
 async function mountView() {
   const pinia = createPinia()
   setActivePinia(pinia)
-  initI18n('en_US')
+  initI18n('en')
 
   const projectStore = useProjectStore(pinia)
   const settingsStore = useSettingsStore(pinia)
