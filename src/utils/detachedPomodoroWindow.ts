@@ -193,6 +193,7 @@ export function createDetachedPomodoroWindowHost(
       state: {
         phase: state.phase,
         isPaused: state.isPaused,
+        deadlineTimestamp: state.deadlineTimestamp,
       },
     }
   }
@@ -660,5 +661,6 @@ interface RenderedPayload {
   state: {
     phase: FloatingPomodoroViewState['phase']
     isPaused: boolean
+    deadlineTimestamp?: number
   }
 }

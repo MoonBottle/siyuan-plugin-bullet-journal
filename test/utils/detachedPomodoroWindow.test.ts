@@ -173,4 +173,42 @@ describe('createDetachedPomodoroWindowHost', () => {
 
     expect(close).toHaveBeenCalled()
   })
+
+  it('payload 携带 deadlineTimestamp 字段', () => {
+    document.documentElement.style.setProperty('--b3-theme-surface', '#ffffff')
+    const executeJavaScript = vi.fn()
+    const BrowserWindow = vi.fn<any>().mockImplementation(class {
+      loadURL = vi.fn()
+      showInactive = vi.fn()
+      show = vi.fn()
+      close = vi.fn()
+      isDestroyed = vi.fn(() => false)
+      isVisible = vi.fn(() => true)
+      webContents = {
+        executeJavaScript,
+        on: vi.fn(),
+      }
+
+      on = vi.fn()
+      once = vi.fn()
+      setAlwaysOnTop = vi.fn()
+      setPosition = vi.fn()
+      setVisibleOnAllWorkspaces = vi.fn()
+    })
+    ;(BrowserWindow as any).getAllWindows = vi.fn(() => [])
+    const host = createDetachedPomodoroWindowHost({
+      frontEnd: 'desktop',
+      runtimeRequire: () => ({ BrowserWindow }),
+      createMarkup: () => '<div class="floating-tomato-shell"></div>',
+      applyViewState: vi.fn(),
+      onAction: vi.fn(),
+    })
+    host.show({
+      ...focusState,
+      deadlineTimestamp: 1234567890,
+    })
+    expect(executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('"deadlineTimestamp":1234567890'),
+    )
+  })
 })
