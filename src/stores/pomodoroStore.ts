@@ -586,9 +586,12 @@ export const usePomodoroStore = defineStore('pomodoro', {
       try {
         const ap = this.activePomodoro
         const now = Date.now()
-        // 先同步累计秒数到当前时刻，避免内核广播/手动结束时 accumulatedSeconds 还是上一次 tick 的值
-        this.updateTimer()
-        const actualMinutes = Math.round(this.activePomodoro!.accumulatedSeconds / 60)
+        // 同步累计秒数到当前时刻（内联实现，不复用 updateTimer 以避免触发完成检查/TICK 的递归）
+        if (this.timerStartTimestamp != null && !ap.isPaused) {
+          const elapsedSeconds = Math.floor((now - this.timerStartTimestamp) / 1000)
+          ap.accumulatedSeconds = this.lastAccumulatedSeconds + elapsedSeconds
+        }
+        const actualMinutes = Math.round(ap.accumulatedSeconds / 60)
         cancelMobileFocusEnd()
 
         if (kernelAvailable.value && ap.blockId) {

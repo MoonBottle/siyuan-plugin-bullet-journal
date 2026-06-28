@@ -625,6 +625,41 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
     const pending = mockSavePendingCompletion.mock.calls[0][1]
     expect(pending.durationMinutes).toBe(Math.round(150 / 60))
   })
+
+  // 回归测试：completePomodoro 内同步累计秒数时不能触发 updateTimer 的完成检查递归
+  // 复现真实运行场景：timerStartTimestamp 已设、accumulatedSeconds 已达目标、kernel 不可用
+  it('倒计时到期时 completePomodoro 能正常结束专注（不递归崩溃）', async () => {
+    const store = usePomodoroStore()
+    const plugin = { isMobile: false }
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-recur',
+        rootId: 'doc-recur',
+        itemId: 'item-recur',
+        itemContent: '倒计时到期',
+        startTime: new Date('2026-06-28T10:00:00').getTime(),
+        accumulatedSeconds: 120,
+        remainingSeconds: 0,
+        targetDurationMinutes: 2,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'countdown',
+      } as any,
+      // 模拟真实运行：timerStartTimestamp 已设，lastAccumulatedSeconds 已达目标
+      // 这样 updateTimer 内部会再次触发 completePomodoro（kernelAvailable=false 时）
+      timerStartTimestamp: Date.now(),
+      lastAccumulatedSeconds: 120,
+      timerInterval: 1,
+    })
+
+    await store.completePomodoro(plugin as any)
+
+    // 递归崩溃时 activePomodoro 不会被清空（清空逻辑在递归点之后）
+    expect(store.activePomodoro).toBeNull()
+    expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('pomodoroStore autoExtendPomodoro', () => {
