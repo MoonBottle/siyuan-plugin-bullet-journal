@@ -211,4 +211,42 @@ describe('createDetachedPomodoroWindowHost', () => {
       expect.stringContaining('"deadlineTimestamp":1234567890'),
     )
   })
+
+  it('detached 窗口 HTML 内置本地计时器脚本', () => {
+    document.documentElement.style.setProperty('--b3-theme-surface', '#ffffff')
+    const loadURL = vi.fn()
+    const BrowserWindow = vi.fn<any>().mockImplementation(class {
+      loadURL = loadURL
+      showInactive = vi.fn()
+      show = vi.fn()
+      close = vi.fn()
+      isDestroyed = vi.fn(() => false)
+      isVisible = vi.fn(() => true)
+      webContents = {
+        executeJavaScript: vi.fn(),
+        on: vi.fn(),
+      }
+
+      on = vi.fn()
+      once = vi.fn()
+      setAlwaysOnTop = vi.fn()
+      setPosition = vi.fn()
+      setVisibleOnAllWorkspaces = vi.fn()
+    })
+    ;(BrowserWindow as any).getAllWindows = vi.fn(() => [])
+
+    const host = createDetachedPomodoroWindowHost({
+      frontEnd: 'desktop',
+      runtimeRequire: () => ({ BrowserWindow }),
+      createMarkup: () => '<div class="floating-tomato-shell"></div>',
+      applyViewState: vi.fn(),
+      onAction: vi.fn(),
+    })
+
+    host.show(focusState)
+
+    expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('countdownDeadline')))
+    expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('tickClock')))
+    expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('setInterval(tickClock')))
+  })
 })

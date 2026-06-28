@@ -550,6 +550,28 @@ function buildDetachedWindowHtml(): string {
         const tooltipInner = tooltipWrapper?.firstElementChild;
         let currentState = { phase: 'focus', isPaused: false };
         let activeTooltipTrigger = null;
+        let countdownDeadline = null;
+        let countdownIntervalId = null;
+        const formatClockFromDeadline = () => {
+          if (countdownDeadline === null || !Number.isFinite(countdownDeadline)) return null;
+          const diffMs = countdownDeadline - Date.now();
+          if (diffMs <= 0) return '00:00';
+          const totalSec = Math.floor(diffMs / 1000);
+          const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+          const ss = String(totalSec % 60).padStart(2, '0');
+          return mm + ':' + ss;
+        };
+        const tickClock = () => {
+          if (currentState.isPaused) return;
+          const text = formatClockFromDeadline();
+          if (text === null) return;
+          const el = document.querySelector('.floating-tomato-primary');
+          if (el) el.textContent = text;
+        };
+        const startLocalTimer = () => {
+          if (countdownIntervalId !== null) return;
+          countdownIntervalId = setInterval(tickClock, 1000);
+        };
         const sendAction = (action) => {
           try {
             const electron = window.require?.('electron');
@@ -600,6 +622,11 @@ function buildDetachedWindowHtml(): string {
             tooltipStyle.textContent = payload.tooltipCssRules;
           }
           currentState = payload.state || currentState;
+          countdownDeadline = (payload.state && typeof payload.state.deadlineTimestamp === 'number')
+            ? payload.state.deadlineTimestamp
+            : null;
+          startLocalTimer();
+          tickClock();
           root.className = payload.className || '';
           // 保存当前 tooltip 状态，innerHTML 替换后恢复
           const savedTooltipText = activeTooltipTrigger?.dataset?.tooltip || null;
