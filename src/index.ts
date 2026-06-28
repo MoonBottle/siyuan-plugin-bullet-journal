@@ -2888,9 +2888,6 @@ export default class TaskAssistantPlugin extends Plugin {
       <div class="timer-skip-btn" style="display:none" data-tooltip="${t("settings").pomodoro.skipBreak}">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use xlink:href="#iconTaSkipBreak" /></svg>
       </div>
-      <div class="timer-end-btn" style="display:none" data-tooltip="${t("pomodoroActive").endFocus}">
-        <svg viewBox="0 0 24 24" width="14" height="14"><use xlink:href="#iconTaCheck" /></svg>
-      </div>
       <div class="timer-control" data-tooltip="${t("pomodoro").startFocus}">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <use xlink:href="#iconTaPlay" />
@@ -2898,6 +2895,9 @@ export default class TaskAssistantPlugin extends Plugin {
         <svg class="timer-pause-icon" viewBox="0 0 24 24" width="14" height="14" style="display:none">
           <use xlink:href="#iconTaPause" />
         </svg>
+      </div>
+      <div class="timer-end-btn" style="display:none" data-tooltip="${t("pomodoroActive").endFocus}">
+        <svg viewBox="0 0 24 24" width="14" height="14"><use xlink:href="#iconTaCheck" /></svg>
       </div>
     `
 
