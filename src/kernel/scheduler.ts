@@ -101,6 +101,9 @@ export function registerTimers(entries: TimerEntry[]): void {
 
 export function cancelTimer(id: string): void {
   timers.delete(id)
+  // 清除 notified 标记：cancel 的语义是「该 timer 不再需要」，
+  // 无论后续是否用相同 id 重新注册（如 pomodoro autoExtend），都应视为全新计时
+  notifiedTimerIds.delete(id)
   schedulePersist()
 }
 

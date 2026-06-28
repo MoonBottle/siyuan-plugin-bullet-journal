@@ -7,6 +7,7 @@ import {
   vi,
 } from 'vitest'
 import {
+  cancelTimer,
   cancelTimersByType,
   getTimers,
   isTimerNotified,
@@ -204,6 +205,63 @@ describe('notifiedTimerIds as source of truth', () => {
     vi.advanceTimersByTime(2000)
 
     expect(dispatchFn).not.toHaveBeenCalled()
+
+    const { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
+  })
+})
+
+describe('cancelTimer clears notifiedTimerIds（pomodoro autoExtend 场景）', () => {
+  it('cancelTimer 后用相同 id 重新注册，timer 到期应触发通知', async () => {
+    vi.useFakeTimers()
+    const dispatchFn = vi.fn()
+    setDispatchNotification(dispatchFn)
+
+    const pastTime = Math.floor(Date.now() / 1000) - 1
+    const entry: TimerEntry = {
+      id: 'pomodoro-block-1',
+      type: 'pomodoro',
+      endTime: pastTime,
+      metadata: {
+        blockId: 'block-1',
+        content: 'pomodoro test',
+      },
+      notified: false,
+    }
+
+    ;(globalThis as any).siyuan = {
+      rpc: { broadcast: vi.fn() },
+    }
+
+    const { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+
+    // 第一次到期触发通知
+    registerTimer(entry)
+    vi.advanceTimersByTime(1000)
+    expect(dispatchFn).toHaveBeenCalledTimes(1)
+
+    // 模拟 autoExtend：cancelTimer（前端 RPC）+ 重新注册相同 id 的新 endTime
+    cancelTimer('pomodoro-block-1')
+    const newFutureTime = Math.floor(Date.now() / 1000) + 2
+    const newEntry: TimerEntry = {
+      id: 'pomodoro-block-1',
+      type: 'pomodoro',
+      endTime: newFutureTime,
+      metadata: {
+        blockId: 'block-1',
+        content: 'pomodoro test',
+      },
+      notified: false,
+    }
+    registerTimer(newEntry)
+
+    // 推进到新 endTime 之后
+    vi.advanceTimersByTime(3000)
+
+    // 期望：重新注册的 timer 到期后应再次触发通知（第二次）
+    expect(dispatchFn).toHaveBeenCalledTimes(2)
 
     const { stopScheduler } = await import('@/kernel/scheduler')
     stopScheduler()
