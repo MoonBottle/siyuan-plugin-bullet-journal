@@ -70,6 +70,31 @@ interface PomodoroState {
   _kernelNotificationUnsubscribe: (() => void) | null
 }
 
+function registerKernelPomodoroTimer(
+  blockId: string,
+  remainingSeconds: number,
+  metadata: {
+    content: string
+    projectName?: string
+    taskName?: string
+  },
+): void {
+  if (!kernelAvailable.value)
+    return
+  const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000)
+  usePlugin()!.kernel!.rpc.call.registerTimer({
+    id: `pomodoro-${blockId}`,
+    type: 'pomodoro',
+    endTime,
+    metadata: {
+      blockId,
+      content: metadata.content,
+      projectName: metadata.projectName,
+      taskName: metadata.taskName,
+    },
+  }).catch(() => {})
+}
+
 function isMobilePomodoroNotificationsEnabled(): boolean {
   return mobileNotificationScheduler.isMobileNotificationsEnabled()
 }
@@ -244,26 +269,12 @@ export const usePomodoroStore = defineStore('pomodoro', {
         showMessage(msg)
 
         console.log(`[Pomodoro] kernelAvailable=${kernelAvailable.value} timerMode=${timerMode} durationMinutes=${durationMinutes}`)
-        if (kernelAvailable.value && timerMode === 'countdown') {
-          const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000)
-          console.log(`[Pomodoro] registering kernel timer: id=pomodoro-${parentBlockId} endTime=${endTime} kernelAvailable=${kernelAvailable.value}`)
-          usePlugin()!.kernel!.rpc.call.registerTimer({
-            id: `pomodoro-${parentBlockId}`,
-            type: 'pomodoro',
-            endTime,
-            metadata: {
-              blockId: parentBlockId,
-              content: item.content,
-              projectName: item.project?.name,
-              taskName: item.task?.name,
-            },
-          }).then((res: any) => {
-            console.log(`[Pomodoro] kernel timer registered successfully, response=${JSON.stringify(res)}`)
-          }).catch((err: any) => {
-            console.error('[Pomodoro] Failed to register kernel timer:', err)
+        if (timerMode === 'countdown') {
+          registerKernelPomodoroTimer(parentBlockId, durationMinutes * 60, {
+            content: item.content,
+            projectName: item.project?.name,
+            taskName: item.task?.name,
           })
-        } else {
-          console.log(`[Pomodoro] skipping kernel timer: kernelAvailable=${kernelAvailable.value} timerMode=${timerMode}`)
         }
 
         return true
@@ -354,20 +365,16 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         await scheduleMobileFocusEnd(this)
 
-        if (kernelAvailable.value && this.activePomodoro?.blockId && this.activePomodoro.timerMode === 'countdown') {
-          const remainingSec = this.activePomodoro.remainingSeconds
-          const endTime = Math.floor((Date.now() + remainingSec * 1000) / 1000)
-          usePlugin()!.kernel!.rpc.call.registerTimer({
-            id: `pomodoro-${this.activePomodoro.blockId}`,
-            type: 'pomodoro',
-            endTime,
-            metadata: {
-              blockId: this.activePomodoro.blockId,
+        if (this.activePomodoro?.blockId && this.activePomodoro.timerMode === 'countdown') {
+          registerKernelPomodoroTimer(
+            this.activePomodoro.blockId,
+            this.activePomodoro.remainingSeconds,
+            {
               content: this.activePomodoro.itemContent,
               projectName: this.activePomodoro.projectName,
               taskName: this.activePomodoro.taskName,
             },
-          }).catch(() => {})
+          )
         }
 
         // 保存状态
@@ -955,19 +962,12 @@ export const usePomodoroStore = defineStore('pomodoro', {
           this.startTimer()
           await scheduleMobileFocusEnd(this)
 
-          if (kernelAvailable.value && data.timerMode !== 'stopwatch') {
-            const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000)
-            usePlugin()!.kernel!.rpc.call.registerTimer({
-              id: `pomodoro-${data.blockId}`,
-              type: 'pomodoro',
-              endTime,
-              metadata: {
-                blockId: data.blockId,
-                content: data.itemContent,
-                projectName: data.projectName,
-                taskName: data.taskName,
-              },
-            }).catch(() => {})
+          if (data.timerMode !== 'stopwatch') {
+            registerKernelPomodoroTimer(data.blockId, remainingSeconds, {
+              content: data.itemContent,
+              projectName: data.projectName,
+              taskName: data.taskName,
+            })
           }
 
           console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒')
