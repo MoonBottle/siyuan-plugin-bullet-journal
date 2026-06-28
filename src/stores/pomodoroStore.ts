@@ -871,8 +871,18 @@ export const usePomodoroStore = defineStore('pomodoro', {
           remainingSeconds,
         }
 
+        if (kernelAvailable.value && pending.blockId) {
+          usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${pending.blockId}` }).catch(() => {})
+        }
+
         this.startTimer()
         await scheduleMobileFocusEnd(this)
+
+        registerKernelPomodoroTimer(pending.blockId, remainingSeconds, {
+          content: pending.itemContent ?? '',
+          projectName: pending.projectName,
+          taskName: pending.taskName,
+        })
 
         this.autoExtendCount++
 
