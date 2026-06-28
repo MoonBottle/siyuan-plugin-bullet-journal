@@ -619,6 +619,7 @@ describe('pomodoroStore autoExtendPomodoro', () => {
   it('kernel 不可用时不调用 registerTimer', async () => {
     mockKernelAvailable.value = false
     mockRegisterTimer.mockClear()
+    mockCancelTimer.mockClear()
     const store = usePomodoroStore()
     mockLoadPendingCompletion.mockResolvedValue({
       blockId: 'b2',
@@ -636,6 +637,7 @@ describe('pomodoroStore autoExtendPomodoro', () => {
     } as any)
 
     expect(mockRegisterTimer).not.toHaveBeenCalled()
+    expect(mockCancelTimer).not.toHaveBeenCalled()
   })
 })
 
