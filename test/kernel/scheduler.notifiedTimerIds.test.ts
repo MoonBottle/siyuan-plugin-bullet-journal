@@ -268,3 +268,71 @@ describe('cancelTimer clears notifiedTimerIds（pomodoro autoExtend 场景）', 
     vi.useRealTimers()
   })
 })
+
+describe('dispatchedNotificationIds 不应阻止 autoExtend 后的二次广播', () => {
+  it('autoExtend 后第二次到期应再次调用 siyuan.rpc.broadcast', async () => {
+    vi.useFakeTimers()
+
+    // 使用真实的 dispatchNotification 实现（来自 webhook.ts），而非 vi.fn()
+    // 这样才能覆盖 scheduler → webhook → siyuan.rpc.broadcast 的完整链路
+    const { dispatchNotification } = await import('@/kernel/webhook')
+    setDispatchNotification(dispatchNotification)
+
+    const broadcastMock = vi.fn()
+    ;(globalThis as any).siyuan = {
+      rpc: { broadcast: broadcastMock },
+    }
+
+    const { initScheduler } = await import('@/kernel/scheduler')
+    initScheduler()
+
+    // 第一次到期：注册一个已过期的 timer
+    const pastTime = Math.floor(Date.now() / 1000) - 1
+    const entry: TimerEntry = {
+      id: 'pomodoro-block-autoextend',
+      type: 'pomodoro',
+      endTime: pastTime,
+      metadata: {
+        blockId: 'block-autoextend',
+        content: 'autoextend test',
+      },
+      notified: false,
+    }
+    registerTimer(entry)
+
+    // 推进 1 秒，让 checkTimers tick 一次
+    vi.advanceTimersByTime(1000)
+
+    // 验证：第一次广播已发出
+    expect(broadcastMock).toHaveBeenCalledTimes(1)
+    expect(broadcastMock).toHaveBeenCalledWith('timer-expired', expect.objectContaining({
+      id: 'pomodoro-block-autoextend',
+      type: 'pomodoro',
+    }))
+
+    // 模拟 autoExtend：cancelTimer + 用相同 id 重新注册未来的 endTime
+    cancelTimer('pomodoro-block-autoextend')
+    const newFutureTime = Math.floor(Date.now() / 1000) + 2
+    const newEntry: TimerEntry = {
+      id: 'pomodoro-block-autoextend',
+      type: 'pomodoro',
+      endTime: newFutureTime,
+      metadata: {
+        blockId: 'block-autoextend',
+        content: 'autoextend test',
+      },
+      notified: false,
+    }
+    registerTimer(newEntry)
+
+    // 推进 3 秒，让 newEndTime 到期并被 checkTimers 检测到
+    vi.advanceTimersByTime(3000)
+
+    // 期望：autoExtend 后的第二次到期应再次广播（这是修复的目标）
+    expect(broadcastMock).toHaveBeenCalledTimes(2)
+
+    const { stopScheduler } = await import('@/kernel/scheduler')
+    stopScheduler()
+    vi.useRealTimers()
+  })
+})
