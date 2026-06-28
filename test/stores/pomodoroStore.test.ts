@@ -822,6 +822,39 @@ describe('pomodoroStore autoExtendPomodoro', () => {
     expect(mockRegisterTimer).not.toHaveBeenCalled()
     expect(mockCancelTimer).not.toHaveBeenCalled()
   })
+
+  it('非整分钟 accumulatedSeconds 时 remainingSeconds 精确等于 extendMinutes*60', async () => {
+    mockKernelAvailable.value = true
+    mockRegisterTimer.mockClear()
+    mockCancelTimer.mockClear()
+    const store = usePomodoroStore()
+    // 25 分 1 秒 = 1501 秒，Math.ceil(1501/60)=26 会多算 1 分钟
+    mockLoadPendingCompletion.mockResolvedValue({
+      blockId: 'b3',
+      itemId: 'i3',
+      itemContent: '非整分钟测试',
+      startTime: new Date('2026-05-07T05:35:00').getTime(),
+      accumulatedSeconds: 25 * 60 + 1,
+      durationMinutes: 25,
+      timerMode: 'countdown',
+    } as any)
+
+    await store.autoExtendPomodoro({
+      isMobile: true,
+      getSettings: () => ({ pomodoro: { autoExtendMinutes: 5 } }),
+    } as any)
+
+    // accumulatedSeconds 应对齐到整分钟（1500）
+    expect(store.activePomodoro?.accumulatedSeconds).toBe(25 * 60)
+    // remainingSeconds 应精确等于 extendMinutes*60（300），而非 359
+    expect(store.activePomodoro?.remainingSeconds).toBe(5 * 60)
+    // targetDurationMinutes 应为 25 + 5 = 30
+    expect(store.activePomodoro?.targetDurationMinutes).toBe(30)
+    // 内核注册的 endTime 应基于精确的 remainingSeconds
+    const callArg = mockRegisterTimer.mock.calls[0][0]
+    expect(callArg.endTime).toBe(Math.floor((Date.now() + 5 * 60 * 1000) / 1000))
+    mockKernelAvailable.value = false
+  })
 })
 
 describe('pomodoroStore restoreBreak', () => {

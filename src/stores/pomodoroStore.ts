@@ -848,7 +848,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings
         const extendMinutes = settings.autoExtendMinutes ?? 5
-        const newTargetMinutes = Math.ceil(pending.accumulatedSeconds / 60) + extendMinutes
+        // 对齐到整分钟，避免 Math.ceil 导致 remainingSeconds 最多多 59 秒
+        const baseSeconds = Math.floor(pending.accumulatedSeconds / 60) * 60
+        const newTargetMinutes = baseSeconds / 60 + extendMinutes
 
         // 基于 pending 数据创建新的 active pomodoro
         const pomodoroData: ActivePomodoroData = {
@@ -858,7 +860,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           itemContent: pending.itemContent,
           startTime: pending.startTime,
           targetDurationMinutes: newTargetMinutes,
-          accumulatedSeconds: pending.accumulatedSeconds,
+          accumulatedSeconds: baseSeconds,
           isPaused: false,
           pauseCount: 0,
           totalPausedSeconds: 0,
@@ -882,7 +884,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         await removePendingCompletion(plugin)
 
-        const remainingSeconds = newTargetMinutes * 60 - pending.accumulatedSeconds
+        const remainingSeconds = extendMinutes * 60
         this.activePomodoro = {
           ...pomodoroData,
           remainingSeconds,
