@@ -48,9 +48,27 @@ const mockCancelPomodoroBreakEnd = vi.fn()
 
 const mockIsMobileNotificationsEnabled = vi.hoisted(() => vi.fn(() => false))
 
+const mockKernelAvailable = vi.hoisted(() => ({ value: false }))
+const mockRegisterTimer = vi.hoisted(() => vi.fn().mockResolvedValue({ ok: true }))
+const mockCancelTimer = vi.hoisted(() => vi.fn().mockResolvedValue({ ok: true }))
+
 // Mock dependencies
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({})),
+  usePlugin: vi.fn(() => ({
+    kernel: {
+      rpc: {
+        call: {
+          registerTimer: mockRegisterTimer,
+          cancelTimer: mockCancelTimer,
+          cancelTimersByType: vi.fn().mockResolvedValue({ ok: true }),
+        },
+      },
+    },
+  })),
+}))
+
+vi.mock('@/composables/useKernelTimer', () => ({
+  kernelAvailable: mockKernelAvailable,
 }))
 
 vi.mock('@/services/mobileNotificationScheduler', () => ({
@@ -566,6 +584,58 @@ describe('pomodoroStore autoExtendPomodoro', () => {
       expectedEndAt: new Date('2026-05-07T06:05:00').getTime(),
       itemContent: '测试',
     }))
+  })
+
+  it('kernel 可用时注册新 timer 并取消旧 timer', async () => {
+    mockKernelAvailable.value = true
+    mockRegisterTimer.mockClear()
+    mockCancelTimer.mockClear()
+    const store = usePomodoroStore()
+    mockLoadPendingCompletion.mockResolvedValue({
+      blockId: 'b1',
+      itemId: 'i1',
+      itemContent: '测试事项',
+      startTime: new Date('2026-05-07T05:35:00').getTime(),
+      accumulatedSeconds: 25 * 60,
+      durationMinutes: 25,
+      timerMode: 'countdown',
+    } as any)
+
+    await store.autoExtendPomodoro({
+      isMobile: true,
+      getSettings: () => ({ pomodoro: { autoExtendMinutes: 5 } }),
+    } as any)
+
+    expect(mockCancelTimer).toHaveBeenCalledWith({ id: 'pomodoro-b1' })
+    expect(mockRegisterTimer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'pomodoro-b1',
+      type: 'pomodoro',
+    }))
+    const callArg = mockRegisterTimer.mock.calls[0][0]
+    expect(callArg.endTime).toBeCloseTo(Math.floor((Date.now() + 5 * 60 * 1000) / 1000), -1)
+    mockKernelAvailable.value = false
+  })
+
+  it('kernel 不可用时不调用 registerTimer', async () => {
+    mockKernelAvailable.value = false
+    mockRegisterTimer.mockClear()
+    const store = usePomodoroStore()
+    mockLoadPendingCompletion.mockResolvedValue({
+      blockId: 'b2',
+      itemId: 'i2',
+      itemContent: '测试事项',
+      startTime: new Date('2026-05-07T05:35:00').getTime(),
+      accumulatedSeconds: 25 * 60,
+      durationMinutes: 25,
+      timerMode: 'countdown',
+    } as any)
+
+    await store.autoExtendPomodoro({
+      isMobile: true,
+      getSettings: () => ({ pomodoro: { autoExtendMinutes: 5 } }),
+    } as any)
+
+    expect(mockRegisterTimer).not.toHaveBeenCalled()
   })
 })
 
