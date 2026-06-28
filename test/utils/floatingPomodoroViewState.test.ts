@@ -5,9 +5,12 @@ import type {
   FloatingPomodoroLabels,
 } from '@/utils/floatingPomodoroViewState'
 import {
+  afterEach,
+  beforeEach,
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 import { buildFloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 
@@ -52,6 +55,13 @@ function createBreakSource(
 }
 
 describe('buildFloatingPomodoroViewState', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-06-28T10:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('builds a countdown focus capsule state', () => {
     const viewState = buildFloatingPomodoroViewState(createFocusSource())
 
@@ -64,6 +74,7 @@ describe('buildFloatingPomodoroViewState', () => {
       progress: 0.36,
       pauseResumeLabel: '暂停',
       endLabel: '结束专注',
+      deadlineTimestamp: 1782640800000 + (15 * 60 + 5) * 1000,
       isPaused: false,
     })
   })
@@ -106,6 +117,7 @@ describe('buildFloatingPomodoroViewState', () => {
       secondaryText: '休息剩余 5 分钟',
       progress: 0,
       skipBreakLabel: '跳过休息',
+      deadlineTimestamp: 1782640800000 + 5 * 60 * 1000,
       isPaused: false,
     })
   })
@@ -202,5 +214,53 @@ describe('buildFloatingPomodoroViewState', () => {
     expect(focusState.secondaryText).toBe('focus:9/25')
     expect(stopwatchState.secondaryText).toBe('stopwatch:12')
     expect(breakState.secondaryText).toBe('break:4')
+  })
+})
+
+describe('buildFloatingPomodoroViewState deadlineTimestamp', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-06-28T10:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('focus 阶段计算 deadlineTimestamp', () => {
+    const state = buildFloatingPomodoroViewState({
+      phase: 'focus',
+      remainingSeconds: 1500,
+      accumulatedSeconds: 0,
+      isPaused: false,
+      labels,
+      timerMode: 'countdown',
+      targetDurationMinutes: 25,
+    })
+    expect(state.phase).toBe('focus')
+    expect(state.deadlineTimestamp).toBe(Date.now() + 1500 * 1000)
+  })
+
+  it('break 阶段计算 deadlineTimestamp', () => {
+    const state = buildFloatingPomodoroViewState({
+      phase: 'break',
+      remainingSeconds: 300,
+      breakDurationSeconds: 300,
+      labels,
+    })
+    expect(state.phase).toBe('break')
+    expect(state.deadlineTimestamp).toBe(Date.now() + 300 * 1000)
+  })
+
+  it('暂停状态也携带 deadlineTimestamp', () => {
+    const state = buildFloatingPomodoroViewState({
+      phase: 'focus',
+      remainingSeconds: 1500,
+      accumulatedSeconds: 0,
+      isPaused: true,
+      labels,
+      timerMode: 'countdown',
+      targetDurationMinutes: 25,
+    })
+    expect(state.isPaused).toBe(true)
+    expect(state.deadlineTimestamp).toBe(Date.now() + 1500 * 1000)
   })
 })

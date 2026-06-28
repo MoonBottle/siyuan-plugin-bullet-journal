@@ -42,6 +42,7 @@ interface FloatingPomodoroViewStateBase {
   secondaryText: string
   progress: number
   isPaused: boolean
+  deadlineTimestamp?: number
 }
 
 export interface FloatingPomodoroFocusViewState extends FloatingPomodoroViewStateBase {
@@ -81,6 +82,7 @@ export function buildFloatingPomodoroViewState(
           : 0,
       ),
       skipBreakLabel: source.labels.skipBreak,
+      deadlineTimestamp: Date.now() + remainingSeconds * 1000,
       isPaused: false,
     }
   }
@@ -109,6 +111,7 @@ export function buildFloatingPomodoroViewState(
     ),
     pauseResumeLabel: source.isPaused ? source.labels.resume : source.labels.pause,
     endLabel: source.labels.endFocus,
+    deadlineTimestamp: Date.now() + remainingSeconds * 1000,
     isPaused: source.isPaused,
   }
 }
