@@ -25,6 +25,7 @@ import {
   loadPendingCompletion,
   removePendingCompletion,
   saveActivePomodoro,
+  savePendingCompletion,
 } from '@/utils/pomodoroStorage'
 
 // 提供 window 和 document（Node 环境无此全局，vitest fake timers 会替换 setInterval）
@@ -82,9 +83,13 @@ vi.mock('@/services/mobileNotificationScheduler', () => ({
 }))
 
 vi.mock('@/api', () => ({
-  appendBlock: vi.fn(),
   setBlockAttrs: vi.fn(),
   getBlockAttrs: vi.fn(),
+}))
+
+vi.mock('@/utils/blockWriter', () => ({
+  insertBlockAfter: vi.fn().mockResolvedValue(true),
+  writeBlock: vi.fn().mockResolvedValue(true),
 }))
 
 vi.mock('@/utils/dialog', () => ({
@@ -132,6 +137,7 @@ const mockLoadActivePomodoro = vi.mocked(loadActivePomodoro)
 const mockLoadPendingCompletion = vi.mocked(loadPendingCompletion)
 const mockRemovePendingCompletion = vi.mocked(removePendingCompletion)
 const mockSaveActivePomodoro = vi.mocked(saveActivePomodoro)
+const mockSavePendingCompletion = vi.mocked(savePendingCompletion)
 
 describe('pomodoroStore Getters', () => {
   beforeEach(() => {
@@ -418,6 +424,7 @@ describe('pomodoroStore mobile scheduling', () => {
 })
 
 describe('pomodoroStore restorePomodoro', () => {
+
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -516,6 +523,105 @@ describe('pomodoroStore restorePomodoro', () => {
     expect(restored).toBe(false)
     expect(expiredSpy).toHaveBeenCalledTimes(1)
     expect(mockCancelPomodoroFocusEnd).toHaveBeenCalledTimes(1)
+  })
+})
+
+
+describe('pomodoroStore completePomodoro durationMinutes', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockSavePendingCompletion.mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('倒计时正常到期（累计未走到目标）→ durationMinutes = targetDurationMinutes', async () => {
+    const store = usePomodoroStore()
+    const plugin = { isMobile: false }
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-1',
+        rootId: 'doc-1',
+        itemId: 'item-1',
+        itemContent: '专注 2 分钟',
+        startTime: new Date('2026-06-28T10:00:00').getTime(),
+        accumulatedSeconds: 60,
+        remainingSeconds: 0,
+        targetDurationMinutes: 2,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'countdown',
+      } as any,
+      timerInterval: 1,
+    })
+
+    await store.completePomodoro(plugin as any)
+
+    expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
+    const pending = mockSavePendingCompletion.mock.calls[0][1]
+    expect(pending.durationMinutes).toBe(2)
+  })
+
+  it('倒计时模式（无论是否达到目标）→ durationMinutes = targetDurationMinutes', async () => {
+    const store = usePomodoroStore()
+    const plugin = { isMobile: false }
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-2',
+        rootId: 'doc-2',
+        itemId: 'item-2',
+        itemContent: '倒计时未达目标',
+        startTime: new Date('2026-06-28T10:00:00').getTime(),
+        accumulatedSeconds: 90,
+        remainingSeconds: 30,
+        targetDurationMinutes: 2,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'countdown',
+      } as any,
+      timerInterval: 1,
+    })
+
+    await store.completePomodoro(plugin as any)
+
+    expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
+    const pending = mockSavePendingCompletion.mock.calls[0][1]
+    expect(pending.durationMinutes).toBe(2)
+  })
+
+  it('正计时（stopwatch）→ durationMinutes = round(accumulated/60)', async () => {
+    const store = usePomodoroStore()
+    const plugin = { isMobile: false }
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-3',
+        rootId: 'doc-3',
+        itemId: 'item-3',
+        itemContent: '正计时',
+        startTime: new Date('2026-06-28T10:00:00').getTime(),
+        accumulatedSeconds: 150,
+        remainingSeconds: 0,
+        targetDurationMinutes: 16 * 60,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'stopwatch',
+      } as any,
+      timerInterval: 1,
+    })
+
+    await store.completePomodoro(plugin as any)
+
+    expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
+    const pending = mockSavePendingCompletion.mock.calls[0][1]
+    expect(pending.durationMinutes).toBe(Math.round(150 / 60))
   })
 })
 

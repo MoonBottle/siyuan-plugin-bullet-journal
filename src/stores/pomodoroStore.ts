@@ -10,7 +10,6 @@ import type {
  */
 import { defineStore } from 'pinia'
 import {
-  appendBlock,
   getBlockAttrs,
   setBlockAttrs,
 } from '@/api'
@@ -19,7 +18,10 @@ import { t } from '@/i18n'
 import { usePlugin } from '@/main'
 import { mobileNotificationScheduler } from '@/services/mobileNotificationScheduler'
 import { defaultPomodoroSettings } from '@/settings'
-import { writeBlock } from '@/utils/blockWriter'
+import {
+  insertBlockAfter,
+  writeBlock,
+} from '@/utils/blockWriter'
 import dayjs from '@/utils/dayjs'
 import { showMessage } from '@/utils/dialog'
 import {
@@ -579,7 +581,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
       try {
         const ap = this.activePomodoro
         const now = Date.now()
-        const actualMinutes = Math.floor(ap.accumulatedSeconds / 60)
+        const actualMinutes = ap.timerMode === 'countdown'
+          ? ap.targetDurationMinutes
+          : Math.round(ap.accumulatedSeconds / 60)
         cancelMobileFocusEnd()
 
         if (kernelAvailable.value && ap.blockId) {
@@ -724,7 +728,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
           }
           await setBlockAttrs(pending.blockId, newAttrs)
         } else {
-          await appendBlock('markdown', blockContent, pending.blockId)
+          await insertBlockAfter(pending.blockId, {
+            type: 'replaceMarkdown',
+            markdown: blockContent,
+          })
         }
 
         await removePendingCompletion(plugin)
@@ -1029,7 +1036,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
           })
         } else {
           const pomodoroContent = `🍅${valueContent}`
-          await appendBlock('markdown', pomodoroContent, data.blockId)
+          await insertBlockAfter(data.blockId, {
+            type: 'replaceMarkdown',
+            markdown: pomodoroContent,
+          })
         }
 
         if (plugin) {
