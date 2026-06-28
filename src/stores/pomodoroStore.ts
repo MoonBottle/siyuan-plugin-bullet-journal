@@ -598,7 +598,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           usePlugin()!.kernel!.rpc.call.cancelTimer({ id: `pomodoro-${ap.blockId}` }).catch(() => {})
         }
 
-        // 1. 构建并持久化待完成记录
+        // 1. 构建 pending（在清空 activePomodoro 之前，用 ap 快照构建）
         const pending: PendingPomodoroCompletion = {
           blockId: ap.blockId,
           rootId: ap.rootId, // 传递文档ID
@@ -620,26 +620,28 @@ export const usePomodoroStore = defineStore('pomodoro', {
           timerMode: ap.timerMode,
         }
 
+        // 2. 同步区：立即切断并发源（停 setInterval）+ 清空状态（激活 L578 重入防线）
+        //    必须在 await 之前完成，避免 await 挂起期间 setInterval 污染状态或并发调用绕过守卫
+        this.stopTimer()
+        this.activePomodoro = null
+
+        // 3. 异步区：以下全部用 ap 快照和 pending，不读 this.activePomodoro
         const saved = await savePendingCompletion(pluginToUse, pending)
         if (!saved) {
           showMessage('❌ 保存待完成记录失败', 'error')
           return false
         }
 
-        // 2. 删除进行中文件
+        // 4. 删除进行中文件
         await removeActivePomodoro(pluginToUse)
 
-        // 3. 清理状态
-        this.stopTimer()
-        this.activePomodoro = null
-
-        // 3.5 触发完成事件，通知悬浮窗和底栏隐藏
+        // 5. 触发完成事件，通知悬浮窗和底栏隐藏
         eventBus.emit(Events.POMODORO_COMPLETED)
 
-        // 4. 播放提示音
+        // 6. 播放提示音
         this.playNotificationSound()
 
-        // 5. 系统通知（此时用户可能在其他应用，提醒回来补填说明）
+        // 7. 系统通知（此时用户可能在其他应用，提醒回来补填说明）
         void showPomodoroCompleteNotification(ap.itemContent, actualMinutes, () => {
           if (typeof window !== 'undefined' && (window as any).require) {
             try {
@@ -653,10 +655,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
           console.error('[Pomodoro] 显示完成通知失败:', error)
         })
 
-        // 6. 触发弹窗（由监听器显示完成弹窗）
+        // 8. 触发弹窗（由监听器显示完成弹窗）
         eventBus.emit(Events.POMODORO_PENDING_COMPLETION, pending)
 
-        // 启动自动延迟倒计时（如果开启）
+        // 9. 启动自动延迟倒计时（如果开启）
         this.scheduleAutoExtend(pluginToUse)
 
         return true

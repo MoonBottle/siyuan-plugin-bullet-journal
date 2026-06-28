@@ -660,6 +660,46 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
     expect(store.activePomodoro).toBeNull()
     expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
   })
+
+  it('completePomodoro 重入保护：并发第二次调用返回 false 且不重复保存', async () => {
+    const store = usePomodoroStore()
+    const plugin = { isMobile: false }
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-reentry',
+        rootId: 'doc-reentry',
+        itemId: 'item-reentry',
+        itemContent: '重入测试',
+        startTime: new Date('2026-06-28T10:00:00').getTime(),
+        accumulatedSeconds: 120,
+        remainingSeconds: 0,
+        targetDurationMinutes: 2,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'countdown',
+      } as any,
+      timerInterval: 1,
+    })
+
+    mockSavePendingCompletion.mockClear()
+
+    // 并发触发两次 completePomodoro（模拟内核广播 + 手动结束同时发生）
+    const [result1, result2] = await Promise.all([
+      store.completePomodoro(plugin as any),
+      store.completePomodoro(plugin as any),
+    ])
+
+    // 第一次成功，第二次被重入防线拦截
+    expect(result1).toBe(true)
+    expect(result2).toBe(false)
+    // savePendingCompletion 只被调用一次（重入保护生效）
+    expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
+    // 状态已清空
+    expect(store.activePomodoro).toBeNull()
+    expect(store.timerInterval).toBeNull()
+  })
 })
 
 describe('pomodoroStore autoExtendPomodoro', () => {
