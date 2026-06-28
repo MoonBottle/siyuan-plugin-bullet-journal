@@ -537,7 +537,7 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
     vi.restoreAllMocks()
   })
 
-  it('倒计时正常到期（累计未走到目标）→ durationMinutes = targetDurationMinutes', async () => {
+  it('倒计时模式：durationMinutes = round(accumulatedSeconds/60)（实际专注时长）', async () => {
     const store = usePomodoroStore()
     const plugin = { isMobile: false }
 
@@ -546,9 +546,9 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
         blockId: 'block-1',
         rootId: 'doc-1',
         itemId: 'item-1',
-        itemContent: '专注 2 分钟',
+        itemContent: '设2分钟专注正常到期',
         startTime: new Date('2026-06-28T10:00:00').getTime(),
-        accumulatedSeconds: 60,
+        accumulatedSeconds: 120,
         remainingSeconds: 0,
         targetDurationMinutes: 2,
         isPaused: false,
@@ -564,9 +564,10 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
     expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
     const pending = mockSavePendingCompletion.mock.calls[0][1]
     expect(pending.durationMinutes).toBe(2)
+    expect(pending.accumulatedSeconds).toBe(120)
   })
 
-  it('倒计时模式（无论是否达到目标）→ durationMinutes = targetDurationMinutes', async () => {
+  it('倒计时模式手动提前结束：durationMinutes = 实际专注时长（非目标时长）', async () => {
     const store = usePomodoroStore()
     const plugin = { isMobile: false }
 
@@ -575,11 +576,11 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
         blockId: 'block-2',
         rootId: 'doc-2',
         itemId: 'item-2',
-        itemContent: '倒计时未达目标',
+        itemContent: '设25分钟专注1分钟手动结束',
         startTime: new Date('2026-06-28T10:00:00').getTime(),
         accumulatedSeconds: 90,
         remainingSeconds: 30,
-        targetDurationMinutes: 2,
+        targetDurationMinutes: 25,
         isPaused: false,
         pauseCount: 0,
         totalPausedSeconds: 0,
@@ -592,7 +593,8 @@ describe('pomodoroStore completePomodoro durationMinutes', () => {
 
     expect(mockSavePendingCompletion).toHaveBeenCalledTimes(1)
     const pending = mockSavePendingCompletion.mock.calls[0][1]
-    expect(pending.durationMinutes).toBe(2)
+    // 实专注 90 秒 → round(90/60)=2 分钟，不是目标 25 分钟
+    expect(pending.durationMinutes).toBe(Math.round(90 / 60))
   })
 
   it('正计时（stopwatch）→ durationMinutes = round(accumulated/60)', async () => {

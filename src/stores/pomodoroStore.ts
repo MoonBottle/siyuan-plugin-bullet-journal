@@ -438,6 +438,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
         return
       }
 
+      // 计时器未启动（例如刚恢复或异常状态），保持现有累计值不变
+      if (this.timerStartTimestamp == null) {
+        return
+      }
+
       // 基于时间戳计算经过的时间（不受 setInterval 节流影响）
       const elapsedMs = Date.now() - this.timerStartTimestamp!
       const elapsedSeconds = Math.floor(elapsedMs / 1000)
@@ -581,9 +586,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
       try {
         const ap = this.activePomodoro
         const now = Date.now()
-        const actualMinutes = ap.timerMode === 'countdown'
-          ? ap.targetDurationMinutes
-          : Math.round(ap.accumulatedSeconds / 60)
+        // 先同步累计秒数到当前时刻，避免内核广播/手动结束时 accumulatedSeconds 还是上一次 tick 的值
+        this.updateTimer()
+        const actualMinutes = Math.round(this.activePomodoro!.accumulatedSeconds / 60)
         cancelMobileFocusEnd()
 
         if (kernelAvailable.value && ap.blockId) {
