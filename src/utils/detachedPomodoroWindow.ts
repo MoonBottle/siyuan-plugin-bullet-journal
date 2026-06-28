@@ -52,6 +52,7 @@ interface BrowserWindowLike {
   once?: (event: string, listener: (...args: any[]) => void) => void
   setAlwaysOnTop?: (flag: boolean, level?: string) => void
   getTitle?: () => string
+  getPosition?: () => [number, number]
   setPosition?: (x: number, y: number) => void
   setVisibleOnAllWorkspaces?: (
     visible: boolean,
@@ -110,6 +111,7 @@ export function createDetachedPomodoroWindowHost(
 
   let detachedWindow: BrowserWindowLike | null = null
   let lastRenderedPayload: RenderedPayload | null = null
+  let savedPosition: { x: number, y: number } | null = null
 
   const handleActionMessage = (_event: unknown, channel: string, action: DetachedPomodoroAction) => {
     if (channel !== ACTION_CHANNEL) {
@@ -160,9 +162,23 @@ export function createDetachedPomodoroWindowHost(
       },
     })
 
-    positionDetachedWindow(detachedWindow, remote)
+    if (savedPosition) {
+      detachedWindow.setPosition?.(savedPosition.x, savedPosition.y)
+    }
+    else {
+      positionDetachedWindow(detachedWindow, remote)
+    }
     detachedWindow.setAlwaysOnTop?.(true, 'screen-saver')
     detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true })
+    detachedWindow.on?.('moved', () => {
+      const pos = detachedWindow?.getPosition?.()
+      if (pos) {
+        savedPosition = {
+          x: pos[0],
+          y: pos[1],
+        }
+      }
+    })
     detachedWindow.webContents?.on?.('ipc-message', handleActionMessage)
     detachedWindow.loadURL?.(
       `data:text/html;charset=UTF-8,${encodeURIComponent(buildDetachedWindowHtml())}`,
