@@ -626,7 +626,6 @@ function buildDetachedWindowHtml(): string {
             ? payload.state.deadlineTimestamp
             : null;
           startLocalTimer();
-          tickClock();
           root.className = payload.className || '';
           // 保存当前 tooltip 状态，innerHTML 替换后恢复
           const savedTooltipText = activeTooltipTrigger?.dataset?.tooltip || null;
@@ -641,6 +640,7 @@ function buildDetachedWindowHtml(): string {
               hideTooltip();
             }
           }
+          tickClock();
         };
         document.addEventListener('click', (event) => {
           const actionEl = event.target instanceof Element
