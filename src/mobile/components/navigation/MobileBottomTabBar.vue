@@ -1,5 +1,8 @@
 <template>
-  <nav class="mobile-bottom-tab-bar" aria-label="移动端主导航">
+  <nav
+    class="mobile-bottom-tab-bar"
+    aria-label="移动端主导航"
+  >
     <button
       v-for="tab in tabs"
       :key="tab.value"
@@ -25,23 +28,43 @@
 </template>
 
 <script setup lang="ts">
-type MobileMainTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more';
+type MobileMainTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more'
 
 defineProps<{
   activeTab: MobileMainTab
-}>();
+}>()
 
 const emit = defineEmits<{
   'update:activeTab': [tab: MobileMainTab]
-}>();
+}>()
 
 const tabs: Array<{ value: MobileMainTab, label: string, icon: string }> = [
-  { value: 'todo', label: '待办', icon: 'iconList' },
-  { value: 'ai', label: '对话', icon: 'iconSparkles' },
-  { value: 'pomodoro', label: '番茄钟', icon: 'iconClock' },
-  { value: 'habit', label: '习惯', icon: 'iconCheck' },
-  { value: 'more', label: '设置', icon: 'iconSettings' },
-];
+  {
+    value: 'todo',
+    label: '待办',
+    icon: 'iconTaTodo',
+  },
+  {
+    value: 'ai',
+    label: '对话',
+    icon: 'iconTaAiAssistant',
+  },
+  {
+    value: 'pomodoro',
+    label: '番茄钟',
+    icon: 'iconTaPomodoro',
+  },
+  {
+    value: 'habit',
+    label: '习惯',
+    icon: 'iconTaHabit',
+  },
+  {
+    value: 'more',
+    label: '设置',
+    icon: 'iconSettings',
+  },
+]
 </script>
 
 <style lang="scss" scoped>
@@ -71,7 +94,9 @@ const tabs: Array<{ value: MobileMainTab, label: string, icon: string }> = [
   border-radius: 12px;
   background: transparent;
   color: var(--b3-theme-on-surface, #222);
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .mobile-bottom-tab-bar__icon {

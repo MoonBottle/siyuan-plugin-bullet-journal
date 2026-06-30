@@ -336,7 +336,7 @@ AND 存在 reminder 配置
 
 ### 7.3 与 ReminderService 的关系
 
-`ReminderService` 继续作为调度器存在，不承担习惯周期判断职责。  
+`ReminderService` 继续作为调度器存在，不承担习惯周期判断职责。
 习惯 reminder entry 的真值来源统一改为领域层。
 
 ---

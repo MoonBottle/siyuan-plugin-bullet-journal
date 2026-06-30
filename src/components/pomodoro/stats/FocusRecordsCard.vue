@@ -1,11 +1,24 @@
 <template>
   <div class="focus-records-card">
-    <h4 class="section-title">{{ t('pomodoroStats').focusRecords }}</h4>
+    <h4 class="section-title">
+      {{ t('pomodoroStats').focusRecords }}
+    </h4>
     <div class="records-content">
-      <div v-if="recordsByDate.length === 0" class="records-empty">{{ t('pomodoroStats').noData }}</div>
+      <div
+        v-if="recordsByDate.length === 0"
+        class="records-empty"
+      >
+        {{ t('pomodoroStats').noData }}
+      </div>
       <div v-else>
-        <div v-for="group in recordsByDate" :key="group.date" class="date-group">
-          <div class="date-header">{{ formatDate(group.date) }}</div>
+        <div
+          v-for="group in recordsByDate"
+          :key="group.date"
+          class="date-group"
+        >
+          <div class="date-header">
+            {{ formatDate(group.date) }}
+          </div>
           <div class="record-items">
             <div
               v-for="r in group.records"
@@ -14,14 +27,28 @@
               @click="handleRecordClick(r.record)"
             >
               <div class="record-icon">
-                <TomatoIcon :width="16" :height="16" />
+                <PomodoroIcon
+                  :width="16"
+                  :height="16"
+                />
               </div>
               <div class="record-info">
-                <div class="record-time">{{ formatTimeRange(r.record) }}</div>
-                <div class="record-source">{{ r.itemContent || r.record.itemContent || getRecordSource(r.record) }}</div>
-                <div v-if="r.record.description" class="record-desc">{{ r.record.description }}</div>
+                <div class="record-time">
+                  {{ formatTimeRange(r.record) }}
+                </div>
+                <div class="record-source">
+                  {{ r.itemContent || r.record.itemContent || getRecordSource(r.record) }}
+                </div>
+                <div
+                  v-if="r.record.description"
+                  class="record-desc"
+                >
+                  {{ r.record.description }}
+                </div>
               </div>
-              <div class="record-duration">{{ getMinutes(r.record) }}m</div>
+              <div class="record-duration">
+                {{ getMinutes(r.record) }}m
+              </div>
             </div>
           </div>
         </div>
@@ -31,92 +58,98 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useProjectStore } from '@/stores';
-import { aggregatePomodorosFromProjects, filterPomodoros } from '@/utils/pomodoroUtils';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { usePlugin } from '@/main';
-import TomatoIcon from '@/components/icons/TomatoIcon.vue';
-import type { PomodoroRecord } from '@/types/models';
+import type { PomodoroRecord } from '@/types/models'
+import { computed } from 'vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import {
+  aggregatePomodorosFromProjects,
+  filterPomodoros,
+} from '@/utils/pomodoroUtils'
 
 const props = defineProps<{
-  startDate: string;
-  endDate: string;
-}>();
+  startDate: string
+  endDate: string
+}>()
 
-const projectStore = useProjectStore();
-const plugin = usePlugin();
+const projectStore = useProjectStore()
+const plugin = usePlugin()
 
-const enrichedPomodoros = computed(() => aggregatePomodorosFromProjects(projectStore.projects));
+const enrichedPomodoros = computed(() => aggregatePomodorosFromProjects(projectStore.projects))
 
 const recordsByDate = computed(() => {
   const filtered = filterPomodoros(enrichedPomodoros.value, {
     startDate: props.startDate,
-    endDate: props.endDate
-  });
-  const byDate = new Map<string, typeof filtered>();
+    endDate: props.endDate,
+  })
+  const byDate = new Map<string, typeof filtered>()
   for (const e of filtered) {
-    const list = byDate.get(e.record.date) ?? [];
-    list.push(e);
-    byDate.set(e.record.date, list);
+    const list = byDate.get(e.record.date) ?? []
+    list.push(e)
+    byDate.set(e.record.date, list)
   }
   for (const list of byDate.values()) {
-    list.sort((a, b) => b.record.startTime.localeCompare(a.record.startTime));
+    list.sort((a, b) => b.record.startTime.localeCompare(a.record.startTime))
   }
   return [...byDate.entries()]
     .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([date, records]) => ({ date, records }));
-});
+    .map(([date, records]) => ({
+      date,
+      records,
+    }))
+})
 
 function formatDate(dateStr: string): string {
-  const d = dayjs(dateStr);
-  const today = dayjs();
-  if (d.isSame(today, 'day')) return t('pomodoroStats').today;
-  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
-  return d.format(fmt);
+  const d = dayjs(dateStr)
+  const today = dayjs()
+  if (d.isSame(today, 'day')) return t('pomodoroStats').today
+  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D'
+  return d.format(fmt)
 }
 
 function formatTimeRange(record: PomodoroRecord): string {
-  const startTime = record.startTime.substring(0, 5);
+  const startTime = record.startTime.substring(0, 5)
   if (record.endTime) {
-    const endTime = record.endTime.substring(0, 5);
-    return `${startTime} - ${endTime}`;
+    const endTime = record.endTime.substring(0, 5)
+    return `${startTime} - ${endTime}`
   }
-  return startTime;
+  return startTime
 }
 
 function getRecordSource(record: PomodoroRecord): string {
   if (record.itemId) {
     for (const project of projectStore.projects) {
       for (const task of project.tasks) {
-        const item = task.items.find(i => i.id === record.itemId);
-        if (item) return item.content;
+        const item = task.items.find((i) => i.id === record.itemId)
+        if (item) return item.content
       }
     }
   }
   if (record.taskId) {
     for (const project of projectStore.projects) {
-      const task = project.tasks.find(t => t.id === record.taskId);
-      if (task) return task.name;
+      const task = project.tasks.find((t) => t.id === record.taskId)
+      if (task) return task.name
     }
   }
   if (record.projectId) {
-    const project = projectStore.projects.find(p => p.id === record.projectId);
-    if (project) return project.name;
+    const project = projectStore.projects.find((p) => p.id === record.projectId)
+    if (project) return project.name
   }
-  return t('pomodoroRecord').unknown;
+  return t('pomodoroRecord').unknown
 }
 
-function getMinutes(r: { actualDurationMinutes?: number; durationMinutes: number }) {
-  return r.actualDurationMinutes ?? r.durationMinutes;
+function getMinutes(r: { actualDurationMinutes?: number, durationMinutes: number }) {
+  return r.actualDurationMinutes ?? r.durationMinutes
 }
 
 async function handleRecordClick(record: PomodoroRecord) {
-  if (!record.blockId || !plugin) return;
-  const docId = record.blockId.substring(0, 22);
-  await openDocumentAtLine(docId, undefined, record.blockId);
+  if (!record.blockId || !plugin) return
+  const docId = record.blockId.substring(0, 22)
+  await openDocumentAtLine(docId, undefined, record.blockId)
 }
 </script>
 

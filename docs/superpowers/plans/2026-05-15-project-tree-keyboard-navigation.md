@@ -12,8 +12,8 @@
 
 ## 文件清单
 
-| 文件 | 职责 |
-|------|------|
+| 文件                                         | 职责                                         |
+| -------------------------------------------- | -------------------------------------------- |
 | `src/components/project/ProjectTreePane.vue` | 添加键盘导航逻辑、可见节点列表计算、焦点管理 |
 
 ---
@@ -23,9 +23,11 @@
 ### 任务 1：添加可见节点列表计算和键盘导航
 
 **文件：**
+
 - 修改：`src/components/project/ProjectTreePane.vue`
 
 **变更内容：**
+
 1. 导入 `computed` 和 `ref`
 2. 添加 `visibleNodes` computed，将树扁平化为可见节点列表
 3. 添加 `handleKeydown` 函数处理上下方向键
@@ -35,18 +37,20 @@
 - [ ] **步骤 1：修改 `<script setup>` 导入和逻辑**
 
 将：
+
 ```typescript
-import { t } from '@/i18n';
-import type { Project } from '@/types/models';
-import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
+import type { Project } from '@/types/models'
+import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree'
+import { t } from '@/i18n'
 ```
 
 改为：
+
 ```typescript
-import { computed, ref } from 'vue';
-import { t } from '@/i18n';
-import type { Project } from '@/types/models';
-import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
+import type { Project } from '@/types/models'
+import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree'
+import { computed, ref } from 'vue'
+import { t } from '@/i18n'
 ```
 
 - [ ] **步骤 2：添加 visibleNodes computed 和 handleKeydown**
@@ -55,80 +59,86 @@ import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
 
 ```typescript
 const props = defineProps<{
-  project: Project | null;
-  nodes: ProjectTaskTreeNode[];
-  searchQuery: string;
-  expandedTaskIds: Set<string>;
-  matchedTaskIds: Set<string>;
-  matchedItemIds: Set<string>;
-  selectedTaskId: string;
-  selectedItemId: string;
-}>();
+  project: Project | null
+  nodes: ProjectTaskTreeNode[]
+  searchQuery: string
+  expandedTaskIds: Set<string>
+  matchedTaskIds: Set<string>
+  matchedItemIds: Set<string>
+  selectedTaskId: string
+  selectedItemId: string
+}>()
 
 const emit = defineEmits<{
-  (event: 'update:searchQuery', value: string): void;
-  (event: 'toggle-task', taskId: string): void;
-  (event: 'select-task', taskId: string): void;
-  (event: 'select-item', itemId: string): void;
-}>();
+  (event: 'update:searchQuery', value: string): void
+  (event: 'toggle-task', taskId: string): void
+  (event: 'select-task', taskId: string): void
+  (event: 'select-item', itemId: string): void
+}>()
 
 // 将树扁平化为可见节点列表
 const visibleNodes = computed(() => {
   const result: Array<{
-    type: 'task' | 'item';
-    id: string;
-    parentTaskId?: string;
-  }> = [];
+    type: 'task' | 'item'
+    id: string
+    parentTaskId?: string
+  }> = []
 
   function traverse(nodes: ProjectTaskTreeNode[]) {
     for (const node of nodes) {
-      result.push({ type: 'task', id: node.task.id });
+      result.push({ type: 'task', id: node.task.id })
       if (props.expandedTaskIds.has(node.task.id)) {
         for (const item of node.items) {
-          result.push({ type: 'item', id: item.id, parentTaskId: node.task.id });
+          result.push({ type: 'item', id: item.id, parentTaskId: node.task.id })
         }
-        traverse(node.children);
+        traverse(node.children)
       }
     }
   }
 
-  traverse(props.nodes);
-  return result;
-});
+  traverse(props.nodes)
+  return result
+})
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
+    return
 
   const currentIndex = visibleNodes.value.findIndex((node) => {
-    if (node.type === 'task') return node.id === props.selectedTaskId;
-    return node.id === props.selectedItemId;
-  });
+    if (node.type === 'task')
+      return node.id === props.selectedTaskId
+    return node.id === props.selectedItemId
+  })
 
-  if (currentIndex === -1) return;
+  if (currentIndex === -1)
+    return
 
   const nextIndex = event.key === 'ArrowUp'
     ? Math.max(0, currentIndex - 1)
-    : Math.min(visibleNodes.value.length - 1, currentIndex + 1);
+    : Math.min(visibleNodes.value.length - 1, currentIndex + 1)
 
-  const next = visibleNodes.value[nextIndex];
+  const next = visibleNodes.value[nextIndex]
   if (next.type === 'task') {
-    emit('select-task', next.id);
-  } else {
-    emit('select-item', next.id);
+    emit('select-task', next.id)
+  }
+  else {
+    emit('select-item', next.id)
   }
 
-  event.preventDefault();
+  event.preventDefault()
 }
 ```
 
 - [ ] **步骤 3：修改模板，添加 tabindex 和 @keydown**
 
 将：
+
 ```vue
       <div v-else class="project-tree-pane__tree">
 ```
 
 改为：
+
 ```vue
       <div
         v-else
@@ -142,8 +152,9 @@ function handleKeydown(event: KeyboardEvent) {
 - [ ] **步骤 4：添加 treeRef**
 
 在 `<script setup>` 中添加：
+
 ```typescript
-const treeRef = ref<HTMLDivElement | null>(null);
+const treeRef = ref<HTMLDivElement | null>(null)
 ```
 
 - [ ] **步骤 5：验证编译通过**
@@ -156,6 +167,7 @@ const treeRef = ref<HTMLDivElement | null>(null);
 ### 任务 2：添加焦点管理（点击节点后树容器获得焦点）
 
 **文件：**
+
 - 修改：`src/components/project/ProjectTreePane.vue`
 
 **变更内容：** 当用户点击任务或事项时，将焦点设置到树容器上，确保后续键盘事件能被正确接收。
@@ -166,19 +178,20 @@ const treeRef = ref<HTMLDivElement | null>(null);
 
 ```typescript
 function handleSelectTask(taskId: string) {
-  emit('select-task', taskId);
-  treeRef.value?.focus();
+  emit('select-task', taskId)
+  treeRef.value?.focus()
 }
 
 function handleSelectItem(itemId: string) {
-  emit('select-item', itemId);
-  treeRef.value?.focus();
+  emit('select-item', itemId)
+  treeRef.value?.focus()
 }
 ```
 
 - [ ] **步骤 2：修改模板中的事件绑定**
 
 将：
+
 ```vue
         @toggle-task="$emit('toggle-task', $event)"
         @select-task="$emit('select-task', $event)"
@@ -186,6 +199,7 @@ function handleSelectItem(itemId: string) {
 ```
 
 改为：
+
 ```vue
         @toggle-task="$emit('toggle-task', $event)"
         @select-task="handleSelectTask"
@@ -211,6 +225,7 @@ function handleSelectItem(itemId: string) {
 ## 自检
 
 **1. 规格覆盖度：**
+
 - [x] 按上/下方向键可以在任务树内的可见节点之间切换选中 → 任务 1
 - [x] 选中任务时，右栏详情面板显示任务详情 → 复用现有事件流
 - [x] 选中事项时，右栏详情面板显示事项详情 → 复用现有事件流

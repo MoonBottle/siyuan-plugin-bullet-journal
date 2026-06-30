@@ -62,6 +62,7 @@
 ### Task 1: 建立 pin/tag parser 与 Item 类型
 
 **Files:**
+
 - Create: `src/parser/pinParser.ts`
 - Create: `src/parser/tagParser.ts`
 - Create: `test/parser/pinParser.test.ts`
@@ -71,24 +72,24 @@
 - [ ] **Step 1: 写 pin parser 的失败测试**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { parsePinnedFromLine, stripPinnedMarker, generatePinnedMarker } from '@/parser/pinParser';
+import { describe, expect, it } from 'vitest'
+import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser'
 
 describe('pinParser', () => {
   it('识别任意位置的 📌', () => {
-    expect(parsePinnedFromLine('修复登录 @2026-05-07 📌')).toBe(true);
-    expect(parsePinnedFromLine('📌 修复登录 @2026-05-07')).toBe(true);
-    expect(parsePinnedFromLine('修复登录 @2026-05-07')).toBe(false);
-  });
+    expect(parsePinnedFromLine('修复登录 @2026-05-07 📌')).toBe(true)
+    expect(parsePinnedFromLine('📌 修复登录 @2026-05-07')).toBe(true)
+    expect(parsePinnedFromLine('修复登录 @2026-05-07')).toBe(false)
+  })
 
   it('剥离图钉并清理空白', () => {
-    expect(stripPinnedMarker('修复登录  📌  @2026-05-07')).toBe('修复登录 @2026-05-07');
-  });
+    expect(stripPinnedMarker('修复登录  📌  @2026-05-07')).toBe('修复登录 @2026-05-07')
+  })
 
   it('生成固定图钉标记', () => {
-    expect(generatePinnedMarker()).toBe('📌');
-  });
-});
+    expect(generatePinnedMarker()).toBe('📌')
+  })
+})
 ```
 
 - [ ] **Step 2: 运行 pin parser 测试并确认失败**
@@ -100,18 +101,18 @@ Expected: FAIL，提示 `Cannot find module '@/parser/pinParser'`
 - [ ] **Step 3: 实现最小 pin parser**
 
 ```ts
-const PIN_MARKER = '📌';
+const PIN_MARKER = '📌'
 
 export function parsePinnedFromLine(line: string): boolean {
-  return line.includes(PIN_MARKER);
+  return line.includes(PIN_MARKER)
 }
 
 export function stripPinnedMarker(text: string): string {
-  return text.replaceAll(PIN_MARKER, '').replace(/[ \t]+/g, ' ').trim();
+  return text.replaceAll(PIN_MARKER, '').replace(/[ \t]+/g, ' ').trim()
 }
 
 export function generatePinnedMarker(): string {
-  return PIN_MARKER;
+  return PIN_MARKER
 }
 ```
 
@@ -124,27 +125,27 @@ Expected: PASS
 - [ ] **Step 5: 写 tag parser 的失败测试**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { isReservedTag, parseTagsFromLine, stripTagsFromLine } from '@/parser/tagParser';
+import { describe, expect, it } from 'vitest'
+import { isReservedTag, parseTagsFromLine, stripTagsFromLine } from '@/parser/tagParser'
 
 describe('tagParser', () => {
   it('提取业务标签并去重', () => {
-    expect(parseTagsFromLine('修复登录 @2026-05-07 #前端 #认证 #前端')).toEqual(['前端', '认证']);
-  });
+    expect(parseTagsFromLine('修复登录 @2026-05-07 #前端 #认证 #前端')).toEqual(['前端', '认证'])
+  })
 
   it('排除保留标签', () => {
-    expect(parseTagsFromLine('修复登录 @2026-05-07 #done #任务 #前端')).toEqual(['前端']);
-  });
+    expect(parseTagsFromLine('修复登录 @2026-05-07 #done #任务 #前端')).toEqual(['前端'])
+  })
 
   it('仅剥离业务标签，保留状态标签', () => {
-    expect(stripTagsFromLine('修复登录 #done #前端 #认证')).toBe('修复登录 #done');
-  });
+    expect(stripTagsFromLine('修复登录 #done #前端 #认证')).toBe('修复登录 #done')
+  })
 
   it('识别保留标签', () => {
-    expect(isReservedTag('done')).toBe(true);
-    expect(isReservedTag('前端')).toBe(false);
-  });
-});
+    expect(isReservedTag('done')).toBe(true)
+    expect(isReservedTag('前端')).toBe(false)
+  })
+})
 ```
 
 - [ ] **Step 6: 运行 tag parser 测试并确认失败**
@@ -163,30 +164,31 @@ const RESERVED_TAGS = new Set([
   '已放弃',
   'task',
   '任务',
-]);
+])
 
-const TAG_REGEX = /(^|\s)#([^\s#]+)/g;
+const TAG_REGEX = /(^|\s)#([^\s#]+)/g
 
 export function isReservedTag(tag: string): boolean {
-  return RESERVED_TAGS.has(tag);
+  return RESERVED_TAGS.has(tag)
 }
 
 export function parseTagsFromLine(line: string): string[] {
-  const tags: string[] = [];
-  let match: RegExpExecArray | null;
+  const tags: string[] = []
+  let match: RegExpExecArray | null
   while ((match = TAG_REGEX.exec(line)) !== null) {
-    const tag = match[2]?.trim();
-    if (!tag || isReservedTag(tag) || tags.includes(tag)) continue;
-    tags.push(tag);
+    const tag = match[2]?.trim()
+    if (!tag || isReservedTag(tag) || tags.includes(tag))
+      continue
+    tags.push(tag)
   }
-  return tags;
+  return tags
 }
 
 export function stripTagsFromLine(text: string): string {
   return text
     .replace(TAG_REGEX, (full, prefix, tag) => isReservedTag(tag) ? full : prefix)
     .replace(/[ \t]+/g, ' ')
-    .trim();
+    .trim()
 }
 ```
 
@@ -200,15 +202,15 @@ Expected: PASS
 
 ```ts
 export interface Item {
-  id: string;
-  content: string;
-  date: string;
+  id: string
+  content: string
+  date: string
   // ...
-  priority?: PriorityLevel;
-  pinned?: boolean;
-  tags?: string[];
-  isTaskList?: boolean;
-  listItemBlockId?: string;
+  priority?: PriorityLevel
+  pinned?: boolean
+  tags?: string[]
+  isTaskList?: boolean
+  listItemBlockId?: string
 }
 ```
 
@@ -230,6 +232,7 @@ git commit -m "feat(parser): add item pin and tag parsers"
 ### Task 2: 把 pin/tag 接入 line parser
 
 **Files:**
+
 - Modify: `src/parser/lineParser.ts`
 - Modify: `test/parser/lineParser.test.ts`
 
@@ -237,24 +240,24 @@ git commit -m "feat(parser): add item pin and tag parsers"
 
 ```ts
 it('解析置顶和业务标签并清洗正文', () => {
-  const items = LineParser.parseItemLine('修复登录 @2026-05-07 🔥 📌 #done #前端 #认证', 1);
+  const items = LineParser.parseItemLine('修复登录 @2026-05-07 🔥 📌 #done #前端 #认证', 1)
 
-  expect(items).toHaveLength(1);
-  expect(items[0].content).toBe('修复登录');
-  expect(items[0].pinned).toBe(true);
-  expect(items[0].status).toBe('completed');
-  expect(items[0].priority).toBe('high');
-  expect(items[0].tags).toEqual(['前端', '认证']);
-});
+  expect(items).toHaveLength(1)
+  expect(items[0].content).toBe('修复登录')
+  expect(items[0].pinned).toBe(true)
+  expect(items[0].status).toBe('completed')
+  expect(items[0].priority).toBe('high')
+  expect(items[0].tags).toEqual(['前端', '认证'])
+})
 
 it('多日期事项共享 pinned 与 tags', () => {
-  const items = LineParser.parseItemLine('整理资料 @2026-05-07, 2026-05-08 📌 #前端', 1);
+  const items = LineParser.parseItemLine('整理资料 @2026-05-07, 2026-05-08 📌 #前端', 1)
 
-  expect(items).toHaveLength(2);
-  expect(items.every(item => item.pinned)).toBe(true);
-  expect(items[0].tags).toEqual(['前端']);
-  expect(items[1].tags).toEqual(['前端']);
-});
+  expect(items).toHaveLength(2)
+  expect(items.every(item => item.pinned)).toBe(true)
+  expect(items[0].tags).toEqual(['前端'])
+  expect(items[1].tags).toEqual(['前端'])
+})
 ```
 
 - [ ] **Step 2: 运行 line parser 测试并确认失败**
@@ -266,15 +269,15 @@ Expected: FAIL，提示 `pinned` / `tags` 断言不匹配
 - [ ] **Step 3: 在 line parser 中接入 pin/tag parser**
 
 ```ts
-import { parsePinnedFromLine, stripPinnedMarker } from './pinParser';
-import { parseTagsFromLine, stripTagsFromLine } from './tagParser';
+import { parsePinnedFromLine, stripPinnedMarker } from './pinParser'
+import { parseTagsFromLine, stripTagsFromLine } from './tagParser'
 
 // parseItemLine 内
-const pinned = parsePinnedFromLine(line);
-const tags = parseTagsFromLine(line);
+const pinned = parsePinnedFromLine(line)
+const tags = parseTagsFromLine(line)
 
-content = stripPinnedMarker(content);
-content = stripTagsFromLine(content);
+content = stripPinnedMarker(content)
+content = stripTagsFromLine(content)
 
 items.push({
   id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -296,7 +299,7 @@ items.push({
   priority,
   pinned,
   tags: tags.length > 0 ? tags : undefined,
-});
+})
 ```
 
 - [ ] **Step 4: 运行 line parser 测试并确认通过**
@@ -317,6 +320,7 @@ git commit -m "feat(parser): parse item pinned markers and business tags"
 ### Task 3: 扩展 projectStore 搜索、标签聚合与置顶分组
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts`
 - Modify: `test/stores/projectStore.test.ts`
 
@@ -324,21 +328,21 @@ git commit -m "feat(parser): parse item pinned markers and business tags"
 
 ```ts
 it('searchQuery 可命中业务标签', () => {
-  const store = useProjectStore();
+  const store = useProjectStore()
   store.$patch({
     currentDate: '2026-05-07',
     projects: [createMockProject([
       mkItem('2026-05-07', 'a', { content: '修复登录', tags: ['前端'] }),
       mkItem('2026-05-07', 'b', { content: '写报价单', tags: ['销售'] }),
     ])],
-  });
+  })
 
-  const result = store.getFilteredAndSortedItems({ groupId: '', searchQuery: '#前端' });
-  expect(result.map(item => item.blockId)).toEqual(['a']);
-});
+  const result = store.getFilteredAndSortedItems({ groupId: '', searchQuery: '#前端' })
+  expect(result.map(item => item.blockId)).toEqual(['a'])
+})
 
 it('聚合标签候选并按数量降序、名称升序排序', () => {
-  const store = useProjectStore();
+  const store = useProjectStore()
   store.$patch({
     currentDate: '2026-05-07',
     projects: [createMockProject([
@@ -346,17 +350,17 @@ it('聚合标签候选并按数量降序、名称升序排序', () => {
       mkItem('2026-05-07', 'b', { tags: ['前端'] }),
       mkItem('2026-05-07', 'c', { tags: ['产品'] }),
     ])],
-  });
+  })
 
   expect(store.getTodoTagOptions('').map(tag => `${tag.value}:${tag.count}`)).toEqual([
     '前端:2',
     '产品:1',
     '认证:1',
-  ]);
-});
+  ])
+})
 
 it('按标签多选 OR 语义过滤并分离已置顶分组', () => {
-  const store = useProjectStore();
+  const store = useProjectStore()
   store.$patch({
     currentDate: '2026-05-07',
     projects: [createMockProject([
@@ -364,16 +368,16 @@ it('按标签多选 OR 语义过滤并分离已置顶分组', () => {
       mkItem('2026-05-07', 'b', { content: '写报价单', tags: ['销售'] }),
       mkItem('2026-05-07', 'c', { content: '同步需求', tags: ['前端', '产品'] }),
     ])],
-  });
+  })
 
   const grouped = store.getGroupedTodoItems({
     groupId: '',
     selectedTags: ['前端', '销售'],
-  });
+  })
 
-  expect(grouped.pinnedItems.map(item => item.blockId)).toEqual(['a']);
-  expect(grouped.regularItems.map(item => item.blockId)).toEqual(['c', 'b']);
-});
+  expect(grouped.pinnedItems.map(item => item.blockId)).toEqual(['a'])
+  expect(grouped.regularItems.map(item => item.blockId)).toEqual(['c', 'b'])
+})
 ```
 
 - [ ] **Step 2: 运行 store 测试并确认失败**
@@ -385,43 +389,45 @@ Expected: FAIL，提示缺少 `getTodoTagOptions` / `getGroupedTodoItems` 或搜
 - [ ] **Step 3: 在 projectStore 中补充过滤和聚合 API**
 
 ```ts
-type TodoTagOption = {
-  value: string;
-  count: number;
-};
+interface TodoTagOption {
+  value: string
+  count: number
+}
 
-type TodoFilterParams = {
-  groupId: string;
-  searchQuery?: string;
-  dateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
-  includeNoPriority?: boolean;
-  sortRules?: TodoSortRule[];
-  selectedTags?: string[];
-};
+interface TodoFilterParams {
+  groupId: string
+  searchQuery?: string
+  dateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
+  includeNoPriority?: boolean
+  sortRules?: TodoSortRule[]
+  selectedTags?: string[]
+}
 
 function matchesSearchQuery(item: Item, searchQuery?: string): boolean {
-  const q = normalizeString(searchQuery?.replace(/^#/, ''));
-  if (!q) return true;
+  const q = normalizeString(searchQuery?.replace(/^#/, ''))
+  if (!q)
+    return true
   return [
     item.content,
     item.project?.name,
     item.task?.name,
     ...(item.tags ?? []),
-  ].some(value => normalizeString(value).includes(q));
+  ].some(value => normalizeString(value).includes(q))
 }
 
 function matchesSelectedTags(item: Item, selectedTags?: string[]): boolean {
-  if (!selectedTags?.length) return true;
-  const tagSet = new Set(item.tags ?? []);
-  return selectedTags.some(tag => tagSet.has(tag));
+  if (!selectedTags?.length)
+    return true
+  const tagSet = new Set(item.tags ?? [])
+  return selectedTags.some(tag => tagSet.has(tag))
 }
 
 function splitPinnedItems(items: Item[]) {
   return {
     pinnedItems: items.filter(item => item.pinned),
     regularItems: items.filter(item => !item.pinned),
-  };
+  }
 }
 ```
 
@@ -429,20 +435,19 @@ function splitPinnedItems(items: Item[]) {
 
 ```ts
 function getTodoTagOptions(groupId: string): TodoTagOption[] {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, number>()
   for (const item of getFilteredAndSortedItems({ groupId })) {
     for (const tag of item.tags ?? []) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      counts.set(tag, (counts.get(tag) ?? 0) + 1)
     }
   }
 
-  return [...counts.entries()]
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+  return Array.from(counts.entries(), ([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
 }
 
 function getGroupedTodoItems(params: TodoFilterParams) {
-  return splitPinnedItems(getFilteredAndSortedItems(params));
+  return splitPinnedItems(getFilteredAndSortedItems(params))
 }
 ```
 
@@ -464,6 +469,7 @@ git commit -m "feat(store): add todo tag aggregation and pinned grouping"
 ### Task 4: 在桌面过滤栏加入聚合标签多选
 
 **Files:**
+
 - Modify: `src/components/todo/TodoFilterBar.vue`
 - Modify: `src/tabs/DesktopTodoDock.vue`
 - Modify: `src/components/todo/TodoContentPane.vue`
@@ -473,7 +479,7 @@ git commit -m "feat(store): add todo tag aggregation and pinned grouping"
 
 ```ts
 it('将聚合标签候选透传给过滤栏并响应多选更新', async () => {
-  const filterBarProps = vi.fn();
+  const filterBarProps = vi.fn()
 
   vi.doMock('@/components/todo/TodoFilterBar.vue', () => ({
     default: defineComponent({
@@ -481,17 +487,17 @@ it('将聚合标签候选透传给过滤栏并响应多选更新', async () => {
       props: ['tagOptions', 'selectedTags', 'tagQuery'],
       emits: ['update:selectedTags', 'update:tagQuery'],
       setup(props) {
-        filterBarProps(props);
+        filterBarProps(props)
         return () => h('button', {
           'data-testid': 'tag-filter-trigger',
-          onClick: () => {
-            (props as any).onUpdateSelectedTags?.(['前端']);
+          'onClick': () => {
+            (props as any).onUpdateSelectedTags?.(['前端'])
           },
-        });
+        })
       },
     }),
-  }));
-});
+  }))
+})
 ```
 
 - [ ] **Step 2: 运行桌面 Dock 测试并确认失败**
@@ -503,24 +509,24 @@ Expected: FAIL，提示过滤栏缺少 `tagOptions` / `selectedTags` props
 - [ ] **Step 3: 扩展过滤栏 props 和 emits**
 
 ```ts
-type TagOption = { value: string; count: number };
+interface TagOption { value: string, count: number }
 
 withDefaults(defineProps<{
   // ...
-  tagQuery?: string;
-  selectedTags?: string[];
-  tagOptions?: TagOption[];
+  tagQuery?: string
+  selectedTags?: string[]
+  tagOptions?: TagOption[]
 }>(), {
   tagQuery: '',
   selectedTags: () => [],
   tagOptions: () => [],
-});
+})
 
 const emit = defineEmits<{
   // ...
-  (event: 'update:tagQuery', value: string): void;
-  (event: 'update:selectedTags', value: string[]): void;
-}>();
+  (event: 'update:tagQuery', value: string): void
+  (event: 'update:selectedTags', value: string[]): void
+}>()
 ```
 
 - [ ] **Step 4: 为过滤栏加入标签搜索 UI**
@@ -537,6 +543,7 @@ const emit = defineEmits<{
       @input="emit('update:tagQuery', ($event.target as HTMLInputElement).value)"
     />
   </div>
+
   <div v-if="selectedTags.length" class="selected-tag-list">
     <button
       v-for="tag in selectedTags"
@@ -547,6 +554,7 @@ const emit = defineEmits<{
       #{{ tag }}
     </button>
   </div>
+
   <div v-if="filteredTagOptions.length" class="tag-option-list">
     <button
       v-for="option in filteredTagOptions"
@@ -563,13 +571,13 @@ const emit = defineEmits<{
 - [ ] **Step 5: 在 DesktopTodoDock 中管理标签查询和已选标签**
 
 ```ts
-const tagQuery = ref('');
-const selectedTags = ref<string[]>([]);
+const tagQuery = ref('')
+const selectedTags = ref<string[]>([])
 
-const tagOptions = computed(() => projectStore.getTodoTagOptions(selectedGroup.value));
+const tagOptions = computed(() => projectStore.getTodoTagOptions(selectedGroup.value))
 
 function updateSelectedTags(next: string[]) {
-  selectedTags.value = next;
+  selectedTags.value = next
 }
 ```
 
@@ -607,6 +615,7 @@ git commit -m "feat(todo): add aggregated tag filter bar"
 ### Task 5: 在 TodoSidebar 渲染已置顶分组与标签
 
 **Files:**
+
 - Modify: `src/components/todo/TodoSidebar.vue`
 - Modify: `src/components/todo/TodoContentPane.vue`
 - Modify: `test/tabs/DesktopTodoDock.test.ts`
@@ -618,14 +627,14 @@ it('有置顶事项时渲染已置顶分组并展示标签', async () => {
   projectStore.getGroupedTodoItems = vi.fn(() => ({
     pinnedItems: [{ id: 'p1', content: '修复登录', status: 'pending', tags: ['前端'], pinned: true }],
     regularItems: [],
-  })) as any;
+  })) as any
 
-  const mounted = mountDock();
-  await nextTick();
+  const mounted = mountDock()
+  await nextTick()
 
-  expect(mounted.container.textContent).toContain('已置顶');
-  expect(mounted.container.textContent).toContain('#前端');
-});
+  expect(mounted.container.textContent).toContain('已置顶')
+  expect(mounted.container.textContent).toContain('#前端')
+})
 ```
 
 - [ ] **Step 2: 运行桌面 Dock 测试并确认失败**
@@ -644,20 +653,24 @@ const groupedItems = computed(() => projectStore.getGroupedTodoItems({
   priorities: props.priorities,
   sortRules: props.sortRules,
   selectedTags: props.selectedTags,
-}));
+}))
 
-const pinnedItems = computed(() => groupedItems.value.pinnedItems);
-const regularItems = computed(() => groupedItems.value.regularItems);
+const pinnedItems = computed(() => groupedItems.value.pinnedItems)
+const regularItems = computed(() => groupedItems.value.regularItems)
 ```
 
 模板新增：
 
 ```vue
 <div v-if="pinnedItems.length > 0" class="todo-section">
-  <div class="section-label">已置顶 ({{ pinnedItems.length }})</div>
+  <div class="section-label">已置顶 ({{ pinnedItems.length }})
+</div>
+
   <div class="todo-items">
     <Card v-for="item in pinnedItems" :key="item.id">
-      <div class="item-content">📌 {{ item.content }}</div>
+      <div class="item-content">📌 {{ item.content }}
+</div>
+
       <div v-if="item.tags?.length" class="item-tag-list">
         <button
           v-for="tag in item.tags"
@@ -691,6 +704,7 @@ git commit -m "feat(todo): show pinned section and tag chips in sidebar"
 ### Task 6: 增加 `📌` UI 写回
 
 **Files:**
+
 - Modify: `src/utils/itemSettingUtils.ts`
 - Modify: `src/components/todo/TodoSidebar.vue`
 - Modify: `test/tabs/DesktopTodoDock.test.ts`
@@ -699,19 +713,19 @@ git commit -m "feat(todo): show pinned section and tag chips in sidebar"
 
 ```ts
 it('点击图钉按钮时调用置顶写回工具', async () => {
-  const toggleItemPinned = vi.fn().mockResolvedValue(undefined);
+  const toggleItemPinned = vi.fn().mockResolvedValue(undefined)
   vi.doMock('@/utils/itemSettingUtils', () => ({
     toggleItemPinned,
-  }));
+  }))
 
-  const mounted = mountDock();
+  const mounted = mountDock()
   await nextTick();
 
   (mounted.container.querySelector('[data-testid=\"todo-pin-toggle-p1\"]') as HTMLElement)
-    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-  expect(toggleItemPinned).toHaveBeenCalled();
-});
+  expect(toggleItemPinned).toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: 运行桌面 Dock 测试并确认失败**
@@ -723,24 +737,24 @@ Expected: FAIL，提示缺少 pin toggle 工具或按钮
 - [ ] **Step 3: 在 itemSettingUtils 中增加 `toggleItemPinned`**
 
 ```ts
-import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser';
+import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser'
 
 export async function toggleItemPinned(item: Item): Promise<void> {
   if (!item.blockId) {
-    throw new Error('事项缺少 blockId，无法更新');
+    throw new Error('事项缺少 blockId，无法更新')
   }
 
-  const currentContent = await fetchBlockContent(item.blockId);
-  const nextPinned = !parsePinnedFromLine(currentContent);
-  let newContent = stripPinnedMarker(currentContent);
+  const currentContent = await fetchBlockContent(item.blockId)
+  const nextPinned = !parsePinnedFromLine(currentContent)
+  let newContent = stripPinnedMarker(currentContent)
 
   if (nextPinned) {
-    newContent = `${newContent} ${generatePinnedMarker()}`;
+    newContent = `${newContent} ${generatePinnedMarker()}`
   }
 
-  newContent = normalizeWhitespace(newContent);
-  await updateBlockContent(item.blockId, newContent);
-  emitItemSettingMutation('pin', item.blockId);
+  newContent = normalizeWhitespace(newContent)
+  await updateBlockContent(item.blockId, newContent)
+  emitItemSettingMutation('pin', item.blockId)
 }
 ```
 
@@ -765,7 +779,7 @@ kind: 'reminder' | 'recurring' | 'pin'
 
 ```ts
 async function handleTogglePinned(item: Item) {
-  await toggleItemPinned(item);
+  await toggleItemPinned(item)
 }
 ```
 
@@ -787,6 +801,7 @@ git commit -m "feat(todo): support pinned item writeback"
 ### Task 7: 更新用户文档并跑回归
 
 **Files:**
+
 - Modify: `docs/user-guide/data-format.md`
 - Test: `test/parser/pinParser.test.ts`
 - Test: `test/parser/tagParser.test.ts`
@@ -816,6 +831,7 @@ git commit -m "feat(todo): support pinned item writeback"
 - `#done`、`#已完成`、`#abandoned`、`#已放弃`、`#task`、`#任务` 不计入业务标签
 - Todo Dock 的主搜索可命中标签
 - 主搜索框下方的标签搜索框支持从解析结果聚合出的标签中多选筛选
+
 ````
 
 - [ ] **Step 2: 运行 parser/store/UI 回归测试**

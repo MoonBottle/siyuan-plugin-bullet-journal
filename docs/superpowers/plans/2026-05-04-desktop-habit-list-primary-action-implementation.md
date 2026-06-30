@@ -30,6 +30,7 @@
 ### Task 1: Swap Desktop HabitListItem Click Semantics
 
 **Files:**
+
 - Modify: `src/components/habit/HabitListItem.vue`
 - Test: `test/components/habit/HabitListItem.test.ts`
 
@@ -45,18 +46,18 @@ it('clicking main body emits open-detail only on desktop', async () => {
     openCalendar: vi.fn(),
     checkIn: vi.fn(),
     increment: vi.fn(),
-  };
+  }
 
-  const mounted = mountComponent({ habit, dayState, periodState }, emits);
-  await nextTick();
+  const mounted = mountComponent({ habit, dayState, periodState }, emits)
+  await nextTick()
 
-  mounted.container.querySelector('[data-testid="habit-list-item-main"]')?.click();
+  mounted.container.querySelector('[data-testid="habit-list-item-main"]')?.click()
 
-  expect(emits.openDetail).toHaveBeenCalledTimes(1);
-  expect(emits.openDetail).toHaveBeenCalledWith(habit);
-  expect(emits.openDoc).not.toHaveBeenCalled();
-  expect(emits.openCalendar).not.toHaveBeenCalled();
-});
+  expect(emits.openDetail).toHaveBeenCalledTimes(1)
+  expect(emits.openDetail).toHaveBeenCalledWith(habit)
+  expect(emits.openDoc).not.toHaveBeenCalled()
+  expect(emits.openCalendar).not.toHaveBeenCalled()
+})
 
 it('clicking desktop document action emits open-doc only', async () => {
   const emits = {
@@ -65,18 +66,18 @@ it('clicking desktop document action emits open-doc only', async () => {
     openCalendar: vi.fn(),
     checkIn: vi.fn(),
     increment: vi.fn(),
-  };
+  }
 
-  const mounted = mountComponent({ habit, dayState, periodState }, emits);
-  await nextTick();
+  const mounted = mountComponent({ habit, dayState, periodState }, emits)
+  await nextTick()
 
-  mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')?.click();
+  mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')?.click()
 
-  expect(emits.openDoc).toHaveBeenCalledTimes(1);
-  expect(emits.openDoc).toHaveBeenCalledWith(habit);
-  expect(emits.openDetail).not.toHaveBeenCalled();
-  expect(emits.openCalendar).not.toHaveBeenCalled();
-});
+  expect(emits.openDoc).toHaveBeenCalledTimes(1)
+  expect(emits.openDoc).toHaveBeenCalledWith(habit)
+  expect(emits.openDetail).not.toHaveBeenCalled()
+  expect(emits.openCalendar).not.toHaveBeenCalled()
+})
 ```
 
 Also update the current “calendar action” desktop test to target the new document action test id instead of the old calendar test id.
@@ -90,6 +91,7 @@ npx vitest run test/components/habit/HabitListItem.test.ts
 ```
 
 Expected:
+
 - FAIL
 - The desktop main click test still receives `open-doc`
 - The new document-action test fails because the old calendar button/test id still exists
@@ -100,7 +102,7 @@ Update `src/components/habit/HabitListItem.vue`:
 
 ```ts
 function handleMainClick() {
-  emit('open-detail', props.habit);
+  emit('open-detail', props.habit)
 }
 ```
 
@@ -119,6 +121,7 @@ Replace the desktop auxiliary button:
 ```
 
 Keep the existing mobile branch unchanged:
+
 - mobile main click still emits `open-detail`
 - mobile still hides the auxiliary desktop-only icon
 - check-in / increment buttons remain untouched
@@ -134,6 +137,7 @@ npx vitest run test/components/habit/HabitListItem.test.ts
 ```
 
 Expected:
+
 - PASS
 - Desktop main click now emits `open-detail`
 - Desktop auxiliary action emits `open-doc`
@@ -151,6 +155,7 @@ git commit -m "refactor(habit): swap desktop list primary action"
 ### Task 2: Align DesktopHabitDock Event Flow With New Semantics
 
 **Files:**
+
 - Modify: `test/tabs/DesktopHabitDock.test.ts`
 - Modify: `src/components/habit/HabitWorkspaceListPane.vue`
 - Modify: `src/tabs/DesktopHabitDock.vue`
@@ -170,24 +175,24 @@ vi.mock('@/components/habit/HabitListItem.vue', () => ({
       return () => h('div', { 'data-testid': `habit-list-item-${props.habit.blockId}` }, [
         h('button', {
           'data-testid': 'habit-list-item-main',
-          onClick: () => emit('open-detail', props.habit),
+          'onClick': () => emit('open-detail', props.habit),
         }),
         h('button', {
           'data-testid': 'habit-list-item-open-doc',
-          onClick: () => emit('open-doc', props.habit),
+          'onClick': () => emit('open-doc', props.habit),
         }),
         h('button', {
           'data-testid': 'habit-list-item-check-in',
-          onClick: () => emit('check-in', props.habit),
+          'onClick': () => emit('check-in', props.habit),
         }),
         h('button', {
           'data-testid': 'habit-list-item-increment',
-          onClick: () => emit('increment', props.habit),
+          'onClick': () => emit('increment', props.habit),
         }),
-      ]);
+      ])
     },
   }),
-}));
+}))
 ```
 
 Update/add expectations:
@@ -195,20 +200,20 @@ Update/add expectations:
 ```ts
 it('opening a list item main action enters detail mode', async () => {
   mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')?.textContent)
-    .toContain('喝水');
-});
+    .toContain('喝水')
+})
 
 it('desktop document action opens the habit document', async () => {
   mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(openDocumentAtLine).toHaveBeenCalledWith('doc-1', undefined, 'habit-1');
-});
+  expect(openDocumentAtLine).toHaveBeenCalledWith('doc-1', undefined, 'habit-1')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -220,6 +225,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts
 ```
 
 Expected:
+
 - FAIL
 - The current list-pane routing still maps `open-calendar` to `select-habit`
 - The test stub and actual component contract are now out of sync until implementation is updated
@@ -261,6 +267,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts
 ```
 
 Expected:
+
 - PASS
 - Main click enters detail mode
 - Auxiliary document action opens the document
@@ -278,6 +285,7 @@ git commit -m "feat(habit): remap desktop dock list actions"
 ### Task 3: Final Focused Regression
 
 **Files:**
+
 - Test: `test/components/habit/HabitListItem.test.ts`
 - Test: `test/tabs/DesktopHabitDock.test.ts`
 
@@ -290,6 +298,7 @@ npx vitest run test/components/habit/HabitListItem.test.ts test/tabs/DesktopHabi
 ```
 
 Expected:
+
 - PASS
 - No failures
 - Desktop interaction semantics match the approved spec
@@ -303,6 +312,7 @@ npx vitest run test/mobile/MobileHabitPanel.test.ts test/mobile/MobileHabitDetai
 ```
 
 Expected:
+
 - PASS
 - No mobile interaction regression
 
@@ -325,4 +335,3 @@ git commit -m "test(habit): verify desktop primary action swap"
   - detail back behavior unchanged: existing `DesktopHabitDock.test.ts` retained in Task 2
 - **Placeholder scan:** No `TODO` / `TBD` / “similar to” placeholders remain.
 - **Type consistency:** The plan keeps the public event names `open-doc`, `open-detail`, `select-habit`, `check-in`, `increment` consistent across files.
-

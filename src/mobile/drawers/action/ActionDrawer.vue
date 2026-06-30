@@ -1,73 +1,120 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div v-if="modelValue" class="action-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+          <div
+            v-if="modelValue"
+            class="action-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Handle Bar -->
-            <div class="drawer-handle" @click="close">
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
-            
+
             <!-- Item Info Header -->
-            <div v-if="item" class="item-info">
-              <div class="item-content">{{ item.content }}</div>
-              <div v-if="item.project || item.task" class="item-breadcrumb">
-                <svg class="breadcrumb-icon"><use xlink:href="#iconFolder"></use></svg>
-                <span v-if="item.project" class="breadcrumb-project">{{ item.project.name }}</span>
-                <span v-if="item.project && item.task" class="breadcrumb-separator">›</span>
+            <div
+              v-if="item"
+              class="item-info"
+            >
+              <div class="item-content">
+                {{ item.content }}
+              </div>
+              <div
+                v-if="item.project || item.task"
+                class="item-breadcrumb"
+              >
+                <svg class="breadcrumb-icon"><use xlink:href="#iconTaProject"></use></svg>
+                <span
+                  v-if="item.project"
+                  class="breadcrumb-project"
+                >{{ item.project.name }}</span>
+                <span
+                  v-if="item.project && item.task"
+                  class="breadcrumb-separator"
+                >›</span>
                 <span v-if="item.task">{{ item.task.name }}</span>
               </div>
             </div>
-            
+
             <!-- Action Grid -->
             <div class="action-grid">
-              <button class="action-btn action-complete" @click="handleComplete">
+              <button
+                class="action-btn action-complete"
+                @click="handleComplete"
+              >
                 <div class="action-icon-wrapper">
                   <svg><use xlink:href="#iconCheck"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.complete') || '完成' }}</span>
               </button>
-              
-              <button class="action-btn action-focus" @click="handlePomodoro">
+
+              <button
+                class="action-btn action-focus"
+                @click="handlePomodoro"
+              >
                 <div class="action-icon-wrapper">
                   <svg><use xlink:href="#iconClock"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.pomodoro') || '专注' }}</span>
               </button>
-              
-              <button class="action-btn action-migrate" @click="handleMigrate">
+
+              <button
+                class="action-btn action-migrate"
+                @click="handleMigrate"
+              >
                 <div class="action-icon-wrapper">
                   <svg><use xlink:href="#iconForward"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.migrate') || '迁移' }}</span>
               </button>
-              
-              <button class="action-btn action-abandon" @click="handleAbandon">
+
+              <button
+                class="action-btn action-abandon"
+                @click="handleAbandon"
+              >
                 <div class="action-icon-wrapper">
-                  <svg><use xlink:href="#iconCloseRound"></use></svg>
+                  <svg><use xlink:href="#iconTaSquareX"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.abandon') || '放弃' }}</span>
               </button>
-              
-              <button class="action-btn action-detail" @click="handleDetail">
+
+              <button
+                class="action-btn action-detail"
+                @click="handleDetail"
+              >
                 <div class="action-icon-wrapper">
-                  <svg><use xlink:href="#iconInfo"></use></svg>
+                  <svg><use xlink:href="#iconTaInfo"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.detail') || '详情' }}</span>
               </button>
-              
-              <button class="action-btn action-calendar" @click="handleCalendar">
+
+              <button
+                class="action-btn action-calendar"
+                @click="handleCalendar"
+              >
                 <div class="action-icon-wrapper">
                   <svg><use xlink:href="#iconCalendar"></use></svg>
                 </div>
                 <span class="action-label">{{ t('mobile.action.calendar') || '日历' }}</span>
               </button>
             </div>
-            
+
             <!-- Cancel Button -->
             <div class="drawer-footer">
-              <button class="cancel-btn" @click="close">
+              <button
+                class="cancel-btn"
+                @click="close"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
             </div>
@@ -79,65 +126,57 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
 
 const props = defineProps<{
-  modelValue: boolean;
-  item: Item | null;
-}>();
+  modelValue: boolean
+  item: Item | null
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openDetail': [item: Item];
-  'openPomodoro': [item: Item];
-}>();
-
-const handleComplete = async () => {
-  if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
-  close();
-};
-
-const handlePomodoro = () => {
-  if (!props.item) return;
-  emit('openPomodoro', props.item);
-  close();
-};
-
-const handleMigrate = async () => {
-  if (!props.item?.blockId) return;
-  const dateStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-
-  await writeBlock(
-    { blockId: props.item.blockId },
-    buildDatePatchFromItem(props.item, dateStr, { includeCurrentItemInSiblings: true }),
-  );
-  close();
-};
-
-const handleAbandon = async () => {
-  if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
-  close();
-};
-
-const handleDetail = () => {
-  if (!props.item) return;
-  emit('openDetail', props.item);
-  close();
-};
-
-const handleCalendar = () => {
-  close();
-};
+  'update:modelValue': [value: boolean]
+  'openDetail': [item: Item]
+  'openPomodoro': [item: Item]
+}>()
 
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
+
+const plugin = usePlugin() as any
+const handlers = computed(() => props.item ? getItemActionHandlers(props.item, plugin, { afterAction: close }) : null)
+
+const handleComplete = async () => {
+  await handlers.value?.complete()
+}
+
+const handlePomodoro = () => {
+  if (!props.item) return
+  emit('openPomodoro', props.item)
+  close()
+}
+
+const handleMigrate = async () => {
+  await handlers.value?.migrate()
+}
+
+const handleAbandon = async () => {
+  await handlers.value?.abandon()
+}
+
+const handleDetail = () => {
+  if (!props.item) return
+  emit('openDetail', props.item)
+  close()
+}
+
+const handleCalendar = () => {
+  close()
+}
 </script>
 
 <style lang="scss" scoped>
@@ -200,17 +239,17 @@ const close = () => {
   font-size: 13px;
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
-  
+
   .breadcrumb-icon {
     width: 14px;
     height: 14px;
     fill: currentColor;
   }
-  
+
   .breadcrumb-project {
     font-weight: 500;
   }
-  
+
   .breadcrumb-separator {
     opacity: 0.5;
   }
@@ -235,11 +274,11 @@ const close = () => {
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-  
+
   &:active {
     transform: scale(0.96);
   }
-  
+
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
@@ -253,7 +292,7 @@ const close = () => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  
+
   svg {
     width: 24px;
     height: 24px;
@@ -267,7 +306,7 @@ const close = () => {
     background: rgba(34, 197, 94, 0.12);
     color: #16a34a;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(34, 197, 94, 0.2);
   }
@@ -278,7 +317,7 @@ const close = () => {
     background: rgba(239, 68, 68, 0.12);
     color: #dc2626;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(239, 68, 68, 0.2);
   }
@@ -289,7 +328,7 @@ const close = () => {
     background: rgba(59, 130, 246, 0.12);
     color: #2563eb;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(59, 130, 246, 0.2);
   }
@@ -300,7 +339,7 @@ const close = () => {
     background: rgba(107, 114, 128, 0.12);
     color: #4b5563;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(107, 114, 128, 0.2);
   }
@@ -311,7 +350,7 @@ const close = () => {
     background: rgba(168, 85, 247, 0.12);
     color: #9333ea;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(168, 85, 247, 0.2);
   }
@@ -322,7 +361,7 @@ const close = () => {
     background: rgba(249, 115, 22, 0.12);
     color: #ea580c;
   }
-  
+
   &:hover .action-icon-wrapper {
     background: rgba(249, 115, 22, 0.2);
   }
@@ -351,11 +390,11 @@ const close = () => {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   &:active {
     transform: scale(0.98);
   }

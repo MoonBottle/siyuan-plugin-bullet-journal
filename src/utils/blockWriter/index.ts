@@ -1,9 +1,30 @@
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
-import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
-import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
-import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
-import { writeViaProtyle } from './protyleTransport';
-import { writeStatusWithSlashCleanup } from './statusPatchWriter';
+/**
+ * blockWriter 模块入口
+ *
+ * 核心调用链：writeBlock → normalizeIntent → buildMutationPlans → executePlans
+ *
+ * 对外暴露两个语义：
+ * - writeBlock：更新已有块（日期、状态、优先级等 patch）
+ * - insertBlockAfter：在指定块之后插入新块
+ *
+ * 内部流程：
+ * 1. normalizeUpdateIntent / normalizeInsertIntent — 归一化意图，排序 patch 序列
+ * 2. buildMutationPlans — 规划变更计划（目标解析 → 能力标注 → 合并/拆分）
+ * 3. executePlans — 加载源 → 渲染 → 提交（protyle 优先，API 兜底）
+ */
+import type {
+  BatchBlockPatch,
+  BlockMutationIntent,
+  BlockPatch,
+  BlockWriteContext,
+  InsertableBlockPatch,
+} from '@/utils/blockWriter/shared/types'
+import {
+  normalizeInsertIntent,
+  normalizeUpdateIntent,
+} from '@/utils/blockWriter/intent/intent'
+import { buildMutationPlans } from '@/utils/blockWriter/planner/mutationPlanner'
+import { executePlans } from '@/utils/blockWriter/runtime/mutationExecutor'
 
 export type {
   BatchBlockPatch,
@@ -15,97 +36,44 @@ export type {
   HabitArchivePatch,
   HabitDefinitionPatch,
   HabitRecordPatch,
-  ItemDateTimeInfo,
   InsertableBlockPatch,
+  ItemDateTimeInfo,
   PinnedPatch,
   PriorityPatch,
-  ReplaceMarkdownPatch,
   RecurringPatch,
   ReminderPatch,
+  ReplaceMarkdownPatch,
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,
-} from './types';
+  TaskTagPatch,
+} from '@/utils/blockWriter/shared/types'
 
-export { createProtyleMarkdownWriter } from './markdownWriter';
-
-export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
-  return insertViaApi(previousBlockId, patch);
+/** 将归一化后的意图通过规划器生成计划，再交由执行引擎执行 */
+async function executeMutationIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
+  const plannerResult = await buildMutationPlans(intent)
+  return executePlans(plannerResult.plans)
 }
 
+/** 在指定块之后插入新块，返回是否成功 */
+export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' })
+  return (await executeMutationIntent(intent)) === true
+}
+
+/** 在指定块之后插入新块，返回 SiYuan 内部操作记录（用于链式操作） */
 export async function insertBlockAfterWithResult(
   previousBlockId: string,
   patch: InsertableBlockPatch,
 ): Promise<IResdoOperations[] | null> {
-  return insertViaApiWithResult(previousBlockId, patch);
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' })
+  const result = await executeMutationIntent(intent)
+  return Array.isArray(result) ? result : null
 }
 
+/** 更新已有块：接受上下文和 patch 列表，归一化后执行变更，返回是否成功 */
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const patchArray = Array.isArray(patches) ? patches : [patches];
-  const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
-    ? patchArray[0]
-    : undefined;
-  const batchedAddDatePatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'addDate' }> => patch.type === 'addDate');
-  const batchedRemoveSlashPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'removeSlashCommand' }> => patch.type === 'removeSlashCommand');
-  const batchedStatusPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'setStatus' }> => patch.type === 'setStatus');
-  const hasStatusPatch = patchArray.some((patch) => patch.type === 'setStatus');
-  const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');
-  const statusTargetBlockId = context.listItemBlockId || context.blockId;
-
-  if (
-    context.protyle
-    && context.nodeElement
-    && batchedStatusPatch
-    && batchedRemoveSlashPatch
-    && patchArray.length === 2
-    && patchArray.every((patch) => patch.type === 'removeSlashCommand' || patch.type === 'setStatus')
-    && !batchedRemoveSlashPatch.suffix
-  ) {
-    const combinedStatusOk = await writeStatusWithSlashCleanup(context, batchedStatusPatch);
-    if (combinedStatusOk) {
-      return true;
-    }
-
-    const slashOk = await writeViaProtyle(context, batchedRemoveSlashPatch);
-    if (!slashOk) {
-      return false;
-    }
-
-    await waitForProtyleTransactionsFlush();
-    return writeBlock(context, batchedStatusPatch);
-  }
-
-  if (
-    context.protyle
-    && context.nodeElement
-    && batchedAddDatePatch
-    && batchedRemoveSlashPatch
-    && patchArray.length === 2
-    && patchArray.every((patch) => patch.type === 'removeSlashCommand' || patch.type === 'addDate')
-    && !batchedRemoveSlashPatch.suffix
-  ) {
-    const combinedOk = await writeDatePatchWithSlashCleanup(context, batchedAddDatePatch);
-    if (combinedOk) {
-      return true;
-    }
-
-    const slashOk = await writeViaProtyle(context, batchedRemoveSlashPatch);
-    if (!slashOk) {
-      return false;
-    }
-
-    await waitForProtyleTransactionsFlush();
-    return writeDatePatch(context, batchedAddDatePatch);
-  }
-
-  if (addDatePatch) {
-    return writeDatePatch(context, addDatePatch);
-  }
-
-  if (context.protyle && context.nodeElement) {
-    const ok = await writeViaProtyle(context, patches);
-    if (ok) return true;
-  }
-  if (requiresProtyle) return false;
-  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, patches);
+  const intent = normalizeUpdateIntent(context, patches)
+  const result = await executeMutationIntent(intent)
+  return result === true
 }

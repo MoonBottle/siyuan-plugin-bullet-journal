@@ -10,12 +10,18 @@
       'chat-message--loading': message.loading,
       'chat-message--error': message.error,
       'chat-message--grouped': isGrouped,
-      'chat-message--grouped-first': isGrouped && isFirst
+      'chat-message--grouped-first': isGrouped && isFirst,
     }"
   >
     <!-- 头部：仅与是否第一条有关，始终在卡片外；分组时由 Panel 统一渲染一条 -->
-    <div v-if="showHeader" class="chat-message__header-row">
-      <div v-if="showHeader" class="chat-message__avatar">
+    <div
+      v-if="showHeader"
+      class="chat-message__header-row"
+    >
+      <div
+        v-if="showHeader"
+        class="chat-message__avatar"
+      >
         <svg v-if="message.role === 'user'">
           <use xlink:href="#iconAccount"></use>
         </svg>
@@ -35,6 +41,15 @@
       </span>
     </div>
     <div class="chat-message__content">
+      <!-- 用户消息复制按钮（hover 显示） -->
+      <span
+        v-if="message.role === 'user' && message.content"
+        class="chat-message__copy-btn b3-tooltips b3-tooltips__ne"
+        :aria-label="t('aiChat').copyMessage"
+        @click="handleCopyMessage"
+      >
+        <svg><use xlink:href="#iconCopy"></use></svg>
+      </span>
       <div class="chat-message__body">
         <!-- 思考中：AI 正在思考但还没有 reasoning 内容 -->
         <ThinkingIndicator
@@ -45,7 +60,7 @@
         <ReasoningDisplay
           v-if="message.reasoning"
           :content="message.reasoning"
-          :default-collapsed="true"
+          :default-collapsed="!message.loading"
         />
 
         <!-- 错误消息 -->
@@ -53,7 +68,38 @@
           v-if="message.error"
           class="chat-message__error-text"
         >
-          {{ message.error }}
+          <template v-if="isStructuredError">
+            <div class="ai-chat-error">
+              <div class="ai-chat-error__title">
+                {{ (message.error as any).title }}
+              </div>
+              <div class="ai-chat-error__message">
+                {{ (message.error as any).message }}
+              </div>
+              <div class="ai-chat-error__suggestion">
+                {{ (message.error as any).suggestion }}
+              </div>
+              <div class="ai-chat-error__actions">
+                <button
+                  v-if="(message.error as any).retryable"
+                  class="ai-chat-error__btn ai-chat-error__btn--retry"
+                  @click="handleRetry"
+                >
+                  {{ t('aiChat').errorRetry }}
+                </button>
+                <button
+                  v-if="showSettingsBtn"
+                  class="ai-chat-error__btn ai-chat-error__btn--settings"
+                  @click="handleOpenSettings"
+                >
+                  {{ t('aiChat').errorOpenSettings }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            {{ message.error }}
+          </template>
         </div>
 
         <!-- 工具调用消息 -->
@@ -67,44 +113,80 @@
 
         <!-- 消息内容（用户和助手的文本消息） -->
         <div
-          v-if="message.content && message.role !== 'tool'"
+          v-if="(message.content || message.skillNames) && message.role !== 'tool'"
           class="chat-message__text"
-          v-html="renderedContent"
-        ></div>
+        >
+          <span
+            v-for="skillName in message.skillNames"
+            :key="skillName"
+            class="chat-message__skill-chip"
+          >
+            <svg class="chat-message__skill-icon"><use xlink:href="#iconSparkles"></use></svg>
+            {{ skillName }}
+          </span>
+          <span
+            v-if="message.content"
+            v-html="renderedContent"
+          ></span>
+        </div>
 
         <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示 footer，仅在最终回答展示） -->
-        <div v-if="showFooter && (message.usage || showInsertBtn)" class="chat-message__footer">
-          <div v-if="message.usage" class="chat-message__usage">
+        <div
+          v-if="showFooter && (message.usage || showInsertBtn)"
+          class="chat-message__footer"
+        >
+          <div
+            v-if="message.usage"
+            class="chat-message__usage"
+          >
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
+              <span
+                class="block__icon b3-tooltips b3-tooltips__ne"
+                :aria-label="t('aiChat').inputTokens"
+              >
                 <svg><use xlink:href="#iconEdit"></use></svg>
               </span>
               {{ message.usage.prompt_tokens }}
             </span>
             <span class="chat-message__usage-divider">|</span>
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').outputTokens">
+              <span
+                class="block__icon b3-tooltips b3-tooltips__ne"
+                :aria-label="t('aiChat').outputTokens"
+              >
                 <svg><use xlink:href="#iconSparkles"></use></svg>
               </span>
               {{ message.usage.completion_tokens }}
             </span>
             <span class="chat-message__usage-divider">|</span>
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').totalTokens">
+              <span
+                class="block__icon b3-tooltips b3-tooltips__ne"
+                :aria-label="t('aiChat').totalTokens"
+              >
                 <svg><use xlink:href="#iconDatabase"></use></svg>
               </span>
               {{ message.usage.total_tokens }}
             </span>
-            <span v-if="message.usage.cached_tokens" class="chat-message__usage-item">
+            <span
+              v-if="message.usage.cached_tokens"
+              class="chat-message__usage-item"
+            >
               <span class="chat-message__usage-divider">|</span>
-              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').cachedTokens">
+              <span
+                class="block__icon b3-tooltips b3-tooltips__ne"
+                :aria-label="t('aiChat').cachedTokens"
+              >
                 <svg><use xlink:href="#iconHistory"></use></svg>
               </span>
               {{ message.usage.cached_tokens }}
             </span>
           </div>
           <!-- 最后一条 AI 消息显示复制和插入按钮 -->
-          <div v-if="showInsertBtn" class="chat-message__action-btns">
+          <div
+            v-if="showInsertBtn"
+            class="chat-message__action-btns"
+          >
             <span
               class="block__icon b3-tooltips b3-tooltips__nw"
               :aria-label="t('aiChat').copyMessage"
@@ -117,10 +199,7 @@
               :aria-label="t('aiChat').insertToNote"
               @click="handleInsertToNote"
             >
-              <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
-                <path d="M192 0A192 192 0 0 0 0 192v640a192 192 0 0 0 192 192h512a192 192 0 0 0 192-192V704a64 64 0 1 0-128 0v128a64 64 0 0 1-64 64H192a64 64 0 0 1-64-64V192a64 64 0 0 1 64-64h512a64 64 0 0 1 64 64 64 64 0 1 0 128 0A192 192 0 0 0 704 0H192z"></path>
-                <path d="M576 704c51.072 0 91.328-32.896 117.376-57.408 18.56-17.472 39.168-40.192 58.752-61.76 9.152-10.176 18.112-20.032 26.56-29.056C838.656 491.776 893.824 448 960 448a64 64 0 1 0 0-128c-125.76 0-214.656 84.16-274.688 148.224-12.352 13.184-23.168 25.152-33.088 36.16-17.088 18.88-31.552 34.88-46.592 49.024-19.008 17.92-28.032 21.632-29.888 22.4l-0.32 0.192a30.08 30.08 0 0 1-7.232-6.912c-9.344-11.136-18.048-27.84-30.912-53.632l-1.408-2.816c-10.944-21.952-25.856-51.712-45.696-75.52C467.776 410.176 433.28 384 384 384c-49.6 0-84.928 26.496-107.52 57.088-20.928 28.416-33.408 63.36-41.984 93.44-6.976 24.256-12.608 50.304-17.472 72.576l-3.456 16.064c-6.4 28.544-10.88 44.544-14.784 52.288a64 64 0 1 0 114.496 57.216c12.16-24.32 19.52-56.256 25.216-81.728l4.16-18.88c4.736-21.824 9.216-42.496 14.912-62.4 7.424-26.048 14.912-43.072 21.952-52.672A31.552 31.552 0 0 1 384 512h0.576v0.064c0.768 0.384 3.2 2.048 7.296 6.912 9.28 11.136 17.984 27.84 30.912 53.632l1.344 2.816c11.008 21.952 25.856 51.712 45.696 75.52C492.288 677.888 526.784 704 576.064 704z"></path>
-              </svg>
+              <svg><use xlink:href="#iconTaFilePlus"></use></svg>
             </span>
           </div>
         </div>
@@ -130,106 +209,149 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { t } from '@/i18n';
-import { pushMsg } from '@/api';
-import { renderMarkdown } from '@/utils/markdownRenderer';
-import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
-import ToolCallDisplay from './ToolCallDisplay.vue';
-import ReasoningDisplay from './ReasoningDisplay.vue';
-import ThinkingIndicator from './ThinkingIndicator.vue';
-import type { ChatMessage } from '@/types/ai';
+import type {
+  AIErrorInfo,
+  ChatMessage,
+} from '@/types/ai'
+import {
+  computed,
+} from 'vue'
+import { pushMsg } from '@/api'
+import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue'
+import { t } from '@/i18n'
+import { renderMarkdown } from '@/utils/markdownRenderer'
+import ReasoningDisplay from './ReasoningDisplay.vue'
+import ThinkingIndicator from './ThinkingIndicator.vue'
+import ToolCallDisplay from './ToolCallDisplay.vue'
 
 const props = defineProps<{
-  message: ChatMessage;
+  message: ChatMessage
   toolCallInfo?: {
-    name: string;
-    arguments: string;
-  } | null;
-  isGrouped?: boolean;  // 是否为分组内的消息
-  isFirst?: boolean;    // 是否为组内第一条
-  isLast?: boolean;     // 是否为组内最后一条
-  showHeader?: boolean; // 是否显示头部（由父组件控制）
-  showFooter?: boolean; // 是否显示底部（token统计，由父组件控制）
-  showInsertBtn?: boolean; // 是否显示插入按钮（由父组件控制）
-}>();
+    name: string
+    arguments: string
+  } | null
+  isGrouped?: boolean // 是否为分组内的消息
+  isFirst?: boolean // 是否为组内第一条
+  isLast?: boolean // 是否为组内最后一条
+  showHeader?: boolean // 是否显示头部（由父组件控制）
+  showFooter?: boolean // 是否显示底部（token统计，由父组件控制）
+  showInsertBtn?: boolean // 是否显示插入按钮（由父组件控制）
+}>()
 
 const emit = defineEmits<{
-  insertToNote: [message: ChatMessage];
-}>();
+  insertToNote: [message: ChatMessage]
+  retry: []
+  openSettings: [section?: string]
+}>()
+
+const isStructuredError = computed(() => {
+  return typeof props.message.error === 'object' && props.message.error !== null
+})
+
+const showSettingsBtn = computed(() => {
+  if (!isStructuredError.value) return false
+  const err = props.message.error as AIErrorInfo
+  return err.type === 'auth' || err.type === 'model_not_found' || err.type === 'unknown'
+})
+
+function handleRetry() {
+  emit('retry')
+}
+
+function handleOpenSettings() {
+  emit('openSettings', 'ai')
+}
+
+// 用于去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
+const MARKDOWN_CODE_BLOCK_RE = /^```(?:markdown)?\n([\s\S]*?)\n```$/
 
 // 判断消息是否有实际内容需要显示
 const hasContent = computed(() => {
-  const m = props.message;
+  const m = props.message
   // 思考中状态
-  if (m.loading && !m.reasoning && !m.content) return true;
+  if (m.loading && !m.reasoning && !m.content) return true
   // 思考过程（包括有工具调用的情况）
-  if (m.reasoning) return true;
+  if (m.reasoning) return true
   // 错误消息
-  if (m.error) return true;
+  if (m.error) return true
   // 工具消息
-  if (m.role === 'tool') return true;
+  if (m.role === 'tool') return true
   // 文本内容
-  if (m.content && m.role !== 'tool') return true;
+  if (m.content) return true
+  if (m.skillNames && m.skillNames.length > 0) return true
   // 工具调用消息（即使没有 reasoning 或 content）
-  if (m.toolCalls && m.toolCalls.length > 0) return true;
+  if (m.toolCalls && m.toolCalls.length > 0) return true
   // 头部或底部
-  if (props.showHeader) return true;
-  if (props.showFooter && (m.usage || props.showInsertBtn)) return true;
-  return false;
-});
+  if (props.showHeader) return true
+  if (props.showFooter && (m.usage || props.showInsertBtn)) return true
+  return false
+})
 
 const roleText = computed(() => {
-  const ai = t('aiChat') as Record<string, string>;
+  const ai = t('aiChat') as Record<string, string>
   switch (props.message.role) {
     case 'user':
-      return ai.roleUser ?? '我';
+      return ai.roleUser ?? '我'
     case 'assistant':
-      return ai.roleAssistant ?? '任务助手';
+      return ai.roleAssistant ?? '任务助手'
     case 'system':
-      return ai.roleSystem ?? '系统';
+      return ai.roleSystem ?? '系统'
     case 'tool':
-      return ai.roleTool ?? '工具';
+      return ai.roleTool ?? '工具'
     default:
-      return ai.roleUnknown ?? '未知';
+      return ai.roleUnknown ?? '未知'
   }
-});
+})
 
 function handleInsertToNote() {
-  emit('insertToNote', props.message);
+  emit('insertToNote', props.message)
 }
 
 async function handleCopyMessage() {
   try {
-    const content = props.message.content || '';
-    await navigator.clipboard.writeText(content);
-    await pushMsg((t('aiChat') as Record<string, string>).copySuccess || '已复制到剪贴板', 1000);
+    const content = props.message.content || ''
+    await navigator.clipboard.writeText(content)
+    await pushMsg((t('aiChat') as Record<string, string>).copySuccess || '已复制到剪贴板', 1000)
   } catch (error) {
-    console.error('Copy failed:', error);
+    console.error('Copy failed:', error)
   }
 }
 
 function getToolName(): string {
-  const ai = t('aiChat') as Record<string, string>;
+  const ai = t('aiChat') as Record<string, string>
   if (props.toolCallInfo?.name) {
-    return props.toolCallInfo.name;
+    return props.toolCallInfo.name
   }
   if (props.message.toolCallId) {
-    return ai.toolRun ?? '工具执行';
+    return ai.toolRun ?? '工具执行'
   }
-  return ai.tool ?? '工具';
+  return ai.tool ?? '工具'
+}
+
+/**
+ * 去除外层 Markdown 代码块包裹
+ * AI 有时会误将整段 Markdown 内容包裹在 ```markdown ... ``` 中，导致前端渲染为代码块而非富文本
+ */
+function unwrapMarkdownCodeBlock(content: string): string {
+  if (!content) return content
+  const trimmed = content.trim()
+  const match = trimmed.match(MARKDOWN_CODE_BLOCK_RE)
+  return match ? match[1].trim() : content
 }
 
 
 
 const renderedContent = computed(() => {
-  const content = props.message.content;
+  let content = props.message.content
+
+  // 去除 AI 误加的外层 Markdown 代码块（如 ```markdown ... ```）
+  content = unwrapMarkdownCodeBlock(content)
 
   // 检查是否为 JSON 格式
-  let isJSON = false;
+  let isJSON = false
   try {
-    JSON.parse(content);
-    isJSON = true;
+    JSON.parse(content)
+    isJSON = true
   } catch {
     // 不是 JSON
   }
@@ -237,23 +359,23 @@ const renderedContent = computed(() => {
   if (isJSON) {
     // 是 JSON，格式化显示（仅对对象/数组，纯数字/字符串/布尔值按普通文本处理）
     try {
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content)
       if (typeof parsed !== 'object' || parsed === null) {
         // 纯数字、字符串、布尔值不按 JSON 代码块显示，避免气泡被拉成细长条
-        isJSON = false;
+        isJSON = false
       }
     } catch {
-      isJSON = false;
+      isJSON = false
     }
   }
 
   if (isJSON) {
     try {
-      const parsed = JSON.parse(content);
-      const formatted = JSON.stringify(parsed, null, 2);
+      const parsed = JSON.parse(content)
+      const formatted = JSON.stringify(parsed, null, 2)
       // 使用 Lute 渲染 Markdown 代码块
-      const jsonMarkdown = '```json\n' + formatted + '\n```';
-      return renderMarkdown(jsonMarkdown);
+      const jsonMarkdown = `\`\`\`json\n${formatted}\n\`\`\``
+      return renderMarkdown(jsonMarkdown)
     } catch {
       // 解析失败，按普通文本处理
     }
@@ -261,19 +383,19 @@ const renderedContent = computed(() => {
 
   // 使用思源 Lute 渲染 Markdown
   try {
-    return renderMarkdown(content);
+    return renderMarkdown(content)
   } catch (error) {
-    console.error('Markdown rendering error:', error);
+    console.error('Markdown rendering error:', error)
     // 渲染失败，返回原始内容
-    return content;
+    return content
   }
-});
+})
 
 function formatTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
+  const date = new Date(timestamp)
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 </script>
 
@@ -286,8 +408,10 @@ function formatTime(timestamp: number): string {
   &--user {
     background: transparent;
     align-items: flex-end;
+    position: relative;
 
     .chat-message__content {
+      position: relative;
       background: var(--b3-theme-primary-lightest);
       border-radius: 16px 0 16px 16px;
       padding: 12px 16px;
@@ -353,7 +477,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--tool {
-    margin-top: 0!important;
+    margin-top: 0 !important;
     background: transparent;
     border-left: none;
 
@@ -366,7 +490,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--error {
-    border: 1px solid var(--b3-theme-error);
+    // border: 1px solid var(--b3-theme-error);
   }
 
   &__avatar {
@@ -459,7 +583,9 @@ function formatTime(timestamp: number): string {
     color: var(--b3-theme-on-background);
     max-width: 100%;
 
-    :deep(h1), :deep(h2), :deep(h3) {
+    :deep(h1),
+    :deep(h2),
+    :deep(h3) {
       margin: 12px 0 8px;
       font-weight: 600;
     }
@@ -526,7 +652,8 @@ function formatTime(timestamp: number): string {
     }
 
     // 标准 Markdown 列表样式
-    :deep(ul), :deep(ol) {
+    :deep(ul),
+    :deep(ol) {
       margin: 8px 0;
       padding-left: 20px;
     }
@@ -572,9 +699,15 @@ function formatTime(timestamp: number): string {
         margin-right: 4px;
       }
 
-      &.level-1 { padding-left: 24px; }
-      &.level-2 { padding-left: 32px; }
-      &.level-3 { padding-left: 40px; }
+      &.level-1 {
+        padding-left: 24px;
+      }
+      &.level-2 {
+        padding-left: 32px;
+      }
+      &.level-3 {
+        padding-left: 40px;
+      }
     }
 
     // 表格样式：支持所有 Markdown 表格（marked 默认输出无 class 的 table）
@@ -586,7 +719,8 @@ function formatTime(timestamp: number): string {
       font-size: 13px;
       table-layout: auto;
 
-      th, td {
+      th,
+      td {
         border: 1px solid var(--b3-theme-surface-lighter);
         padding: 8px 12px;
         text-align: left;
@@ -647,6 +781,62 @@ function formatTime(timestamp: number): string {
   &__error-text {
     color: var(--b3-theme-error);
     font-size: 13px;
+  }
+
+  .ai-chat-error {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &__title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    &__message {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    &__suggestion {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    &__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    &__btn {
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--b3-theme-on-surface-light);
+      background: transparent;
+      color: var(--b3-theme-on-surface);
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--b3-theme-surface-lighter);
+      }
+
+      &--retry {
+        border-color: var(--b3-theme-primary);
+        color: var(--b3-theme-primary);
+
+        &:hover {
+          background: var(--b3-theme-primary-lightest);
+        }
+      }
+
+      &--settings {
+        border-color: var(--b3-theme-on-surface-light);
+      }
+    }
   }
 
   &__text {
@@ -713,14 +903,70 @@ function formatTime(timestamp: number): string {
       }
     }
   }
+
+  &__copy-btn {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--b3-theme-on-surface-light);
+      transition: fill 0.2s ease;
+    }
+
+    &:hover svg {
+      fill: var(--b3-theme-primary);
+    }
+  }
+
+  &--user:hover &__copy-btn {
+    opacity: 0.7;
+  }
+
+  &--user &__copy-btn:hover {
+    opacity: 1;
+  }
 }
 
 @keyframes loading-bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
   40% {
     transform: scale(1);
   }
+}
+
+.chat-message__skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--b3-theme-primary-lightest);
+  color: var(--b3-theme-primary);
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: nowrap;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.chat-message__skill-icon {
+  width: 12px;
+  height: 12px;
+  fill: var(--b3-theme-primary);
 }
 </style>

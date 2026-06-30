@@ -12,10 +12,10 @@
 
 ## 文件清单
 
-| 文件 | 职责 |
-|------|------|
-| `src/components/workbench/view/WorkbenchViewHost.vue` | 添加 `project` 视图渲染分支 |
-| `src/components/workbench/WorkbenchSidebar.vue` | 添加 `project` 到"新建视图"菜单 |
+| 文件                                                  | 职责                            |
+| ----------------------------------------------------- | ------------------------------- |
+| `src/components/workbench/view/WorkbenchViewHost.vue` | 添加 `project` 视图渲染分支     |
+| `src/components/workbench/WorkbenchSidebar.vue`       | 添加 `project` 到"新建视图"菜单 |
 
 ---
 
@@ -24,9 +24,11 @@
 ### 任务 1：WorkbenchViewHost.vue 添加 project 渲染分支
 
 **文件：**
+
 - 修改：`src/components/workbench/view/WorkbenchViewHost.vue`
 
 **变更内容：**
+
 1. 导入 `ProjectTab` 组件
 2. 在 `v-if` / `v-else-if` 链中添加 `project` 分支
 
@@ -35,7 +37,7 @@
 在 `<script setup>` 的 import 区域添加：
 
 ```typescript
-import ProjectTab from '@/tabs/ProjectTab.vue';
+import ProjectTab from '@/tabs/ProjectTab.vue'
 ```
 
 - [ ] **步骤 2：添加 project 渲染分支**
@@ -92,6 +94,7 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
 ### 任务 2：WorkbenchSidebar.vue 添加 project 菜单选项
 
 **文件：**
+
 - 修改：`src/components/workbench/WorkbenchSidebar.vue`
 
 **变更内容：** 在"新建视图"菜单中添加"项目列表"选项。
@@ -112,6 +115,7 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
       <svg><use xlink:href="#iconList"></use></svg>
     </span>
   </button>
+
   <button
     class="workbench-sidebar__create-option"
     data-testid="workbench-create-project-view"
@@ -144,6 +148,7 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
 ## 自检
 
 **1. 规格覆盖度：**
+
 - [x] 在工作台"新建视图"菜单中可以看到"项目列表"选项 → 任务 2
 - [x] 点击后可以创建项目列表视图 → 任务 2（调用 handleCreateView('project')）
 - [x] 项目列表视图在工作台主区域正确渲染 → 任务 1

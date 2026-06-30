@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="priority-picker-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="priority-picker-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
           <div
             v-if="modelValue"
@@ -9,14 +13,22 @@
             style="overscroll-behavior: contain; touch-action: pan-y;"
             @click.stop
           >
-            <div class="sheet-handle" @click="close">
+            <div
+              class="sheet-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ title }}</h4>
+              <h4 class="sheet-title">
+                {{ title }}
+              </h4>
             </div>
-            
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <button
                 v-for="option in priorityOptions"
                 :key="option.value"
@@ -26,9 +38,12 @@
               >
                 <span class="priority-emoji">{{ option.emoji }}</span>
                 <span class="priority-label">{{ option.label }}</span>
-                <svg v-if="tempPriority === option.value" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
+                <svg
+                  v-if="tempPriority === option.value"
+                  class="check-icon"
+                ><use xlink:href="#iconCheck"></use></svg>
               </button>
-              
+
               <button
                 class="priority-option"
                 :class="{ active: !tempPriority }"
@@ -36,15 +51,24 @@
               >
                 <span class="priority-emoji">⚪</span>
                 <span class="priority-label">{{ clearLabel }}</span>
-                <svg v-if="!tempPriority" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
+                <svg
+                  v-if="!tempPriority"
+                  class="check-icon"
+                ><use xlink:href="#iconCheck"></use></svg>
               </button>
             </div>
-            
+
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="close">
+              <button
+                class="sheet-cancel-btn"
+                @click="close"
+              >
                 {{ cancelText }}
               </button>
-              <button class="sheet-confirm-btn" @click="confirm">
+              <button
+                class="sheet-confirm-btn"
+                @click="confirm"
+              >
                 {{ confirmText }}
               </button>
             </div>
@@ -56,59 +80,74 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { PriorityLevel } from '@/types/models';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { t } from '@/i18n';
+import type { PriorityLevel } from '@/types/models'
+import {
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
 
 const props = withDefaults(defineProps<{
-  modelValue: boolean;
-  priority?: PriorityLevel;
-  title?: string;
-  cancelText?: string;
-  confirmText?: string;
-  clearLabel?: string;
+  modelValue: boolean
+  priority?: PriorityLevel
+  title?: string
+  cancelText?: string
+  confirmText?: string
+  clearLabel?: string
 }>(), {
   title: () => t('todo.priority.setPriority') || '设置优先级',
   cancelText: () => t('common.cancel') || '取消',
   confirmText: () => t('common.confirm') || '确认',
   clearLabel: () => t('todo.priority.clear') || '清除',
-});
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  confirm: [priority: PriorityLevel | undefined];
-  cancel: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "confirm": [priority: PriorityLevel | undefined]
+  "cancel": []
+}>()
 
-const tempPriority = ref<PriorityLevel | undefined>(props.priority);
+const tempPriority = ref<PriorityLevel | undefined>(props.priority)
 
 const priorityOptions = [
-  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: PRIORITY_CONFIG.high.label },
-  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: PRIORITY_CONFIG.medium.label },
-  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: PRIORITY_CONFIG.low.label },
-];
+  {
+    value: 'high' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.high.emoji,
+    label: PRIORITY_CONFIG.high.label,
+  },
+  {
+    value: 'medium' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.medium.emoji,
+    label: PRIORITY_CONFIG.medium.label,
+  },
+  {
+    value: 'low' as PriorityLevel,
+    emoji: PRIORITY_CONFIG.low.emoji,
+    label: PRIORITY_CONFIG.low.label,
+  },
+]
 
 // Sync with props when opened
 watch(() => props.modelValue, (val) => {
   if (val) {
-    tempPriority.value = props.priority;
+    tempPriority.value = props.priority
   }
-});
+})
 
 const selectPriority = (priority: PriorityLevel | undefined) => {
-  tempPriority.value = priority;
-};
+  tempPriority.value = priority
+}
 
 const close = () => {
-  emit('update:modelValue', false);
-  emit('cancel');
-};
+  emit('update:modelValue', false)
+  emit('cancel')
+}
 
 const confirm = () => {
-  emit('confirm', tempPriority.value);
-  emit('update:modelValue', false);
-};
+  emit('confirm', tempPriority.value)
+  emit('update:modelValue', false)
+}
 </script>
 
 <style lang="scss" scoped>

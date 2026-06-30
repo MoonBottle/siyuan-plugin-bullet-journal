@@ -1,9 +1,9 @@
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 export function useSwipeActions() {
-  const isSwiping = ref(false);
+  const isSwiping = ref(false)
 
   return {
-    isSwiping
-  };
+    isSwiping,
+  }
 }

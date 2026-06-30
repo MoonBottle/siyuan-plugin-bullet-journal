@@ -111,11 +111,11 @@
 工作台配置独立于其他视图配置，建议建模为：
 
 ```ts
-type WorkbenchSettings = {
-  entries: WorkbenchEntry[];
-  dashboards: WorkbenchDashboard[];
-  activeEntryId: string | null;
-};
+interface WorkbenchSettings {
+  entries: WorkbenchEntry[]
+  dashboards: WorkbenchDashboard[]
+  activeEntryId: string | null
+}
 ```
 
 职责划分：
@@ -129,26 +129,26 @@ type WorkbenchSettings = {
 ### 4.2 左栏条目模型
 
 ```ts
-type WorkbenchEntry = {
-  id: string;
-  type: 'dashboard' | 'view';
-  title: string;
-  icon: string;
-  order: number;
-  viewType?: WorkbenchViewType;
-  dashboardId?: string;
-};
+interface WorkbenchEntry {
+  id: string
+  type: 'dashboard' | 'view'
+  title: string
+  icon: string
+  order: number
+  viewType?: WorkbenchViewType
+  dashboardId?: string
+}
 ```
 
 ```ts
-type WorkbenchViewType =
-  | 'calendar'
-  | 'gantt'
-  | 'quadrant'
-  | 'project'
-  | 'todo'
-  | 'habit'
-  | 'pomodoroStats';
+type WorkbenchViewType
+  = | 'calendar'
+    | 'gantt'
+    | 'quadrant'
+    | 'project'
+    | 'todo'
+    | 'habit'
+    | 'pomodoroStats'
 ```
 
 约束：
@@ -161,26 +161,26 @@ type WorkbenchViewType =
 ### 4.3 仪表盘模型
 
 ```ts
-type WorkbenchDashboard = {
-  id: string;
-  title: string;
-  widgets: WorkbenchWidgetInstance[];
-};
+interface WorkbenchDashboard {
+  id: string
+  title: string
+  widgets: WorkbenchWidgetInstance[]
+}
 ```
 
 ```ts
-type WorkbenchWidgetInstance = {
-  id: string;
-  type: WorkbenchWidgetType;
-  title?: string;
+interface WorkbenchWidgetInstance {
+  id: string
+  type: WorkbenchWidgetType
+  title?: string
   layout: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  };
-  config: Record<string, unknown>;
-};
+    x: number
+    y: number
+    w: number
+    h: number
+  }
+  config: Record<string, unknown>
+}
 ```
 
 首版不单独拆 `layoutMap`，布局直接挂在 widget 实例上，读写更直接。
@@ -190,13 +190,13 @@ type WorkbenchWidgetInstance = {
 运行时代码层需有 registry，但 registry 不进持久化配置：
 
 ```ts
-type WorkbenchWidgetDefinition = {
-  type: WorkbenchWidgetType;
-  name: string;
-  icon: string;
-  defaultSize: { w: number; h: number };
-  createDefaultConfig: () => Record<string, unknown>;
-};
+interface WorkbenchWidgetDefinition {
+  type: WorkbenchWidgetType
+  name: string
+  icon: string
+  defaultSize: { w: number, h: number }
+  createDefaultConfig: () => Record<string, unknown>
+}
 ```
 
 设置里只存 widget 实例数据，不存组件对象或渲染函数。

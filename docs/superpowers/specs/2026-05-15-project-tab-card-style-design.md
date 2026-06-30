@@ -41,13 +41,14 @@ ProjectTab.vue
 .project-workbench {
   display: grid;
   grid-template-columns: auto minmax(320px, 1fr) auto;
-  gap: 16px;                    // 新增：三栏间距
+  gap: 16px; // 新增：三栏间距
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 16px;                // 新增：内边距，卡片不贴边
-  background: var(--b3-theme-surface);  // 改为 surface，卡片用 background
+  padding: 16px; // 新增：内边距，卡片不贴边
+  background: var(--b3-theme-surface); // 改为 surface，卡片用 background
 }
+
 ```
 
 ### 2. 三栏卡片样式（三个 Pane）
@@ -63,6 +64,7 @@ ProjectTab.vue
   background: var(--b3-theme-background);
   overflow: hidden;
 }
+
 ```
 
 ### 3. 各栏具体调整
@@ -102,19 +104,20 @@ ProjectTab.vue
   gap: 4px;
   width: 100%;
   padding: 10px;
-  border: 1px solid var(--b3-theme-surface-lighter);  // 新增
-  border-radius: 10px;                                 // 改为 10px
-  background: var(--b3-theme-surface);                 // 新增
+  border: 1px solid var(--b3-theme-surface-lighter); // 新增
+  border-radius: 10px; // 改为 10px
+  background: var(--b3-theme-surface); // 新增
   color: var(--b3-theme-on-background);
   text-align: left;
   cursor: pointer;
 
   &:hover,
   &--active {
-    border-color: var(--b3-theme-primary);             // 高亮边框
-    background: var(--b3-theme-primary-lightest);      // 高亮背景
+    border-color: var(--b3-theme-primary); // 高亮边框
+    background: var(--b3-theme-primary-lightest); // 高亮背景
   }
 }
+
 ```
 
 #### 统计卡片
@@ -127,22 +130,23 @@ ProjectTab.vue
   margin-top: 12px;
 
   div {
-    padding: 12px;                                       // 增加内边距
-    border: 1px solid var(--b3-theme-surface-lighter);   // 统一边框色
-    border-radius: 10px;                                 // 统一圆角
-    background: var(--b3-theme-surface);                 // 统一背景
+    padding: 12px; // 增加内边距
+    border: 1px solid var(--b3-theme-surface-lighter); // 统一边框色
+    border-radius: 10px; // 统一圆角
+    background: var(--b3-theme-surface); // 统一背景
   }
 }
+
 ```
 
 ## 变更文件清单
 
-| 文件 | 变更类型 | 说明 |
-|------|----------|------|
-| `src/components/project/ProjectView.vue` | 修改 | 外层布局添加 gap 和 padding |
-| `src/components/project/ProjectListPane.vue` | 修改 | 移除 border-right，卡片化样式 |
-| `src/components/project/ProjectTreePane.vue` | 修改 | 卡片化样式 |
-| `src/components/project/ProjectDetailPane.vue` | 修改 | 移除 border-left，卡片化样式 |
+| 文件                                           | 变更类型 | 说明                          |
+| ---------------------------------------------- | -------- | ----------------------------- |
+| `src/components/project/ProjectView.vue`       | 修改     | 外层布局添加 gap 和 padding   |
+| `src/components/project/ProjectListPane.vue`   | 修改     | 移除 border-right，卡片化样式 |
+| `src/components/project/ProjectTreePane.vue`   | 修改     | 卡片化样式                    |
+| `src/components/project/ProjectDetailPane.vue` | 修改     | 移除 border-left，卡片化样式  |
 
 ## 参考样式
 
@@ -179,6 +183,7 @@ FocusReviewTab 的关键卡片样式：
     background: var(--b3-theme-primary-lightest);
   }
 }
+
 ```
 
 ## 验收标准

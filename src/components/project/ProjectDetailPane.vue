@@ -1,10 +1,16 @@
 <template>
   <aside class="project-detail-pane">
-    <div v-if="!task && !item" class="project-detail-pane__empty">
+    <div
+      v-if="!task && !item"
+      class="project-detail-pane__empty"
+    >
       {{ t('project').selectDetailPrompt }}
     </div>
 
-    <div v-else-if="task" class="project-detail-pane__task">
+    <div
+      v-else-if="task"
+      class="project-detail-pane__task"
+    >
       <div class="project-detail-pane__header">
         <span class="project-detail-pane__eyebrow">{{ t('project').taskDetail }}</span>
         <h3>{{ task.name }}</h3>
@@ -39,16 +45,26 @@
       </button>
     </div>
 
-    <div v-else-if="item" class="project-detail-pane__item">
+    <div
+      v-else-if="item"
+      class="project-detail-pane__item"
+    >
       <div class="project-detail-pane__item-main">
         <ItemDetailContent
           :item="item"
-          :show-all-dates="false"
+          :show-all-dates="!!item?.siblingItems?.length"
           :show-action-row="false"
           :close-on-siyuan-link="false"
           :embedded="true"
+          :navigation-info="navigationInfo"
+          @navigatePrev="emit('navigatePrev')"
+          @navigateNext="emit('navigateNext')"
         />
-        <ItemActionBar :item="item" open-doc-mode="preview" />
+        <ItemActionBar
+          :show-separator="true"
+          :item="item"
+          open-doc-mode="preview"
+        />
       </div>
       <div class="project-detail-pane__focus-card">
         <FocusWorkbenchRecordPane
@@ -64,64 +80,85 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useApp, usePlugin } from '@/main';
-import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
-import ItemActionBar from '@/components/todo/ItemActionBar.vue';
-import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import { t } from '@/i18n';
-import { getTaskItemProgress } from '@/utils/projectTaskTree';
-import type { Item, Project, Task } from '@/types/models';
+import type {
+  Item,
+  Project,
+  Task,
+} from '@/types/models'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import { getTaskItemProgress } from '@/utils/projectTaskTree'
 
 const props = defineProps<{
-  project: Project | null;
-  task: Task | null;
-  item: Item | null;
-}>();
+  project: Project | null
+  task: Task | null
+  item: Item | null
+  navigationInfo?: { currentIndex: number, total: number, canPrev: boolean, canNext: boolean }
+}>()
 
-const app = useApp();
-const plugin = usePlugin() as any;
+const emit = defineEmits<{
+  navigatePrev: []
+  navigateNext: []
+}>()
 
-const progress = computed(() => props.task ? getTaskItemProgress(props.task) : {
-  total: 0,
-  completed: 0,
-  pending: 0,
-  abandoned: 0,
-});
+const app = useApp()
+const plugin = usePlugin() as any
 
-const docBtnRef = ref<HTMLButtonElement | null>(null);
+const progress = computed(() => props.task
+  ? getTaskItemProgress(props.task)
+  : {
+      total: 0,
+      completed: 0,
+      pending: 0,
+      abandoned: 0,
+    })
+
+const docBtnRef = ref<HTMLButtonElement | null>(null)
 
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
 function openDocPreview(blockId: string) {
-  if (!docBtnRef.value || !blockId) return;
+  if (!docBtnRef.value || !blockId) return
 
   preview.showNow({
     blockId,
     itemId: blockId,
     anchorEl: docBtnRef.value,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  if (!preview.isOpen.value) return;
-  if (nativePreview.containsTarget(event.target)) return;
-  preview.forceClose();
+  if (!preview.isOpen.value) return
+  if (nativePreview.containsTarget(event.target)) return
+  preview.forceClose()
 }
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -131,26 +168,26 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: () => {},
-    });
+    })
   },
   { flush: 'post' },
-);
+)
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 </script>
 
 <style lang="scss" scoped>
 .project-detail-pane {
   min-width: 0;
-  padding: 12px;
+  padding: 8px;
   overflow: hidden;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);

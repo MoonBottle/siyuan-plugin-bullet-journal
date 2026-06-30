@@ -28,12 +28,14 @@ Route all slash-command-triggered updates through `protyle.transaction()` instea
 ### Two-Path Design
 
 **Simple case** (same block, single line):
+
 - Update DOM text node directly
 - Commit via `protyle.transaction()`
 - Debounce merge replaces protyle's stale `doOperations` with ours
 - Zero delay, zero race
 
 **Complex case** (parent block, multi-line with tomato clocks):
+
 - Wait for protyle transaction queue to flush
 - Then call `updateBlock` API
 - No race because protyle has no pending transactions
@@ -45,9 +47,9 @@ Route all slash-command-triggered updates through `protyle.transaction()` instea
 ```typescript
 // src/utils/fileUtils.ts
 export type BlockWriter = (
-  content: string,       // computed new content (markdown)
-  targetBlockId: string  // target block ID (may differ from current block for parent block updates)
-) => Promise<boolean>;
+  content: string, // computed new content (markdown)
+  targetBlockId: string // target block ID (may differ from current block for parent block updates)
+) => Promise<boolean>
 ```
 
 #### 2. `updateBlockDateTime` signature change
@@ -60,9 +62,9 @@ export async function updateBlockDateTime(
   newEndTime?: string,
   allDay?: boolean,
   originalDate?: string,
-  siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
+  siblingItems?: Array<{ date: string, startDateTime?: string, endDateTime?: string }>,
   status?: ItemStatus,
-  writer?: BlockWriter  // NEW: optional writer hook
+  writer?: BlockWriter // NEW: optional writer hook
 ): Promise<boolean>
 ```
 
@@ -70,13 +72,13 @@ At the end of the function, the final `updateBlock` call is replaced:
 
 ```typescript
 // Before:
-await updateBlock('markdown', newContent, targetBlockId);
+await updateBlock('markdown', newContent, targetBlockId)
 
 // After:
 if (writer) {
-  return await writer(newContent, targetBlockId);
+  return await writer(newContent, targetBlockId)
 }
-await updateBlock('markdown', newContent, targetBlockId);
+await updateBlock('markdown', newContent, targetBlockId)
 ```
 
 This change applies to both the single-line path and the multi-line path inside `updateBlockDateTime`.
@@ -87,7 +89,7 @@ This change applies to both the single-line path and the multi-line path inside 
 export async function updateBlockContent(
   blockId: string,
   tag: string,
-  writer?: BlockWriter  // NEW
+  writer?: BlockWriter // NEW
 ): Promise<boolean>
 ```
 
@@ -101,40 +103,40 @@ function createProtyleWriter(
   nodeElement: HTMLElement,
   currentBlockId: string
 ): BlockWriter {
-  const oldHTML = nodeElement.outerHTML;
+  const oldHTML = nodeElement.outerHTML
 
   return async (content, targetBlockId) => {
     // Strip block attribute lines {: id="..." }
-    const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
+    const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim()
 
     // Simple case: same block, single line
     if (targetBlockId === currentBlockId && !content.includes('\n')) {
       // Update DOM text node
-      const textNode = findFirstTextNode(nodeElement);
+      const textNode = findFirstTextNode(nodeElement)
       if (textNode) {
-        textNode.textContent = textContent;
+        textNode.textContent = textContent
       }
 
       // Update "updated" attribute
-      const now = new Date();
-      nodeElement.setAttribute('updated', formatDateForAttr(now));
+      const now = new Date()
+      nodeElement.setAttribute('updated', formatDateForAttr(now))
 
       // Commit via protyle.transaction()
-      const newHTML = nodeElement.outerHTML;
+      const newHTML = nodeElement.outerHTML
       if (newHTML !== oldHTML) {
         protyle.transaction(
           [{ id: targetBlockId, data: newHTML, action: 'update' }],
           [{ id: targetBlockId, data: oldHTML, action: 'update' }]
-        );
+        )
       }
-      return true;
+      return true
     }
 
     // Complex case: wait for protyle queue to flush, then API
-    await waitForProtyleTransactionsFlush();
-    await updateBlock('markdown', content, targetBlockId);
-    return true;
-  };
+    await waitForProtyleTransactionsFlush()
+    await updateBlock('markdown', content, targetBlockId)
+    return true
+  }
 }
 ```
 
@@ -142,12 +144,12 @@ function createProtyleWriter(
 
 ```typescript
 async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
-  const start = Date.now();
+  const start = Date.now()
   while ((window as any).siyuan?.transactions?.length > 0 && Date.now() - start < timeout) {
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 100))
   }
   // Extra buffer for server-side processing
-  await new Promise(r => setTimeout(r, 200));
+  await new Promise(r => setTimeout(r, 200))
 }
 ```
 
@@ -162,34 +164,39 @@ async function markAsTodayItem(
   filter: string[] = SLASH_COMMAND_FILTERS.TODAY,
   writer?: BlockWriter
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
+  const blockId = nodeElement.getAttribute('data-node-id')
+  if (!blockId)
+    return
 
-  const today = formatDate(new Date());
-  const existingItems = await extractDatesFromBlock(blockId);
+  const today = formatDate(new Date())
+  const existingItems = await extractDatesFromBlock(blockId)
 
   // Date already exists: just clean slash command text
-  const todayItem = existingItems.find(item => item.date === today);
+  const todayItem = existingItems.find(item => item.date === today)
   if (todayItem) {
-    deleteSlashCommandContent(protyle, filter);
-    showMessage(t('slash').alreadyMarkedToday, 2000, 'info');
-    return;
+    deleteSlashCommandContent(protyle, filter)
+    showMessage(t('slash').alreadyMarkedToday, 2000, 'info')
+    return
   }
 
   // Add date via writer (DOM+transaction) or API
   const success = await updateBlockDateTime(
-    blockId, today,
-    undefined, undefined, true,
+    blockId,
+    today,
+    undefined,
+    undefined,
+    true,
     undefined,
     existingItems.length > 0 ? existingItems : undefined,
     undefined,
-    writer  // NEW: pass writer hook
-  );
+    writer // NEW: pass writer hook
+  )
 
   if (success) {
-    showMessage(t('slash').markSuccess, 2000, 'info');
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
+    showMessage(t('slash').markSuccess, 2000, 'info')
+  }
+  else {
+    showMessage(t('slash').markFailed, 2000, 'error')
   }
 }
 ```
@@ -209,14 +216,14 @@ case 'today':
 
 ## Affected Commands
 
-| Command | Current Path | New Path |
-|---------|-------------|----------|
-| `today` | `updateBlockDateTime` API | DOM + `protyle.transaction()` |
-| `tomorrow` | `updateBlockDateTime` API | DOM + `protyle.transaction()` |
-| `date` | `updateBlockDateTime` API | DOM + `protyle.transaction()` (after picker) |
-| `done` | `deleteSlashCommandContent` | No change (already safe) |
-| `abandon` | `deleteSlashCommandContent` | No change (already safe) |
-| `markAsTask` | `deleteSlashCommandContent` + suffix | No change (already safe) |
+| Command      | Current Path                         | New Path                                     |
+| ------------ | ------------------------------------ | -------------------------------------------- |
+| `today`      | `updateBlockDateTime` API            | DOM + `protyle.transaction()`                |
+| `tomorrow`   | `updateBlockDateTime` API            | DOM + `protyle.transaction()`                |
+| `date`       | `updateBlockDateTime` API            | DOM + `protyle.transaction()` (after picker) |
+| `done`       | `deleteSlashCommandContent`          | No change (already safe)                     |
+| `abandon`    | `deleteSlashCommandContent`          | No change (already safe)                     |
+| `markAsTask` | `deleteSlashCommandContent` + suffix | No change (already safe)                     |
 
 ## Non-Goals
 

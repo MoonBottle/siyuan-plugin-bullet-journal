@@ -1,54 +1,111 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div v-if="modelValue" class="weixin-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-            <div class="drawer-handle" @click="close">
+          <div
+            v-if="modelValue"
+            class="weixin-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
 
             <div class="weixin-sheet__header">
-              <h3 class="weixin-sheet__title">微信 ClawBot 连接</h3>
-              <button class="weixin-sheet__close" @click="close">
+              <h3 class="weixin-sheet__title">
+                微信 ClawBot 连接
+              </h3>
+              <button
+                class="weixin-sheet__close"
+                @click="close"
+              >
                 <svg><use xlink:href="#iconClose"></use></svg>
               </button>
             </div>
 
             <div class="weixin-sheet__body">
-              <div v-if="!isConnected" class="weixin-sheet__status">
-                <div class="weixin-sheet__status-icon" :class="`is-${loginStatus}`">
+              <div
+                v-if="!isConnected"
+                class="weixin-sheet__status"
+              >
+                <div
+                  class="weixin-sheet__status-icon"
+                  :class="`is-${loginStatus}`"
+                >
                   <svg v-if="loginStatus === 'none' || loginStatus === 'error'">
                     <use xlink:href="#iconWeixin"></use>
                   </svg>
-                  <div v-else-if="loginStatus === 'pending'" class="weixin-sheet__spinner"></div>
-                  <svg v-else-if="loginStatus === 'scaned'" class="is-green">
-                    <use xlink:href="#iconCheck"></use>
+                  <div
+                    v-else-if="loginStatus === 'pending'"
+                    class="weixin-sheet__spinner"
+                  ></div>
+                  <svg
+                    v-else-if="loginStatus === 'scaned'"
+                    class="is-green"
+                  >
+                    <use xlink:href="#iconTaCheck"></use>
                   </svg>
                 </div>
-                <div class="weixin-sheet__status-text">{{ statusText }}</div>
-                <div v-if="errorMessage" class="weixin-sheet__error">{{ errorMessage }}</div>
+                <div class="weixin-sheet__status-text">
+                  {{ statusText }}
+                </div>
+                <div
+                  v-if="errorMessage"
+                  class="weixin-sheet__error"
+                >
+                  {{ errorMessage }}
+                </div>
               </div>
 
-              <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-sheet__qrcode">
+              <div
+                v-if="loginStatus === 'pending' && qrcodeUrl"
+                class="weixin-sheet__qrcode"
+              >
                 <div class="weixin-sheet__qrcode-wrapper">
                   <canvas ref="qrcodeCanvasRef"></canvas>
                 </div>
-                <p class="weixin-sheet__qrcode-hint">请使用微信扫描上方二维码</p>
+                <p class="weixin-sheet__qrcode-hint">
+                  请使用微信扫描上方二维码
+                </p>
                 <p class="weixin-sheet__qrcode-link">
-                  如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
+                  如果二维码无法显示，<a
+                    :href="qrcodeUrl"
+                    target="_blank"
+                  >点击此处打开</a>
                 </p>
               </div>
 
-              <div v-if="isConnected" class="weixin-sheet__connected">
+              <div
+                v-if="isConnected"
+                class="weixin-sheet__connected"
+              >
                 <div class="weixin-sheet__success-icon">
-                  <svg><use xlink:href="#iconCheck"></use></svg>
+                  <svg><use xlink:href="#iconTaCheck"></use></svg>
                 </div>
-                <div class="weixin-sheet__success-text">已连接到微信</div>
-                <div v-if="accountId" class="weixin-sheet__account">账号: {{ accountId }}</div>
+                <div class="weixin-sheet__success-text">
+                  已连接到微信
+                </div>
+                <div
+                  v-if="accountId"
+                  class="weixin-sheet__account"
+                >
+                  账号: {{ accountId }}
+                </div>
               </div>
 
-              <div v-if="connectedUsers.length > 0" class="weixin-sheet__users">
+              <div
+                v-if="connectedUsers.length > 0"
+                class="weixin-sheet__users"
+              >
                 <div class="weixin-sheet__users-title">
                   微信会话 ({{ connectedUsers.length }})
                 </div>
@@ -65,7 +122,10 @@
                       class="weixin-sheet__user-status"
                       :class="`weixin-sheet__user-status--${user.status.tone}`"
                     >{{ user.status.label }}</span>
-                    <span v-if="user.unread > 0" class="weixin-sheet__user-unread">
+                    <span
+                      v-if="user.unread > 0"
+                      class="weixin-sheet__user-unread"
+                    >
                       {{ user.unread }}
                     </span>
                   </div>
@@ -117,185 +177,195 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
-import { useAIStore } from '@/stores';
-import QRCode from 'qrcode';
+import QRCode from 'qrcode'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { useAIStore } from '@/stores'
 
 defineProps<{
-  modelValue: boolean;
-}>();
+  modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'switch-conversation': [conversationId: string];
-}>();
+  'update:modelValue': [value: boolean]
+  'switchConversation': [conversationId: string]
+}>()
 
-const aiStore = useAIStore();
+const aiStore = useAIStore()
 
-const isLoading = ref(false);
-const isChecking = ref(false);
-const pollTimeout = ref<number | null>(null);
-const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null);
+const isLoading = ref(false)
+const isChecking = ref(false)
+const pollTimeout = ref<number | null>(null)
+const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null)
 
-const loginStatus = computed(() => aiStore.clawBotLoginStatus);
-const isConnected = computed(() => aiStore.isClawBotConnected);
-const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
+const loginStatus = computed(() => aiStore.clawBotLoginStatus)
+const isConnected = computed(() => aiStore.isClawBotConnected)
+const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl)
 
 watch(qrcodeUrl, async (url) => {
-  if (!url) return;
-  await nextTick();
+  if (!url) return
+  await nextTick()
   if (qrcodeCanvasRef.value) {
     QRCode.toCanvas(qrcodeCanvasRef.value, url, {
       width: 200,
       margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
-    });
+      color: {
+        dark: '#000000',
+        light: '#ffffff',
+      },
+    })
   }
-}, { immediate: true });
+}, { immediate: true })
 
 const errorMessage = computed(() => {
   if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
-    return '本地代理不可用，请重新加载插件';
+    return '本地代理不可用，请重新加载插件'
   }
-  return aiStore.clawBotConfig.errorMessage;
-});
-const accountId = computed(() => aiStore.clawBotConfig.accountId);
+  return aiStore.clawBotConfig.errorMessage
+})
+const accountId = computed(() => aiStore.clawBotConfig.accountId)
 
 const statusText = computed(() => {
   switch (loginStatus.value) {
     case 'none':
-      return '点击"获取二维码"开始连接微信';
+      return '点击"获取二维码"开始连接微信'
     case 'pending':
-      return '等待扫码...';
+      return '等待扫码...'
     case 'scaned':
-      return '已扫码，等待确认...';
+      return '已扫码，等待确认...'
     case 'connected':
-      return '已连接';
+      return '已连接'
     case 'expired':
-      return '二维码已过期，请刷新';
+      return '二维码已过期，请刷新'
     case 'error':
-      return '连接出错';
+      return '连接出错'
     default:
-      return '未知状态';
+      return '未知状态'
   }
-});
+})
 
 const connectedUsers = computed(() => {
-  const users: Array<{ id: string; name: string; conversationId: string; unread: number; status: any }> = [];
+  const users: Array<{ id: string, name: string, conversationId: string, unread: number, status: any }> = []
 
-  const conversationMap = aiStore.weixinConversationMap || {};
-  const unreadMessages = aiStore.unreadWeixinMessages || {};
+  const conversationMap = aiStore.weixinConversationMap || {}
+  const unreadMessages = aiStore.unreadWeixinMessages || {}
 
   for (const userId of Object.keys(conversationMap)) {
-    const map = conversationMap[userId];
-    if (!map) continue;
-    const unread = unreadMessages[userId] || 0;
+    const map = conversationMap[userId]
+    if (!map) continue
+    const unread = unreadMessages[userId] || 0
     users.push({
       id: userId,
       name: map.userName || `用户 ${userId.slice(0, 8)}`,
       conversationId: map.conversationId,
       unread,
       status: aiStore.getWeixinConversationStatus(userId),
-    });
+    })
   }
 
   users.sort((a, b) => {
-    const mapA = conversationMap[a.id];
-    const mapB = conversationMap[b.id];
-    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0);
-  });
+    const mapA = conversationMap[a.id]
+    const mapB = conversationMap[b.id]
+    return (mapB?.lastMessageAt || 0) - (mapA?.lastMessageAt || 0)
+  })
 
-  return users;
-});
+  return users
+})
 
 function close() {
-  emit('update:modelValue', false);
+  emit('update:modelValue', false)
 }
 
 async function handleStartLogin() {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const result = await aiStore.startClawBotLogin();
+    const result = await aiStore.startClawBotLogin()
     if (result) {
-      startPolling();
+      startPolling()
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
 
 async function handleRefreshQR() {
-  stopPolling();
-  await handleStartLogin();
+  stopPolling()
+  await handleStartLogin()
 }
 
 async function handleCheckStatus() {
-  isChecking.value = true;
+  isChecking.value = true
   try {
-    const success = await aiStore.pollClawBotLogin();
+    const success = await aiStore.pollClawBotLogin()
     if (success) {
-      stopPolling();
+      stopPolling()
     }
   } finally {
-    isChecking.value = false;
+    isChecking.value = false
   }
 }
 
 async function handleDisconnect() {
-  await aiStore.disconnectClawBot();
-  stopPolling();
+  await aiStore.disconnectClawBot()
+  stopPolling()
 }
 
 function handleUserClick(conversationId: string, userId: string) {
-  aiStore.clearWeixinUnread(userId);
-  emit('switch-conversation', conversationId);
-  close();
+  aiStore.clearWeixinUnread(userId)
+  emit('switchConversation', conversationId)
+  close()
 }
 
 function startPolling() {
-  stopPolling();
-  let stopped = false;
+  stopPolling()
+  const stopped = false
 
   async function poll() {
-    if (stopped) return;
+    if (stopped) return
     if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
       try {
-        const success = await aiStore.pollClawBotLogin();
+        const success = await aiStore.pollClawBotLogin()
         if (success) {
-          stopPolling();
-          return;
+          stopPolling()
+          return
         }
       } catch {
         // 继续轮询
       }
       if (!stopped) {
-        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number;
+        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number
       }
     } else {
-      stopPolling();
+      stopPolling()
     }
   }
 
-  poll();
-  pollTimeout.value = -1 as unknown as number;
+  poll()
+  pollTimeout.value = -1 as unknown as number
 }
 
 function stopPolling() {
   if (pollTimeout.value) {
-    clearTimeout(pollTimeout.value);
-    pollTimeout.value = null;
+    clearTimeout(pollTimeout.value)
+    pollTimeout.value = null
   }
 }
 
 onMounted(() => {
   if (loginStatus.value === 'pending') {
-    startPolling();
+    startPolling()
   }
-});
+})
 
 onUnmounted(() => {
-  stopPolling();
-});
+  stopPolling()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -430,7 +500,9 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .weixin-sheet__status-text {
@@ -633,11 +705,21 @@ onUnmounted(() => {
   }
 }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
-.slide-up-enter-active, .slide-up-leave-active {
+.slide-up-enter-active,
+.slide-up-leave-active {
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
 </style>

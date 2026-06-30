@@ -40,6 +40,7 @@
 ## Task 1: 把 AI 接入移动端 shell 和底部一级导航
 
 **Files:**
+
 - Modify: `src/mobile/MobileMainShell.vue`
 - Modify: `src/mobile/components/navigation/MobileBottomTabBar.vue`
 - Modify: `src/utils/mobileMainShellNavigation.ts`
@@ -55,23 +56,23 @@ vi.mock('@/mobile/panels/MobileAiPanel.vue', () => ({
   default: defineComponent({
     name: 'MobileAiPanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai');
+      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai')
     },
   }),
-}));
+}))
 
 it('renders ai as a first-level tab without showing the todo fab', async () => {
-  const mounted = mountShell();
+  const mounted = mountShell()
   await nextTick();
 
-  (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click();
-  await nextTick();
+  (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click()
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
+  expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull()
 
-  mounted.unmount();
-});
+  mounted.unmount()
+})
 ```
 
 在 `test/mobile/MobileMainShell.navigation.test.ts` 扩展导航事件用例：
@@ -81,17 +82,17 @@ vi.mock('@/mobile/panels/MobileAiPanel.vue', () => ({
   default: defineComponent({
     name: 'MobileAiPanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai');
+      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai')
     },
   }),
-}));
+}))
 
-eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: 'ai' });
-await nextTick();
+eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: 'ai' })
+await nextTick()
 
-expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull();
+expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull()
 expect(mounted.container.querySelector('[data-testid="mobile-tab-ai"]')?.className)
-  .toContain('mobile-bottom-tab-bar__button--active');
+  .toContain('mobile-bottom-tab-bar__button--active')
 ```
 
 - [ ] **Step 2: 跑定向测试，确认新增断言先失败**
@@ -109,13 +110,13 @@ Expected: FAIL，原因应为 `MobileAiPanel` 尚未接入、`mobile-tab-ai` 不
 在 `src/utils/mobileMainShellNavigation.ts` 把联合类型改为：
 
 ```ts
-export type MobileMainShellTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more';
+export type MobileMainShellTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more'
 ```
 
 在 `src/mobile/components/navigation/MobileBottomTabBar.vue`：
 
 ```ts
-type MobileMainTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more';
+type MobileMainTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more'
 
 const tabs: Array<{ value: MobileMainTab, label: string }> = [
   { value: 'todo', label: '待办' },
@@ -123,7 +124,7 @@ const tabs: Array<{ value: MobileMainTab, label: string }> = [
   { value: 'pomodoro', label: '番茄钟' },
   { value: 'habit', label: '习惯打卡' },
   { value: 'more', label: '设置' },
-];
+]
 ```
 
 并把 grid 改为：
@@ -141,7 +142,7 @@ grid-template-columns: repeat(5, minmax(0, 1fr));
 同时新增导入：
 
 ```ts
-import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
+import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue'
 ```
 
 先创建最小占位版 `src/mobile/panels/MobileAiPanel.vue`：
@@ -174,6 +175,7 @@ git commit -m "feat(mobile): add ai tab to main shell"
 ## Task 2: 实现移动端 AI 主面板和全屏历史页
 
 **Files:**
+
 - Modify: `src/mobile/panels/MobileAiPanel.vue`
 - Create: `src/mobile/components/ai/MobileAiConversationListPage.vue`
 - Test: `test/mobile/MobileAiPanel.test.ts`
@@ -186,9 +188,9 @@ git commit -m "feat(mobile): add ai tab to main shell"
 ```ts
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, h, nextTick } from 'vue'
+import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue'
 
 const mockAiStore = {
   currentConversation: { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 },
@@ -199,68 +201,68 @@ const mockAiStore = {
   switchConversation: vi.fn(),
   deleteConversation: vi.fn(),
   clearCurrentConversation: vi.fn(),
-};
+}
 
 vi.mock('@/stores', () => ({
   useAIStore: () => mockAiStore,
   useProjectStore: () => ({ projects: [] }),
   useSettingsStore: () => ({ groups: [] }),
-}));
+}))
 
 vi.mock('@/components/ai/ChatPanel.vue', () => ({
   default: defineComponent({
     name: 'ChatPanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'chat-panel-stub' }, 'chat');
+      return () => h('div', { 'data-testid': 'chat-panel-stub' }, 'chat')
     },
   }),
-}));
+}))
 
 function mountPanel() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobileAiPanel);
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobileAiPanel)
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 describe('MobileAiPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
     mockAiStore.getConversationsList.mockResolvedValue([
       { id: 'conv-1', title: '新对话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
       { id: 'conv-2', title: '工作复盘', createdAt: 2, updatedAt: 2, messageCount: 4, fileSize: 20, hasSkillExecutions: false },
-    ]);
-  });
+    ])
+  })
 
   it('opens the full-screen history page from the header entry', async () => {
-    const mounted = mountPanel();
+    const mounted = mountPanel()
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid=\"mobile-ai-history-page\"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid=\"mobile-ai-history-page\"]')).not.toBeNull()
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('switches conversation and returns to chat after selecting a history item', async () => {
-    const mounted = mountPanel();
+    const mounted = mountPanel()
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click();
+    (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click()
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid=\"mobile-ai-history-item-conv-2\"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid=\"mobile-ai-history-item-conv-2\"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mockAiStore.switchConversation).toHaveBeenCalledWith('conv-2');
-    expect(mounted.container.querySelector('[data-testid=\"chat-panel-stub\"]')).not.toBeNull();
+    expect(mockAiStore.switchConversation).toHaveBeenCalledWith('conv-2')
+    expect(mounted.container.querySelector('[data-testid=\"chat-panel-stub\"]')).not.toBeNull()
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})
 ```
 
 创建 `test/mobile/MobileAiConversationListPage.test.ts`：
@@ -268,21 +270,21 @@ describe('MobileAiPanel', () => {
 ```ts
 // @vitest-environment happy-dom
 
-import { createApp, nextTick } from 'vue';
-import { describe, expect, it, vi } from 'vitest';
-import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue';
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue'
 
 function mountPage(props: Record<string, unknown>) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobileAiConversationListPage, props);
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobileAiConversationListPage, props)
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 it('renders current conversation highlight and emits delete/select', async () => {
-  const onSelect = vi.fn();
-  const onDelete = vi.fn();
+  const onSelect = vi.fn()
+  const onDelete = vi.fn()
   const mounted = mountPage({
     conversations: [
       { id: 'conv-1', title: '新对话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
@@ -291,20 +293,20 @@ it('renders current conversation highlight and emits delete/select', async () =>
     currentConversationId: 'conv-2',
     onSelect,
     onDelete,
-  });
-  await nextTick();
+  })
+  await nextTick()
 
   expect(mounted.container.querySelector('[data-testid=\"mobile-ai-history-item-conv-2\"]')?.className)
     .toContain('is-active');
 
   (mounted.container.querySelector('[data-testid=\"mobile-ai-history-item-conv-1\"]') as HTMLButtonElement | null)?.click();
-  (mounted.container.querySelector('[data-testid=\"mobile-ai-history-delete-conv-2\"]') as HTMLButtonElement | null)?.click();
+  (mounted.container.querySelector('[data-testid=\"mobile-ai-history-delete-conv-2\"]') as HTMLButtonElement | null)?.click()
 
-  expect(onSelect).toHaveBeenCalledWith('conv-1');
-  expect(onDelete).toHaveBeenCalledWith('conv-2');
+  expect(onSelect).toHaveBeenCalledWith('conv-1')
+  expect(onDelete).toHaveBeenCalledWith('conv-2')
 
-  mounted.unmount();
-});
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认面板与历史页行为先失败**
@@ -323,20 +325,20 @@ Expected: FAIL，原因应为 `MobileAiPanel` 还只是占位组件，历史页�
 
 ```vue
 <script setup lang="ts">
-import type { ConversationIndexItem } from '@/services/conversationStorageService';
+import type { ConversationIndexItem } from '@/services/conversationStorageService'
 
 defineProps<{
-  conversations: ConversationIndexItem[];
-  currentConversationId: string | null;
-  isLoadingHistory: boolean;
-}>();
+  conversations: ConversationIndexItem[]
+  currentConversationId: string | null
+  isLoadingHistory: boolean
+}>()
 
 const emit = defineEmits<{
-  back: [];
-  select: [conversationId: string];
-  delete: [conversationId: string];
-  create: [];
-}>();
+  back: []
+  select: [conversationId: string]
+  delete: [conversationId: string]
+  create: []
+}>()
 </script>
 ```
 
@@ -372,48 +374,48 @@ const emit = defineEmits<{
 
 ```vue
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
-import ChatPanel from '@/components/ai/ChatPanel.vue';
-import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue';
-import { useAIStore, useProjectStore, useSettingsStore } from '@/stores';
-import { t } from '@/i18n';
+import { computed, nextTick, onMounted, ref } from 'vue'
+import ChatPanel from '@/components/ai/ChatPanel.vue'
+import { t } from '@/i18n'
+import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue'
+import { useAIStore, useProjectStore, useSettingsStore } from '@/stores'
 
-const aiStore = useAIStore();
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
+const aiStore = useAIStore()
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
 
-const viewMode = ref<'chat' | 'history'>('chat');
-const conversationsList = ref([]);
-const isLoadingHistory = ref(false);
-const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null);
+const viewMode = ref<'chat' | 'history'>('chat')
+const conversationsList = ref([])
+const isLoadingHistory = ref(false)
+const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null)
 
-const allItems = computed(() => projectStore.items || []);
-const currentTitle = computed(() => aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle);
+const allItems = computed(() => projectStore.items || [])
+const currentTitle = computed(() => aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle)
 
 async function refreshConversationsList() {
-  isLoadingHistory.value = true;
-  conversationsList.value = await aiStore.getConversationsList();
-  isLoadingHistory.value = false;
+  isLoadingHistory.value = true
+  conversationsList.value = await aiStore.getConversationsList()
+  isLoadingHistory.value = false
 }
 
 async function ensureConversation() {
-  await refreshConversationsList();
+  await refreshConversationsList()
   if (!aiStore.currentConversationId && conversationsList.value.length === 0) {
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    await refreshConversationsList();
+    await aiStore.createConversation(t('aiChat').defaultConversationTitle)
+    await refreshConversationsList()
   }
 }
 
 async function handleOpenHistory() {
-  await refreshConversationsList();
-  viewMode.value = 'history';
+  await refreshConversationsList()
+  viewMode.value = 'history'
 }
 
 async function handleSelectConversation(conversationId: string) {
-  await aiStore.switchConversation(conversationId);
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.focusInput?.();
+  await aiStore.switchConversation(conversationId)
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.focusInput?.()
 }
 </script>
 ```
@@ -422,15 +424,15 @@ async function handleSelectConversation(conversationId: string) {
 
 ```ts
 async function handleDeleteConversation(conversationId: string) {
-  await aiStore.deleteConversation(conversationId);
-  await refreshConversationsList();
+  await aiStore.deleteConversation(conversationId)
+  await refreshConversationsList()
 
   if (conversationsList.value.length === 0) {
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    await refreshConversationsList();
+    await aiStore.createConversation(t('aiChat').defaultConversationTitle)
+    await refreshConversationsList()
   }
 
-  viewMode.value = 'chat';
+  viewMode.value = 'chat'
 }
 ```
 
@@ -454,6 +456,7 @@ git commit -m "feat(mobile): add ai chat panel and history page"
 ## Task 3: 补齐回归边界，确保桌面不退化、移动 CRUD 完整
 
 **Files:**
+
 - Modify: `test/tabs/AiChatDock.mobile.test.ts`
 - Modify: `test/mobile/MobileAiPanel.test.ts`
 - Modify: `src/mobile/panels/MobileAiPanel.vue`
@@ -464,43 +467,43 @@ git commit -m "feat(mobile): add ai chat panel and history page"
 
 ```ts
 it('creates a default conversation when the current list is empty on first mount', async () => {
-  mockAiStore.currentConversation = null;
-  mockAiStore.currentConversationId = null;
-  mockAiStore.getConversationsList.mockResolvedValueOnce([]);
+  mockAiStore.currentConversation = null
+  mockAiStore.currentConversationId = null
+  mockAiStore.getConversationsList.mockResolvedValueOnce([])
   mockAiStore.getConversationsList.mockResolvedValueOnce([
     { id: 'conv-new', title: '新对话', createdAt: 3, updatedAt: 3, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
-  ]);
+  ])
 
-  const mounted = mountPanel();
-  await nextTick();
+  const mounted = mountPanel()
+  await nextTick()
 
-  expect(mockAiStore.createConversation).toHaveBeenCalled();
-  mounted.unmount();
-});
+  expect(mockAiStore.createConversation).toHaveBeenCalled()
+  mounted.unmount()
+})
 
 it('creates a replacement conversation after deleting the last history item', async () => {
   mockAiStore.getConversationsList
     .mockResolvedValueOnce([{ id: 'conv-1', title: '唯一会话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false }])
     .mockResolvedValueOnce([])
-    .mockResolvedValueOnce([{ id: 'conv-new', title: '新对话', createdAt: 2, updatedAt: 2, messageCount: 0, fileSize: 10, hasSkillExecutions: false }]);
+    .mockResolvedValueOnce([{ id: 'conv-new', title: '新对话', createdAt: 2, updatedAt: 2, messageCount: 0, fileSize: 10, hasSkillExecutions: false }])
 
-  const mounted = mountPanel();
+  const mounted = mountPanel()
   await nextTick();
-  (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click();
+  (mounted.container.querySelector('[data-testid=\"mobile-ai-open-history\"]') as HTMLButtonElement | null)?.click()
   await nextTick();
-  (mounted.container.querySelector('[data-testid=\"mobile-ai-history-delete-conv-1\"]') as HTMLButtonElement | null)?.click();
-  await nextTick();
+  (mounted.container.querySelector('[data-testid=\"mobile-ai-history-delete-conv-1\"]') as HTMLButtonElement | null)?.click()
+  await nextTick()
 
-  expect(mockAiStore.deleteConversation).toHaveBeenCalledWith('conv-1');
-  expect(mockAiStore.createConversation).toHaveBeenCalled();
-  mounted.unmount();
-});
+  expect(mockAiStore.deleteConversation).toHaveBeenCalledWith('conv-1')
+  expect(mockAiStore.createConversation).toHaveBeenCalled()
+  mounted.unmount()
+})
 ```
 
 并在 `test/tabs/AiChatDock.mobile.test.ts` 保留/补一个明确断言：
 
 ```ts
-expect(mounted.container.querySelector('[data-testid="conversation-select-stub"]')).not.toBeNull();
+expect(mounted.container.querySelector('[data-testid="conversation-select-stub"]')).not.toBeNull()
 ```
 
 这条测试不改桌面行为，只确认桌面 dock 仍由原 dropdown 负责。
@@ -521,24 +524,32 @@ Expected: FAIL，原因应为当前 `MobileAiPanel` 尚未完全处理首屏空�
 
 ```ts
 async function handleCreateConversation() {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.focusInput?.();
+  await aiStore.createConversation(t('aiChat').defaultConversationTitle)
+  await refreshConversationsList()
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.focusInput?.()
 }
 
 async function handleClearConversation() {
-  await aiStore.clearCurrentConversation();
+  await aiStore.clearCurrentConversation()
 }
 ```
 
 聊天页 header 的按钮与更多菜单绑定：
 
 ```vue
-<button data-testid="mobile-ai-open-history" @click="handleOpenHistory">历史</button>
-<button data-testid="mobile-ai-new-conversation" @click="handleCreateConversation">新建</button>
-<button data-testid="mobile-ai-clear-conversation" @click="handleClearConversation">清空</button>
+<button data-testid="mobile-ai-open-history" @click="handleOpenHistory">
+历史
+</button>
+
+<button data-testid="mobile-ai-new-conversation" @click="handleCreateConversation">
+新建
+</button>
+
+<button data-testid="mobile-ai-clear-conversation" @click="handleClearConversation">
+清空
+</button>
 ```
 
 如果 `ChatPanel` 在移动宽度下出现明显布局问题，只允许补最小 class hook，例如：

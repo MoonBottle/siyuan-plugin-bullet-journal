@@ -62,6 +62,7 @@ Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
 Meditation 🎯2026-04-01 🔄daily
 
 Weekly report 🎯2026-04-01 Stick to 84 days 🔄weekly on Fri
+
 ```
 
 ### Count Habits (With Target Value + Unit)
@@ -76,6 +77,7 @@ Running 🎯2026-04-01 5 km 🔄daily
 Reading 🎯2026-04-01 30 minutes 🔄daily
 
 Learn words 🎯2026-04-01 Stick to 90 days 50 words 🔄daily
+
 ```
 
 **Supported units**: times, cups, minutes, hours, km, pages, ml, and custom units.
@@ -86,19 +88,20 @@ Learn words 🎯2026-04-01 Stick to 90 days 50 words 🔄daily
 Drink water 🎯2026-04-01 Stick to 21 days 8 cups ⏰09:00 🔄daily
 
 Wake up early 🎯2026-04-01 Stick to 30 days ⏰07:00 🔄daily
+
 ```
 
 ### Frequency Rules
 
 Use `🔄` as the habit frequency marker:
 
-| Chinese Format | English Format | Description |
-|----------|----------|------|
-| `🔄每天` | `🔄daily` | Check in daily |
-| `🔄每N天` | `🔄every N days` | Check in every N days |
-| `🔄每周` | `🔄weekly` | Check in once a week |
-| `🔄每周N天` | `🔄N days/week` | Check in N days a week |
-| `🔄每周一三五` | `🔄Mon,Wed,Fri` | Check in on specified weekdays |
+| Chinese Format | English Format   | Description                    |
+| -------------- | ---------------- | ------------------------------ |
+| `🔄每天`       | `🔄daily`        | Check in daily                 |
+| `🔄每N天`      | `🔄every N days` | Check in every N days          |
+| `🔄每周`       | `🔄weekly`       | Check in once a week           |
+| `🔄每周N天`    | `🔄N days/week`  | Check in N days a week         |
+| `🔄每周一三五` | `🔄Mon,Wed,Fri`  | Check in on specified weekdays |
 
 > **Difference from `🔁`**: `🔄` is the habit-specific frequency marker, while `🔁` is the item recurrence marker. Habit check-ins are triggered by the user; the system does not automatically create check-in records.
 
@@ -120,6 +123,7 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 📋 Develop registration module @L1
 
 Write registration API 📅2026-04-02
+
 ```
 
 - When `🎯` is encountered, switch to **habit context**; `📅date` lines below are parsed as check-in records
@@ -139,6 +143,7 @@ Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
 Wake up early 📅2026-04-06
 
 Wake up early 📅2026-04-07
+
 ```
 
 ### Count Check-in Records
@@ -149,6 +154,7 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 Drink water 3/8 cups 📅2026-04-07
 
 Drink water 8/8 cups 📅2026-04-08
+
 ```
 
 **Count record format is `current value/target value+unit`**. The target value is copied from the habit definition when the record is created; subsequent changes to the habit target do not affect historical records.
@@ -164,11 +170,11 @@ Drink water 8/8 cups 📅2026-04-08
 
 ### Habit Marking Commands
 
-| Command | Trigger | Description |
-|------|--------|----------|
-| Create/Edit Habit | `/habit` | Non-habit line: open create dialog; existing habit line: open edit dialog |
-| Check In | `/checkin` | Quick check-in based on current line type |
-| Open Habit Dock | `/habits` | Open habit check-in sidebar |
+| Command           | Trigger    | Description                                                               |
+| ----------------- | ---------- | ------------------------------------------------------------------------- |
+| Create/Edit Habit | `/habit`   | Non-habit line: open create dialog; existing habit line: open edit dialog |
+| Check In          | `/checkin` | Quick check-in based on current line type                                 |
+| Open Habit Dock   | `/habits`  | Open habit check-in sidebar                                               |
 
 ### `/habit` Create Habit
 
@@ -190,14 +196,14 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups ⏰09:00 🔄daily
 
 ### `/checkin` Behavior
 
-| Trigger Line Type | Behavior |
-|-----------|------|
-| Habit definition line (not checked in today) | Check in today: binary creates record, count increments by 1 |
-| Habit definition line (already checked in today) | Prompt "Already checked in today" |
-| Habit definition line (archived) | Prompt "Habit is archived" |
-| Today's check-in record line (binary) | Prompt "Already checked in today" |
-| Today's check-in record line (count) | Increment current value by 1 |
-| Historical check-in record line | Open Habit Dock, navigate to that habit's details |
+| Trigger Line Type                                | Behavior                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| Habit definition line (not checked in today)     | Check in today: binary creates record, count increments by 1 |
+| Habit definition line (already checked in today) | Prompt "Already checked in today"                            |
+| Habit definition line (archived)                 | Prompt "Habit is archived"                                   |
+| Today's check-in record line (binary)            | Prompt "Already checked in today"                            |
+| Today's check-in record line (count)             | Increment current value by 1                                 |
+| Historical check-in record line                  | Open Habit Dock, navigate to that habit's details            |
 
 ---
 
@@ -257,8 +263,8 @@ The habit view (viewType: `habit`) embeds the habit workspace into the workbench
 
 The dashboard supports adding the "Habit Week" widget to display a weekly habit check-in progress overview:
 
-| Widget | Icon | Description | Configurable |
-|--------|------|-------------|--------------|
+| Widget     | Icon        | Description                             | Configurable                    |
+| ---------- | ----------- | --------------------------------------- | ------------------------------- |
 | Habit Week | `iconCheck` | Weekly habit check-in progress overview | Group + Scope (active/archived) |
 
 > The Workbench also supports Todo View, Quadrant View, Focus Stats View, etc. See [Workbench](./workbench.md) for details.
@@ -271,21 +277,21 @@ The dashboard supports adding the "Habit Week" widget to display a weekly habit 
 
 Streak is calculated based on the habit's frequency cycle:
 
-| Frequency | Streak Unit | Calculation Logic |
-|------|------------|----------|
-| `🔄daily` | Days | Check from today backwards, +1 for each completed day, break otherwise |
-| `🔄every N days` | Cycles | Check from current cycle backwards, +1 if at least 1 check-in per N-day cycle |
-| `🔄weekly` | Weeks | Check from this week backwards, +1 if at least 1 check-in per natural week |
-| `🔄N days/week` | Weeks | Check from this week backwards, +1 if check-in days >= N per natural week |
+| Frequency        | Streak Unit | Calculation Logic                                                             |
+| ---------------- | ----------- | ----------------------------------------------------------------------------- |
+| `🔄daily`        | Days        | Check from today backwards, +1 for each completed day, break otherwise        |
+| `🔄every N days` | Cycles      | Check from current cycle backwards, +1 if at least 1 check-in per N-day cycle |
+| `🔄weekly`       | Weeks       | Check from this week backwards, +1 if at least 1 check-in per natural week    |
+| `🔄N days/week`  | Weeks       | Check from this week backwards, +1 if check-in days >= N per natural week     |
 
 **Special handling for not checked in today**: Today not being over does not count as a break; `currentStreak` is calculated from yesterday.
 
 ### Completion Rate
 
-| Metric | Calculation |
-|------|----------|
-| Total completion rate | Cumulative completed requirements / cumulative total requirements |
-| Weekly completion rate | This week's completed requirements / this week's total requirements |
+| Metric                  | Calculation                                                           |
+| ----------------------- | --------------------------------------------------------------------- |
+| Total completion rate   | Cumulative completed requirements / cumulative total requirements     |
+| Weekly completion rate  | This week's completed requirements / this week's total requirements   |
 | Monthly completion rate | This month's completed requirements / this month's total requirements |
 
 Count type "completion": `currentValue >= targetValue` counts as completed.
@@ -360,10 +366,10 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily 📦2026-05-04
 
 Habits have two inactive states:
 
-| State | Meaning | Trigger |
-|------|------|----------|
-| **Ended** | Natural expiration | Automatically becomes ended when `Stick to N days` expires |
-| **Archived** | User-initiated deactivation | Manually add the `📦` marker |
+| State        | Meaning                     | Trigger                                                    |
+| ------------ | --------------------------- | ---------------------------------------------------------- |
+| **Ended**    | Natural expiration          | Automatically becomes ended when `Stick to N days` expires |
+| **Archived** | User-initiated deactivation | Manually add the `📦` marker                               |
 
 The two states do not override each other and can coexist independently:
 
@@ -391,15 +397,15 @@ The two states do not override each other and can coexist independently:
 
 ### Behavior After Archiving
 
-| Behavior | Archived Habit |
-|------|------------|
-| Default habit list | Hidden, does not appear in the active list |
-| Habit details | Still accessible to view calendar, statistics, logs |
-| Check-in | Disabled (button grayed out, `/checkin` prompts "Habit is archived") |
-| Reminders | Stopped |
-| Historical records | Preserved, unaffected |
-| Statistics | Fully viewable in the detail page |
-| Document navigation | Can still open the block where the habit is defined |
+| Behavior            | Archived Habit                                                       |
+| ------------------- | -------------------------------------------------------------------- |
+| Default habit list  | Hidden, does not appear in the active list                           |
+| Habit details       | Still accessible to view calendar, statistics, logs                  |
+| Check-in            | Disabled (button grayed out, `/checkin` prompts "Habit is archived") |
+| Reminders           | Stopped                                                              |
+| Historical records  | Preserved, unaffected                                                |
+| Statistics          | Fully viewable in the detail page                                    |
+| Document navigation | Can still open the block where the habit is defined                  |
 
 ### Invalid Archive Marker Format
 
@@ -449,6 +455,7 @@ Meditation 📅2026-04-02
 📋 Physical examination appointment @L1
 
 Book hospital 📅2026-04-15
+
 ```
 
 ---

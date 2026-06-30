@@ -1,12 +1,17 @@
 <template>
-  <div v-if="links.length > 0" class="typed-link-list" :class="{ 'is-right-aligned': align === 'right' }">
+  <div
+    v-if="links.length > 0"
+    class="typed-link-list"
+    :class="{ 'is-right-aligned': align === 'right' }"
+  >
     <SyButton
       v-for="link in links"
       :key="`${link.name}-${link.url}-${link.type || 'default'}-${link.blockId || 'no-block'}`"
       type="link"
       :text="link.name"
       :href="link.type === 'attachment' ? undefined : link.url"
-      :class="['typed-link', getTypedLinkMeta(link.type).typeClass]"
+      class="typed-link"
+      :class="[getTypedLinkMeta(link.type).typeClass]"
       :data-icon="getTypedLinkMeta(link.type).iconText"
       @click="emit('linkClick', link)"
     />
@@ -14,24 +19,25 @@
 </template>
 
 <script setup lang="ts">
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import { getTypedLinkMeta } from './typedLinkMeta';
-import type { Link } from '@/types/models';
+import type { Link } from '@/types/models'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import { getTypedLinkMeta } from './typedLinkMeta'
 
 withDefaults(defineProps<{
-  links: Link[];
-  align?: 'left' | 'right';
+  links: Link[]
+  align?: 'left' | 'right'
 }>(), {
   align: 'left',
-});
+})
 
 const emit = defineEmits<{
-  linkClick: [link: Link];
-}>();
+  linkClick: [link: Link]
+}>()
 </script>
 
 <style lang="scss" scoped>
 .typed-link-list {
+  margin-top: 4px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

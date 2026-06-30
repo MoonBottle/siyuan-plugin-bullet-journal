@@ -1,8 +1,14 @@
 <template>
   <div class="chat-panel">
     <!-- 消息列表 -->
-    <div ref="messagesContainerRef" class="chat-panel__messages">
-      <div v-if="messages.length === 0" class="chat-panel__empty">
+    <div
+      ref="messagesContainerRef"
+      class="chat-panel__messages"
+    >
+      <div
+        v-if="messages.length === 0"
+        class="chat-panel__empty"
+      >
         <div class="chat-panel__empty-icon">
           <AiAssistantIcon />
         </div>
@@ -55,6 +61,8 @@
                   :show-footer="message.showFooter"
                   :show-insert-btn="message.showInsertBtn"
                   @insert-to-note="handleInsertToNote"
+                  @retry="handleRetry"
+                  @open-settings="handleOpenSettings"
                 />
               </div>
             </template>
@@ -72,6 +80,8 @@
                 :show-footer="message.showFooter"
                 :show-insert-btn="message.showInsertBtn"
                 @insert-to-note="handleInsertToNote"
+                @retry="handleRetry"
+                @open-settings="handleOpenSettings"
               />
             </template>
           </div>
@@ -83,7 +93,10 @@
 
     <!-- 输入区域 -->
     <div class="chat-panel__input-area">
-      <div v-if="isAIEnabled && enabledProviders.length > 0" class="chat-panel__input-card">
+      <div
+        v-if="isAIEnabled && enabledProviders.length > 0"
+        class="chat-panel__input-card"
+      >
         <!-- 卡片头部：供应商信息 + 设置按钮 -->
         <div class="chat-panel__card-header">
           <div class="chat-panel__provider-select">
@@ -98,7 +111,11 @@
               placement="bottom"
             />
           </div>
-          <button v-if="!isMobile" class="chat-panel__settings-btn" @click="handleOpenSettings">
+          <button
+            v-if="!isMobile"
+            class="chat-panel__settings-btn"
+            @click="handleOpenSettings('ai')"
+          >
             <svg><use xlink:href="#iconSettings"></use></svg>
           </button>
         </div>
@@ -110,6 +127,7 @@
             v-model="inputContent"
             :placeholder="inputPlaceholder"
             :disabled="isLoading || !isAIEnabled"
+            :skills="enabledSkillList"
             @send="handleSend"
           />
         </div>
@@ -128,7 +146,7 @@
             <button
               class="chat-panel__send-btn"
               :disabled="!canSend"
-              @click="handleSend"
+              @click="handleSend()"
             >
               <svg><use xlink:href="#iconForward"></use></svg>
             </button>
@@ -137,7 +155,10 @@
       </div>
 
       <!-- 未启用AI时的简化输入 -->
-      <div v-else class="chat-panel__input-card chat-panel__input-card--disabled">
+      <div
+        v-else
+        class="chat-panel__input-card chat-panel__input-card--disabled"
+      >
         <div class="chat-panel__card-header">
           <div class="chat-panel__provider-info">
             <div class="chat-panel__provider-avatar">
@@ -147,7 +168,11 @@
               {{ t('aiChat').notConfigured }}
             </span>
           </div>
-          <button v-if="!isMobile" class="chat-panel__settings-btn" @click="handleOpenSettings">
+          <button
+            v-if="!isMobile"
+            class="chat-panel__settings-btn"
+            @click="handleOpenSettings('ai')"
+          >
             <svg><use xlink:href="#iconSettings"></use></svg>
           </button>
         </div>
@@ -166,360 +191,408 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
-import { useAIStore } from '@/stores';
-import { t } from '@/i18n';
-import ChatMessage from './ChatMessage.vue';
-import ChatInput from './ChatInput.vue';
-import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import type { Project, ProjectGroup, Item } from '@/types/models';
-import type { AIProviderConfig, ChatMessage as ChatMessageType } from '@/types/ai';
-import { appendBlock, pushMsg } from '@/api';
-import { smartFormatMarkdown } from '@/utils/markdownRenderer';
-import { getActiveEditor, getFrontend } from 'siyuan';
+import type {
+  AIProviderConfig,
+  ChatMessage as ChatMessageType,
+} from '@/types/ai'
+import type {
+  Item,
+  Project,
+  ProjectGroup,
+} from '@/types/models'
+import {
+  getActiveEditor,
+} from 'siyuan'
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue'
+import {
+  appendBlock,
+  pushMsg,
+} from '@/api'
+import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import {
+  useAIStore,
+  useSkillStore,
+
+} from '@/stores'
+import { isMobileDevice } from '@/utils/isMobile'
+
+import { smartFormatMarkdown } from '@/utils/markdownRenderer'
+import ChatInput from './ChatInput.vue'
+import ChatMessage from './ChatMessage.vue'
+
+const props = defineProps<{
+  projects: Project[]
+  groups: ProjectGroup[]
+  items: Item[]
+  showToolCalls?: boolean
+}>()
+
+const emit = defineEmits<{
+  openSettings: [section?: string]
+}>()
+
+const NEWLINE_RE = /\n/g
 
 // 判断是否为移动端
-const isMobile = computed(() => {
-  const frontEnd = getFrontend();
-  return frontEnd === 'mobile' || frontEnd === 'browser-mobile';
-});
+const isMobile = computed(() => isMobileDevice())
 
 // 带渲染元数据的消息
 interface RenderMessage extends ChatMessageType {
   // 工具调用信息（如果是 tool 消息，用于显示工具名称和参数）
-  toolCallInfo: { name: string; arguments: string } | null;
+  toolCallInfo: { name: string, arguments: string } | null
   // 是否显示头部（头像、名称、时间）
-  showHeader: boolean;
+  showHeader: boolean
   // 是否显示底部（token 统计）
-  showFooter: boolean;
+  showFooter: boolean
   // 是否显示插入按钮
-  showInsertBtn: boolean;
+  showInsertBtn: boolean
 }
 
 // 增强的消息组
 interface EnhancedMessageGroup {
-  type: 'user' | 'assistant';
-  messages: RenderMessage[];
-  firstMessage: ChatMessageType;
-  firstRenderIndex: number;
-  lastRenderIndex: number;
+  type: 'user' | 'assistant'
+  messages: RenderMessage[]
+  firstMessage: ChatMessageType
+  firstRenderIndex: number
+  lastRenderIndex: number
 }
 
-const props = defineProps<{
-  projects: Project[];
-  groups: ProjectGroup[];
-  items: Item[];
-  showToolCalls?: boolean;
-}>();
+const aiStore = useAIStore()
+const skillStore = useSkillStore()
 
-const emit = defineEmits<{
-  openSettings: [];
-}>();
+const messagesContainerRef = ref<HTMLDivElement>()
+const chatInputRef = ref<InstanceType<typeof ChatInput>>()
 
-const aiStore = useAIStore();
-
-const messagesContainerRef = ref<HTMLDivElement>();
-const chatInputRef = ref<InstanceType<typeof ChatInput>>();
-
-const messages = computed(() => aiStore.currentMessages);
-const isLoading = computed(() => aiStore.isLoading);
-const isAIEnabled = computed(() => aiStore.isAIEnabled);
-const enabledProviders = computed(() => aiStore.enabledProviders);
+const messages = computed(() => aiStore.currentMessages)
+const isLoading = computed(() => aiStore.isLoading)
+const isAIEnabled = computed(() => aiStore.isAIEnabled)
+const enabledProviders = computed(() => aiStore.enabledProviders)
 
 // 输入内容
-const inputContent = ref('');
+const inputContent = ref('')
+
+const enabledSkillList = computed(() => skillStore.enabledSkills)
 
 // 是否可以发送
 const canSend = computed(() => {
-  return inputContent.value.trim().length > 0 && !isLoading.value && isAIEnabled.value;
-});
+  return inputContent.value.trim().length > 0 && !isLoading.value && isAIEnabled.value
+})
 
 // 当前选中的供应商
 const selectedProviderId = computed({
   get: () => aiStore.activeProviderId || '',
   set: (value: string) => {
-    aiStore.setActiveProvider(value || null);
-  }
-});
+    aiStore.setActiveProvider(value || null)
+  },
+})
 
 // 当前选中的供应商配置
 const currentProvider = computed<AIProviderConfig | null>(() => {
-  return enabledProviders.value.find(p => p.id === selectedProviderId.value) || null;
-});
+  return enabledProviders.value.find((p) => p.id === selectedProviderId.value) || null
+})
 
 // 当前供应商可用的模型列表
 const availableModels = computed(() => {
-  return currentProvider.value?.models || [];
-});
+  return currentProvider.value?.models || []
+})
 
 // 供应商选项列表
 const providerOptions = computed(() => {
-  return enabledProviders.value.map(provider => ({
+  return enabledProviders.value.map((provider) => ({
     value: provider.id,
-    label: provider.name
-  }));
-});
+    label: provider.name,
+  }))
+})
 
 // 模型选项列表
 const modelOptions = computed(() => {
-  return availableModels.value.map(model => ({
+  return availableModels.value.map((model) => ({
     value: model,
-    label: model
-  }));
-});
+    label: model,
+  }))
+})
 
 // 当前选中的模型
 const selectedModel = computed({
   get: () => currentProvider.value?.defaultModel || '',
   set: (value: string) => {
     if (currentProvider.value) {
-      currentProvider.value.defaultModel = value;
+      currentProvider.value.defaultModel = value
     }
-  }
-});
+  },
+})
 
 // 如果没有选中的供应商，自动选择第一个启用的供应商
 watch(() => enabledProviders.value, (providers) => {
   if (providers.length > 0 && !selectedProviderId.value) {
-    aiStore.setActiveProvider(providers[0].id);
+    aiStore.setActiveProvider(providers[0].id)
   }
-}, { immediate: true });
+}, { immediate: true })
 
 // 计算工具调用信息
 function computeToolCallInfo(message: ChatMessageType) {
   if (message.role !== 'tool' || !message.toolCallId) {
-    return null;
+    return null
   }
 
   // 从当前消息位置向前查找，找到最近的一条包含该 toolCallId 的 assistant 消息
-  const messageIndex = messages.value.findIndex(m => m.id === message.id);
-  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length;
+  const messageIndex = messages.value.findIndex((m) => m.id === message.id)
+  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length
 
   for (let i = searchStartIndex - 1; i >= 0; i--) {
-    const msg = messages.value[i];
+    const msg = messages.value[i]
     if (msg.role === 'assistant' && msg.toolCalls) {
-      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId);
+      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId)
       if (toolCall) {
         return {
           name: toolCall.function.name,
-          arguments: toolCall.function.arguments
-        };
+          arguments: toolCall.function.arguments,
+        }
       }
     }
   }
 
-  return null;
+  return null
 }
 
 // 增强的消息分组：预计算所有渲染相关的元数据
 const enhancedMessageGroups = computed<EnhancedMessageGroup[]>(() => {
-  const groups: EnhancedMessageGroup[] = [];
-  let currentGroup: EnhancedMessageGroup | null = null;
+  const groups: EnhancedMessageGroup[] = []
+  let currentGroup: EnhancedMessageGroup | null = null
 
   for (const message of messages.value) {
     // 跳过系统消息
-    if (message.role === 'system') continue;
+    if (message.role === 'system') continue
 
     // 如果 showToolCalls 为 false，直接过滤 tool 消息
-    if (message.role === 'tool' && props.showToolCalls === false) continue;
+    if (message.role === 'tool' && props.showToolCalls === false) continue
 
     // 预计算工具调用信息
     const toolCallInfo = message.role === 'tool'
       ? computeToolCallInfo(message)
-      : null;
+      : null
 
     // showHeader: 用户消息显示头部，AI 消息在分组模式下不显示（由 Panel 统一显示）
-    const showHeader = message.role === 'user';
+    const showHeader = message.role === 'user'
 
     // showFooter: 只有 assistant 消息且不含 toolCalls 时才显示
-    const showFooter = message.role === 'assistant' && !message.toolCalls?.length;
+    const showFooter = message.role === 'assistant' && !message.toolCalls?.length
 
     const renderMessage: RenderMessage = {
       ...message,
       toolCallInfo,
       showHeader,
       showFooter,
-      showInsertBtn: false // 临时值，后面根据 isLast 设置
-    };
+      showInsertBtn: false, // 临时值，后面根据 isLast 设置
+    }
 
     // 分组逻辑
     if (message.role === 'user') {
       // 用户消息单独成组
       if (currentGroup) {
         // 设置上一组的插入按钮
-        setInsertBtnForGroup(currentGroup);
-        groups.push(currentGroup);
+        setInsertBtnForGroup(currentGroup)
+        groups.push(currentGroup)
       }
       currentGroup = {
         type: 'user',
         messages: [renderMessage],
         firstMessage: message,
         firstRenderIndex: 0,
-        lastRenderIndex: 0
-      };
+        lastRenderIndex: 0,
+      }
     } else {
       // AI 消息（assistant/tool）
       if (currentGroup?.type === 'assistant') {
-        const idx = currentGroup.messages.length;
-        currentGroup.messages.push(renderMessage);
-        currentGroup.lastRenderIndex = idx;
+        const idx = currentGroup.messages.length
+        currentGroup.messages.push(renderMessage)
+        currentGroup.lastRenderIndex = idx
       } else {
         if (currentGroup) {
-          setInsertBtnForGroup(currentGroup);
-          groups.push(currentGroup);
+          setInsertBtnForGroup(currentGroup)
+          groups.push(currentGroup)
         }
         currentGroup = {
           type: 'assistant',
           messages: [renderMessage],
           firstMessage: message,
           firstRenderIndex: 0,
-          lastRenderIndex: 0
-        };
+          lastRenderIndex: 0,
+        }
       }
     }
   }
 
   if (currentGroup) {
-    setInsertBtnForGroup(currentGroup);
-    groups.push(currentGroup);
+    setInsertBtnForGroup(currentGroup)
+    groups.push(currentGroup)
   }
 
-  return groups;
-});
+  return groups
+})
 
 // 设置组的插入按钮（只有最后一条可插入的 assistant 消息显示）
 function setInsertBtnForGroup(group: EnhancedMessageGroup) {
   if (group.type === 'assistant' && group.lastRenderIndex >= 0) {
-    const lastMsg = group.messages[group.lastRenderIndex];
-    const canInsert = lastMsg.role === 'assistant' &&
-                     !lastMsg.loading &&
-                     lastMsg.content?.trim();
+    const lastMsg = group.messages[group.lastRenderIndex]
+    const canInsert = lastMsg.role === 'assistant'
+      && !lastMsg.loading
+      && lastMsg.content?.trim()
     if (canInsert) {
-      lastMsg.showInsertBtn = true;
+      lastMsg.showInsertBtn = true
     }
   }
 }
 
 const inputPlaceholder = computed(() => {
   if (!isAIEnabled.value) {
-    return t('aiChat').placeholderDisabled;
+    return t('aiChat').placeholderDisabled
   }
-  return t('aiChat').placeholder;
-});
+  return t('aiChat').placeholder
+})
 
 const examples = [
   t('aiChat').example1,
   t('aiChat').example2,
   t('aiChat').example3,
-  t('aiChat').example4
-];
+  t('aiChat').example4,
+]
 
 // 自动滚动到底部
 watch(
   () => messages.value.length,
   async (newLen, oldLen) => {
-    console.log('[ChatPanel] messages.length 变化:', { oldLen, newLen });
-    await nextTick();
-    scrollToBottom();
-  }
-);
+    console.log('[ChatPanel] messages.length 变化:', {
+      oldLen,
+      newLen,
+    })
+    await nextTick()
+    scrollToBottom()
+  },
+)
 
 // 监听消息内容变化（用于流式响应）
 watch(
-  () => messages.value.map(m => m.content),
-  async (newContents, oldContents) => {
-    console.log('[ChatPanel] messages.content 变化:', { count: newContents.length });
-    await nextTick();
-    scrollToBottom();
+  () => messages.value.map((m) => m.content),
+  async (newContents, _oldContents) => {
+    console.log('[ChatPanel] messages.content 变化:', { count: newContents.length })
+    await nextTick()
+    scrollToBottom()
   },
-  { deep: true }
-);
+  { deep: true },
+)
 
 watch(
   () => isLoading.value,
   async () => {
-    await nextTick();
-    scrollToBottom();
-  }
-);
+    await nextTick()
+    scrollToBottom()
+  },
+)
 
 function scrollToBottom() {
-  const container = messagesContainerRef.value;
+  const container = messagesContainerRef.value
   if (container) {
     // 使用 requestAnimationFrame 确保在 DOM 更新后滚动
     requestAnimationFrame(() => {
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: 'smooth'
-      });
-    });
+        behavior: 'smooth',
+      })
+    })
   }
 }
 
-async function handleSend(content?: string | Event) {
-  const messageContent = (typeof content === 'string' ? content : '').trim() || inputContent.value.trim();
-  if (!messageContent || isLoading.value || !isAIEnabled.value) return;
+async function handleSend(content?: string | string[], skillNames?: string[]) {
+  let messageContent: string
+  let skills: string[] = []
 
-  inputContent.value = '';
-  await aiStore.sendMessage(messageContent);
+  if (Array.isArray(content)) {
+    messageContent = content[0] || ''
+    skills = content.slice(1) as string[]
+  } else if (typeof content === 'string') {
+    messageContent = content
+    skills = skillNames ?? []
+  } else {
+    messageContent = inputContent.value.trim()
+    skills = chatInputRef.value?.getSelectedSkillNames() ?? []
+  }
+
+  messageContent = messageContent.trim()
+
+  if ((!messageContent && skills.length === 0) || isLoading.value || !isAIEnabled.value) return
+
+  inputContent.value = ''
+  chatInputRef.value?.clearSelectedSkills()
+  await aiStore.sendMessage(messageContent, skills.length > 0 ? skills : undefined)
 }
 
 function handleExampleClick(example: string) {
-  handleSend(example);
+  handleSend(example)
 }
 
-function handleOpenSettings() {
-  emit('openSettings');
+function handleOpenSettings(section?: string) {
+  emit('openSettings', section)
+}
+
+function handleRetry() {
+  aiStore.retryLastMessage()
 }
 
 function focusInput() {
-  chatInputRef.value?.focus();
+  chatInputRef.value?.focus()
 }
 
 // 获取当前激活的文档 ID
 function getCurrentDocId(): string | null {
   // 使用思源官方 API 获取当前编辑器
-  const editor = getActiveEditor();
+  const editor = getActiveEditor()
   if (editor?.protyle?.block?.rootID) {
-    return editor.protyle.block.rootID;
+    return editor.protyle.block.rootID
   }
-  return null;
+  return null
 }
 
 // 处理插入到笔记
 async function handleInsertToNote(message: ChatMessageType) {
-  const docId = getCurrentDocId();
+  const docId = getCurrentDocId()
   if (!docId) {
-    await pushMsg('请先打开一个文档', 3000);
-    return;
+    await pushMsg('请先打开一个文档', 3000)
+    return
   }
 
   try {
     // 使用 Lute 格式化消息内容（规范化 Markdown 格式 + 压缩多余空行）
-    const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
-    const formattedContent = smartFormatMarkdown(message.content);
-    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(/\n/g, '\n> ')}`;
+    const timestamp = new Date(message.timestamp).toLocaleString('zh-CN')
+    const formattedContent = smartFormatMarkdown(message.content)
+    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(NEWLINE_RE, '\n> ')}`
 
-    await appendBlock('markdown', contentToInsert, docId);
-    await pushMsg(t('aiChat').insertSuccess, 1000);
+    await appendBlock('markdown', contentToInsert, docId)
+    await pushMsg(t('aiChat').insertSuccess, 1000)
   } catch (error) {
-    console.error('插入到笔记失败:', error);
-    await pushMsg(t('aiChat').insertFailed, 1000);
+    console.error('插入到笔记失败:', error)
+    await pushMsg(t('aiChat').insertFailed, 1000)
   }
 }
 
 defineExpose({
   focusInput,
   scrollToBottom,
-});
+})
 
 // 格式化时间
 function formatTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
+  const date = new Date(timestamp)
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 </script>
 

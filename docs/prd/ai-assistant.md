@@ -8,14 +8,14 @@ AI 对话功能提供内置的任务助手面板，支持通过自然语言与 A
 
 ### 2.1 核心功能
 
-| 功能 | 描述 | 状态 |
-|------|------|------|
-| 多供应商支持 | 支持 OpenAI 兼容的 API | ✅ |
-| 对话界面 | 聊天式交互界面 | ✅ |
-| 多对话管理 | 支持创建多个独立对话 | ✅ |
-| 工具调用 | AI 可调用任务查询工具 | ✅ |
-| 日报生成 | 自动生成工作日报 | ✅ |
-| 历史保存 | 对话历史自动保存 | ✅ |
+| 功能         | 描述                   | 状态 |
+| ------------ | ---------------------- | ---- |
+| 多供应商支持 | 支持 OpenAI 兼容的 API | ✅   |
+| 对话界面     | 聊天式交互界面         | ✅   |
+| 多对话管理   | 支持创建多个独立对话   | ✅   |
+| 工具调用     | AI 可调用任务查询工具  | ✅   |
+| 日报生成     | 自动生成工作日报       | ✅   |
+| 历史保存     | 对话历史自动保存       | ✅   |
 
 ### 2.2 支持的 AI 供应商
 
@@ -45,41 +45,41 @@ AI 对话功能提供内置的任务助手面板，支持通过自然语言与 A
 ```typescript
 // AI 供应商配置
 interface AIProviderConfig {
-  id: string;              // 供应商 ID
-  name: string;            // 显示名称
-  apiUrl: string;          // API 地址
-  apiKey: string;          // API 密钥
-  model: string;           // 默认模型
-  enabled: boolean;        // 是否启用
+  id: string // 供应商 ID
+  name: string // 显示名称
+  apiUrl: string // API 地址
+  apiKey: string // API 密钥
+  model: string // 默认模型
+  enabled: boolean // 是否启用
 }
 
 // 对话
 interface Conversation {
-  id: string;              // 对话 ID
-  title: string;           // 对话标题
-  messages: Message[];     // 消息列表
-  createdAt: number;       // 创建时间
-  updatedAt: number;       // 更新时间
+  id: string // 对话 ID
+  title: string // 对话标题
+  messages: Message[] // 消息列表
+  createdAt: number // 创建时间
+  updatedAt: number // 更新时间
 }
 
 // 消息
 interface Message {
-  id: string;              // 消息 ID
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  content: string;         // 消息内容
-  toolCalls?: ToolCall[];  // 工具调用
-  toolCallId?: string;     // 工具调用 ID
-  timestamp: number;       // 时间戳
+  id: string // 消息 ID
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  content: string // 消息内容
+  toolCalls?: ToolCall[] // 工具调用
+  toolCallId?: string // 工具调用 ID
+  timestamp: number // 时间戳
 }
 
 // 工具调用
 interface ToolCall {
-  id: string;
-  type: 'function';
+  id: string
+  type: 'function'
   function: {
-    name: string;
-    arguments: string;
-  };
+    name: string
+    arguments: string
+  }
 }
 ```
 
@@ -88,45 +88,49 @@ interface ToolCall {
 ```typescript
 // 可用工具
 const bulletJournalTools: ToolDefinition[] = [
-  getUserTimeTool,      // 获取用户当前时间
-  listGroupsTool,       // 查询分组列表
-  listProjectsTool,     // 查询项目列表
-  filterItemsTool       // 筛选事项
-];
+  getUserTimeTool, // 获取用户当前时间
+  listGroupsTool, // 查询分组列表
+  listProjectsTool, // 查询项目列表
+  filterItemsTool // 筛选事项
+]
 
 // 工具定义
 interface ToolDefinition {
-  type: 'function';
+  type: 'function'
   function: {
-    name: string;
-    description: string;
+    name: string
+    description: string
     parameters: {
-      type: 'object';
-      properties: Record<string, unknown>;
-      required: string[];
-    };
-  };
+      type: 'object'
+      properties: Record<string, unknown>
+      required: string[]
+    }
+  }
 }
 ```
 
 ### 3.3 工具详情
 
 #### get_user_time
+
 - **描述**: 获取用户当前的本地日期和时间
 - **用途**: 处理「今天」「明天」「本周」等时间相关问题
 - **参数**: 无
 
 #### list_groups
+
 - **描述**: 查询所有分组
 - **用途**: 了解项目组织结构
 - **参数**: 无
 
 #### list_projects
+
 - **描述**: 查询所有项目
 - **用途**: 获取项目概览
 - **参数**: `{ groupId?: string }`
 
 #### filter_items
+
 - **描述**: 按条件筛选事项
 - **用途**: 查询具体任务数据
 - **参数**: `{ projectId?, projectIds?, groupId?, startDate?, endDate?, status? }`
@@ -187,22 +191,22 @@ AI 响应（可能含工具调用）
 
 ```typescript
 // 1. 发送消息到 AI
-const response = await aiService.chat(messages, tools);
+const response = await aiService.chat(messages, tools)
 
 // 2. 检查是否有工具调用
 if (response.toolCalls) {
   // 3. 执行工具
-  const toolResults = await executeTools(response.toolCalls);
-  
+  const toolResults = await executeTools(response.toolCalls)
+
   // 4. 将工具结果添加到消息列表
   messages.push({
     role: 'tool',
     toolCallId: toolCall.id,
     content: JSON.stringify(toolResults)
-  });
-  
+  })
+
   // 5. 再次调用 AI 获取最终回复
-  const finalResponse = await aiService.chat(messages, tools);
+  const finalResponse = await aiService.chat(messages, tools)
 }
 ```
 
@@ -258,7 +262,7 @@ if (response.toolCalls) {
 AI: 我来帮您查询今天的待办事项。
     [调用 get_user_time]
     [调用 filter_items with startDate, endDate, status='pending']
-    
+
     您今天有 3 个待办事项：
     1. 完成首页设计 [项目A]
     2. 代码审查 [项目B]
@@ -273,20 +277,20 @@ AI: 我来帮您查询今天的待办事项。
 AI: 我来为您生成今天的工作日报。
     [调用 get_user_time]
     [调用 filter_items with today's date]
-    
+
     ## 2024-03-08 工作日报
-    
+
     ### 已完成
     - 需求评审会议
     - 登录模块代码审查
-    
+
     ### 进行中
     - 首页设计（预计今日完成）
-    
+
     ### 明日计划
     - 支付模块开发
     - 周会
-    
+
     [一键插入笔记]
 ```
 
@@ -298,7 +302,7 @@ AI: 我来为您生成今天的工作日报。
 AI: 我来查询工作分组下的项目。
     [调用 list_groups]
     [调用 list_projects with groupId]
-    
+
     工作分组下有 3 个项目：
     1. 网站重构 (5个任务)
     2. 移动端开发 (3个任务)
@@ -328,7 +332,7 @@ const defaultProviders: AIProviderConfig[] = [
     model: 'deepseek-chat',
     enabled: false
   }
-];
+]
 ```
 
 ### 7.2 设置存储

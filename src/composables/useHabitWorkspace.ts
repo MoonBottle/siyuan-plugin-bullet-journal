@@ -1,13 +1,21 @@
+import type { MaybeRefOrGetter } from 'vue'
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
 import {
   computed,
+
   ref,
   toValue,
   watch,
-  type MaybeRefOrGetter,
-} from 'vue';
-import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
+} from 'vue'
+import {
+  getHabitDayState,
+  getHabitPeriodState,
+} from '@/domain/habit/habitCompletion'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
 import {
   archiveHabit,
   checkIn,
@@ -16,284 +24,283 @@ import {
   markHabitMissed,
   resetHabitRecord,
   unarchiveHabit,
-} from '@/services/habitService';
-import { useProjectStore } from '@/stores/projectStore';
-import { useSettingsStore } from '@/stores/settingsStore';
-import type { Habit, HabitStats } from '@/types/models';
-import { showMessage } from '@/utils/dialog';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import dayjs from '@/utils/dayjs';
+} from '@/services/habitService'
+import { useProjectStore } from '@/stores/projectStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
+import { openDocumentAtLine } from '@/utils/fileUtils'
 import {
   calculateAllHabitStats,
   calculateHabitStats,
-} from '@/utils/habitStatsUtils';
+} from '@/utils/habitStatsUtils'
 
-type UseHabitWorkspaceOptions = {
-  groupId?: MaybeRefOrGetter<string | undefined>;
-  defaultListMode?: MaybeRefOrGetter<'active' | 'archived' | undefined>;
-};
+interface UseHabitWorkspaceOptions {
+  groupId?: MaybeRefOrGetter<string | undefined>
+  defaultListMode?: MaybeRefOrGetter<'active' | 'archived' | undefined>
+}
 
-type HabitListMode = 'active' | 'archived';
+type HabitListMode = 'active' | 'archived'
 
 export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
-  const plugin = usePlugin() as any;
-  const projectStore = useProjectStore();
-  const settingsStore = useSettingsStore();
+  const plugin = usePlugin() as any
+  const projectStore = useProjectStore()
+  const settingsStore = useSettingsStore()
 
-  const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
-  const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
-  const selectedHabitId = ref<string | null>(null);
-  const selectedStatsCache = ref<HabitStats | null>(null);
-  const listMode = ref<HabitListMode>('active');
+  const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
+  const selectedViewMonth = ref(dayjs().format('YYYY-MM'))
+  const selectedHabitId = ref<string | null>(null)
+  const selectedStatsCache = ref<HabitStats | null>(null)
+  const listMode = ref<HabitListMode>('active')
 
-  const currentDate = computed(() => projectStore.currentDate);
-  const groupId = computed(() => toValue(options.groupId) ?? '');
-  const resolvedDefaultListMode = computed<HabitListMode>(() => toValue(options.defaultListMode) ?? 'active');
-  const allHabits = computed(() => projectStore.getHabits(groupId.value));
+  const currentDate = computed(() => projectStore.currentDate)
+  const groupId = computed(() => toValue(options.groupId) ?? '')
+  const resolvedDefaultListMode = computed<HabitListMode>(() => toValue(options.defaultListMode) ?? 'active')
+  const allHabits = computed(() => projectStore.getHabits(groupId.value))
   const habits = computed(() => {
     if (listMode.value === 'archived') {
-      return allHabits.value.filter(habit => Boolean(habit.archivedAt));
+      return allHabits.value.filter((habit) => Boolean(habit.archivedAt))
     }
 
-    return allHabits.value.filter(habit => !habit.archivedAt);
-  });
+    return allHabits.value.filter((habit) => !habit.archivedAt)
+  })
 
   const habitStatsMap = computed(() => {
-    return calculateAllHabitStats(habits.value, currentDate.value);
-  });
+    return calculateAllHabitStats(habits.value, currentDate.value)
+  })
 
   const habitDayStateMap = computed(() => {
-    return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, selectedDate.value)]));
-  });
+    return new Map(habits.value.map((habit) => [habit.blockId, getHabitDayState(habit, selectedDate.value)]))
+  })
 
   const habitPeriodStateMap = computed(() => {
-    return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]));
-  });
+    return new Map(habits.value.map((habit) => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]))
+  })
 
   const selectedHabit = computed(() => {
     if (!selectedHabitId.value) {
-      return null;
+      return null
     }
 
-    return allHabits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null;
-  });
+    return allHabits.value.find((habit) => habit.blockId === selectedHabitId.value) ?? null
+  })
 
   const selectedStats = computed(() => {
     if (!selectedHabit.value) {
-      return null;
+      return null
     }
-    return calculateHabitStats(selectedHabit.value, currentDate.value, selectedViewMonth.value);
-  });
+    return calculateHabitStats(selectedHabit.value, currentDate.value, selectedViewMonth.value)
+  })
 
-  const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
-  const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day');
+  const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value)
+  const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day')
 
   watch(selectedStats, (value) => {
     if (value) {
-      selectedStatsCache.value = value;
+      selectedStatsCache.value = value
     }
-  }, { immediate: true });
+  }, { immediate: true })
 
   watch(resolvedDefaultListMode, (value) => {
-    listMode.value = value;
-  }, { immediate: true });
+    listMode.value = value
+  }, { immediate: true })
 
   function syncSelectedHabit() {
     if (!selectedHabitId.value) {
-      return;
+      return
     }
 
-    if (!allHabits.value.some(habit => habit.blockId === selectedHabitId.value)) {
-      selectedHabitId.value = null;
+    if (!allHabits.value.some((habit) => habit.blockId === selectedHabitId.value)) {
+      selectedHabitId.value = null
     }
   }
 
   function selectHabit(habit: Habit, date: string = currentDate.value) {
-    selectedDate.value = date;
-    selectedViewMonth.value = date.substring(0, 7);
-    selectedHabitId.value = habit.blockId;
-    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
+    selectedDate.value = date
+    selectedViewMonth.value = date.substring(0, 7)
+    selectedHabitId.value = habit.blockId
+    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value)
   }
 
   function selectHabitById(habitId: string, date: string = currentDate.value): boolean {
-    const habit = allHabits.value.find(item => item.blockId === habitId);
+    const habit = allHabits.value.find((item) => item.blockId === habitId)
     if (!habit) {
-      return false;
+      return false
     }
-    selectHabit(habit, date);
-    return true;
+    selectHabit(habit, date)
+    return true
   }
 
   function clearSelectedHabit() {
-    selectedHabitId.value = null;
+    selectedHabitId.value = null
   }
 
   function showArchivedHabits() {
-    listMode.value = 'archived';
+    listMode.value = 'archived'
   }
 
   function showActiveHabits() {
-    listMode.value = 'active';
+    listMode.value = 'active'
   }
 
   function resetListMode() {
-    listMode.value = resolvedDefaultListMode.value;
+    listMode.value = resolvedDefaultListMode.value
   }
 
   async function refreshHabits() {
     if (!plugin) {
-      return;
+      return
     }
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'habit-workspace:manual-refresh',
-    });
-    syncSelectedHabit();
+    })
+    syncSelectedHabit()
   }
 
   function isHabitArchived(habit: Habit) {
-    return Boolean(habit.archivedAt);
+    return Boolean(habit.archivedAt)
   }
 
   async function checkInHabit(habit: Habit) {
     if (isHabitArchived(habit)) {
-      showMessage(t('habit.archivedCannotCheckIn'));
-      return false;
+      showMessage(t('habit.archivedCannotCheckIn'))
+      return false
     }
 
-    const success = await checkIn(habit, selectedDate.value, undefined, habitCheckInTimePrecision.value);
+    const success = await checkIn(habit, selectedDate.value, undefined, habitCheckInTimePrecision.value)
     if (!success) {
-      return false;
+      return false
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value)
+      syncSelectedHabit()
     }
 
-    return true;
+    return true
   }
 
   async function incrementHabit(habit: Habit) {
     if (isHabitArchived(habit)) {
-      showMessage(t('habit.archivedCannotCheckIn'));
-      return false;
+      showMessage(t('habit.archivedCannotCheckIn'))
+      return false
     }
 
-    const success = await checkInCount(habit, selectedDate.value, 1, undefined, habitCheckInTimePrecision.value);
+    const success = await checkInCount(habit, selectedDate.value, 1, undefined, habitCheckInTimePrecision.value)
     if (!success) {
-      return false;
+      return false
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value)
+      syncSelectedHabit()
     }
 
-    return true;
+    return true
   }
 
   async function openHabitDoc(habit: Habit) {
     if (!habit.docId) {
-      return;
+      return
     }
-    await openDocumentAtLine(habit.docId, undefined, habit.blockId);
+    await openDocumentAtLine(habit.docId, undefined, habit.blockId)
   }
 
   async function openSelectedHabitDoc() {
     if (!selectedHabit.value) {
-      return;
+      return
     }
-    await openHabitDoc(selectedHabit.value);
+    await openHabitDoc(selectedHabit.value)
   }
 
   async function archiveSelectedHabit() {
     if (!selectedHabit.value || selectedHabit.value.archivedAt) {
-      return false;
+      return false
     }
 
-    const success = await archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'));
+    const success = await archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'))
     if (success) {
       await plugin?.requestRefresh?.({
         type: 'full',
         reason: 'habit-workspace:archive',
-      });
+      })
     }
-    return success;
+    return success
   }
 
   async function unarchiveSelectedHabit() {
     if (!selectedHabit.value || !selectedHabit.value.archivedAt) {
-      return false;
+      return false
     }
 
-    const success = await unarchiveHabit(selectedHabit.value);
+    const success = await unarchiveHabit(selectedHabit.value)
     if (success) {
       await plugin?.requestRefresh?.({
         type: 'full',
         reason: 'habit-workspace:unarchive',
-      });
+      })
     }
-    return success;
+    return success
   }
 
   async function markHabitMissedForDate(habit: Habit, date: string) {
     if (isHabitArchived(habit)) {
-      showMessage(t('habit.archivedCannotCheckIn'));
-      return false;
+      showMessage(t('habit.archivedCannotCheckIn'))
+      return false
     }
 
-    const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value);
+    const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value)
     if (!success) {
-      return false;
+      return false
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value)
+      syncSelectedHabit()
     }
 
-    return true;
+    return true
   }
 
   async function resetHabitRecordForDate(habit: Habit, date: string) {
-    const record = getRecordForDate(habit, date);
+    const record = getRecordForDate(habit, date)
     if (!record) {
-      return false;
+      return false
     }
 
-    const success = await resetHabitRecord(record);
+    const success = await resetHabitRecord(record)
     if (!success) {
-      return false;
+      return false
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value)
+      syncSelectedHabit()
     }
 
-    return true;
+    return true
   }
 
   async function handleMonthCellPrimaryAction(habit: Habit, date: string) {
-    const record = getRecordForDate(habit, date);
+    const record = getRecordForDate(habit, date)
     if (record?.status === 'missed') {
-      return await resetHabitRecordForDate(habit, date);
+      return await resetHabitRecordForDate(habit, date)
     }
 
     if (habit.type === 'binary') {
       if (isHabitArchived(habit)) {
-        showMessage(t('habit.archivedCannotCheckIn'));
-        return false;
+        showMessage(t('habit.archivedCannotCheckIn'))
+        return false
       }
-      return await checkIn(habit, date, undefined, habitCheckInTimePrecision.value);
+      return await checkIn(habit, date, undefined, habitCheckInTimePrecision.value)
     }
 
     if (isHabitArchived(habit)) {
-      showMessage(t('habit.archivedCannotCheckIn'));
-      return false;
+      showMessage(t('habit.archivedCannotCheckIn'))
+      return false
     }
-    return await checkInCount(habit, date, 1, undefined, habitCheckInTimePrecision.value);
+    return await checkInCount(habit, date, 1, undefined, habitCheckInTimePrecision.value)
   }
 
   return {
@@ -325,5 +332,5 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     markHabitMissedForDate,
     resetHabitRecordForDate,
     handleMonthCellPrimaryAction,
-  };
+  }
 }

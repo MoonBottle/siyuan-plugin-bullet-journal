@@ -1,88 +1,101 @@
 <template>
   <div class="pomodoro-complete-dialog">
     <!-- 时长不足警告 -->
-    <div v-if="isDurationTooShort && !saved" class="duration-warning">
+    <div
+      v-if="isDurationTooShort && !saved"
+      class="duration-warning"
+    >
       <span class="warning-icon">⚠️</span>
       <span class="warning-text">{{ durationWarningMessage }}</span>
     </div>
     <div class="dialog-content">
       <template v-if="!saved">
-        <!-- 左侧：卡片区域 -->
+        <!-- 左侧：事项信息卡片 -->
         <div class="dialog-left-column">
-          <!-- 项目卡片 -->
-          <Card
-            v-if="pending?.projectName"
-            :show-header="true"
-            :show-footer="pending.projectLinks && pending.projectLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').project }}</span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending.projectName }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.projectLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+          <ItemDetailContent
+            v-if="currentItem"
+            :item="currentItem"
+            :embedded="true"
+            :show-action-row="false"
+            :readonly="true"
+          />
+          <template v-else>
+            <Card
+              v-if="pending?.projectName"
+              :show-header="true"
+              :show-footer="pending.projectLinks && pending.projectLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').project }}</span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending.projectName }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.projectLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
 
-          <!-- 任务卡片 -->
-          <Card
-            v-if="pending?.taskName"
-            :show-header="true"
-            :show-footer="pending.taskLinks && pending.taskLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').task }}</span>
-              <span v-if="pending.taskLevel" class="task-level-badge" :class="'level-' + pending.taskLevel.toLowerCase()">
-                {{ pending.taskLevel }}
-              </span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending.taskName }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.taskLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+            <Card
+              v-if="pending?.taskName"
+              :show-header="true"
+              :show-footer="pending.taskLinks && pending.taskLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').task }}</span>
+                <span
+                  v-if="pending.taskLevel"
+                  class="task-level-badge"
+                  :class="`level-${pending.taskLevel.toLowerCase()}`"
+                >
+                  {{ pending.taskLevel }}
+                </span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending.taskName }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.taskLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
 
-          <!-- 事项卡片 -->
-          <Card
-            status="pending"
-            :show-header="true"
-            :show-footer="pending.itemLinks && pending.itemLinks.length > 0"
-            :hover-effect="false"
-          >
-            <template #header>
-              <span class="info-card-label">{{ t('todo').item }}</span>
-            </template>
-            <div class="info-card-content">
-              <span>{{ pending?.itemContent }}</span>
-            </div>
-            <template #footer>
-              <SyButton
-                v-for="link in pending.itemLinks"
-                :key="link.url"
-                type="link"
-                :text="link.name"
-                :href="link.url"
-              />
-            </template>
-          </Card>
+            <Card
+              status="pending"
+              :show-header="true"
+              :show-footer="pending.itemLinks && pending.itemLinks.length > 0"
+              :hover-effect="false"
+            >
+              <template #header>
+                <span class="info-card-label">{{ t('todo').item }}</span>
+              </template>
+              <div class="info-card-content">
+                <span>{{ pending?.itemContent }}</span>
+              </div>
+              <template #footer>
+                <SyButton
+                  v-for="link in pending.itemLinks"
+                  :key="link.url"
+                  type="link"
+                  :text="link.name"
+                  :href="link.url"
+                />
+              </template>
+            </Card>
+          </template>
         </div>
 
         <!-- 右侧：计时信息区域 -->
@@ -115,7 +128,9 @@
       </template>
       <template v-else>
         <div class="break-section">
-          <p class="break-hint">{{ t('settings').pomodoro.breakHint }}</p>
+          <p class="break-hint">
+            {{ t('settings').pomodoro.breakHint }}
+          </p>
           <div class="break-options">
             <button
               v-for="duration in breakDurations"
@@ -140,177 +155,231 @@
     <div class="dialog-actions">
       <template v-if="!saved">
         <template v-if="isDurationTooShort">
-          <button v-if="autoExtendEnabled" class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
-          <button class="discard-btn" @click="handleDiscard">{{ t('pomodoroComplete').discardRecord }}</button>
-          <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').confirmRecord }}</button>
+          <button
+            v-if="autoExtendEnabled"
+            class="extend-btn"
+            @click="handleExtend"
+          >
+            {{ t('pomodoroComplete').extendFocus }}
+          </button>
+          <button
+            class="discard-btn"
+            @click="handleDiscard"
+          >
+            {{ t('pomodoroComplete').discardRecord }}
+          </button>
+          <button
+            class="save-btn"
+            @click="handleSave"
+          >
+            {{ t('pomodoroComplete').confirmRecord }}
+          </button>
         </template>
         <template v-else>
-          <button v-if="autoExtendEnabled" class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
-          <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
+          <button
+            v-if="autoExtendEnabled"
+            class="extend-btn"
+            @click="handleExtend"
+          >
+            {{ t('pomodoroComplete').extendFocus }}
+          </button>
+          <button
+            class="save-btn"
+            @click="handleSave"
+          >
+            {{ t('pomodoroComplete').save }}
+          </button>
         </template>
       </template>
       <template v-else>
-        <button class="skip-btn" @click="handleClose">{{ t('settings').pomodoro.skipBreak }}</button>
-        <button class="start-break-btn" @click="handleStartBreak">{{ t('settings').pomodoro.startBreak }}</button>
+        <button
+          class="skip-btn"
+          @click="handleClose"
+        >
+          {{ t('settings').pomodoro.skipBreak }}
+        </button>
+        <button
+          class="start-break-btn"
+          @click="handleStartBreak"
+        >
+          {{ t('settings').pomodoro.startBreak }}
+        </button>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, computed, watch } from 'vue';
-import { usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { t } from '@/i18n';
-import { eventBus, Events } from '@/utils/eventBus';
-import type { PendingPomodoroCompletion } from '@/types/models';
-import Card from '@/components/common/Card.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import dayjs from '@/utils/dayjs';
-import { defaultPomodoroSettings } from '@/settings';
-import { removePendingCompletion } from '@/utils/pomodoroStorage';
+import type { PendingPomodoroCompletion } from '@/types/models'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  watch,
+} from 'vue'
+import Card from '@/components/common/Card.vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { defaultPomodoroSettings } from '@/settings'
+import {
+  usePomodoroStore,
+  useProjectStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { removePendingCompletion } from '@/utils/pomodoroStorage'
 
 const props = defineProps<{
-  pending: PendingPomodoroCompletion;
-  closeDialog: () => void;
-}>();
+  pending: PendingPomodoroCompletion
+  closeDialog: () => void
+}>()
 
-const pomodoroStore = usePomodoroStore();
-const plugin = usePlugin() as any;
+const pomodoroStore = usePomodoroStore()
+const projectStore = useProjectStore()
+const plugin = usePlugin() as any
 
-const description = ref('');
-const saved = ref(false);
-const discarded = ref(false);
-const skipAutoSave = ref(false);
+// 通过 blockId 从 projectStore 获取真实 Item，复用 ItemDetailContent
+const currentItem = computed(() => {
+  if (!props.pending?.blockId) return undefined
+  return projectStore.getItemByBlockId(props.pending.blockId)
+})
+
+const description = ref('')
+const saved = ref(false)
+const discarded = ref(false)
+const skipAutoSave = ref(false)
 
 // 从设置读取休息时长预设
 const breakDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15]
+})
 
 // 从设置读取默认休息时长
 const defaultBreakDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultBreakDuration ?? 5;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultBreakDuration ?? 5
+})
 
 // 当前选中的休息时长
-const selectedBreakDuration = ref(defaultBreakDuration.value);
+const selectedBreakDuration = ref(defaultBreakDuration.value)
 
 // 默认选中设置的默认值
 watch(defaultBreakDuration, (newVal) => {
-  selectedBreakDuration.value = newVal;
-}, { immediate: true });
+  selectedBreakDuration.value = newVal
+}, { immediate: true })
 
 // 监听自动延迟事件，关闭弹窗并跳过自动保存
 const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-  skipAutoSave.value = true;
-  props.closeDialog();
-});
+  skipAutoSave.value = true
+  props.closeDialog()
+})
 
 // 最小专注时间（分钟）
 const minFocusMinutes = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5
+})
 
 // 专注时长是否过短
 const isDurationTooShort = computed(() => {
-  const duration = props.pending?.durationMinutes || 0;
-  return duration < minFocusMinutes.value;
-});
+  const duration = props.pending?.durationMinutes || 0
+  return duration < minFocusMinutes.value
+})
 
 // 时长警告信息
 const durationWarningMessage = computed(() => {
-  return t('pomodoroComplete').durationTooShortMessage
-    .replace('{actual}', String(props.pending?.durationMinutes || 0))
-    .replace('{min}', String(minFocusMinutes.value));
-});
+  return t('pomodoroComplete').durationTooShortMessage.replace('{actual}', String(props.pending?.durationMinutes || 0)).replace('{min}', String(minFocusMinutes.value))
+})
 
 // 格式化的开始时间
 const formattedStartTime = computed(() => {
-  if (!props.pending?.startTime) return '--:--';
-  return dayjs(props.pending.startTime).format('HH:mm');
-});
+  if (!props.pending?.startTime) return '--:--'
+  return dayjs(props.pending.startTime).format('HH:mm')
+})
 
 // 格式化的结束时间
 const formattedEndTime = computed(() => {
-  if (!props.pending?.endTime) return '--:--';
-  return dayjs(props.pending.endTime).format('HH:mm');
-});
+  if (!props.pending?.endTime) return '--:--'
+  return dayjs(props.pending.endTime).format('HH:mm')
+})
 
-const autoExtendRemaining = computed(() => pomodoroStore.autoExtendRemainingSeconds);
+const autoExtendRemaining = computed(() => pomodoroStore.autoExtendRemainingSeconds)
 
 const autoExtendEnabled = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.autoExtendEnabled ?? false;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.autoExtendEnabled ?? false
+})
 
 async function handleSave() {
-  if (!plugin || !props.pending) return;
+  if (!plugin || !props.pending) return
   const success = await pomodoroStore.savePomodoroRecordFromPending(
     plugin,
     props.pending,
-    description.value
-  );
+    description.value,
+  )
   if (success) {
-    saved.value = true;
+    saved.value = true
   }
 }
 
 function handleInputFocus() {
-  pomodoroStore.cancelAutoExtend();
+  pomodoroStore.cancelAutoExtend()
 }
 
 function handleExtend() {
-  pomodoroStore.manualExtendPomodoro(plugin);
+  pomodoroStore.manualExtendPomodoro(plugin)
 }
 
 function selectBreakDuration(minutes: number) {
-  selectedBreakDuration.value = minutes;
+  selectedBreakDuration.value = minutes
 }
 
 function handleStartBreak() {
-  pomodoroStore.startBreak(selectedBreakDuration.value, plugin);
-  props.closeDialog();
+  pomodoroStore.startBreak(selectedBreakDuration.value, plugin)
+  props.closeDialog()
 }
 
 function handleClose() {
-  props.closeDialog();
+  props.closeDialog()
 }
 
 async function handleDiscard() {
-  discarded.value = true;
+  discarded.value = true
   // 删除待完成记录
   if (plugin) {
-    await removePendingCompletion(plugin);
+    await removePendingCompletion(plugin)
   }
   // 悬浮窗和底栏已在倒计时结束时隐藏，无需额外处理
-  props.closeDialog();
+  props.closeDialog()
 }
 
 onBeforeUnmount(async () => {
   // 清理自动延迟事件监听
-  unsubscribeAutoExtend();
+  unsubscribeAutoExtend()
 
   // 自动延迟关闭时不保存
   if (skipAutoSave.value) {
-    return;
+    return
   }
   // 如果用户选择不记录，则不保存
   if (discarded.value) {
-    return;
+    return
   }
   // 正常情况：未保存且专注时长足够，自动保存
   if (!saved.value && props.pending && !isDurationTooShort.value) {
     await pomodoroStore.savePomodoroRecordFromPending(
       plugin,
       props.pending,
-      description.value
-    );
+      description.value,
+    )
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -462,17 +531,17 @@ onBeforeUnmount(async () => {
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
-    color: #4CAF50;
+    color: #4caf50;
   }
 
   &.level-l2 {
     background: rgba(255, 152, 0, 0.15);
-    color: #FF9800;
+    color: #ff9800;
   }
 
   &.level-l3 {
     background: rgba(33, 150, 243, 0.15);
-    color: #2196F3;
+    color: #2196f3;
   }
 }
 
@@ -536,14 +605,14 @@ onBeforeUnmount(async () => {
 
 .countdown-label {
   font-size: 13px;
-  color: #FF9800;
+  color: #ff9800;
   font-weight: 500;
 }
 
 .countdown-value {
   font-size: 14px;
   font-weight: 700;
-  color: #FF9800;
+  color: #ff9800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -642,7 +711,7 @@ onBeforeUnmount(async () => {
 
 .warning-text {
   font-size: 13px;
-  color: #FF9800;
+  color: #ff9800;
   font-weight: 500;
 }
 

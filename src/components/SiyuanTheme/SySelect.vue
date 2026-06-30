@@ -1,9 +1,14 @@
 <template>
-  <div class="sy-select" v-click-outside="closeDropdown">
+  <div
+    v-click-outside="closeDropdown"
+    class="sy-select"
+  >
     <button
       ref="triggerRef"
       class="sy-select__trigger"
-      :class="{ 'is-open': isOpen, 'is-disabled': disabled }"
+      :class="{
+        'is-open': isOpen, 'is-disabled': disabled,
+      }"
       :disabled="disabled"
       @click="toggleDropdown"
     >
@@ -21,17 +26,31 @@
       <div
         v-if="isOpen"
         ref="menuRef"
-        class="sy-select__menu"
+        class="b3-menu sy-select__menu"
         :style="menuStyle"
       >
-        <div
-          v-for="option in options"
-          :key="getOptionValue(option)"
-          class="sy-select__option"
-          :class="{ 'is-active': isOptionActive(option) }"
-          @click="selectOption(option)"
-        >
-          {{ getOptionLabel(option) }}
+        <div class="b3-menu__items">
+          <div
+            v-for="option in options"
+            :key="getOptionValue(option)"
+            class="b3-menu__item"
+            :class="{
+              'b3-menu__item--selected': isOptionActive(option),
+              'b3-menu__item--current': isCurrent(option),
+            }"
+            @click="selectOption(option)"
+            @mouseenter="setCurrent(option)"
+            @mouseleave="clearCurrent"
+          >
+            <svg
+              v-if="multiple"
+              class="sy-select__check"
+              :class="{ 'is-checked': isOptionActive(option) }"
+            >
+              <use xlink:href="#iconSelect"></use>
+            </svg>
+            <span class="b3-menu__label">{{ getOptionLabel(option) }}</span>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -39,212 +58,293 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue'
 
 export interface SySelectOption {
-  value: string;
-  label: string;
+  value: string | number
+  label: string
 }
 
 interface Props {
-  modelValue: string;
-  options: SySelectOption[];
-  placeholder?: string;
-  disabled?: boolean;
-  placement?: 'top' | 'bottom';
+  modelValue: string | number | (string | number)[]
+  options: SySelectOption[]
+  placeholder?: string
+  disabled?: boolean
+  placement?: 'top' | 'bottom'
+  multiple?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择',
   disabled: false,
-  placement: 'bottom'
-});
+  placement: 'bottom',
+  multiple: false,
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
-  change: [value: string];
-}>();
+  'update:modelValue': [value: string | number | (string | number)[]]
+  'change': [value: string | number | (string | number)[]]
+}>()
 
-const isOpen = ref(false);
-const menuRef = ref<HTMLElement>();
-const triggerRef = ref<HTMLElement>();
-const menuStyle = ref<Record<string, string>>({});
+const isOpen = ref(false)
+const menuRef = ref<HTMLElement>()
+const triggerRef = ref<HTMLElement>()
+const menuStyle = ref<Record<string, string>>({})
+const currentValue = ref<string | number | null>(null)
 
 function getOptionLabel(option: SySelectOption): string {
-  return option.label || '';
+  return option.label || ''
 }
 
-function getOptionValue(option: SySelectOption): string {
-  return option.value || '';
+function getOptionValue(option: SySelectOption): string | number {
+  return option.value
 }
 
 function isOptionActive(option: SySelectOption): boolean {
-  return getOptionValue(option) === props.modelValue;
+  const value = getOptionValue(option)
+  if (props.multiple) {
+    return Array.isArray(props.modelValue) && props.modelValue.includes(value)
+  }
+  return value === props.modelValue
+}
+
+function isCurrent(option: SySelectOption): boolean {
+  return getOptionValue(option) === currentValue.value
+}
+
+function setCurrent(option: SySelectOption): void {
+  currentValue.value = getOptionValue(option)
+}
+
+function clearCurrent(): void {
+  currentValue.value = null
 }
 
 const displayLabel = computed(() => {
-  const selected = props.options.find(opt => isOptionActive(opt));
-  return selected ? getOptionLabel(selected) : props.placeholder;
-});
+  if (props.multiple) {
+    if (!Array.isArray(props.modelValue) || props.modelValue.length === 0) {
+      return props.placeholder
+    }
+    if (props.modelValue.length === props.options.length) {
+      return props.placeholder
+    }
+    const labels = props.modelValue
+      .map((val) => props.options.find((opt) => getOptionValue(opt) === val))
+      .filter(Boolean)
+      .map((opt) => getOptionLabel(opt!))
+    return labels.join(', ')
+  }
+  const selected = props.options.find((opt) => isOptionActive(opt))
+  return selected ? getOptionLabel(selected) : props.placeholder
+})
 
 async function toggleDropdown() {
-  if (props.disabled) return;
-  isOpen.value = !isOpen.value;
+  if (props.disabled) return
+  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    await nextTick();
-    updateMenuPosition();
+    await nextTick()
+    updateMenuPosition()
   }
 }
 
 function closeDropdown() {
-  isOpen.value = false;
+  isOpen.value = false
+  currentValue.value = null
 }
 
 function selectOption(option: SySelectOption) {
-  const value = getOptionValue(option);
-  emit('update:modelValue', value);
-  emit('change', value);
-  isOpen.value = false;
+  const value = getOptionValue(option)
+  if (props.multiple) {
+    const current = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+    const index = current.indexOf(value)
+    if (index >= 0) {
+      current.splice(index, 1)
+    } else {
+      current.push(value)
+    }
+    emit('update:modelValue', current)
+    emit('change', current)
+  } else {
+    emit('update:modelValue', value)
+    emit('change', value)
+    isOpen.value = false
+  }
 }
 
 function getElementViewportRect(element: HTMLElement): DOMRect {
-  return element.getBoundingClientRect();
+  return element.getBoundingClientRect()
 }
 
 function calculateMenuPosition(
   triggerRect: DOMRect,
   menuHeight: number,
-  menuWidth: number
-): { top: number; left: number } {
-  const gap = 4;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+  menuWidth: number,
+): { top: number, left: number } {
+  const gap = 4
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
 
-  let top: number;
-  let placement = props.placement;
+  let top: number
+  const placement = props.placement
 
   if (placement === 'top') {
-    top = triggerRect.top - menuHeight - gap;
+    top = triggerRect.top - menuHeight - gap
     if (top < 0) {
-      top = triggerRect.bottom + gap;
+      top = triggerRect.bottom + gap
     }
   } else {
-    top = triggerRect.bottom + gap;
+    top = triggerRect.bottom + gap
     if (top + menuHeight > viewportHeight) {
-      top = triggerRect.top - menuHeight - gap;
+      top = triggerRect.top - menuHeight - gap
     }
   }
 
-  if (top < 0) top = gap;
+  if (top < 0) top = gap
   if (top + menuHeight > viewportHeight) {
-    top = Math.max(gap, viewportHeight - menuHeight - gap);
+    top = Math.max(gap, viewportHeight - menuHeight - gap)
   }
 
-  let left = triggerRect.left;
+  let left = triggerRect.left
   if (left + menuWidth > viewportWidth) {
-    left = Math.max(gap, viewportWidth - menuWidth - gap);
+    left = Math.max(gap, viewportWidth - menuWidth - gap)
   }
-  if (left < 0) left = gap;
+  if (left < 0) left = gap
 
-  return { top, left };
+  return {
+    top,
+    left,
+  }
 }
 
 function updateMenuPosition() {
-  const trigger = triggerRef.value;
-  const menu = menuRef.value;
-  if (!trigger) return;
+  const trigger = triggerRef.value
+  const menu = menuRef.value
+  if (!trigger) return
 
-  const triggerRect = getElementViewportRect(trigger);
-  let menuHeight = 200;
+  const triggerRect = getElementViewportRect(trigger)
+
+  // 先获取菜单的实际内容高度
+  let contentHeight = 0
+  let contentWidth = 0
   if (menu) {
-    const menuRect = menu.getBoundingClientRect();
-    menuHeight = Math.min(menuRect.height || 200, 200);
+    const menuRect = menu.getBoundingClientRect()
+    contentHeight = menuRect.height || 0
+    contentWidth = menuRect.width || 0
   }
 
-  const menuWidth = Math.max(triggerRect.width, 160);
-  const { top, left } = calculateMenuPosition(triggerRect, menuHeight, menuWidth);
+  // 如果没有获取到高度，根据选项数量估算
+  if (contentHeight === 0 && props.options.length > 0) {
+    const estimatedItemHeight = 32 // 每个选项大约32px
+    contentHeight = props.options.length * estimatedItemHeight
+  }
+
+  // 计算最大可用高度（视口高度减去边距）
+  const viewportHeight = window.innerHeight
+  const gap = 4
+  const maxAvailableHeight = viewportHeight - gap * 2
+
+  // 使用内容高度，但不超过视口可用高度
+  const menuHeight = Math.min(contentHeight || 200, maxAvailableHeight)
+  const menuWidth = Math.max(Math.max(triggerRect.width, contentWidth), 160)
+
+  const {
+    top,
+    left,
+  } = calculateMenuPosition(triggerRect, menuHeight, menuWidth)
 
   menuStyle.value = {
     position: 'fixed',
     top: `${top}px`,
     left: `${left}px`,
     width: `${menuWidth}px`,
-    maxHeight: '200px',
-    zIndex: '9999'
-  };
+    maxHeight: `${maxAvailableHeight}px`,
+    zIndex: '9999',
+    overflow: 'hidden',
+  }
 }
 
-let resizeObserver: ResizeObserver | null = null;
-let scrollListeners: { element: Element; listener: EventListener }[] = [];
+let resizeObserver: ResizeObserver | null = null
+let scrollListeners: { element: Element | Document, listener: EventListener }[] = []
 
-function getScrollableAncestors(element: HTMLElement): Element[] {
-  const ancestors: Element[] = [];
-  let current = element.parentElement;
+function getScrollableAncestors(element: HTMLElement): (Element | Document)[] {
+  const ancestors: (Element | Document)[] = []
+  let current = element.parentElement
 
   while (current) {
-    const style = window.getComputedStyle(current);
-    const overflow = style.overflow + style.overflowX + style.overflowY;
+    const style = window.getComputedStyle(current)
+    const overflow = style.overflow + style.overflowX + style.overflowY
     if (overflow.includes('auto') || overflow.includes('scroll')) {
-      ancestors.push(current);
+      ancestors.push(current)
     }
-    current = current.parentElement;
+    current = current.parentElement
   }
-  ancestors.push(document);
-  return ancestors;
+  ancestors.push(document)
+  return ancestors
 }
 
 function addScrollListeners() {
-  const trigger = triggerRef.value;
-  if (!trigger) return;
-  const scrollableAncestors = getScrollableAncestors(trigger);
-  scrollableAncestors.forEach(ancestor => {
-    const listener = () => updateMenuPosition();
-    ancestor.addEventListener('scroll', listener, true);
-    scrollListeners.push({ element: ancestor, listener });
-  });
+  const trigger = triggerRef.value
+  if (!trigger) return
+  const scrollableAncestors = getScrollableAncestors(trigger)
+  scrollableAncestors.forEach((ancestor) => {
+    const listener = () => updateMenuPosition()
+    ancestor.addEventListener('scroll', listener, true)
+    scrollListeners.push({
+      element: ancestor,
+      listener,
+    })
+  })
 }
 
 function removeScrollListeners() {
-  scrollListeners.forEach(({ element, listener }) => {
-    element.removeEventListener('scroll', listener, true);
-  });
-  scrollListeners = [];
+  scrollListeners.forEach(({
+    element,
+    listener,
+  }) => {
+    element.removeEventListener('scroll', listener, true)
+  })
+  scrollListeners = []
 }
 
 watch(isOpen, (open) => {
   if (open) {
     if (typeof ResizeObserver !== 'undefined' && !resizeObserver) {
-      resizeObserver = new ResizeObserver(() => updateMenuPosition());
-      resizeObserver.observe(document.body);
+      resizeObserver = new ResizeObserver(() => updateMenuPosition())
+      resizeObserver.observe(document.body)
     } else {
-      window.addEventListener('resize', updateMenuPosition);
+      window.addEventListener('resize', updateMenuPosition)
     }
-    addScrollListeners();
+    addScrollListeners()
   } else {
     if (resizeObserver) {
-      resizeObserver.disconnect();
-      resizeObserver = null;
+      resizeObserver.disconnect()
+      resizeObserver = null
     }
-    window.removeEventListener('resize', updateMenuPosition);
-    removeScrollListeners();
+    window.removeEventListener('resize', updateMenuPosition)
+    removeScrollListeners()
   }
-});
+})
 
 const vClickOutside = {
   mounted(el: HTMLElement, binding: any) {
     (el as any)._clickOutside = (event: Event) => {
       if (!(el === event.target || el.contains(event.target as Node))) {
-        binding.value();
+        binding.value()
       }
-    };
-    document.addEventListener('click', (el as any)._clickOutside, true);
+    }
+    document.addEventListener('click', (el as any)._clickOutside, true)
   },
   unmounted(el: HTMLElement) {
     if ((el as any)._clickOutside) {
-      document.removeEventListener('click', (el as any)._clickOutside, true);
+      document.removeEventListener('click', (el as any)._clickOutside, true)
     }
-  }
-};
+  },
+}
 </script>
 
 <style lang="scss" scoped>
@@ -289,6 +389,7 @@ const vClickOutside = {
   &__label {
     flex: 1;
     text-align: left;
+    line-height: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -310,45 +411,34 @@ const vClickOutside = {
     }
   }
 
-  &__menu {
-    overflow-y: auto;
-    background: var(--b3-theme-surface);
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 4px;
-    min-width: 100px;
+  &__check {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    fill: var(--b3-theme-on-surface);
+    opacity: 0.3;
+    margin-right: 4px;
+
+    &.is-checked {
+      fill: var(--b3-theme-primary);
+      opacity: 1;
+    }
   }
 
-  &__option {
-    padding: 6px 12px;
-    margin: 2px 0;
-    font-size: 13px;
-    border-radius: 6px;
-    color: var(--b3-theme-on-surface);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
+  &__menu {
     overflow: hidden;
-    text-overflow: ellipsis;
 
-    &:hover {
-      background: var(--b3-theme-primary-lightest);
-      color: var(--b3-theme-primary);
-    }
+    .b3-menu__items {
+      overflow-y: auto;
+      max-height: inherit;
 
-    &.is-active {
-      background: var(--b3-theme-primary-lightest);
-      color: var(--b3-theme-primary);
-      font-weight: 500;
-    }
-
-    &:first-child {
-      margin-top: 0;
-    }
-
-    &:last-child {
-      margin-bottom: 0;
+      // 确保内容宽度自适应，不被截断
+      .b3-menu__item {
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
     }
   }
 }

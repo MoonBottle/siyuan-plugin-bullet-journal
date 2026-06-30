@@ -8,13 +8,13 @@
 
 ### 2.1 设置分类
 
-| 分类 | 描述 | 状态 |
-|------|------|------|
-| 目录配置 | 配置扫描的项目文档目录 | ✅ |
-| 分组管理 | 管理项目分组 | ✅ |
-| 午休时间 | 设置午休时间段 | ✅ |
-| AI 配置 | 配置 AI 供应商 | ✅ |
-| MCP 配置 | 生成 MCP 服务器配置 | ✅ |
+| 分类     | 描述                   | 状态 |
+| -------- | ---------------------- | ---- |
+| 目录配置 | 配置扫描的项目文档目录 | ✅   |
+| 分组管理 | 管理项目分组           | ✅   |
+| 午休时间 | 设置午休时间段         | ✅   |
+| AI 配置  | 配置 AI 供应商         | ✅   |
+| MCP 配置 | 生成 MCP 服务器配置    | ✅   |
 
 ### 2.2 验收标准
 
@@ -30,15 +30,16 @@
 ### 3.1 目录配置
 
 #### 功能描述
+
 配置插件扫描的项目文档目录路径。
 
 #### 设置项
 
-| 设置 | 类型 | 说明 |
-|------|------|------|
-| 目录列表 | 数组 | 扫描的目录路径列表 |
-| 启用状态 | 布尔 | 每个目录可单独启用/禁用 |
-| 分组关联 | 字符串 | 目录关联的分组 ID |
+| 设置     | 类型   | 说明                    |
+| -------- | ------ | ----------------------- |
+| 目录列表 | 数组   | 扫描的目录路径列表      |
+| 启用状态 | 布尔   | 每个目录可单独启用/禁用 |
+| 分组关联 | 字符串 | 目录关联的分组 ID       |
 
 #### 操作
 
@@ -77,13 +78,14 @@ directories: []
 ### 3.2 分组管理
 
 #### 功能描述
+
 管理项目分组，用于视图筛选。
 
 #### 设置项
 
-| 设置 | 类型 | 说明 |
-|------|------|------|
-| 分组列表 | 数组 | 所有分组 |
+| 设置     | 类型   | 说明               |
+| -------- | ------ | ------------------ |
+| 分组列表 | 数组   | 所有分组           |
 | 默认分组 | 字符串 | 新建目录的默认分组 |
 
 #### 操作
@@ -97,45 +99,47 @@ directories: []
 
 ```typescript
 interface ProjectGroup {
-  id: string;    // 分组 ID
-  name: string;  // 分组名称
+  id: string // 分组 ID
+  name: string // 分组名称
 }
 ```
 
 ### 3.3 午休时间
 
 #### 功能描述
+
 设置午休时间段，用于日历视图显示。
 
 #### 设置项
 
-| 设置 | 类型 | 默认值 |
-|------|------|--------|
-| 午休开始 | 时间 | 12:00 |
-| 午休结束 | 时间 | 13:00 |
+| 设置     | 类型 | 默认值 |
+| -------- | ---- | ------ |
+| 午休开始 | 时间 | 12:00  |
+| 午休结束 | 时间 | 13:00  |
 
 ### 3.4 AI 配置
 
 #### 功能描述
+
 配置 AI 对话功能的供应商。
 
 #### 设置项
 
-| 设置 | 类型 | 说明 |
-|------|------|------|
-| 供应商列表 | 数组 | 所有 AI 供应商配置 |
+| 设置       | 类型   | 说明                |
+| ---------- | ------ | ------------------- |
+| 供应商列表 | 数组   | 所有 AI 供应商配置  |
 | 活跃供应商 | 字符串 | 当前使用的供应商 ID |
 
 #### 供应商配置
 
 ```typescript
 interface AIProviderConfig {
-  id: string;       // 供应商 ID
-  name: string;     // 显示名称
-  apiUrl: string;   // API 地址
-  apiKey: string;   // API 密钥
-  model: string;    // 默认模型
-  enabled: boolean; // 是否启用
+  id: string // 供应商 ID
+  name: string // 显示名称
+  apiUrl: string // API 地址
+  apiKey: string // API 密钥
+  model: string // 默认模型
+  enabled: boolean // 是否启用
 }
 ```
 
@@ -150,6 +154,7 @@ interface AIProviderConfig {
 ### 3.5 MCP 配置
 
 #### 功能描述
+
 生成 MCP 服务器配置供外部 AI 助手使用。
 
 #### 操作
@@ -181,22 +186,22 @@ interface AIProviderConfig {
 ```typescript
 // 设置数据结构
 interface SettingsData {
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  lunchBreakStart: string;
-  lunchBreakEnd: string;
-  todoDock: TodoDockSettings;
+  directories: ProjectDirectory[]
+  groups: ProjectGroup[]
+  defaultGroup: string
+  lunchBreakStart: string
+  lunchBreakEnd: string
+  todoDock: TodoDockSettings
   ai?: {
-    providers: AIProviderConfig[];
-    activeProviderId: string | null;
-  };
+    providers: AIProviderConfig[]
+    activeProviderId: string | null
+  }
 }
 
 // AI 聊天记录（单独存储）
 interface AIChatHistory {
-  conversations: unknown[];
-  currentConversationId: string | null;
+  conversations: unknown[]
+  currentConversationId: string | null
 }
 ```
 
@@ -217,16 +222,16 @@ const defaultSettings: SettingsData = {
     providers: [],
     activeProviderId: null
   }
-};
+}
 ```
 
 ### 4.3 存储方式
 
-| 数据 | 存储文件 | 说明 |
-|------|----------|------|
-| 设置 | `settings.json` | 插件主要配置 |
-| AI 聊天记录 | `ai-chat-history.json` | 对话历史 |
-| 活跃番茄钟 | `active-pomodoro.json` | 进行中的番茄钟 |
+| 数据        | 存储文件               | 说明           |
+| ----------- | ---------------------- | -------------- |
+| 设置        | `settings.json`        | 插件主要配置   |
+| AI 聊天记录 | `ai-chat-history.json` | 对话历史       |
+| 活跃番茄钟  | `active-pomodoro.json` | 进行中的番茄钟 |
 
 ### 4.4 文件结构
 

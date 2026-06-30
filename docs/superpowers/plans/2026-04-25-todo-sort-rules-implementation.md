@@ -42,6 +42,7 @@
 ### Task 1: Add Persistent Sort Rule Types And Defaults
 
 **Files:**
+
 - Modify: `src/settings/types.ts`
 - Modify: `src/stores/settingsStore.ts`
 - Modify: `src/index.ts`
@@ -50,34 +51,34 @@
 - [ ] **Step 1: Add the sort-rule types to `src/settings/types.ts`**
 
 ```ts
-export type TodoSortField =
-  | 'priority'
-  | 'time'
-  | 'date'
-  | 'reminderTime'
-  | 'project'
-  | 'task'
-  | 'content';
+export type TodoSortField
+  = | 'priority'
+    | 'time'
+    | 'date'
+    | 'reminderTime'
+    | 'project'
+    | 'task'
+    | 'content'
 
-export type TodoSortDirection = 'asc' | 'desc';
+export type TodoSortDirection = 'asc' | 'desc'
 
 export interface TodoSortRule {
-  field: TodoSortField;
-  direction: TodoSortDirection;
+  field: TodoSortField
+  direction: TodoSortDirection
 }
 
 export interface TodoDockSettings {
-  hideCompleted: boolean;
-  hideAbandoned: boolean;
-  showLinks: boolean;
-  showReminderAndRecurring: boolean;
-  sortRules: TodoSortRule[];
+  hideCompleted: boolean
+  hideAbandoned: boolean
+  showLinks: boolean
+  showReminderAndRecurring: boolean
+  sortRules: TodoSortRule[]
 }
 
 export const defaultTodoSortRules: TodoSortRule[] = [
   { field: 'priority', direction: 'asc' },
   { field: 'time', direction: 'asc' },
-];
+]
 ```
 
 - [ ] **Step 2: Wire the default into `src/stores/settingsStore.ts` state and load/save paths**
@@ -129,20 +130,20 @@ it('falls back to default todo sort rules when persisted config omits sortRules'
       showLinks: true,
       showReminderAndRecurring: true,
     },
-  } as any;
+  } as any
 
   const sortRules = Array.isArray(settings.todoDock?.sortRules) && settings.todoDock.sortRules.length > 0
     ? settings.todoDock.sortRules
     : [
         { field: 'priority', direction: 'asc' },
         { field: 'time', direction: 'asc' },
-      ];
+      ]
 
   expect(sortRules).toEqual([
     { field: 'priority', direction: 'asc' },
     { field: 'time', direction: 'asc' },
-  ]);
-});
+  ])
+})
 ```
 
 - [ ] **Step 5: Run the focused store test file**
@@ -161,6 +162,7 @@ git commit -m "feat(todo): add persistent sort rule settings"
 ### Task 2: Centralize Todo Sorting In `projectStore`
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts`
 - Test: `test/stores/projectStore.test.ts`
 
@@ -168,11 +170,12 @@ git commit -m "feat(todo): add persistent sort rule settings"
 
 ```ts
 function normalizeString(value?: string): string {
-  return (value || '').toLocaleLowerCase();
+  return (value || '').toLocaleLowerCase()
 }
 
 function normalizeReminderTime(item: Item): number | null {
-  if (!item.reminder?.enabled) return null;
+  if (!item.reminder?.enabled)
+    return null
   return calculateReminderTime(
     item.date,
     item.startDateTime,
@@ -180,14 +183,17 @@ function normalizeReminderTime(item: Item): number | null {
     undefined,
     undefined,
     item.reminder,
-  );
+  )
 }
 
 function compareNullableNumber(a: number | null, b: number | null, direction: TodoSortDirection): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  return direction === 'asc' ? a - b : b - a;
+  if (a == null && b == null)
+    return 0
+  if (a == null)
+    return 1
+  if (b == null)
+    return -1
+  return direction === 'asc' ? a - b : b - a
 }
 ```
 
@@ -199,8 +205,9 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
     if (rule.field === 'priority') {
       const diff = rule.direction === 'asc'
         ? comparePriority(a.priority, b.priority)
-        : comparePriority(b.priority, a.priority);
-      if (diff !== 0) return diff;
+        : comparePriority(b.priority, a.priority)
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'time') {
@@ -208,64 +215,70 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         a.startDateTime ? Date.parse(a.startDateTime.replace(' ', 'T')) : null,
         b.startDateTime ? Date.parse(b.startDateTime.replace(' ', 'T')) : null,
         rule.direction,
-      );
-      if (diff !== 0) return diff;
+      )
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'date') {
       const diff = rule.direction === 'asc'
         ? a.date.localeCompare(b.date)
-        : b.date.localeCompare(a.date);
-      if (diff !== 0) return diff;
+        : b.date.localeCompare(a.date)
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'reminderTime') {
-      const diff = compareNullableNumber(normalizeReminderTime(a), normalizeReminderTime(b), rule.direction);
-      if (diff !== 0) return diff;
+      const diff = compareNullableNumber(normalizeReminderTime(a), normalizeReminderTime(b), rule.direction)
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'project') {
       const diff = rule.direction === 'asc'
         ? normalizeString(a.project?.name).localeCompare(normalizeString(b.project?.name))
-        : normalizeString(b.project?.name).localeCompare(normalizeString(a.project?.name));
-      if (diff !== 0) return diff;
+        : normalizeString(b.project?.name).localeCompare(normalizeString(a.project?.name))
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'task') {
       const diff = rule.direction === 'asc'
         ? normalizeString(a.task?.name).localeCompare(normalizeString(b.task?.name))
-        : normalizeString(b.task?.name).localeCompare(normalizeString(a.task?.name));
-      if (diff !== 0) return diff;
+        : normalizeString(b.task?.name).localeCompare(normalizeString(a.task?.name))
+      if (diff !== 0)
+        return diff
     }
 
     if (rule.field === 'content') {
       const diff = rule.direction === 'asc'
         ? normalizeString(a.content).localeCompare(normalizeString(b.content))
-        : normalizeString(b.content).localeCompare(normalizeString(a.content));
-      if (diff !== 0) return diff;
+        : normalizeString(b.content).localeCompare(normalizeString(a.content))
+      if (diff !== 0)
+        return diff
     }
   }
 
-  return 0;
+  return 0
 }
 ```
 
 - [ ] **Step 3: Replace the three handwritten `items.sort(...)` blocks with the shared comparator**
 
 ```ts
-const settingsStore = useSettingsStore();
+const settingsStore = useSettingsStore()
 const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
   ? settingsStore.todoDock.sortRules
-  : defaultTodoSortRules;
+  : defaultTodoSortRules
 
-items.sort((a, b) => compareTodoItems(a, b, sortRules));
+items.sort((a, b) => compareTodoItems(a, b, sortRules))
 ```
 
 - [ ] **Step 4: Add focused sort coverage to `test/stores/projectStore.test.ts`**
 
 ```ts
 it('uses the default priority then time rules for pending items', () => {
-  const store = useProjectStore();
+  const store = useProjectStore()
   store.$patch({
     currentDate: '2026-04-25',
     projects: [createMockProject([
@@ -273,20 +286,20 @@ it('uses the default priority then time rules for pending items', () => {
       mkItem('2026-04-25', 'medium-early', { priority: 'medium', startDateTime: '2026-04-25 09:00:00' }),
       mkItem('2026-04-25', 'high-early', { priority: 'high', startDateTime: '2026-04-25 08:00:00' }),
     ])],
-  });
+  })
 
-  const result = store.getFilteredAndSortedItems({ groupId: '' });
-  expect(result.map(item => item.blockId)).toEqual(['high-early', 'high-late', 'medium-early']);
-});
+  const result = store.getFilteredAndSortedItems({ groupId: '' })
+  expect(result.map(item => item.blockId)).toEqual(['high-early', 'high-late', 'medium-early'])
+})
 
 it('supports reminderTime desc while keeping items without reminders last', () => {
-  const store = useProjectStore();
+  const store = useProjectStore()
   const items = [
     mkItem('2026-04-25', 'no-reminder'),
     mkItem('2026-04-25', 'reminder-a', { reminder: { enabled: true, triggerType: 'relative', minutesBefore: 30 } as any }),
     mkItem('2026-04-25', 'reminder-b', { reminder: { enabled: true, triggerType: 'relative', minutesBefore: 10 } as any }),
-  ];
-  store.$patch({ currentDate: '2026-04-25', projects: [createMockProject(items)] });
+  ]
+  store.$patch({ currentDate: '2026-04-25', projects: [createMockProject(items)] })
 
   const result = store.getFilteredAndSortedItems({
     groupId: '',
@@ -294,10 +307,10 @@ it('supports reminderTime desc while keeping items without reminders last', () =
       { field: 'reminderTime', direction: 'desc' },
       { field: 'content', direction: 'asc' },
     ] as any,
-  } as any);
+  } as any)
 
-  expect(result.at(-1)?.blockId).toBe('no-reminder');
-});
+  expect(result.at(-1)?.blockId).toBe('no-reminder')
+})
 ```
 
 - [ ] **Step 5: Run the store test file again**
@@ -316,6 +329,7 @@ git commit -m "feat(todo): centralize multi-rule item sorting"
 ### Task 3: Add The Desktop Todo Sort UI
 
 **Files:**
+
 - Modify: `src/tabs/DesktopTodoDock.vue`
 - Modify: `src/settings/types.ts`
 - Test: `test/components/todo/TodoSharedUi.test.ts`
@@ -323,7 +337,7 @@ git commit -m "feat(todo): centralize multi-rule item sorting"
 - [ ] **Step 1: Add the local sort editor state and computed helpers in `src/tabs/DesktopTodoDock.vue`**
 
 ```ts
-const sortEditorOpen = ref(false);
+const sortEditorOpen = ref(false)
 
 const sortFieldOptions = [
   { value: 'priority', label: '优先级' },
@@ -333,14 +347,14 @@ const sortFieldOptions = [
   { value: 'project', label: '项目名' },
   { value: 'task', label: '任务名' },
   { value: 'content', label: '内容' },
-];
+]
 
 const directionOptions = [
   { value: 'asc', label: '升序' },
   { value: 'desc', label: '降序' },
-];
+]
 
-const sortRules = computed(() => settingsStore.todoDock.sortRules);
+const sortRules = computed(() => settingsStore.todoDock.sortRules)
 ```
 
 - [ ] **Step 2: Add the `iconSort` button and a compact inline panel to the filter row**
@@ -362,6 +376,7 @@ const sortRules = computed(() => settingsStore.todoDock.sortRules);
     <button class="sort-rule-btn" @click="moveSortRule(index, 1)">↓</button>
     <button class="sort-rule-btn" @click="removeSortRule(index)">×</button>
   </div>
+
   <div class="sort-panel-actions">
     <button class="b3-button b3-button--outline" @click="addSortRule">新增规则</button>
     <button class="b3-button b3-button--text" @click="resetSortRules">恢复默认</button>
@@ -373,16 +388,17 @@ const sortRules = computed(() => settingsStore.todoDock.sortRules);
 
 ```ts
 function persistSortRules(nextRules: TodoSortRule[]) {
-  settingsStore.todoDock.sortRules = nextRules.length > 0 ? nextRules : [...defaultTodoSortRules];
-  settingsStore.saveToPlugin();
+  settingsStore.todoDock.sortRules = nextRules.length > 0 ? nextRules : [...defaultTodoSortRules]
+  settingsStore.saveToPlugin()
 }
 
 function moveSortRule(index: number, delta: number) {
-  const next = [...settingsStore.todoDock.sortRules];
-  const target = index + delta;
-  if (target < 0 || target >= next.length) return;
-  [next[index], next[target]] = [next[target], next[index]];
-  persistSortRules(next);
+  const next = [...settingsStore.todoDock.sortRules]
+  const target = index + delta
+  if (target < 0 || target >= next.length)
+    return;
+  [next[index], next[target]] = [next[target], next[index]]
+  persistSortRules(next)
 }
 ```
 
@@ -394,11 +410,11 @@ it('renders the sort trigger as iconSort-only control', async () => {
     global: {
       stubs: { TodoSidebar: true, SySelect: true },
     },
-  });
+  })
 
-  expect(wrapper.html()).toContain('#iconSort');
-  expect(wrapper.text()).not.toContain('优先级 > 时间');
-});
+  expect(wrapper.html()).toContain('#iconSort')
+  expect(wrapper.text()).not.toContain('优先级 > 时间')
+})
 ```
 
 - [ ] **Step 5: Run the component test file**
@@ -417,6 +433,7 @@ git commit -m "feat(todo): add desktop sort rule editor"
 ### Task 4: Unify Reminder/Recurring Action Buttons
 
 **Files:**
+
 - Create: `src/components/todo/TodoItemActionButtons.vue`
 - Modify: `src/components/todo/TodoItemMeta.vue`
 - Modify: `src/components/dialog/ItemDetailDialog.vue`
@@ -507,11 +524,11 @@ it('renders active reminder and recurring buttons with shared action-btn classes
       reminderTooltip: '下一次提醒 2026-04-25 09:30',
       recurringTooltip: '下一次重复 2026-04-26',
     },
-  });
+  })
 
-  expect(wrapper.findAll('.action-btn')).toHaveLength(2);
-  expect(wrapper.find('.action-btn.active').exists()).toBe(true);
-});
+  expect(wrapper.findAll('.action-btn')).toHaveLength(2)
+  expect(wrapper.find('.action-btn.active').exists()).toBe(true)
+})
 ```
 
 - [ ] **Step 5: Run the shared UI component test file**
@@ -530,6 +547,7 @@ git commit -m "feat(ui): unify todo reminder and recurring actions"
 ### Task 5: Unify Typed Links Across Todo, Detail, And Pomodoro Active
 
 **Files:**
+
 - Create: `src/components/todo/TodoTypedLinks.vue`
 - Modify: `src/components/todo/TodoItemMeta.vue`
 - Modify: `src/components/dialog/ItemDetailDialog.vue`
@@ -539,6 +557,18 @@ git commit -m "feat(ui): unify todo reminder and recurring actions"
 - [ ] **Step 1: Create `src/components/todo/TodoTypedLinks.vue`**
 
 ```vue
+<script setup lang="ts">
+import type { Link } from '@/types/models'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+
+const props = defineProps<{ links: Link[] }>()
+const emit = defineEmits<{ linkClick: [url: string] }>()
+
+function handleLinkClick(url: string) {
+  emit('linkClick', url)
+}
+</script>
+
 <template>
   <div v-if="links.length > 0" class="typed-link-list">
     <SyButton
@@ -547,23 +577,11 @@ git commit -m "feat(ui): unify todo reminder and recurring actions"
       type="link"
       :text="link.name"
       :href="link.url"
-      :class="['typed-link', `typed-link--${link.type || 'default'}`]"
+      class="typed-link" :class="[`typed-link--${link.type || 'default'}`]"
       @click="handleLinkClick(link.url)"
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import type { Link } from '@/types/models';
-
-const props = defineProps<{ links: Link[] }>();
-const emit = defineEmits<{ linkClick: [url: string] }>();
-
-function handleLinkClick(url: string) {
-  emit('linkClick', url);
-}
-</script>
 ```
 
 - [ ] **Step 2: Replace inline typed-link blocks in `TodoItemMeta.vue` and `ItemDetailDialog.vue`**
@@ -572,7 +590,9 @@ function handleLinkClick(url: string) {
 <TodoTypedLinks :links="visibleLinks" />
 
 <TodoTypedLinks :links="projectLinks" @link-click="handleLinkClick" />
+
 <TodoTypedLinks :links="taskLinks" @link-click="handleLinkClick" />
+
 <TodoTypedLinks :links="itemLinks" @link-click="handleLinkClick" />
 ```
 
@@ -608,11 +628,11 @@ it('renders typed links with the correct type classes', () => {
         { name: '思源块', url: 'siyuan://blocks/abc', type: 'block-ref' },
       ],
     },
-  });
+  })
 
-  expect(wrapper.find('.typed-link--external').exists()).toBe(true);
-  expect(wrapper.find('.typed-link--block-ref').exists()).toBe(true);
-});
+  expect(wrapper.find('.typed-link--external').exists()).toBe(true)
+  expect(wrapper.find('.typed-link--block-ref').exists()).toBe(true)
+})
 ```
 
 - [ ] **Step 5: Run the shared UI tests**
@@ -639,4 +659,3 @@ git commit -m "feat(ui): unify typed links across todo and pomodoro"
 - **Spec coverage:** Task 1 covers persistent settings and backward-compatible defaults. Task 2 covers comparator semantics including reminder time and stable fallback behavior. Task 3 covers the `iconSort` trigger and rule editor. Task 4 covers reminder/recurring button unification. Task 5 covers shared typed links and `PomodoroActiveTimer.vue`.
 - **Placeholder scan:** No `TBD`, `TODO`, or unscoped “write tests later” steps remain; each task includes exact files, code snippets, commands, and commit messages.
 - **Type consistency:** `TodoSortField`, `TodoSortDirection`, `TodoSortRule`, `TodoItemActionButtons`, and `TodoTypedLinks` are named consistently across tasks.
-

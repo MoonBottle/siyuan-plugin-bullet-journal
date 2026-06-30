@@ -7,11 +7,15 @@
       @update:model-value="emit('update:selectedDate', $event)"
     />
 
-    <div v-if="habits.length > 0" class="habit-workspace-list-pane__list">
+    <div
+      v-if="habits.length > 0"
+      class="habit-workspace-list-pane__list"
+    >
       <div
         v-for="habit in habits"
         :key="habit.blockId"
-        :class="['habit-workspace-list-pane__item', {
+        class="habit-workspace-list-pane__item"
+        :class="[{
           'habit-workspace-list-pane__item--active': activeHabitId === habit.blockId,
         }]"
         :data-testid="itemTestIdPrefix ? `${itemTestIdPrefix}${habit.blockId}` : undefined"
@@ -24,48 +28,57 @@
           :current-date="selectedDate"
           :is-mobile="itemOpenBehavior === 'detail'"
           :readonly-actions="archivedList"
-          @check-in="emit('check-in', $event)"
+          @checkIn="emit('checkIn', $event)"
           @increment="emit('increment', $event)"
-          @mark-missed="handleMarkMissed"
-          @reset-record="handleResetRecord"
-          @open-doc="emit('open-doc', $event)"
-          @open-detail="emit('select-habit', $event)"
+          @markMissed="handleMarkMissed"
+          @resetRecord="handleResetRecord"
+          @openDoc="emit('openDoc', $event)"
+          @openDetail="emit('selectHabit', $event)"
         />
       </div>
     </div>
 
-    <div v-else class="habit-workspace-list-pane__empty">
-      <div class="habit-workspace-list-pane__empty-icon">🎯</div>
-      <div class="habit-workspace-list-pane__empty-title">{{ emptyTitle || t('habit').noHabits }}</div>
-      <div class="habit-workspace-list-pane__empty-desc">{{ emptyDesc || t('habit').noHabitsDesc }}</div>
+    <div
+      v-else
+      class="habit-workspace-list-pane__empty"
+    >
+      <div class="habit-workspace-list-pane__empty-icon">
+        🎯
+      </div>
+      <div class="habit-workspace-list-pane__empty-title">
+        {{ emptyTitle || t('habit').noHabits }}
+      </div>
+      <div class="habit-workspace-list-pane__empty-desc">
+        {{ emptyDesc || t('habit').noHabitsDesc }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import HabitListItem from '@/components/habit/HabitListItem.vue';
-import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
-import { t } from '@/i18n';
 import type {
   Habit,
   HabitDayState,
   HabitPeriodState,
   HabitStats,
-} from '@/types/models';
+} from '@/types/models'
+import HabitListItem from '@/components/habit/HabitListItem.vue'
+import HabitWeekBar from '@/components/habit/HabitWeekBar.vue'
+import { t } from '@/i18n'
 
 withDefaults(defineProps<{
-  selectedDate: string;
-  currentDate: string;
-  habits: Habit[];
-  habitStatsMap: Map<string, HabitStats>;
-  habitDayStateMap: Map<string, HabitDayState>;
-  habitPeriodStateMap: Map<string, HabitPeriodState>;
-  activeHabitId?: string | null;
-  itemOpenBehavior?: 'document' | 'detail';
-  itemTestIdPrefix?: string;
-  archivedList?: boolean;
-  emptyTitle?: string;
-  emptyDesc?: string;
+  selectedDate: string
+  currentDate: string
+  habits: Habit[]
+  habitStatsMap: Map<string, HabitStats>
+  habitDayStateMap: Map<string, HabitDayState>
+  habitPeriodStateMap: Map<string, HabitPeriodState>
+  activeHabitId?: string | null
+  itemOpenBehavior?: 'document' | 'detail'
+  itemTestIdPrefix?: string
+  archivedList?: boolean
+  emptyTitle?: string
+  emptyDesc?: string
 }>(), {
   activeHabitId: null,
   itemOpenBehavior: 'document',
@@ -73,24 +86,24 @@ withDefaults(defineProps<{
   archivedList: false,
   emptyTitle: '',
   emptyDesc: '',
-});
+})
 
 const emit = defineEmits<{
-  'update:selectedDate': [value: string];
-  'select-habit': [habit: Habit];
-  'open-doc': [habit: Habit];
-  'check-in': [habit: Habit];
-  'increment': [habit: Habit];
-  'mark-missed': [habit: Habit, date: string];
-  'reset-record': [habit: Habit, date: string];
-}>();
+  'update:selectedDate': [value: string]
+  'selectHabit': [habit: Habit]
+  'openDoc': [habit: Habit]
+  'checkIn': [habit: Habit]
+  'increment': [habit: Habit]
+  'markMissed': [habit: Habit, date: string]
+  'resetRecord': [habit: Habit, date: string]
+}>()
 
 function handleMarkMissed(habit: Habit, date: string) {
-  emit('mark-missed', habit, date);
+  emit('markMissed', habit, date)
 }
 
 function handleResetRecord(habit: Habit, date: string) {
-  emit('reset-record', habit, date);
+  emit('resetRecord', habit, date)
 }
 </script>
 

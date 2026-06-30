@@ -1,189 +1,192 @@
-import { computed, ref } from 'vue';
+import {
+  computed,
+  ref,
+} from 'vue'
 
-export type BlockFocusPreviewTrigger = {
-  blockId: string;
-  itemId: string;
-  anchorEl: HTMLElement;
-};
+export interface BlockFocusPreviewTrigger {
+  blockId: string
+  itemId: string
+  anchorEl: HTMLElement
+}
 
-type UseBlockFocusPreviewOptions = {
-  showDelayMs: number;
-  hideDelayMs: number;
-  popoverLeaveGraceMs?: number;
-};
+interface UseBlockFocusPreviewOptions {
+  showDelayMs: number
+  hideDelayMs: number
+  popoverLeaveGraceMs?: number
+}
 
 export function useBlockFocusPreview(options: UseBlockFocusPreviewOptions) {
-  const activeBlockId = ref('');
-  const activeItemId = ref('');
-  const anchorEl = ref<HTMLElement | null>(null);
-  const triggerHovered = ref(false);
-  const popoverHovered = ref(false);
-  const dragActive = ref(false);
-  const isLoading = ref(false);
-  const errorMessage = ref('');
+  const activeBlockId = ref('')
+  const activeItemId = ref('')
+  const anchorEl = ref<HTMLElement | null>(null)
+  const triggerHovered = ref(false)
+  const popoverHovered = ref(false)
+  const dragActive = ref(false)
+  const isLoading = ref(false)
+  const errorMessage = ref('')
 
-  let showTimer: ReturnType<typeof window.setTimeout> | null = null;
-  let hideTimer: ReturnType<typeof window.setTimeout> | null = null;
-  let popoverLeaveTimer: ReturnType<typeof window.setTimeout> | null = null;
+  let showTimer: number | null = null
+  let hideTimer: number | null = null
+  let popoverLeaveTimer: number | null = null
 
-  const isOpen = computed(() => !!activeBlockId.value);
+  const isOpen = computed(() => !!activeBlockId.value)
 
   function clearShowTimer() {
     if (showTimer !== null) {
-      window.clearTimeout(showTimer);
-      showTimer = null;
+      window.clearTimeout(showTimer)
+      showTimer = null
     }
   }
 
   function clearHideTimer() {
     if (hideTimer !== null) {
-      window.clearTimeout(hideTimer);
-      hideTimer = null;
+      window.clearTimeout(hideTimer)
+      hideTimer = null
     }
   }
 
   function clearPopoverLeaveTimer() {
     if (popoverLeaveTimer !== null) {
-      window.clearTimeout(popoverLeaveTimer);
-      popoverLeaveTimer = null;
+      window.clearTimeout(popoverLeaveTimer)
+      popoverLeaveTimer = null
     }
   }
 
   function clearActivePreview() {
-    activeBlockId.value = '';
-    activeItemId.value = '';
-    anchorEl.value = null;
-    isLoading.value = false;
+    activeBlockId.value = ''
+    activeItemId.value = ''
+    anchorEl.value = null
+    isLoading.value = false
   }
 
   function canOpen(payload: BlockFocusPreviewTrigger) {
-    return !!payload.blockId && !!payload.anchorEl && !dragActive.value;
+    return !!payload.blockId && !!payload.anchorEl && !dragActive.value
   }
 
   function showNow(payload: BlockFocusPreviewTrigger) {
-    clearShowTimer();
-    clearHideTimer();
-    clearPopoverLeaveTimer();
+    clearShowTimer()
+    clearHideTimer()
+    clearPopoverLeaveTimer()
 
     if (!canOpen(payload)) {
-      return;
+      return
     }
 
-    triggerHovered.value = true;
-    errorMessage.value = '';
-    isLoading.value = true;
-    activeBlockId.value = payload.blockId;
-    activeItemId.value = payload.itemId;
-    anchorEl.value = payload.anchorEl;
+    triggerHovered.value = true
+    errorMessage.value = ''
+    isLoading.value = true
+    activeBlockId.value = payload.blockId
+    activeItemId.value = payload.itemId
+    anchorEl.value = payload.anchorEl
   }
 
   function scheduleShow(payload: BlockFocusPreviewTrigger) {
-    triggerHovered.value = true;
-    clearHideTimer();
-    clearShowTimer();
+    triggerHovered.value = true
+    clearHideTimer()
+    clearShowTimer()
 
     if (!canOpen(payload)) {
-      return;
+      return
     }
 
     if (options.showDelayMs <= 0) {
-      showNow(payload);
-      return;
+      showNow(payload)
+      return
     }
 
     showTimer = window.setTimeout(() => {
-      showTimer = null;
+      showTimer = null
       if (!triggerHovered.value || dragActive.value) {
-        return;
+        return
       }
-      showNow(payload);
-    }, options.showDelayMs);
+      showNow(payload)
+    }, options.showDelayMs)
   }
 
   function scheduleHide() {
-    triggerHovered.value = false;
-    clearShowTimer();
-    clearHideTimer();
+    triggerHovered.value = false
+    clearShowTimer()
+    clearHideTimer()
 
     if (!isOpen.value) {
-      return;
+      return
     }
 
     const hide = () => {
-      hideTimer = null;
+      hideTimer = null
       if (triggerHovered.value || popoverHovered.value) {
-        return;
+        return
       }
-      clearActivePreview();
-    };
-
-    if (options.hideDelayMs <= 0) {
-      hide();
-      return;
+      clearActivePreview()
     }
 
-    hideTimer = window.setTimeout(hide, options.hideDelayMs);
+    if (options.hideDelayMs <= 0) {
+      hide()
+      return
+    }
+
+    hideTimer = window.setTimeout(hide, options.hideDelayMs)
   }
 
   function markPopoverHovered(hovered: boolean) {
     if (hovered) {
-      clearPopoverLeaveTimer();
-      popoverHovered.value = true;
-      clearHideTimer();
-      return;
+      clearPopoverLeaveTimer()
+      popoverHovered.value = true
+      clearHideTimer()
+      return
     }
 
-    clearPopoverLeaveTimer();
-    const graceMs = options.popoverLeaveGraceMs ?? 120;
+    clearPopoverLeaveTimer()
+    const graceMs = options.popoverLeaveGraceMs ?? 120
 
     const finalizeLeave = () => {
-      popoverLeaveTimer = null;
-      popoverHovered.value = false;
+      popoverLeaveTimer = null
+      popoverHovered.value = false
       if (!triggerHovered.value) {
-        scheduleHide();
+        scheduleHide()
       }
-    };
-
-    if (graceMs <= 0) {
-      finalizeLeave();
-      return;
     }
 
-    popoverLeaveTimer = window.setTimeout(finalizeLeave, graceMs);
+    if (graceMs <= 0) {
+      finalizeLeave()
+      return
+    }
+
+    popoverLeaveTimer = window.setTimeout(finalizeLeave, graceMs)
   }
 
   function setDragActive(active: boolean) {
-    dragActive.value = active;
+    dragActive.value = active
     if (active) {
-      clearShowTimer();
-      clearHideTimer();
-      clearPopoverLeaveTimer();
-      triggerHovered.value = false;
-      popoverHovered.value = false;
-      clearActivePreview();
+      clearShowTimer()
+      clearHideTimer()
+      clearPopoverLeaveTimer()
+      triggerHovered.value = false
+      popoverHovered.value = false
+      clearActivePreview()
     }
   }
 
   function setLoading(loading: boolean) {
-    isLoading.value = loading;
+    isLoading.value = loading
   }
 
   function setError(message: string) {
-    errorMessage.value = message;
+    errorMessage.value = message
   }
 
   function forceClose() {
-    clearShowTimer();
-    clearHideTimer();
-    clearPopoverLeaveTimer();
-    triggerHovered.value = false;
-    popoverHovered.value = false;
-    clearActivePreview();
+    clearShowTimer()
+    clearHideTimer()
+    clearPopoverLeaveTimer()
+    triggerHovered.value = false
+    popoverHovered.value = false
+    clearActivePreview()
   }
 
   function dispose() {
-    forceClose();
-    dragActive.value = false;
+    forceClose()
+    dragActive.value = false
   }
 
   return {
@@ -202,5 +205,5 @@ export function useBlockFocusPreview(options: UseBlockFocusPreviewOptions) {
     setError,
     forceClose,
     dispose,
-  };
+  }
 }

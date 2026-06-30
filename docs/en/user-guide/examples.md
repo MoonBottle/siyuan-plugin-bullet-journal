@@ -12,6 +12,7 @@ Create a document `E-commerce-Order-System-Refactoring.sy.md` in SiYuan with the
 
 ```markdown
 ## E-commerce Order System Refactoring
+
 > Optimize checkout flow, improve conversion by 20%
 
 [Requirements Doc](https://example.com/requirements)
@@ -52,6 +53,7 @@ Select payment method 📅2026-02-26
 Order confirmation 📅2026-02-27
 
 Weekly meeting 📅2026-02-24 14:00~15:00 ⏰13:50 🔁weekly
+
 ```
 
 ## Document Structure Analysis
@@ -60,10 +62,12 @@ Weekly meeting 📅2026-02-24 14:00~15:00 ⏰13:50 🔁weekly
 
 ```markdown
 ## E-commerce Order System Refactoring
+
 > Optimize checkout flow, improve conversion by 20%
 
 [Requirements Doc](https://example.com/requirements)
 [Dev Gantt](https://gantt.example.com/project123)
+
 ```
 
 - Project Name: E-commerce Order System Refactoring
@@ -144,6 +148,7 @@ Fix critical production bug 📅2026-03-09 🔥
 Routine code review 📅2026-03-09 🌱
 
 Improve documentation formatting 📅2026-03-09 🍃
+
 ```
 
 ### Reminder Settings
@@ -154,6 +159,7 @@ Set reminders for important items:
 Weekly meeting 📅2026-03-17 14:00~16:00 ⏰13:50
 
 Project deadline 📅2026-03-20 ⏰1 day before
+
 ```
 
 ### Recurring Items
@@ -166,6 +172,7 @@ Daily standup 📅2026-03-17 09:00 🔁daily until 2026-12-31
 Weekly meeting 📅2026-03-17 14:00 ⏰13:50 🔁weekly
 
 Monthly report 📅2026-03-17 10:00 🔁monthly on day 15
+
 ```
 
 ## Task Status Update
@@ -202,38 +209,48 @@ Slash commands can significantly improve efficiency in daily usage:
 
 ```markdown
 # Input
+
 Complete requirements doc /today
 
 # Result
+
 Complete requirements doc 📅2026-03-09
+
 ```
 
 ### Quick Completion Marking
 
 ```markdown
 # Input
+
 Fix login bug /done
 
 # Result
+
 Fix login bug ✅
+
 ```
 
 ### Quick View Opening
 
 ```markdown
 # Input
+
 Weekly meeting /calendar
 
 # Result: Opens calendar view and automatically jumps to meeting date
+
 ```
 
 ### Quick Focus Start
 
 ```markdown
 # Input
+
 Read technical docs /focus
 
 # Result: Opens Pomodoro focus dialog with "Read technical docs" preselected
+
 ```
 
 ## Best Practices

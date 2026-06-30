@@ -1,60 +1,77 @@
 // @vitest-environment happy-dom
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-
-const mockWriteBlock = vi.hoisted(() => vi.fn(async () => true));
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
 
 vi.mock('@/i18n', () => ({
   t: vi.fn(() => ''),
-}));
+}))
 
-vi.mock('@/utils/dayjs', () => ({
-  default: () => ({
-    add: () => ({
-      format: () => '2026-05-02',
-    }),
-  }),
-}));
+vi.mock('@/main', () => ({
+  usePlugin: () => ({ name: 'test-plugin' }),
+}))
 
-vi.mock('@/utils/blockWriter', () => ({
-  writeBlock: mockWriteBlock,
-}));
+vi.mock('@/utils/itemActionHandlers', () => ({
+  getItemActionHandlers: (_item: any, _plugin: any, options?: { afterAction?: () => void }) => {
+    const afterAction = options?.afterAction
+    return {
+      isProcessing: { value: false },
+      complete: vi.fn(async () => { afterAction?.() }),
+      migrate: vi.fn(async () => { afterAction?.() }),
+      abandon: vi.fn(async () => { afterAction?.() }),
+      migrateToToday: vi.fn(async () => { afterAction?.() }),
+      migrateToDate: vi.fn(async () => { afterAction?.() }),
+    }
+  },
+}))
 
 async function mountDrawer(props: Record<string, unknown>) {
-  const { default: ActionDrawer } = await import('@/mobile/drawers/action/ActionDrawer.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: ActionDrawer } = await import('@/mobile/drawers/action/ActionDrawer.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const events: Array<{ name: string; payload: unknown }> = [];
+  const events: Array<{ name: string, payload: unknown }> = []
   const app = createApp(ActionDrawer, {
     ...props,
     'onUpdate:modelValue': (payload: unknown) => {
-      events.push({ name: 'update:modelValue', payload });
+      events.push({
+        name: 'update:modelValue',
+        payload,
+      })
     },
-  });
-  app.mount(container);
-  await nextTick();
+  })
+  app.mount(container)
+  await nextTick()
 
   return {
     events,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('ActionDrawer', () => {
+describe('actionDrawer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   afterEach(() => {
-    document.body.innerHTML = '';
-  });
+    document.body.innerHTML = ''
+  })
 
-  it('uses BlockWriter setStatus when completing an item', async () => {
+  it('closes drawer after completing an item', async () => {
     const mounted = await mountDrawer({
       modelValue: true,
       item: {
@@ -65,21 +82,20 @@ describe('ActionDrawer', () => {
       },
     });
 
-    (document.body.querySelector('.action-complete') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (document.body.querySelector('.action-complete') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      { type: 'setStatus', status: 'completed' },
-    );
     expect(mounted.events).toEqual([
-      { name: 'update:modelValue', payload: false },
-    ]);
+      {
+        name: 'update:modelValue',
+        payload: false,
+      },
+    ])
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
-  it('uses BlockWriter addDate when migrating an item', async () => {
+  it('closes drawer after migrating an item', async () => {
     const mounted = await mountDrawer({
       modelValue: true,
       item: {
@@ -93,35 +109,16 @@ describe('ActionDrawer', () => {
       },
     });
 
-    (document.body.querySelector('.action-migrate') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (document.body.querySelector('.action-migrate') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-2' },
-      {
-        type: 'addDate',
-        date: '2026-05-02',
-        status: 'pending',
-        startTime: '09:00',
-        endTime: '10:00',
-        allDay: false,
-        originalDate: '2026-05-01',
-        siblingItems: [
-          { date: '2026-05-03' },
-          {
-            date: '2026-05-01',
-            startDateTime: '2026-05-01 09:00',
-            endDateTime: '2026-05-01 10:00',
-            timePrecision: undefined,
-          },
-        ],
-        timePrecision: undefined,
-      },
-    );
     expect(mounted.events).toEqual([
-      { name: 'update:modelValue', payload: false },
-    ]);
+      {
+        name: 'update:modelValue',
+        payload: false,
+      },
+    ])
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

@@ -10,23 +10,17 @@
           @click="handleBackToList"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
-        <div class="block__logo" data-testid="habit-detail-header">{{ selectedHabit.name }}</div>
-        <span class="fn__flex-1 fn__space"></span>
-        <button
-          class="block__icon"
-          data-testid="habit-dock-refresh-button"
-          :aria-label="t('common').refresh"
-          @click="refreshHabits"
+        <div
+          class="block__logo"
+          data-testid="habit-detail-header"
         >
-          <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
-          ><use xlink:href="#iconRefresh"></use></svg>
-        </button>
+          {{ selectedHabit.name }}
+        </div>
+        <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
           :data-testid="selectedHabit.archivedAt ? 'habit-detail-unarchive' : 'habit-detail-archive'"
@@ -34,8 +28,8 @@
           @click="handleToggleArchiveSelectedHabit"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+            @mouseleave="hideTooltip"
           ><use :xlink:href="selectedHabit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
         </button>
         <button
@@ -45,9 +39,20 @@
           @click="handleOpenSelectedHabitDoc"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconFile"></use></svg>
+        </button>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
         </button>
       </template>
       <template v-else-if="listMode === 'archived'">
@@ -58,27 +63,15 @@
           @click="handleBackToActiveList"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconLeft"></use></svg>
         </button>
-        <div class="block__logo" data-testid="habit-archived-header">{{ t('habit').archivedList }}</div>
-        <span class="fn__flex-1 fn__space"></span>
-        <button
-          class="block__icon"
-          data-testid="habit-dock-refresh-button"
-          :aria-label="t('common').refresh"
-          @click="refreshHabits"
+        <div
+          class="block__logo"
+          data-testid="habit-archived-header"
         >
-          <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
-          ><use xlink:href="#iconRefresh"></use></svg>
-        </button>
-      </template>
-      <template v-else>
-        <div class="block__logo" data-testid="habit-list-header">
-          {{ t('habit').title }}
+          {{ t('habit').archivedList }}
         </div>
         <span class="fn__flex-1 fn__space"></span>
         <button
@@ -88,10 +81,19 @@
           @click="refreshHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconRefresh"></use></svg>
         </button>
+      </template>
+      <template v-else>
+        <div
+          class="block__logo"
+          data-testid="habit-list-header"
+        >
+          {{ t('habit').title }}
+        </div>
+        <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
           data-testid="habit-dock-open-archived"
@@ -99,9 +101,20 @@
           @click="handleShowArchivedHabits"
         >
           <svg
-            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
-            @mouseleave="hideIconTooltip"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+            @mouseleave="hideTooltip"
           ><use xlink:href="#iconInbox"></use></svg>
+        </button>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
         </button>
       </template>
     </div>
@@ -123,9 +136,9 @@
             :empty-desc="t('workbench').habitDetailEmptyDesc"
             content-test-id="habit-detail-content"
             @update:view-month="selectedViewMonth = $event"
-            @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
-            @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
-            @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
+            @monthCellPrimary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+            @monthCellMarkMissed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+            @monthCellReset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
           />
         </div>
       </template>
@@ -144,12 +157,12 @@
           :empty-desc="listMode === 'archived' ? t('habit').archivedEmptyDesc : ''"
           item-test-id-prefix="habit-list-item-"
           @update:selected-date="selectedDate = $event"
-          @check-in="checkInHabit"
+          @checkIn="checkInHabit"
           @increment="incrementHabit"
-          @mark-missed="markHabitMissedForDate"
-          @reset-record="resetHabitRecordForDate"
-          @open-doc="openHabitDoc"
-          @select-habit="selectHabit"
+          @markMissed="markHabitMissedForDate"
+          @resetRecord="resetHabitRecordForDate"
+          @openDoc="openHabitDoc"
+          @selectHabit="selectHabit"
         />
       </template>
     </div>
@@ -157,18 +170,32 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
-import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
-import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
-import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
-import { t } from '@/i18n';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
+import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation'
+import {
+  onMounted,
+  onUnmounted,
+} from 'vue'
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue'
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue'
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { consumePendingHabitDockTarget } from '@/utils/habitDockNavigation'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
-const plugin = usePlugin();
+const plugin = usePlugin()
 const {
   listMode,
   selectedDate,
@@ -195,92 +222,92 @@ const {
   resetHabitRecordForDate,
   archiveSelectedHabit,
   unarchiveSelectedHabit,
-} = useHabitWorkspace();
+} = useHabitWorkspace()
 
 async function handleOpenSelectedHabitDoc() {
-  hideIconTooltip();
-  await openSelectedHabitDoc();
+  hideTooltip()
+  await openSelectedHabitDoc()
 }
 
 async function handleToggleArchiveSelectedHabit() {
-  hideIconTooltip();
+  hideTooltip()
   if (selectedHabit.value?.archivedAt) {
-    await unarchiveSelectedHabit();
-    return;
+    await unarchiveSelectedHabit()
+    return
   }
 
-  await archiveSelectedHabit();
+  await archiveSelectedHabit()
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  return selectHabitById(target.habitId, target.date || currentDate.value);
+  return selectHabitById(target.habitId, target.date || currentDate.value)
 }
 
 function handleBackToList() {
-  hideIconTooltip();
-  clearSelectedHabit();
+  hideTooltip()
+  clearSelectedHabit()
 }
 
 function handleShowArchivedHabits() {
-  hideIconTooltip();
-  showArchivedHabits();
+  hideTooltip()
+  showArchivedHabits()
 }
 
 function handleBackToActiveList() {
-  hideIconTooltip();
-  showActiveHabits();
+  hideTooltip()
+  showActiveHabits()
 }
 
 const handleDataRefresh = async () => {
   if (selectedHabit.value) {
-    selectHabitById(selectedHabit.value.blockId, selectedDate.value);
+    selectHabitById(selectedHabit.value.blockId, selectedDate.value)
   }
-};
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let unsubscribeHabitNavigate: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let unsubscribeHabitNavigate: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
-  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
+  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation)
 
-  const pendingTarget = consumePendingHabitDockTarget();
+  const pendingTarget = consumePendingHabitDockTarget()
   if (pendingTarget) {
-    applyHabitDockNavigation(pendingTarget);
+    applyHabitDockNavigation(pendingTarget)
   }
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
       onRefresh: () => handleDataRefresh(),
       viewName: 'DesktopHabitDock',
-    });
+    })
   } catch {
     // ignore
   }
-});
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (unsubscribeHabitNavigate) {
-    unsubscribeHabitNavigate();
+    unsubscribeHabitNavigate()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 </script>
 
 <style scoped>
@@ -313,5 +340,4 @@ onUnmounted(() => {
 .block__icons .block__icon {
   opacity: 1;
 }
-
 </style>

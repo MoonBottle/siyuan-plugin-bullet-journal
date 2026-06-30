@@ -1,13 +1,12 @@
 import antfu from '@antfu/eslint-config'
-import perfectionist from 'eslint-plugin-perfectionist'
 import i18nPlugin from './src/utils/eslint/i18n-validate-keys.mjs'
 
 export default antfu(
   {
     type: 'lib',
     stylistic: {
-      indent: 2, // 4, or 'tab'
-      quotes: 'single', // or 'double'
+      indent: 2,
+      quotes: 'single',
     },
 
     vue: true,
@@ -18,6 +17,10 @@ export default antfu(
     ignores: [
       'dist',
       'node_modules',
+      'docs',
+      'logs',
+      '**/*.md',
+      '**/*.yaml',
     ],
   },
   {
@@ -29,13 +32,25 @@ export default antfu(
   },
   {
     files: [
-      'src/**/*.ts',
+      'src/kernel/**/*.ts',
+      'src/services/**/*.ts',
     ],
     rules: {
+      'node/prefer-global/buffer': 'off',
     },
   },
   {
+    files: [
+      'src/**/*.{ts,js,mjs,vue}',
+      'test/**/*.{ts,js,mjs,vue}',
+      '*.{ts,js,mjs}',
+    ],
+    plugins: {
+      i18n: i18nPlugin,
+    },
     rules: {
+      'i18n/validate-keys': 'warn',
+
       'antfu/top-level-function': 'off',
       'antfu/if-newline': 'off',
 
@@ -69,6 +84,9 @@ export default antfu(
       'ts/consistent-type-imports': 'off',
       'ts/explicit-function-return-type': 'off',
       'ts/no-require-imports': 'off',
+      'ts/no-this-alias': ['error', {
+        allowedNames: ['self'],
+      }],
       'ts/no-use-before-define': 'warn',
       'ts/prefer-literal-enum-member': 'off',
       'ts/strict-boolean-expressions': 'off',
@@ -95,7 +113,7 @@ export default antfu(
       'vue/first-attribute-linebreak': ['warn', {
         multiline: 'below',
       }],
-      "vue/no-mutating-props": ["error", {
+      'vue/no-mutating-props': ['error', {
         shallowOnly: true,
       }],
       'vue/max-attributes-per-line': ['error', {

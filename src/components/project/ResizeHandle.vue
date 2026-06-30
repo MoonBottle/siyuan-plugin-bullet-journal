@@ -11,21 +11,21 @@ withDefaults(defineProps<{
   isActive?: boolean
 }>(), {
   isActive: false,
-});
+})
 
 const emit = defineEmits<{
-  (e: 'drag-start', event: MouseEvent): void;
-}>();
+  (e: 'dragStart', event: MouseEvent): void
+}>()
 
 function handleMouseDown(event: MouseEvent) {
-  emit('drag-start', event);
+  emit('dragStart', event)
 }
 </script>
 
 <style scoped lang="scss">
 .resize-handle {
   position: relative;
-  width: 16px;
+  width: 8px;
   cursor: col-resize;
   flex-shrink: 0;
 
@@ -46,19 +46,21 @@ function handleMouseDown(event: MouseEvent) {
     transform: translateX(-50%);
     width: 1px;
     height: 100%;
-    background-color: var(--b3-border-color);
-    opacity: 0.5;
-    transition: opacity 0.15s, background-color 0.15s;
+    background-color: var(--b3-theme-surface-lighter);
+    opacity: 0;
+    transition:
+      opacity 0.15s,
+      background-color 0.15s;
   }
 
   &:hover::after {
-    opacity: 0.8;
-    background-color: var(--b3-text-on-surface);
+    opacity: 1;
+    background-color: var(--b3-theme-surface-lighter);
   }
 
   &--active::after {
     opacity: 1;
-    background-color: var(--b3-theme-primary);
+    background-color: var(--b3-theme-surface-lighter);
   }
 }
 </style>

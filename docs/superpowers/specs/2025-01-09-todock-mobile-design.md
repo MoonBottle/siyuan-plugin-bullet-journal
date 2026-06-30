@@ -1,7 +1,7 @@
 # TodoDock 移动端适配设计文档
 
-**日期**: 2025-01-09  
-**主题**: TodoDock 移动端 UI/UX 适配  
+**日期**: 2025-01-09
+**主题**: TodoDock 移动端 UI/UX 适配
 **状态**: 已批准，待实现
 
 ---
@@ -12,14 +12,14 @@
 
 当前 `TodoDock` 完全为 PC 端设计，在移动端存在以下体验问题：
 
-| 问题 | 具体表现 |
-|------|---------|
+| 问题               | 具体表现                                                       |
+| ------------------ | -------------------------------------------------------------- |
 | 筛选区占用过多空间 | 搜索框+分组选择+日期筛选+优先级按钮堆叠，在小屏幕上占据 4-5 行 |
-| 操作按钮太小 | 卡片底部的 4-6 个小图标按钮（16-20px），触屏难以准确点击 |
-| 悬停交互失效 | "hover 显示操作按钮"的模式在移动端完全不工作 |
-| 信息密度过高 | 项目名、任务名、内容挤在一起，移动端难以阅读 |
-| 详情页不适合 | PC 弹窗式设计在移动端显得拥挤，操作困难 |
-| 缺少快捷创建 | 移动端无法快速创建任务或事项，必须回到笔记中编辑 |
+| 操作按钮太小       | 卡片底部的 4-6 个小图标按钮（16-20px），触屏难以准确点击       |
+| 悬停交互失效       | "hover 显示操作按钮"的模式在移动端完全不工作                   |
+| 信息密度过高       | 项目名、任务名、内容挤在一起，移动端难以阅读                   |
+| 详情页不适合       | PC 弹窗式设计在移动端显得拥挤，操作困难                        |
+| 缺少快捷创建       | 移动端无法快速创建任务或事项，必须回到笔记中编辑               |
 
 ### 1.2 设计目标
 
@@ -100,10 +100,10 @@ TodoDock.vue (入口)
 ```vue
 <template>
   <div class="mobile-todo-dock">
-    <MobileFilterBar 
+    <MobileFilterBar
       v-model:search="searchQuery"
-      @open-filter="showFilterDrawer = true"
       :has-active-filters="hasActiveFilters"
+      @open-filter="showFilterDrawer = true"
     />
     <MobileTodoList
       :items="filteredItems"
@@ -115,7 +115,7 @@ TodoDock.vue (入口)
       @create="openQuickCreate"
       @toggle-settings="showSettingsMenu"
     />
-    
+
     <!-- 全局抽屉 -->
     <FilterDrawer v-model="showFilterDrawer" />
     <ActionDrawer v-model="showActionDrawer" :item="selectedItem" />
@@ -128,6 +128,7 @@ TodoDock.vue (入口)
 ### 3.2 MobileFilterBar（顶部筛选栏）
 
 **改造要点**：
+
 - PC 端 4 行筛选器 → 移动端 1 行（搜索框 + 筛选按钮）
 - 点击筛选按钮弹出 FilterDrawer
 
@@ -140,6 +141,7 @@ TodoDock.vue (入口)
 ### 3.3 MobileTaskCard（任务卡片）
 
 **改造要点**：
+
 - 移除底部操作按钮区
 - 增大点击区域（最小 44px）
 - 点击打开 ActionDrawer
@@ -166,12 +168,12 @@ TodoDock.vue (入口)
 └─────────────────────────────────┘
 ```
 
-| 按钮 | 功能 |
-|------|------|
-| 🔄 刷新 | 刷新任务列表 |
-| ➕ 添加 | 打开 QuickCreateDrawer |
+| 按钮    | 功能                              |
+| ------- | --------------------------------- |
+| 🔄 刷新 | 刷新任务列表                      |
+| ➕ 添加 | 打开 QuickCreateDrawer            |
 | ⚙️ 设置 | 弹出设置菜单（显示/隐藏已完成等） |
-| 👁️ 显示 | 快速切换筛选条件 |
+| 👁️ 显示 | 快速切换筛选条件                  |
 
 ---
 
@@ -182,6 +184,7 @@ TodoDock.vue (入口)
 **触发**：点击顶部筛选按钮
 
 **布局**：
+
 ```
 ┌─────────────────────────┐ ← 从底部滑出，最大高度 70vh
 │  ▓▓▓ 拖动条 ▓▓▓          │
@@ -207,6 +210,7 @@ TodoDock.vue (入口)
 **触发**：点击任务卡片
 
 **布局**：
+
 ```
 ┌─────────────────────────┐
 │  ▓▓▓ 拖动条 ▓▓▓          │
@@ -230,6 +234,7 @@ TodoDock.vue (入口)
 **设计**：全屏抽屉，从底部滑入，占满整个视口
 
 **布局**：
+
 ```
 ┌─────────────────────────┐
 │  ← 返回        更多 ▼   │  ← 顶部导航栏（固定）
@@ -263,6 +268,7 @@ TodoDock.vue (入口)
 ```
 
 **交互**：
+
 - 点击项目区块 → 打开 ProjectDetail
 - 点击任务区块 → 打开 TaskDetail
 - 长按内容 → 复制到剪贴板
@@ -273,6 +279,7 @@ TodoDock.vue (入口)
 **设计**：展示项目下的所有任务，支持在项目下创建新任务
 
 **布局**：
+
 ```
 ┌─────────────────────────┐
 │  ← 返回    工作项目    + │  ← 「+」按钮快速创建任务
@@ -298,6 +305,7 @@ TodoDock.vue (入口)
 **设计**：展示任务下的所有事项，支持在任务下创建新事项
 
 **布局**：
+
 ```
 ┌─────────────────────────┐
 │  ← 返回 完成Q2报告    +  │  ← 「+」按钮快速创建事项
@@ -319,11 +327,13 @@ TodoDock.vue (入口)
 ### 4.6 QuickCreateDrawer（快捷创建抽屉）
 
 **入口**：
+
 1. 底部导航栏「➕」按钮
 2. 项目/任务详情页的「+」按钮
 3. ActionDrawer 中的「更多」选项
 
 **布局**：
+
 ```
 ┌─────────────────────────┐
 │  ▓▓▓ 拖动条 ▓▓▓          │
@@ -345,6 +355,7 @@ TodoDock.vue (入口)
 ```
 
 **智能预填充**：
+
 - 从项目详情页进入 → 自动填充「所属项目」
 - 从任务详情页进入 → 自动填充「所属项目」和「所属任务」
 - 从列表页进入 → 显示完整表单
@@ -363,36 +374,36 @@ TodoDock.vue (入口)
 // utils/quickCreate.ts
 
 interface CreateTaskParams {
-  projectId: string;           // 项目文档 ID
-  projectBox: string;          // 笔记本 ID
-  taskName: string;            // 任务名称
-  level?: 'L1' | 'L2' | 'L3';  // 任务级别，默认 'L2'
+  projectId: string // 项目文档 ID
+  projectBox: string // 笔记本 ID
+  taskName: string // 任务名称
+  level?: 'L1' | 'L2' | 'L3' // 任务级别，默认 'L2'
 }
 
 interface CreateItemParams {
-  projectId: string;           // 项目文档 ID
-  projectBox: string;          // 笔记本 ID
-  taskBlockId?: string;        // 所属任务块 ID
-  content: string;             // 事项内容
-  date?: string;               // 日期，默认今天
-  timeRange?: {                // 时间范围（可选）
-    start: string;             // 格式: HH:mm
-    end: string;
-  };
-  priority?: 'high' | 'medium' | 'low';
+  projectId: string // 项目文档 ID
+  projectBox: string // 笔记本 ID
+  taskBlockId?: string // 所属任务块 ID
+  content: string // 事项内容
+  date?: string // 日期，默认今天
+  timeRange?: { // 时间范围（可选）
+    start: string // 格式: HH:mm
+    end: string
+  }
+  priority?: 'high' | 'medium' | 'low'
 }
 
 /**
  * 创建任务
  * 在项目文档中追加任务块
  */
-async function createTask(params: CreateTaskParams): Promise<boolean>;
+async function createTask(params: CreateTaskParams): Promise<boolean>
 
 /**
  * 创建事项
  * 在指定任务下或项目末尾追加事项块
  */
-async function createItem(params: CreateItemParams): Promise<boolean>;
+async function createItem(params: CreateItemParams): Promise<boolean>
 
 /**
  * 智能解析输入
@@ -400,15 +411,16 @@ async function createItem(params: CreateItemParams): Promise<boolean>;
  * 示例: "完成报告 📅明天 14:00-16:00"
  */
 function parseQuickInput(input: string): {
-  content: string;
-  date?: string;
-  timeRange?: { start: string; end: string };
-};
+  content: string
+  date?: string
+  timeRange?: { start: string, end: string }
+}
 ```
 
 ### 5.3 创建流程
 
 **创建任务**：
+
 1. 用户选择项目（或已预填充）
 2. 输入任务名称
 3. 选择级别（L1/L2/L3）
@@ -417,6 +429,7 @@ function parseQuickInput(input: string): {
 6. 刷新列表，显示成功提示
 
 **创建事项**：
+
 1. 用户选择任务（或已预填充）
 2. 输入事项内容
 3. 选择日期（默认今天）
@@ -454,9 +467,9 @@ $mobile-gap: 12px;
 $mobile-gap-sm: 8px;
 
 // 触摸规范（Apple HIG）
-$mobile-touch-height: 44px;    // 最小点击高度
-$mobile-touch-gap: 8px;        // 触摸元素间最小间距
-$mobile-button-height: 48px;   // 按钮推荐高度
+$mobile-touch-height: 44px; // 最小点击高度
+$mobile-touch-gap: 8px; // 触摸元素间最小间距
+$mobile-button-height: 48px; // 按钮推荐高度
 
 // 颜色（复用思源变量）
 $mobile-bg-primary: var(--b3-theme-background);
@@ -469,6 +482,7 @@ $mobile-primary-color: var(--b3-theme-primary);
 // 动画
 $mobile-transition-duration: 0.25s;
 $mobile-drawer-animation: cubic-bezier(0.32, 0.72, 0, 1);
+
 ```
 
 ### 6.2 响应式断点
@@ -508,6 +522,7 @@ const isMobile = computed(() => plugin.isMobile);
 .overlay-enter-from {
   opacity: 0;
 }
+
 ```
 
 ---
@@ -516,24 +531,24 @@ const isMobile = computed(() => plugin.isMobile);
 
 ### 7.1 手势操作
 
-| 手势 | 作用范围 | 效果 |
-|------|---------|------|
-| 下拉 | 任务列表 | 刷新数据 |
+| 手势 | 作用范围 | 效果                         |
+| ---- | -------- | ---------------------------- |
+| 下拉 | 任务列表 | 刷新数据                     |
 | 上拉 | 抽屉底部 | 关闭抽屉（当抽屉内容较少时） |
 | 左滑 | 任务卡片 | 快速标记完成（显示完成按钮） |
-| 右滑 | 任务卡片 | 打开详情 |
-| 长按 | 任务卡片 | 弹出快捷操作菜单 |
-| 左滑 | 详情页 | 返回上一页 |
+| 右滑 | 任务卡片 | 打开详情                     |
+| 长按 | 任务卡片 | 弹出快捷操作菜单             |
+| 左滑 | 详情页   | 返回上一页                   |
 
 ### 7.2 状态反馈
 
-| 操作 | 反馈方式 |
-|------|---------|
+| 操作     | 反馈方式                   |
+| -------- | -------------------------- |
 | 点击卡片 | 轻微缩放动画（scale 0.98） |
-| 长按卡片 | 震动反馈（如果设备支持） |
-| 标记完成 | 卡片滑出 + Toast 提示 |
-| 创建成功 | Toast 提示 + 列表自动刷新 |
-| 网络错误 | Toast 提示 + 重试按钮 |
+| 长按卡片 | 震动反馈（如果设备支持）   |
+| 标记完成 | 卡片滑出 + Toast 提示      |
+| 创建成功 | Toast 提示 + 列表自动刷新  |
+| 网络错误 | Toast 提示 + 重试按钮      |
 
 ### 7.3 加载状态
 
@@ -616,6 +631,7 @@ const isMobile = computed(() => plugin.isMobile);
 - [ ] 实现移动端检测和视图切换
 
 **验收标准**：
+
 - 移动端能正常显示任务列表
 - 搜索功能可用
 - 底部导航能正常交互
@@ -628,6 +644,7 @@ const isMobile = computed(() => plugin.isMobile);
 - [ ] 集成筛选功能
 
 **验收标准**：
+
 - 筛选抽屉能正常筛选任务
 - 操作抽屉按钮能正常执行操作
 - 抽屉动画流畅
@@ -641,6 +658,7 @@ const isMobile = computed(() => plugin.isMobile);
 - [ ] 实现层级跳转
 
 **验收标准**：
+
 - 能正常查看事项详情
 - 能在项目/任务详情间跳转
 - 返回逻辑正确
@@ -653,6 +671,7 @@ const isMobile = computed(() => plugin.isMobile);
 - [ ] 集成到项目/任务详情页
 
 **验收标准**：
+
 - 能成功创建任务和事项
 - 创建后列表自动刷新
 - 智能解析准确
@@ -665,6 +684,7 @@ const isMobile = computed(() => plugin.isMobile);
 - [ ] 修复 Bug
 
 **验收标准**：
+
 - 手势操作流畅
 - 大列表不卡顿
 - 主流移动端浏览器兼容
@@ -696,7 +716,7 @@ const isMobile = computed(() => plugin.isMobile);
 ```vue
 <template>
   <Teleport to="body">
-    <div class="drawer-overlay" v-if="modelValue" @click="close">
+    <div v-if="modelValue" class="drawer-overlay" @click="close">
       <div class="drawer" @click.stop>
         <!-- 抽屉内容 -->
       </div>
@@ -711,19 +731,19 @@ const isMobile = computed(() => plugin.isMobile);
 
 ```typescript
 // 下拉刷新
-const touchStartY = ref(0);
-const isPulling = ref(false);
+const touchStartY = ref(0)
+const isPulling = ref(false)
 
-const onTouchStart = (e: TouchEvent) => {
-  touchStartY.value = e.touches[0].clientY;
-};
+function onTouchStart(e: TouchEvent) {
+  touchStartY.value = e.touches[0].clientY
+}
 
-const onTouchMove = (e: TouchEvent) => {
-  const deltaY = e.touches[0].clientY - touchStartY.value;
+function onTouchMove(e: TouchEvent) {
+  const deltaY = e.touches[0].clientY - touchStartY.value
   if (deltaY > 0 && scrollTop === 0) {
-    isPulling.value = true;
+    isPulling.value = true
   }
-};
+}
 ```
 
 ### 10.4 性能优化
@@ -737,13 +757,13 @@ const onTouchMove = (e: TouchEvent) => {
 
 ## 11. 风险评估
 
-| 风险 | 影响 | 缓解措施 |
-|------|------|---------|
-| 思源移动端 API 限制 | 高 | 提前测试 API 在移动端可用性 |
-| 手势与思源手势冲突 | 中 | 使用适当的 preventDefault，测试冲突 |
-| 小屏幕适配问题 | 中 | 多设备测试，使用响应式单位 |
-| 性能问题（大量任务） | 中 | 实现虚拟滚动，分页加载 |
-| 用户不习惯新交互 | 低 | 提供设置项，允许反馈调整 |
+| 风险                 | 影响 | 缓解措施                            |
+| -------------------- | ---- | ----------------------------------- |
+| 思源移动端 API 限制  | 高   | 提前测试 API 在移动端可用性         |
+| 手势与思源手势冲突   | 中   | 使用适当的 preventDefault，测试冲突 |
+| 小屏幕适配问题       | 中   | 多设备测试，使用响应式单位          |
+| 性能问题（大量任务） | 中   | 实现虚拟滚动，分页加载              |
+| 用户不习惯新交互     | 低   | 提供设置项，允许反馈调整            |
 
 ---
 
@@ -757,8 +777,8 @@ const onTouchMove = (e: TouchEvent) => {
 
 ### 12.2 变更记录
 
-| 日期 | 版本 | 变更内容 |
-|------|------|---------|
+| 日期       | 版本 | 变更内容     |
+| ---------- | ---- | ------------ |
 | 2025-01-09 | v1.0 | 初始设计文档 |
 
 ---

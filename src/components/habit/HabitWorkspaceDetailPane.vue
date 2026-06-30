@@ -35,7 +35,7 @@
             class="block__icon b3-tooltips b3-tooltips__sw"
             :data-testid="openDocButtonTestId || undefined"
             :aria-label="t('todo').openDoc"
-            @click="emit('open-doc')"
+            @click="emit('openDoc')"
           >
             <svg><use xlink:href="#iconFile"></use></svg>
           </button>
@@ -85,9 +85,9 @@
             :current-date="currentDate"
             :view-month="viewMonth"
             @update:view-month="emit('update:viewMonth', $event)"
-            @month-cell-primary="emit('month-cell-primary', $event)"
-            @month-cell-mark-missed="emit('month-cell-mark-missed', $event)"
-            @month-cell-reset="emit('month-cell-reset', $event)"
+            @monthCellPrimary="emit('monthCellPrimary', $event)"
+            @monthCellMarkMissed="emit('monthCellMarkMissed', $event)"
+            @monthCellReset="emit('monthCellReset', $event)"
           />
         </div>
 
@@ -117,43 +117,50 @@
       class="habit-workspace-detail-pane__empty"
       :data-testid="emptyTestId || undefined"
     >
-      <div class="habit-workspace-detail-pane__empty-title">{{ emptyTitle }}</div>
-      <div class="habit-workspace-detail-pane__empty-desc">{{ emptyDesc }}</div>
+      <div class="habit-workspace-detail-pane__empty-title">
+        {{ emptyTitle }}
+      </div>
+      <div class="habit-workspace-detail-pane__empty-desc">
+        {{ emptyDesc }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
-import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
-import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
-import { getHabitDayState } from '@/domain/habit/habitCompletion';
-import { t } from '@/i18n';
-import type { Habit, HabitStats } from '@/types/models';
-import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
+import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue'
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import { computed } from 'vue'
+import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue'
+import HabitRecordLog from '@/components/habit/HabitRecordLog.vue'
+import HabitStatsCards from '@/components/habit/HabitStatsCards.vue'
+import { getHabitDayState } from '@/domain/habit/habitCompletion'
+import { t } from '@/i18n'
 
 const props = withDefaults(defineProps<{
-  selectedHabit: Habit | null;
-  stats?: HabitStats | null;
-  currentDate: string;
-  viewMonth: string;
-  showHeader?: boolean;
-  showRefreshAction?: boolean;
-  showArchiveAction?: boolean;
-  showOpenDocAction?: boolean;
-  title?: string;
-  emptyTitle: string;
-  emptyDesc: string;
-  headerTestId?: string;
-  contentTestId?: string;
-  emptyTestId?: string;
-  refreshButtonTestId?: string;
-  archiveButtonTestId?: string;
-  unarchiveButtonTestId?: string;
-  openDocButtonTestId?: string;
-  recordPreviewTriggerMode?: 'document' | 'preview';
-  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
+  selectedHabit: Habit | null
+  stats?: HabitStats | null
+  currentDate: string
+  viewMonth: string
+  showHeader?: boolean
+  showRefreshAction?: boolean
+  showArchiveAction?: boolean
+  showOpenDocAction?: boolean
+  title?: string
+  emptyTitle: string
+  emptyDesc: string
+  headerTestId?: string
+  contentTestId?: string
+  emptyTestId?: string
+  refreshButtonTestId?: string
+  archiveButtonTestId?: string
+  unarchiveButtonTestId?: string
+  openDocButtonTestId?: string
+  recordPreviewTriggerMode?: 'document' | 'preview'
+  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void
 }>(), {
   stats: null,
   showHeader: true,
@@ -169,27 +176,27 @@ const props = withDefaults(defineProps<{
   unarchiveButtonTestId: '',
   openDocButtonTestId: '',
   recordPreviewTriggerMode: 'document',
-});
+})
 
 const emit = defineEmits<{
-  refresh: [];
-  archive: [];
-  unarchive: [];
-  'open-doc': [];
-  'update:viewMonth': [value: string];
-  'month-cell-primary': [value: string];
-  'month-cell-mark-missed': [value: string];
-  'month-cell-reset': [value: string];
-}>();
+  'refresh': []
+  'archive': []
+  'unarchive': []
+  'openDoc': []
+  'update:viewMonth': [value: string]
+  'monthCellPrimary': [value: string]
+  'monthCellMarkMissed': [value: string]
+  'monthCellReset': [value: string]
+}>()
 
-const headerTitle = computed(() => props.title || props.selectedHabit?.name || '');
+const headerTitle = computed(() => props.title || props.selectedHabit?.name || '')
 const ebbinghausDayState = computed(() => {
   if (!props.selectedHabit || props.selectedHabit.frequency?.type !== 'ebbinghaus') {
-    return null;
+    return null
   }
 
-  return getHabitDayState(props.selectedHabit, props.currentDate);
-});
+  return getHabitDayState(props.selectedHabit, props.currentDate)
+})
 </script>
 
 <style scoped>

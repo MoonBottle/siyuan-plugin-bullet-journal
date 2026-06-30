@@ -1,5 +1,8 @@
 <template>
-  <div class="workbench-habit-view" data-testid="workbench-habit-view">
+  <div
+    class="workbench-habit-view"
+    data-testid="workbench-habit-view"
+  >
     <aside class="workbench-habit-view__sidebar">
       <div class="workbench-habit-view__sidebar-header">
         <template v-if="listMode === 'archived'">
@@ -10,11 +13,14 @@
             @click="showActiveHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconLeft"></use></svg>
           </button>
-          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-archived-header">
+          <div
+            class="workbench-habit-view__sidebar-title"
+            data-testid="workbench-habit-archived-header"
+          >
             {{ t('habit').archivedList }}
           </div>
           <span class="fn__flex-1 fn__space"></span>
@@ -25,27 +31,19 @@
             @click="refreshHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconRefresh"></use></svg>
           </button>
         </template>
         <template v-else>
-          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-active-header">
+          <div
+            class="workbench-habit-view__sidebar-title"
+            data-testid="workbench-habit-active-header"
+          >
             {{ t('habit').title }}
           </div>
           <span class="fn__flex-1 fn__space"></span>
-          <button
-            class="block__icon"
-            data-testid="workbench-habit-sidebar-refresh-button"
-            :aria-label="t('common').refresh"
-            @click="refreshHabits"
-          >
-            <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
-              @mouseleave="hideIconTooltip"
-            ><use xlink:href="#iconRefresh"></use></svg>
-          </button>
           <button
             class="block__icon"
             data-testid="workbench-habit-open-archived"
@@ -53,9 +51,20 @@
             @click="showArchivedHabits"
           >
             <svg
-              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
-              @mouseleave="hideIconTooltip"
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+              @mouseleave="hideTooltip"
             ><use xlink:href="#iconInbox"></use></svg>
+          </button>
+          <button
+            class="block__icon"
+            data-testid="workbench-habit-sidebar-refresh-button"
+            :aria-label="t('common').refresh"
+            @click="refreshHabits"
+          >
+            <svg
+              @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideTooltip"
+            ><use xlink:href="#iconRefresh"></use></svg>
           </button>
         </template>
       </div>
@@ -74,11 +83,11 @@
         item-open-behavior="detail"
         item-test-id-prefix="workbench-habit-item-"
         @update:selected-date="selectedDate = $event"
-        @check-in="checkInHabit"
+        @checkIn="checkInHabit"
         @increment="incrementHabit"
-        @mark-missed="markHabitMissedForDate"
-        @reset-record="resetHabitRecordForDate"
-        @select-habit="selectHabit"
+        @markMissed="markHabitMissedForDate"
+        @resetRecord="resetHabitRecordForDate"
+        @selectHabit="selectHabit"
       />
     </aside>
 
@@ -104,42 +113,56 @@
         @refresh="refreshHabits"
         @archive="archiveSelectedHabit"
         @unarchive="unarchiveSelectedHabit"
-        @open-doc="openSelectedHabitDoc"
+        @openDoc="openSelectedHabitDoc"
         @update:view-month="selectedViewMonth = $event"
-        @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
-        @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
-        @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
+        @monthCellPrimary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+        @monthCellMarkMissed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+        @monthCellReset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
       />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue';
-import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
-import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
-import { t } from '@/i18n';
-import { useApp, usePlugin } from '@/main';
-import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue'
+import {
+  onMounted,
+  onUnmounted,
+  watch,
+} from 'vue'
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue'
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 defineProps<{
-  viewConfig?: Record<string, unknown>;
-}>();
+  viewConfig?: Record<string, unknown>
+}>()
 
-const plugin = usePlugin();
-const app = useApp();
+const plugin = usePlugin()
+const app = useApp()
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 const {
   listMode,
   selectedDate,
@@ -163,26 +186,26 @@ const {
   resetHabitRecordForDate,
   archiveSelectedHabit,
   unarchiveSelectedHabit,
-} = useHabitWorkspace();
+} = useHabitWorkspace()
 
 function handleRecordPreviewClick(payload: HabitRecordLogPreviewPayload) {
   preview.showNow({
     blockId: payload.blockId,
     itemId: payload.blockId,
     anchorEl: payload.anchorEl,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
   if (!preview.isOpen.value) {
-    return;
+    return
   }
 
   if (nativePreview.containsTarget(event.target)) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 }
 
 function handleNativePreviewDestroyed({
@@ -190,19 +213,19 @@ function handleNativePreviewDestroyed({
   blockId,
   anchorEl,
 }: {
-  initiatedByController: boolean;
-  blockId: string;
-  anchorEl: HTMLElement;
+  initiatedByController: boolean
+  blockId: string
+  anchorEl: HTMLElement
 }) {
-  const activeBlockId = preview.activeBlockId.value;
-  const activeItemId = preview.activeItemId.value;
-  const activeAnchorEl = preview.anchorEl.value;
+  const activeBlockId = preview.activeBlockId.value
+  const activeItemId = preview.activeItemId.value
+  const activeAnchorEl = preview.anchorEl.value
 
   if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 
   if (
     initiatedByController
@@ -211,70 +234,70 @@ function handleNativePreviewDestroyed({
     || !activeAnchorEl
     || !anchorEl.matches(':hover')
   ) {
-    return;
+    return
   }
 
   preview.showNow({
     blockId: activeBlockId,
     itemId: activeItemId,
     anchorEl: activeAnchorEl,
-  });
+  })
 }
 
 const handleDataRefresh = async () => {
   if (selectedHabit.value) {
-    selectHabit(selectedHabit.value, selectedDate.value);
+    selectHabit(selectedHabit.value, selectedDate.value)
   }
-};
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
       getCurrentPlugin: () => plugin,
       onRefresh: () => handleDataRefresh(),
       viewName: 'WorkbenchHabitView',
-    });
+    })
   }
   catch {
     // ignore
   }
 
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
 
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -284,12 +307,12 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: handleNativePreviewDestroyed,
-    });
+    })
   },
   {
     flush: 'post',
   },
-);
+)
 </script>
 
 <style scoped>

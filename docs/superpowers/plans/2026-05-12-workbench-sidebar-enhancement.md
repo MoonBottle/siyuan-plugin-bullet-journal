@@ -12,22 +12,23 @@
 
 ## 文件结构
 
-| 文件 | 职责 |
-|------|------|
-| `src/types/workbench.ts` | `WorkbenchSettings` 接口，新增 `sidebarCollapsed` 字段 |
-| `src/utils/workbenchStorage.ts` | 存储归一化，处理 `sidebarCollapsed` |
-| `src/stores/workbenchStore.ts` | Pinia store，新增 `sidebarCollapsed`、`toggleSidebar()`、`reorderEntries()` |
-| `src/components/workbench/WorkbenchSidebar.vue` | 侧栏 UI：iconMore、拖拽手柄、收起/展开 |
-| `src/tabs/WorkbenchTab.vue` | 透传 `collapsed` prop，处理 `reorder-entries` / `toggle-sidebar` 事件 |
-| `test/stores/workbenchStore.test.ts` | store 新增方法的测试 |
-| `test/utils/workbenchStorage.test.ts` | storage 归一化的测试 |
-| `package.json` | 新增 sortablejs 依赖 |
+| 文件                                            | 职责                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `src/types/workbench.ts`                        | `WorkbenchSettings` 接口，新增 `sidebarCollapsed` 字段                      |
+| `src/utils/workbenchStorage.ts`                 | 存储归一化，处理 `sidebarCollapsed`                                         |
+| `src/stores/workbenchStore.ts`                  | Pinia store，新增 `sidebarCollapsed`、`toggleSidebar()`、`reorderEntries()` |
+| `src/components/workbench/WorkbenchSidebar.vue` | 侧栏 UI：iconMore、拖拽手柄、收起/展开                                      |
+| `src/tabs/WorkbenchTab.vue`                     | 透传 `collapsed` prop，处理 `reorder-entries` / `toggle-sidebar` 事件       |
+| `test/stores/workbenchStore.test.ts`            | store 新增方法的测试                                                        |
+| `test/utils/workbenchStorage.test.ts`           | storage 归一化的测试                                                        |
+| `package.json`                                  | 新增 sortablejs 依赖                                                        |
 
 ---
 
 ### 任务 1：数据模型 — 类型 + storage + store
 
 **文件：**
+
 - 修改：`src/types/workbench.ts:80-84`
 - 修改：`src/utils/workbenchStorage.ts:10-16`、`src/utils/workbenchStorage.ts:25-29`
 - 修改：`src/stores/workbenchStore.ts:73-91`、`src/stores/workbenchStore.ts:121-131`
@@ -40,10 +41,10 @@
 
 ```typescript
 export interface WorkbenchSettings {
-  entries: WorkbenchEntry[];
-  dashboards: WorkbenchDashboard[];
-  activeEntryId: string | null;
-  sidebarCollapsed?: boolean;
+  entries: WorkbenchEntry[]
+  dashboards: WorkbenchDashboard[]
+  activeEntryId: string | null
+  sidebarCollapsed?: boolean
 }
 ```
 
@@ -61,7 +62,7 @@ return {
   dashboards: Array.isArray(raw.dashboards) ? raw.dashboards : [],
   activeEntryId: typeof raw.activeEntryId === 'string' ? raw.activeEntryId : null,
   sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : false,
-};
+}
 ```
 
 - [ ] **步骤 3：编写 storage 测试验证 `sidebarCollapsed` 归一化**
@@ -75,24 +76,24 @@ it('loadWorkbenchSettings normalizes sidebarCollapsed field', async () => {
     dashboards: [],
     activeEntryId: null,
     sidebarCollapsed: true,
-  }) as any;
+  }) as any
 
-  const settings = await loadWorkbenchSettings(plugin);
+  const settings = await loadWorkbenchSettings(plugin)
 
-  expect(settings.sidebarCollapsed).toBe(true);
-});
+  expect(settings.sidebarCollapsed).toBe(true)
+})
 
 it('loadWorkbenchSettings defaults sidebarCollapsed to false when missing', async () => {
   const plugin = createMockPlugin({
     entries: [],
     dashboards: [],
     activeEntryId: null,
-  }) as any;
+  }) as any
 
-  const settings = await loadWorkbenchSettings(plugin);
+  const settings = await loadWorkbenchSettings(plugin)
 
-  expect(settings.sidebarCollapsed).toBe(false);
-});
+  expect(settings.sidebarCollapsed).toBe(false)
+})
 
 it('loadWorkbenchSettings defaults sidebarCollapsed to false for invalid type', async () => {
   const plugin = createMockPlugin({
@@ -100,12 +101,12 @@ it('loadWorkbenchSettings defaults sidebarCollapsed to false for invalid type', 
     dashboards: [],
     activeEntryId: null,
     sidebarCollapsed: 'yes',
-  }) as any;
+  }) as any
 
-  const settings = await loadWorkbenchSettings(plugin);
+  const settings = await loadWorkbenchSettings(plugin)
 
-  expect(settings.sidebarCollapsed).toBe(false);
-});
+  expect(settings.sidebarCollapsed).toBe(false)
+})
 ```
 
 - [ ] **步骤 4：运行 storage 测试验证通过**
@@ -120,7 +121,7 @@ it('loadWorkbenchSettings defaults sidebarCollapsed to false for invalid type', 
 1. 在 store 函数体顶部新增 ref：
 
 ```typescript
-const sidebarCollapsed = ref(false);
+const sidebarCollapsed = ref(false)
 ```
 
 2. 更新 `getSettingsSnapshot`：
@@ -132,7 +133,7 @@ function getSettingsSnapshot(): WorkbenchSettings {
     dashboards: dashboards.value,
     activeEntryId: activeEntryId.value,
     sidebarCollapsed: sidebarCollapsed.value,
-  };
+  }
 }
 ```
 
@@ -140,16 +141,16 @@ function getSettingsSnapshot(): WorkbenchSettings {
 
 ```typescript
 async function load(plugin: WorkbenchPlugin): Promise<void> {
-  bindPlugin(plugin);
-  const settings = await loadWorkbenchSettings(plugin);
-  entries.value = normalizeOrders(settings.entries ?? []);
-  dashboards.value = settings.dashboards ?? [];
-  sidebarCollapsed.value = settings.sidebarCollapsed ?? false;
+  bindPlugin(plugin)
+  const settings = await loadWorkbenchSettings(plugin)
+  entries.value = normalizeOrders(settings.entries ?? [])
+  dashboards.value = settings.dashboards ?? []
+  sidebarCollapsed.value = settings.sidebarCollapsed ?? false
 
-  const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId);
+  const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId)
   activeEntryId.value = hasActiveEntry
     ? settings.activeEntryId
-    : (entries.value[0]?.id ?? null);
+    : (entries.value[0]?.id ?? null)
 }
 ```
 
@@ -157,8 +158,8 @@ async function load(plugin: WorkbenchPlugin): Promise<void> {
 
 ```typescript
 async function toggleSidebar(): Promise<void> {
-  sidebarCollapsed.value = !sidebarCollapsed.value;
-  await persist();
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  await persist()
 }
 ```
 
@@ -166,14 +167,14 @@ async function toggleSidebar(): Promise<void> {
 
 ```typescript
 async function reorderEntries(orderedIds: string[]): Promise<void> {
-  const idSet = new Set(orderedIds);
+  const idSet = new Set(orderedIds)
   const reordered = orderedIds
     .map(id => entries.value.find(entry => entry.id === id))
-    .filter((entry): entry is WorkbenchEntry => entry !== undefined);
+    .filter((entry): entry is WorkbenchEntry => entry !== undefined)
 
-  const unmatched = entries.value.filter(entry => !idSet.has(entry.id));
-  entries.value = normalizeOrders([...reordered, ...unmatched]);
-  await persist();
+  const unmatched = entries.value.filter(entry => !idSet.has(entry.id))
+  entries.value = normalizeOrders([...reordered, ...unmatched])
+  await persist()
 }
 ```
 
@@ -203,7 +204,7 @@ return {
   updateWidgetLayout,
   updateWidgetLayouts,
   updateWidgetConfig,
-};
+}
 ```
 
 - [ ] **步骤 6：编写 store 测试验证新方法**
@@ -212,104 +213,104 @@ return {
 
 ```typescript
 it('load restores sidebarCollapsed from storage', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
 
   mockLoadWorkbenchSettings.mockResolvedValueOnce({
     entries: [],
     dashboards: [],
     activeEntryId: null,
     sidebarCollapsed: true,
-  } satisfies WorkbenchSettings);
+  } satisfies WorkbenchSettings)
 
-  await store.load(plugin);
+  await store.load(plugin)
 
-  expect(store.sidebarCollapsed).toBe(true);
-});
+  expect(store.sidebarCollapsed).toBe(true)
+})
 
 it('load defaults sidebarCollapsed to false when not in storage', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
 
   mockLoadWorkbenchSettings.mockResolvedValueOnce({
     entries: [],
     dashboards: [],
     activeEntryId: null,
-  } satisfies WorkbenchSettings);
+  } satisfies WorkbenchSettings)
 
-  await store.load(plugin);
+  await store.load(plugin)
 
-  expect(store.sidebarCollapsed).toBe(false);
-});
+  expect(store.sidebarCollapsed).toBe(false)
+})
 
 it('toggleSidebar flips sidebarCollapsed and persists', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
-  store.bindPlugin(plugin);
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
+  store.bindPlugin(plugin)
 
-  expect(store.sidebarCollapsed).toBe(false);
+  expect(store.sidebarCollapsed).toBe(false)
 
-  await store.toggleSidebar();
+  await store.toggleSidebar()
 
-  expect(store.sidebarCollapsed).toBe(true);
+  expect(store.sidebarCollapsed).toBe(true)
   expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
     sidebarCollapsed: true,
-  }));
+  }))
 
-  await store.toggleSidebar();
+  await store.toggleSidebar()
 
-  expect(store.sidebarCollapsed).toBe(false);
+  expect(store.sidebarCollapsed).toBe(false)
   expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
     sidebarCollapsed: false,
-  }));
-});
+  }))
+})
 
 it('reorderEntries reorders entries by given ids and persists', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
-  store.bindPlugin(plugin);
-  const first = createEntry({ id: 'entry-1', order: 0 });
-  const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
-  const third = createEntry({ id: 'entry-3', title: 'Calendar', icon: 'iconCalendar', order: 2, viewType: 'calendar' });
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
+  store.bindPlugin(plugin)
+  const first = createEntry({ id: 'entry-1', order: 0 })
+  const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' })
+  const third = createEntry({ id: 'entry-3', title: 'Calendar', icon: 'iconCalendar', order: 2, viewType: 'calendar' })
 
-  store.entries = [first, second, third];
+  store.entries = [first, second, third]
 
-  await store.reorderEntries(['entry-3', 'entry-1', 'entry-2']);
+  await store.reorderEntries(['entry-3', 'entry-1', 'entry-2'])
 
-  expect(store.entries.map(e => e.id)).toEqual(['entry-3', 'entry-1', 'entry-2']);
-  expect(store.entries.map(e => e.order)).toEqual([0, 1, 2]);
+  expect(store.entries.map(e => e.id)).toEqual(['entry-3', 'entry-1', 'entry-2'])
+  expect(store.entries.map(e => e.order)).toEqual([0, 1, 2])
   expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
     entries: store.entries,
-  }));
-});
+  }))
+})
 
 it('reorderEntries preserves entries not in orderedIds at the end', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
-  store.bindPlugin(plugin);
-  const first = createEntry({ id: 'entry-1', order: 0 });
-  const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
+  store.bindPlugin(plugin)
+  const first = createEntry({ id: 'entry-1', order: 0 })
+  const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' })
 
-  store.entries = [first, second];
+  store.entries = [first, second]
 
-  await store.reorderEntries(['entry-2']);
+  await store.reorderEntries(['entry-2'])
 
-  expect(store.entries.map(e => e.id)).toEqual(['entry-2', 'entry-1']);
-  expect(store.entries.map(e => e.order)).toEqual([0, 1]);
-});
+  expect(store.entries.map(e => e.id)).toEqual(['entry-2', 'entry-1'])
+  expect(store.entries.map(e => e.order)).toEqual([0, 1])
+})
 
 it('reorderEntries ignores unknown ids', async () => {
-  const plugin = createPlugin();
-  const store = useWorkbenchStore();
-  store.bindPlugin(plugin);
-  const first = createEntry({ id: 'entry-1', order: 0 });
+  const plugin = createPlugin()
+  const store = useWorkbenchStore()
+  store.bindPlugin(plugin)
+  const first = createEntry({ id: 'entry-1', order: 0 })
 
-  store.entries = [first];
+  store.entries = [first]
 
-  await store.reorderEntries(['entry-1', 'nonexistent']);
+  await store.reorderEntries(['entry-1', 'nonexistent'])
 
-  expect(store.entries.map(e => e.id)).toEqual(['entry-1']);
-});
+  expect(store.entries.map(e => e.id)).toEqual(['entry-1'])
+})
 ```
 
 - [ ] **步骤 7：运行 store 测试验证通过**
@@ -359,6 +360,7 @@ git commit -m "chore: add sortablejs dependency"
 ### 任务 3：WorkbenchSidebar UI 重构 — iconMore + 拖拽手柄 + 收起/展开
 
 **文件：**
+
 - 修改：`src/components/workbench/WorkbenchSidebar.vue`（全面重构）
 
 这是核心任务，将 `WorkbenchSidebar.vue` 全面重构为支持新特性的版本。
@@ -386,11 +388,7 @@ git commit -m "chore: add sortablejs dependency"
         @mouseenter="handleEntryMouseEnter(entry, $event)"
         @mouseleave="handleEntryMouseLeave"
       >
-        <span
-          v-if="!collapsed"
-          class="workbench-sidebar__entry-drag"
-          aria-hidden="true"
-        >
+        <span v-if="!collapsed" class="workbench-sidebar__entry-drag" aria-hidden="true">
           <svg><use xlink:href="#iconMove"></use></svg>
         </span>
         <span class="workbench-sidebar__entry-icon" aria-hidden="true">
@@ -488,99 +486,103 @@ git commit -m "chore: add sortablejs dependency"
     </button>
   </aside>
 </template>
+
 ```
 
 - [ ] **步骤 2：重写 `<script setup>` 部分**
 
 ```typescript
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Menu } from 'siyuan';
-import Sortable from 'sortablejs';
-import { t } from '@/i18n';
-import { hideIconTooltip, showConfirmDialog, showIconTooltip, showInputDialog } from '@/utils/dialog';
-import type { WorkbenchEntry, WorkbenchViewType } from '@/types/workbench';
+import type { WorkbenchEntry, WorkbenchViewType } from '@/types/workbench'
+import { Menu } from 'siyuan'
+import Sortable from 'sortablejs'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { t } from '@/i18n'
+import { hideIconTooltip, showConfirmDialog, showIconTooltip, showInputDialog } from '@/utils/dialog'
 
 const props = defineProps<{
-  entries: WorkbenchEntry[];
-  activeEntryId: string | null;
-  collapsed: boolean;
-}>();
+  entries: WorkbenchEntry[]
+  activeEntryId: string | null
+  collapsed: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'select', id: string): void;
-  (event: 'create-dashboard'): void;
-  (event: 'create-view', viewType: WorkbenchViewType): void;
-  (event: 'rename-entry', id: string, title: string): void;
-  (event: 'delete-entry', id: string): void;
-  (event: 'reorder-entries', orderedIds: string[]): void;
-  (event: 'toggle-sidebar'): void;
-}>();
+  (event: 'select', id: string): void
+  (event: 'create-dashboard'): void
+  (event: 'create-view', viewType: WorkbenchViewType): void
+  (event: 'rename-entry', id: string, title: string): void
+  (event: 'delete-entry', id: string): void
+  (event: 'reorder-entries', orderedIds: string[]): void
+  (event: 'toggle-sidebar'): void
+}>()
 
-const entriesContainerRef = ref<HTMLElement | null>(null);
-const isCreateMenuOpen = ref(false);
-let sortableInstance: Sortable | null = null;
+const entriesContainerRef = ref<HTMLElement | null>(null)
+const isCreateMenuOpen = ref(false)
+let sortableInstance: Sortable | null = null
 
 function initSortable() {
-  destroySortable();
-  if (!entriesContainerRef.value || props.collapsed) return;
+  destroySortable()
+  if (!entriesContainerRef.value || props.collapsed)
+    return
 
   sortableInstance = Sortable.create(entriesContainerRef.value, {
     handle: '.workbench-sidebar__entry-drag',
     animation: 150,
     onEnd: () => {
-      if (!entriesContainerRef.value) return;
+      if (!entriesContainerRef.value)
+        return
       const ids = Array.from(entriesContainerRef.value.children)
         .map(el => (el as HTMLElement).dataset.id)
-        .filter((id): id is string => typeof id === 'string');
-      emit('reorder-entries', ids);
+        .filter((id): id is string => typeof id === 'string')
+      emit('reorder-entries', ids)
     },
-  });
+  })
 }
 
 function destroySortable() {
   if (sortableInstance) {
-    sortableInstance.destroy();
-    sortableInstance = null;
+    sortableInstance.destroy()
+    sortableInstance = null
   }
 }
 
 watch(() => props.collapsed, (collapsed) => {
   if (collapsed) {
-    destroySortable();
-  } else {
-    nextTick(() => initSortable());
+    destroySortable()
   }
-});
+  else {
+    nextTick(() => initSortable())
+  }
+})
 
 onMounted(() => {
   if (!props.collapsed) {
-    initSortable();
+    initSortable()
   }
-});
+})
 
 onUnmounted(() => {
-  destroySortable();
-});
+  destroySortable()
+})
 
 function toggleCreateMenu() {
-  isCreateMenuOpen.value = !isCreateMenuOpen.value;
+  isCreateMenuOpen.value = !isCreateMenuOpen.value
 }
 
 function handleCreateDashboard() {
-  isCreateMenuOpen.value = false;
-  emit('create-dashboard');
+  isCreateMenuOpen.value = false
+  emit('create-dashboard')
 }
 
 function handleCreateView(viewType: WorkbenchViewType) {
-  isCreateMenuOpen.value = false;
-  emit('create-view', viewType);
+  isCreateMenuOpen.value = false
+  emit('create-view', viewType)
 }
 
 function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault()
+  event.stopPropagation()
 
-  const menu = new Menu('workbench-entry-menu');
+  const menu = new Menu('workbench-entry-menu')
   menu.addItem({
     icon: 'iconEdit',
     label: t('workbench').rename,
@@ -591,14 +593,14 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
         entry.title,
         (nextTitle) => {
           if (!nextTitle || nextTitle === entry.title) {
-            return;
+            return
           }
 
-          emit('rename-entry', entry.id, nextTitle);
+          emit('rename-entry', entry.id, nextTitle)
         },
-      );
+      )
     },
-  });
+  })
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('workbench').delete,
@@ -607,23 +609,25 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
         t('workbench').delete,
         t('workbench').deleteConfirm.replace('{name}', entry.title),
         () => emit('delete-entry', entry.id),
-      );
+      )
     },
-  });
+  })
   menu.open({
     x: event.clientX,
     y: event.clientY,
-  });
+  })
 }
 
 function handleEntryMouseEnter(entry: WorkbenchEntry, event: MouseEvent) {
-  if (!props.collapsed) return;
-  showIconTooltip(event.currentTarget as HTMLElement, entry.title);
+  if (!props.collapsed)
+    return
+  showIconTooltip(event.currentTarget as HTMLElement, entry.title)
 }
 
 function handleEntryMouseLeave() {
-  if (!props.collapsed) return;
-  hideIconTooltip();
+  if (!props.collapsed)
+    return
+  hideIconTooltip()
 }
 ```
 
@@ -649,7 +653,10 @@ function handleEntryMouseLeave() {
   border-right: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
   overflow: hidden;
-  transition: width 200ms ease, flex-basis 200ms ease, padding 200ms ease;
+  transition:
+    width 200ms ease,
+    flex-basis 200ms ease,
+    padding 200ms ease;
   position: relative;
 }
 
@@ -860,6 +867,7 @@ function handleEntryMouseLeave() {
 .sortable-chosen {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
 ```
 
 - [ ] **步骤 5：运行构建确认编译通过**
@@ -884,6 +892,7 @@ git commit -m "feat(workbench): sidebar iconMore, drag handle, collapse UI"
 ### 任务 4：WorkbenchTab 接入新 props 和事件
 
 **文件：**
+
 - 修改：`src/tabs/WorkbenchTab.vue`
 
 - [ ] **步骤 1：更新模板中的 `<WorkbenchSidebar>` 标签**
@@ -903,6 +912,7 @@ git commit -m "feat(workbench): sidebar iconMore, drag handle, collapse UI"
   @reorder-entries="handleReorderEntries"
   @toggle-sidebar="handleToggleSidebar"
 />
+
 ```
 
 - [ ] **步骤 2：在 script 中新增两个事件处理函数**
@@ -911,11 +921,11 @@ git commit -m "feat(workbench): sidebar iconMore, drag handle, collapse UI"
 
 ```typescript
 async function handleReorderEntries(orderedIds: string[]) {
-  await workbenchStore.reorderEntries(orderedIds);
+  await workbenchStore.reorderEntries(orderedIds)
 }
 
 async function handleToggleSidebar() {
-  await workbenchStore.toggleSidebar();
+  await workbenchStore.toggleSidebar()
 }
 ```
 

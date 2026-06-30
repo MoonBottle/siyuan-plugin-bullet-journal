@@ -1,28 +1,51 @@
 <template>
   <Teleport to="body">
     <Transition name="overlay-fade">
-      <div v-if="visible" class="break-overlay" @click.self="handleOverlayClick">
+      <div
+        v-if="visible"
+        class="break-overlay"
+        @click.self="handleOverlayClick"
+      >
         <div class="break-overlay-content">
           <!-- 关闭按钮 -->
-          <button class="close-btn" @click="closeOverlay" :title="t('settings').pomodoro.breakOverlayClose">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+          <button
+            class="close-btn"
+            :title="t('settings').pomodoro.breakOverlayClose"
+            @click="closeOverlay"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+            >
+              <path
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                fill="currentColor"
+              />
             </svg>
           </button>
 
           <!-- 标题 -->
           <div class="overlay-header">
-            <svg class="coffee-icon" viewBox="0 0 1024 1024" width="48" height="48" fill="currentColor">
-              <path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/>
-              <path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79zM458.82 384.85c-11.24 0-21.65-7.24-25.16-18.53-7.08-22.77-10.67-46.5-10.67-70.56 0-35.32 7.58-69.32 22.55-101.05 6.2-13.17 21.92-18.81 35.07-12.6 13.17 6.21 18.82 21.91 12.6 35.08-11.61 24.64-17.5 51.07-17.5 78.56 0 18.74 2.79 37.21 8.3 54.9 4.32 13.9-3.45 28.67-17.35 33-2.61 0.81-5.24 1.2-7.84 1.2zM326.71 384.85c-11.26 0-21.69-7.27-25.17-18.6-1.25-4.04-2.55-7.62-3.8-11.11-5.28-14.63-10.73-29.76-10.73-61.45 0-32.51 6.14-48.33 12.07-63.63 1.43-3.67 2.91-7.48 4.38-11.8 1.58-5.19 3.46-9.94 5.28-14.5 4.09-10.29 6.81-17.08 6.81-40.95 0-24.25-3.28-32.4-8.24-44.74-1.81-4.52-3.71-9.25-5.56-14.75-4.65-13.8 2.77-28.74 16.56-33.39 13.8-4.68 28.74 2.76 33.4 16.56 1.49 4.45 3.04 8.26 4.52 11.92 5.91 14.73 12.03 29.96 12.03 64.4 0 31.55-4.38 44.97-10.55 60.47-1.35 3.36-2.75 6.85-4.09 11.17-1.94 5.78-3.69 10.32-5.38 14.66-5.12 13.2-8.51 21.92-8.51 44.57 0 22.47 3.19 31.32 7.61 43.57 1.52 4.22 3.08 8.56 4.58 13.45 4.29 13.91-3.51 28.66-17.41 32.95-2.6 0.82-5.23 1.2-7.8 1.2zM595.87 384.85c-11.24 0-21.65-7.24-25.16-18.53-7.08-22.77-10.67-46.5-10.67-70.56 0-22.92 3.27-45.61 9.73-67.42 4.13-13.97 18.83-21.89 32.75-17.8 13.96 4.13 21.93 18.8 17.8 32.75-5.02 16.96-7.57 34.61-7.57 52.47 0 18.74 2.79 37.21 8.3 54.9 4.32 13.9-3.45 28.67-17.35 33-2.6 0.8-5.24 1.19-7.83 1.19z"/>
+            <svg
+              class="coffee-icon"
+              width="48"
+              height="48"
+            >
+              <use xlink:href="#iconTaCoffee" />
             </svg>
-            <h2 class="overlay-title">{{ t('settings').pomodoro.breakOverlayTitle }}</h2>
+            <h2 class="overlay-title">
+              {{ t('settings').pomodoro.breakOverlayTitle }}
+            </h2>
           </div>
 
           <!-- 倒计时圆环 -->
           <div class="timer-display">
             <div class="timer-circle">
-              <svg class="progress-ring" viewBox="0 0 200 200">
+              <svg
+                class="progress-ring"
+                viewBox="0 0 200 200"
+              >
                 <circle
                   class="progress-ring-bg"
                   cx="100"
@@ -39,7 +62,9 @@
                 />
               </svg>
               <div class="timer-content">
-                <div class="time-remaining">{{ formattedTime }}</div>
+                <div class="time-remaining">
+                  {{ formattedTime }}
+                </div>
               </div>
             </div>
           </div>
@@ -51,12 +76,37 @@
 
           <!-- 操作按钮 -->
           <div class="overlay-actions">
-            <button class="action-btn secondary" @click="closeOverlay">
+            <button
+              class="action-btn secondary"
+              @click="closeOverlay"
+            >
+              <svg
+                class="btn-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <use xlink:href="#iconTaMinimize" />
+              </svg>
               {{ t('settings').pomodoro.breakOverlayClose }}
             </button>
-            <button class="action-btn primary" @click="skipBreak">
-              <svg class="btn-icon" viewBox="0 0 24 24">
-                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
+            <button
+              class="action-btn primary"
+              @click="skipBreak"
+            >
+              <svg
+                class="btn-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <use xlink:href="#iconTaSkipBreak" />
               </svg>
               {{ t('settings').pomodoro.skipBreak }}
             </button>
@@ -68,63 +118,63 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { t } from '@/i18n';
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { usePomodoroStore } from '@/stores'
 
-const props = defineProps<{
-  visible: boolean;
-}>();
+defineProps<{
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+  (e: 'close'): void
+}>()
 
-const plugin = usePlugin() as any;
-const pomodoroStore = usePomodoroStore();
+const plugin = usePlugin() as any
+const pomodoroStore = usePomodoroStore()
 
 // 圆周长
-const radius = 90;
-const circumference = 2 * Math.PI * radius;
+const radius = 90
+const circumference = 2 * Math.PI * radius
 
 // 休息总时长（秒），用于进度环计算
 const totalBreakSeconds = computed(() => {
-  return pomodoroStore.breakTotalSeconds || 5 * 60;
-});
+  return pomodoroStore.breakTotalSeconds || 5 * 60
+})
 
 // 进度环：休息倒计时，从满到空（shrink）
 const strokeDashoffset = computed(() => {
-  const remaining = pomodoroStore.breakRemainingSeconds;
-  const total = totalBreakSeconds.value;
-  const elapsed = Math.max(0, total - remaining);
-  const progress = total > 0 ? elapsed / total : 0;
-  return circumference * progress;
-});
+  const remaining = pomodoroStore.breakRemainingSeconds
+  const total = totalBreakSeconds.value
+  const elapsed = Math.max(0, total - remaining)
+  const progress = total > 0 ? elapsed / total : 0
+  return circumference * progress
+})
 
 // 格式化的剩余时间 MM:SS
 const formattedTime = computed(() => {
-  const secs = pomodoroStore.breakRemainingSeconds;
-  const mins = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-});
+  const secs = pomodoroStore.breakRemainingSeconds
+  const mins = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+})
 
 // 关闭弹窗
 const closeOverlay = () => {
-  pomodoroStore.hideBreakOverlay();
-  emit('close');
-};
+  pomodoroStore.hideBreakOverlay()
+  emit('close')
+}
 
 // 点击遮罩层关闭
 const handleOverlayClick = () => {
-  closeOverlay();
-};
+  closeOverlay()
+}
 
 // 跳过休息
 const skipBreak = async () => {
-  await pomodoroStore.stopBreak(plugin);
-};
+  await pomodoroStore.stopBreak(plugin)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -303,6 +353,8 @@ const skipBreak = async () => {
 .btn-icon {
   width: 18px;
   height: 18px;
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 // 过渡动画
@@ -318,7 +370,9 @@ const skipBreak = async () => {
 
 .overlay-fade-enter-active .break-overlay-content,
 .overlay-fade-leave-active .break-overlay-content {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .overlay-fade-enter-from .break-overlay-content,

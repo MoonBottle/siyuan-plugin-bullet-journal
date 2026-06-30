@@ -2,14 +2,16 @@
  * MCP 服务器构建配置
  * 产出 dist/mcp-server.js，供 node 启动
  */
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { resolve } from 'node:path'
+import { defineConfig } from 'vite'
+import removeConsole from 'vite-plugin-remove-console'
 
 export default defineConfig({
+  plugins: [removeConsole()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
-    }
+      '@': resolve(__dirname, 'src'),
+    },
   },
 
   build: {
@@ -22,18 +24,18 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/mcp/server.ts'),
       fileName: () => 'mcp-server.js',
-      formats: ['es']
+      formats: ['es'],
     },
     rollupOptions: {
       output: {
-        entryFileNames: 'mcp-server.js'
-      }
+        entryFileNames: 'mcp-server.js',
+      },
     },
     target: 'node18',
-    minify: false
+    minify: false,
   },
   // 强制打包所有 npm 依赖，不要作为 external
   ssr: {
-    noExternal: /.*/
-  }
-});
+    noExternal: /.*/,
+  },
+})

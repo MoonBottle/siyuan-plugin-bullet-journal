@@ -2,9 +2,15 @@
   <button
     type="button"
     class="sy-settings-action-btn b3-button b3-button--outline fn__flex-center"
+    :disabled="disabled"
     @click="$emit('click', $event)"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
   >
-    <svg v-if="icon" class="sy-settings-action-btn__icon">
+    <svg
+      v-if="icon"
+      class="sy-settings-action-btn__icon"
+    >
       <use :xlink:href="`#${icon}`"></use>
     </svg>
     <span>{{ text }}</span>
@@ -12,13 +18,30 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  icon?: string;
-  text: string;
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
+
+const props = defineProps<{
+  disabled?: boolean
+  icon?: string
+  text: string
+  title?: string
 }>()
 defineEmits<{
-  click: [event: MouseEvent];
+  click: [event: MouseEvent]
 }>()
+
+function onMouseEnter(e: MouseEvent) {
+  if (props.title) {
+    showTooltip(e.currentTarget as HTMLElement, props.title)
+  }
+}
+
+function onMouseLeave(_e: MouseEvent) {
+  hideTooltip()
+}
 </script>
 
 <style scoped>

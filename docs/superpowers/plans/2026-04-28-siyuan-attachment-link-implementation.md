@@ -50,6 +50,7 @@
 ## Task 1: Extend the shared link model and link factory
 
 **Files:**
+
 - Modify: `src/types/models.ts`
 - Modify: `src/parser/lineParser.ts`
 - Test: `test/parser/lineParser.test.ts`
@@ -59,11 +60,11 @@
 Add these tests near the existing `parseTaskLine` / `parseItemLine - 事项链接` coverage in `test/parser/lineParser.test.ts`:
 
 ```ts
-import { LineParser, createLink, inferLinkType, parseBlockRefs } from '@/parser/lineParser';
+import { createLink, inferLinkType, LineParser, parseBlockRefs } from '@/parser/lineParser'
 
 it('inferLinkType: assets 相对路径识别为 attachment', () => {
-  expect(inferLinkType('assets/demo.png')).toBe('attachment');
-});
+  expect(inferLinkType('assets/demo.png')).toBe('attachment')
+})
 
 it('createLink: attachment 支持 blockId', () => {
   expect(createLink('截图', 'assets/demo.png', 'attachment', 'block-asset-1')).toEqual({
@@ -71,18 +72,18 @@ it('createLink: attachment 支持 blockId', () => {
     url: 'assets/demo.png',
     type: 'attachment',
     blockId: 'block-asset-1',
-  });
-});
+  })
+})
 
 it('事项传入 attachment links 时保留 type 和 blockId', () => {
   const links = [
     { name: '截图', url: 'assets/demo.png', type: 'attachment', blockId: 'asset-block-1' as const },
-  ];
-  const items = LineParser.parseItemLine('带附件事项 @2024-01-01', 1, links);
+  ]
+  const items = LineParser.parseItemLine('带附件事项 @2024-01-01', 1, links)
 
-  expect(items).toHaveLength(1);
-  expect(items[0].links).toEqual(links);
-});
+  expect(items).toHaveLength(1)
+  expect(items[0].links).toEqual(links)
+})
 ```
 
 - [ ] **Step 2: Run the parser test slice to verify it fails**
@@ -103,13 +104,13 @@ Expected:
 Update `src/types/models.ts`:
 
 ```ts
-export type LinkType = 'external' | 'siyuan' | 'block-ref' | 'attachment';
+export type LinkType = 'external' | 'siyuan' | 'block-ref' | 'attachment'
 
 export interface Link {
-  name: string;
-  url: string;
-  type?: LinkType;
-  blockId?: string;
+  name: string
+  url: string
+  type?: LinkType
+  blockId?: string
 }
 ```
 
@@ -118,10 +119,10 @@ Update `src/parser/lineParser.ts`:
 ```ts
 export function inferLinkType(url: string): Link['type'] {
   if (url.startsWith('siyuan://'))
-    return 'siyuan';
+    return 'siyuan'
   if (url.startsWith('assets/'))
-    return 'attachment';
-  return 'external';
+    return 'attachment'
+  return 'external'
 }
 
 export function createLink(
@@ -135,7 +136,7 @@ export function createLink(
     url,
     type: type ?? inferLinkType(url),
     blockId,
-  };
+  }
 }
 ```
 
@@ -164,6 +165,7 @@ git commit -m "feat(parser): add attachment link type metadata"
 ## Task 2: Parse attachment Markdown and preserve the source block ID
 
 **Files:**
+
 - Modify: `src/parser/core.ts`
 - Test: `test/parser/core.test.ts`
 
@@ -181,9 +183,9 @@ it('事项下方图片附件：识别为 attachment 并记录附件块 blockId',
 {: id="after-i1" }
 ![0851d4ddc2897e0cf1313a3d6fec6cd3](assets/demo-20260427112346.png)
 {: id="asset-block-1" }
-`;
+`
 
-  const project = parseKramdown(kramdown, 'test-doc');
+  const project = parseKramdown(kramdown, 'test-doc')
 
   expect(project!.tasks[0].items[0].links).toEqual([
     {
@@ -192,8 +194,8 @@ it('事项下方图片附件：识别为 attachment 并记录附件块 blockId',
       type: 'attachment',
       blockId: 'asset-block-1',
     },
-  ]);
-});
+  ])
+})
 
 it('事项下方普通附件链接：attachment 与外链可并存', () => {
   const kramdown = `## 项目
@@ -206,15 +208,15 @@ it('事项下方普通附件链接：attachment 与外链可并存', () => {
 {: id="after-link1" }
   - {: id="asset1" }[报价单](assets/quote.pdf)
 {: id="after-asset1" }
-`;
+`
 
-  const project = parseKramdown(kramdown, 'test-doc');
+  const project = parseKramdown(kramdown, 'test-doc')
 
   expect(project!.tasks[0].items[0].links).toEqual([
     { name: '说明文档', url: 'https://example.com/spec', type: 'external', blockId: 'after-link1' },
     { name: '报价单', url: 'assets/quote.pdf', type: 'attachment', blockId: 'after-asset1' },
-  ]);
-});
+  ])
+})
 ```
 
 Note: if the implementation keeps current semantics where a block’s `blockId` comes from the trailing `{: id="..." }` line, make the assertions match that parsed block ID consistently.
@@ -238,20 +240,20 @@ Introduce a focused helper near the top of `src/parser/core.ts`:
 
 ```ts
 function extractMarkdownLinks(text: string, blockId: string): Link[] {
-  const links: Link[] = [];
-  const linkRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g;
+  const links: Link[] = []
+  const linkRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g
 
-  let match: RegExpExecArray | null;
+  let match: RegExpExecArray | null
   while ((match = linkRegex.exec(text)) !== null) {
-    const [, rawName, rawUrl] = match;
-    const isAttachment = rawUrl.startsWith('assets/');
-    const fallbackName = rawUrl.split('/').pop() || '附件';
-    const name = rawName.trim() || fallbackName;
+    const [, rawName, rawUrl] = match
+    const isAttachment = rawUrl.startsWith('assets/')
+    const fallbackName = rawUrl.split('/').pop() || '附件'
+    const name = rawName.trim() || fallbackName
 
-    links.push(createLink(name, rawUrl.trim(), isAttachment ? 'attachment' : undefined, blockId));
+    links.push(createLink(name, rawUrl.trim(), isAttachment ? 'attachment' : undefined, blockId))
   }
 
-  return links;
+  return links
 }
 ```
 
@@ -266,13 +268,13 @@ with `extractMarkdownLinks(...)`, preserving current ordering and “stop at nex
 For the item-level loops, pass `nextBlock.blockId` or the current block’s `blockId` when collecting links from each concrete block:
 
 ```ts
-itemLinks.push(...extractMarkdownLinks(strippedNextContent, nextBlock.blockId));
+itemLinks.push(...extractMarkdownLinks(strippedNextContent, nextBlock.blockId))
 ```
 
 For in-block multiline parsing:
 
 ```ts
-itemLinks.push(...extractMarkdownLinks(strippedLineContent, block.blockId));
+itemLinks.push(...extractMarkdownLinks(strippedLineContent, block.blockId))
 ```
 
 - [ ] **Step 4: Run the parser test slices to verify they pass**
@@ -298,6 +300,7 @@ git commit -m "feat(parser): capture attachment block ids from kramdown"
 ## Task 3: Add typed-link presentation metadata so attachments are visually distinct
 
 **Files:**
+
 - Create: `src/components/todo/typedLinkMeta.ts`
 - Modify: `src/components/todo/TodoTypedLinks.vue`
 - Test: `test/components/todo/typedLinkMeta.test.ts`
@@ -307,8 +310,8 @@ git commit -m "feat(parser): capture attachment block ids from kramdown"
 Create `test/components/todo/typedLinkMeta.test.ts`:
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { getTypedLinkMeta } from '@/components/todo/typedLinkMeta';
+import { describe, expect, it } from 'vitest'
+import { getTypedLinkMeta } from '@/components/todo/typedLinkMeta'
 
 describe('getTypedLinkMeta', () => {
   it('attachment 返回独立样式和图标', () => {
@@ -316,17 +319,17 @@ describe('getTypedLinkMeta', () => {
       typeClass: 'typed-link--attachment',
       iconText: '📎',
       href: undefined,
-    });
-  });
+    })
+  })
 
   it('external 保持外链语义', () => {
     expect(getTypedLinkMeta('external')).toEqual({
       typeClass: 'typed-link--external',
       iconText: '↗',
       href: undefined,
-    });
-  });
-});
+    })
+  })
+})
 ```
 
 - [ ] **Step 2: Run the new helper test to verify it fails**
@@ -346,25 +349,25 @@ Expected:
 Create `src/components/todo/typedLinkMeta.ts`:
 
 ```ts
-import type { LinkType } from '@/types/models';
+import type { LinkType } from '@/types/models'
 
 export interface TypedLinkMeta {
-  typeClass: string;
-  iconText: string;
-  href?: string;
+  typeClass: string
+  iconText: string
+  href?: string
 }
 
 export function getTypedLinkMeta(type?: LinkType): TypedLinkMeta {
   switch (type) {
     case 'attachment':
-      return { typeClass: 'typed-link--attachment', iconText: '📎' };
+      return { typeClass: 'typed-link--attachment', iconText: '📎' }
     case 'siyuan':
-      return { typeClass: 'typed-link--siyuan', iconText: 'S' };
+      return { typeClass: 'typed-link--siyuan', iconText: 'S' }
     case 'block-ref':
-      return { typeClass: 'typed-link--block-ref', iconText: '❝' };
+      return { typeClass: 'typed-link--block-ref', iconText: '❝' }
     case 'external':
     default:
-      return { typeClass: 'typed-link--external', iconText: '↗' };
+      return { typeClass: 'typed-link--external', iconText: '↗' }
   }
 }
 ```
@@ -394,8 +397,8 @@ And adjust the emit signature:
 
 ```ts
 const emit = defineEmits<{
-  linkClick: [link: Link];
-}>();
+  linkClick: [link: Link]
+}>()
 ```
 
 Add scoped CSS for attachment:
@@ -410,6 +413,7 @@ Add scoped CSS for attachment:
 :deep(.typed-link--attachment::before) {
   content: attr(data-icon);
 }
+
 ```
 
 Keep the existing `external` / `siyuan` / `block-ref` markers, but refactor them to use the new class structure consistently.
@@ -437,6 +441,7 @@ git commit -m "feat(todo): distinguish attachment links in typed link ui"
 ## Task 4: Wire attachment navigation into dialog and pomodoro surfaces
 
 **Files:**
+
 - Create: `src/utils/linkNavigation.ts`
 - Modify: `src/components/dialog/ItemDetailDialog.vue`
 - Modify: `src/components/pomodoro/PomodoroActiveTimer.vue`
@@ -447,31 +452,31 @@ git commit -m "feat(todo): distinguish attachment links in typed link ui"
 Create `test/utils/linkNavigation.test.ts`:
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
+import { describe, expect, it } from 'vitest'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 
 describe('resolveAttachmentTargetBlockId', () => {
   it('优先返回 link.blockId', () => {
     expect(resolveAttachmentTargetBlockId(
       { name: '截图', url: 'assets/demo.png', type: 'attachment', blockId: 'asset-block-1' },
       'item-block-1',
-    )).toBe('asset-block-1');
-  });
+    )).toBe('asset-block-1')
+  })
 
   it('缺失 link.blockId 时回退到 item.blockId', () => {
     expect(resolveAttachmentTargetBlockId(
       { name: '截图', url: 'assets/demo.png', type: 'attachment' },
       'item-block-1',
-    )).toBe('item-block-1');
-  });
+    )).toBe('item-block-1')
+  })
 
   it('非 attachment 返回 undefined', () => {
     expect(resolveAttachmentTargetBlockId(
       { name: '官网', url: 'https://example.com', type: 'external' },
       'item-block-1',
-    )).toBeUndefined();
-  });
-});
+    )).toBeUndefined()
+  })
+})
 ```
 
 - [ ] **Step 2: Run the helper test to verify it fails**
@@ -491,37 +496,37 @@ Expected:
 Create `src/utils/linkNavigation.ts`:
 
 ```ts
-import type { Link } from '@/types/models';
+import type { Link } from '@/types/models'
 
 export function resolveAttachmentTargetBlockId(link: Link, fallbackBlockId?: string): string | undefined {
   if (link.type !== 'attachment')
-    return undefined;
-  return link.blockId || fallbackBlockId;
+    return undefined
+  return link.blockId || fallbackBlockId
 }
 ```
 
 Update `src/components/dialog/ItemDetailDialog.vue`:
 
 ```ts
-import { showMessage } from 'siyuan';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
-import type { Link } from '@/types/models';
+import type { Link } from '@/types/models'
+import { showMessage } from 'siyuan'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 
 async function handleLinkClick(link: Link) {
   if (link.type === 'attachment') {
-    const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId);
+    const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId)
     if (!targetBlockId || !props.item.docId) {
-      showMessage(t('common').blockIdError, 'error');
-      return;
+      showMessage(t('common').blockIdError, 'error')
+      return
     }
-    await openDocumentAtLine(props.item.docId, undefined, targetBlockId);
-    handleClose();
-    return;
+    await openDocumentAtLine(props.item.docId, undefined, targetBlockId)
+    handleClose()
+    return
   }
 
   if (link.url.startsWith('siyuan://')) {
-    handleClose();
+    handleClose()
   }
 }
 ```
@@ -529,21 +534,21 @@ async function handleLinkClick(link: Link) {
 Update `src/components/pomodoro/PomodoroActiveTimer.vue`:
 
 ```ts
-import { showMessage } from 'siyuan';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
-import type { Link } from '@/types/models';
+import type { Link } from '@/types/models'
+import { showMessage } from 'siyuan'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
 
 async function handleLinkClick(link: Link) {
-  const docId = currentItem.value?.docId;
-  const fallbackBlockId = currentItem.value?.blockId;
+  const docId = currentItem.value?.docId
+  const fallbackBlockId = currentItem.value?.blockId
 
   if (link.type === 'attachment') {
-    const targetBlockId = resolveAttachmentTargetBlockId(link, fallbackBlockId);
+    const targetBlockId = resolveAttachmentTargetBlockId(link, fallbackBlockId)
     if (!docId || !targetBlockId) {
-      showMessage(t('common').blockIdError, 'error');
-      return;
+      showMessage(t('common').blockIdError, 'error')
+      return
     }
-    await openDocumentAtLine(docId, undefined, targetBlockId);
+    await openDocumentAtLine(docId, undefined, targetBlockId)
   }
 }
 ```

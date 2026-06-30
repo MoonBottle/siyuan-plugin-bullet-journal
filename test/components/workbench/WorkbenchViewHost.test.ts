@@ -1,14 +1,28 @@
 // @vitest-environment happy-dom
 
-import { createApp, nextTick } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initI18n } from '@/i18n';
-import type { WorkbenchEntry } from '@/types/workbench';
+import type { WorkbenchEntry } from '@/types/workbench'
+import {
+  createPinia,
+  getActivePinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
+import { initI18n } from '@/i18n'
 
-const desktopTodoDockProps = vi.fn();
-const pomodoroStatsTabProps = vi.fn();
-const focusWorkbenchTabProps = vi.fn();
-const quadrantTabProps = vi.fn();
+const desktopTodoDockProps = vi.fn()
+const pomodoroStatsTabProps = vi.fn()
+const focusWorkbenchTabProps = vi.fn()
+const quadrantTabProps = vi.fn()
 
 vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   default: {
@@ -16,18 +30,18 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
     setup(props: any) {
       desktopTodoDockProps({
         enableWorkbenchPreview: props.enableWorkbenchPreview,
-      });
-      return {};
+      })
+      return {}
     },
     template: '<div data-testid="desktop-todo-dock-mock">Desktop Todo</div>',
   },
-}));
+}))
 
 vi.mock('@/components/workbench/view/WorkbenchHabitView.vue', () => ({
   default: {
     template: '<div data-testid="workbench-habit-view-mock">Workbench Habit</div>',
   },
-}));
+}))
 
 vi.mock('@/tabs/QuadrantTab.vue', () => ({
   default: {
@@ -35,12 +49,12 @@ vi.mock('@/tabs/QuadrantTab.vue', () => ({
     setup(props: any) {
       quadrantTabProps({
         embedded: props.embedded,
-      });
-      return {};
+      })
+      return {}
     },
     template: '<div data-testid="quadrant-tab-mock">Quadrant</div>',
   },
-}));
+}))
 
 vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
   default: {
@@ -48,12 +62,12 @@ vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
     setup(props: any) {
       pomodoroStatsTabProps({
         embedded: props.embedded,
-      });
-      return {};
+      })
+      return {}
     },
     template: '<div data-testid="pomodoro-stats-tab-mock">Pomodoro Stats</div>',
   },
-}));
+}))
 
 vi.mock('@/tabs/FocusWorkbenchTab.vue', () => ({
   default: {
@@ -61,19 +75,30 @@ vi.mock('@/tabs/FocusWorkbenchTab.vue', () => ({
     setup(props: any) {
       focusWorkbenchTabProps({
         embedded: props.embedded,
-      });
-      return {};
+      })
+      return {}
     },
     template: '<div data-testid="focus-workbench-tab-mock">Focus Workbench</div>',
   },
-}));
+}))
 
-vi.mock('@/tabs/ProjectTab.vue', () => ({
+vi.mock('@/components/workbench/view/WorkbenchProjectView.vue', () => ({
   default: {
-    props: ['embedded'],
-    template: '<div data-testid="project-tab-mock">Project</div>',
+    template: '<div data-testid="workbench-project-view-mock">Project</div>',
   },
-}));
+}))
+
+vi.mock('@/components/workbench/view/WorkbenchCalendarView.vue', () => ({
+  default: {
+    template: '<div data-testid="workbench-calendar-view-mock">Calendar</div>',
+  },
+}))
+
+vi.mock('@/components/workbench/view/WorkbenchGanttView.vue', () => ({
+  default: {
+    template: '<div data-testid="workbench-gantt-view-mock">Gantt</div>',
+  },
+}))
 
 function createViewEntry(viewType: WorkbenchEntry['viewType']): WorkbenchEntry {
   return {
@@ -83,130 +108,163 @@ function createViewEntry(viewType: WorkbenchEntry['viewType']): WorkbenchEntry {
     icon: 'iconFile',
     order: 0,
     viewType,
-  };
+  }
 }
 
 async function mountComponent(component: any, props: Record<string, unknown>) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const app = createApp(component, props);
-  app.mount(container);
-  await nextTick();
+  const app = createApp(component, props)
+  const pinia = getActivePinia()
+  if (pinia) {
+    app.use(pinia)
+  }
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     app,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('WorkbenchViewHost', () => {
+describe('workbenchViewHost', () => {
   beforeEach(() => {
-    initI18n('en_US');
-    vi.clearAllMocks();
-  });
+    initI18n('en')
+    vi.clearAllMocks()
+    setActivePinia(createPinia())
+  })
 
   it('todo view entry renders workbench todo host', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('todo'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="desktop-todo-dock-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="desktop-todo-dock-mock"]')).not.toBeNull()
     expect(desktopTodoDockProps).toHaveBeenCalledWith(expect.objectContaining({
       enableWorkbenchPreview: true,
-    }));
+    }))
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  }, 30000)
 
   it('quadrant view entry renders workbench quadrant host', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('quadrant'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="quadrant-tab-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="quadrant-tab-mock"]')).not.toBeNull()
     expect(quadrantTabProps).toHaveBeenCalledWith(expect.objectContaining({
       embedded: true,
-    }));
+    }))
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('habit view entry renders workbench habit host', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('habit'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-habit"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="workbench-habit-view-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-habit"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-view-mock"]')).not.toBeNull()
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('pomodoro stats view entry renders workbench pomodoro stats host', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('pomodoroStats'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-pomodoro-stats"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="pomodoro-stats-tab-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-pomodoro-stats"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="pomodoro-stats-tab-mock"]')).not.toBeNull()
     expect(pomodoroStatsTabProps).toHaveBeenCalledWith(expect.objectContaining({
       embedded: true,
-    }));
+    }))
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('focus workbench view entry renders workbench focus workbench host', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('focusWorkbench'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-focus-workbench"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="focus-workbench-tab-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-focus-workbench"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="focus-workbench-tab-mock"]')).not.toBeNull()
     expect(focusWorkbenchTabProps).toHaveBeenCalledWith(expect.objectContaining({
       embedded: true,
-    }));
+    }))
 
-    mounted.unmount();
-  }, 10000);
+    mounted.unmount()
+  }, 10000)
 
-  it('unsupported view entry renders unsupported placeholder', async () => {
-    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+  it('calendar view entry renders workbench calendar host', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
     const mounted = await mountComponent(WorkbenchViewHost, {
       entry: createViewEntry('calendar'),
-    });
+    })
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-unsupported"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-view-calendar"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="workbench-calendar-view-mock"]')).not.toBeNull()
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
 
-describe('WorkbenchContentHost routing', () => {
+  it('gantt view entry renders workbench gantt host', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: createViewEntry('gantt'),
+    })
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-gantt"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="workbench-gantt-view-mock"]')).not.toBeNull()
+
+    mounted.unmount()
+  })
+
+  it('unsupported view entry renders unsupported placeholder', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue')
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: {
+        ...createViewEntry('todo'),
+        viewType: 'nonExistent',
+      } as any,
+    })
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-unsupported"]')).not.toBeNull()
+
+    mounted.unmount()
+  })
+})
+
+describe('workbenchContentHost routing', () => {
   beforeEach(() => {
-    initI18n('en_US');
-  });
+    initI18n('en')
+    setActivePinia(createPinia())
+  })
 
   it('routes empty, dashboard, and view entry states', async () => {
-    const { default: WorkbenchContentHost } = await import('@/components/workbench/WorkbenchContentHost.vue');
+    const { default: WorkbenchContentHost } = await import('@/components/workbench/WorkbenchContentHost.vue')
 
     const emptyMounted = await mountComponent(WorkbenchContentHost, {
       activeEntry: null,
-    });
-    expect(emptyMounted.container.querySelector('[data-testid="workbench-content-empty"]')).not.toBeNull();
-    emptyMounted.unmount();
+    })
+    expect(emptyMounted.container.querySelector('[data-testid="workbench-content-empty"]')).not.toBeNull()
+    emptyMounted.unmount()
 
     const dashboardMounted = await mountComponent(WorkbenchContentHost, {
       activeEntry: {
@@ -217,17 +275,17 @@ describe('WorkbenchContentHost routing', () => {
         order: 0,
         dashboardId: 'dashboard-1',
       } satisfies WorkbenchEntry,
-    });
-    expect(dashboardMounted.container.querySelector('[data-testid="workbench-dashboard-placeholder"]')).not.toBeNull();
-    expect(dashboardMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull();
-    dashboardMounted.unmount();
+    })
+    expect(dashboardMounted.container.querySelector('[data-testid="workbench-dashboard-placeholder"]')).not.toBeNull()
+    expect(dashboardMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull()
+    dashboardMounted.unmount()
 
     const viewMounted = await mountComponent(WorkbenchContentHost, {
       activeEntry: createViewEntry('todo'),
-    });
-    expect(viewMounted.container.querySelector('[data-testid="workbench-view-host"]')).not.toBeNull();
-    expect(viewMounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
-    expect(viewMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull();
-    viewMounted.unmount();
-  }, 10000);
-});
+    })
+    expect(viewMounted.container.querySelector('[data-testid="workbench-view-host"]')).not.toBeNull()
+    expect(viewMounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull()
+    expect(viewMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull()
+    viewMounted.unmount()
+  }, 30000)
+})

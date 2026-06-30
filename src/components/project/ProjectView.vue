@@ -1,14 +1,28 @@
 <template>
   <div class="project-view">
-    <div v-if="projects.length === 0" class="empty-state">
+    <div
+      v-if="projects.length === 0"
+      class="empty-state"
+    >
       <div class="empty-icon">
-        <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        <svg
+          viewBox="0 0 24 24"
+          width="64"
+          height="64"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
       </div>
       <h3>{{ t('project').noProjectsData }}</h3>
-      <p class="hint">{{ t('project').configureDirHint }}</p>
-      <p class="hint">{{ t('project').dirStructureHint }}</p>
+      <p class="hint">
+        {{ t('project').configureDirHint }}
+      </p>
+      <p class="hint">
+        {{ t('project').dirStructureHint }}
+      </p>
     </div>
 
     <div
@@ -22,70 +36,93 @@
         v-model:search-query="projectSearchQuery"
         :projects="filteredProjects"
         :selected-project-id="selectedProjectId"
-        @select-project="selectProject"
+        @selectProject="selectProject"
       />
-      <ResizeHandle :is-active="activeHandleIndex === 0" @drag-start="(e: MouseEvent) => onMouseDown(e, 0)" />
+      <ResizeHandle
+        :is-active="activeHandleIndex === 0"
+        @dragStart="(e: MouseEvent) => onMouseDown(e, 0)"
+      />
       <ProjectTreePane
         v-model:search-query="treeSearchQuery"
         :project="selectedProject"
         :nodes="visibleTaskNodes"
-        :expanded-task-ids="effectiveExpandedTaskIds"
-        :matched-task-ids="filteredTaskTree.matchedTaskIds"
-        :matched-item-ids="filteredTaskTree.matchedItemIds"
-        :selected-task-id="selectedTaskId"
-        :selected-item-id="selectedItemId"
+        :expanded-task-block-ids="effectiveExpandedTaskBlockIds"
+        :matched-task-block-ids="filteredTaskTree.matchedTaskBlockIds"
+        :matched-item-block-ids="filteredTaskTree.matchedItemBlockIds"
+        :selected-task-block-id="selectedTaskBlockId"
+        :selected-item-block-id="selectedItemBlockId"
         :tag-query="treeTagQuery"
         :selected-tags="treeSelectedTags"
         :tag-options="projectTagOptions"
-        @toggle-task="toggleTask"
-        @select-task="selectTask"
-        @select-item="selectItem"
+        @toggleTask="toggleTask"
+        @selectTask="selectTask"
+        @selectItem="selectItem"
         @update:tag-query="treeTagQuery = $event"
         @update:selected-tags="treeSelectedTags = $event"
       />
-      <ResizeHandle :is-active="activeHandleIndex === 1" @drag-start="(e: MouseEvent) => onMouseDown(e, 1)" />
+      <ResizeHandle
+        :is-active="activeHandleIndex === 1"
+        @dragStart="(e: MouseEvent) => onMouseDown(e, 1)"
+      />
       <ProjectDetailPane
         :project="selectedProject"
         :task="detailTask"
         :item="selectedItem"
+        :navigation-info="itemNavigationInfo"
+        @navigatePrev="navigatePrevItem"
+        @navigateNext="navigateNextItem"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue';
-import ProjectListPane from '@/components/project/ProjectListPane.vue';
-import ProjectTreePane from '@/components/project/ProjectTreePane.vue';
-import ResizeHandle from '@/components/project/ResizeHandle.vue';
-import { useResizableColumns } from '@/composables/useResizableColumns';
-import { t } from '@/i18n';
-import { buildProjectTaskTree, filterProjectTaskTree } from '@/utils/projectTaskTree';
-import type { Item, Project, Task } from '@/types/models';
+import type {
+  Item,
+  ItemStatus,
+  Project,
+  Task,
+} from '@/types/models'
+import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue'
+import ProjectListPane from '@/components/project/ProjectListPane.vue'
+import ProjectTreePane from '@/components/project/ProjectTreePane.vue'
+import ResizeHandle from '@/components/project/ResizeHandle.vue'
+import { useResizableColumns } from '@/composables/useResizableColumns'
+import { t } from '@/i18n'
+import {
+  buildProjectTaskTree,
+  filterProjectTaskTree,
+} from '@/utils/projectTaskTree'
 
 const props = withDefaults(defineProps<{
-  projects: Project[];
-  embedded?: boolean;
-  columnRatios?: [number, number, number];
+  projects: Project[]
+  embedded?: boolean
+  columnRatios?: [number, number, number]
+  itemStatusFilter?: ItemStatus[]
 }>(), {
   embedded: false,
-});
+})
 
 const emit = defineEmits<{
-  (e: 'update:columnRatios', ratios: [number, number, number]): void;
-}>();
+  (e: 'update:columnRatios', ratios: [number, number, number]): void
+}>()
 
-const selectedProjectId = ref('');
-const selectedTaskId = ref('');
-const selectedItemId = ref('');
-const projectSearchQuery = ref('');
-const treeSearchQuery = ref('');
-const treeTagQuery = ref('');
-const treeSelectedTags = ref<string[]>([]);
-const expandedTaskIds = ref<Set<string>>(new Set());
+const selectedProjectId = ref('')
+const selectedTaskBlockId = ref('')
+const selectedItemBlockId = ref('')
+const projectSearchQuery = ref('')
+const treeSearchQuery = ref('')
+const treeTagQuery = ref('')
+const treeSelectedTags = ref<string[]>([])
+const expandedTaskBlockIds = ref<Set<string>>(new Set())
 
-const workbenchRef = ref<HTMLElement>();
+const workbenchRef = ref<HTMLElement>()
 
 const {
   gridTemplateColumns,
@@ -96,117 +133,202 @@ const {
 } = useResizableColumns({
   containerRef: workbenchRef,
   initialRatios: props.columnRatios,
+  handleWidth: 8,
   onChange: (ratios) => emit('update:columnRatios', ratios),
-});
+})
 
 watch(() => props.columnRatios, (newRatios) => {
-  if (newRatios) setRatios(newRatios);
-});
+  if (newRatios) setRatios(newRatios)
+})
 
 const filteredProjects = computed(() => {
-  const query = projectSearchQuery.value.trim().toLocaleLowerCase();
-  if (!query) return props.projects;
+  const query = projectSearchQuery.value.trim().toLocaleLowerCase()
+  if (!query) return props.projects
 
-  return props.projects.filter(project => [
+  return props.projects.filter((project) => [
     project.name,
     project.description,
     project.path,
-  ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
-});
+  ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query))
+})
 
-const selectedProject = computed(() => filteredProjects.value.find(project => project.id === selectedProjectId.value) || null);
-const taskTree = computed(() => buildProjectTaskTree(selectedProject.value));
-const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value));
-const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes);
-const effectiveExpandedTaskIds = computed(() => {
-  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value;
-  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds]);
-});
+const selectedProject = computed(() => filteredProjects.value.find((project) => project.id === selectedProjectId.value) || null)
+const taskTree = computed(() => buildProjectTaskTree(selectedProject.value))
+const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value, props.itemStatusFilter))
+const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes)
+const effectiveExpandedTaskBlockIds = computed(() => {
+  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskBlockIds.value
+  return new Set([...expandedTaskBlockIds.value, ...filteredTaskTree.value.autoExpandedTaskBlockIds])
+})
 
-type TagOption = { name: string; count: number };
+interface TagOption { name: string, count: number }
 const projectTagOptions = computed<TagOption[]>(() => {
-  const tagCounts = new Map<string, number>();
+  const tagCounts = new Map<string, number>()
   for (const task of selectedProject.value?.tasks ?? []) {
     for (const item of task.items ?? []) {
-      if (!item.tags) continue;
+      if (!item.tags) continue
       for (const tag of item.tags) {
-        const normalized = tag.trim();
-        if (!normalized) continue;
-        tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1);
+        const normalized = tag.trim()
+        if (!normalized) continue
+        tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1)
       }
     }
   }
   return Array.from(tagCounts.entries())
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-});
-const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value));
-const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value));
-const detailTask = computed(() => selectedItem.value ? null : selectedTask.value);
+    .map(([name, count]) => ({
+      name,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+})
+const selectedTask = computed(() => findTaskByBlockId(selectedProject.value, selectedTaskBlockId.value))
+const selectedItem = computed(() => findItemByBlockId(selectedProject.value, selectedItemBlockId.value))
+const detailTask = computed(() => selectedItem.value ? null : selectedTask.value)
+
+// 导航：同 Task 下 Item 切换（使用过滤后的 items）
+const selectedFilteredNode = computed(() => {
+  const nodes = filteredTaskTree.value.nodes
+  return findNodeByTaskBlockId(nodes, selectedTaskBlockId.value)
+})
+
+const siblingItemBlockIds = computed(() => {
+  const node = selectedFilteredNode.value
+  if (!node) return []
+  return node.items
+    .map((entry) => ('isMerged' in entry ? entry.blockId : entry.blockId))
+    .filter((blockId): blockId is string => !!blockId)
+})
+
+const itemNavigationInfo = computed(() => {
+  const blockIds = siblingItemBlockIds.value
+  if (blockIds.length <= 1) return undefined
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  return {
+    currentIndex: idx >= 0 ? idx : 0,
+    total: blockIds.length,
+    canPrev: idx > 0,
+    canNext: idx >= 0 && idx < blockIds.length - 1,
+  }
+})
+
+function navigatePrevItem() {
+  const blockIds = siblingItemBlockIds.value
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  if (idx > 0) {
+    selectedItemBlockId.value = blockIds[idx - 1]
+  }
+}
+
+function navigateNextItem() {
+  const blockIds = siblingItemBlockIds.value
+  const idx = blockIds.indexOf(selectedItemBlockId.value)
+  if (idx >= 0 && idx < blockIds.length - 1) {
+    selectedItemBlockId.value = blockIds[idx + 1]
+  }
+}
+
+function findNodeByTaskBlockId(nodes: ProjectTaskTreeNode[], blockId: string): ProjectTaskTreeNode | undefined {
+  for (const node of nodes) {
+    if ((node.task.blockId ?? node.task.id) === blockId) return node
+    const found = findNodeByTaskBlockId(node.children, blockId)
+    if (found) return found
+  }
+  return undefined
+}
 
 watch(filteredProjects, (projects) => {
-  if (projects.some(project => project.id === selectedProjectId.value)) return;
-  selectedProjectId.value = projects[0]?.id || '';
-}, { immediate: true });
+  if (projects.some((project) => project.id === selectedProjectId.value)) return
+  selectedProjectId.value = projects[0]?.id || ''
+}, { immediate: true })
 
 watch(selectedProject, (project, previousProject) => {
-  if (project?.id === previousProject?.id) return;
-  selectedTaskId.value = '';
-  selectedItemId.value = '';
-  treeSearchQuery.value = '';
-  treeTagQuery.value = '';
-  treeSelectedTags.value = [];
-  expandedTaskIds.value = new Set(project?.tasks.map(task => task.id) ?? []);
-}, { immediate: true });
+  if (project?.id === previousProject?.id) {
+    // 同项目刷新 — 智能合并折叠状态
+    const prevExpanded = expandedTaskBlockIds.value
+    const newTaskBlockIds = new Set(
+      project?.tasks.map((task) => task.blockId).filter(Boolean) ?? [],
+    )
+    const merged = new Set<string>()
+    for (const blockId of newTaskBlockIds) {
+      if (!prevExpanded.has(blockId)) merged.add(blockId)
+    }
+    for (const blockId of prevExpanded) {
+      if (newTaskBlockIds.has(blockId)) merged.add(blockId)
+    }
+    expandedTaskBlockIds.value = merged
+    return
+  }
+  // 不同项目 — 完全重置
+  selectedTaskBlockId.value = ''
+  selectedItemBlockId.value = ''
+  treeSearchQuery.value = ''
+  treeTagQuery.value = ''
+  treeSelectedTags.value = []
+  expandedTaskBlockIds.value = new Set(
+    project?.tasks.map((task) => task.blockId).filter(Boolean) ?? [],
+  )
+}, { immediate: true })
 
 function selectProject(projectId: string) {
-  selectedProjectId.value = projectId;
+  selectedProjectId.value = projectId
 }
 
-function toggleTask(taskId: string) {
-  const next = new Set(expandedTaskIds.value);
-  if (next.has(taskId)) next.delete(taskId);
-  else next.add(taskId);
-  expandedTaskIds.value = next;
+function toggleTask(taskBlockId: string) {
+  const next = new Set(expandedTaskBlockIds.value)
+  if (next.has(taskBlockId)) next.delete(taskBlockId)
+  else next.add(taskBlockId)
+  expandedTaskBlockIds.value = next
 }
 
-function selectTask(taskId: string) {
-  selectedTaskId.value = taskId;
-  selectedItemId.value = '';
+function selectTask(taskBlockId: string) {
+  selectedTaskBlockId.value = taskBlockId
+  // 从过滤后的节点中获取第一个 Item 的 blockId，确保与导航列表一致
+  const node = findNodeByTaskBlockId(filteredTaskTree.value.nodes, taskBlockId)
+  const firstBlockId = node?.items
+    ?.map((entry) => ('isMerged' in entry ? entry.blockId : entry.blockId))
+    ?.find((blockId): blockId is string => !!blockId) ?? ''
+  selectedItemBlockId.value = firstBlockId
 }
 
-function selectItem(itemId: string) {
-  const item = findItemById(selectedProject.value, itemId);
-  selectedItemId.value = itemId;
-  selectedTaskId.value = item?.task?.id || '';
+function selectItem(itemBlockId: string) {
+  const item = findItemByBlockId(selectedProject.value, itemBlockId)
+  selectedItemBlockId.value = itemBlockId
+  selectedTaskBlockId.value = item?.task?.blockId ?? item?.task?.id ?? ''
 }
 
-function findTaskById(project: Project | null, taskId: string): Task | null {
-  return project?.tasks.find(task => task.id === taskId) || null;
+function findTaskByBlockId(project: Project | null, blockId: string): Task | null {
+  if (!blockId) return null
+  return project?.tasks.find((task) => (task.blockId ?? task.id) === blockId) || null
 }
 
-function findItemById(project: Project | null, itemId: string): Item | null {
+function findItemByBlockId(project: Project | null, blockId: string): Item | null {
+  if (!blockId) return null
   for (const task of project?.tasks ?? []) {
-    const item = task.items.find(row => row.id === itemId);
-    if (item) return item;
+    const item = task.items.find((row) => row.blockId === blockId)
+    if (item) return item
   }
-  return null;
+  return null
 }
 
 const allCollapsed = computed(() => {
-  if (!selectedProject.value) return true;
-  return selectedProject.value.tasks.every(task => !expandedTaskIds.value.has(task.id));
-});
+  if (!selectedProject.value) return true
+  return selectedProject.value.tasks.every((task) => {
+    const bid = task.blockId
+    return !bid || !expandedTaskBlockIds.value.has(bid)
+  })
+})
 
 function toggleCollapseAll() {
-  if (!selectedProject.value) return;
-  const currentTaskIds = new Set(selectedProject.value.tasks.map(task => task.id));
+  if (!selectedProject.value) return
+  const currentTaskBlockIds = selectedProject.value.tasks
+    .map((task) => task.blockId)
+    .filter((id): id is string => Boolean(id))
   if (allCollapsed.value) {
-    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds]);
+    expandedTaskBlockIds.value = new Set([...expandedTaskBlockIds.value, ...currentTaskBlockIds])
   } else {
-    const next = new Set(expandedTaskIds.value);
-    currentTaskIds.forEach(id => next.delete(id));
-    expandedTaskIds.value = next;
+    const next = new Set(expandedTaskBlockIds.value)
+    currentTaskBlockIds.forEach((id) => next.delete(id))
+    expandedTaskBlockIds.value = next
   }
 }
 
@@ -214,7 +336,7 @@ defineExpose({
   allCollapsed,
   toggleCollapseAll,
   resetColumnRatios: reset,
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -266,5 +388,4 @@ defineExpose({
 .project-workbench--embedded {
   padding: 8px;
 }
-
 </style>

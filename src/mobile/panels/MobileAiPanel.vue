@@ -1,5 +1,8 @@
 <template>
-  <div class="mobile-ai-panel" data-testid="mobile-ai-panel">
+  <div
+    class="mobile-ai-panel"
+    data-testid="mobile-ai-panel"
+  >
     <MobileAiConversationListPage
       v-if="viewMode === 'history'"
       :conversations="conversationsList"
@@ -30,11 +33,16 @@
         >
           <span class="mobile-ai-panel__weixin-wrap">
             <WeixinIcon :is-connected="isClawBotConnected" />
-            <span v-if="hasUnreadWeixin" class="mobile-ai-panel__unread-badge"></span>
+            <span
+              v-if="hasUnreadWeixin"
+              class="mobile-ai-panel__unread-badge"
+            ></span>
           </span>
         </button>
         <div class="mobile-ai-panel__title-block">
-          <div class="mobile-ai-panel__title">{{ currentTitle }}</div>
+          <div class="mobile-ai-panel__title">
+            {{ currentTitle }}
+          </div>
           <div
             v-if="currentHeaderStatus"
             class="mobile-ai-panel__title-status"
@@ -97,154 +105,166 @@
 
     <MobileWeixinSheet
       v-model="showWeixinSheet"
-      @switch-conversation="handleWeixinSwitch"
+      @switchConversation="handleWeixinSwitch"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
-import ChatPanel from '@/components/ai/ChatPanel.vue';
-import WeixinIcon from '@/components/icons/WeixinIcon.vue';
-import { t } from '@/i18n';
-import { getCurrentPlugin } from '@/main';
-import MobileConfirmDrawer from '@/mobile/drawers/confirm/MobileConfirmDrawer.vue';
-import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue';
-import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue';
-import { useAIStore, useProjectStore, useSettingsStore } from '@/stores';
-import type { ConversationIndexItem } from '@/services/conversationStorageService';
+import type { ConversationIndexItem } from '@/services/conversationStorageService'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+} from 'vue'
+import ChatPanel from '@/components/ai/ChatPanel.vue'
+import WeixinIcon from '@/components/icons/WeixinIcon.vue'
+import { t } from '@/i18n'
+import { getCurrentPlugin } from '@/main'
+import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue'
+import MobileConfirmDrawer from '@/mobile/drawers/confirm/MobileConfirmDrawer.vue'
+import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue'
+import {
+  useAIStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
 
-const aiStore = useAIStore();
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
+const WECHAT_PREFIX_RE = /^微信:\s*/
 
-const viewMode = ref<'chat' | 'history'>('chat');
-const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
-const isLoadingHistory = ref(false);
-const showDeleteConfirm = ref(false);
-const showClearConfirm = ref(false);
-const showWeixinSheet = ref(false);
-const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null);
-const pendingDeleteConversationId = ref<string | null>(null);
+const aiStore = useAIStore()
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
 
-const allItems = computed(() => projectStore.items || []);
-const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
-const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
-const currentTitle = computed(() => {
-  const conv = currentConversation.value;
-  if (conv?.source === 'weixin') {
-    return conv.weixinUserName?.trim()
-      || conv.title.replace(/^微信:\s*/, '').trim()
-      || '微信会话';
-  }
+const viewMode = ref<'chat' | 'history'>('chat')
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? [])
+const isLoadingHistory = ref(false)
+const showDeleteConfirm = ref(false)
+const showClearConfirm = ref(false)
+const showWeixinSheet = ref(false)
+const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null)
+const pendingDeleteConversationId = ref<string | null>(null)
 
-  return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle;
-});
+const allItems = computed(() => projectStore.items || [])
+const isClawBotConnected = computed(() => aiStore.isClawBotConnected)
+const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin)
 
 const currentConversation = computed(() => {
-  const convId = aiStore.currentConversationId;
-  if (!convId) return null;
-  return conversationsList.value.find(c => c.id === convId) || null;
-});
+  const convId = aiStore.currentConversationId
+  if (!convId) return null
+  return conversationsList.value.find((c) => c.id === convId) || null
+})
+
+const currentTitle = computed(() => {
+  const conv = currentConversation.value
+  if (conv?.source === 'weixin') {
+    return conv.weixinUserName?.trim()
+      || conv.title.replace(WECHAT_PREFIX_RE, '').trim()
+      || '微信会话'
+  }
+
+  return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle
+})
 
 const currentWeixinStatus = computed(() => {
-  const conv = currentConversation.value;
-  if (!conv || conv.source !== 'weixin' || !conv.weixinUserId) return null;
-  return aiStore.getWeixinConversationStatus(conv.weixinUserId);
-});
+  const conv = currentConversation.value
+  if (!conv || conv.source !== 'weixin' || !conv.weixinUserId) return null
+  return aiStore.getWeixinConversationStatus(conv.weixinUserId)
+})
 
 const currentHeaderStatus = computed(() => {
   if (currentConversation.value?.source !== 'weixin') {
-    return null;
+    return null
   }
 
-  const status = currentWeixinStatus.value;
+  const status = currentWeixinStatus.value
   if (!status || status.status === 'active') {
-    return null;
+    return null
   }
 
-  return status;
-});
+  return status
+})
 
 function loadAISettingsFromPlugin() {
-  const pluginSettings = getCurrentPlugin()?.getSettings?.();
+  const pluginSettings = getCurrentPlugin()?.getSettings?.()
   if (!pluginSettings?.ai) {
-    return;
+    return
   }
 
   aiStore.loadSettings({
     providers: pluginSettings.ai.providers || [],
     activeProviderId: pluginSettings.ai.activeProviderId || null,
     showToolCalls: pluginSettings.ai.showToolCalls,
-  });
+  })
 }
 
 async function refreshConversationsList() {
-  isLoadingHistory.value = true;
-  await aiStore.refreshConversationsList();
-  isLoadingHistory.value = false;
+  isLoadingHistory.value = true
+  await aiStore.refreshConversationsList()
+  isLoadingHistory.value = false
 }
 
 async function handleOpenHistory() {
-  viewMode.value = 'history';
-  await refreshConversationsList();
+  viewMode.value = 'history'
+  await refreshConversationsList()
 }
 
 async function handleSelectConversation(conversationId: string) {
-  await aiStore.switchConversation(conversationId);
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.scrollToBottom?.();
-  chatPanelRef.value?.focusInput?.();
+  await aiStore.switchConversation(conversationId)
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.scrollToBottom?.()
+  chatPanelRef.value?.focusInput?.()
 }
 
 async function handleCreateConversation() {
-  aiStore.startNewConversationDraft();
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.focusInput?.();
+  aiStore.startNewConversationDraft()
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.focusInput?.()
 }
 
 async function handleDeleteConversation(conversationId: string) {
-  pendingDeleteConversationId.value = conversationId;
-  showDeleteConfirm.value = true;
+  pendingDeleteConversationId.value = conversationId
+  showDeleteConfirm.value = true
 }
 
 async function handleConfirmDelete() {
-  const conversationId = pendingDeleteConversationId.value;
+  const conversationId = pendingDeleteConversationId.value
   if (!conversationId) {
-    return;
+    return
   }
 
-  pendingDeleteConversationId.value = null;
-  await aiStore.deleteConversation(conversationId);
-  await refreshConversationsList();
-  viewMode.value = conversationsList.value.length === 0 ? 'chat' : 'history';
+  pendingDeleteConversationId.value = null
+  await aiStore.deleteConversation(conversationId)
+  await refreshConversationsList()
+  viewMode.value = conversationsList.value.length === 0 ? 'chat' : 'history'
 }
 
 async function handleClearConversation() {
-  showClearConfirm.value = true;
+  showClearConfirm.value = true
 }
 
 async function handleConfirmClear() {
-  await aiStore.clearCurrentConversation();
+  await aiStore.clearCurrentConversation()
 }
 
 async function handleWeixinSwitch(conversationId: string) {
-  showWeixinSheet.value = false;
-  await aiStore.switchConversation(conversationId);
-  viewMode.value = 'chat';
-  await nextTick();
-  chatPanelRef.value?.scrollToBottom?.();
-  chatPanelRef.value?.focusInput?.();
+  showWeixinSheet.value = false
+  await aiStore.switchConversation(conversationId)
+  viewMode.value = 'chat'
+  await nextTick()
+  chatPanelRef.value?.scrollToBottom?.()
+  chatPanelRef.value?.focusInput?.()
 }
 
 onMounted(async () => {
-  loadAISettingsFromPlugin();
-  await refreshConversationsList();
-  await nextTick();
-  chatPanelRef.value?.scrollToBottom?.();
-});
+  loadAISettingsFromPlugin()
+  await refreshConversationsList()
+  await nextTick()
+  chatPanelRef.value?.scrollToBottom?.()
+})
 </script>
 
 <style lang="scss" scoped>

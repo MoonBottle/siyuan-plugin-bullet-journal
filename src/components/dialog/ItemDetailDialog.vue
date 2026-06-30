@@ -1,82 +1,122 @@
 <template>
   <div class="item-detail-dialog">
     <ItemDetailContent
-      :item="item"
+      :item="reactiveItem"
       :show-all-dates="showAllDates"
       :show-action-row="true"
       :close-on-siyuan-link="true"
+      :navigation-info="navigationInfo"
       @close="handleClose"
-      @set-reminder="handleSetReminder"
-      @set-recurring="handleSetRecurring"
-      @skip-occurrence="handleSkipOccurrence"
+      @setReminder="handleSetReminder"
+      @setRecurring="handleSetRecurring"
+      @navigatePrev="navigatePrev"
+      @navigateNext="navigateNext"
     />
 
-    <!-- 底部按钮 -->
-    <div class="dialog-footer">
-      <button class="b3-button b3-button--outline" data-initial-focus @click="handleClose">
-        {{ t('common').cancel }}
-      </button>
-      <button class="b3-button b3-button--outline" @click="handleOpenCalendar">
-        {{ t('todo').viewInCalendar }}
-      </button>
-      <button class="b3-button b3-button--text" @click="handleOpenDoc">
-        {{ t('todo').openDoc }}
-      </button>
-    </div>
+    <ItemActionBar
+      :item="reactiveItem"
+      :show-separator="true"
+      :after-action="handleAfterNavigate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
+import { useProjectStore } from '@/stores'
 
 interface Props {
-  item: Item;
-  showAllDates?: boolean;
+  blockId: string
+  fallbackItem: Item
+  showAllDates?: boolean
+  siblingBlockIds?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showAllDates: false
-});
+  showAllDates: false,
+  siblingBlockIds: () => [],
+})
 
 const emit = defineEmits<{
-  close: [];
-  openDoc: [];
-  openCalendar: [date: string];
-  setReminder: [];
-  setRecurring: [];
-  skipOccurrence: [];
-}>();
+  close: []
+  setReminder: []
+  setRecurring: []
+}>()
 
-// 关闭弹框
+const projectStore = useProjectStore()
+
+const activeBlockId = ref(props.blockId)
+
+const currentIndex = computed(() => {
+  if (!props.siblingBlockIds?.length) return -1
+  return props.siblingBlockIds.indexOf(activeBlockId.value)
+})
+
+const canNavigatePrev = computed(() => currentIndex.value > 0)
+const canNavigateNext = computed(() =>
+  currentIndex.value >= 0 && currentIndex.value < props.siblingBlockIds!.length - 1,
+)
+
+const navigationInfo = computed(() => {
+  if (!props.siblingBlockIds?.length || props.siblingBlockIds.length <= 1) return undefined
+  return {
+    currentIndex: currentIndex.value,
+    total: props.siblingBlockIds.length,
+    canPrev: canNavigatePrev.value,
+    canNext: canNavigateNext.value,
+  }
+})
+
+const reactiveItem = computed(() => projectStore.getItemByBlockId(activeBlockId.value) ?? props.fallbackItem)
+
+function navigatePrev() {
+  if (!canNavigatePrev.value) return
+  activeBlockId.value = props.siblingBlockIds![currentIndex.value - 1]
+}
+
+function navigateNext() {
+  if (!canNavigateNext.value) return
+  activeBlockId.value = props.siblingBlockIds![currentIndex.value + 1]
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowLeft') {
+    navigatePrev()
+  } else if (e.key === 'ArrowRight') {
+    navigateNext()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
+
 function handleClose() {
-  emit('close');
+  emit('close')
 }
 
-// 打开文档
-function handleOpenDoc() {
-  emit('openDoc');
+function handleAfterNavigate() {
+  emit('close')
 }
 
-// 打开日历
-function handleOpenCalendar() {
-  emit('openCalendar', props.item.date);
-}
-
-// 设置提醒
 function handleSetReminder() {
-  emit('setReminder');
+  emit('setReminder')
 }
 
-// 设置重复
 function handleSetRecurring() {
-  emit('setRecurring');
-}
-
-// 跳过本次
-function handleSkipOccurrence() {
-  emit('skipOccurrence');
+  emit('setRecurring')
 }
 
 </script>
@@ -84,14 +124,5 @@ function handleSkipOccurrence() {
 <style lang="scss" scoped>
 .item-detail-dialog {
   padding: 16px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--b3-border-color);
 }
 </style>

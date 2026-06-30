@@ -1,220 +1,428 @@
 <template>
-  <div 
-    class="mobile-todo-list mobile-todo-list--gesture-guard b3-dialog" 
+  <div
     ref="scrollContainer"
+    class="mobile-todo-list mobile-todo-list--gesture-guard b3-dialog"
     @touchstart="handleContainerTouchStart"
     @touchmove="handleContainerTouchMove"
     @touchend="handleContainerTouchEnd"
   >
     <!-- 下拉刷新指示器 -->
-    <div 
+    <div
       class="pull-refresh-indicator"
       :style="{ transform: `translateY(${pullDistance}px)` }"
     >
-      <div v-if="isRefreshing" class="refresh-spinner">
+      <div
+        v-if="isRefreshing"
+        class="refresh-spinner"
+      >
         <SyLoading :text="t('common').refreshing || '刷新中...'" />
       </div>
-      <div v-else class="pull-text">
+      <div
+        v-else
+        class="pull-text"
+      >
         {{ pullDistance >= REFRESH_THRESHOLD ? (t('mobile.releaseToRefresh') || '释放刷新') : (t('mobile.pullToRefresh') || '下拉刷新') }}
       </div>
     </div>
     <div class="todo-content">
-      <SyLoading v-if="showInitialLoading" :text="t('common').loading" />
-      
+      <SyLoading
+        v-if="showInitialLoading"
+        :text="t('common').loading"
+      />
+
       <!-- Empty states -->
-      <div v-else-if="hasActiveFilters && filteredItems.length === 0" class="empty-guide">
+      <div
+        v-else-if="hasActiveFilters && filteredItems.length === 0"
+        class="empty-guide"
+      >
         <div class="empty-icon-wrapper">
           <svg class="empty-icon"><use xlink:href="#iconSearch"></use></svg>
         </div>
-        <div class="empty-title">{{ t('todo').noFilterResults || '没有找到符合条件的事项' }}</div>
-        <div class="empty-desc">{{ t('todo').adjustFilters || '请尝试调整筛选条件' }}</div>
+        <div class="empty-title">
+          {{ t('todo').noFilterResults || '没有找到符合条件的事项' }}
+        </div>
+        <div class="empty-desc">
+          {{ t('todo').adjustFilters || '请尝试调整筛选条件' }}
+        </div>
       </div>
-      
-      <div v-else-if="!hasAnyItems" class="empty-guide">
+
+      <div
+        v-else-if="!hasAnyItems"
+        class="empty-guide"
+      >
         <div class="empty-icon-wrapper large">
           <svg class="empty-icon"><use xlink:href="#iconList"></use></svg>
         </div>
-        <div class="empty-title">{{ t('todo').emptyGuideTitle }}</div>
-        <div class="empty-desc">{{ t('todo').emptyGuideDesc }}</div>
-        <button class="create-example-btn" @click="handleCreateExample">
+        <div class="empty-title">
+          {{ t('todo').emptyGuideTitle }}
+        </div>
+        <div class="empty-desc">
+          {{ t('todo').emptyGuideDesc }}
+        </div>
+        <button
+          class="create-example-btn"
+          @click="handleCreateExample"
+        >
           <svg><use xlink:href="#iconAdd"></use></svg>
           {{ t('todo').createExampleDoc }}
         </button>
       </div>
-      
+
       <!-- Grouped list -->
-      <div v-else class="todo-sections">
+      <div
+        v-else
+        class="todo-sections"
+      >
         <!-- Expired items -->
-        <div v-if="expiredItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('expired')">
+        <div
+          v-if="expiredItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('expired')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar expired"></div>
               <span class="section-title">{{ t('todo').expired }}</span>
               <span class="section-count">{{ expiredItems.length }}</span>
             </div>
             <div class="section-actions">
-              <button class="action-link" @click.stop="handlePostponeAll(expiredItems)">
+              <button
+                class="action-link"
+                @click.stop="handlePostponeAll(expiredItems)"
+              >
                 {{ t('mobile.postpone') || '顺延' }}
               </button>
-              <div class="collapse-icon" :class="{ collapsed: collapsedSections.expired }">
+              <div
+                class="collapse-icon"
+                :class="{ collapsed: collapsedSections.expired }"
+              >
                 <svg><use xlink:href="#iconDown"></use></svg>
               </div>
             </div>
           </div>
-          <div v-show="!collapsedSections.expired" class="section-content">
+          <div
+            v-show="!collapsedSections.expired"
+            class="section-content"
+          >
             <div
               v-for="(item, index) in expiredItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === expiredItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <button class="item-check-button expired" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
-              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
-                <div class="item-title">{{ item.content }}</div>
+              <button
+                class="item-check-button expired"
+                data-testid="todo-item-complete-button"
+                type="button"
+                @click.stop="emit('itemComplete', item)"
+              ></button>
+              <div
+                class="item-content"
+                data-testid="todo-item-content"
+                @click="emit('itemClick', item)"
+              >
+                <div class="item-title">
+                  {{ item.content }}
+                </div>
                 <div class="item-meta">
                   <span class="meta-date expired">{{ formatExpiredDate(item) }}</span>
-                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
-                  <svg v-if="item.repeatRule" class="meta-icon"><use xlink:href="#iconRefresh"></use></svg>
-                  <svg v-if="item.reminder?.enabled" class="meta-icon"><use xlink:href="#iconClock"></use></svg>
+                  <span
+                    v-if="item.priority"
+                    class="priority-tag"
+                    :class="item.priority"
+                  >{{ getPriorityLabel(item.priority) }}</span>
+                  <svg
+                    v-if="item.repeatRule"
+                    class="meta-icon"
+                  ><use xlink:href="#iconTaRepeat"></use></svg>
+                  <svg
+                    v-if="item.reminder?.enabled"
+                    class="meta-icon"
+                  ><use xlink:href="#iconTaAlarmClock"></use></svg>
                 </div>
               </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              <div
+                v-if="item.project"
+                class="item-project"
+              >
+                {{ item.project.name }}
+              </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Today's items -->
-        <div v-if="todayItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('today')">
+        <div
+          v-if="todayItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('today')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar today"></div>
               <span class="section-title">{{ t('todo').today }}</span>
               <span class="section-count">{{ todayItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.today }">
+            <div
+              class="collapse-icon"
+              :class="{ collapsed: collapsedSections.today }"
+            >
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.today" class="section-content">
+          <div
+            v-show="!collapsedSections.today"
+            class="section-content"
+          >
             <div
               v-for="(item, index) in todayItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === todayItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <button class="item-check-button today" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
-              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
-                <div class="item-title">{{ item.content }}</div>
+              <button
+                class="item-check-button today"
+                data-testid="todo-item-complete-button"
+                type="button"
+                @click.stop="emit('itemComplete', item)"
+              ></button>
+              <div
+                class="item-content"
+                data-testid="todo-item-content"
+                @click="emit('itemClick', item)"
+              >
+                <div class="item-title">
+                  {{ item.content }}
+                </div>
                 <div class="item-meta">
-                  <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
-                  <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
-                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
-                  <svg v-if="item.repeatRule" class="meta-icon"><use xlink:href="#iconRefresh"></use></svg>
-                  <svg v-if="item.reminder?.enabled" class="meta-icon"><use xlink:href="#iconClock"></use></svg>
+                  <span
+                    v-if="item.startDateTime"
+                    class="meta-time"
+                  >{{ formatTime(item) }}</span>
+                  <span
+                    v-else
+                    class="meta-time all-day"
+                  >{{ t('todo.allDay') || '全天' }}</span>
+                  <span
+                    v-if="item.priority"
+                    class="priority-tag"
+                    :class="item.priority"
+                  >{{ getPriorityLabel(item.priority) }}</span>
+                  <svg
+                    v-if="item.repeatRule"
+                    class="meta-icon"
+                  ><use xlink:href="#iconTaRepeat"></use></svg>
+                  <svg
+                    v-if="item.reminder?.enabled"
+                    class="meta-icon"
+                  ><use xlink:href="#iconTaAlarmClock"></use></svg>
                 </div>
               </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              <div
+                v-if="item.project"
+                class="item-project"
+              >
+                {{ item.project.name }}
+              </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Tomorrow's items -->
-        <div v-if="tomorrowItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('tomorrow')">
+        <div
+          v-if="tomorrowItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('tomorrow')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar tomorrow"></div>
               <span class="section-title">{{ t('todo').tomorrow }}</span>
               <span class="section-count">{{ tomorrowItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.tomorrow }">
+            <div
+              class="collapse-icon"
+              :class="{ collapsed: collapsedSections.tomorrow }"
+            >
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.tomorrow" class="section-content">
+          <div
+            v-show="!collapsedSections.tomorrow"
+            class="section-content"
+          >
             <div
               v-for="(item, index) in tomorrowItems"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item"
               :class="{ 'is-last': index === tomorrowItems.length - 1 }"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <button class="item-check-button tomorrow" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
-              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
-                <div class="item-title">{{ item.content }}</div>
+              <button
+                class="item-check-button tomorrow"
+                data-testid="todo-item-complete-button"
+                type="button"
+                @click.stop="emit('itemComplete', item)"
+              ></button>
+              <div
+                class="item-content"
+                data-testid="todo-item-content"
+                @click="emit('itemClick', item)"
+              >
+                <div class="item-title">
+                  {{ item.content }}
+                </div>
                 <div class="item-meta">
-                  <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
-                  <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
-                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
+                  <span
+                    v-if="item.startDateTime"
+                    class="meta-time"
+                  >{{ formatTime(item) }}</span>
+                  <span
+                    v-else
+                    class="meta-time all-day"
+                  >{{ t('todo.allDay') || '全天' }}</span>
+                  <span
+                    v-if="item.priority"
+                    class="priority-tag"
+                    :class="item.priority"
+                  >{{ getPriorityLabel(item.priority) }}</span>
                 </div>
               </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              <div
+                v-if="item.project"
+                class="item-project"
+              >
+                {{ item.project.name }}
+              </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Future items -->
-        <div v-if="futureItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('future')">
+        <div
+          v-if="futureItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('future')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar future"></div>
               <span class="section-title">{{ t('todo').future }}</span>
               <span class="section-count">{{ futureItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.future }">
+            <div
+              class="collapse-icon"
+              :class="{ collapsed: collapsedSections.future }"
+            >
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.future" class="section-content">
-            <div v-for="date in futureDates" :key="date" class="date-group">
-              <div class="date-divider">{{ formatDateLabel(date) }}</div>
+          <div
+            v-show="!collapsedSections.future"
+            class="section-content"
+          >
+            <div
+              v-for="date in futureDates"
+              :key="date"
+              class="date-group"
+            >
+              <div class="date-divider">
+                {{ formatDateLabel(date) }}
+              </div>
               <div
                 v-for="(item, index) in groupedFutureItems.get(date)"
-                :key="item.id"
+                :key="item.blockId || item.id"
                 class="todo-item"
                 :class="{ 'is-last': index === groupedFutureItems.get(date)!.length - 1 }"
                 @touchstart="handleTouchStart(item)"
                 @touchend="handleTouchEnd"
                 @touchmove="handleTouchMove"
               >
-                <button class="item-check-button future" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
-                <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
-                  <div class="item-title">{{ item.content }}</div>
+                <button
+                  class="item-check-button future"
+                  data-testid="todo-item-complete-button"
+                  type="button"
+                  @click.stop="emit('itemComplete', item)"
+                ></button>
+                <div
+                  class="item-content"
+                  data-testid="todo-item-content"
+                  @click="emit('itemClick', item)"
+                >
+                  <div class="item-title">
+                    {{ item.content }}
+                  </div>
                   <div class="item-meta">
-                    <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
-                    <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
-                    <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
+                    <span
+                      v-if="item.startDateTime"
+                      class="meta-time"
+                    >{{ formatTime(item) }}</span>
+                    <span
+                      v-else
+                      class="meta-time all-day"
+                    >{{ t('todo.allDay') || '全天' }}</span>
+                    <span
+                      v-if="item.priority"
+                      class="priority-tag"
+                      :class="item.priority"
+                    >{{ getPriorityLabel(item.priority) }}</span>
                   </div>
                 </div>
-                <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+                <div
+                  v-if="item.project"
+                  class="item-project"
+                >
+                  {{ item.project.name }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Completed items -->
-        <div v-if="!hideCompleted && completedItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('completed')">
+        <div
+          v-if="!hideCompleted && completedItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('completed')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar completed"></div>
               <span class="section-title">{{ t('todo').completed }}</span>
               <span class="section-count">{{ completedItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.completed }">
+            <div
+              class="collapse-icon"
+              :class="{ collapsed: collapsedSections.completed }"
+            >
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.completed" class="section-content">
+          <div
+            v-show="!collapsedSections.completed"
+            class="section-content"
+          >
             <div
               v-for="(item, index) in completedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item completed-item"
               :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -222,33 +430,55 @@
               @touchmove="handleTouchMove"
             >
               <span class="item-check-indicator completed"></span>
-              <div class="item-content" @click="emit('itemClick', item)">
-                <div class="item-title">{{ item.content }}</div>
+              <div
+                class="item-content"
+                @click="emit('itemClick', item)"
+              >
+                <div class="item-title">
+                  {{ item.content }}
+                </div>
                 <div class="item-meta">
                   <span class="meta-date">{{ formatExpiredDate(item) }}</span>
                 </div>
               </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              <div
+                v-if="item.project"
+                class="item-project"
+              >
+                {{ item.project.name }}
+              </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Abandoned items -->
-        <div v-if="!hideAbandoned && abandonedItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('abandoned')">
+        <div
+          v-if="!hideAbandoned && abandonedItems.length > 0"
+          class="todo-section"
+        >
+          <div
+            class="section-header"
+            @click="toggleSection('abandoned')"
+          >
             <div class="section-title-wrapper">
               <div class="section-status-bar abandoned"></div>
               <span class="section-title">{{ t('todo').abandoned }}</span>
               <span class="section-count">{{ abandonedItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.abandoned }">
+            <div
+              class="collapse-icon"
+              :class="{ collapsed: collapsedSections.abandoned }"
+            >
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.abandoned" class="section-content">
+          <div
+            v-show="!collapsedSections.abandoned"
+            class="section-content"
+          >
             <div
               v-for="(item, index) in abandonedItems.slice(0, 10)"
-              :key="item.id"
+              :key="item.blockId || item.id"
               class="todo-item abandoned-item"
               :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
               @touchstart="handleTouchStart(item)"
@@ -256,13 +486,23 @@
               @touchmove="handleTouchMove"
             >
               <span class="item-check-indicator abandoned"></span>
-              <div class="item-content" @click="emit('itemClick', item)">
-                <div class="item-title">{{ item.content }}</div>
+              <div
+                class="item-content"
+                @click="emit('itemClick', item)"
+              >
+                <div class="item-title">
+                  {{ item.content }}
+                </div>
                 <div class="item-meta">
                   <span class="meta-date">{{ formatExpiredDate(item) }}</span>
                 </div>
               </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              <div
+                v-if="item.project"
+                class="item-project"
+              >
+                {{ item.project.name }}
+              </div>
             </div>
           </div>
         </div>
@@ -272,86 +512,92 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onUnmounted } from 'vue';
-import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import type { Item, PriorityLevel } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
-import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils';
-import { getEffectiveDate } from '@/utils/dateRangeUtils';
-import { createExampleDocument } from '@/utils/exampleDocUtils';
-import { showMessage } from '@/utils/dialog';
+import type {
+  Item,
+  PriorityLevel,
+} from '@/types/models'
+import {
+  computed,
+  onUnmounted,
+  ref,
+} from 'vue'
+import SyLoading from '@/components/SiyuanTheme/SyLoading.vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import { getEffectiveDate } from '@/utils/dateRangeUtils'
+import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils'
+import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
+import { createExampleDocument } from '@/utils/exampleDocUtils'
+import { migrateItem } from '@/utils/itemActions'
 
 const props = defineProps<{
-  groupId?: string;
-  searchQuery?: string;
-  dateRange?: { start: string; end: string } | null;
-  completedDateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
-  hasActiveFilters?: boolean;
-}>();
+  groupId?: string
+  searchQuery?: string
+  dateRange?: { start: string, end: string } | null
+  completedDateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
+  hasActiveFilters?: boolean
+}>()
 
 const emit = defineEmits<{
-  itemClick: [item: Item];
-  itemComplete: [item: Item];
-  itemLongPress: [item: Item];
-  refresh: [];
-}>();
+  itemClick: [item: Item]
+  itemComplete: [item: Item]
+  itemLongPress: [item: Item]
+  refresh: []
+}>()
 
 // Pull-to-refresh state
-const isRefreshing = ref(false);
-const pullDistance = ref(0);
-const isPulling = ref(false);
-const startY = ref(0);
-const scrollContainer = ref<HTMLElement | null>(null);
+const isRefreshing = ref(false)
+const pullDistance = ref(0)
+const isPulling = ref(false)
+const startY = ref(0)
+const scrollContainer = ref<HTMLElement | null>(null)
 
-const REFRESH_THRESHOLD = 80;
+const REFRESH_THRESHOLD = 80
 
 // Pull-to-refresh touch handlers
 const handleContainerTouchStart = (e: TouchEvent) => {
   if (scrollContainer.value?.scrollTop === 0) {
-    startY.value = e.touches[0].clientY;
-    isPulling.value = true;
+    startY.value = e.touches[0].clientY
+    isPulling.value = true
   }
-};
+}
 
 const handleContainerTouchMove = (e: TouchEvent) => {
-  if (!isPulling.value) return;
-  const currentY = e.touches[0].clientY;
-  const diff = currentY - startY.value;
+  if (!isPulling.value) return
+  const currentY = e.touches[0].clientY
+  const diff = currentY - startY.value
   if (diff > 0) {
-    pullDistance.value = Math.min(diff * 0.5, REFRESH_THRESHOLD + 20);
+    pullDistance.value = Math.min(diff * 0.5, REFRESH_THRESHOLD + 20)
     // Only prevent default when necessary (handled via .passive modifier)
     if (pullDistance.value > 0) {
-      e.preventDefault();
+      e.preventDefault()
     }
   }
-};
+}
 
 const handleContainerTouchEnd = async () => {
-  if (!isPulling.value) return;
-  isPulling.value = false;
-  
-  if (pullDistance.value >= REFRESH_THRESHOLD) {
-    isRefreshing.value = true;
-    emit('refresh');
-    isRefreshing.value = false;
-  }
-  pullDistance.value = 0;
-};
+  if (!isPulling.value) return
+  isPulling.value = false
 
-const projectStore = useProjectStore();
-const loading = computed(() => projectStore.loading);
-const hasAnyItems = computed(() => projectStore.getDisplayItems('').length > 0);
-const showInitialLoading = computed(() => loading.value && !hasAnyItems.value);
+  if (pullDistance.value >= REFRESH_THRESHOLD) {
+    isRefreshing.value = true
+    emit('refresh')
+    isRefreshing.value = false
+  }
+  pullDistance.value = 0
+}
+
+const projectStore = useProjectStore()
+const loading = computed(() => projectStore.loading)
+const hasAnyItems = computed(() => projectStore.getDisplayItems('').length > 0)
+const showInitialLoading = computed(() => loading.value && !hasAnyItems.value)
 
 // Long press handling
-let pressTimer: ReturnType<typeof setTimeout> | null = null;
-let currentItem: Item | null = null;
-const PRESS_DURATION = 500;
+let pressTimer: ReturnType<typeof setTimeout> | null = null
+let currentItem: Item | null = null
+const PRESS_DURATION = 500
 
 // Collapsible sections
 const collapsedSections = ref({
@@ -361,11 +607,11 @@ const collapsedSections = ref({
   future: false,
   completed: false,
   abandoned: false,
-});
+})
 
 const toggleSection = (section: keyof typeof collapsedSections.value) => {
-  collapsedSections.value[section] = !collapsedSections.value[section];
-};
+  collapsedSections.value[section] = !collapsedSections.value[section]
+}
 
 // Filtered items
 const filteredItems = computed(() => {
@@ -374,21 +620,21 @@ const filteredItems = computed(() => {
     searchQuery: props.searchQuery || '',
     dateRange: props.dateRange,
     priorities: props.priorities?.length ? props.priorities : undefined,
-  });
-});
+  })
+})
 
 // Group items by date
-const todayStr = dayjs().format('YYYY-MM-DD');
-const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+const todayStr = dayjs().format('YYYY-MM-DD')
+const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD')
 
 // 隐藏设置
-const hideCompleted = computed(() => projectStore.hideCompleted);
-const hideAbandoned = computed(() => projectStore.hideAbandoned);
+const hideCompleted = computed(() => projectStore.hideCompleted)
+const hideAbandoned = computed(() => projectStore.hideAbandoned)
 
 // 只包含待办状态的事项（已完成和已放弃单独分组）
 const pendingItems = computed(() => {
-  return filteredItems.value.filter(item => item.status === 'pending');
-});
+  return filteredItems.value.filter((item) => item.status === 'pending')
+})
 
 // 已完成事项
 const completedItems = computed(() => {
@@ -397,8 +643,8 @@ const completedItems = computed(() => {
     searchQuery: props.searchQuery || '',
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities?.length ? props.priorities : undefined,
-  });
-});
+  })
+})
 
 // 已放弃事项
 const abandonedItems = computed(() => {
@@ -407,137 +653,131 @@ const abandonedItems = computed(() => {
     searchQuery: props.searchQuery || '',
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities?.length ? props.priorities : undefined,
-  });
-});
+  })
+})
 
 const expiredItems = computed(() => {
-  return pendingItems.value.filter(item => getEffectiveDate(item) < todayStr);
-});
+  return pendingItems.value.filter((item) => getEffectiveDate(item) < todayStr)
+})
 
 const todayItems = computed(() => {
-  return pendingItems.value.filter(item => item.date === todayStr);
-});
+  return pendingItems.value.filter((item) => item.date === todayStr)
+})
 
 const tomorrowItems = computed(() => {
-  return pendingItems.value.filter(item => item.date === tomorrowStr);
-});
+  return pendingItems.value.filter((item) => item.date === tomorrowStr)
+})
 
 const futureItems = computed(() => {
-  return pendingItems.value.filter(item => {
-    const date = item.date;
-    return date > tomorrowStr && getEffectiveDate(item) >= todayStr;
-  });
-});
+  return pendingItems.value.filter((item) => {
+    const date = item.date
+    return date > tomorrowStr && getEffectiveDate(item) >= todayStr
+  })
+})
 
 const groupedFutureItems = computed(() => {
-  const grouped = new Map<string, Item[]>();
-  futureItems.value.forEach(item => {
-    const list = grouped.get(item.date);
+  const grouped = new Map<string, Item[]>()
+  futureItems.value.forEach((item) => {
+    const list = grouped.get(item.date)
     if (list) {
-      list.push(item);
+      list.push(item)
     } else {
-      grouped.set(item.date, [item]);
+      grouped.set(item.date, [item])
     }
-  });
-  return grouped;
-});
+  })
+  return grouped
+})
 
 const futureDates = computed(() => {
-  return Array.from(groupedFutureItems.value.keys()).sort();
-});
+  return Array.from(groupedFutureItems.value.keys()).sort()
+})
 
 // Format helpers
 const formatDateLabel = (date: string) => {
-  return formatDateLabelUtil(date, t('todo').today, t('todo').tomorrow);
-};
+  return formatDateLabelUtil(date, t('todo').today, t('todo').tomorrow)
+}
 
 const formatExpiredDate = (item: Item) => {
-  const date = getEffectiveDate(item);
-  const day = dayjs(date);
-  const today = dayjs();
-  const diffDays = today.diff(day, 'day');
-  
-  if (diffDays === 1) return t('todo.yesterday') || '昨天';
-  return day.format('M月D日');
-};
+  const date = getEffectiveDate(item)
+  const day = dayjs(date)
+  const today = dayjs()
+  const diffDays = today.diff(day, 'day')
+
+  if (diffDays === 1) return t('todo.yesterday') || '昨天'
+  return day.format('M月D日')
+}
 
 const formatTime = (item: Item) => {
-  if (!item.startDateTime) return '';
-  return item.startDateTime.split(' ')[1]?.slice(0, 5) || '';
-};
+  if (!item.startDateTime) return ''
+  return item.startDateTime.split(' ')[1]?.slice(0, 5) || ''
+}
 
 const getPriorityLabel = (priority: PriorityLevel) => {
   const labels: Record<string, string> = {
     high: t('todo.priority.high') || '高',
     medium: t('todo.priority.medium') || '中',
     low: t('todo.priority.low') || '低',
-  };
-  return labels[priority] || priority;
-};
+  }
+  return labels[priority] || priority
+}
 
 // Touch handlers for long press
 const handleTouchStart = (item: Item) => {
-  currentItem = item;
+  currentItem = item
   pressTimer = setTimeout(() => {
     if (currentItem) {
-      emit('itemLongPress', currentItem);
+      emit('itemLongPress', currentItem)
     }
-    pressTimer = null;
-  }, PRESS_DURATION);
-};
+    pressTimer = null
+  }, PRESS_DURATION)
+}
 
 const handleTouchEnd = () => {
   if (pressTimer) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
+    clearTimeout(pressTimer)
+    pressTimer = null
   }
-  currentItem = null;
-};
+  currentItem = null
+}
 
 const handleTouchMove = () => {
   if (pressTimer) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
+    clearTimeout(pressTimer)
+    pressTimer = null
   }
-  currentItem = null;
-};
+  currentItem = null
+}
 
 // Postpone all expired items
 const handlePostponeAll = async (items: Item[]) => {
-  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
-  let successCount = 0;
-  
+  let successCount = 0
+
   for (const item of items) {
     if (item.blockId) {
       try {
-        const success = await writeBlock(
-          { blockId: item.blockId },
-          buildDatePatchFromItem(item, tomorrow, { includeCurrentItemInSiblings: true }),
-        );
-        if (success) {
-          successCount++;
-        }
+        const success = await migrateItem(item)
+        if (success) successCount++
       } catch (e) {
-        console.error('Failed to postpone item:', e);
+        console.error('Failed to postpone item:', e)
       }
     }
   }
-  
+
   if (successCount > 0) {
-    showMessage(t('mobile.postponeSuccess', { count: successCount }) || `已顺延 ${successCount} 个事项到明天`);
-    emit('refresh');
+    showMessage(t('mobile.postponeSuccess', { count: successCount }) || `已顺延 ${successCount} 个事项到明天`)
+    emit('refresh')
   }
-};
+}
 
 const handleCreateExample = async () => {
-  await createExampleDocument();
-};
+  await createExampleDocument()
+}
 
 onUnmounted(() => {
   if (pressTimer) {
-    clearTimeout(pressTimer);
+    clearTimeout(pressTimer)
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -611,18 +851,18 @@ onUnmounted(() => {
   background: var(--b3-theme-surface-lighter);
   border-radius: 50%;
   margin-bottom: 20px;
-  
+
   &.large {
     width: 80px;
     height: 80px;
   }
-  
+
   .empty-icon {
     width: 32px;
     height: 32px;
     fill: var(--b3-theme-on-surface);
     opacity: 0.4;
-    
+
     .large & {
       width: 40px;
       height: 40px;
@@ -659,16 +899,16 @@ onUnmounted(() => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     opacity: 0.9;
     transform: translateY(-1px);
   }
-  
+
   &:active {
     transform: scale(0.98);
   }
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -714,27 +954,27 @@ onUnmounted(() => {
   width: 4px;
   height: 20px;
   border-radius: 2px;
-  
+
   &.expired {
     background: #ef4444;
   }
-  
+
   &.today {
     background: var(--b3-theme-primary);
   }
-  
+
   &.tomorrow {
     background: #10b981;
   }
-  
+
   &.future {
     background: #8b5cf6;
   }
-  
+
   &.completed {
     background: #22c55e;
   }
-  
+
   &.abandoned {
     background: #9ca3af;
   }
@@ -777,7 +1017,7 @@ onUnmounted(() => {
   padding: 4px 8px;
   border-radius: 6px;
   transition: background 0.2s;
-  
+
   &:hover {
     background: rgba(16, 185, 129, 0.1);
   }
@@ -790,14 +1030,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-  
+
   svg {
     width: 14px;
     height: 14px;
     fill: var(--b3-theme-on-surface);
     opacity: 0.5;
   }
-  
+
   &.collapsed {
     transform: rotate(-90deg);
   }
@@ -816,15 +1056,15 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid var(--b3-border-color);
-  
+
   &:hover {
     background: var(--b3-theme-surface);
   }
-  
+
   &:active {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   &.is-last {
     border-bottom: none;
   }
@@ -868,19 +1108,19 @@ onUnmounted(() => {
   &.expired {
     border-color: rgba(239, 68, 68, 0.32);
   }
-  
+
   &.today {
     border-color: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.38);
   }
-  
+
   &.tomorrow {
     border-color: rgba(16, 185, 129, 0.34);
   }
-  
+
   &.future {
     border-color: rgba(139, 92, 246, 0.34);
   }
-  
+
   &.completed {
     border-color: rgba(34, 197, 94, 0.34);
     background: var(--b3-theme-background);
@@ -897,7 +1137,7 @@ onUnmounted(() => {
     border-bottom: 2px solid #22c55e;
     transform: rotate(45deg);
   }
-  
+
   &.abandoned {
     border-color: rgba(156, 163, 175, 0.38);
   }
@@ -936,7 +1176,7 @@ onUnmounted(() => {
 .meta-date {
   font-size: 12px;
   font-weight: 500;
-  
+
   &.expired {
     color: #ef4444;
   }
@@ -946,7 +1186,7 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--b3-theme-primary);
   font-weight: 500;
-  
+
   &.all-day {
     color: var(--b3-theme-on-surface);
     opacity: 0.6;
@@ -966,17 +1206,17 @@ onUnmounted(() => {
   padding: 1px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-  
+
   &.high {
     background: rgba(239, 68, 68, 0.1);
     color: #dc2626;
   }
-  
+
   &.medium {
     background: rgba(249, 115, 22, 0.1);
     color: #ea580c;
   }
-  
+
   &.low {
     background: rgba(107, 114, 128, 0.1);
     color: #4b5563;

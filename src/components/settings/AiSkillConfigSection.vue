@@ -1,269 +1,240 @@
 <template>
   <SySettingsSection
+    :svg-icon="skillSvgIcon"
     :title="t('settings').aiSkills?.title ?? 'AI 技能配置'"
-    :description="t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务'"
+    :description="t('settings').aiSkills?.description ?? '管理 AI 技能，让 AI 能够执行特定任务'"
   >
-    <template #header>
-      <div class="sy-settings-section__header">
-        <div class="sy-settings-section__header-left">
-          <div class="sy-settings-section__title-row fn__flex">
-            <SkillIcon class="sy-settings-section__icon" />
-            <span class="sy-settings-section__title">{{ t('settings').aiSkills?.title ?? 'AI 技能配置' }}</span>
-          </div>
-          <div class="sy-settings-section__description">{{ t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务' }}</div>
-        </div>
+    <div class="skill-section">
+      <div
+        v-if="skills.length === 0"
+        class="skill-empty"
+      >
+        {{ t('settings').aiSkills?.emptySkills ?? '暂无技能，从技能市场浏览模板，或自定义创建' }}
       </div>
-    </template>
-    <!-- 内置技能列表 -->
-    <div v-if="builtinSkills.length > 0" class="skill-section">
-      <h4 class="skill-section-title">
-        {{ t('settings').aiSkills?.builtinSkills ?? '内置技能' }}
-        <span class="skill-section-hint">
-          {{ t('settings').aiSkills?.builtinHint ?? '（可创建同名文档覆盖）' }}
-        </span>
-      </h4>
-      <div class="custom-list">
-        <div 
-          v-for="skill in builtinSkills" 
-          :key="skill.id" 
-          class="custom-item builtin-skill"
+
+      <div
+        v-else
+        class="custom-list"
+      >
+        <div
+          v-for="skill in skills"
+          :key="skill.name"
+          class="custom-item"
         >
           <div class="custom-item-header">
             <div class="custom-item-info">
               <span class="custom-item-name">
                 {{ skill.name }}
-                <span class="builtin-badge">{{ t('common')?.builtin ?? '内置' }}</span>
+                <span
+                  v-if="!skill.enabled"
+                  class="disabled-badge"
+                >
+                  {{ t('common')?.disabled ?? '已禁用' }}
+                </span>
               </span>
               <span class="custom-item-desc">{{ skill.description }}</span>
             </div>
             <div class="custom-item-actions">
-              <SyButton 
-                icon="iconCopy" 
-                :text="t('settings').aiSkills?.customize ?? '自定义'"
-                :aria-label="t('settings').aiSkills?.customize ?? '自定义'"
-                @click="createOverrideSkill(skill)"
+              <SyButton
+                icon="iconFolder"
+                :aria-label="t('settings').aiSkills?.openFolder ?? '打开目录'"
+                @click="openSkillFolder(skill.name)"
               />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 用户自定义技能列表 -->
-    <div class="skill-section">
-      <h4 class="skill-section-title">
-        {{ t('settings').aiSkills?.customSkills ?? '自定义技能' }}
-      </h4>
-      <div v-if="userSkills.length === 0" class="skill-empty">
-        {{ t('settings').aiSkills?.emptySkills ?? '暂无自定义技能，点击下方按钮添加' }}
-      </div>
-      <div v-else class="custom-list">
-        <div 
-          v-for="skill in userSkills" 
-          :key="skill.docId" 
-          :class="['custom-item', { 'is-override': skill.isOverride }]"
-        >
-          <div class="custom-item-header">
-            <div class="custom-item-info">
-              <span class="custom-item-name">
-                {{ skill.name }}
-                <span v-if="skill.isOverride" class="override-badge">
-                  {{ t('common')?.overriding ?? '已覆盖' }}
-                </span>
-                <span v-else-if="!skill.enabled" class="disabled-badge">
-                  {{ t('common')?.disabled ?? '已禁用' }}
-                </span>
-              </span>
-              <span class="custom-item-path">{{ skill.docPath }}</span>
-            </div>
-            <div class="custom-item-actions">
-              <SyButton 
-                icon="iconEdit" 
-                :aria-label="t('settings').aiSkills?.edit ?? '编辑'"
+              <SyButton
+                icon="iconEdit"
+                :text="t('settings').aiSkills?.editSkill ?? '编辑'"
+                :aria-label="t('settings').aiSkills?.editSkill ?? '编辑'"
                 @click="editSkill(skill)"
               />
-              <SyButton 
-                icon="iconTrashcan" 
+              <SyButton
+                icon="iconTrashcan"
                 :aria-label="t('settings').aiSkills?.delete ?? '删除'"
                 @click="removeSkill(skill)"
               />
               <SySwitch
                 :model-value="skill.enabled"
-                @update:model-value="toggleSkillEnabled(skill.docId, $event)"
+                @update:model-value="toggleSkillEnabled(skill.name, $event)"
               />
             </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- 添加技能按钮 -->
-    <SySettingsActionButton
-      icon="iconAdd"
-      :text="t('settings').aiSkills?.addSkill ?? '添加技能文档'"
-      @click="showAddSkillDialog"
-    />
+
+    <div class="skill-actions">
+      <SySettingsActionButton
+        icon="iconAdd"
+        :text="t('settings').aiSkills?.addSkill ?? '添加技能'"
+        :title="t('settings').aiSkills?.addSkillDescription ?? '自定义创建新技能'"
+        @click="showAddSkillDialog"
+      />
+      <SySettingsActionButton
+        icon="iconSparkles"
+        :text="t('settings').aiSkills?.marketTitle ?? '技能市场'"
+        :title="t('settings').aiSkills?.marketDescription ?? '浏览模板，快速创建技能'"
+        @click="openMarketDialog"
+      />
+    </div>
   </SySettingsSection>
-  
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed, createApp } from 'vue';
-import { useSkillStore } from '@/stores/skillStore';
-import { getAllBuiltinSkills } from '@/utils/skillTemplates';
-import { t } from '@/i18n';
-import { showMessage } from 'siyuan';
-import { showConfirmDialog, createDialog } from '@/utils/dialog';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
-import type { SkillConfig } from '@/types/skill';
-import { useSkillService } from '@/services/skillService';
+/* eslint-disable vue/one-component-per-file */
+import type { RegisteredSkill } from '@/skills'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  createApp,
+} from 'vue'
+import { getWorkspaceInfo } from '@/api'
+import SkillEditDialog from '@/components/dialog/SkillEditDialog.vue'
+import SkillMarketDialog from '@/components/dialog/SkillMarketDialog.vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import { useSkillStore } from '@/stores/skillStore'
 
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingsActionButton from './SySettingsActionButton.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
-import SkillIcon from '@/components/icons/SkillIcon.vue';
+import {
+  createDialog,
+  showConfirmDialog,
+} from '@/utils/dialog'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import SySettingsActionButton from './SySettingsActionButton.vue'
+import SySettingsSection from './SySettingsSection.vue'
 
-// 定义 props 和 emits
-const props = defineProps<{
-  dialog?: { destroy: () => void };
-}>();
+const _props = defineProps<{
+  dialog?: { destroy: () => void }
+}>()
 
-const emit = defineEmits<{
-  (e: 'editSkill', docId: string): void;
-  (e: 'close'): void;
-}>();
+const _emit = defineEmits<{
+  (e: 'close'): void
+}>()
 
-const skillStore = useSkillStore();
+const skillStore = useSkillStore()
 
-const prefilledSkillName = ref('');
+const skillSvgIcon = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M758.208 42.688H254.016C184.448 42.688 128 99.008 128 168.64v671.808c0 69.568 56.448 125.952 126.08 125.952h504.128c69.568 0 126.016-56.384 126.016-125.952V168.64a126.016 126.016 0 0 0-126.08-125.952zM254.016 126.656h504.192c23.168 0 41.984 18.752 41.984 41.984v671.808a41.984 41.984 0 0 1-41.984 41.984H254.016a41.984 41.984 0 0 1-41.984-41.984V168.64c0-23.232 18.816-41.984 41.984-41.984z m425.024 231.296a41.984 41.984 0 0 0-4.864-83.712H338.048l-4.864 0.256a41.984 41.984 0 0 0 4.864 83.712h336.128l4.864-0.256z m0 167.936a41.984 41.984 0 0 0-4.864-83.712H338.048l-4.864 0.256a41.984 41.984 0 0 0 4.864 83.712h336.128l4.864-0.256zM476.16 652.096a41.984 41.984 0 0 1-37.12 41.728l-4.864 0.256h-96a41.984 41.984 0 0 1-4.928-83.648l4.864-0.32h96c23.232 0 42.048 18.816 42.048 41.984z" fill="currentColor"/></svg>'
 
-// 内置技能列表
-const builtinSkills = computed(() => {
-  const userSkillNames = new Set(skillStore.skills.map(s => s.name));
-  return getAllBuiltinSkills()
-    .filter(builtin => !userSkillNames.has(builtin.name))
-    .map(builtin => ({
-      id: builtin.id,
-      name: builtin.name,
-      description: builtin.description,
-      isBuiltin: true
-    }));
-});
+const skills = computed(() => skillStore.skills)
 
-// 用户自定义技能列表
-const userSkills = computed(() => skillStore.skills);
+function openMarketDialog() {
+  const container = document.createElement('div')
 
-// 打开创建技能弹框
-function openCreateSkillDialog(prefilledName: string = '') {
-  const container = document.createElement('div');
-  
+  let app: ReturnType<typeof createApp>
+
   const dialog = createDialog({
-    title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能文档',
+    title: t('settings').aiSkills?.marketTitle ?? '技能市场',
     content: '',
-    width: '480px',
+    width: '600px',
     destroyCallback: () => {
-      app.unmount();
-    }
-  });
-  
-  const app = createApp(CreateSkillDialog, {
-    mode: 'new',
-    prefilledName,
-    onClose: () => {
-      dialog.destroy();
+      app.unmount()
     },
-    onCreated: (docId: string, _skillName?: string) => {
-      // 打开创建的文档
-      emit('editSkill', docId);
-      if (props.dialog) {
-        props.dialog.destroy();
-      }
-      emit('close');
-    }
-  });
-  
-  app.use(getSharedPinia());
-  app.mount(container);
-  
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  })
+
+  app = createApp(SkillMarketDialog, {
+    onClose: () => {
+      dialog.destroy()
+    },
+    onCreated: () => {
+      dialog.destroy()
+    },
+  })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
   if (bodyEl) {
-    bodyEl.appendChild(container);
+    bodyEl.appendChild(container)
   }
 }
 
-// 显示添加技能对话框
+function openSkillEditDialog(skillName: string, mode: 'create' | 'edit' | 'view') {
+  const container = document.createElement('div')
+
+  let app: ReturnType<typeof createApp>
+
+  const titleMap = {
+    create: t('settings').aiSkills?.addSkill ?? '添加技能',
+    edit: t('settings').aiSkills?.editSkill ?? '编辑技能',
+    view: skillName,
+  }
+
+  const dialog = createDialog({
+    title: titleMap[mode],
+    content: '',
+    width: '800px',
+    destroyCallback: () => {
+      app.unmount()
+    },
+  })
+
+  app = createApp(SkillEditDialog, {
+    skillName,
+    mode,
+    onClose: () => {
+      dialog.destroy()
+    },
+    onSaved: () => {
+      dialog.destroy()
+    },
+  })
+
+  app.use(getSharedPinia())
+  app.mount(container)
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body')
+  if (bodyEl) {
+    bodyEl.appendChild(container)
+  }
+}
+
 function showAddSkillDialog() {
-  openCreateSkillDialog('');
+  openSkillEditDialog('', 'create')
 }
 
-// 编辑技能（触发事件让父组件处理）
-function editSkill(skill: SkillConfig) {
-  if (!skill.docId) {
-    showMessage('无法获取文档ID', 2000, 'error');
-    return;
-  }
-  
-  // 触发事件，让父组件打开文档
-  emit('editSkill', skill.docId);
-  
-  // 关闭弹框
-  if (props.dialog) {
-    props.dialog.destroy();
-  }
-  emit('close');
+function editSkill(skill: RegisteredSkill) {
+  openSkillEditDialog(skill.name, 'edit')
 }
 
-// 删除技能
-function removeSkill(skill: SkillConfig) {
+function removeSkill(skill: RegisteredSkill) {
   showConfirmDialog(
     t('common').confirmDelete,
     (t('settings').aiSkills?.confirmDeleteSkill ?? '确定要删除技能「{name}」吗？')
       .replace('{name}', skill.name),
     () => {
-      skillStore.removeSkill(skill.docId);
-      showMessage('技能已删除', 2000, 'info');
-    }
-  );
+      skillStore.removeSkill(skill.name)
+      showMessage('技能已删除', 2000, 'info')
+    },
+  )
 }
 
-// 切换启用状态
-function toggleSkillEnabled(skillId: string, enabled: boolean) {
-  skillStore.toggleSkillEnabled(skillId, enabled);
-}
+const BACKSLASH_RE = /\\/g
+const TRAILING_SLASHES_RE = /\/+$/
 
-// 创建覆盖技能
-async function createOverrideSkill(skill: { name: string; description: string }) {
-  const skillService = useSkillService();
-  
-  // 获取或创建任务助手笔记本
-  const notebook = await getOrCreateTaskAssistantNotebook();
-  if (!notebook) {
-    showMessage('没有可用的笔记本', 3000, 'error');
-    return;
+async function openSkillFolder(skillName: string) {
+  const workspaceInfo = await getWorkspaceInfo()
+  const workspacePath = workspaceInfo?.workspaceDir ?? ''
+  if (!workspacePath) {
+    showMessage('无法获取工作空间路径，请使用思源桌面版', 4000, 'error')
+    return
   }
 
-  const result = await skillService.createOverrideSkill(
-    skill.name,
-    notebook.id,
-    'AI技能'
-  );
+  const base = workspacePath.replace(BACKSLASH_RE, '/').replace(TRAILING_SLASHES_RE, '')
+  const skillPath = `${base}/data/storage/petal/siyuan-plugin-bullet-journal/skills/${skillName}`
 
-  if (result) {
-    showMessage(`已创建「${skill.name}」的自定义版本`, 3000, 'info');
+  try {
+    const { shell } = (window as any).require('electron')
+    shell.showItemInFolder(skillPath)
+  } catch {
+    showMessage('无法打开目录，请使用思源桌面版', 4000, 'error')
   }
 }
 
-// 技能创建成功回调
-async function onSkillCreated(skillId: string) {
-  showDialog.value = false;
-  // 打开创建的文档
-  if (skillId) {
-    await openDocument(skillId);
-  }
+function toggleSkillEnabled(name: string, enabled: boolean) {
+  skillStore.toggleSkillEnabled(name, enabled)
 }
+
 </script>
 
 <style scoped>
@@ -271,20 +242,16 @@ async function onSkillCreated(skillId: string) {
   margin-bottom: 20px;
 }
 
-.skill-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--b3-theme-on-surface);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.skill-empty {
+  color: var(--b3-theme-on-surface-light);
+  font-size: 13px;
+  padding: 12px 0;
+  text-align: center;
 }
 
-.skill-section-hint {
-  font-size: 12px;
-  font-weight: normal;
-  color: var(--b3-theme-on-surface-light);
+.skill-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .custom-list {
@@ -300,15 +267,6 @@ async function onSkillCreated(skillId: string) {
   padding: 12px;
   border: 1px solid transparent;
   transition: all 0.2s;
-}
-
-.custom-item.builtin-skill {
-  background: var(--b3-theme-surface-light);
-}
-
-.custom-item.is-override {
-  border-color: var(--b3-theme-primary-light);
-  background: var(--b3-theme-primary-lightest);
 }
 
 .custom-item-header {
@@ -335,7 +293,6 @@ async function onSkillCreated(skillId: string) {
   gap: 8px;
 }
 
-.custom-item-path,
 .custom-item-desc {
   font-size: 11px;
   color: var(--b3-theme-on-surface-light);
@@ -351,37 +308,12 @@ async function onSkillCreated(skillId: string) {
   flex-shrink: 0;
 }
 
-.builtin-badge,
-.override-badge,
 .disabled-badge {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: normal;
-}
-
-.builtin-badge {
   background: var(--b3-theme-surface-lighter);
   color: var(--b3-theme-on-surface-light);
-}
-
-.override-badge {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-}
-
-.disabled-badge {
-  background: var(--b3-theme-surface-lighter);
-  color: var(--b3-theme-on-surface-light);
-}
-
-.skill-empty {
-  color: var(--b3-theme-on-surface-light);
-  font-size: 13px;
-  padding: 16px;
-  text-align: center;
-  background: var(--b3-theme-surface);
-  border-radius: 6px;
-  margin-bottom: 16px;
 }
 </style>

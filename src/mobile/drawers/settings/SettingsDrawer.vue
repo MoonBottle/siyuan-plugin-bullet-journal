@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
           <div
             v-if="modelValue"
@@ -9,20 +13,31 @@
             style="overscroll-behavior: contain; touch-action: pan-y;"
             @click.stop
           >
-            <div class="drawer-handle" @click="close">
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
-            
+
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('mobile.settings.title') || '设置' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('mobile.settings.title') || '设置' }}
+              </h3>
             </div>
-            
-            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+
+            <div
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- View Settings Section -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.settings.view') || '视图设置' }}</label>
-                
-                <div class="setting-item" @click="toggleHideCompleted">
+
+                <div
+                  class="setting-item"
+                  @click="toggleHideCompleted"
+                >
                   <div class="setting-info">
                     <div class="setting-icon">
                       <svg><use xlink:href="#iconEye"></use></svg>
@@ -30,21 +45,30 @@
                     <span class="setting-label">{{ t('mobile.settings.hideCompleted') || '隐藏已完成' }}</span>
                   </div>
                   <div class="setting-control">
-                    <div class="switch" :class="{ active: projectStore.hideCompleted }">
+                    <div
+                      class="switch"
+                      :class="{ active: projectStore.hideCompleted }"
+                    >
                       <div class="switch-thumb"></div>
                     </div>
                   </div>
                 </div>
-                
-                <div class="setting-item" @click="toggleHideAbandoned">
+
+                <div
+                  class="setting-item"
+                  @click="toggleHideAbandoned"
+                >
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconCloseRound"></use></svg>
+                      <svg><use xlink:href="#iconTaSquareX"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.hideAbandoned') || '隐藏已放弃' }}</span>
                   </div>
                   <div class="setting-control">
-                    <div class="switch" :class="{ active: projectStore.hideAbandoned }">
+                    <div
+                      class="switch"
+                      :class="{ active: projectStore.hideAbandoned }"
+                    >
                       <div class="switch-thumb"></div>
                     </div>
                   </div>
@@ -81,11 +105,11 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- About Section -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.settings.about') || '关于' }}</label>
-                
+
                 <!-- 插件设置入口暂时隐藏 -->
                 <!-- <div class="setting-item" @click="openPluginSettings">
                   <div class="setting-info">
@@ -98,11 +122,11 @@
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div> -->
-                
+
                 <div class="setting-item version-item">
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconInfo"></use></svg>
+                      <svg><use xlink:href="#iconTaInfo"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.version') || '版本' }}</span>
                   </div>
@@ -112,9 +136,12 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="drawer-footer">
-              <button class="confirm-btn" @click="close">
+              <button
+                class="confirm-btn"
+                @click="close"
+              >
                 {{ t('common.confirm') || '确认' }}
               </button>
             </div>
@@ -126,65 +153,73 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import type { HabitCheckInTimePrecision } from '@/settings/types';
+import type { HabitCheckInTimePrecision } from '@/settings/types'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
 
-const props = defineProps<{
-  modelValue: boolean;
-}>();
+defineProps<{
+  modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-}>();
+  'update:modelValue': [value: boolean]
+}>()
 
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
-const plugin = usePlugin();
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
+const plugin = usePlugin()
 
-const version = computed(() => plugin?.manifest?.version || '0.12.2');
-const habitCheckInTimePrecision = ref<HabitCheckInTimePrecision>(plugin?.getSettings?.().habitCheckInTimePrecision ?? 'day');
+const version = computed(() => plugin?.manifest?.version || '0.12.2')
+const habitCheckInTimePrecision = ref<HabitCheckInTimePrecision>(plugin?.getSettings?.().habitCheckInTimePrecision ?? 'day')
 const habitCheckInTimePrecisionOptions = computed(() => [
-  { value: 'day', label: t('settings').habitSettings.precisionDay },
-  { value: 'minute', label: t('settings').habitSettings.precisionMinute },
-  { value: 'second', label: t('settings').habitSettings.precisionSecond },
-]);
+  {
+    value: 'day',
+    label: t('settings').habitSettings.precisionDay,
+  },
+  {
+    value: 'minute',
+    label: t('settings').habitSettings.precisionMinute,
+  },
+  {
+    value: 'second',
+    label: t('settings').habitSettings.precisionSecond,
+  },
+])
 
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 
 const toggleHideCompleted = () => {
-  projectStore.toggleHideCompleted();
-};
+  projectStore.toggleHideCompleted()
+}
 
 const toggleHideAbandoned = () => {
-  projectStore.toggleHideAbandoned();
-};
+  projectStore.toggleHideAbandoned()
+}
 
 const handleHabitCheckInTimePrecisionChange = (event: Event) => {
-  const value = (event.target as HTMLSelectElement).value as HabitCheckInTimePrecision;
-  habitCheckInTimePrecision.value = value;
+  const value = (event.target as HTMLSelectElement).value as HabitCheckInTimePrecision
+  habitCheckInTimePrecision.value = value
 
   if (!plugin?.updateSettings) {
-    return;
+    return
   }
 
   plugin.updateSettings({
     habitCheckInTimePrecision: value,
-  });
-  settingsStore.habitCheckInTimePrecision = value;
-};
+  })
+  settingsStore.habitCheckInTimePrecision = value
+}
 
-const openPluginSettings = () => {
-  // 打开插件设置页面
-  if (plugin?.openSetting) {
-    plugin.openSetting();
-  }
-  close();
-};
 </script>
 
 <style lang="scss" scoped>
@@ -270,22 +305,22 @@ const openPluginSettings = () => {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 8px;
-  
+
   &:hover {
     border-color: var(--b3-theme-primary);
   }
-  
+
   &:active {
     transform: scale(0.99);
   }
-  
+
   &.version-item {
     cursor: default;
-    
+
     &:hover {
       border-color: var(--b3-border-color);
     }
-    
+
     &:active {
       transform: none;
     }
@@ -313,7 +348,7 @@ const openPluginSettings = () => {
   background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   border-radius: 10px;
   flex-shrink: 0;
-  
+
   svg {
     width: 18px;
     height: 18px;
@@ -365,10 +400,10 @@ const openPluginSettings = () => {
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &.active {
     background: var(--b3-theme-primary);
-    
+
     .switch-thumb {
       transform: translateX(20px);
     }
@@ -419,11 +454,11 @@ const openPluginSettings = () => {
   transition: all 0.2s ease;
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
-  
+
   &:hover {
     opacity: 0.9;
   }
-  
+
   &:active {
     transform: scale(0.98);
   }

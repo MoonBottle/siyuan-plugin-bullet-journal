@@ -2,7 +2,10 @@
   <div class="sy-setting-item fn__flex">
     <div class="sy-setting-item__left">
       <span class="sy-setting-item__label">{{ label }}</span>
-      <span v-if="description" class="sy-setting-item__desc">{{ description }}</span>
+      <span
+        v-if="description"
+        class="sy-setting-item__desc"
+      >{{ description }}</span>
     </div>
     <div class="sy-setting-item__control">
       <slot />
@@ -12,8 +15,8 @@
 
 <script setup lang="ts">
 defineProps<{
-  label: string;
-  description?: string;
+  label: string
+  description?: string
 }>()
 </script>
 

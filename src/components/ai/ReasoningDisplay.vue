@@ -1,7 +1,9 @@
 <template>
   <div class="reasoning-display">
-    <!-- 头部：折叠/展开图标 + 思考图标 + 标题 -->
-    <div class="reasoning-display__header" @click="toggleCollapse">
+    <div
+      class="reasoning-display__header"
+      @click="toggleCollapse"
+    >
       <span class="reasoning-display__arrow">
         <svg v-if="isCollapsed">
           <use xlink:href="#iconDown"></use>
@@ -16,7 +18,6 @@
       <span class="reasoning-display__title">{{ title }}</span>
     </div>
 
-    <!-- 展开后的内容 -->
     <div
       v-if="!isCollapsed"
       class="reasoning-display__content"
@@ -26,36 +27,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { t } from '@/i18n';
-import { renderMarkdown } from '@/utils/markdownRenderer';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { renderMarkdown } from '@/utils/markdownRenderer'
 
 const props = defineProps<{
-  /** 思考过程内容 */
-  content: string;
-  /** 默认是否折叠，默认为 true */
-  defaultCollapsed?: boolean;
-  /** 自定义标题，默认使用 i18n 的 reasoningTitle */
-  title?: string;
-}>();
+  content: string
+  defaultCollapsed?: boolean
+  title?: string
+}>()
 
-const isCollapsed = ref(props.defaultCollapsed ?? true);
+const isCollapsed = ref(props.defaultCollapsed ?? true)
+
+watch(() => props.defaultCollapsed, (val) => {
+  if (val !== undefined)
+    isCollapsed.value = val
+})
 
 const title = computed(() => {
-  return props.title ?? (t('aiChat') as Record<string, string>).reasoningTitle ?? '思考过程';
-});
+  return props.title ?? (t('aiChat') as Record<string, string>).reasoningTitle ?? '思考过程'
+})
 
 const renderedContent = computed(() => {
   try {
-    return renderMarkdown(props.content);
+    return renderMarkdown(props.content)
   } catch (error) {
-    console.error('Reasoning markdown rendering error:', error);
-    return props.content;
+    console.error('Reasoning markdown rendering error:', error)
+    return props.content
   }
-});
+})
 
 function toggleCollapse() {
-  isCollapsed.value = !isCollapsed.value;
+  isCollapsed.value = !isCollapsed.value
 }
 </script>
 
@@ -125,14 +132,18 @@ function toggleCollapse() {
     color: var(--b3-theme-on-surface);
     border-top: 1px solid var(--b3-theme-surface-lightest);
 
-    // Markdown 渲染样式
     :deep(p) {
       margin: 4px 0;
-      &:first-child { margin-top: 0; }
-      &:last-child { margin-bottom: 0; }
+      &:first-child {
+        margin-top: 0;
+      }
+      &:last-child {
+        margin-bottom: 0;
+      }
     }
 
-    :deep(ul), :deep(ol) {
+    :deep(ul),
+    :deep(ol) {
       margin: 4px 0;
       padding-left: 16px;
     }
@@ -170,5 +181,4 @@ function toggleCollapse() {
     }
   }
 }
-
 </style>

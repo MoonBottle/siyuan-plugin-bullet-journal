@@ -1,56 +1,62 @@
-import { IMenu, Menu } from 'siyuan';
-import { t } from '@/i18n';
-import { getTodayISO, getTomorrowISO } from '@/utils/dayjs';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { PriorityLevel } from '@/types/models';
+import type { RepeatRule } from '@/types/models'
+import type { ItemActionHandlers } from '@/utils/itemActionHandlers'
+import {
+  IMenu,
+  Menu,
+} from 'siyuan'
+import { t } from '@/i18n'
+import {
+  getTodayISO,
+  getTomorrowISO,
+} from '@/utils/dayjs'
 
 export interface MenuOptions {
-  x: number;
-  y: number;
-  items: MenuItem[];
+  x: number
+  y: number
+  items: MenuItem[]
 }
 
 export interface MenuItem {
-  label?: string;
-  icon?: string;
-  iconHTML?: string;
-  accelerator?: string;
-  disabled?: boolean;
-  type?: 'separator' | 'submenu';
-  submenu?: MenuItem[];
-  click?: () => void;
+  label?: string
+  icon?: string
+  iconHTML?: string
+  accelerator?: string
+  disabled?: boolean
+  type?: 'separator' | 'submenu'
+  submenu?: MenuItem[]
+  click?: () => void
 }
 
 export function showContextMenu(options: MenuOptions) {
-  const menu = new Menu('bullet-journal-context-menu');
-  
-  options.items.forEach(item => {
+  const menu = new Menu('bullet-journal-context-menu')
+
+  options.items.forEach((item) => {
     if (item.type === 'separator') {
-      menu.addSeparator();
-      return;
+      menu.addSeparator()
+      return
     }
 
     if (item.submenu && item.submenu.length > 0) {
-      const subItems: IMenu[] = item.submenu.map(sub => {
+      const subItems: IMenu[] = item.submenu.map((sub) => {
         if (sub.type === 'separator') {
-          return { type: 'separator' } as IMenu;
+          return { type: 'separator' } as IMenu
         }
         return {
           label: sub.label,
           icon: sub.icon,
           iconHTML: sub.iconHTML,
           disabled: sub.disabled,
-          click: sub.click ? () => sub.click!() : undefined
-        };
-      });
+          click: sub.click ? () => sub.click!() : undefined,
+        }
+      })
 
       menu.addItem({
         label: item.label,
         type: 'submenu' as const,
         icon: item.icon,
-        submenu: subItems
-      });
-      return;
+        submenu: subItems,
+      })
+      return
     }
 
     menu.addItem({
@@ -58,154 +64,171 @@ export function showContextMenu(options: MenuOptions) {
       icon: item.icon,
       accelerator: item.accelerator,
       disabled: item.disabled,
-      click: item.click ? () => item.click!() : undefined
-    });
-  });
+      click: item.click ? () => item.click!() : undefined,
+    })
+  })
 
   menu.open({
     x: options.x,
-    y: options.y
-  });
+    y: options.y,
+  })
 }
 
 export function createItemMenu(
   item: {
-    id: string;
-    content: string;
-    date: string;
-    blockId?: string;
-    docId?: string;
-    lineNumber?: number;
-    status?: string;
-    task?: { name: string };
+    id: string
+    content: string
+    date: string
+    blockId?: string
+    docId?: string
+    lineNumber?: number
+    status?: string
+    task?: { name: string }
+    pinned?: boolean
+    repeatRule?: RepeatRule
   },
-  handlers: {
-    onComplete?: () => void;
-    onMigrateToday?: () => void;
-    onMigrateTomorrow?: () => void;
-    onMigrateCustom?: () => void;
-    onAbandon?: () => void;
-    onOpenDoc?: () => void;
-    onShowDetail?: () => void;
-    onShowCalendar?: () => void;
-    onStartPomodoro?: () => void;
-    onSetPriority?: (priority: PriorityLevel | undefined) => void;
-  },
+  handlers: ItemActionHandlers,
   options: {
-    showCalendarMenu?: boolean;
-    isFocusing?: boolean;
-  } = {}
+    showCalendarMenu?: boolean
+    isFocusing?: boolean
+  } = {},
 ): MenuOptions {
-  const { showCalendarMenu = true, isFocusing = false } = options;
-  const isPending = item.status !== 'completed' && item.status !== 'abandoned';
+  const {
+    showCalendarMenu = true,
+    isFocusing = false,
+  } = options
+  const isPending = item.status !== 'completed' && item.status !== 'abandoned'
 
-  const items: MenuItem[] = [];
+  const items: MenuItem[] = []
 
   if (isPending) {
     items.push({
       label: t('todo').complete,
-      icon: 'iconCheck',
-      click: handlers.onComplete
-    });
+      icon: 'iconTaSquareCheck',
+      click: () => handlers.complete(),
+    })
 
     if (!isFocusing) {
       items.push({
         label: t('pomodoro').startFocus,
-        icon: 'iconClock',
-        click: handlers.onStartPomodoro
-      });
+        icon: 'iconTaTimer',
+        click: () => handlers.startFocus(),
+      })
+      items.push({
+        label: t('todo').setFocusPlan,
+        icon: 'iconTaClockPlus',
+        click: () => handlers.focusPlan(),
+      })
     }
 
     items.push({
       label: t('todo').migrate,
-      icon: 'iconForward',
+      icon: 'iconTaCalendarDays',
       submenu: (() => {
-        const todayStr = getTodayISO();
-        const tomorrowStr = getTomorrowISO();
-        const submenu: MenuItem[] = [];
+        const todayStr = getTodayISO()
+        const tomorrowStr = getTomorrowISO()
+        const submenu: MenuItem[] = []
         if (item.date !== todayStr) {
           submenu.push({
             label: t('todo').migrateToday,
-            icon: 'iconCalendar',
-            click: handlers.onMigrateToday
-          });
+            icon: 'iconTaSun',
+            click: () => handlers.migrateToToday(),
+          })
         }
         if (item.date !== tomorrowStr) {
           submenu.push({
             label: t('todo').migrateTomorrow,
-            icon: 'iconCalendar',
-            click: handlers.onMigrateTomorrow
-          });
+            icon: 'iconTaSunrise',
+            click: () => handlers.migrate(),
+          })
         }
         submenu.push({
           label: t('todo').chooseDate,
-          icon: 'iconCalendar',
-          click: handlers.onMigrateCustom
-        });
-        return submenu;
-      })()
-    });
+          icon: 'iconTaCalendarDays',
+          click: () => handlers.migrateCustom(),
+        })
+        return submenu
+      })(),
+    })
+
+    if (item.repeatRule) {
+      items.push({
+        label: t('recurring').skipThis,
+        icon: 'iconTaSkipForward',
+        click: () => handlers.skipOccurrence(),
+      })
+    }
+
+    items.push({ type: 'separator' })
 
     items.push({
       label: t('todo').abandon,
-      icon: 'iconCloseRound',
-      click: handlers.onAbandon
-    });
+      icon: 'iconTaSquareX',
+      click: () => handlers.abandon(),
+    })
+
+    items.push({ type: 'separator' })
 
     items.push({
       label: t('todo').priority.setPriority,
-      icon: 'iconMark',
+      icon: 'iconTaFlag',
       submenu: [
         {
-          iconHTML: '🔥',
+          iconHTML: '🔥&nbsp;&nbsp;',
           label: t('todo').priority.high,
-          click: () => handlers.onSetPriority?.('high'),
+          click: () => handlers.setPriority('high'),
         },
         {
-          iconHTML: '🌱',
+          iconHTML: '🌱&nbsp;&nbsp;',
           label: t('todo').priority.medium,
-          click: () => handlers.onSetPriority?.('medium'),
+          click: () => handlers.setPriority('medium'),
         },
         {
-          iconHTML: '🍃',
+          iconHTML: '🍃&nbsp;&nbsp;',
           label: t('todo').priority.low,
-          click: () => handlers.onSetPriority?.('low'),
+          click: () => handlers.setPriority('low'),
         },
         { type: 'separator' },
         {
-          iconHTML: '⚪',
+          icon: 'iconTaBrushCleaning',
           label: t('todo').priority.clear,
-          click: () => handlers.onSetPriority?.(undefined),
+          click: () => handlers.setPriority(undefined),
         },
       ],
-    });
+    })
 
-    items.push({ type: 'separator' });
+    items.push({
+      label: item.pinned ? t('todo').unpin : t('todo').pin,
+      icon: item.pinned ? 'iconTaPinOff' : 'iconTaPin',
+      click: () => handlers.togglePinned(),
+    })
+
+    items.push({ type: 'separator' })
   }
 
   items.push({
     label: t('todo').openDoc,
-    icon: 'iconOpen',
-    click: handlers.onOpenDoc
-  });
+    icon: 'iconTaFileText',
+    click: () => handlers.openDoc(),
+  })
 
   items.push({
     label: t('todo').viewDetail,
-    icon: 'iconInfo',
-    click: handlers.onShowDetail
-  });
+    icon: 'iconTaInfo',
+    click: () => handlers.openDetail(),
+  })
 
-  if (showCalendarMenu && handlers.onShowCalendar) {
+  if (showCalendarMenu) {
     items.push({
       label: t('todo').viewCalendar,
-      icon: 'iconCalendar',
-      click: handlers.onShowCalendar
-    });
+      icon: 'iconTaCalendarRange',
+      click: () => handlers.openCalendar(),
+    })
   }
 
   return {
     x: 0,
     y: 0,
-    items
-  };
+    items,
+  }
 }

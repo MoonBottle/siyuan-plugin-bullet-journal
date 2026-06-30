@@ -1,5 +1,8 @@
 <template>
-  <section class="mobile-todo-panel" data-testid="todo-panel">
+  <section
+    class="mobile-todo-panel"
+    data-testid="todo-panel"
+  >
     <div class="mobile-filter-bar-shell">
       <MobileFilterBar
         v-model:search="state.searchQuery"
@@ -33,8 +36,8 @@
     <ActionDrawer
       v-model="state.showActionDrawer"
       :item="state.selectedItem"
-      @open-detail="openItemDetail"
-      @open-pomodoro="handleOpenPomodoro"
+      @openDetail="openItemDetail"
+      @openPomodoro="handleOpenPomodoro"
     />
 
     <MobileItemDetail
@@ -42,18 +45,18 @@
       :item="state.selectedItem"
       @open-project="openProjectDetail"
       @open-task="openTaskDetail"
-      @open-pomodoro="handleOpenPomodoro"
-      @set-reminder="handleSetReminder"
-      @set-recurring="handleSetRecurring"
+      @openPomodoro="handleOpenPomodoro"
+      @setReminder="handleSetReminder"
+      @setRecurring="handleSetRecurring"
       @refresh="handleRefresh"
     />
 
     <TaskItemDetail
       v-model="state.showTaskItemDetail"
       :item="state.selectedTaskItem"
-      @open-pomodoro="handleOpenPomodoro"
-      @set-reminder="handleSetTaskItemReminder"
-      @set-recurring="handleSetTaskItemRecurring"
+      @openPomodoro="handleOpenPomodoro"
+      @setReminder="handleSetTaskItemReminder"
+      @setRecurring="handleSetTaskItemRecurring"
       @refresh="handleRefresh"
     />
 
@@ -101,40 +104,72 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
-import ActionDrawer from '@/mobile/drawers/action/ActionDrawer.vue';
-import FilterDrawer from '@/mobile/drawers/filter/FilterDrawer.vue';
-import MobileItemDetail from '@/mobile/drawers/item/MobileItemDetail.vue';
-import MobileRecurringDrawer from '@/mobile/drawers/pomodoro/MobileRecurringDrawer.vue';
-import MobileReminderDrawer from '@/mobile/drawers/pomodoro/MobileReminderDrawer.vue';
-import ProjectDetail from '@/mobile/drawers/project/ProjectDetail.vue';
-import QuickCreateDrawer from '@/mobile/drawers/quick-create/QuickCreateDrawer.vue';
-import TaskItemDetail from '@/mobile/drawers/task/TaskItemDetail.vue';
-import TaskDetail from '@/mobile/drawers/task/TaskDetail.vue';
-import MobileFilterBar from '@/mobile/components/todo/MobileFilterBar.vue';
-import MobileTodoList from '@/mobile/components/todo/MobileTodoList.vue';
-import { useItemDetail } from '@/mobile/composables/useItemDetail';
-import { t } from '@/i18n';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import type { Item, ItemStatus, PriorityLevel, Project, Task } from '@/types/models';
-import { writeBlock } from '@/utils/blockWriter';
-import { showMessage } from '@/utils/dialog';
-import dayjs from '@/utils/dayjs';
-import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
-import { buildViewDebugContext } from '@/utils/viewDebug';
+import type {
+  Item,
+  ItemStatus,
+  PriorityLevel,
+  Project,
+  Task,
+} from '@/types/models'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import MobileFilterBar from '@/mobile/components/todo/MobileFilterBar.vue'
+import MobileTodoList from '@/mobile/components/todo/MobileTodoList.vue'
+import { useItemDetail } from '@/mobile/composables/useItemDetail'
+import ActionDrawer from '@/mobile/drawers/action/ActionDrawer.vue'
+import FilterDrawer from '@/mobile/drawers/filter/FilterDrawer.vue'
+import MobileItemDetail from '@/mobile/drawers/item/MobileItemDetail.vue'
+import MobileRecurringDrawer from '@/mobile/drawers/pomodoro/MobileRecurringDrawer.vue'
+import MobileReminderDrawer from '@/mobile/drawers/pomodoro/MobileReminderDrawer.vue'
+import ProjectDetail from '@/mobile/drawers/project/ProjectDetail.vue'
+import QuickCreateDrawer from '@/mobile/drawers/quick-create/QuickCreateDrawer.vue'
+import TaskDetail from '@/mobile/drawers/task/TaskDetail.vue'
+import TaskItemDetail from '@/mobile/drawers/task/TaskItemDetail.vue'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { completeItem } from '@/utils/itemActions'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  buildCompletedTodoDateRange,
+  buildTodoDateRange,
+
+} from '@/utils/todoDateFilter'
+import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const emit = defineEmits<{
-  'open-pomodoro': [{ blockId?: string }]
-}>();
+  openPomodoro: [{ blockId?: string }]
+}>()
 
-const plugin = usePlugin() as any;
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
-const { openItem, openProject, openTask } = useItemDetail();
-const initialCurrentDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD');
+const plugin = usePlugin() as any
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
+const {
+  openItem,
+  openProject,
+  openTask,
+} = useItemDetail()
+const initialCurrentDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD')
 
 function buildDateRangeForFilter(
   dateFilter: TodoDateFilterType,
@@ -146,7 +181,7 @@ function buildDateRangeForFilter(
     currentDateValue,
     currentRange?.start ?? currentDateValue,
     currentRange?.end ?? dayjs(currentDateValue).add(7, 'day').format('YYYY-MM-DD'),
-  );
+  )
 }
 
 const state = reactive({
@@ -166,198 +201,197 @@ const state = reactive({
   selectedTaskItem: null as Item | null,
   selectedProjectId: null as string | null,
   selectedTaskBlockId: null as string | null,
-});
+})
 
-const currentDate = computed(() => projectStore.currentDate);
-const selectedProject = ref<Project | null>(null);
-const selectedTask = ref<Task | null>(null);
-const showReminderDrawer = ref(false);
-const showRecurringDrawer = ref(false);
-const selectedItemForSetting = ref<Item | null>(null);
+const currentDate = computed(() => projectStore.currentDate)
+const selectedProject = ref<Project | null>(null)
+const selectedTask = ref<Task | null>(null)
+const showReminderDrawer = ref(false)
+const showRecurringDrawer = ref(false)
+const selectedItemForSetting = ref<Item | null>(null)
 
 const handleSetReminder = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showReminderDrawer.value = true;
-};
+  selectedItemForSetting.value = item
+  showReminderDrawer.value = true
+}
 
 const handleSetRecurring = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showRecurringDrawer.value = true;
-};
+  selectedItemForSetting.value = item
+  showRecurringDrawer.value = true
+}
+
+const updateSelectedItems = () => {
+  if (state.showItemDetail && state.selectedItem?.blockId) {
+    const updatedItem = projectStore.getDisplayItems('').find((item) => item.blockId === state.selectedItem?.blockId)
+    if (updatedItem) {
+      state.selectedItem = updatedItem
+    }
+  }
+
+  if (state.showTaskItemDetail && state.selectedTaskItem?.blockId) {
+    const updatedItem = projectStore.getDisplayItems('').find((item) => item.blockId === state.selectedTaskItem?.blockId)
+    if (updatedItem) {
+      state.selectedTaskItem = updatedItem
+    }
+  }
+}
+
+const handleRefresh = async () => {
+  await plugin?.requestRefresh?.({
+    type: 'full',
+    reason: 'mobile-todo:manual-refresh',
+  })
+  updateSelectedItems()
+  showMessage(t('common').dataRefreshed)
+}
 
 const handleSettingDrawerClose = () => {
-  selectedItemForSetting.value = null;
-  handleRefresh();
-};
+  selectedItemForSetting.value = null
+  handleRefresh()
+}
 
 const hasActiveFilters = computed(() => {
   return (
     state.selectedGroup !== ''
     || state.dateFilter !== 'today'
     || state.selectedPriorities.length > 0
-  );
-});
+  )
+})
 
-settingsStore.loadFromPlugin();
-projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
-projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
-
-const updateSelectedItems = () => {
-  if (state.showItemDetail && state.selectedItem?.blockId) {
-    const updatedItem = projectStore.getDisplayItems('').find(item => item.blockId === state.selectedItem?.blockId);
-    if (updatedItem) {
-      state.selectedItem = updatedItem;
-    }
-  }
-
-  if (state.showTaskItemDetail && state.selectedTaskItem?.blockId) {
-    const updatedItem = projectStore.getDisplayItems('').find(item => item.blockId === state.selectedTaskItem?.blockId);
-    if (updatedItem) {
-      state.selectedTaskItem = updatedItem;
-    }
-  }
-};
-
-const handleRefresh = async () => {
-  await plugin?.requestRefresh?.({
-    type: 'full',
-    reason: 'mobile-todo:manual-refresh',
-  });
-  updateSelectedItems();
-  showMessage(t('common').dataRefreshed);
-};
+settingsStore.loadFromPlugin()
+projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
 const openQuickCreate = () => {
-  state.selectedProjectId = null;
-  state.selectedTaskBlockId = null;
-  state.showQuickCreate = true;
-};
+  state.selectedProjectId = null
+  state.selectedTaskBlockId = null
+  state.showQuickCreate = true
+}
 
 const handleQuickComplete = async (item: Item) => {
-  if (!item.blockId)
-    return;
-  await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
-  showMessage(t('todo').complete);
-};
+  if (!item.blockId) return
+  await completeItem(item)
+  showMessage(t('todo').complete)
+}
 
 const openItemDetail = (item: Item) => {
-  state.selectedItem = item;
-  openItem(item);
-  state.showItemDetail = true;
-};
+  state.selectedItem = item
+  openItem(item)
+  state.showItemDetail = true
+}
 
 const openTaskItemDetail = (item: Item) => {
-  state.selectedTaskItem = item;
-  state.showTaskItemDetail = true;
-};
+  state.selectedTaskItem = item
+  state.showTaskItemDetail = true
+}
 
 const openProjectDetail = (projectId: string) => {
-  const project = projectStore.projects.find(project => project.id === projectId);
+  const project = projectStore.projects.find((project) => project.id === projectId)
   if (!project)
-    return;
+    return
 
-  selectedProject.value = project;
-  openProject(project);
-  state.showProjectDetail = true;
-};
+  selectedProject.value = project
+  openProject(project)
+  state.showProjectDetail = true
+}
 
 const openTaskDetail = (taskOrTaskId: Task | string) => {
-  let task: Task | undefined;
+  let task: Task | undefined
 
   if (typeof taskOrTaskId === 'string') {
     for (const project of projectStore.projects) {
-      task = project.tasks.find(currentTask => currentTask.blockId === taskOrTaskId);
+      task = project.tasks.find((currentTask) => currentTask.blockId === taskOrTaskId)
       if (task) {
-        selectedProject.value = project;
-        break;
+        selectedProject.value = project
+        break
       }
     }
   }
   else {
-    task = taskOrTaskId;
+    task = taskOrTaskId
     for (const project of projectStore.projects) {
-      if (project.tasks.some(currentTask => currentTask.blockId === task.blockId)) {
-        selectedProject.value = project;
-        break;
+      if (project.tasks.some((currentTask) => currentTask.blockId === task.blockId)) {
+        selectedProject.value = project
+        break
       }
     }
   }
 
   if (!task)
-    return;
+    return
 
-  selectedTask.value = task;
-  openTask(task);
-  state.showTaskDetail = true;
-};
+  selectedTask.value = task
+  openTask(task)
+  state.showTaskDetail = true
+}
 
 const handleCreateTask = (projectId: string) => {
-  state.selectedProjectId = projectId;
-  state.selectedTaskBlockId = null;
-  state.showQuickCreate = true;
-};
+  state.selectedProjectId = projectId
+  state.selectedTaskBlockId = null
+  state.showQuickCreate = true
+}
 
 const handleCreateItem = (taskId: string, projectId?: string) => {
-  state.selectedTaskBlockId = taskId;
-  state.selectedProjectId = projectId || '';
-  state.showQuickCreate = true;
-};
+  state.selectedTaskBlockId = taskId
+  state.selectedProjectId = projectId || ''
+  state.showQuickCreate = true
+}
 
 const applyFilters = (options: { silent?: boolean } = {}) => {
-  state.dateRange = buildDateRangeForFilter(state.dateFilter, currentDate.value, state.dateRange);
+  state.dateRange = buildDateRangeForFilter(state.dateFilter, currentDate.value, state.dateRange)
 
   if (!options.silent) {
-    showMessage(t('mobile.filter.applied') || '筛选已应用');
+    showMessage(t('mobile.filter.applied') || '筛选已应用')
   }
-};
+}
 
 const completedDateRange = computed(() => {
-  return buildCompletedTodoDateRange(state.dateFilter, currentDate.value, state.dateRange);
-});
+  return buildCompletedTodoDateRange(state.dateFilter, currentDate.value, state.dateRange)
+})
 
 watch(
   () => projectStore.currentDate,
   () => {
     if (state.dateFilter !== 'all' && state.dateFilter !== 'custom') {
-      applyFilters({ silent: true });
+      applyFilters({ silent: true })
     }
   },
-);
+)
 
 const handleOpenPomodoro = (item: Item) => {
-  emit('open-pomodoro', {
+  emit('openPomodoro', {
     blockId: item.blockId,
-  });
-};
+  })
+}
 
 const handleSetTaskItemReminder = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showReminderDrawer.value = true;
-};
+  selectedItemForSetting.value = item
+  showReminderDrawer.value = true
+}
 
 const handleSetTaskItemRecurring = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showRecurringDrawer.value = true;
-};
+  selectedItemForSetting.value = item
+  showRecurringDrawer.value = true
+}
 
 const handleToggleItemStatus = (_item: Item, _newStatus: ItemStatus) => {
-  showMessage(t('mobile.status.updated') || '状态已更新');
-};
+  showMessage(t('mobile.status.updated') || '状态已更新')
+}
 
 const handleCreated = () => {
-  showMessage(t('mobile.create.success') || '创建成功');
-  handleRefresh();
-};
+  showMessage(t('mobile.create.success') || '创建成功')
+  handleRefresh()
+}
 
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
     ...buildViewDebugContext('MobileTodoPanel', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
-  });
+  })
 
   if (!plugin)
-    return;
+    return
 
   const storeKeys = [
     'directories',
@@ -369,41 +403,41 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     'showPomodoroTotal',
     'todoDock',
     'scanMode',
-  ];
+  ]
 
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(key => key in payload);
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((key) => key in payload)
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, unknown> = {}
     storeKeys.forEach((key) => {
       if (payload[key] !== undefined)
-        patch[key] = payload[key];
-    });
+        patch[key] = payload[key]
+    })
     if (Object.keys(patch).length > 0) {
-      settingsStore.$patch(patch);
+      settingsStore.$patch(patch)
     }
   }
   else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
 
-  updateSelectedItems();
-};
+  updateSelectedItems()
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 onMounted(async () => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('MobileTodoPanel', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('MobileTodoPanel', plugin))
 
-  settingsStore.loadFromPlugin();
-  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
-  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+  settingsStore.loadFromPlugin()
+  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
@@ -411,39 +445,44 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('MobileTodoPanel', plugin),
-          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
-        });
-        return handleDataRefresh(payload);
+          data: payload
+            ? {
+                type: 'SETTINGS_CHANGED',
+                ...payload,
+              }
+            : { type: 'SETTINGS_CHANGED' },
+        })
+        return handleDataRefresh(payload)
       },
       viewName: 'MobileTodoPanel',
-    });
+    })
   }
   catch {
     // Ignore BroadcastChannel failures on unsupported environments.
   }
 
-  applyFilters({ silent: true });
-});
+  applyFilters({ silent: true })
+})
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoPanel', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoPanel', plugin))
 
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 
 defineExpose({
   openQuickCreate,
-});
+})
 </script>
 
 <style lang="scss" scoped>

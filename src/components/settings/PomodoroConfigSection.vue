@@ -1,7 +1,11 @@
 <template>
   <!-- Desktop Version -->
   <template v-if="!isMobile">
-    <SySettingsSection icon="iconClock" :title="t('settings').pomodoro.title" :description="(t('settings').pomodoro as any).sectionDescription ?? ''">
+    <SySettingsSection
+      icon="iconClock"
+      :title="t('settings').pomodoro.title"
+      :description="(t('settings').pomodoro as any).sectionDescription ?? ''"
+    >
       <SySettingItemList>
         <SySettingItem
           :label="t('settings').pomodoro.enableFloatingButton"
@@ -55,9 +59,9 @@
             type="number"
             class="b3-text-field fn__flex-center fn__size200"
             :value="pomodoro.minFocusMinutes ?? 5"
-            @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value)"
             min="1"
             max="60"
+            @input="handleMinFocusMinutesInput(($event.target as HTMLInputElement).value)"
           />
         </SySettingItem>
         <SySettingItem
@@ -75,9 +79,9 @@
               type="number"
               class="b3-text-field fn__flex-center fn__size200"
               :value="pomodoro.autoExtendWaitSeconds ?? 30"
-              @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value)"
               min="10"
               max="300"
+              @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value)"
             />
           </SySettingItem>
           <SySettingItem
@@ -88,9 +92,9 @@
               type="number"
               class="b3-text-field fn__flex-center fn__size200"
               :value="pomodoro.autoExtendMinutes ?? 5"
-              @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value)"
               min="1"
               max="60"
+              @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value)"
             />
           </SySettingItem>
           <SySettingItem
@@ -101,9 +105,9 @@
               type="number"
               class="b3-text-field fn__flex-center fn__size200"
               :value="pomodoro.autoExtendMaxCount ?? 3"
-              @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value)"
               min="1"
               max="10"
+              @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value)"
             />
           </SySettingItem>
         </template>
@@ -133,7 +137,7 @@
           <SySelect
             :model-value="pomodoro.defaultFocusDuration ?? 25"
             :options="focusDurationOptions"
-            @update:model-value="pomodoro.defaultFocusDuration = $event"
+            @update:model-value="pomodoro.defaultFocusDuration = $event as number"
           />
         </SySettingItem>
         <SySettingItem
@@ -162,7 +166,7 @@
           <SySelect
             :model-value="pomodoro.defaultBreakDuration ?? 5"
             :options="breakDurationOptions"
-            @update:model-value="pomodoro.defaultBreakDuration = $event"
+            @update:model-value="pomodoro.defaultBreakDuration = $event as number"
           />
         </SySettingItem>
       </SySettingItemList>
@@ -174,30 +178,51 @@
     <div class="ios-settings-content">
       <!-- Header -->
       <div class="ios-group-header">
-        <div class="header-icon">🍅</div>
+        <div class="header-icon">
+          🍅
+        </div>
         <div class="header-info">
-          <div class="header-title">{{ t('settings').pomodoro.title }}</div>
-          <div class="header-desc">{{ (t('settings').pomodoro as any).sectionDescription ?? t('settings').pomodoro.sectionDesc }}</div>
+          <div class="header-title">
+            {{ t('settings').pomodoro.title }}
+          </div>
+          <div class="header-desc">
+            {{ t('settings').pomodoro.sectionDescription ?? t('settings').pomodoro.sectionDesc }}
+          </div>
         </div>
       </div>
 
       <!-- General Group -->
       <div class="ios-group">
-        <div class="ios-cell" @click="pomodoro.enableFloatingButton = !pomodoro.enableFloatingButton">
+        <div
+          class="ios-cell"
+          @click="pomodoro.enableFloatingButton = !pomodoro.enableFloatingButton"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.enableFloatingButton }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.enableFloatingButtonDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.enableFloatingButton }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.enableFloatingButtonDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: pomodoro.enableFloatingButton }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: pomodoro.enableFloatingButton }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
         </div>
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.floatingDisplayMode }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.floatingDisplayModeDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.floatingDisplayMode }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.floatingDisplayModeDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
             <select
@@ -205,30 +230,56 @@
               class="ios-select"
               @change="updateFloatingDisplayMode(($event.target as HTMLSelectElement).value as PomodoroFloatingDisplayMode)"
             >
-              <option v-for="opt in floatingDisplayModeOptions" :key="opt.value" :value="opt.value">
+              <option
+                v-for="opt in floatingDisplayModeOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
                 {{ opt.label }}
               </option>
             </select>
           </div>
         </div>
-        <div class="ios-cell" @click="pomodoro.enableStatusBarTimer = !pomodoro.enableStatusBarTimer">
+        <div
+          class="ios-cell"
+          @click="pomodoro.enableStatusBarTimer = !pomodoro.enableStatusBarTimer"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.enableStatusBarTimer }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.enableStatusBarTimerDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.enableStatusBarTimer }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.enableStatusBarTimerDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: pomodoro.enableStatusBarTimer }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: pomodoro.enableStatusBarTimer }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
         </div>
-        <div class="ios-cell" @click="pomodoro.enableStatusBar = !pomodoro.enableStatusBar">
+        <div
+          class="ios-cell"
+          @click="pomodoro.enableStatusBar = !pomodoro.enableStatusBar"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.enableStatusBar }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.enableStatusBarDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.enableStatusBar }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.enableStatusBarDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: pomodoro.enableStatusBar }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: pomodoro.enableStatusBar }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
@@ -239,27 +290,49 @@
       <div class="ios-group">
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.recordMode }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.recordMode }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <select v-model="pomodoro.recordMode" class="ios-select">
-              <option value="block">{{ t('settings').pomodoro.recordModeBlock }}</option>
-              <option value="attr">{{ t('settings').pomodoro.recordModeAttr }}</option>
+            <select
+              v-model="pomodoro.recordMode"
+              class="ios-select"
+            >
+              <option value="block">
+                {{ t('settings').pomodoro.recordModeBlock }}
+              </option>
+              <option value="attr">
+                {{ t('settings').pomodoro.recordModeAttr }}
+              </option>
             </select>
           </div>
         </div>
-        <div class="cell-footer">{{ t('settings').pomodoro.recordModeDesc }}</div>
+        <div class="cell-footer">
+          {{ t('settings').pomodoro.recordModeDesc }}
+        </div>
       </div>
 
       <!-- Auto Complete Group -->
       <div class="ios-group">
-        <div class="ios-cell" @click="pomodoro.autoCompleteOnItemDone = !pomodoro.autoCompleteOnItemDone">
+        <div
+          class="ios-cell"
+          @click="pomodoro.autoCompleteOnItemDone = !pomodoro.autoCompleteOnItemDone"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.autoCompleteOnItemDone }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.autoCompleteOnItemDoneDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.autoCompleteOnItemDone }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.autoCompleteOnItemDoneDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: pomodoro.autoCompleteOnItemDone }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: pomodoro.autoCompleteOnItemDone }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
@@ -270,17 +343,21 @@
       <div class="ios-group">
         <div class="ios-cell ios-cell-input">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.minFocusMinutes }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.minFocusMinutesDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.minFocusMinutes }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.minFocusMinutesDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
             <input
               type="number"
               class="ios-number-input"
               :value="pomodoro.minFocusMinutes ?? 5"
-              @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
               min="1"
               max="60"
+              @input="handleMinFocusMinutesInput(($event.target as HTMLInputElement).value)"
             />
             <span class="unit">{{ t('common').minutes }}</span>
           </div>
@@ -289,13 +366,24 @@
 
       <!-- Auto Extend Group -->
       <div class="ios-group">
-        <div class="ios-cell" @click="pomodoro.autoExtendEnabled = !pomodoro.autoExtendEnabled">
+        <div
+          class="ios-cell"
+          @click="pomodoro.autoExtendEnabled = !pomodoro.autoExtendEnabled"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.autoExtendEnabled }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.autoExtendEnabledDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.autoExtendEnabled }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.autoExtendEnabledDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: pomodoro.autoExtendEnabled }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: pomodoro.autoExtendEnabled }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
@@ -303,61 +391,75 @@
         <template v-if="pomodoro.autoExtendEnabled">
           <div class="ios-cell ios-cell-input">
             <div class="cell-content">
-              <div class="cell-title">{{ t('settings').pomodoro.autoExtendWaitSeconds }}</div>
+              <div class="cell-title">
+                {{ t('settings').pomodoro.autoExtendWaitSeconds }}
+              </div>
             </div>
             <div class="cell-accessory">
               <input
                 type="number"
                 class="ios-number-input"
                 :value="pomodoro.autoExtendWaitSeconds ?? 30"
-                @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value) || 30"
                 min="10"
                 max="300"
+                @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value) || 30"
               />
               <span class="unit">{{ t('common').seconds }}</span>
             </div>
           </div>
-          <div class="cell-footer">{{ t('settings').pomodoro.autoExtendWaitSecondsDesc }}</div>
+          <div class="cell-footer">
+            {{ t('settings').pomodoro.autoExtendWaitSecondsDesc }}
+          </div>
           <div class="ios-cell ios-cell-input">
             <div class="cell-content">
-              <div class="cell-title">{{ t('settings').pomodoro.autoExtendMinutes }}</div>
+              <div class="cell-title">
+                {{ t('settings').pomodoro.autoExtendMinutes }}
+              </div>
             </div>
             <div class="cell-accessory">
               <input
                 type="number"
                 class="ios-number-input"
                 :value="pomodoro.autoExtendMinutes ?? 5"
-                @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
                 min="1"
                 max="60"
+                @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
               />
               <span class="unit">{{ t('common').minutes }}</span>
             </div>
           </div>
-          <div class="cell-footer">{{ t('settings').pomodoro.autoExtendMinutesDesc }}</div>
+          <div class="cell-footer">
+            {{ t('settings').pomodoro.autoExtendMinutesDesc }}
+          </div>
           <div class="ios-cell ios-cell-input">
             <div class="cell-content">
-              <div class="cell-title">{{ t('settings').pomodoro.autoExtendMaxCount }}</div>
+              <div class="cell-title">
+                {{ t('settings').pomodoro.autoExtendMaxCount }}
+              </div>
             </div>
             <div class="cell-accessory">
               <input
                 type="number"
                 class="ios-number-input"
                 :value="pomodoro.autoExtendMaxCount ?? 3"
-                @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value) || 3"
                 min="1"
                 max="10"
+                @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value) || 3"
               />
               <span class="unit">{{ t('common').times }}</span>
             </div>
           </div>
-          <div class="cell-footer">{{ t('settings').pomodoro.autoExtendMaxCountDesc }}</div>
+          <div class="cell-footer">
+            {{ t('settings').pomodoro.autoExtendMaxCountDesc }}
+          </div>
         </template>
       </div>
 
       <!-- Focus Duration Presets -->
       <div class="ios-group">
-        <div class="ios-cell-header">{{ t('settings').pomodoro.focusDurationPresets }}</div>
+        <div class="ios-cell-header">
+          {{ t('settings').pomodoro.focusDurationPresets }}
+        </div>
         <div class="ios-cell ios-cell-segment">
           <div class="segment-control">
             <button
@@ -372,19 +474,32 @@
           </div>
           <span class="segment-unit">{{ t('common').minutes }}</span>
         </div>
-        <div class="cell-footer">{{ t('settings').pomodoro.focusDurationPresetsDesc }}</div>
+        <div class="cell-footer">
+          {{ t('settings').pomodoro.focusDurationPresetsDesc }}
+        </div>
       </div>
 
       <!-- Default Focus Duration -->
       <div class="ios-group">
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.defaultFocusDuration }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.defaultFocusDurationDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.defaultFocusDuration }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.defaultFocusDurationDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <select v-model="pomodoro.defaultFocusDuration" class="ios-select">
-              <option v-for="opt in focusDurationOptions" :key="opt.value" :value="opt.value">
+            <select
+              v-model="pomodoro.defaultFocusDuration"
+              class="ios-select"
+            >
+              <option
+                v-for="opt in focusDurationOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
                 {{ opt.label }}
               </option>
             </select>
@@ -394,7 +509,9 @@
 
       <!-- Break Duration Presets -->
       <div class="ios-group">
-        <div class="ios-cell-header">{{ t('settings').pomodoro.breakDurationPresets }}</div>
+        <div class="ios-cell-header">
+          {{ t('settings').pomodoro.breakDurationPresets }}
+        </div>
         <div class="ios-cell ios-cell-segment">
           <div class="segment-control">
             <button
@@ -409,19 +526,32 @@
           </div>
           <span class="segment-unit">{{ t('common').minutes }}</span>
         </div>
-        <div class="cell-footer">{{ t('settings').pomodoro.breakDurationPresetsDesc }}</div>
+        <div class="cell-footer">
+          {{ t('settings').pomodoro.breakDurationPresetsDesc }}
+        </div>
       </div>
 
       <!-- Default Break Duration -->
       <div class="ios-group">
         <div class="ios-cell ios-cell-select">
           <div class="cell-content">
-            <div class="cell-title">{{ t('settings').pomodoro.defaultBreakDuration }}</div>
-            <div class="cell-subtitle">{{ t('settings').pomodoro.defaultBreakDurationDesc }}</div>
+            <div class="cell-title">
+              {{ t('settings').pomodoro.defaultBreakDuration }}
+            </div>
+            <div class="cell-subtitle">
+              {{ t('settings').pomodoro.defaultBreakDurationDesc }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <select v-model="pomodoro.defaultBreakDuration" class="ios-select">
-              <option v-for="opt in breakDurationOptions" :key="opt.value" :value="opt.value">
+            <select
+              v-model="pomodoro.defaultBreakDuration"
+              class="ios-select"
+            >
+              <option
+                v-for="opt in breakDurationOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
                 {{ opt.label }}
               </option>
             </select>
@@ -433,129 +563,160 @@
 </template>
 
 <script setup lang="ts">
-import type { PomodoroFloatingDisplayMode, PomodoroSettings } from '@/settings/types';
-import { t } from '@/i18n';
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import { computed, ref, watch } from 'vue';
+import type {
+  PomodoroFloatingDisplayMode,
+  PomodoroSettings,
+} from '@/settings/types'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import SySettingsSection from './SySettingsSection.vue'
 
 const props = defineProps<{
-  pomodoro: PomodoroSettings;
-  isMobile?: boolean;
-}>();
+  pomodoro: PomodoroSettings
+  isMobile?: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:pomodoro': [value: PomodoroSettings];
-}>();
+  'update:pomodoro': [value: PomodoroSettings]
+}>()
 
 const recordModeOptions = [
-  { value: 'block', label: t('settings').pomodoro.recordModeBlock },
-  { value: 'attr', label: t('settings').pomodoro.recordModeAttr }
-];
+  {
+    value: 'block',
+    label: t('settings').pomodoro.recordModeBlock,
+  },
+  {
+    value: 'attr',
+    label: t('settings').pomodoro.recordModeAttr,
+  },
+]
 
 const floatingDisplayModeOptions = [
-  { value: 'inline', label: t('settings').pomodoro.floatingDisplayModeInline },
-  { value: 'desktop', label: t('settings').pomodoro.floatingDisplayModeDesktop },
-  { value: 'both', label: t('settings').pomodoro.floatingDisplayModeBoth },
-];
+  {
+    value: 'inline',
+    label: t('settings').pomodoro.floatingDisplayModeInline,
+  },
+  {
+    value: 'desktop',
+    label: t('settings').pomodoro.floatingDisplayModeDesktop,
+  },
+  {
+    value: 'both',
+    label: t('settings').pomodoro.floatingDisplayModeBoth,
+  },
+]
 
 // 专注时长预设本地状态（4个）
-const focusPresets = ref<number[]>([15, 25, 45, 60]);
+const focusPresets = ref<number[]>([15, 25, 45, 60])
 
 // 休息时长预设本地状态（3个）
-const breakPresets = ref<number[]>([5, 10, 15]);
+const breakPresets = ref<number[]>([5, 10, 15])
 
 // 从 props 初始化预设值
 const initPresets = () => {
   if (props.pomodoro.focusDurationPresets?.length === 4) {
-    focusPresets.value = [...props.pomodoro.focusDurationPresets];
+    focusPresets.value = [...props.pomodoro.focusDurationPresets]
   }
   if (props.pomodoro.breakDurationPresets?.length === 3) {
-    breakPresets.value = [...props.pomodoro.breakDurationPresets];
+    breakPresets.value = [...props.pomodoro.breakDurationPresets]
   }
-};
-initPresets();
+}
+initPresets()
 
 // 监听预设变化，同步到 pomodoro 配置
 watch(focusPresets, (newVal) => {
   const newDefault = newVal.includes(props.pomodoro.defaultFocusDuration)
     ? props.pomodoro.defaultFocusDuration
-    : newVal[0];
+    : newVal[0]
   emit('update:pomodoro', {
     ...props.pomodoro,
     focusDurationPresets: [...newVal],
-    defaultFocusDuration: newDefault
-  });
-}, { deep: true });
+    defaultFocusDuration: newDefault,
+  })
+}, { deep: true })
 
 watch(breakPresets, (newVal) => {
   const newDefault = newVal.includes(props.pomodoro.defaultBreakDuration)
     ? props.pomodoro.defaultBreakDuration
-    : newVal[0];
+    : newVal[0]
   emit('update:pomodoro', {
     ...props.pomodoro,
     breakDurationPresets: [...newVal],
-    defaultBreakDuration: newDefault
-  });
-}, { deep: true });
+    defaultBreakDuration: newDefault,
+  })
+}, { deep: true })
 
 // 验证专注预设输入
 const validateFocusPreset = (index: number) => {
-  let value = focusPresets.value[index];
-  if (value < 1) value = 1;
-  if (value > 180) value = 180;
-  focusPresets.value[index] = value;
-};
+  let value = focusPresets.value[index]
+  if (value < 1) value = 1
+  if (value > 180) value = 180
+  focusPresets.value[index] = value
+}
 
 // 验证休息预设输入
 const validateBreakPreset = (index: number) => {
-  let value = breakPresets.value[index];
-  if (value < 1) value = 1;
-  if (value > 60) value = 60;
-  breakPresets.value[index] = value;
-};
+  let value = breakPresets.value[index]
+  if (value < 1) value = 1
+  if (value > 60) value = 60
+  breakPresets.value[index] = value
+}
 
 // 设置默认专注时长
 const setDefaultFocusDuration = (duration: number) => {
   emit('update:pomodoro', {
     ...props.pomodoro,
-    defaultFocusDuration: duration
-  });
-};
+    defaultFocusDuration: duration,
+  })
+}
 
 // 设置默认休息时长
 const setDefaultBreakDuration = (duration: number) => {
   emit('update:pomodoro', {
     ...props.pomodoro,
-    defaultBreakDuration: duration
-  });
-};
+    defaultBreakDuration: duration,
+  })
+}
 
 // 专注时长下拉选项（从 presets 动态生成）
 const focusDurationOptions = computed(() => {
-  return focusPresets.value.map(minutes => ({
+  return focusPresets.value.map((minutes) => ({
     value: minutes,
-    label: `${minutes} ${t('common').minutes}`
-  }));
-});
+    label: `${minutes} ${t('common').minutes}`,
+  }))
+})
 
 // 休息时长下拉选项
 const breakDurationOptions = computed(() => {
-  return breakPresets.value.map(minutes => ({
+  return breakPresets.value.map((minutes) => ({
     value: minutes,
-    label: `${minutes} ${t('common').minutes}`
-  }));
-});
+    label: `${minutes} ${t('common').minutes}`,
+  }))
+})
+
+const handleMinFocusMinutesInput = (rawValue: string) => {
+  const value = Number.parseInt(rawValue)
+  if (Number.isNaN(value) || value < 1 || value > 60) return
+  emit('update:pomodoro', {
+    ...props.pomodoro,
+    minFocusMinutes: value,
+  })
+}
 
 const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   emit('update:pomodoro', {
     ...props.pomodoro,
     floatingDisplayMode: mode,
-  });
-};
+  })
+}
 </script>
 
 <style lang="scss" scoped>
@@ -575,22 +736,22 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   display: flex;
   gap: 12px;
   padding: 16px 0 20px;
-  
+
   .header-icon {
     font-size: 36px;
   }
-  
+
   .header-info {
     flex: 1;
   }
-  
+
   .header-title {
     font-size: 20px;
     font-weight: 600;
     color: #000;
     margin-bottom: 4px;
   }
-  
+
   .header-desc {
     font-size: 14px;
     color: #6c6c70;
@@ -600,7 +761,7 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
 
 .ios-group {
   margin-bottom: 20px;
-  
+
   .ios-cell-header {
     font-size: 15px;
     font-weight: 500;
@@ -618,45 +779,45 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   padding: 12px 16px;
   background: #fff;
   min-height: 44px;
-  
+
   &:first-child {
     border-radius: 10px 10px 0 0;
   }
-  
+
   &:last-child {
     border-radius: 0 0 10px 10px;
   }
-  
+
   &:only-child {
     border-radius: 10px;
   }
-  
+
   & + .ios-cell {
     border-top: 0.5px solid #e5e5ea;
   }
-  
+
   &:active {
     background: #f2f2f7;
   }
-  
+
   .cell-content {
     flex: 1;
     min-width: 0;
   }
-  
+
   .cell-title {
     font-size: 16px;
     color: #000;
     line-height: 22px;
   }
-  
+
   .cell-subtitle {
     font-size: 13px;
     color: #6c6c70;
     line-height: 18px;
     margin-top: 2px;
   }
-  
+
   .cell-accessory {
     display: flex;
     align-items: center;
@@ -675,7 +836,7 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   .cell-content {
     padding-right: 8px;
   }
-  
+
   .cell-accessory {
     gap: 4px;
   }
@@ -686,12 +847,12 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   align-items: stretch;
   padding: 16px;
   gap: 12px;
-  
+
   .segment-control {
     display: flex;
     gap: 8px;
   }
-  
+
   .segment-btn {
     flex: 1;
     padding: 10px 12px;
@@ -703,17 +864,17 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
-    
+
     &.active {
       background: #007aff;
       color: #fff;
     }
-    
+
     &:active {
       opacity: 0.8;
     }
   }
-  
+
   .segment-unit {
     font-size: 15px;
     color: #6c6c70;
@@ -738,15 +899,15 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &.on {
     background: #34c759;
-    
+
     .switch-thumb {
       transform: translateX(20px);
     }
   }
-  
+
   .switch-thumb {
     width: 27px;
     height: 27px;
@@ -771,7 +932,7 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   text-align: right;
   direction: rtl;
   cursor: pointer;
-  
+
   &:focus {
     outline: none;
   }
@@ -786,7 +947,7 @@ const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
   font-size: 16px;
   text-align: center;
   background: #fff;
-  
+
   &:focus {
     outline: none;
     border-color: #007aff;

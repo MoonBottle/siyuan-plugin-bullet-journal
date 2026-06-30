@@ -16,55 +16,58 @@
       :display-mode="displayMode"
       :preview-trigger-mode="previewTriggerMode"
       :on-item-preview-click="onItemPreviewClick"
-      @add-tag-filter="emit('add-tag-filter', $event)"
+      @addTagFilter="emit('addTagFilter', $event)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
-import type { TodoSortRule } from '@/settings';
-import type { PriorityLevel } from '@/types/models';
-import type { TodoDateRange } from '@/utils/todoDateFilter';
-import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue'
+import type { TodoSortRule } from '@/settings'
+import type { PriorityLevel } from '@/types/models'
+import type { TodoDateRange } from '@/utils/todoDateFilter'
+import {
+  computed,
+  ref,
+} from 'vue'
+import TodoSidebar from '@/components/todo/TodoSidebar.vue'
 
 const props = withDefaults(defineProps<{
-  groupId: string;
-  searchQuery: string;
-  selectedTags?: string[];
-  sortRules?: TodoSortRule[];
-  dateRange?: TodoDateRange | null;
-  completedDateRange?: TodoDateRange | null;
-  priorities: PriorityLevel[];
-  displayMode?: 'default' | 'embedded';
-  previewTriggerMode?: 'hover' | 'click';
-  onItemPreviewClick?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
+  groupId: string
+  searchQuery: string
+  selectedTags?: string[]
+  sortRules?: TodoSortRule[]
+  dateRange?: TodoDateRange | null
+  completedDateRange?: TodoDateRange | null
+  priorities: PriorityLevel[]
+  displayMode?: 'default' | 'embedded'
+  previewTriggerMode?: 'hover' | 'click'
+  onItemPreviewClick?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void
 }>(), {
   dateRange: null,
   completedDateRange: null,
   displayMode: 'default',
   previewTriggerMode: 'hover',
-});
+})
 
 const emit = defineEmits<{
-  (event: 'add-tag-filter', value: string): void;
-}>();
+  (event: 'addTagFilter', value: string): void
+}>()
 
-const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
-const rootEl = ref<HTMLElement | null>(null);
-const allCollapsed = computed(() => todoSidebar.value?.allCollapsed ?? false);
+const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
+const allCollapsed = computed(() => todoSidebar.value?.allCollapsed ?? false)
 
 function toggleCollapseAll() {
-  todoSidebar.value?.toggleCollapseAll();
+  todoSidebar.value?.toggleCollapseAll()
 }
 
 function getScrollElement() {
   if (props.displayMode === 'embedded') {
-    return rootEl.value?.querySelector('.todo-content') as HTMLElement | null;
+    return rootEl.value?.querySelector('.todo-content') as HTMLElement | null
   }
 
-  return rootEl.value;
+  return rootEl.value
 }
 
 defineExpose({
@@ -73,7 +76,7 @@ defineExpose({
   todoSidebar,
   allCollapsed,
   toggleCollapseAll,
-});
+})
 </script>
 
 <style lang="scss" scoped>

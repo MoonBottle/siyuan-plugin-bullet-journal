@@ -1,1 +1,1 @@
-export { default as MobileItemDetail } from './MobileItemDetail.vue';
+export { default as MobileItemDetail } from './MobileItemDetail.vue'

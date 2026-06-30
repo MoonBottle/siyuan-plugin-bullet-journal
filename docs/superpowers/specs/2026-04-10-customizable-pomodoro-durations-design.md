@@ -6,11 +6,11 @@
 
 ## 当前问题
 
-| 位置 | 当前实现 | 问题 |
-|------|---------|------|
-| `PomodoroTimerDialog.vue` | `quickDurations = [15, 25, 45, 60]` 硬编码 | 无法自定义专注时长选项 |
-| `PomodoroCompleteDialog.vue` | 休息按钮固定为 5/10/15 分钟 | 无法自定义休息时长选项 |
-| 默认选中值 | 专注默认25分钟，休息默认第一个（5分钟） | 无法设置个人偏好默认值 |
+| 位置                         | 当前实现                                   | 问题                   |
+| ---------------------------- | ------------------------------------------ | ---------------------- |
+| `PomodoroTimerDialog.vue`    | `quickDurations = [15, 25, 45, 60]` 硬编码 | 无法自定义专注时长选项 |
+| `PomodoroCompleteDialog.vue` | 休息按钮固定为 5/10/15 分钟                | 无法自定义休息时长选项 |
+| 默认选中值                   | 专注默认25分钟，休息默认第一个（5分钟）    | 无法设置个人偏好默认值 |
 
 ## 设计目标
 
@@ -26,18 +26,18 @@
 ```typescript
 export interface PomodoroSettings {
   // ... 现有配置项
-  
+
   // 专注时长预设（4个），默认 [15, 25, 45, 60]
-  focusDurationPresets?: number[];
-  
+  focusDurationPresets?: number[]
+
   // 默认专注时长，必须在 presets 中，默认 25
-  defaultFocusDuration?: number;
-  
+  defaultFocusDuration?: number
+
   // 休息时长预设（3个），默认 [5, 10, 15]
-  breakDurationPresets?: number[];
-  
+  breakDurationPresets?: number[]
+
   // 默认休息时长，必须在 presets 中，默认 5
-  defaultBreakDuration?: number;
+  defaultBreakDuration?: number
 }
 ```
 
@@ -86,12 +86,12 @@ export interface PomodoroSettings {
 
 ### 输入限制
 
-| 配置项 | 范围 | 说明 |
-|--------|------|------|
-| 专注时长预设 | 1-180 分钟 | 4个数值，必须为正整数 |
-| 默认专注时长 | 下拉选择，选项为 presets 中的值 | 默认25 |
-| 休息时长预设 | 1-60 分钟 | 3个数值，必须为正整数 |
-| 默认休息时长 | 下拉选择，选项为 presets 中的值 | 默认5 |
+| 配置项       | 范围                            | 说明                  |
+| ------------ | ------------------------------- | --------------------- |
+| 专注时长预设 | 1-180 分钟                      | 4个数值，必须为正整数 |
+| 默认专注时长 | 下拉选择，选项为 presets 中的值 | 默认25                |
+| 休息时长预设 | 1-60 分钟                       | 3个数值，必须为正整数 |
+| 默认休息时长 | 下拉选择，选项为 presets 中的值 | 默认5                 |
 
 **注意**：默认时长使用下拉选择，选项动态从对应的预设值生成，确保始终合法。
 
@@ -164,6 +164,7 @@ export interface PomodoroSettings {
 ### 5. 国际化（`src/i18n/zh_CN.json` / `en_US.json`）
 
 新增翻译键：
+
 - `settings.pomodoro.focusDurationPresets`
 - `settings.pomodoro.focusDurationPresetsDesc`
 - `settings.pomodoro.defaultFocusDuration`

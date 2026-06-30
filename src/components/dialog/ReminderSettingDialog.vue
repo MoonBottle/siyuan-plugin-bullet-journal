@@ -1,105 +1,142 @@
 <template>
-  <div class="reminder-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }">
+  <div
+    class="reminder-setting-dialog"
+    :class="{ 'drawer-mode': layout === 'drawer' }"
+  >
     <!-- 事项信息卡片 -->
-    <div v-if="item" class="selected-item-section">
-      <SelectedItemCard :item="item" :show-header="true" />
+    <div
+      v-if="item"
+      class="selected-item-section"
+    >
+      <SelectedItemCard
+        :item="item"
+        :show-header="true"
+      />
     </div>
 
     <!-- 提醒方式 -->
-      <div class="panel-title">{{ t('reminder.reminderMethod') }}</div>
-      <div class="quick-buttons">
+    <div class="panel-title">
+      {{ t('reminder.reminderMethod') }}
+    </div>
+    <div class="quick-buttons">
+      <button
+        v-for="method in reminderMethods"
+        :key="method.value"
+        class="mode-btn"
+        :class="{ active: selectedMethod === method.value }"
+        @click="selectMethod(method.value)"
+      >
+        {{ method.label }}
+      </button>
+    </div>
+
+    <!-- 自定义提醒方式展开区域 -->
+    <div
+      v-if="selectedMethod === 'custom'"
+      class="custom-section"
+    >
+      <div class="custom-row">
+        <span class="custom-label">{{ t('reminder.relativeBase') }}</span>
+        <div class="base-options">
+          <button
+            class="mode-btn small"
+            :class="{ active: relativeBase === 'start' }"
+            @click="relativeBase = 'start'"
+          >
+            {{ t('reminder.beforeStart') }}
+          </button>
+          <button
+            class="mode-btn small"
+            :class="{ active: relativeBase === 'end' }"
+            @click="relativeBase = 'end'"
+          >
+            {{ t('reminder.beforeEnd') }}
+          </button>
+        </div>
+      </div>
+      <div class="custom-row">
+        <span class="custom-label">{{ t('reminder.offsetTime') }}</span>
+        <div class="offset-inputs">
+          <input
+            v-model.number="customOffset"
+            type="number"
+            min="1"
+            max="999"
+            class="offset-input"
+          />
+          <select
+            v-model="offsetUnit"
+            class="unit-select"
+          >
+            <option value="minutes">
+              {{ t('reminder.unitMinutes') }}
+            </option>
+            <option value="hours">
+              {{ t('reminder.unitHours') }}
+            </option>
+            <option value="days">
+              {{ t('reminder.unitDays') }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提醒时间（仅准时模式显示） -->
+    <template v-if="selectedMethod === 'ontime'">
+      <div class="panel-title">
+        {{ t('reminder.reminderTime') }}
+      </div>
+      <div class="quick-buttons time-presets">
         <button
-          v-for="method in reminderMethods"
-          :key="method.value"
+          v-for="time in timePresets"
+          :key="time"
           class="mode-btn"
-          :class="{ active: selectedMethod === method.value }"
-          @click="selectMethod(method.value)"
+          :class="{ active: !isCustomTime && reminderTime === time }"
+          @click="selectTime(time)"
         >
-          {{ method.label }}
+          {{ time }}
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ active: isCustomTime }"
+          @click="setCustomTime"
+        >
+          {{ t('reminder.custom') }}
         </button>
       </div>
 
-      <!-- 自定义提醒方式展开区域 -->
-      <div v-if="selectedMethod === 'custom'" class="custom-section">
+      <!-- 自定义时间展开区域 -->
+      <div
+        v-if="isCustomTime"
+        class="custom-section"
+      >
         <div class="custom-row">
-          <span class="custom-label">{{ t('reminder.relativeBase') }}</span>
-          <div class="base-options">
-            <button
-              class="mode-btn small"
-              :class="{ active: relativeBase === 'start' }"
-              @click="relativeBase = 'start'"
-            >
-              {{ t('reminder.beforeStart') }}
-            </button>
-            <button
-              class="mode-btn small"
-              :class="{ active: relativeBase === 'end' }"
-              @click="relativeBase = 'end'"
-            >
-              {{ t('reminder.beforeEnd') }}
-            </button>
-          </div>
-        </div>
-        <div class="custom-row">
-          <span class="custom-label">{{ t('reminder.offsetTime') }}</span>
-          <div class="offset-inputs">
-            <input
-              v-model.number="customOffset"
-              type="number"
-              min="1"
-              max="999"
-              class="offset-input"
-            />
-            <select v-model="offsetUnit" class="unit-select">
-              <option value="minutes">{{ t('reminder.unitMinutes') }}</option>
-              <option value="hours">{{ t('reminder.unitHours') }}</option>
-              <option value="days">{{ t('reminder.unitDays') }}</option>
-            </select>
-          </div>
+          <span class="custom-label">{{ t('reminder.customTimeLabel') }}</span>
+          <input
+            v-model="reminderTime"
+            type="time"
+            class="time-input"
+          />
         </div>
       </div>
-
-      <!-- 提醒时间（仅准时模式显示） -->
-      <template v-if="selectedMethod === 'ontime'">
-        <div class="panel-title">{{ t('reminder.reminderTime') }}</div>
-        <div class="quick-buttons time-presets">
-          <button
-            v-for="time in timePresets"
-            :key="time"
-            class="mode-btn"
-            :class="{ active: !isCustomTime && reminderTime === time }"
-            @click="selectTime(time)"
-          >
-            {{ time }}
-          </button>
-          <button
-            class="mode-btn"
-            :class="{ active: isCustomTime }"
-            @click="setCustomTime"
-          >
-            {{ t('reminder.custom') }}
-          </button>
-        </div>
-
-        <!-- 自定义时间展开区域 -->
-        <div v-if="isCustomTime" class="custom-section">
-          <div class="custom-row">
-            <span class="custom-label">{{ t('reminder.customTimeLabel') }}</span>
-            <input
-              v-model="reminderTime"
-              type="time"
-              class="time-input"
-            />
-          </div>
-        </div>
-      </template>
+    </template>
 
     <!-- 底部按钮 -->
-    <div v-if="!hideFooter" class="action-section">
-      <button class="start-btn" @click="handleSave">
+    <div
+      v-if="!hideFooter"
+      class="action-section"
+    >
+      <button
+        class="start-btn"
+        @click="handleSave"
+      >
         {{ t('reminder.save') }}
       </button>
-      <button class="cancel-btn" @click="handleCancel">
+      <button
+        class="cancel-btn"
+        @click="handleCancel"
+      >
         {{ t('reminder.cancel') }}
       </button>
     </div>
@@ -107,148 +144,193 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useProjectStore } from '@/stores';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { t } from '@/i18n';
-import type { ReminderConfig } from '@/types/models';
-import SelectedItemCard from '@/components/pomodoro/SelectedItemCard.vue';
+import type { ReminderConfig } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  ref,
+} from 'vue'
+import SelectedItemCard from '@/components/pomodoro/SelectedItemCard.vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 interface Props {
-  blockId: string;
-  initialConfig?: ReminderConfig;
-  layout?: 'dialog' | 'drawer';
-  hideFooter?: boolean;
+  blockId: string
+  initialConfig?: ReminderConfig
+  layout?: 'dialog' | 'drawer'
+  hideFooter?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  layout: 'dialog'
-});
+  layout: 'dialog',
+})
 
 
 
 const emit = defineEmits<{
-  save: [config: ReminderConfig];
-  cancel: [];
-}>();
+  save: [config: ReminderConfig]
+  cancel: []
+}>()
 
 // 获取事项信息
-const pinia = getSharedPinia();
-const projectStore = pinia ? useProjectStore(pinia) : null;
+const pinia = getSharedPinia()
+const projectStore = pinia ? useProjectStore(pinia) : null
 
 const item = computed(() => {
-  if (!props.blockId || !projectStore) return null;
-  return projectStore.getItemByBlockId(props.blockId) || null;
-});
+  if (!props.blockId || !projectStore) return null
+  return projectStore.getItemByBlockId(props.blockId) || null
+})
 
 // 提醒时间（更多预设）
-const timePresets = ['07:00', '08:00', '09:00', '10:00', '12:00', '14:00', '15:00', '18:00', '20:00'];
-const reminderTime = ref(props.initialConfig?.time ?? '09:00');
-const isCustomTime = ref(!timePresets.includes(reminderTime.value));
+const timePresets = ['07:00', '08:00', '09:00', '10:00', '12:00', '14:00', '15:00', '18:00', '20:00']
+const reminderTime = ref(props.initialConfig?.time ?? '09:00')
+const isCustomTime = ref(!timePresets.includes(reminderTime.value))
 
 // 提醒方法
 const reminderMethods = computed(() => [
-  { value: 'ontime', label: t('reminder.ontime') },
-  { value: 'before5m', label: t('reminder.before5m') },
-  { value: 'before15m', label: t('reminder.before15m') },
-  { value: 'before30m', label: t('reminder.before30m') },
-  { value: 'before1h', label: t('reminder.before1h') },
-  { value: 'before1d', label: t('reminder.before1d') },
-  { value: 'custom', label: t('reminder.custom') }
-]);
+  {
+    value: 'ontime',
+    label: t('reminder.ontime'),
+  },
+  {
+    value: 'before5m',
+    label: t('reminder.before5m'),
+  },
+  {
+    value: 'before15m',
+    label: t('reminder.before15m'),
+  },
+  {
+    value: 'before30m',
+    label: t('reminder.before30m'),
+  },
+  {
+    value: 'before1h',
+    label: t('reminder.before1h'),
+  },
+  {
+    value: 'before1d',
+    label: t('reminder.before1d'),
+  },
+  {
+    value: 'custom',
+    label: t('reminder.custom'),
+  },
+])
 
-const selectedMethod = ref('ontime');
-const relativeBase = ref<'start' | 'end'>('start');
-const customOffset = ref(30);
-const offsetUnit = ref<'minutes' | 'hours' | 'days'>('minutes');
+const selectedMethod = ref('ontime')
+const relativeBase = ref<'start' | 'end'>('start')
+const customOffset = ref(30)
+const offsetUnit = ref<'minutes' | 'hours' | 'days'>('minutes')
 
 // 初始化方法选择
 onMounted(() => {
-  const config = props.initialConfig;
+  const config = props.initialConfig
   if (config?.type === 'relative' && config.offsetMinutes) {
-    const minutes = config.offsetMinutes;
-    if (minutes === 5) selectedMethod.value = 'before5m';
-    else if (minutes === 15) selectedMethod.value = 'before15m';
-    else if (minutes === 30) selectedMethod.value = 'before30m';
-    else if (minutes === 60) selectedMethod.value = 'before1h';
-    else if (minutes === 1440) selectedMethod.value = 'before1d';
+    const minutes = config.offsetMinutes
+    if (minutes === 5) {
+      selectedMethod.value = 'before5m'
+    }
+    else if (minutes === 15) {
+      selectedMethod.value = 'before15m'
+    }
+    else if (minutes === 30) {
+      selectedMethod.value = 'before30m'
+    }
+    else if (minutes === 60) {
+      selectedMethod.value = 'before1h'
+    }
+    else if (minutes === 1440) {
+      selectedMethod.value = 'before1d'
+    }
     else {
-      selectedMethod.value = 'custom';
-      relativeBase.value = config.relativeTo ?? 'start';
+      selectedMethod.value = 'custom'
+      relativeBase.value = config.relativeTo ?? 'start'
       if (minutes % 1440 === 0) {
-        customOffset.value = minutes / 1440;
-        offsetUnit.value = 'days';
+        customOffset.value = minutes / 1440
+        offsetUnit.value = 'days'
       } else if (minutes % 60 === 0) {
-        customOffset.value = minutes / 60;
-        offsetUnit.value = 'hours';
+        customOffset.value = minutes / 60
+        offsetUnit.value = 'hours'
       } else {
-        customOffset.value = minutes;
-        offsetUnit.value = 'minutes';
+        customOffset.value = minutes
+        offsetUnit.value = 'minutes'
       }
     }
   } else {
-    selectedMethod.value = 'ontime';
+    selectedMethod.value = 'ontime'
   }
-});
+})
 
 function selectTime(time: string) {
-  reminderTime.value = time;
-  isCustomTime.value = false;
+  reminderTime.value = time
+  isCustomTime.value = false
 }
 
 function setCustomTime() {
-  isCustomTime.value = true;
+  isCustomTime.value = true
 }
 
 function selectMethod(method: string) {
-  selectedMethod.value = method;
+  selectedMethod.value = method
 }
 
 function handleSave() {
-  let config: ReminderConfig;
-  
+  let config: ReminderConfig
+
   if (selectedMethod.value === 'ontime') {
     config = {
       enabled: true,
       type: 'absolute',
       time: reminderTime.value,
-      alertMode: { type: 'ontime' }
-    };
-  } else {
-    let offsetMinutes: number;
-    switch (selectedMethod.value) {
-      case 'before5m': offsetMinutes = 5; break;
-      case 'before15m': offsetMinutes = 15; break;
-      case 'before30m': offsetMinutes = 30; break;
-      case 'before1h': offsetMinutes = 60; break;
-      case 'before1d': offsetMinutes = 1440; break;
-      case 'custom':
-        if (offsetUnit.value === 'days') offsetMinutes = customOffset.value * 1440;
-        else if (offsetUnit.value === 'hours') offsetMinutes = customOffset.value * 60;
-        else offsetMinutes = customOffset.value;
-        break;
-      default: offsetMinutes = 10;
+      alertMode: { type: 'ontime' },
     }
-    
+  } else {
+    let offsetMinutes: number
+    switch (selectedMethod.value) {
+      case 'before5m':
+        offsetMinutes = 5
+        break
+      case 'before15m':
+        offsetMinutes = 15
+        break
+      case 'before30m':
+        offsetMinutes = 30
+        break
+      case 'before1h':
+        offsetMinutes = 60
+        break
+      case 'before1d':
+        offsetMinutes = 1440
+        break
+      case 'custom':
+        if (offsetUnit.value === 'days') offsetMinutes = customOffset.value * 1440
+        else if (offsetUnit.value === 'hours') offsetMinutes = customOffset.value * 60
+        else offsetMinutes = customOffset.value
+        break
+      default: offsetMinutes = 10
+    }
+
     config = {
       enabled: true,
       type: 'relative',
       relativeTo: relativeBase.value,
-      offsetMinutes
-    };
+      offsetMinutes,
+    }
   }
-  
-  emit('save', config);
+
+  emit('save', config)
 }
 
 function handleCancel() {
-  emit('cancel');
+  emit('cancel')
 }
 
 // 暴露方法供父组件调用
 defineExpose({
-  getConfig: handleSave
-});
+  getConfig: handleSave,
+})
 </script>
 
 <style lang="scss" scoped>

@@ -3,39 +3,62 @@
  * 封装微信 iLink API，处理登录、消息收发、媒体加解密
  */
 
+import type {
+  CDNMedia,
+  ClawBotConfig,
+  GetConfigResp,
+  GetUpdatesReq,
+  GetUpdatesResp,
+  MessageItem,
+  QRCodeResponse,
+  QRStatusResponse,
+  SendMessageReq,
+  UploadedFileInfo,
+  WeixinApiCommonResp,
+  WeixinMessage,
+} from '@/types/clawbot'
 import {
-  WeixinMessageType,
-  WeixinMessageItemType,
-  type ClawBotConfig,
-  type WeixinMessage,
-  type GetUpdatesReq,
-  type GetUpdatesResp,
-  type GetConfigResp,
-  type QRCodeResponse,
-  type QRStatusResponse,
-  type SendMessageReq,
-  type UploadedFileInfo,
-  type MessageItem,
-  type CDNMedia,
-  type WeixinApiCommonResp
-} from '@/types/clawbot';
-import { aes128EcbEncrypt, aes128EcbDecrypt, generateAesKey, base64Encode, base64Decode, md5, bytesToHex } from '@/utils/crypto';
-import { forwardProxy, forwardProxyBinary, forwardProxyLongPoll } from '@/services/clawBotForwardProxy';
+  forwardProxy,
+  forwardProxyBinary,
+  forwardProxyLongPoll,
+} from '@/services/clawBotForwardProxy'
+import {
 
-const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com';
-const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com';
-const DEFAULT_BOT_TYPE = '3';
-const CHANNEL_VERSION = '2.1.1';
+
+
+
+
+
+
+  WeixinMessageItemType,
+  WeixinMessageType,
+} from '@/types/clawbot'
+import {
+  aes128EcbDecrypt,
+  aes128EcbEncrypt,
+  base64Decode,
+  base64Encode,
+  generateAesKey,
+  hexToBytes,
+  md5,
+} from '@/utils/crypto'
+
+const ABSOLUTE_URL_RE = /^https?:\/\//
+
+const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com'
+const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com'
+const DEFAULT_BOT_TYPE = '3'
+const CHANNEL_VERSION = '2.1.1'
 
 export class ClawBotApiError extends Error {
-  code: number;
-  kind: 'context_stale' | 'session_expired' | 'api';
+  code: number
+  kind: 'context_stale' | 'session_expired' | 'api'
 
   constructor(message: string, code: number, kind: 'context_stale' | 'session_expired' | 'api') {
-    super(message);
-    this.name = 'ClawBotApiError';
-    this.code = code;
-    this.kind = kind;
+    super(message)
+    this.name = 'ClawBotApiError'
+    this.code = code
+    this.kind = kind
   }
 }
 
@@ -45,36 +68,36 @@ function buildHeaders(token?: string, body?: string): Record<string, string> {
     'Content-Type': 'application/json',
     'iLink-App-Id': 'bot',
     'iLink-App-ClientVersion': '131329', // 2.1.1 的版本号编码
-  };
+  }
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    headers['AuthorizationType'] = 'ilink_bot_token';
+    headers.Authorization = `Bearer ${token}`
+    headers.AuthorizationType = 'ilink_bot_token'
   }
 
   // 生成随机的 X-WECHAT-UIN
-  const uint32 = Math.floor(Math.random() * 4294967295);
-  headers['X-WECHAT-UIN'] = btoa(String(uint32));
+  const uint32 = Math.floor(Math.random() * 4294967295)
+  headers['X-WECHAT-UIN'] = btoa(String(uint32))
 
   if (body) {
-    headers['Content-Length'] = String(new Blob([body]).size);
+    headers['Content-Length'] = String(new Blob([body]).size)
   }
 
-  return headers;
+  return headers
 }
 
 /** 构建 base_info */
 function buildBaseInfo(): { channel_version?: string } {
-  return { channel_version: CHANNEL_VERSION };
+  return { channel_version: CHANNEL_VERSION }
 }
 
 export class ClawBotService {
-  private config: ClawBotConfig;
-  private abortController: AbortController | null = null;
-  private messageHandlers: Array<(msg: WeixinMessage) => void> = [];
-  private isMonitoring = false;
-  private getUpdatesBuf = '';
-  private consecutiveFailures = 0;
+  private config: ClawBotConfig
+  private abortController: AbortController | null = null
+  private messageHandlers: Array<(msg: WeixinMessage) => void> = []
+  private isMonitoring = false
+  private getUpdatesBuf = ''
+  private consecutiveFailures = 0
 
   constructor(config?: Partial<ClawBotConfig>) {
     this.config = {
@@ -82,44 +105,47 @@ export class ClawBotService {
       baseUrl: DEFAULT_BASE_URL,
       cdnBaseUrl: DEFAULT_CDN_BASE_URL,
       loginStatus: 'none',
-      ...config
-    };
+      ...config,
+    }
   }
 
   // ========== 配置管理 ==========
 
   getConfig(): ClawBotConfig {
-    return { ...this.config };
+    return { ...this.config }
   }
 
   updateConfig(config: Partial<ClawBotConfig>): void {
-    this.config = { ...this.config, ...config };
+    this.config = {
+      ...this.config,
+      ...config,
+    }
   }
 
   isConnected(): boolean {
-    return this.config.loginStatus === 'connected' && !!this.config.token;
+    return this.config.loginStatus === 'connected' && !!this.config.token
   }
 
   isContextStaleError(error: unknown): error is ClawBotApiError {
-    return error instanceof ClawBotApiError && error.kind === 'context_stale';
+    return error instanceof ClawBotApiError && error.kind === 'context_stale'
   }
 
   // ========== Transport 层 ==========
 
   private buildTargetUrl(path: string): string {
-    return `${this.config.baseUrl}/ilink/${path}`;
+    return `${this.config.baseUrl}/ilink/${path}`
   }
 
   private buildCdnUrl(pathOrUrl: string): string {
-    if (/^https?:\/\//.test(pathOrUrl)) {
-      return pathOrUrl;
+    if (ABSOLUTE_URL_RE.test(pathOrUrl)) {
+      return pathOrUrl
     }
-    return `${this.config.cdnBaseUrl}/${pathOrUrl}`;
+    return `${this.config.cdnBaseUrl}/${pathOrUrl}`
   }
 
-  private async requestIlink(path: string, method: string, body?: any, timeout?: number): Promise<{ status: number; data: any }> {
-    const headers = buildHeaders(this.config.token, body ? JSON.stringify(body) : undefined);
-    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }));
+  private async requestIlink(path: string, method: string, body?: any, timeout?: number): Promise<{ status: number, data: any }> {
+    const headers = buildHeaders(this.config.token, body ? JSON.stringify(body) : undefined)
+    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }))
 
     const result = await forwardProxy({
       url: this.buildTargetUrl(path),
@@ -128,21 +154,24 @@ export class ClawBotService {
       payload: body ?? '',
       contentType: 'application/json',
       timeout,
-    });
+    })
 
-    let parsed: any;
+    let parsed: any
     try {
-      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
+      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body
     } catch {
-      parsed = result.body;
+      parsed = result.body
     }
 
-    return { status: result.status, data: parsed };
+    return {
+      status: result.status,
+      data: parsed,
+    }
   }
 
-  private async requestIlinkLongPoll(path: string, body: any): Promise<{ status: number; data: any }> {
-    const headers = buildHeaders(this.config.token, JSON.stringify(body));
-    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }));
+  private async requestIlinkLongPoll(path: string, body: any): Promise<{ status: number, data: any }> {
+    const headers = buildHeaders(this.config.token, JSON.stringify(body))
+    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }))
 
     const result = await forwardProxyLongPoll({
       url: this.buildTargetUrl(path),
@@ -150,16 +179,19 @@ export class ClawBotService {
       headers: headerEntries,
       payload: body,
       contentType: 'application/json',
-    });
+    })
 
-    let parsed: any;
+    let parsed: any
     try {
-      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
+      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body
     } catch {
-      parsed = result.body;
+      parsed = result.body
     }
 
-    return { status: result.status, data: parsed };
+    return {
+      status: result.status,
+      data: parsed,
+    }
   }
 
   private async requestCdn(pathOrUrl: string): Promise<ArrayBuffer> {
@@ -167,8 +199,8 @@ export class ClawBotService {
       url: this.buildCdnUrl(pathOrUrl),
       method: 'GET',
       contentType: 'application/octet-stream',
-    });
-    return result.body;
+    })
+    return result.body
   }
 
   // ========== 登录流程 ==========
@@ -176,30 +208,33 @@ export class ClawBotService {
   /**
    * 启动扫码登录
    */
-  async startLogin(): Promise<{ qrcodeUrl: string; sessionKey: string }> {
+  async startLogin(): Promise<{ qrcodeUrl: string, sessionKey: string }> {
     try {
-      const { status, data } = await this.requestIlink(
+      const {
+        status,
+        data,
+      } = await this.requestIlink(
         `bot/get_bot_qrcode?bot_type=${DEFAULT_BOT_TYPE}`,
         'GET',
-      );
+      )
 
       if (status !== 200) {
-        throw new Error(`获取二维码失败: ${status}`);
+        throw new Error(`获取二维码失败: ${status}`)
       }
 
-      const qrcodeData: QRCodeResponse = data;
-      
-      this.config.loginStatus = 'pending';
-      this.config.qrcodeUrl = qrcodeData.qrcode_img_content;
+      const qrcodeData: QRCodeResponse = data
+
+      this.config.loginStatus = 'pending'
+      this.config.qrcodeUrl = qrcodeData.qrcode_img_content
 
       return {
         qrcodeUrl: qrcodeData.qrcode_img_content,
-        sessionKey: qrcodeData.qrcode
-      };
+        sessionKey: qrcodeData.qrcode,
+      }
     } catch (error) {
-      this.config.loginStatus = 'error';
-      this.config.errorMessage = error instanceof Error ? error.message : '获取二维码失败';
-      throw error;
+      this.config.loginStatus = 'error'
+      this.config.errorMessage = error instanceof Error ? error.message : '获取二维码失败'
+      throw error
     }
   }
 
@@ -207,36 +242,39 @@ export class ClawBotService {
    * 轮询扫码状态
    */
   async pollQRStatus(qrcode: string, timeoutMs = 480000): Promise<boolean> {
-    const startTime = Date.now();
-    let scanedPrinted = false;
+    const startTime = Date.now()
+    let scanedPrinted = false
 
     while (Date.now() - startTime < timeoutMs) {
       if (this.config.loginStatus !== 'pending' && this.config.loginStatus !== 'scaned') {
-        return false;
+        return false
       }
 
       try {
-        const { status, data } = await this.requestIlink(
+        const {
+          status,
+          data,
+        } = await this.requestIlink(
           `bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
           'GET',
           undefined,
           35000,
-        );
+        )
 
         if (status !== 200) {
-          await new Promise(r => setTimeout(r, 2000));
-          continue;
+          await new Promise((r) => setTimeout(r, 2000))
+          continue
         }
 
-        const statusData: QRStatusResponse = data;
+        const statusData: QRStatusResponse = data
 
         switch (statusData.status) {
           case 'scaned':
             if (!scanedPrinted) {
-              this.config.loginStatus = 'scaned';
-              scanedPrinted = true;
+              this.config.loginStatus = 'scaned'
+              scanedPrinted = true
             }
-            break;
+            break
 
           case 'confirmed':
             if (statusData.ilink_bot_id && statusData.bot_token) {
@@ -246,50 +284,50 @@ export class ClawBotService {
                 token: statusData.bot_token,
                 userId: statusData.ilink_user_id,
                 loginStatus: 'connected',
-                baseUrl: statusData.baseurl || this.config.baseUrl
-              };
-              return true;
+                baseUrl: statusData.baseurl || this.config.baseUrl,
+              }
+              return true
             }
-            throw new Error('登录响应缺少必要信息');
+            throw new Error('登录响应缺少必要信息')
 
           case 'expired':
-            this.config.loginStatus = 'expired';
-            throw new Error('二维码已过期');
+            this.config.loginStatus = 'expired'
+            throw new Error('二维码已过期')
 
           case 'scaned_but_redirect':
             // IDC 切换，更新 baseUrl
             if (data.redirect_host) {
-              this.config.baseUrl = `https://${data.redirect_host}`;
+              this.config.baseUrl = `https://${data.redirect_host}`
             }
-            break;
+            break
         }
 
         // 等待 1 秒再轮询
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1000))
       } catch (error) {
         if (error instanceof Error && error.message === '二维码已过期') {
-          throw error;
+          throw error
         }
         // 网络错误，继续轮询
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 2000))
       }
     }
 
-    throw new Error('登录超时');
+    throw new Error('登录超时')
   }
 
   /**
    * 断开连接
    */
   disconnect(): void {
-    this.stopMonitoring();
+    this.stopMonitoring()
     this.config = {
       enabled: false,
       baseUrl: DEFAULT_BASE_URL,
       cdnBaseUrl: DEFAULT_CDN_BASE_URL,
-      loginStatus: 'none'
-    };
-    this.getUpdatesBuf = '';
+      loginStatus: 'none',
+    }
+    this.getUpdatesBuf = ''
   }
 
   // ========== 消息监听 ==========
@@ -299,27 +337,30 @@ export class ClawBotService {
    */
   async startMonitoring(): Promise<void> {
     if (this.isMonitoring || !this.isConnected()) {
-      console.log('[ClawBot] 监听未启动:', { isMonitoring: this.isMonitoring, isConnected: this.isConnected() });
-      return;
+      console.log('[ClawBot] 监听未启动:', {
+        isMonitoring: this.isMonitoring,
+        isConnected: this.isConnected(),
+      })
+      return
     }
 
-    this.isMonitoring = true;
-    this.abortController = new AbortController();
+    this.isMonitoring = true
+    this.abortController = new AbortController()
 
-    console.log('[ClawBot] 开始消息监听...');
-    
+    console.log('[ClawBot] 开始消息监听...')
+
     // 启动监听循环
-    this.monitoringLoop();
+    this.monitoringLoop()
   }
 
   /**
    * 停止监听
    */
   stopMonitoring(): void {
-    this.isMonitoring = false;
+    this.isMonitoring = false
     if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+      this.abortController.abort()
+      this.abortController = null
     }
   }
 
@@ -327,56 +368,60 @@ export class ClawBotService {
    * 监听循环
    */
   private async monitoringLoop(): Promise<void> {
-    const MAX_CONSECUTIVE_FAILURES = 3;
-    const BACKOFF_DELAY_MS = 30000;
-    const RETRY_DELAY_MS = 2000;
+    const MAX_CONSECUTIVE_FAILURES = 3
+    const BACKOFF_DELAY_MS = 30000
+    const RETRY_DELAY_MS = 2000
 
-    console.log('[ClawBot] 监听循环已启动');
+    console.log('[ClawBot] 监听循环已启动')
 
     while (this.isMonitoring && this.config.token) {
       try {
-        console.log('[ClawBot] 等待消息...', { buf: this.getUpdatesBuf.slice(0, 20) + '...' });
-        
+        console.log('[ClawBot] 等待消息...', { buf: `${this.getUpdatesBuf.slice(0, 20)}...` })
+
         const resp = await this.getUpdates({
           get_updates_buf: this.getUpdatesBuf,
-          timeoutMs: 35000
-        });
+          timeoutMs: 35000,
+        })
 
-        console.log('[ClawBot] 收到响应:', { ret: resp.ret, errcode: resp.errcode, msgCount: resp.msgs?.length });
+        console.log('[ClawBot] 收到响应:', {
+          ret: resp.ret,
+          errcode: resp.errcode,
+          msgCount: resp.msgs?.length,
+        })
 
         // 处理响应 (适配实际 API 返回的字段)
-        const ret = resp.ret ?? 0;
-        const errcode = resp.errcode ?? 0;
-        
+        const ret = resp.ret ?? 0
+        const errcode = resp.errcode ?? 0
+
         if (ret !== 0 || errcode !== 0) {
           // 会话过期
           if (errcode === -14) {
-            this.config.loginStatus = 'expired';
-            this.config.errorMessage = '会话已过期，请重新登录';
-            break;
+            this.config.loginStatus = 'expired'
+            this.config.errorMessage = '会话已过期，请重新登录'
+            break
           }
 
-          this.consecutiveFailures++;
+          this.consecutiveFailures++
           if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            await this.sleep(BACKOFF_DELAY_MS);
-            this.consecutiveFailures = 0;
+            await this.sleep(BACKOFF_DELAY_MS)
+            this.consecutiveFailures = 0
           } else {
-            await this.sleep(RETRY_DELAY_MS);
+            await this.sleep(RETRY_DELAY_MS)
           }
-          continue;
+          continue
         }
 
-        this.consecutiveFailures = 0;
+        this.consecutiveFailures = 0
 
         // 保存同步缓冲区
         if (resp.get_updates_buf) {
-          this.getUpdatesBuf = resp.get_updates_buf;
+          this.getUpdatesBuf = resp.get_updates_buf
         }
 
         // 处理消息
-        const msgs = resp.msgs || (resp as any).Msgs || [];
+        const msgs = resp.msgs || (resp as any).Msgs || []
         if (msgs.length > 0) {
-          console.log(`[ClawBot] 收到 ${msgs.length} 条消息`);
+          console.log(`[ClawBot] 收到 ${msgs.length} 条消息`)
           for (const msg of msgs) {
             // 完整打印消息结构
             console.log('[ClawBot] 原始消息结构:', {
@@ -387,14 +432,14 @@ export class ClawBotService {
               message_type: msg.message_type,
               message_state: msg.message_state,
               item_list_length: msg.item_list?.length,
-              item_list: msg.item_list
-            });
-            console.log('[ClawBot] 开始调用 processInboundMessage');
+              item_list: msg.item_list,
+            })
+            console.log('[ClawBot] 开始调用 processInboundMessage')
             try {
-              await this.processInboundMessage(msg);
-              console.log('[ClawBot] processInboundMessage 完成');
+              await this.processInboundMessage(msg)
+              console.log('[ClawBot] processInboundMessage 完成')
             } catch (err) {
-              console.error('[ClawBot] processInboundMessage 出错:', err);
+              console.error('[ClawBot] processInboundMessage 出错:', err)
             }
           }
         }
@@ -403,23 +448,23 @@ export class ClawBotService {
         if (resp.longpolling_timeout_ms && resp.longpolling_timeout_ms > 0) {
           // 使用服务器建议的超时时间
         }
-      } catch (error) {
+      } catch {
         if (this.abortController?.signal.aborted) {
-          break;
+          break
         }
 
-        this.consecutiveFailures++;
+        this.consecutiveFailures++
         if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          await this.sleep(BACKOFF_DELAY_MS);
-          this.consecutiveFailures = 0;
+          await this.sleep(BACKOFF_DELAY_MS)
+          this.consecutiveFailures = 0
         } else {
-          await this.sleep(RETRY_DELAY_MS);
+          await this.sleep(RETRY_DELAY_MS)
         }
       }
     }
 
-    console.log('[ClawBot] 监听循环已结束');
-    this.isMonitoring = false;
+    console.log('[ClawBot] 监听循环已结束')
+    this.isMonitoring = false
   }
 
   /**
@@ -428,23 +473,30 @@ export class ClawBotService {
   private async getUpdates(params: GetUpdatesReq & { timeoutMs?: number }): Promise<GetUpdatesResp> {
     const body = {
       get_updates_buf: params.get_updates_buf || '',
-      base_info: buildBaseInfo()
-    };
+      base_info: buildBaseInfo(),
+    }
 
     try {
-      const { status, data } = await this.requestIlinkLongPoll('bot/getupdates', body);
+      const {
+        status,
+        data,
+      } = await this.requestIlinkLongPoll('bot/getupdates', body)
 
       if (status !== 200) {
-        throw new Error(`HTTP ${status}`);
+        throw new Error(`HTTP ${status}`)
       }
 
-      console.log('[ClawBot] getUpdates 原始响应:', JSON.stringify(data).slice(0, 500));
-      return data;
+      console.log('[ClawBot] getUpdates 原始响应:', JSON.stringify(data).slice(0, 500))
+      return data
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        return { ret: 0, msgs: [], get_updates_buf: params.get_updates_buf };
+        return {
+          ret: 0,
+          msgs: [],
+          get_updates_buf: params.get_updates_buf,
+        }
       }
-      throw error;
+      throw error
     }
   }
 
@@ -453,36 +505,36 @@ export class ClawBotService {
    */
   private async processInboundMessage(msg: WeixinMessage): Promise<void> {
     // 适配字段名（下划线 vs 驼峰）
-    const messageType = msg.message_type ?? (msg as any).MessageType;
-    const fromUserId = msg.from_user_id ?? (msg as any).FromUserId;
-    const itemList = msg.item_list ?? (msg as any).ItemList ?? [];
-    const contextToken = msg.context_token ?? (msg as any).ContextToken;
-    
-    console.log('[ClawBot] processInboundMessage:', { 
-      messageType, 
+    const messageType = msg.message_type ?? (msg as any).MessageType
+    const fromUserId = msg.from_user_id ?? (msg as any).FromUserId
+    const itemList = msg.item_list ?? (msg as any).ItemList ?? []
+    const contextToken = msg.context_token ?? (msg as any).ContextToken
+
+    console.log('[ClawBot] processInboundMessage:', {
+      messageType,
       fromUserId,
       itemListLength: itemList.length,
       itemList: JSON.stringify(itemList),
       expectedType: WeixinMessageType.USER,
-      handlerCount: this.messageHandlers.length 
-    });
-    
+      handlerCount: this.messageHandlers.length,
+    })
+
     // 只处理用户发来的消息
     if (messageType !== WeixinMessageType.USER) {
-      console.log('[ClawBot] 非用户消息，跳过');
-      return;
+      console.log('[ClawBot] 非用户消息，跳过')
+      return
     }
 
     // 下载媒体文件（如果有）
-    const mediaItem = this.findDownloadableMedia(itemList);
+    const mediaItem = this.findDownloadableMedia(itemList)
     if (mediaItem) {
       try {
         const mediaBlob = await this.downloadMediaFromItem(mediaItem);
         // 将 Blob 附加到消息中供后续处理
         (msg as any)._mediaBlob = mediaBlob;
-        (msg as any)._mediaType = this.getMediaType(mediaItem);
+        (msg as any)._mediaType = this.getMediaType(mediaItem)
       } catch (error) {
-        console.error('[ClawBot] 下载媒体失败:', error);
+        console.error('[ClawBot] 下载媒体失败:', error)
       }
     }
 
@@ -492,16 +544,16 @@ export class ClawBotService {
       message_type: messageType,
       from_user_id: fromUserId,
       item_list: itemList,
-      context_token: contextToken
-    };
+      context_token: contextToken,
+    }
 
     // 触发消息处理器
-    console.log('[ClawBot] 触发消息处理器:', { handlerCount: this.messageHandlers.length });
+    console.log('[ClawBot] 触发消息处理器:', { handlerCount: this.messageHandlers.length })
     for (const handler of this.messageHandlers) {
       try {
-        handler(normalizedMsg);
+        handler(normalizedMsg)
       } catch (error) {
-        console.error('[ClawBot] 消息处理器错误:', error);
+        console.error('[ClawBot] 消息处理器错误:', error)
       }
     }
   }
@@ -510,14 +562,14 @@ export class ClawBotService {
    * 查找可下载的媒体项
    */
   private findDownloadableMedia(itemList?: MessageItem[]): MessageItem | undefined {
-    if (!itemList) return undefined;
+    if (!itemList) return undefined
 
-    const hasMedia = (m?: CDNMedia) => m?.encrypt_query_param || m?.full_url;
+    const hasMedia = (m?: CDNMedia) => m?.encrypt_query_param || m?.full_url
 
-    return itemList.find(i => i.type === WeixinMessageItemType.IMAGE && hasMedia(i.image_item?.media)) ||
-           itemList.find(i => i.type === WeixinMessageItemType.VIDEO && hasMedia(i.video_item?.media)) ||
-           itemList.find(i => i.type === WeixinMessageItemType.FILE && hasMedia(i.file_item?.media)) ||
-           itemList.find(i => i.type === WeixinMessageItemType.VOICE && hasMedia(i.voice_item?.media) && !i.voice_item?.text);
+    return itemList.find((i) => i.type === WeixinMessageItemType.IMAGE && hasMedia(i.image_item?.media))
+      || itemList.find((i) => i.type === WeixinMessageItemType.VIDEO && hasMedia(i.video_item?.media))
+      || itemList.find((i) => i.type === WeixinMessageItemType.FILE && hasMedia(i.file_item?.media))
+      || itemList.find((i) => i.type === WeixinMessageItemType.VOICE && hasMedia(i.voice_item?.media) && !i.voice_item?.text)
   }
 
   /**
@@ -526,15 +578,15 @@ export class ClawBotService {
   private getMediaType(item: MessageItem): string {
     switch (item.type) {
       case WeixinMessageItemType.IMAGE:
-        return 'image/*';
+        return 'image/*'
       case WeixinMessageItemType.VIDEO:
-        return 'video/mp4';
+        return 'video/mp4'
       case WeixinMessageItemType.VOICE:
-        return 'audio/wav';
+        return 'audio/wav'
       case WeixinMessageItemType.FILE:
-        return 'application/octet-stream';
+        return 'application/octet-stream'
       default:
-        return 'application/octet-stream';
+        return 'application/octet-stream'
     }
   }
 
@@ -542,42 +594,42 @@ export class ClawBotService {
    * 下载媒体文件
    */
   private async downloadMediaFromItem(item: MessageItem): Promise<Blob> {
-    let media: CDNMedia | undefined;
-    let aesKey: Uint8Array | undefined;
+    let media: CDNMedia | undefined
+    let aesKey: Uint8Array | undefined
 
     switch (item.type) {
       case WeixinMessageItemType.IMAGE:
-        media = item.image_item?.media;
-        aesKey = item.image_item?.aeskey ? hexToBytes(item.image_item.aeskey) : undefined;
-        break;
+        media = item.image_item?.media
+        aesKey = item.image_item?.aeskey ? hexToBytes(item.image_item.aeskey) : undefined
+        break
       case WeixinMessageItemType.VIDEO:
-        media = item.video_item?.media;
-        break;
+        media = item.video_item?.media
+        break
       case WeixinMessageItemType.FILE:
-        media = item.file_item?.media;
-        break;
+        media = item.file_item?.media
+        break
       case WeixinMessageItemType.VOICE:
-        media = item.voice_item?.media;
-        break;
+        media = item.voice_item?.media
+        break
     }
 
     if (!media?.full_url) {
-      throw new Error('媒体 URL 不存在');
+      throw new Error('媒体 URL 不存在')
     }
 
-    const encryptedData = new Uint8Array(await this.requestCdn(media.full_url));
+    const encryptedData = new Uint8Array(await this.requestCdn(media.full_url))
 
     // 解密
     if (media.aes_key) {
-      const key = base64Decode(media.aes_key);
-      const decrypted = await aes128EcbDecrypt(encryptedData, key);
-      return new Blob([decrypted]);
+      const key = base64Decode(media.aes_key)
+      const decrypted = await aes128EcbDecrypt(encryptedData, key)
+      return new Blob([decrypted as BlobPart])
     } else if (aesKey) {
-      const decrypted = await aes128EcbDecrypt(encryptedData, aesKey);
-      return new Blob([decrypted]);
+      const decrypted = await aes128EcbDecrypt(encryptedData, aesKey)
+      return new Blob([decrypted as BlobPart])
     }
 
-    return new Blob([encryptedData]);
+    return new Blob([encryptedData])
   }
 
   // ========== 消息发送 ==========
@@ -586,10 +638,14 @@ export class ClawBotService {
    * 发送文本消息
    */
   async sendTextMessage(toUserId: string, text: string, contextToken?: string): Promise<void> {
-    console.log('[ClawBot] sendTextMessage:', { toUserId, textLength: text.length, hasContextToken: !!contextToken });
-    
+    console.log('[ClawBot] sendTextMessage:', {
+      toUserId,
+      textLength: text.length,
+      hasContextToken: !!contextToken,
+    })
+
     if (!this.config.token) {
-      throw new Error('未登录');
+      throw new Error('未登录')
     }
 
     const req: SendMessageReq = {
@@ -599,23 +655,35 @@ export class ClawBotService {
         client_id: `claw-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         message_type: 2, // BOT
         message_state: 2, // FINISH
-        item_list: [{ type: 1, text_item: { text } }],
-        context_token: contextToken
-      }
-    };
-
-    const body = { ...req, base_info: buildBaseInfo() };
-
-    const { status, data } = await this.requestIlink('bot/sendmessage', 'POST', body);
-
-    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
-    console.log('[ClawBot] sendTextMessage response:', { status, body: responseText.substring(0, 500) });
-
-    if (status !== 200) {
-      throw new Error(`发送消息失败: ${status} ${responseText}`);
+        item_list: [{
+          type: 1,
+          text_item: { text },
+        }],
+        context_token: contextToken,
+      },
     }
 
-    this.assertApiSuccess(responseText, 'sendmessage');
+    const body = {
+      ...req,
+      base_info: buildBaseInfo(),
+    }
+
+    const {
+      status,
+      data,
+    } = await this.requestIlink('bot/sendmessage', 'POST', body)
+
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data)
+    console.log('[ClawBot] sendTextMessage response:', {
+      status,
+      body: responseText.substring(0, 500),
+    })
+
+    if (status !== 200) {
+      throw new Error(`发送消息失败: ${status} ${responseText}`)
+    }
+
+    this.assertApiSuccess(responseText, 'sendmessage')
   }
 
   /**
@@ -624,72 +692,75 @@ export class ClawBotService {
    */
   async probeContext(toUserId: string, contextToken?: string): Promise<{ status: 'active' | 'stale' | 'unknown' }> {
     if (!this.config.token) {
-      throw new Error('未登录');
+      throw new Error('未登录')
     }
 
     if (!contextToken) {
-      return { status: 'unknown' };
+      return { status: 'unknown' }
     }
 
     try {
-      await this.fetchConfig(toUserId, contextToken);
-      return { status: 'active' };
+      await this.fetchConfig(toUserId, contextToken)
+      return { status: 'active' }
     } catch (error) {
       if (this.isContextStaleError(error)) {
-        return { status: 'stale' };
+        return { status: 'stale' }
       }
-      throw error;
+      throw error
     }
   }
 
   async notifyGatewayStart(): Promise<WeixinApiCommonResp> {
     if (!this.config.token) {
-      throw new Error('未登录');
+      throw new Error('未登录')
     }
 
-    const body = { base_info: buildBaseInfo() };
-    const { status, data } = await this.requestIlink('bot/msg/notifystart', 'POST', body);
+    const body = { base_info: buildBaseInfo() }
+    const {
+      status,
+      data,
+    } = await this.requestIlink('bot/msg/notifystart', 'POST', body)
 
-    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data)
     console.log('[ClawBot] notifyGatewayStart response:', {
       status,
-      body: responseText.substring(0, 500)
-    });
+      body: responseText.substring(0, 500),
+    })
 
     if (status !== 200) {
-      throw new Error(`网关保活失败: ${status} ${responseText}`);
+      throw new Error(`网关保活失败: ${status} ${responseText}`)
     }
 
-    this.assertApiSuccess(responseText, 'notifystart');
-    return this.parseApiResponse(responseText) ?? { ret: 0 };
+    this.assertApiSuccess(responseText, 'notifystart')
+    return this.parseApiResponse(responseText) ?? { ret: 0 }
   }
 
   async sendTypingKeepalive(toUserId: string, contextToken?: string): Promise<{ status: 'active' | 'stale' | 'unknown' }> {
     if (!this.config.token) {
-      throw new Error('未登录');
+      throw new Error('未登录')
     }
 
     if (!contextToken) {
-      return { status: 'unknown' };
+      return { status: 'unknown' }
     }
 
     try {
-      const config = await this.fetchConfig(toUserId, contextToken);
-      const typingTicket = config.typing_ticket;
+      const config = await this.fetchConfig(toUserId, contextToken)
+      const typingTicket = config.typing_ticket
 
       if (!typingTicket) {
-        return { status: 'unknown' };
+        return { status: 'unknown' }
       }
 
-      await this.sendTypingStatus(toUserId, typingTicket, 1);
-      await this.sleep(1200);
-      await this.sendTypingStatus(toUserId, typingTicket, 2);
-      return { status: 'active' };
+      await this.sendTypingStatus(toUserId, typingTicket, 1)
+      await this.sleep(1200)
+      await this.sendTypingStatus(toUserId, typingTicket, 2)
+      return { status: 'active' }
     } catch (error) {
       if (this.isContextStaleError(error)) {
-        return { status: 'stale' };
+        return { status: 'stale' }
       }
-      throw error;
+      throw error
     }
   }
 
@@ -700,14 +771,14 @@ export class ClawBotService {
     toUserId: string,
     file: File,
     text: string,
-    contextToken?: string
+    contextToken?: string,
   ): Promise<void> {
     if (!this.config.token) {
-      throw new Error('未登录');
+      throw new Error('未登录')
     }
 
     // 1. 上传媒体文件
-    const uploaded = await this.uploadMedia(file, toUserId);
+    const uploaded = await this.uploadMedia(file, toUserId)
 
     // 2. 构建媒体消息
     const mediaItem: MessageItem = {
@@ -716,18 +787,21 @@ export class ClawBotService {
         media: {
           encrypt_query_param: uploaded.downloadEncryptedQueryParam,
           aes_key: base64Encode(uploaded.aeskey),
-          encrypt_type: 1
+          encrypt_type: 1,
         },
-        mid_size: uploaded.fileSizeCiphertext
-      }
-    };
+        mid_size: uploaded.fileSizeCiphertext,
+      },
+    }
 
     // 3. 发送消息
-    const items: MessageItem[] = [];
+    const items: MessageItem[] = []
     if (text) {
-      items.push({ type: 1, text_item: { text } });
+      items.push({
+        type: 1,
+        text_item: { text },
+      })
     }
-    items.push(mediaItem);
+    items.push(mediaItem)
 
     // 分条发送
     for (const item of items) {
@@ -739,16 +813,19 @@ export class ClawBotService {
           message_type: 2,
           message_state: 2,
           item_list: [item],
-          context_token: contextToken
-        }
-      };
+          context_token: contextToken,
+        },
+      }
 
-      const body = { ...req, base_info: buildBaseInfo() };
+      const body = {
+        ...req,
+        base_info: buildBaseInfo(),
+      }
 
-      const { status } = await this.requestIlink('bot/sendmessage', 'POST', body);
+      const { status } = await this.requestIlink('bot/sendmessage', 'POST', body)
 
       if (status !== 200) {
-        throw new Error(`发送媒体消息失败: ${status}`);
+        throw new Error(`发送媒体消息失败: ${status}`)
       }
     }
   }
@@ -758,13 +835,13 @@ export class ClawBotService {
    */
   private async uploadMedia(file: File, toUserId: string): Promise<UploadedFileInfo> {
     // 1. 读取文件并加密
-    const fileData = new Uint8Array(await file.arrayBuffer());
-    const aesKey = await generateAesKey();
-    const encrypted = await aes128EcbEncrypt(fileData, aesKey);
+    const fileData = new Uint8Array(await file.arrayBuffer())
+    const aesKey = await generateAesKey()
+    const encrypted = await aes128EcbEncrypt(fileData, aesKey)
 
     // 2. 计算 MD5
-    const rawMd5 = await md5(fileData);
-    const encryptedMd5 = await md5(encrypted);
+    const rawMd5 = await md5(fileData)
+    const encryptedMd5 = await md5(encrypted)
 
     // 3. 获取上传 URL
     const body = {
@@ -775,13 +852,16 @@ export class ClawBotService {
       rawfilemd5: rawMd5,
       filesize: encrypted.length,
       aeskey: base64Encode(aesKey),
-      base_info: buildBaseInfo()
-    };
+      base_info: buildBaseInfo(),
+    }
 
-    const { status, data: uploadInfo } = await this.requestIlink('bot/getuploadurl', 'POST', body);
+    const {
+      status,
+      data: uploadInfo,
+    } = await this.requestIlink('bot/getuploadurl', 'POST', body)
 
     if (status !== 200) {
-      throw new Error(`获取上传 URL 失败: ${status}`);
+      throw new Error(`获取上传 URL 失败: ${status}`)
     }
 
     // 4. 上传文件到 CDN（通过 forwardProxy）
@@ -789,42 +869,42 @@ export class ClawBotService {
       url: uploadInfo.upload_full_url,
       method: 'PUT',
       contentType: 'application/octet-stream',
-      payload: Array.from(encrypted).map(b => String.fromCharCode(b)).join(''),
+      payload: Array.from(encrypted).map((b) => String.fromCharCode(b)).join(''),
       payloadEncoding: 'base64',
       timeout: 30000,
-    });
+    })
 
     if (uploadResult.status < 200 || uploadResult.status >= 300) {
-      throw new Error(`上传文件失败: ${uploadResult.status}`);
+      throw new Error(`上传文件失败: ${uploadResult.status}`)
     }
 
     return {
       filekey: encryptedMd5,
-      aeskey,
+      aeskey: aesKey,
       fileSize: fileData.length,
       fileSizeCiphertext: encrypted.length,
-      downloadEncryptedQueryParam: uploadInfo.upload_param
-    };
+      downloadEncryptedQueryParam: uploadInfo.upload_param,
+    }
   }
 
   /**
    * 根据文件获取媒体类型
    */
   private getMediaTypeFromFile(file: File): number {
-    if (file.type.startsWith('image/')) return 2;
-    if (file.type.startsWith('video/')) return 5;
-    if (file.type.startsWith('audio/')) return 3;
-    return 4; // FILE
+    if (file.type.startsWith('image/')) return 2
+    if (file.type.startsWith('video/')) return 5
+    if (file.type.startsWith('audio/')) return 3
+    return 4 // FILE
   }
 
   /**
    * 获取上传媒体类型
    */
   private getUploadMediaType(file: File): number {
-    if (file.type.startsWith('image/')) return 1;
-    if (file.type.startsWith('video/')) return 2;
-    if (file.type.startsWith('audio/')) return 4;
-    return 3; // FILE
+    if (file.type.startsWith('image/')) return 1
+    if (file.type.startsWith('video/')) return 2
+    if (file.type.startsWith('audio/')) return 4
+    return 3 // FILE
   }
 
   // ========== 事件处理 ==========
@@ -833,36 +913,36 @@ export class ClawBotService {
    * 添加消息处理器
    */
   onMessage(handler: (msg: WeixinMessage) => void): () => void {
-    console.log('[ClawBot] 添加消息处理器，当前数量:', this.messageHandlers.length);
-    this.messageHandlers.push(handler);
-    console.log('[ClawBot] 添加后数量:', this.messageHandlers.length);
+    console.log('[ClawBot] 添加消息处理器，当前数量:', this.messageHandlers.length)
+    this.messageHandlers.push(handler)
+    console.log('[ClawBot] 添加后数量:', this.messageHandlers.length)
     return () => {
-      const index = this.messageHandlers.indexOf(handler);
+      const index = this.messageHandlers.indexOf(handler)
       if (index > -1) {
-        this.messageHandlers.splice(index, 1);
+        this.messageHandlers.splice(index, 1)
       }
-    };
+    }
   }
 
   /**
    * 清空所有消息处理器
    */
   clearMessageHandlers(): void {
-    console.log('[ClawBot] 清空消息处理器，原数量:', this.messageHandlers.length);
-    this.messageHandlers = [];
+    console.log('[ClawBot] 清空消息处理器，原数量:', this.messageHandlers.length)
+    this.messageHandlers = []
   }
 
   // ========== 工具方法 ==========
 
   private parseApiResponse(responseText: string): WeixinApiCommonResp | null {
     if (!responseText.trim()) {
-      return null;
+      return null
     }
 
     try {
-      return JSON.parse(responseText) as WeixinApiCommonResp;
+      return JSON.parse(responseText) as WeixinApiCommonResp
     } catch {
-      throw new Error(`微信接口返回了无法解析的响应: ${responseText.slice(0, 200)}`);
+      throw new Error(`微信接口返回了无法解析的响应: ${responseText.slice(0, 200)}`)
     }
   }
 
@@ -870,24 +950,27 @@ export class ClawBotService {
     const body = {
       ilink_user_id: toUserId,
       context_token: contextToken,
-      base_info: buildBaseInfo()
-    };
+      base_info: buildBaseInfo(),
+    }
 
-    const { status, data } = await this.requestIlink('bot/getconfig', 'POST', body);
+    const {
+      status,
+      data,
+    } = await this.requestIlink('bot/getconfig', 'POST', body)
 
-    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data)
     console.log('[ClawBot] getConfig response:', {
       toUserId,
       status,
-      body: responseText.substring(0, 500)
-    });
+      body: responseText.substring(0, 500),
+    })
 
     if (status !== 200) {
-      throw new Error(`探测会话失败: ${status} ${responseText}`);
+      throw new Error(`探测会话失败: ${status} ${responseText}`)
     }
 
-    this.assertApiSuccess(responseText, 'getconfig');
-    return (this.parseApiResponse(responseText) ?? { ret: 0 }) as GetConfigResp;
+    this.assertApiSuccess(responseText, 'getconfig')
+    return (this.parseApiResponse(responseText) ?? { ret: 0 }) as GetConfigResp
   }
 
   private async sendTypingStatus(toUserId: string, typingTicket: string, statusValue: 1 | 2): Promise<void> {
@@ -895,81 +978,93 @@ export class ClawBotService {
       ilink_user_id: toUserId,
       typing_ticket: typingTicket,
       status: statusValue,
-      base_info: buildBaseInfo()
-    };
+      base_info: buildBaseInfo(),
+    }
 
-    const { status, data } = await this.requestIlink('bot/sendtyping', 'POST', body);
+    const {
+      status,
+      data,
+    } = await this.requestIlink('bot/sendtyping', 'POST', body)
 
-    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data)
     console.log('[ClawBot] sendTyping response:', {
       toUserId,
       status,
       typingStatus: statusValue,
-      body: responseText.substring(0, 500)
-    });
+      body: responseText.substring(0, 500),
+    })
 
     if (status !== 200) {
-      throw new Error(`发送输入态失败: ${status} ${responseText}`);
+      throw new Error(`发送输入态失败: ${status} ${responseText}`)
     }
 
-    this.assertApiSuccess(responseText, 'sendtyping');
+    this.assertApiSuccess(responseText, 'sendtyping')
   }
 
   private extractApiCode(resp: WeixinApiCommonResp | null): number | null {
     if (!resp) {
-      return null;
+      return null
     }
 
     if (typeof resp.errcode === 'number')
-      return resp.errcode;
+      return resp.errcode
     if (typeof resp.ret === 'number')
-      return resp.ret;
+      return resp.ret
     if (typeof resp.res === 'number')
-      return resp.res;
-    return null;
+      return resp.res
+    return null
   }
 
   private assertApiSuccess(responseText: string, label: string): void {
-    const resp = this.parseApiResponse(responseText);
-    const code = this.extractApiCode(resp);
+    const resp = this.parseApiResponse(responseText)
+    const code = this.extractApiCode(resp)
 
     if (code === null || code === 0) {
-      return;
+      return
     }
 
-    const rawMessage = resp?.errmsg || resp?.msg || `${label} failed`;
+    const rawMessage = resp?.errmsg || resp?.msg || `${label} failed`
 
     if (code === -14) {
-      this.config.loginStatus = 'expired';
-      this.config.errorMessage = '会话已过期，请重新登录';
-      console.warn(`[ClawBot] ${label}: login token expired`, { code, rawMessage });
-      throw new ClawBotApiError(`微信登录会话已过期: ${rawMessage}`, code, 'session_expired');
+      this.config.loginStatus = 'expired'
+      this.config.errorMessage = '会话已过期，请重新登录'
+      console.warn(`[ClawBot] ${label}: login token expired`, {
+        code,
+        rawMessage,
+      })
+      throw new ClawBotApiError(`微信登录会话已过期: ${rawMessage}`, code, 'session_expired')
     }
 
     if (code === -2) {
-      console.warn(`[ClawBot] ${label}: context token stale`, { code, rawMessage });
-      throw new ClawBotApiError(`微信会话上下文已失效: ${rawMessage}`, code, 'context_stale');
+      console.warn(`[ClawBot] ${label}: context token stale`, {
+        code,
+        rawMessage,
+      })
+      throw new ClawBotApiError(`微信会话上下文已失效: ${rawMessage}`, code, 'context_stale')
     }
 
-    console.warn(`[ClawBot] ${label}: api error`, { code, rawMessage });
-    throw new ClawBotApiError(`微信接口错误(${code}): ${rawMessage}`, code, 'api');
+    console.warn(`[ClawBot] ${label}: api error`, {
+      code,
+      rawMessage,
+    })
+    throw new ClawBotApiError(`微信接口错误(${code}): ${rawMessage}`, code, 'api')
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
 
 // 单例实例
-let serviceInstance: ClawBotService | null = null;
+let serviceInstance: ClawBotService | null = null
 
 export function useClawBotService(config?: Partial<ClawBotConfig>): ClawBotService {
   if (!serviceInstance) {
-    serviceInstance = new ClawBotService(config);
+    serviceInstance = new ClawBotService(config)
   }
-  return serviceInstance;
+  return serviceInstance
 }
 
 export function resetClawBotService(): void {
-  serviceInstance = null;
+  serviceInstance = null
 }

@@ -1,20 +1,34 @@
 <template>
   <div class="timer-starter">
     <div class="drawer-header">
-      <h3 class="drawer-title">{{ t('pomodoro').startFocusTitle || '开始专注' }}</h3>
+      <h3 class="drawer-title">
+        {{ t('pomodoro').startFocusTitle || '开始专注' }}
+      </h3>
     </div>
 
     <div class="drawer-content">
       <!-- Selected Item Display -->
-      <div v-if="selectedItem" class="selected-item-card">
-        <div class="item-project" v-if="selectedItem.project">
-          <svg><use xlink:href="#iconFolder"></use></svg>
+      <div
+        v-if="selectedItem"
+        class="selected-item-card"
+      >
+        <div
+          v-if="selectedItem.project"
+          class="item-project"
+        >
+          <svg><use xlink:href="#iconTaProject"></use></svg>
           {{ selectedItem.project.name }}
         </div>
-        <div class="item-task" v-if="selectedItem.task">
-          <svg><use xlink:href="#iconList"></use></svg>
+        <div
+          v-if="selectedItem.task"
+          class="item-task"
+        >
+          <svg><use xlink:href="#iconTaTodo"></use></svg>
           {{ selectedItem.task.name }}
-          <span v-if="selectedItem.task.level" class="level-badge">{{ selectedItem.task.level }}</span>
+          <span
+            v-if="selectedItem.task.level"
+            class="level-badge"
+          >{{ selectedItem.task.level }}</span>
         </div>
         <div class="item-content">
           <span class="status-emoji">{{ getStatusEmoji(selectedItem) }}</span>
@@ -25,7 +39,11 @@
       <!-- Item Selector Button -->
       <div class="form-section">
         <label class="section-label">{{ t('pomodoroDialog').selectItem || '选择事项' }}</label>
-        <button class="selector-btn" :class="{ empty: !selectedItem }" @click="openItemSelector">
+        <button
+          class="selector-btn"
+          :class="{ empty: !selectedItem }"
+          @click="openItemSelector"
+        >
           <span class="selector-text">
             {{ selectedItem ? selectedItem.content : (t('pomodoroDialog').selectItem || '选择要专注的事项') }}
           </span>
@@ -55,7 +73,10 @@
       </div>
 
       <!-- Duration Selector (countdown mode only) -->
-      <div v-if="timerMode === 'countdown'" class="form-section">
+      <div
+        v-if="timerMode === 'countdown'"
+        class="form-section"
+      >
         <label class="section-label">{{ t('pomodoroDialog').setDuration || '专注时长' }}</label>
         <div class="duration-grid">
           <button
@@ -91,121 +112,129 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useProjectStore, usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import type { Item } from '@/types/models';
-import { t } from '@/i18n';
-import ItemSelectorSheet from './ItemSelectorSheet.vue';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  usePomodoroStore,
+  useProjectStore,
+} from '@/stores'
+import { showMessage } from '@/utils/dialog'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import ItemSelectorSheet from './ItemSelectorSheet.vue'
 
 const props = defineProps<{
-  preselectedBlockId?: string;
-}>();
+  preselectedBlockId?: string
+}>()
 
 const emit = defineEmits<{
-  'close': [];
-  'started': [];
-}>();
+  close: []
+  started: []
+}>()
 
-const plugin = usePlugin() as any;
-const pinia = getSharedPinia();
-const projectStore = pinia ? useProjectStore(pinia) : null;
-const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
+const close = () => {
+  emit('close')
+}
+
+const plugin = usePlugin() as any
+const pinia = getSharedPinia()
+const projectStore = pinia ? useProjectStore(pinia) : null
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null
 
 // State
-const selectedItem = ref<Item | null>(null);
-const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
-const selectedDuration = ref(25);
-const showItemSheet = ref(false);
+const selectedItem = ref<Item | null>(null)
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown')
+const selectedDuration = ref(25)
+const showItemSheet = ref(false)
 
 // Duration presets from settings
 const durationPresets = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60];
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60]
+})
 
 // Default duration from settings
 const defaultDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultFocusDuration ?? 25;
-});
+  const settings = plugin?.getSettings?.()
+  return settings?.pomodoro?.defaultFocusDuration ?? 25
+})
 
 // Preselected item
 const preselectedItem = computed(() => {
-  if (!props.preselectedBlockId || !projectStore) return null;
-  return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
-});
-
-// Initialize on mount
-onMounted(() => {
-  initState();
-});
-
-// Watch for default duration changes
-watch(defaultDuration, (newVal) => {
-  selectedDuration.value = newVal;
-});
+  if (!props.preselectedBlockId || !projectStore) return null
+  return projectStore.getItemByBlockId(props.preselectedBlockId) || null
+})
 
 // Initialize state
 const initState = () => {
   if (preselectedItem.value) {
-    selectedItem.value = preselectedItem.value;
+    selectedItem.value = preselectedItem.value
   }
-  selectedDuration.value = defaultDuration.value;
-};
+  selectedDuration.value = defaultDuration.value
+}
+
+// Initialize on mount
+onMounted(() => {
+  initState()
+})
+
+// Watch for default duration changes
+watch(defaultDuration, (newVal) => {
+  selectedDuration.value = newVal
+})
 
 // Open item selector sheet
 const openItemSelector = () => {
-  showItemSheet.value = true;
-};
+  showItemSheet.value = true
+}
 
 // Handle item selection
 const onItemSelected = (item: Item) => {
-  selectedItem.value = item;
-};
+  selectedItem.value = item
+}
 
 // Get status emoji
 const getStatusEmoji = (item: Item): string => {
-  if (item.status === 'completed') return '✅';
-  if (item.status === 'abandoned') return '❌';
-  return '⏳';
-};
+  if (item.status === 'completed') return '✅'
+  if (item.status === 'abandoned') return '❌'
+  return '⏳'
+}
 
 // Start pomodoro
 const startPomodoro = async () => {
-  if (!selectedItem.value) return;
+  if (!selectedItem.value) return
   if (!pomodoroStore) {
-    console.warn('[MobileTimerStarter] Pinia 未初始化');
-    return;
+    console.warn('[MobileTimerStarter] Pinia 未初始化')
+    return
   }
 
-  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId;
+  const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId
   if (!parentBlockId) {
-    alert('无法获取事项块ID');
-    return;
+    showMessage('无法获取事项块ID', 'error')
+    return
   }
 
-  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value;
+  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value
 
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
     duration,
     parentBlockId,
     plugin,
-    timerMode.value
-  );
+    timerMode.value,
+  )
 
   if (success) {
-    emit('started');
-    close();
+    emit('started')
+    close()
   }
-};
-
-// Close drawer
-const close = () => {
-  emit('close');
-};
+}
 </script>
 
 <style lang="scss" scoped>

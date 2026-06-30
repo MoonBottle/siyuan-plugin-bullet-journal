@@ -1,9 +1,19 @@
 <template>
   <div class="pomodoro-stats-tab">
-    <div v-if="showHeader" class="stats-header">
-      <h2 class="stats-title">{{ t('pomodoroStats').statsTitle }}</h2>
+    <div
+      v-if="showHeader"
+      class="stats-header"
+    >
+      <h2 class="stats-title">
+        {{ t('pomodoroStats').statsTitle }}
+      </h2>
       <span class="fn__flex-1 fn__space"></span>
-      <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
+      <span
+        class="block__icon refresh-btn"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
+        @click="handleRefresh"
+      >
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
@@ -15,7 +25,10 @@
     </div>
 
     <div class="stats-cards-grid">
-      <FocusDetailSection v-model:range="range" v-model:range-offset="rangeOffset" />
+      <FocusDetailSection
+        v-model:range="range"
+        v-model:range-offset="rangeOffset"
+      />
       <FocusTrendChart />
       <FocusTimelineChart />
       <BestFocusTimeChart />
@@ -24,66 +37,84 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { t } from '@/i18n';
-import { showMessage } from '@/utils/dialog';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildViewDebugContext } from '@/utils/viewDebug';
-import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue';
-import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue';
-import FocusTrendChart from '@/components/pomodoro/stats/FocusTrendChart.vue';
-import FocusTimelineChart from '@/components/pomodoro/stats/FocusTimelineChart.vue';
-import BestFocusTimeChart from '@/components/pomodoro/stats/BestFocusTimeChart.vue';
-import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue'
+import BestFocusTimeChart from '@/components/pomodoro/stats/BestFocusTimeChart.vue'
+import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue'
+import FocusTimelineChart from '@/components/pomodoro/stats/FocusTimelineChart.vue'
+import FocusTrendChart from '@/components/pomodoro/stats/FocusTrendChart.vue'
+import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  useSettingsStore,
+} from '@/stores'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
+import { buildViewDebugContext } from '@/utils/viewDebug'
 
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 
-type RangeType = 'today' | 'week' | 'month';
-const range = ref<RangeType>('week');
-const rangeOffset = ref(0);
-const showHeader = computed(() => !props.embedded);
+type RangeType = 'today' | 'week' | 'month'
+const range = ref<RangeType>('week')
+const rangeOffset = ref(0)
+const showHeader = computed(() => !props.embedded)
 
-const plugin = usePlugin() as any;
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
+const plugin = usePlugin() as any
+const settingsStore = useSettingsStore()
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'pomodoro-stats:manual-refresh',
-    });
-    showMessage(t('common').dataRefreshed);
+    })
+    showMessage(t('common').dataRefreshed)
   }
-};
+}
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
-  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroStatsTab', plugin));
-  if (!plugin) return;
-  settingsStore.loadFromPlugin();
-};
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroStatsTab', plugin))
+  if (!plugin) return
+  settingsStore.loadFromPlugin()
+}
 
-let unsubscribeRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 onMounted(async () => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
-  settingsStore.loadFromPlugin();
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin))
+  settingsStore.loadFromPlugin()
 
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
@@ -92,30 +123,30 @@ onMounted(async () => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroStatsTab', plugin),
           data: { type: 'DATA_REFRESHED' },
-        });
-        return handleDataRefresh();
+        })
+        return handleDataRefresh()
       },
       viewName: 'PomodoroStatsTab',
-    });
+    })
   } catch {
     // 忽略
   }
-});
+})
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroStatsTab', plugin))
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 
 </script>
 

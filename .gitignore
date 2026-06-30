@@ -19,3 +19,5 @@ package
 .agents/
 logs/
 .trae/
+.qoder/
+.mimocode/

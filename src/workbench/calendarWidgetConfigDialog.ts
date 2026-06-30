@@ -1,57 +1,57 @@
-import { Dialog } from 'siyuan';
-import { createApp } from 'vue';
-import CalendarWidgetConfigDialog from '@/components/workbench/dialogs/CalendarWidgetConfigDialog.vue';
-import { t } from '@/i18n';
-import type { WorkbenchCalendarWidgetConfig } from '@/types/workbench';
-import { getSharedPinia } from '@/utils/sharedPinia';
+import type { WorkbenchCalendarWidgetConfig } from '@/types/workbench'
+import { Dialog } from 'siyuan'
+import { createApp } from 'vue'
+import CalendarWidgetConfigDialog from '@/components/workbench/dialogs/CalendarWidgetConfigDialog.vue'
+import { t } from '@/i18n'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
 export function openCalendarWidgetConfigDialog(options: {
-  initialConfig: WorkbenchCalendarWidgetConfig;
-  onConfirm: (config: WorkbenchCalendarWidgetConfig) => void | Promise<void>;
+  initialConfig: WorkbenchCalendarWidgetConfig
+  onConfirm: (config: WorkbenchCalendarWidgetConfig) => void | Promise<void>
 }): Dialog {
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
-  let isConfirming = false;
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
+  let isConfirming = false
 
   const dialog = new Dialog({
     title: t('workbench').configure,
     content: '',
     width: '420px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   const closeDialog = () => {
-    dialog.destroy();
-  };
+    dialog.destroy()
+  }
 
   app = createApp(CalendarWidgetConfigDialog, {
     initialConfig: options.initialConfig,
     onCancel: closeDialog,
     onConfirm: async (config: WorkbenchCalendarWidgetConfig) => {
       if (isConfirming) {
-        return;
+        return
       }
 
-      isConfirming = true;
+      isConfirming = true
       try {
-        await options.onConfirm(config);
-        closeDialog();
+        await options.onConfirm(config)
+        closeDialog()
       }
       finally {
-        isConfirming = false;
+        isConfirming = false
       }
     },
-  });
+  })
 
-  const pinia = getSharedPinia();
+  const pinia = getSharedPinia()
   if (pinia) {
-    app.use(pinia);
+    app.use(pinia)
   }
-  app.mount(mountEl);
+  app.mount(mountEl)
 
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
-  return dialog;
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
+  return dialog
 }

@@ -1,41 +1,69 @@
+import type {
+  TodoSortDirection,
+  TodoSortRule,
+} from '@/settings/types'
+import type {
+  CalendarEvent,
+  CheckInRecord,
+  Habit,
+  Item,
+  ItemStatus,
+  PomodoroRecord,
+  PriorityLevel,
+  Project,
+  ProjectDirectory,
+  ScanMode,
+} from '@/types/models'
 /**
  * 项目数据状态管理
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
-import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel, Habit, CheckInRecord } from '@/types/models';
-import { comparePriority } from '@/parser/priorityParser';
-import { matchGroupId } from '@/utils/directoryUtils';
-import { MarkdownParser } from '@/parser/markdownParser';
-import { DataConverter } from '@/utils/dataConverter';
+import { defineStore } from 'pinia'
+import { getHPathByID } from '@/api'
+import { writeKernelData } from '@/mcp/kernelDataWriter'
+import { MarkdownParser } from '@/parser/markdownParser'
 
-import { defaultPomodoroSettings } from '@/settings';
-import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
-import { eventBus, Events } from '@/utils/eventBus';
-import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { getHPathByID } from '@/api';
-import type { TodoSortDirection, TodoSortRule } from '@/settings/types';
-import { defaultTodoSortRules } from '@/settings/types';
-import { buildDailyFocusPlanEntries, buildDailyFocusPlanSummary } from '@/utils/focusPlanReview';
+import { comparePriority } from '@/parser/priorityParser'
+import { calculateReminderTime } from '@/parser/reminderParser'
+import { defaultTodoSortRules } from '@/settings/types'
+import { DataConverter } from '@/utils/dataConverter'
+import {
+  filterDateRangeRepresentative,
+  getEffectiveDate,
+} from '@/utils/dateRangeUtils'
+import dayjs from '@/utils/dayjs'
+import { matchGroupId } from '@/utils/directoryUtils'
+import { dirtyDocTracker } from '@/utils/dirtyDocTracker'
+
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import {
+  buildDailyFocusPlanEntries,
+  buildDailyFocusPlanSummary,
+} from '@/utils/focusPlanReview'
+import { useSettingsStore } from './settingsStore'
+
+const LEADING_HASH_RE = /^#/
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
   items: Item[] | undefined,
   currentDate: string,
-  groupId: string
+  groupId: string,
 ): Item[] {
-  if (!items) return [];
-  const filtered = !groupId ? items : items.filter(i => i.project?.groupId === groupId);
-  return filterDateRangeRepresentative(filtered, currentDate);
+  if (!items) return []
+  const filtered = !groupId ? items : items.filter((i) => i.project?.groupId === groupId)
+  return filterDateRangeRepresentative(filtered, currentDate)
 }
 
 function normalizeString(value?: string): string {
-  return (value || '').toLocaleLowerCase();
+  return (value || '').toLocaleLowerCase()
 }
 
 function normalizeReminderTime(item: Item): number | null {
-  if (!item.reminder?.enabled) return null;
+  if (!item.reminder?.enabled) return null
   return calculateReminderTime(
     item.date,
     item.startDateTime,
@@ -43,7 +71,7 @@ function normalizeReminderTime(item: Item): number | null {
     undefined,
     undefined,
     item.reminder,
-  );
+  )
 }
 
 function buildTodayFocusPlanEntries(
@@ -51,7 +79,7 @@ function buildTodayFocusPlanEntries(
   currentDate: string,
   groupId: string,
 ) {
-  return buildFocusPlanEntriesForDate(items, currentDate, groupId);
+  return buildFocusPlanEntriesForDate(items, currentDate, groupId)
 }
 
 function buildFocusPlanEntriesForDate(
@@ -59,46 +87,46 @@ function buildFocusPlanEntriesForDate(
   date: string,
   groupId: string,
 ) {
-  const displayItems = computeDisplayItems(items, date, groupId);
+  const displayItems = computeDisplayItems(items, date, groupId)
   return buildDailyFocusPlanEntries(
     displayItems
       .filter((item) => {
         const actualMinutes = (item.pomodoros ?? [])
-          .filter(record => record.date === date)
+          .filter((record) => record.date === date)
           .reduce((sum, record) => {
-            return sum + (record.actualDurationMinutes ?? record.durationMinutes);
-          }, 0);
-        return !!item.focusPlan || actualMinutes > 0;
+            return sum + (record.actualDurationMinutes ?? record.durationMinutes)
+          }, 0)
+        return !!item.focusPlan || actualMinutes > 0
       })
-      .map(item => ({
+      .map((item) => ({
         itemId: item.id,
         blockId: item.blockId ?? item.id,
         date: item.date,
         estimatedMinutes: item.focusPlan?.normalizedMinutes ?? 0,
         actualMinutes: (item.pomodoros ?? [])
-          .filter(record => record.date === date)
+          .filter((record) => record.date === date)
           .reduce((sum, record) => {
-            return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+            return sum + (record.actualDurationMinutes ?? record.durationMinutes)
           }, 0),
         itemStatus: item.status,
         itemContent: item.content,
       })),
     date,
-  );
+  )
 }
 
 function compareNullableNumber(a: number | null, b: number | null, direction: TodoSortDirection): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  return direction === 'asc' ? a - b : b - a;
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  return direction === 'asc' ? a - b : b - a
 }
 
 function compareNullableString(a: string | null, b: string | null, direction: TodoSortDirection): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  return direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  return direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a)
 }
 
 function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
@@ -106,9 +134,9 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
     if (rule.field === 'priority') {
       const diff = rule.direction === 'asc'
         ? comparePriority(a.priority, b.priority)
-        : comparePriority(b.priority, a.priority);
-      if (diff !== 0) return diff;
-      continue;
+        : comparePriority(b.priority, a.priority)
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'time') {
@@ -116,17 +144,17 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         a.startDateTime ?? null,
         b.startDateTime ?? null,
         rule.direction,
-      );
-      if (diff !== 0) return diff;
-      continue;
+      )
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'date') {
       const diff = rule.direction === 'asc'
         ? a.date.localeCompare(b.date)
-        : b.date.localeCompare(a.date);
-      if (diff !== 0) return diff;
-      continue;
+        : b.date.localeCompare(a.date)
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'reminderTime') {
@@ -134,9 +162,9 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         normalizeReminderTime(a),
         normalizeReminderTime(b),
         rule.direction,
-      );
-      if (diff !== 0) return diff;
-      continue;
+      )
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'project') {
@@ -144,9 +172,9 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         normalizeString(a.project?.name),
         normalizeString(b.project?.name),
         rule.direction,
-      );
-      if (diff !== 0) return diff;
-      continue;
+      )
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'task') {
@@ -154,9 +182,9 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         normalizeString(a.task?.name),
         normalizeString(b.task?.name),
         rule.direction,
-      );
-      if (diff !== 0) return diff;
-      continue;
+      )
+      if (diff !== 0) return diff
+      continue
     }
 
     if (rule.field === 'content') {
@@ -164,178 +192,185 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
         normalizeString(a.content),
         normalizeString(b.content),
         rule.direction,
-      );
-      if (diff !== 0) return diff;
+      )
+      if (diff !== 0) return diff
     }
   }
 
-  return 0;
+  return 0
 }
 
-type TodoFilterParams = {
-  groupId: string;
-  searchQuery?: string;
-  selectedTags?: string[];
-  dateRange?: { start: string; end: string } | null;
-  priorities?: PriorityLevel[];
-  includeNoPriority?: boolean;
-  sortRules?: TodoSortRule[];
-};
+interface TodoFilterParams {
+  groupId: string
+  searchQuery?: string
+  selectedTags?: string[]
+  dateRange?: { start: string, end: string } | null
+  priorities?: PriorityLevel[]
+  includeNoPriority?: boolean
+  sortRules?: TodoSortRule[]
+}
 
-type TodoTagOption = {
-  name: string;
-  count: number;
-};
+interface TodoTagOption {
+  name: string
+  count: number
+}
 
 function resolveTodoSortRules(params: TodoFilterParams): TodoSortRule[] {
   if (Array.isArray(params.sortRules) && params.sortRules.length > 0) {
-    return params.sortRules;
+    return params.sortRules
   }
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useSettingsStore()
   return Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
     ? settingsStore.todoDock.sortRules
-    : defaultTodoSortRules;
+    : defaultTodoSortRules
 }
 
 function shouldApplyPriorityFilter(params: TodoFilterParams): boolean {
   return Boolean(
     params.includeNoPriority
     || (params.priorities && params.priorities.length > 0),
-  );
+  )
 }
 
 function matchesPriorityFilter(item: Item, params: TodoFilterParams): boolean {
   const matchesDefinedPriority = Boolean(
     item.priority
     && params.priorities?.includes(item.priority),
-  );
-  const matchesNoPriority = params.includeNoPriority && item.priority === undefined;
-  return Boolean(matchesDefinedPriority || matchesNoPriority);
+  )
+  const matchesNoPriority = params.includeNoPriority && item.priority === undefined
+  return Boolean(matchesDefinedPriority || matchesNoPriority)
 }
 
 function normalizeSearchQuery(query?: string): string {
-  return normalizeString(query).trim().replace(/^#/, '');
+  return normalizeString(query).trim().replace(LEADING_HASH_RE, '')
 }
 
 function matchesSearchQuery(item: Item, searchQuery?: string): boolean {
-  const query = normalizeSearchQuery(searchQuery);
-  if (!query) return true;
+  const query = normalizeSearchQuery(searchQuery)
+  if (!query) return true
 
-  const normalizedTags = item.tags?.map(tag => normalizeString(tag)) ?? [];
-  return normalizedTags.some(tag => tag.includes(query))
+  const normalizedTags = item.tags?.map((tag) => normalizeString(tag)) ?? []
+  return normalizedTags.some((tag) => tag.includes(query))
     || normalizeString(item.content).includes(query)
     || normalizeString(item.project?.name).includes(query)
-    || normalizeString(item.task?.name).includes(query);
+    || normalizeString(item.task?.name).includes(query)
 }
 
 function matchesSelectedTags(item: Item, selectedTags?: string[]): boolean {
-  if (!selectedTags?.length) return true;
+  if (!selectedTags?.length) return true
 
-  const itemTags = new Set((item.tags ?? []).map(tag => normalizeString(tag)));
-  return selectedTags.some(tag => itemTags.has(normalizeString(tag)));
+  const itemTags = new Set((item.tags ?? []).map((tag) => normalizeString(tag)))
+  return selectedTags.some((tag) => itemTags.has(normalizeString(tag)))
 }
 
 function applyTodoFilters(items: Item[], params: TodoFilterParams): Item[] {
-  let filtered = items;
+  let filtered = items
 
   if (params.searchQuery?.trim()) {
-    filtered = filtered.filter(item => matchesSearchQuery(item, params.searchQuery));
+    filtered = filtered.filter((item) => matchesSearchQuery(item, params.searchQuery))
   }
 
   if (params.selectedTags?.length) {
-    filtered = filtered.filter(item => matchesSelectedTags(item, params.selectedTags));
+    filtered = filtered.filter((item) => matchesSelectedTags(item, params.selectedTags))
   }
 
   if (params.dateRange) {
-    filtered = filtered.filter(item =>
+    filtered = filtered.filter((item) =>
       item.date >= params.dateRange.start
-      && item.date <= params.dateRange.end
-    );
+      && item.date <= params.dateRange.end,
+    )
   }
 
   if (shouldApplyPriorityFilter(params)) {
-    filtered = filtered.filter(item => matchesPriorityFilter(item, params));
+    filtered = filtered.filter((item) => matchesPriorityFilter(item, params))
   }
 
-  return filtered;
+  return filtered
 }
 
 function buildTodoTagOptions(items: Item[]): TodoTagOption[] {
-  const tagCounts = new Map<string, TodoTagOption>();
-  const tagNameCollator = new Intl.Collator('en', { sensitivity: 'base' });
+  const tagCounts = new Map<string, TodoTagOption>()
+  const tagNameCollator = new Intl.Collator('en', { sensitivity: 'base' })
 
   for (const item of items) {
-    const uniqueTags = new Set((item.tags ?? []).map(tag => normalizeString(tag)));
+    const uniqueTags = new Set((item.tags ?? []).map((tag) => normalizeString(tag)))
     for (const normalizedTag of uniqueTags) {
-      const rawTag = (item.tags ?? []).find(tag => normalizeString(tag) === normalizedTag);
-      const existing = tagCounts.get(normalizedTag);
+      const rawTag = (item.tags ?? []).find((tag) => normalizeString(tag) === normalizedTag)
+      const existing = tagCounts.get(normalizedTag)
       if (existing) {
-        existing.count += 1;
-        continue;
+        existing.count += 1
+        continue
       }
 
-      if (!rawTag) continue;
+      if (!rawTag) continue
       tagCounts.set(normalizedTag, {
         name: rawTag,
         count: 1,
-      });
+      })
     }
   }
 
   return Array.from(tagCounts.values())
-    .sort((a, b) => b.count - a.count || tagNameCollator.compare(a.name, b.name));
+    .sort((a, b) => b.count - a.count || tagNameCollator.compare(a.name, b.name))
 }
 
-import { useSettingsStore } from './settingsStore';
-import dayjs from '@/utils/dayjs';
-import { writeMcpCache } from '@/mcp/mcpCacheWriter';
-
-let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
-const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25;
-const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
+let kernelDataTimer: ReturnType<typeof setTimeout> | null = null
+const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25
+const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]'
 
 function logProjectNameDebug(
   stage: string,
   payload: Record<string, unknown>,
 ) {
-  console.log(`${PROJECT_NAME_DEBUG_PREFIX} ${stage}:`, payload);
+  console.log(`${PROJECT_NAME_DEBUG_PREFIX} ${stage}:`, payload)
 }
 
-function debouncedWriteMcpCache(
+function debouncedWriteKernelData(
   projects: Project[],
   items: Item[],
-  groups: Array<{ id: string; name: string }>
+  groups: Array<{ id: string, name: string }>,
+  habits: Habit[],
 ) {
-  if (mcpCacheTimer) clearTimeout(mcpCacheTimer);
-  mcpCacheTimer = setTimeout(() => {
-    writeMcpCache(projects, items, groups).catch((err) => {
-      console.error('[Task Assistant] Failed to write MCP cache:', err);
-    });
-  }, 2000);
+  if (kernelDataTimer) clearTimeout(kernelDataTimer)
+  kernelDataTimer = setTimeout(() => {
+    writeKernelData(projects, items, groups, habits).catch((err) => {
+      console.error('[Task Assistant] Failed to write kernel data:', err)
+    })
+  }, 2000)
 }
 
 interface ProjectState {
   // 项目列表（唯一数据源）
-  projects: Project[];
+  projects: Project[]
 
   // 是否首次加载中（用于显示加载动画）
-  loading: boolean;
+  loading: boolean
 
   // 是否正在刷新（后台刷新，不显示加载动画）
-  refreshing: boolean;
+  refreshing: boolean
 
   // 刷新计数器
-  refreshKey: number;
+  refreshKey: number
 
   // 是否隐藏已完成的事项
-  hideCompleted: boolean;
+  hideCompleted: boolean
 
   // 是否隐藏已放弃的事项
-  hideAbandoned: boolean;
+  hideAbandoned: boolean
 
   // 当前日期（用于日期相关计算，刷新时更新）
-  currentDate: string;
+  currentDate: string
+}
+
+type ProjectStateWithGetters = ProjectState & {
+  items: Item[]
+  calendarEvents: CalendarEvent[]
+  itemIndex: Map<string, Item>
+  getAllPomodoros: (groupId: string) => PomodoroRecord[]
+  getTodayPomodoros: (groupId: string) => PomodoroRecord[]
+  habits: Habit[]
+  getHabits: (groupId: string) => Habit[]
 }
 
 export const useProjectStore = defineStore('project', {
@@ -346,109 +381,113 @@ export const useProjectStore = defineStore('project', {
     refreshKey: 0,
     hideCompleted: false,
     hideAbandoned: false,
-    currentDate: dayjs().format('YYYY-MM-DD')
+    currentDate: dayjs().format('YYYY-MM-DD'),
   }),
 
   getters: {
     // 从 projects 计算所有事项（自动缓存）
     items: (state): Item[] => {
-      const items: Item[] = [];
+      const items: Item[] = []
       for (const project of state.projects) {
         for (const task of project.tasks) {
           for (const item of task.items) {
             // 设置反向引用
-            item.project = project;
-            item.task = task;
-            items.push(item);
+            item.project = project
+            item.task = task
+            items.push(item)
           }
         }
       }
-      return items;
+      return items
     },
 
     // 从 projects 计算日历事件（自动缓存）
     calendarEvents: (state): CalendarEvent[] => {
-      return DataConverter.projectsToCalendarEvents(state.projects);
+      return DataConverter.projectsToCalendarEvents(state.projects)
+    },
+
+    getCalendarEvents: (state) => (showItems: boolean, itemStatusFilter?: ItemStatus[]) => {
+      return DataConverter.projectsToCalendarEvents(state.projects, itemStatusFilter, showItems)
     },
 
     // blockId -> Item 索引（用于快速查找）
     itemIndex: (state): Map<string, Item> => {
-      const index = new Map<string, Item>();
+      const index = new Map<string, Item>()
       for (const project of state.projects) {
         for (const task of project.tasks) {
           for (const item of task.items) {
             if (item.blockId) {
-              index.set(item.blockId, item);
+              index.set(item.blockId, item)
             }
           }
         }
       }
-      return index;
+      return index
     },
 
     // 按分组过滤的项目（groupId 为空表示全部分组）
     getFilteredProjects: (state) => (groupId: string) => {
-      let projects = state.projects;
+      let projects = state.projects
       if (groupId) {
-        projects = projects.filter(p => p.groupId === groupId);
+        projects = projects.filter((p) => p.groupId === groupId)
       }
-      return [...projects].sort((a, b) => b.path.localeCompare(a.path));
+      return [...projects].sort((a, b) => b.path.localeCompare(a.path))
     },
 
     // 按分组过滤的事项
     getFilteredItems: (state) => (groupId: string) => {
-      const items = (state as any).items as Item[];
-      if (!groupId) return items;
-      return items.filter(i => i.project?.groupId === groupId);
+      const items = (state as ProjectStateWithGetters).items
+      if (!groupId) return items
+      return items.filter((i) => i.project?.groupId === groupId)
     },
 
     // 多日期事项仅保留代表项，供待办/过期/完成/放弃分组使用
     getDisplayItems: (state) => (groupId: string) => {
-      const items = (state as any).items as Item[];
-      return computeDisplayItems(items, state.currentDate, groupId);
+      const items = (state as ProjectStateWithGetters).items
+      return computeDisplayItems(items, state.currentDate, groupId)
     },
 
     // 按分组过滤的日历事件
     getFilteredCalendarEvents: (state) => (groupId: string) => {
-      const events = (state as any).calendarEvents as CalendarEvent[];
-      if (!groupId) return events;
-      return events.filter(e => {
-        const project = state.projects.find(p => p.id === e.extendedProps.docId);
-        return project?.groupId === groupId;
-      });
+      const events = (state as ProjectStateWithGetters).calendarEvents
+      if (!groupId) return events
+      return events.filter((e) => {
+        const project = state.projects.find((p) => p.id === e.extendedProps.docId)
+        return project?.groupId === groupId
+      })
     },
 
     // 通过 blockId 快速查找 Item
     getItemByBlockId: (state) => (blockId: string): Item | undefined => {
-      return (state as any).itemIndex.get(blockId);
+      return (state as ProjectStateWithGetters).itemIndex.get(blockId)
     },
 
     // 需要提醒的事项列表（按提醒时间排序，只包含未来24小时内的）
     itemsNeedingReminder: (state): Item[] => {
-      const items: Item[] = [];
-      const now = Date.now();
-      let checkedCount = 0;
-      let skippedStatus = 0;
-      let skippedNoReminder = 0;
-      let skippedTooLate = 0;
-      let skippedTooEarly = 0;
-      let addedCount = 0;
-      
+      const items: Item[] = []
+      const now = Date.now()
+      let checkedCount = 0
+      let skippedStatus = 0
+      let skippedNoReminder = 0
+      let skippedTooLate = 0
+      let skippedTooEarly = 0
+      let addedCount = 0
+
       for (const project of state.projects) {
         for (const task of project.tasks) {
           for (const item of task.items) {
-            checkedCount++;
-            
+            checkedCount++
+
             // 跳过已完成/放弃/无提醒的
             if (item.status === 'completed' || item.status === 'abandoned') {
-              skippedStatus++;
-              continue;
+              skippedStatus++
+              continue
             }
             if (!item.reminder?.enabled) {
-              skippedNoReminder++;
-              continue;
+              skippedNoReminder++
+              continue
             }
-            
+
             // 计算提醒时间
             const reminderTime = calculateReminderTime(
               item.date,
@@ -456,419 +495,426 @@ export const useProjectStore = defineStore('project', {
               item.endDateTime,
               undefined,
               undefined,
-              item.reminder
-            );
-            
+              item.reminder,
+            )
+
             // 只收集未来24小时内需要提醒的（减少扫描量）
             if (reminderTime > now && reminderTime < now + 24 * 60 * 60 * 1000) {
-              (item as any)._reminderTime = reminderTime; // 缓存计算结果
-              items.push(item);
-              addedCount++;
+              (item as Item & { _reminderTime?: number })._reminderTime = reminderTime
+              items.push(item)
+              addedCount++
             } else if (reminderTime <= now) {
-              skippedTooLate++;
+              skippedTooLate++
             } else {
-              skippedTooEarly++;
+              skippedTooEarly++
             }
           }
         }
       }
-      
+
       if (checkedCount > 0) {
-        console.log(`[ProjectStore] itemsNeedingReminder: checked=${checkedCount}, added=${addedCount}, skipped(status=${skippedStatus}, noReminder=${skippedNoReminder}, tooLate=${skippedTooLate}, tooEarly=${skippedTooEarly})`);
+        console.log(`[ProjectStore] itemsNeedingReminder: checked=${checkedCount}, added=${addedCount}, skipped(status=${skippedStatus}, noReminder=${skippedNoReminder}, tooLate=${skippedTooLate}, tooEarly=${skippedTooEarly})`)
       }
-      
+
       // 按提醒时间排序
-      return items.sort((a, b) => ((a as any)._reminderTime || 0) - ((b as any)._reminderTime || 0));
+      return items.sort((a, b) => ((a as Item & { _reminderTime?: number })._reminderTime || 0) - ((b as Item & { _reminderTime?: number })._reminderTime || 0))
     },
 
     // 今日及以后的待办事项（排除已完成和已放弃）
     getFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
-      return items.filter(item => {
-        const effectiveDate = getEffectiveDate(item);
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
+      return items.filter((item) => {
+        const effectiveDate = getEffectiveDate(item)
         return (
-          effectiveDate >= state.currentDate &&
-          item.status !== 'completed' &&
-          item.status !== 'abandoned'
-        );
-      });
+          effectiveDate >= state.currentDate
+          && item.status !== 'completed'
+          && item.status !== 'abandoned'
+        )
+      })
     },
 
     // 已完成的事项
     getCompletedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
-      return items.filter(item => item.status === 'completed');
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
+      return items.filter((item) => item.status === 'completed')
     },
 
     // 已放弃的事项
     getAbandonedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
-      return items.filter(item => item.status === 'abandoned');
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
+      return items.filter((item) => item.status === 'abandoned')
     },
 
     // 过期的事项（时间过了但未完成未放弃）
     getExpiredItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
-      return items.filter(item => {
-        const effectiveDate = getEffectiveDate(item);
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
+      return items.filter((item) => {
+        const effectiveDate = getEffectiveDate(item)
         return (
-          effectiveDate < state.currentDate &&
-          item.status !== 'completed' &&
-          item.status !== 'abandoned'
-        );
-      });
+          effectiveDate < state.currentDate
+          && item.status !== 'completed'
+          && item.status !== 'abandoned'
+        )
+      })
     },
 
     // 按分组获取过滤和排序后的事项（支持搜索、日期筛选、优先级筛选）
     getFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
-        params.groupId
-      );
+        params.groupId,
+      )
 
       // 2. 应用搜索、标签、日期、优先级过滤
-      items = applyTodoFilters(items, params);
+      items = applyTodoFilters(items, params)
 
       // 3. 根据设置过滤已完成和已放弃的事项
       if (state.hideCompleted) {
-        items = items.filter(item => item.status !== 'completed');
+        items = items.filter((item) => item.status !== 'completed')
       }
       if (state.hideAbandoned) {
-        items = items.filter(item => item.status !== 'abandoned');
+        items = items.filter((item) => item.status !== 'abandoned')
       }
 
       // 4. 按配置排序
-      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)))
 
-      return items;
+      return items
     },
 
     getGroupedFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         params.groupId,
-      );
+      )
 
-      items = applyTodoFilters(items, params);
+      items = applyTodoFilters(items, params)
 
       if (state.hideCompleted) {
-        items = items.filter(item => item.status !== 'completed');
+        items = items.filter((item) => item.status !== 'completed')
       }
       if (state.hideAbandoned) {
-        items = items.filter(item => item.status !== 'abandoned');
+        items = items.filter((item) => item.status !== 'abandoned')
       }
 
-      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)))
 
       return {
-        pinnedItems: items.filter(item => item.pinned),
-        regularItems: items.filter(item => !item.pinned),
-      };
+        pinnedItems: items.filter((item) => item.pinned),
+        regularItems: items.filter((item) => !item.pinned),
+      }
     },
 
     getTodoTagOptions: (state) => (groupId: string): TodoTagOption[] => {
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
         groupId,
-      );
+      )
 
       if (state.hideCompleted) {
-        items = items.filter(item => item.status !== 'completed');
+        items = items.filter((item) => item.status !== 'completed')
       }
       if (state.hideAbandoned) {
-        items = items.filter(item => item.status !== 'abandoned');
+        items = items.filter((item) => item.status !== 'abandoned')
       }
 
-      return buildTodoTagOptions(items);
+      return buildTodoTagOptions(items)
     },
 
     // 按分组获取过滤和排序后的已完成事项（支持搜索、日期筛选、优先级筛选）
     getFilteredCompletedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
-        params.groupId
-      );
+        params.groupId,
+      )
 
       // 2. 只保留已完成的事项
-      items = items.filter(item => item.status === 'completed');
+      items = items.filter((item) => item.status === 'completed')
 
       // 3. 应用搜索、标签、日期、优先级过滤
-      items = applyTodoFilters(items, params);
+      items = applyTodoFilters(items, params)
 
       // 4. 按配置排序
-      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)))
 
-      return items;
+      return items
     },
 
     // 按分组获取过滤和排序后的已放弃事项（支持搜索、日期筛选、优先级筛选）
     getFilteredAbandonedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
-        (state as any).items as Item[],
+        (state as ProjectStateWithGetters).items,
         state.currentDate,
-        params.groupId
-      );
+        params.groupId,
+      )
 
       // 2. 只保留已放弃的事项
-      items = items.filter(item => item.status === 'abandoned');
+      items = items.filter((item) => item.status === 'abandoned')
 
       // 3. 应用搜索、标签、日期、优先级过滤
-      items = applyTodoFilters(items, params);
+      items = applyTodoFilters(items, params)
 
       // 4. 按配置排序
-      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)))
 
-      return items;
+      return items
     },
 
     // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
     getGroupedFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
-      const futureItems = items.filter(item => {
-        const effectiveDate = getEffectiveDate(item);
+      const items = computeDisplayItems((state as ProjectStateWithGetters).items, state.currentDate, groupId)
+      const futureItems = items.filter((item) => {
+        const effectiveDate = getEffectiveDate(item)
         return (
-          effectiveDate >= state.currentDate &&
-          item.status !== 'completed' &&
-          item.status !== 'abandoned'
-        );
-      });
+          effectiveDate >= state.currentDate
+          && item.status !== 'completed'
+          && item.status !== 'abandoned'
+        )
+      })
 
-      const grouped = new Map<string, Item[]>();
-      futureItems.forEach(item => {
-        const list = grouped.get(item.date);
+      const grouped = new Map<string, Item[]>()
+      futureItems.forEach((item) => {
+        const list = grouped.get(item.date)
         if (list) {
-          list.push(item);
+          list.push(item)
         } else {
-          grouped.set(item.date, [item]);
+          grouped.set(item.date, [item])
         }
-      });
+      })
 
-      grouped.forEach(list => {
+      grouped.forEach((list) => {
         list.sort((a, b) => {
-          return (a.startDateTime || a.date).localeCompare(b.startDateTime || b.date);
-        });
-      });
+          return (a.startDateTime || a.date).localeCompare(b.startDateTime || b.date)
+        })
+      })
 
-      return grouped;
+      return grouped
     },
 
     // 获取所有番茄钟记录（包括项目、任务、事项的番茄钟）
     getAllPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
-      const pomodoros: PomodoroRecord[] = [];
-      const seenBlockIds = new Set<string>(); // 用于去重
-      const projects = !groupId ? state.projects : state.projects.filter(p => p.groupId === groupId);
+      const pomodoros: PomodoroRecord[] = []
+      const seenBlockIds = new Set<string>() // 用于去重
+      const projects = !groupId ? state.projects : state.projects.filter((p) => p.groupId === groupId)
 
-      projects.forEach(project => {
+      projects.forEach((project) => {
         // 项目级别番茄钟
         if (project.pomodoros) {
-          pomodoros.push(...project.pomodoros);
+          pomodoros.push(...project.pomodoros)
         }
         // 任务和事项级别番茄钟
-        project.tasks.forEach(task => {
+        project.tasks.forEach((task) => {
           if (task.pomodoros) {
-            pomodoros.push(...task.pomodoros);
+            pomodoros.push(...task.pomodoros)
           }
-          task.items.forEach(item => {
+          task.items.forEach((item) => {
             if (item.pomodoros && item.blockId) {
               // 根据 blockId 去重：同一个 blockId 的 item 只收集一次 pomodoros
               if (!seenBlockIds.has(item.blockId)) {
-                seenBlockIds.add(item.blockId);
-                pomodoros.push(...item.pomodoros);
+                seenBlockIds.add(item.blockId)
+                pomodoros.push(...item.pomodoros)
               }
             } else if (item.pomodoros) {
               // 没有 blockId 的 item，直接收集
-              pomodoros.push(...item.pomodoros);
+              pomodoros.push(...item.pomodoros)
             }
-          });
-        });
-      });
+          })
+        })
+      })
 
-      return pomodoros;
+      return pomodoros
     },
 
     // 获取今日番茄钟记录
     getTodayPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
-      return allPomodoros.filter((p: PomodoroRecord) => p.date === state.currentDate);
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
+      return allPomodoros.filter((p: PomodoroRecord) => p.date === state.currentDate)
     },
 
     // 获取今日专注分钟数
     getTodayFocusMinutes: (state) => (groupId: string = ''): number => {
-      const todayPomodoros = (state as any).getTodayPomodoros(groupId);
+      const todayPomodoros = (state as ProjectStateWithGetters).getTodayPomodoros(groupId)
       return todayPomodoros.reduce((sum: number, p: PomodoroRecord) => {
         // 优先使用实际专注时长，否则使用计算时长
-        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes;
-        return sum + minutes;
-      }, 0);
+        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes
+        return sum + minutes
+      }, 0)
     },
 
     // 获取总番茄数
     getTotalPomodoros: (state) => (groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
-      return allPomodoros.length;
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
+      return allPomodoros.length
     },
 
     // 获取总专注分钟数
     getTotalFocusMinutes: (state) => (groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros.reduce((sum: number, p: PomodoroRecord) => {
         // 优先使用实际专注时长，否则使用计算时长
-        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes;
-        return sum + minutes;
-      }, 0);
+        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes
+        return sum + minutes
+      }, 0)
     },
 
     // 按日期分组获取番茄钟记录
     getPomodorosByDate: (state) => (groupId: string = ''): Map<string, PomodoroRecord[]> => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
-      const grouped = new Map<string, PomodoroRecord[]>();
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
+      const grouped = new Map<string, PomodoroRecord[]>()
 
       allPomodoros.forEach((p: PomodoroRecord) => {
-        const list = grouped.get(p.date);
+        const list = grouped.get(p.date)
         if (list) {
-          list.push(p);
+          list.push(p)
         } else {
-          grouped.set(p.date, [p]);
+          grouped.set(p.date, [p])
         }
-      });
+      })
 
       // 每个日期内的番茄钟按开始时间排序
-      grouped.forEach(list => {
-        list.sort((a, b) => a.startTime.localeCompare(b.startTime));
-      });
+      grouped.forEach((list) => {
+        list.sort((a, b) => a.startTime.localeCompare(b.startTime))
+      })
 
-      return grouped;
+      return grouped
     },
 
     // 获取日期范围内的专注分钟数（按日聚合，用于统计图表）
     getFocusMinutesByDateRange: (state) => (
       startDate: string,
       endDate: string,
-      groupId: string = ''
+      groupId: string = '',
     ): Map<string, number> => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
-      const byDay = new Map<string, number>();
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
+      const byDay = new Map<string, number>()
 
       allPomodoros.forEach((p: PomodoroRecord) => {
         if (p.date >= startDate && p.date <= endDate) {
-          const mins = p.actualDurationMinutes ?? p.durationMinutes;
-          const current = byDay.get(p.date) ?? 0;
-          byDay.set(p.date, current + mins);
+          const mins = p.actualDurationMinutes ?? p.durationMinutes
+          const current = byDay.get(p.date) ?? 0
+          byDay.set(p.date, current + mins)
         }
-      });
+      })
 
-      return byDay;
+      return byDay
     },
 
     // 获取某日的专注分钟数
     getFocusMinutesByDay: (state) => (date: string, groupId: string = ''): number => {
-      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      const allPomodoros = (state as ProjectStateWithGetters).getAllPomodoros(groupId)
       return allPomodoros
         .filter((p: PomodoroRecord) => p.date === date)
-        .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+        .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0)
     },
 
     getItemFocusPlanMinutes: () => (item: Item): number | undefined => {
-      return item.focusPlan?.normalizedMinutes;
+      return item.focusPlan?.normalizedMinutes
     },
 
     getItemActualFocusMinutes: () => (item: Item): number => {
       return (item.pomodoros ?? []).reduce((sum, record) => {
-        return sum + (record.actualDurationMinutes ?? record.durationMinutes);
-      }, 0);
+        return sum + (record.actualDurationMinutes ?? record.durationMinutes)
+      }, 0)
     },
 
     getTodayFocusPlanEntries: (state) => (groupId: string = '') => {
-      return buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId);
+      return buildTodayFocusPlanEntries((state as ProjectStateWithGetters).items, state.currentDate, groupId)
     },
 
     getFocusPlanEntriesByDate: (state) => (date: string, groupId: string = '') => {
-      return buildFocusPlanEntriesForDate((state as any).items, date, groupId);
+      return buildFocusPlanEntriesForDate((state as ProjectStateWithGetters).items, date, groupId)
     },
 
     getTodayFocusPlanSummary: (state) => (groupId: string = '') => {
       return buildDailyFocusPlanSummary(
-        buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId),
+        buildTodayFocusPlanEntries((state as ProjectStateWithGetters).items, state.currentDate, groupId),
         state.currentDate,
-      );
+      )
     },
 
     getFocusPlanSummaryByDate: (state) => (date: string, groupId: string = '') => {
       return buildDailyFocusPlanSummary(
-        buildFocusPlanEntriesForDate((state as any).items, date, groupId),
+        buildFocusPlanEntriesForDate((state as ProjectStateWithGetters).items, date, groupId),
         date,
-      );
+      )
     },
 
     getItemSummaryByDate: (state) => (date: string, groupId: string = '') => {
-      const allItems = (state as any).items as Item[];
-      const today = state.currentDate;
-      let items = allItems.filter((item: Item) => {
-        if (groupId && item.project?.groupId !== groupId) return false;
-        return item.date === date;
-      });
-      const total = items.length;
-      const completed = items.filter((i: Item) => i.status === 'completed').length;
-      const abandoned = items.filter((i: Item) => i.status === 'abandoned').length;
-      const isOverdueDate = date < today;
-      const overdue = isOverdueDate ? items.filter((i: Item) => i.status !== 'completed' && i.status !== 'abandoned').length : 0;
-      const pending = total - completed - abandoned - overdue;
-      return { date, total, completed, abandoned, pending, overdue };
+      const allItems = (state as ProjectStateWithGetters).items
+      const today = state.currentDate
+      const items = allItems.filter((item: Item) => {
+        if (groupId && item.project?.groupId !== groupId) return false
+        return item.date === date
+      })
+      const total = items.length
+      const completed = items.filter((i: Item) => i.status === 'completed').length
+      const abandoned = items.filter((i: Item) => i.status === 'abandoned').length
+      const isOverdueDate = date < today
+      const overdue = isOverdueDate ? items.filter((i: Item) => i.status !== 'completed' && i.status !== 'abandoned').length : 0
+      const pending = total - completed - abandoned - overdue
+      return {
+        date,
+        total,
+        completed,
+        abandoned,
+        pending,
+        overdue,
+      }
     },
 
     // 从 projects 计算所有习惯
     habits: (state): Habit[] => {
-      const habits: Habit[] = [];
+      const habits: Habit[] = []
       for (const project of state.projects) {
         for (const habit of project.habits || []) {
-          habit.project = project;
-          habits.push(habit);
+          habit.project = project
+          habits.push(habit)
         }
       }
-      return habits;
+      return habits
     },
 
     // 按分组过滤的习惯
     getHabits: (state) => (groupId: string): Habit[] => {
-      const habits = (state as any).habits as Habit[];
-      if (!groupId) return habits;
-      return habits.filter(h => h.project?.groupId === groupId);
+      const habits = (state as ProjectStateWithGetters).habits
+      if (!groupId) return habits
+      return habits.filter((h) => h.project?.groupId === groupId)
     },
 
     // 获取今日打卡记录
     getTodayRecords: (state) => (groupId: string): CheckInRecord[] => {
-      const records: CheckInRecord[] = [];
-      const habits = (state as any).getHabits(groupId) as Habit[];
+      const records: CheckInRecord[] = []
+      const habits = (state as ProjectStateWithGetters).getHabits(groupId)
       for (const habit of habits) {
         for (const record of habit.records) {
           if (record.date === state.currentDate) {
-            records.push(record);
+            records.push(record)
           }
         }
       }
-      return records;
+      return records
     },
 
     // 按日期获取打卡记录
     getRecordsByDate: (state) => (date: string, groupId: string): CheckInRecord[] => {
-      const records: CheckInRecord[] = [];
-      const habits = (state as any).getHabits(groupId) as Habit[];
+      const records: CheckInRecord[] = []
+      const habits = (state as ProjectStateWithGetters).getHabits(groupId)
       for (const habit of habits) {
         for (const record of habit.records) {
           if (record.date === date) {
-            records.push(record);
+            records.push(record)
           }
         }
       }
-      return records;
-    }
+      return records
+    },
   },
 
   actions: {
@@ -876,41 +922,41 @@ export const useProjectStore = defineStore('project', {
      * 清空项目数据（无启用目录时使用）
      */
     clearData() {
-      this.projects = [];
+      this.projects = []
     },
 
     applyProjects(nextProjects: Project[]) {
       logProjectNameDebug('store-applyProjects', {
         count: nextProjects.length,
-        sampleProjects: nextProjects.slice(0, 5).map(project => ({
+        sampleProjects: nextProjects.slice(0, 5).map((project) => ({
           id: project.id,
           name: project.name,
           path: project.path,
           groupId: project.groupId,
         })),
-      });
-      this.projects = nextProjects;
+      })
+      this.projects = nextProjects
     },
 
     appendProjects(nextProjects: Project[]) {
-      if (nextProjects.length === 0) return;
+      if (nextProjects.length === 0) return
       logProjectNameDebug('store-appendProjects', {
         appendCount: nextProjects.length,
         existingCount: this.projects.length,
-        sampleProjects: nextProjects.slice(0, 5).map(project => ({
+        sampleProjects: nextProjects.slice(0, 5).map((project) => ({
           id: project.id,
           name: project.name,
           path: project.path,
           groupId: project.groupId,
         })),
-      });
-      this.projects = [...this.projects, ...nextProjects];
+      })
+      this.projects = [...this.projects, ...nextProjects]
     },
 
     removeProjectsByIds(projectIds: string[]) {
-      if (projectIds.length === 0) return;
-      const idSet = new Set(projectIds);
-      this.projects = this.projects.filter(project => !idSet.has(project.id));
+      if (projectIds.length === 0) return
+      const idSet = new Set(projectIds)
+      this.projects = this.projects.filter((project) => !idSet.has(project.id))
     },
 
     async buildProjectsFromParser(
@@ -919,12 +965,12 @@ export const useProjectStore = defineStore('project', {
       scanMode: ScanMode,
       directories: ProjectDirectory[],
     ): Promise<Project[]> {
-      const enabledDirs = directories.filter(d => d.enabled);
-      const nextProjects: Project[] = [];
+      const enabledDirs = directories.filter((d) => d.enabled)
+      const nextProjects: Project[] = []
 
       await parser.parseAllProjectsWithCallback(_plugin, (project) => {
         if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
-          project.groupId = matchGroupId(project.path, enabledDirs);
+          project.groupId = matchGroupId(project.path, enabledDirs)
         }
         logProjectNameDebug('store-buildProjectsFromParser-callback', {
           scanMode,
@@ -932,11 +978,11 @@ export const useProjectStore = defineStore('project', {
           projectName: project.name,
           projectPath: project.path,
           groupId: project.groupId,
-        });
-        nextProjects.push(project);
-      });
+        })
+        nextProjects.push(project)
+      })
 
-      return nextProjects;
+      return nextProjects
     },
 
     /**
@@ -944,22 +990,22 @@ export const useProjectStore = defineStore('project', {
      * 流式更新：每解析完一个项目就立即显示
      */
     async loadProjects(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
-      if (this.loading) return;
-      
-      const enabledDirs = directories.filter(d => d.enabled);
-      console.log('[Task Assistant] Loading projects, scanMode:', scanMode, 'enabledDirs:', enabledDirs.length);
-      
-      this.loading = true;
-      this.projects = [];
-      
+      if (this.loading) return
+
+      const enabledDirs = directories.filter((d) => d.enabled)
+      console.log('[Task Assistant] Loading projects, scanMode:', scanMode, 'enabledDirs:', enabledDirs.length)
+
+      this.loading = true
+      this.projects = []
+
       try {
-        const parser = new MarkdownParser(enabledDirs, scanMode);
-        let pendingProjects: Project[] = [];
+        const parser = new MarkdownParser(directories, scanMode)
+        let pendingProjects: Project[] = []
 
         await parser.parseAllProjectsWithCallback(_plugin, (project) => {
           // 全扫描模式下，需要根据路径匹配确定分组
           if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
-            project.groupId = matchGroupId(project.path, enabledDirs);
+            project.groupId = matchGroupId(project.path, enabledDirs)
           }
           logProjectNameDebug('store-loadProjects-parser-callback', {
             scanMode,
@@ -968,27 +1014,30 @@ export const useProjectStore = defineStore('project', {
             projectPath: project.path,
             groupId: project.groupId,
             pendingCountBeforePush: pendingProjects.length,
-          });
-          pendingProjects.push(project);
+          })
+          pendingProjects.push(project)
 
           if (pendingProjects.length >= INITIAL_LOAD_PROJECT_BATCH_SIZE) {
-            this.appendProjects(pendingProjects);
-            pendingProjects = [];
+            this.appendProjects(pendingProjects)
+            pendingProjects = []
           }
-        });
+        })
 
-        this.appendProjects(pendingProjects);
+        this.appendProjects(pendingProjects)
 
-        this.currentDate = dayjs().format('YYYY-MM-DD');
-        console.log('[Task Assistant] Total projects loaded:', this.projects.length);
+        this.currentDate = dayjs().format('YYYY-MM-DD')
+        console.log('[Task Assistant] Total projects loaded:', this.projects.length)
 
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
-        const settingsStore = useSettingsStore();
-        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+        eventBus.emit(Events.DATA_REFRESHED, {
+          plugin: _plugin,
+          items: this.items,
+        })
+        const settingsStore = useSettingsStore()
+        debouncedWriteKernelData(this.projects, this.items, settingsStore.groups, this.habits)
       } catch (error) {
-        console.error('[Task Assistant] Failed to load projects:', error);
+        console.error('[Task Assistant] Failed to load projects:', error)
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
@@ -1009,14 +1058,14 @@ export const useProjectStore = defineStore('project', {
           scanMode,
           directoriesCount: directories.length,
           dirtyDocsAtSkip: dirtyDocTracker.getDirtyDocs(),
-        });
-        return;
+        })
+        return
       }
 
-      this.refreshing = true;
-      this.refreshKey++;
+      this.refreshing = true
+      this.refreshKey++
 
-      const newDate = dayjs().format('YYYY-MM-DD');
+      const newDate = dayjs().format('YYYY-MM-DD')
       console.log('[Task Assistant] Refresh started:', {
         refreshKey: this.refreshKey,
         date: newDate,
@@ -1024,51 +1073,54 @@ export const useProjectStore = defineStore('project', {
         pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
         pluginAvailable: Boolean(_plugin),
         directoriesCount: directories.length,
-        enabledDirsCount: directories.filter(d => d.enabled).length,
+        enabledDirsCount: directories.filter((d) => d.enabled).length,
         currentProjectsCount: this.projects.length,
-      });
+      })
 
       try {
-        const dirtyDocIds = dirtyDocTracker.getDirtyDocs();
+        const dirtyDocIds = dirtyDocTracker.getDirtyDocs()
         console.log('[Task Assistant] Refresh dirty docs snapshot:', {
           refreshKey: this.refreshKey,
           dirtyDocIds,
           dirtyDocCount: dirtyDocIds.length,
-        });
+        })
 
         if (!options?.forceFull && dirtyDocIds.length > 0) {
           // 定向刷新：只更新指定文档
-          console.log('[Task Assistant] Refresh choosing directed refresh path');
-          await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
+          console.log('[Task Assistant] Refresh choosing directed refresh path')
+          await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds)
         } else {
           // 全量刷新
           console.warn('[Task Assistant] Refresh choosing full refresh path because no dirty docs were present:', {
             refreshKey: this.refreshKey,
             pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
             pluginAvailable: Boolean(_plugin),
-          });
-          await this.refreshFull(_plugin, scanMode, directories);
+          })
+          await this.refreshFull(_plugin, scanMode, directories)
         }
 
-        this.currentDate = newDate;
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
-        const settingsStore = useSettingsStore();
-        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+        this.currentDate = newDate
+        eventBus.emit(Events.DATA_REFRESHED, {
+          plugin: _plugin,
+          items: this.items,
+        })
+        const settingsStore = useSettingsStore()
+        debouncedWriteKernelData(this.projects, this.items, settingsStore.groups, this.habits)
       } catch (error) {
         console.error('[Task Assistant] Refresh failed, falling back to full refresh:', {
           refreshKey: this.refreshKey,
           error,
           dirtyDocsAtFailure: dirtyDocTracker.getDirtyDocs(),
-        });
+        })
         // 出错时回退到全量刷新
-        await this.refreshFull(_plugin, scanMode, directories);
+        await this.refreshFull(_plugin, scanMode, directories)
       } finally {
         console.log('[Task Assistant] Refresh finished:', {
           refreshKey: this.refreshKey,
           currentProjectsCount: this.projects.length,
           remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
-        });
-        this.refreshing = false;
+        })
+        this.refreshing = false
       }
     },
 
@@ -1081,25 +1133,24 @@ export const useProjectStore = defineStore('project', {
         pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
         pluginAvailable: Boolean(_plugin),
         directoriesCount: directories.length,
-        enabledDirsCount: directories.filter(d => d.enabled).length,
+        enabledDirsCount: directories.filter((d) => d.enabled).length,
         dirtyDocsBeforeClear: dirtyDocTracker.getDirtyDocs(),
-      });
+      })
 
-      const enabledDirs = directories.filter(d => d.enabled);
-      const parser = new MarkdownParser(enabledDirs, scanMode);
+      const parser = new MarkdownParser(directories, scanMode)
       const nextProjects = await this.buildProjectsFromParser(
         parser,
         _plugin,
         scanMode,
         directories,
-      );
-      this.applyProjects(nextProjects);
+      )
+      this.applyProjects(nextProjects)
 
-      dirtyDocTracker.clearAll();
+      dirtyDocTracker.clearAll()
       console.log('[Task Assistant] Full refresh completed:', {
         projectsCount: this.projects.length,
         remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
-      });
+      })
     },
 
     /**
@@ -1110,70 +1161,74 @@ export const useProjectStore = defineStore('project', {
       _plugin: any,
       scanMode: ScanMode,
       directories: ProjectDirectory[],
-      dirtyDocIds: string[]
+      dirtyDocIds: string[],
     ): Promise<void> {
       console.log('[Task Assistant] Directed refresh started:', {
         dirtyDocIds,
         dirtyDocCount: dirtyDocIds.length,
         scanMode,
         directoriesCount: directories.length,
-        enabledDirsCount: directories.filter(d => d.enabled).length,
-      });
+        enabledDirsCount: directories.filter((d) => d.enabled).length,
+      })
 
-      const enabledDirs = directories.filter(d => d.enabled);
-      const parser = new MarkdownParser(enabledDirs, scanMode);
+      const parser = new MarkdownParser(directories, scanMode)
 
       // 只解析脏文档，而不是整个目录
       for (const docId of dirtyDocIds) {
         try {
           // 从现有项目获取 groupId 和 path
-          const existingProject = this.projects.find(p => p.id === docId);
-          const groupId = existingProject?.groupId;
-          let path = existingProject?.path;
+          const existingProject = this.projects.find((p) => p.id === docId)
+          const groupId = existingProject?.groupId
+          let path = existingProject?.path
           logProjectNameDebug('store-refreshDirtyDocs-existing-project', {
             docId,
             existingProjectName: existingProject?.name,
             existingProjectPath: existingProject?.path,
             existingGroupId: groupId,
-          });
+          })
           console.log('[Task Assistant] Directed refresh processing doc:', {
             docId,
             hasExistingProject: Boolean(existingProject),
             existingProjectName: existingProject?.name,
             existingGroupId: groupId,
             existingPath: path,
-          });
-          
+          })
+
           // 如果没有 path，从思源查询
           if (!path) {
             try {
-              path = await getHPathByID(docId);
+              path = await getHPathByID(docId)
               console.log('[Task Assistant] Directed refresh resolved path from Siyuan:', {
                 docId,
                 path,
-              });
-            } catch (e) {
-              console.warn('[Task Assistant] Failed to get hpath for doc:', docId);
-              path = '';
+              })
+            } catch {
+              console.warn('[Task Assistant] Failed to get hpath for doc:', docId)
+              path = ''
             }
           }
 
           // 全扫描模式下重新匹配分组
-          let finalGroupId = groupId;
+          let finalGroupId = groupId
+          const enabledDirs = directories.filter((d) => d.enabled)
           if (scanMode === 'full' && enabledDirs.length > 0 && path) {
-            finalGroupId = matchGroupId(path, enabledDirs);
+            finalGroupId = matchGroupId(path, enabledDirs)
           }
           console.log('[Task Assistant] Directed refresh parse context:', {
             docId,
             path,
             originalGroupId: groupId,
             finalGroupId,
-          });
+          })
 
           // 使用 parser 的复用方法：解析 + 番茄钟合并
           const project = await parser.parseAndProcessSingleDocument(
-            docId, '', finalGroupId, path, _plugin
-          );
+            docId,
+            '',
+            finalGroupId,
+            path,
+            _plugin,
+          )
 
           if (project) {
             logProjectNameDebug('store-refreshDirtyDocs-parsed-project', {
@@ -1181,34 +1236,34 @@ export const useProjectStore = defineStore('project', {
               projectName: project.name,
               projectPath: project.path,
               projectGroupId: project.groupId,
-            });
-            this.updateProjectsIncrementally([project]);
+            })
+            this.updateProjectsIncrementally([project])
             console.log('[Task Assistant] Project refreshed:', {
               docId,
               projectName: project.name,
               itemsCount: project.items?.length,
-            });
+            })
           } else {
             console.warn('[Task Assistant] Directed refresh produced no project for doc:', {
               docId,
               path,
               finalGroupId,
-            });
-            this.removeProjectsByIds([docId]);
+            })
+            this.removeProjectsByIds([docId])
           }
         } catch (error) {
-          console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);
+          console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error)
         }
       }
 
       // 清除脏标记
-      dirtyDocTracker.clearDirty(dirtyDocIds);
+      dirtyDocTracker.clearDirty(dirtyDocIds)
 
       console.log('[Task Assistant] Directed refresh completed:', {
         refreshedCount: dirtyDocIds.length,
         remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
         currentProjectsCount: this.projects.length,
-      });
+      })
     },
 
     /**
@@ -1217,9 +1272,9 @@ export const useProjectStore = defineStore('project', {
      */
     updateProjectsIncrementally(updatedProjects: Project[]): void {
       for (const newProject of updatedProjects) {
-        const index = this.projects.findIndex(p => p.id === newProject.id);
+        const index = this.projects.findIndex((p) => p.id === newProject.id)
         if (index >= 0) {
-          const oldProject = this.projects[index];
+          const oldProject = this.projects[index]
           logProjectNameDebug('store-updateProjectsIncrementally-replace', {
             projectId: newProject.id,
             oldName: oldProject?.name,
@@ -1228,18 +1283,18 @@ export const useProjectStore = defineStore('project', {
             newName: newProject.name,
             newPath: newProject.path,
             newGroupId: newProject.groupId,
-          });
+          })
           // 替换现有项目 - Vue 会检测到该索引的变化
-          this.projects[index] = newProject;
+          this.projects[index] = newProject
         } else {
           logProjectNameDebug('store-updateProjectsIncrementally-insert', {
             projectId: newProject.id,
             newName: newProject.name,
             newPath: newProject.path,
             newGroupId: newProject.groupId,
-          });
+          })
           // 新增项目
-          this.projects.push(newProject);
+          this.projects.push(newProject)
         }
       }
       // 注意：删除项目暂不处理，需额外逻辑
@@ -1249,41 +1304,45 @@ export const useProjectStore = defineStore('project', {
      * 切换隐藏已完成事项的状态
      */
     toggleHideCompleted() {
-      this.hideCompleted = !this.hideCompleted;
+      this.hideCompleted = !this.hideCompleted
       // 保存到 settingsStore
-      const settingsStore = useSettingsStore();
-      settingsStore.todoDock.hideCompleted = this.hideCompleted;
-      settingsStore.saveToPlugin();
+      const settingsStore = useSettingsStore()
+      settingsStore.todoDock.hideCompleted = this.hideCompleted
+      settingsStore.saveToPlugin()
     },
 
     /**
      * 切换隐藏已放弃事项的状态
      */
     toggleHideAbandoned() {
-      this.hideAbandoned = !this.hideAbandoned;
+      this.hideAbandoned = !this.hideAbandoned
       // 保存到 settingsStore
-      const settingsStore = useSettingsStore();
-      settingsStore.todoDock.hideAbandoned = this.hideAbandoned;
-      settingsStore.saveToPlugin();
+      const settingsStore = useSettingsStore()
+      settingsStore.todoDock.hideAbandoned = this.hideAbandoned
+      settingsStore.saveToPlugin()
     },
 
     /**
      * 更新当前日期（供零点调度推进统一日期源）
      */
     setCurrentDate(newDate: string) {
-      this.currentDate = newDate;
+      this.currentDate = newDate
     },
 
     /**
      * 获取甘特图数据
+     * @param showItems 是否显示事项
+     * @param dateFilter 可选，日期范围过滤
+     * @param dateFilter.start 开始日期
+     * @param dateFilter.end 结束日期
      * @param groupId 可选，按该分组过滤；空则全部
      */
-    getGanttTasks(showItems: boolean = false, dateFilter?: { start?: string; end?: string }, groupId: string = '') {
+    getGanttTasks(showItems: boolean = false, dateFilter?: { start?: string, end?: string }, groupId: string = '') {
       const projects = groupId
-        ? this.projects.filter(p => p.groupId === groupId)
-        : this.projects;
-      return DataConverter.projectsToGanttTasks(projects, showItems, dateFilter);
+        ? this.projects.filter((p) => p.groupId === groupId)
+        : this.projects
+      return DataConverter.projectsToGanttTasks(projects, showItems, dateFilter)
     },
 
-  }
-});
+  },
+})

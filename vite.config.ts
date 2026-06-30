@@ -8,11 +8,73 @@ import {
   defineConfig,
   loadEnv,
 } from "vite"
+import removeConsole from "vite-plugin-remove-console"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import zipPack from "vite-plugin-zip-pack"
-import removeConsole from "vite-plugin-remove-console"
 
 const pluginInfo = require("./plugin.json")
+
+const PI_REGISTER_BUILTINS_ID = 'pi-ai/dist/providers/register-builtins.js'
+const PI_ENV_API_KEYS_ID = 'pi-ai/dist/env-api-keys.js'
+
+const FONT_FACE_RE = /@font-face\{[^}]+\}/g
+
+function removeGanttFontFace() {
+  return {
+    name: 'remove-gantt-font-face',
+    enforce: 'pre',
+    transform(code: string, id: string) {
+      if (id.includes('dhtmlx-gantt') && id.endsWith('.css')) {
+        // 只删除非图标字体的 @font-face（如 Inter），保留 dhx-gantt-icons
+        return {
+          code: code.replace(FONT_FACE_RE, (match) => match.includes('dhx-gantt-icons') ? match : ''),
+          map: null,
+        }
+      }
+    },
+  }
+}
+
+function piProviderOptimizer() {
+  return {
+    name: 'pi-provider-optimizer',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id.includes(PI_REGISTER_BUILTINS_ID)) {
+        return {
+          code: `import { registerApiProvider, clearApiProviders } from "../api-registry.js";
+import { streamOpenAICompletions, streamSimpleOpenAICompletions } from "./openai-completions.js";
+export { streamOpenAICompletions, streamSimpleOpenAICompletions };
+export function registerBuiltInApiProviders() {
+  registerApiProvider({
+    api: "openai-completions",
+    stream: streamOpenAICompletions,
+    streamSimple: streamSimpleOpenAICompletions,
+  });
+}
+export function resetApiProviders() {
+  clearApiProviders();
+  registerBuiltInApiProviders();
+}
+registerBuiltInApiProviders();
+`,
+          map: null,
+        }
+      }
+
+      if (id.includes(PI_ENV_API_KEYS_ID)) {
+        return {
+          code: `export function findEnvKeys() { return undefined; }
+export function getEnvApiKey() { return undefined; }
+`,
+          map: null,
+        }
+      }
+
+      return null
+    },
+  }
+}
 
 export default defineConfig(({
   mode,
@@ -48,7 +110,7 @@ export default defineConfig(({
     resolve: {
       alias: {
         "@": resolve(__dirname, "src"),
-        ...(!isWatch ? { "vconsole": resolve(__dirname, "src/mobile/utils/vconsole.stub.ts") } : {}),
+        ...(!isWatch ? { vconsole: resolve(__dirname, "src/mobile/utils/vconsole.stub.ts") } : {}),
       },
     },
 
@@ -70,6 +132,8 @@ export default defineConfig(({
     },
 
     plugins: [
+      removeGanttFontFace(),
+      piProviderOptimizer(),
       vue(),
       viteStaticCopy({
         targets: [
@@ -93,8 +157,14 @@ export default defineConfig(({
           // 因此只要输出到工作空间插件目录，就必须同步复制最新的 MCP 构建产物。
           ...(siyuanWorkspacePath
             ? [
-                { src: "./dist/mcp-server.js", dest: "./" },
-                { src: "./dist/kernel.js", dest: "./" },
+                {
+                  src: "./dist/mcp-server.js",
+                  dest: "./",
+                },
+                {
+                  src: "./dist/kernel.js",
+                  dest: "./",
+                },
               ]
             : []),
           {
@@ -115,8 +185,8 @@ export default defineConfig(({
     define: {
       "process.env.DEV_MODE": `"${isWatch}"`,
       "process.env.NODE_ENV": JSON.stringify(isWatch ? 'development' : 'production'),
-      __VUE_OPTIONS_API__: true,
-      __VUE_PROD_DEVTOOLS__: isWatch,
+      "__VUE_OPTIONS_API__": true,
+      "__VUE_PROD_DEVTOOLS__": isWatch,
     },
 
     build: {
@@ -168,6 +238,7 @@ export default defineConfig(({
                       "./README*.md",
                       "./plugin.json",
                       "dist/mcp-server.js",
+                      "dist/kernel.js",
                     ])
                     for (const file of files) {
                       this.addWatchFile(file)
@@ -190,8 +261,7 @@ export default defineConfig(({
 
         output: {
           entryFileNames: "[name].js",
-          // chunk 文件命名优化
-          chunkFileNames: "assets/[name]-[hash].js",
+          codeSplitting: false,
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === "style.css") {
               return "index.css"

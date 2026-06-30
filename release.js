@@ -14,6 +14,9 @@ const {
   version: currentVersion = '0.0.0',
 } = PluginInfo
 
+const SEMVER_RE = /^\d+\.\d+\.\d+$/
+const VERSION_JSON_RE = /"version"\s*:\s*"[^"]+"/
+
 function parseVersion(version) {
   const [major, minor, patch] = version.split('.').map(Number)
   return {
@@ -132,7 +135,7 @@ const main = async () => {
 
     console.log(`🚀  Ready to release => v${newVersion}`)
 
-    const isValid = /^\d+\.\d+\.\d+$/.test(newVersion)
+    const isValid = SEMVER_RE.test(newVersion)
     if (!isValid) {
       console.log('\n\x1B[31m❌  Invalid version format.\x1B[0m')
       return
@@ -142,7 +145,7 @@ const main = async () => {
     console.log('🔄  \x1B[90mUpdating plugin.json...\x1B[0m')
     const content = readFileSync('./plugin.json', 'utf8')
     const updated = content.replace(
-      /"version"\s*:\s*"[^"]+"/,
+      VERSION_JSON_RE,
       `"version": "${newVersion}"`,
     )
     writeFileSync('./plugin.json', updated, 'utf8')
@@ -151,7 +154,7 @@ const main = async () => {
     console.log('🔄  \x1B[90mUpdating package.json...\x1B[0m')
     const packageContent = readFileSync('./package.json', 'utf8')
     const packageUpdated = packageContent.replace(
-      /"version"\s*:\s*"[^"]+"/,
+      VERSION_JSON_RE,
       `"version": "${newVersion}"`,
     )
     writeFileSync('./package.json', packageUpdated, 'utf8')
@@ -160,7 +163,7 @@ const main = async () => {
     console.log('🔄  \x1B[90m Ready to commit new version and create tag...\x1B[0m')
     exec(
       `git add ./plugin.json ./package.json && git commit -m "chore: update version to ${newVersion}" && git push && git tag v${newVersion}`,
-      (err, stdout) => {
+      (err) => {
         if (err) {
           console.error('\x1B[31m%s\x1B[0m', '❌  Error for adding and committing:', err)
           process.exit(1)

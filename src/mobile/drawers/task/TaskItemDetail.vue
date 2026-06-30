@@ -5,29 +5,29 @@
     :disable-navigation="true"
     overlay-class="task-item-detail-overlay"
     @update:model-value="$emit('update:modelValue', $event)"
-    @open-pomodoro="$emit('openPomodoro', $event)"
-    @set-reminder="$emit('setReminder', $event)"
-    @set-recurring="$emit('setRecurring', $event)"
+    @openPomodoro="$emit('openPomodoro', $event)"
+    @setReminder="$emit('setReminder', $event)"
+    @setRecurring="$emit('setRecurring', $event)"
     @refresh="$emit('refresh')"
   />
 </template>
 
 <script setup lang="ts">
-import MobileItemDetail from '../item/MobileItemDetail.vue';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import MobileItemDetail from '../item/MobileItemDetail.vue'
 
 defineProps<{
-  modelValue: boolean;
-  item: Item | null;
-}>();
+  modelValue: boolean
+  item: Item | null
+}>()
 
 defineEmits<{
-  'update:modelValue': [value: boolean];
-  'openPomodoro': [item: Item];
-  'setReminder': [item: Item];
-  'setRecurring': [item: Item];
-  'refresh': [];
-}>();
+  'update:modelValue': [value: boolean]
+  'openPomodoro': [item: Item]
+  'setReminder': [item: Item]
+  'setRecurring': [item: Item]
+  'refresh': []
+}>()
 </script>
 
 <style lang="scss">

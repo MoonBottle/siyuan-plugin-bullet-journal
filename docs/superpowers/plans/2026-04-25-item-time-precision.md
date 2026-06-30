@@ -30,6 +30,7 @@
 ### Task 1: Lock the expected behavior with parser tests
 
 **Files:**
+
 - Modify: `test/parser/lineParser.test.ts`
 - Reference: `src/parser/lineParser.ts`
 - Reference: `src/types/models.ts`
@@ -38,25 +39,25 @@
 
 ```ts
 it('支持 HH:mm 时间范围并归一化为秒级时间', () => {
-  const items = LineParser.parseItemLine('周会 @2026-03-17 14:00~16:00', 1);
+  const items = LineParser.parseItemLine('周会 @2026-03-17 14:00~16:00', 1)
 
-  expect(items).toHaveLength(1);
-  expect(items[0].startDateTime).toBe('2026-03-17 14:00:00');
-  expect(items[0].endDateTime).toBe('2026-03-17 16:00:00');
-  expect(items[0].timePrecision).toBe('minute');
-});
+  expect(items).toHaveLength(1)
+  expect(items[0].startDateTime).toBe('2026-03-17 14:00:00')
+  expect(items[0].endDateTime).toBe('2026-03-17 16:00:00')
+  expect(items[0].timePrecision).toBe('minute')
+})
 
 it('多日期混合场景保留各自时间精度', () => {
   const items = LineParser.parseItemLine(
     '整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00:05~15:00:10',
     1
-  );
+  )
 
-  expect(items[0].timePrecision).toBe('minute');
-  expect(items[1].timePrecision).toBe('second');
-  expect(items[0].siblingItems?.[0].timePrecision).toBe('second');
-  expect(items[1].siblingItems?.[0].timePrecision).toBe('minute');
-});
+  expect(items[0].timePrecision).toBe('minute')
+  expect(items[1].timePrecision).toBe('second')
+  expect(items[0].siblingItems?.[0].timePrecision).toBe('second')
+  expect(items[1].siblingItems?.[0].timePrecision).toBe('minute')
+})
 ```
 
 - [ ] **Step 2: Run parser tests to verify they fail**
@@ -68,13 +69,13 @@ Expected: FAIL on missing `timePrecision` field and minute-format parsing.
 - [ ] **Step 3: Add the model surface needed by the tests**
 
 ```ts
-export type TimePrecision = 'minute' | 'second';
+export type TimePrecision = 'minute' | 'second'
 
 export interface ItemDateTimeInfo {
-  date: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  timePrecision?: TimePrecision;
+  date: string
+  startDateTime?: string
+  endDateTime?: string
+  timePrecision?: TimePrecision
 }
 ```
 
@@ -83,16 +84,16 @@ Add `timePrecision?: TimePrecision` to `Item` and reuse `ItemDateTimeInfo` where
 - [ ] **Step 4: Update parser regex and normalization logic**
 
 ```ts
-const TIME_PART = '\\d{2}:\\d{2}(?::\\d{2})?';
+const TIME_PART = '\\d{2}:\\d{2}(?::\\d{2})?'
 const mainRegex = new RegExp(
   `(?:@|📅)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_PART}(?:~${TIME_PART})?))?`,
   'g'
-);
+)
 
-function normalizeTime(time: string): { value: string; precision: TimePrecision } {
+function normalizeTime(time: string): { value: string, precision: TimePrecision } {
   return time.length === 5
     ? { value: `${time}:00`, precision: 'minute' }
-    : { value: time, precision: 'second' };
+    : { value: time, precision: 'second' }
 }
 ```
 
@@ -114,6 +115,7 @@ git commit -m "feat(parser): support minute precision item times"
 ### Task 2: Lock markdown rewrite precision with file utility tests
 
 **Files:**
+
 - Modify: `test/utils/fileUtils.test.ts`
 - Reference: `src/utils/fileUtils.ts`
 - Reference: `src/tabs/CalendarTab.vue`
@@ -124,8 +126,8 @@ git commit -m "feat(parser): support minute precision item times"
 it('分钟精度事项更新时间后保持 HH:mm 格式', async () => {
   mockGetBlockKramdown.mockResolvedValue({
     kramdown: '周会 📅2026-03-17 14:00~16:00\\n{: id="block-1" }'
-  });
-  mockUpdateBlock.mockResolvedValue(undefined);
+  })
+  mockUpdateBlock.mockResolvedValue(undefined)
 
   const result = await updateBlockDateTime(
     'block-1',
@@ -138,21 +140,21 @@ it('分钟精度事项更新时间后保持 HH:mm 格式', async () => {
     'pending',
     undefined,
     'minute'
-  );
+  )
 
-  expect(result).toBe(true);
+  expect(result).toBe(true)
   expect(mockUpdateBlock).toHaveBeenCalledWith(
     'markdown',
     '周会 📅2026-03-18 15:30~17:30\\n{: id="block-1" }',
     'block-1'
-  );
-});
+  )
+})
 
 it('秒级事项更新时间后继续输出 HH:mm:ss 格式', async () => {
   mockGetBlockKramdown.mockResolvedValue({
     kramdown: '校时 📅2026-03-17 14:00:05~16:00:10\\n{: id="block-1" }'
-  });
-  mockUpdateBlock.mockResolvedValue(undefined);
+  })
+  mockUpdateBlock.mockResolvedValue(undefined)
 
   const result = await updateBlockDateTime(
     'block-1',
@@ -165,11 +167,11 @@ it('秒级事项更新时间后继续输出 HH:mm:ss 格式', async () => {
     'pending',
     undefined,
     'second'
-  );
+  )
 
-  expect(result).toBe(true);
-  expect(mockUpdateBlock.mock.calls[0][1]).toContain('15:30:05~17:30:10');
-});
+  expect(result).toBe(true)
+  expect(mockUpdateBlock.mock.calls[0][1]).toContain('15:30:05~17:30:10')
+})
 ```
 
 - [ ] **Step 2: Run the file utility tests to verify they fail**
@@ -182,21 +184,23 @@ Expected: FAIL because `updateBlockDateTime` does not accept or honor precision 
 
 ```ts
 function formatTimeForPrecision(timeStr: string, precision: TimePrecision = 'second'): string {
-  const normalized = formatTimeToSeconds(timeStr);
-  return precision === 'minute' ? normalized.slice(0, 5) : normalized;
+  const normalized = formatTimeToSeconds(timeStr)
+  return precision === 'minute' ? normalized.slice(0, 5) : normalized
 }
 
 function buildTimeKey(
   item: ItemDateTimeInfo,
   fallbackPrecision: TimePrecision = 'second'
 ): string {
-  const precision = item.timePrecision ?? fallbackPrecision;
-  const startTime = item.startDateTime?.split(' ')[1];
-  const endTime = item.endDateTime?.split(' ')[1];
+  const precision = item.timePrecision ?? fallbackPrecision
+  const startTime = item.startDateTime?.split(' ')[1]
+  const endTime = item.endDateTime?.split(' ')[1]
 
-  if (!startTime) return '';
-  if (!endTime) return formatTimeForPrecision(startTime, precision);
-  return `${formatTimeForPrecision(startTime, precision)}~${formatTimeForPrecision(endTime, precision)}`;
+  if (!startTime)
+    return ''
+  if (!endTime)
+    return formatTimeForPrecision(startTime, precision)
+  return `${formatTimeForPrecision(startTime, precision)}~${formatTimeForPrecision(endTime, precision)}`
 }
 ```
 
@@ -217,17 +221,17 @@ export async function updateBlockDateTime(
   writer?: BlockWriter,
   timePrecision: TimePrecision = 'second'
 ): Promise<boolean> {
-  const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
+  const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined
   const formattedEndTime = newEndTime
     ? formatTimeToSeconds(newEndTime)
-    : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
+    : (formattedStartTime ? addOneHour(formattedStartTime) : undefined)
 
   const updatedItem: ItemDateTimeInfo = {
     date: newDate,
     startDateTime: allDay ? undefined : (formattedStartTime ? `${newDate} ${formattedStartTime}` : undefined),
     endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined),
     timePrecision: allDay ? undefined : timePrecision
-  };
+  }
 }
 ```
 
@@ -249,6 +253,7 @@ git commit -m "feat(calendar): preserve item time precision on rewrite"
 ### Task 3: Wire the calendar event flow to pass precision through drag/resize
 
 **Files:**
+
 - Modify: `src/types/models.ts`
 - Modify: `src/tabs/CalendarTab.vue`
 - Reference: `src/components/calendar/CalendarView.vue`
@@ -272,7 +277,7 @@ If `CalendarEvent` construction already spreads from `Item`, use that existing p
 const timePrecision
   = eventInfo.timePrecision
     || eventInfo.extendedProps?.timePrecision
-    || 'second';
+    || 'second'
 
 const success = await updateBlockDateTime(
   blockId,
@@ -285,7 +290,7 @@ const success = await updateBlockDateTime(
   status,
   undefined,
   timePrecision
-);
+)
 ```
 
 Do not change the existing `startStr` / `endStr` extraction beyond what is needed to pass the precision through.
@@ -310,6 +315,7 @@ git commit -m "feat(calendar): thread item time precision through events"
 ### Task 4: Update docs and perform final verification
 
 **Files:**
+
 - Modify: `docs/user-guide/data-format.md`
 - Reference: `src/parser/lineParser.ts`
 - Reference: `src/utils/fileUtils.ts`
@@ -322,6 +328,7 @@ git commit -m "feat(calendar): thread item time precision through events"
 > 提示：事项支持 `HH:mm` 与 `HH:mm:ss` 两种格式。拖动或拉伸日历事件后，会保留原始时间精度。
 
 整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00:00~15:00:00
+
 ```
 
 - [ ] **Step 2: Run the final verification set**

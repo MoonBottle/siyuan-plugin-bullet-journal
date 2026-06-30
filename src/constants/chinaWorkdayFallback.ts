@@ -1,6 +1,13 @@
+export interface ChinaWorkdayCalendarMeta {
+  lastUpdated: string | null
+  source: 'remote' | 'cache' | 'fallback'
+  yearRange: string
+}
+
 export interface ChinaWorkdayCalendarData {
   holidays: string[]
   workdays: string[]
+  meta?: ChinaWorkdayCalendarMeta
 }
 
 export const CHINA_WORKDAY_FALLBACK: ChinaWorkdayCalendarData = {
@@ -75,4 +82,9 @@ export const CHINA_WORKDAY_FALLBACK: ChinaWorkdayCalendarData = {
     '2026-09-20',
     '2026-10-10',
   ],
-};
+  meta: {
+    lastUpdated: null,
+    source: 'fallback',
+    yearRange: '2025~2026',
+  },
+}

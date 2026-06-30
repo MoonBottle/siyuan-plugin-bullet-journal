@@ -1,59 +1,102 @@
 <template>
-  <div v-if="item" class="item-action-bar">
+  <div
+    v-if="item"
+    class="item-action-bar"
+    :class="{ 'item-action-bar--separator': showSeparator }"
+  >
     <span
-      v-if="canComplete"
-      class="block__icon"
+      v-if="canComplete && isActionVisible('complete')"
+      class="block__icon block__icon--lg"
       :aria-label="t('todo').complete"
       @mouseenter="handleTooltipEnter($event, t('todo').complete)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleComplete"
     >
-      <svg><use xlink:href="#iconCheck"></use></svg>
+      <svg><use xlink:href="#iconTaSquareCheck"></use></svg>
     </span>
 
     <span
-      v-if="!pomodoroStore.isFocusing && canStartFocus"
+      v-if="!pomodoroStore.isFocusing && canStartFocus && isActionVisible('startFocus')"
       class="block__icon"
       :aria-label="t('todo').startFocusAria"
       @mouseenter="handleTooltipEnter($event, t('todo').startFocusAria)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleStartFocus"
     >
-      <svg><use xlink:href="#iconClock"></use></svg>
+      <svg><use xlink:href="#iconTaTimer"></use></svg>
     </span>
 
     <span
-      v-if="canSetFocusPlan"
+      v-if="canSetFocusPlan && isActionVisible('focusPlan')"
       class="block__icon"
       :aria-label="focusPlanLabel"
       @mouseenter="handleTooltipEnter($event, focusPlanLabel)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleFocusPlan"
     >
-      <svg><use xlink:href="#iconAttr"></use></svg>
+      <svg><use xlink:href="#iconTaClockPlus"></use></svg>
     </span>
 
     <span
-      v-if="canMigrate"
+      v-if="canMigrate && isActionVisible('migrate')"
       class="block__icon"
       :aria-label="migrateLabel"
       @mouseenter="handleTooltipEnter($event, migrateLabel)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleMigrate"
     >
-      <svg><use xlink:href="#iconForward"></use></svg>
+      <svg v-if="isMigrateToToday"><use xlink:href="#iconTaSun"></use></svg>
+      <svg v-else><use xlink:href="#iconTaSunrise"></use></svg>
     </span>
 
     <span
-      v-if="canAbandon"
-      class="block__icon"
+      v-if="canSkipOccurrence && isActionVisible('skipOccurrence')"
+      class="block__icon block__icon--lg"
+      :aria-label="t('recurring.skipThis')"
+      @mouseenter="handleTooltipEnter($event, skipTooltip)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleSkipOccurrence"
+    >
+      <svg><use xlink:href="#iconTaSkipForward"></use></svg>
+    </span>
+
+    <span
+      v-if="canAbandon && isActionVisible('abandon')"
+      class="block__icon-separator"
+    ></span>
+
+    <span
+      v-if="canAbandon && isActionVisible('abandon')"
+      class="block__icon block__icon--lg"
       :aria-label="t('todo').abandon"
       @mouseenter="handleTooltipEnter($event, t('todo').abandon)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleAbandon"
     >
-      <svg><use xlink:href="#iconCloseRound"></use></svg>
+      <svg><use xlink:href="#iconTaSquareX"></use></svg>
     </span>
+
+    <span
+      v-if="isActionVisible('pin', showPin)"
+      class="block__icon-separator"
+    ></span>
+
+    <span
+      v-if="isActionVisible('pin', showPin)"
+      class="block__icon"
+      :aria-label="pinLabel"
+      @mouseenter="handleTooltipEnter($event, pinLabel)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleTogglePinned"
+    >
+      <svg v-if="item.pinned"><use xlink:href="#iconTaPinOff"></use></svg>
+      <svg v-else><use xlink:href="#iconTaPin"></use></svg>
+    </span>
+
+    <span
+      v-if="isActionVisible('openDoc') && hasLeftButtons"
+      class="block__icon-separator"
+    ></span>
 
     <span
       ref="docIconRef"
@@ -63,191 +106,234 @@
       @mouseleave="handleTooltipLeave"
       @click.stop="handleOpenDocClick"
     >
-      <svg><use xlink:href="#iconFile"></use></svg>
+      <svg><use xlink:href="#iconTaFileText"></use></svg>
     </span>
 
     <span
+      v-if="isActionVisible('detail', showDetail)"
+      class="block__icon"
+      :aria-label="t('todo').detail"
+      @mouseenter="handleTooltipEnter($event, t('todo').detail)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleOpenDetail"
+    >
+      <svg><use xlink:href="#iconTaInfo"></use></svg>
+    </span>
+
+    <span
+      v-if="isActionVisible('calendar')"
       class="block__icon"
       :aria-label="t('todo').calendar"
       @mouseenter="handleTooltipEnter($event, t('todo').calendar)"
       @mouseleave="handleTooltipLeave"
       @click.stop="handleOpenCalendar"
     >
-      <svg><use xlink:href="#iconCalendar"></use></svg>
+      <svg><use xlink:href="#iconTaCalendarRange"></use></svg>
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useApp, usePlugin } from '@/main';
-import { usePomodoroStore } from '@/stores';
-import { t } from '@/i18n';
-import { TAB_TYPES } from '@/constants';
-import { hideIconTooltip, showFocusPlanDialog, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
-import dayjs from '@/utils/dayjs';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { writeBlock } from '@/utils/blockWriter';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { t } from '@/i18n'
+import {
+  useApp,
+  usePlugin,
+} from '@/main'
+import { getNextOccurrenceDate } from '@/parser/recurringParser'
+import { usePomodoroStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { getItemActionHandlers } from '@/utils/itemActionHandlers'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
-type OpenDocMode = 'navigate' | 'preview';
+type OpenDocMode = 'navigate' | 'preview'
+
+export type ActionName = 'complete' | 'startFocus' | 'focusPlan' | 'migrate' | 'skipOccurrence' | 'abandon' | 'openDoc' | 'calendar' | 'pin' | 'detail'
 
 const props = withDefaults(defineProps<{
-  item: Item | null;
-  openDocMode?: OpenDocMode;
+  item: Item | null
+  openDocMode?: OpenDocMode
+  showPin?: boolean
+  showDetail?: boolean
+  showSeparator?: boolean
+  showActions?: ActionName[]
+  afterAction?: () => void
 }>(), {
   openDocMode: 'navigate',
-});
+  showPin: false,
+  showDetail: false,
+  showSeparator: false,
+})
 
-const emit = defineEmits<{
-  (event: 'open-doc', docId: string, blockId: string): void;
-}>();
+const app = useApp()
+const plugin = usePlugin() as any
+const pomodoroStore = usePomodoroStore()
+const docIconRef = ref<HTMLElement | null>(null)
 
-const app = useApp();
-const plugin = usePlugin() as any;
-const pomodoroStore = usePomodoroStore();
-const isProcessing = ref(false);
-const docIconRef = ref<HTMLElement | null>(null);
+const handlers = computed(() => {
+  if (!props.item) return null
+  return getItemActionHandlers(props.item, plugin, { afterAction: props.afterAction })
+})
 
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
-const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed');
-const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
-const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
+const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned')
+const canSkipOccurrence = computed(() => {
+  if (!props.item?.blockId || !props.item.repeatRule) return false
+  if (props.item.status === 'completed' || props.item.status === 'abandoned') return false
+  return props.item.date < dayjs().format('YYYY-MM-DD') || dayjs(props.item.date).isSame(dayjs(), 'day')
+})
+const skipTooltip = computed(() => {
+  if (!canSkipOccurrence.value || !props.item?.repeatRule) return ''
+  return t('recurring.skipTooltip', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) })
+})
 const focusPlanLabel = computed(() => {
   return props.item?.focusPlan
     ? t('focusPlan').editAction
-    : t('focusPlan').setAction;
-});
+    : t('focusPlan').setAction
+})
 const migrateLabel = computed(() => {
-  if (!props.item) return '';
+  if (!props.item) return ''
   return props.item.date < dayjs().format('YYYY-MM-DD')
     ? t('todo').migrateToToday
-    : t('todo').migrateToTomorrow;
-});
+    : t('todo').migrateToTomorrow
+})
+const isMigrateToToday = computed(() => !!props.item && props.item.date < dayjs().format('YYYY-MM-DD'))
 
-function buildDatePatch(item: Item, targetDate: string) {
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime,
-    }] : []),
-  ];
+const pinLabel = computed(() => {
+  if (!props.item) return ''
+  return props.item.pinned ? t('todo').unpin : t('todo').pin
+})
 
-  return {
-    type: 'addDate' as const,
-    date: targetDate,
-    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    allDay: !item.startDateTime,
-    originalDate: item.date,
-    siblingItems: completeSiblingItems,
-  };
+const hasLeftButtons = computed(() => {
+  // 检查 openDoc 左边是否有任何可见按钮
+  const leftActions: ActionName[] = ['complete', 'startFocus', 'focusPlan', 'migrate', 'skipOccurrence', 'abandon', 'pin']
+  return leftActions.some((action) => {
+    switch (action) {
+      case 'complete':
+        return canComplete.value && isActionVisible('complete')
+      case 'startFocus':
+        return !pomodoroStore.isFocusing && canStartFocus.value && isActionVisible('startFocus')
+      case 'focusPlan':
+        return canSetFocusPlan.value && isActionVisible('focusPlan')
+      case 'migrate':
+        return canMigrate.value && isActionVisible('migrate')
+      case 'skipOccurrence':
+        return canSkipOccurrence.value && isActionVisible('skipOccurrence')
+      case 'abandon':
+        return canAbandon.value && isActionVisible('abandon')
+      case 'pin':
+        return isActionVisible('pin', props.showPin)
+      default:
+        return false
+    }
+  })
+})
+
+function isActionVisible(name: ActionName, legacyShow = true): boolean {
+  if (props.showActions !== undefined) return props.showActions.includes(name)
+  return legacyShow
 }
 
 function handleTooltipEnter(event: MouseEvent, text: string) {
-  const el = event.currentTarget as HTMLElement | null;
-  if (!el || !text) return;
-  showIconTooltip(el, text);
+  const el = event.currentTarget as HTMLElement | null
+  if (!el || !text) return
+  showTooltip(el, text)
 }
 
 function handleTooltipLeave() {
-  hideIconTooltip();
+  hideTooltip()
 }
 
 async function handleComplete() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
-  try {
-    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
-  } finally {
-    isProcessing.value = false;
-  }
+  await handlers.value?.complete()
 }
 
 async function handleAbandon() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
-  try {
-    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
-  } finally {
-    isProcessing.value = false;
-  }
+  await handlers.value?.abandon()
 }
 
 function handleStartFocus() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  showPomodoroTimerDialog(props.item.blockId);
+  handlers.value?.startFocus()
 }
 
 function handleFocusPlan() {
-  if (!props.item || isProcessing.value) return;
-  showFocusPlanDialog(props.item);
+  handlers.value?.focusPlan()
 }
 
 async function handleMigrate() {
-  if (!props.item?.blockId || isProcessing.value) return;
-  isProcessing.value = true;
-  try {
-    const targetDate = props.item.date < dayjs().format('YYYY-MM-DD')
-      ? dayjs().format('YYYY-MM-DD')
-      : dayjs().add(1, 'day').format('YYYY-MM-DD');
-    await writeBlock({ blockId: props.item.blockId }, buildDatePatch(props.item, targetDate));
-  } finally {
-    isProcessing.value = false;
-  }
+  await handlers.value?.migrate()
+}
+
+async function handleSkipOccurrence() {
+  await handlers.value?.skipOccurrence()
+}
+
+async function handleTogglePinned() {
+  await handlers.value?.togglePinned()
+}
+
+function handleOpenDetail() {
+  handlers.value?.openDetail()
 }
 
 function handleOpenDocClick() {
-  if (!props.item?.blockId || isProcessing.value) return;
-
-  emit('open-doc', props.item.docId, props.item.blockId);
+  if (!props.item?.blockId) return
 
   if (props.openDocMode === 'preview') {
-    openBlockPreview(props.item.blockId);
-    return;
+    openBlockPreview(props.item.blockId)
+    props.afterAction?.()
+    return
   }
 
-  if (props.item.docId) {
-    openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
-  }
+  handlers.value?.openDoc()
 }
 
 function openBlockPreview(blockId: string) {
-  if (!docIconRef.value || !blockId) return;
+  if (!docIconRef.value || !blockId) return
 
   preview.showNow({
     blockId,
     itemId: blockId,
     anchorEl: docIconRef.value,
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  if (props.openDocMode !== 'preview') return;
-  if (!preview.isOpen.value) return;
-  if (nativePreview.containsTarget(event.target)) return;
-  preview.forceClose();
+  if (props.openDocMode !== 'preview') return
+  if (!preview.isOpen.value) return
+  if (nativePreview.containsTarget(event.target)) return
+  preview.forceClose()
 }
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
-    if (props.openDocMode !== 'preview') return;
+    if (props.openDocMode !== 'preview') return
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -257,26 +343,23 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: () => {},
-    });
+    })
   },
   { flush: 'post' },
-);
+)
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
-  nativePreview.close();
-  preview.dispose();
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  nativePreview.close()
+  preview.dispose()
+})
 
 function handleOpenCalendar() {
-  if (!props.item || isProcessing.value) return;
-  if (plugin?.openCustomTab) {
-    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: props.item.date });
-  }
+  handlers.value?.openCalendar()
 }
 </script>
 
@@ -288,9 +371,12 @@ function handleOpenCalendar() {
   gap: 4px;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--b3-border-color);
+
+  &--separator {
+    margin-top: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--b3-border-color);
+  }
 }
 
 .block__icon {
@@ -303,7 +389,9 @@ function handleOpenCalendar() {
   cursor: pointer;
   flex-shrink: 0;
   opacity: 1;
-  transition: opacity 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
 
   svg {
     width: 14px;
@@ -315,5 +403,20 @@ function handleOpenCalendar() {
     color: var(--b3-theme-primary);
     opacity: 1;
   }
+
+  &--lg {
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.block__icon-separator {
+  width: 1px;
+  height: 14px;
+  background: var(--b3-border-color);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 </style>

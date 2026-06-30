@@ -36,86 +36,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { showIconTooltip, hideIconTooltip, showLinkTooltip, hideLinkTooltip, formatLinkForDisplay } from '@/utils/dialog';
+import {
+  computed,
+  ref,
+} from 'vue'
+import { formatLinkForDisplay } from '@/utils/format'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
   // 通用
-  type?: 'icon' | 'link';
-  ariaLabel?: string;
+  type?: 'icon' | 'link'
+  ariaLabel?: string
   // 图标按钮专用
-  icon?: string;
+  icon?: string
   // 链接按钮专用
-  text?: string;
-  href?: string;
-  maxWidth?: number;
-  tooltip?: string;
+  text?: string
+  href?: string
+  maxWidth?: number
+  tooltip?: string
 }>(), {
   type: 'icon',
   maxWidth: 150,
-});
+})
 
 const emit = defineEmits<{
-  click: [event: MouseEvent | KeyboardEvent];
-}>();
+  click: [event: MouseEvent | KeyboardEvent]
+}>()
 
-const btnRef = ref<HTMLElement | null>(null);
-const linkRef = ref<HTMLElement | null>(null);
+const btnRef = ref<HTMLElement | null>(null)
+const linkRef = ref<HTMLElement | null>(null)
 
 // 链接按钮样式
 const linkStyle = computed(() => ({
   maxWidth: `${props.maxWidth}px`,
-}));
+}))
 
 // 链接按钮显示文本（截断后）
 const displayText = computed(() => {
-  if (!props.text) return '';
-  const result = formatLinkForDisplay(props.text);
-  return result.display;
-});
+  if (!props.text) return ''
+  const result = formatLinkForDisplay(props.text)
+  return result.display
+})
 
 // 链接按钮是否需要显示 tooltip（文本被截断时）
 const needsTooltip = computed(() => {
-  if (!props.text) return false;
-  return props.text.length > 12;
-});
+  if (!props.text) return false
+  return props.text.length > 12
+})
 
 // 图标按钮点击
 function handleClick(event: MouseEvent | KeyboardEvent) {
-  emit('click', event);
+  emit('click', event)
 }
 
 // 链接按钮点击
 function handleLinkClick(event: MouseEvent) {
-  console.log('[SyButton] link clicked, href:', props.href);
-  emit('click', event);
+  console.log('[SyButton] link clicked, href:', props.href)
+  emit('click', event)
   if (props.href) {
-    window.open(props.href, '_blank');
+    window.open(props.href, '_blank')
   }
 }
 
 // 图标按钮 hover tooltip
 function handleIconMouseEnter() {
-  const el = btnRef.value;
+  const el = btnRef.value
   if (el && props.ariaLabel) {
-    showIconTooltip(el, props.ariaLabel);
+    showTooltip(el, props.ariaLabel)
   }
 }
 
 function handleIconMouseLeave() {
-  hideIconTooltip();
+  hideTooltip()
 }
 
 // 链接按钮 hover tooltip
 function handleLinkMouseEnter() {
-  const el = linkRef.value;
+  const el = linkRef.value
   if (el && needsTooltip.value) {
-    showLinkTooltip(el, props.text!);
+    showTooltip(el, props.text!, { wrap: true })
   }
 }
 
 function handleLinkMouseLeave() {
-  hideLinkTooltip();
+  hideTooltip()
 }
 </script>
 
@@ -167,7 +174,6 @@ function handleLinkMouseLeave() {
 }
 
 .sy-link-btn:hover {
-  background: var(--b3-theme-primary-light);
   color: var(--b3-theme-primary);
   z-index: 1;
 }

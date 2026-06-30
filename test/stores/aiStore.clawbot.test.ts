@@ -1,5 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
+import {
+  createPinia,
+  setActivePinia,
+} from 'pinia'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+
+import { ClawBotApiError } from '@/services/clawBotService'
+import { useAIStore } from '@/stores/aiStore'
 
 const {
   mockUseConversationStorage,
@@ -74,13 +86,6 @@ vi.mock('@/services/aiTools', () => ({
   bulletJournalTools: [],
 }))
 
-vi.mock('@/agents/react/agent', () => ({
-  ReActAgent: vi.fn().mockImplementation(() => ({
-    setToolContext: vi.fn(),
-    run: vi.fn(),
-  })),
-}))
-
 vi.mock('@/stores/projectStore', () => ({
   useProjectStore: vi.fn(() => ({
     projects: [],
@@ -98,9 +103,6 @@ vi.mock('@/stores/settingsStore', () => ({
 vi.mock('siyuan', () => ({
   showMessage: mockShowMessage,
 }))
-
-import { ClawBotApiError } from '@/services/clawBotService'
-import { useAIStore } from '@/stores/aiStore'
 
 function createConversation(id = 'conv-1') {
   return {
@@ -216,7 +218,10 @@ describe('aiStore clawbot context management', () => {
       from_user_id: 'user@im.wechat',
       message_type: 1,
       context_token: 'fresh-token',
-      item_list: [{ type: 1, text_item: { text: 'hello' } }],
+      item_list: [{
+        type: 1,
+        text_item: { text: 'hello' },
+      }],
     })
 
     expect(store.weixinConversationMap['user@im.wechat'].contextToken).toBe('fresh-token')
@@ -361,7 +366,10 @@ describe('aiStore clawbot context management', () => {
       from_user_id: 'user@im.wechat',
       message_type: 1,
       context_token: 'fresh-token',
-      item_list: [{ type: 1, text_item: { text: 'hello' } }],
+      item_list: [{
+        type: 1,
+        text_item: { text: 'hello' },
+      }],
     })
 
     expect(store.weixinConversationMap['user@im.wechat']).toBeDefined()
@@ -398,7 +406,7 @@ describe('aiStore clawbot context management', () => {
     const conversations = await store.getConversationsList()
 
     expect(conversations).toHaveLength(2)
-    expect(conversations.find(c => c.source === 'weixin')).toBeDefined()
+    expect(conversations.find((c) => c.source === 'weixin')).toBeDefined()
   })
 
   it('restores weixin conversation map from persisted conversations during clawbot init', async () => {
@@ -456,7 +464,7 @@ describe('aiStore clawbot context management', () => {
           name: 'Test Provider',
           provider: 'openai',
           apiKey: 'test-key',
-          baseUrl: 'https://api.example.com',
+          apiUrl: 'https://api.example.com',
           defaultModel: 'test-model',
           models: ['test-model'],
           enabled: true,

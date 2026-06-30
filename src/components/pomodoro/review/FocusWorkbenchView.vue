@@ -1,5 +1,8 @@
 <template>
-  <div class="focus-workbench-view" data-testid="focus-workbench-view">
+  <div
+    class="focus-workbench-view"
+    data-testid="focus-workbench-view"
+  >
     <aside class="focus-workbench-view__sidebar">
       <FocusWorkbenchMiniCalendar
         v-model="selectedDate"
@@ -8,23 +11,39 @@
 
       <div class="focus-workbench-view__selected-date">
         <div>
-          <div class="focus-workbench-view__selected-date-title">{{ selectedDateLabel }}</div>
-          <div class="focus-workbench-view__selected-date-subtitle">{{ selectedDateSubtitle }}</div>
+          <div class="focus-workbench-view__selected-date-title">
+            {{ selectedDateLabel }}
+          </div>
+          <div class="focus-workbench-view__selected-date-subtitle">
+            {{ selectedDateSubtitle }}
+          </div>
         </div>
       </div>
 
       <div class="focus-workbench-view__summary-grid">
         <div class="focus-workbench-view__summary-card">
-          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').plannedTotal }}</div>
-          <div class="focus-workbench-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
+          <div class="focus-workbench-view__summary-label">
+            {{ t('focusWorkbench').plannedTotal }}
+          </div>
+          <div class="focus-workbench-view__summary-value">
+            {{ formatDuration(selectedSummary.estimatedMinutes) }}
+          </div>
         </div>
         <div class="focus-workbench-view__summary-card">
-          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').actualTotal }}</div>
-          <div class="focus-workbench-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
+          <div class="focus-workbench-view__summary-label">
+            {{ t('focusWorkbench').actualTotal }}
+          </div>
+          <div class="focus-workbench-view__summary-value">
+            {{ formatDuration(selectedSummary.actualMinutes) }}
+          </div>
         </div>
         <div class="focus-workbench-view__summary-card">
-          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').varianceTotal }}</div>
-          <div class="focus-workbench-view__summary-value">{{ summaryVarianceDisplay }}</div>
+          <div class="focus-workbench-view__summary-label">
+            {{ t('focusWorkbench').varianceTotal }}
+          </div>
+          <div class="focus-workbench-view__summary-value">
+            {{ summaryVarianceDisplay }}
+          </div>
         </div>
       </div>
 
@@ -38,7 +57,10 @@
         />
       </div>
 
-      <div v-if="statusFilters.length > 0" class="focus-workbench-view__filters">
+      <div
+        v-if="statusFilters.length > 0"
+        class="focus-workbench-view__filters"
+      >
         <button
           v-for="filter in statusFilters"
           :key="filter.value"
@@ -64,7 +86,11 @@
         </button>
       </div>
 
-      <div v-if="filteredEntries.length > 0" class="focus-workbench-view__list" data-testid="focus-workbench-list">
+      <div
+        v-if="filteredEntries.length > 0"
+        class="focus-workbench-view__list"
+        data-testid="focus-workbench-list"
+      >
         <button
           v-for="entry in filteredEntries"
           :key="entry.blockId ?? entry.itemId"
@@ -75,7 +101,10 @@
         >
           <div class="focus-workbench-view__list-item-top">
             <span class="focus-workbench-view__list-item-title">{{ entry.itemContent || entry.itemId }}</span>
-            <span class="focus-workbench-view__list-item-status" :data-status="entry.reviewStatus">
+            <span
+              class="focus-workbench-view__list-item-status"
+              :data-status="entry.reviewStatus"
+            >
               {{ getStatusLabel(entry.reviewStatus) }}
             </span>
           </div>
@@ -86,9 +115,17 @@
         </button>
       </div>
 
-      <div v-else class="focus-workbench-view__empty" data-testid="focus-workbench-empty">
-        <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').emptyTitle }}</div>
-        <div class="focus-workbench-view__empty-desc">{{ t('focusWorkbench').emptyDesc }}</div>
+      <div
+        v-else
+        class="focus-workbench-view__empty"
+        data-testid="focus-workbench-empty"
+      >
+        <div class="focus-workbench-view__empty-title">
+          {{ t('focusWorkbench').emptyTitle }}
+        </div>
+        <div class="focus-workbench-view__empty-desc">
+          {{ t('focusWorkbench').emptyDesc }}
+        </div>
         <button
           v-if="canAddFocusPlan"
           class="focus-workbench-view__empty-action"
@@ -101,57 +138,97 @@
     </aside>
 
     <section class="focus-workbench-view__detail">
-      <div v-if="selectedEntry" class="focus-workbench-view__detail-surface" data-testid="focus-workbench-detail">
-          <div class="focus-workbench-view__detail-layout">
-            <div class="focus-workbench-view__detail-panel focus-workbench-view__detail-panel--item">
-            <div class="focus-workbench-view__detail-panel-header">{{ t('todo').item }}</div>
-            <div v-if="selectedItem" class="focus-workbench-view__detail-panel-body">
+      <div
+        v-if="selectedEntry"
+        class="focus-workbench-view__detail-surface"
+        data-testid="focus-workbench-detail"
+      >
+        <div class="focus-workbench-view__detail-layout">
+          <div class="focus-workbench-view__detail-panel focus-workbench-view__detail-panel--item">
+            <div class="focus-workbench-view__detail-panel-header">
+              {{ t('todo').item }}
+            </div>
+            <div
+              v-if="selectedItem"
+              class="focus-workbench-view__detail-panel-body"
+            >
               <ItemDetailContent
                 :item="selectedItem"
                 :show-all-dates="false"
                 :show-action-row="false"
                 :close-on-siyuan-link="false"
               />
-              <ItemActionBar :item="selectedItem" open-doc-mode="preview" />
+              <ItemActionBar
+                :show-separator="true"
+                :item="selectedItem"
+                open-doc-mode="preview"
+              />
             </div>
-            <div v-else class="focus-workbench-view__detail-panel-empty">
-              <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').detailEmptyTitle }}</div>
-                <div class="focus-workbench-view__empty-desc">{{ detailEmptyDesc }}</div>
+            <div
+              v-else
+              class="focus-workbench-view__detail-panel-empty"
+            >
+              <div class="focus-workbench-view__empty-title">
+                {{ t('focusWorkbench').detailEmptyTitle }}
+              </div>
+              <div class="focus-workbench-view__empty-desc">
+                {{ detailEmptyDesc }}
+              </div>
             </div>
           </div>
 
           <div class="focus-workbench-view__detail-lower">
             <div class="focus-workbench-view__detail-panel">
-              <div class="focus-workbench-view__detail-panel-header">{{ t('focusWorkbench').overviewTitle }}</div>
+              <div class="focus-workbench-view__detail-panel-header">
+                {{ t('focusWorkbench').overviewTitle }}
+              </div>
               <div class="focus-workbench-view__detail-panel-body focus-workbench-view__detail-panel-body--summary">
                 <div class="focus-workbench-view__detail-grid">
                   <div class="focus-workbench-view__detail-card">
-                    <div class="focus-workbench-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
-                    <div class="focus-workbench-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
+                    <div class="focus-workbench-view__detail-label">
+                      {{ t('focusPlan').estimatedShort }}
+                    </div>
+                    <div class="focus-workbench-view__detail-value">
+                      {{ formatDuration(selectedEntry.estimatedMinutes) }}
+                    </div>
                   </div>
                   <div class="focus-workbench-view__detail-card">
-                    <div class="focus-workbench-view__detail-label">{{ t('focusWorkbench').actualTotal }}</div>
-                    <div class="focus-workbench-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
+                    <div class="focus-workbench-view__detail-label">
+                      {{ t('focusWorkbench').actualTotal }}
+                    </div>
+                    <div class="focus-workbench-view__detail-value">
+                      {{ formatDuration(selectedEntry.actualMinutes) }}
+                    </div>
                   </div>
                   <div class="focus-workbench-view__detail-card">
-                    <div class="focus-workbench-view__detail-label">{{ t('focusWorkbench').variance }}</div>
-                    <div class="focus-workbench-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
+                    <div class="focus-workbench-view__detail-label">
+                      {{ t('focusWorkbench').variance }}
+                    </div>
+                    <div class="focus-workbench-view__detail-value">
+                      {{ formatDelta(selectedEntry.deltaMinutes) }}
+                    </div>
                   </div>
                   <div class="focus-workbench-view__detail-card">
-                    <div class="focus-workbench-view__detail-label">状态</div>
-                    <div class="focus-workbench-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
+                    <div class="focus-workbench-view__detail-label">
+                      状态
+                    </div>
+                    <div class="focus-workbench-view__detail-value">
+                      {{ getStatusLabel(selectedEntry.reviewStatus) }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="focus-workbench-view__detail-panel">
-              <div class="focus-workbench-view__detail-panel-header">{{ t('pomodoroStats').focusRecords }}</div>
+              <div class="focus-workbench-view__detail-panel-header">
+                {{ t('pomodoroStats').focusRecords }}
+              </div>
               <div class="focus-workbench-view__detail-panel-body">
                 <FocusWorkbenchRecordPane
                   :records="selectedItem?.pomodoros ?? []"
                   :item-content="selectedEntry.itemContent || selectedItem?.content"
-                  :title="''"
+                  title=""
                   :empty-title="t('pomodoroStats').noData"
                   :empty-desc="detailEmptyDesc"
                 />
@@ -161,179 +238,233 @@
         </div>
       </div>
 
-      <div v-else class="focus-workbench-view__detail-empty" data-testid="focus-workbench-detail-empty">
-        <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').detailEmptyTitle }}</div>
-        <div class="focus-workbench-view__empty-desc">{{ detailEmptyDesc }}</div>
+      <div
+        v-else
+        class="focus-workbench-view__detail-empty"
+        data-testid="focus-workbench-detail-empty"
+      >
+        <div class="focus-workbench-view__empty-title">
+          {{ t('focusWorkbench').detailEmptyTitle }}
+        </div>
+        <div class="focus-workbench-view__empty-desc">
+          {{ detailEmptyDesc }}
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import type { FocusPlanDailyReviewEntry, FocusPlanReviewStatus } from '@/utils/focusPlanReview';
-import type { Item } from '@/types/models';
-import { showFocusPlanItemPickerDialog, showMessage } from '@/utils/dialog';
-import dayjs from '@/utils/dayjs';
-import FocusWorkbenchMiniCalendar from '@/components/pomodoro/review/FocusWorkbenchMiniCalendar.vue';
-import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue';
-import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
-import ItemActionBar from '@/components/todo/ItemActionBar.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
-const plugin = usePlugin() as any;
+import type { Item } from '@/types/models'
+import type {
+  FocusPlanDailyReviewEntry,
+  FocusPlanReviewStatus,
+} from '@/utils/focusPlanReview'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import FocusWorkbenchMiniCalendar from '@/components/pomodoro/review/FocusWorkbenchMiniCalendar.vue'
+import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import ItemActionBar from '@/components/todo/ItemActionBar.vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  showFocusPlanItemPickerDialog,
+  showMessage,
+} from '@/utils/dialog'
 
 const props = defineProps<{
-  initialGroupId?: string;
-}>();
+  initialGroupId?: string
+}>()
+const projectStore = useProjectStore()
+const settingsStore = useSettingsStore()
+const plugin = usePlugin() as any
 
-const activeStatus = ref<'all' | FocusPlanReviewStatus>('all');
-const selectedEntryKey = ref<string>('');
-const selectedGroup = ref(resolveInitialGroup());
-const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
+const activeStatus = ref<'all' | FocusPlanReviewStatus>('all')
+const selectedEntryKey = ref<string>('')
+const selectedGroup = ref(resolveInitialGroup())
+const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
-  settingsStore.groups.forEach(group => {
-    options.push({ value: group.id, label: group.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
-const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, selectedGroup.value));
-const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, selectedGroup.value));
-const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
+  settingsStore.groups.forEach((group) => {
+    options.push({
+      value: group.id,
+      label: group.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
+const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, selectedGroup.value))
+const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, selectedGroup.value))
+const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'))
 const selectedDateSubtitle = computed(() => {
-  const today = dayjs().format('YYYY-MM-DD');
-  if (selectedDate.value === today) return t('focusWorkbench').todayList;
-  if (selectedDate.value < today) return t('focusWorkbench').historyList;
-  return t('focusWorkbench').futureList;
-});
+  const today = dayjs().format('YYYY-MM-DD')
+  if (selectedDate.value === today) return t('focusWorkbench').todayList
+  if (selectedDate.value < today) return t('focusWorkbench').historyList
+  return t('focusWorkbench').futureList
+})
 const detailEmptyDesc = computed(() => {
-  const today = dayjs().format('YYYY-MM-DD');
-  if (selectedDate.value === today) return t('focusWorkbench').detailEmptyDescToday;
-  if (selectedDate.value < today) return t('focusWorkbench').detailEmptyDescHistory;
-  return t('focusWorkbench').detailEmptyDescFuture;
-});
-const canAddFocusPlan = computed(() => selectedDate.value >= dayjs().format('YYYY-MM-DD'));
+  const today = dayjs().format('YYYY-MM-DD')
+  if (selectedDate.value === today) return t('focusWorkbench').detailEmptyDescToday
+  if (selectedDate.value < today) return t('focusWorkbench').detailEmptyDescHistory
+  return t('focusWorkbench').detailEmptyDescFuture
+})
+const canAddFocusPlan = computed(() => selectedDate.value >= dayjs().format('YYYY-MM-DD'))
 const summaryVarianceDisplay = computed(() => {
-  const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
-  return formatDelta(delta);
-});
+  const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes
+  return formatDelta(delta)
+})
 const statusFilters = computed(() => {
-  const entries = selectedEntries.value;
-  if (entries.length === 0) return [];
+  const entries = selectedEntries.value
+  if (entries.length === 0) return []
   return [
-    { value: 'all' as const, label: t('focusWorkbench').all, count: entries.length },
-    { value: 'overrun' as const, label: getStatusLabel('overrun'), count: entries.filter(entry => entry.reviewStatus === 'overrun').length },
-    { value: 'underrun' as const, label: getStatusLabel('underrun'), count: entries.filter(entry => entry.reviewStatus === 'underrun').length },
-    { value: 'in-progress' as const, label: getStatusLabel('in-progress'), count: entries.filter(entry => entry.reviewStatus === 'in-progress').length },
-    { value: 'not-started' as const, label: getStatusLabel('not-started'), count: entries.filter(entry => entry.reviewStatus === 'not-started').length },
-    { value: 'unplanned' as const, label: getStatusLabel('unplanned'), count: entries.filter(entry => entry.reviewStatus === 'unplanned').length },
-    { value: 'matched' as const, label: getStatusLabel('matched'), count: entries.filter(entry => entry.reviewStatus === 'matched').length },
-  ].filter(filter => filter.value === 'all' || filter.count > 0);
-});
+    {
+      value: 'all' as const,
+      label: t('focusWorkbench').all,
+      count: entries.length,
+    },
+    {
+      value: 'overrun' as const,
+      label: getStatusLabel('overrun'),
+      count: entries.filter((entry) => entry.reviewStatus === 'overrun').length,
+    },
+    {
+      value: 'underrun' as const,
+      label: getStatusLabel('underrun'),
+      count: entries.filter((entry) => entry.reviewStatus === 'underrun').length,
+    },
+    {
+      value: 'in-progress' as const,
+      label: getStatusLabel('in-progress'),
+      count: entries.filter((entry) => entry.reviewStatus === 'in-progress').length,
+    },
+    {
+      value: 'not-started' as const,
+      label: getStatusLabel('not-started'),
+      count: entries.filter((entry) => entry.reviewStatus === 'not-started').length,
+    },
+    {
+      value: 'unplanned' as const,
+      label: getStatusLabel('unplanned'),
+      count: entries.filter((entry) => entry.reviewStatus === 'unplanned').length,
+    },
+    {
+      value: 'matched' as const,
+      label: getStatusLabel('matched'),
+      count: entries.filter((entry) => entry.reviewStatus === 'matched').length,
+    },
+  ].filter((filter) => filter.value === 'all' || filter.count > 0)
+})
 const filteredEntries = computed(() => {
-  if (activeStatus.value === 'all') return selectedEntries.value;
-  return selectedEntries.value.filter(entry => entry.reviewStatus === activeStatus.value);
-});
+  if (activeStatus.value === 'all') return selectedEntries.value
+  return selectedEntries.value.filter((entry) => entry.reviewStatus === activeStatus.value)
+})
 const selectedEntry = computed(() => {
-  return filteredEntries.value.find(entry => getEntryKey(entry) === selectedEntryKey.value)
+  return filteredEntries.value.find((entry) => getEntryKey(entry) === selectedEntryKey.value)
     ?? filteredEntries.value[0]
-    ?? null;
-});
+    ?? null
+})
 const selectedItem = computed<Item | null>(() => {
-  if (!selectedEntry.value) return null;
-  return projectStore.items.find(item => item.id === selectedEntry.value!.itemId)
-    ?? (selectedEntry.value.blockId ? projectStore.getItemByBlockId(selectedEntry.value.blockId) ?? null : null);
-});
+  if (!selectedEntry.value) return null
+  return projectStore.items.find((item) => item.id === selectedEntry.value!.itemId)
+    ?? (selectedEntry.value.blockId ? projectStore.getItemByBlockId(selectedEntry.value.blockId) ?? null : null)
+})
 watch(filteredEntries, (entries) => {
   if (entries.length === 0) {
-    selectedEntryKey.value = '';
-    return;
+    selectedEntryKey.value = ''
+    return
   }
 
-  if (!entries.some(entry => getEntryKey(entry) === selectedEntryKey.value)) {
-      selectedEntryKey.value = getEntryKey(entries[0]);
+  if (!entries.some((entry) => getEntryKey(entry) === selectedEntryKey.value)) {
+    selectedEntryKey.value = getEntryKey(entries[0])
   }
-}, { immediate: true });
+}, { immediate: true })
 watch(selectedGroup, (groupId) => {
-  settingsStore.focusWorkbench.selectedGroup = groupId;
-  settingsStore.saveToPlugin();
-});
+  settingsStore.focusWorkbench.selectedGroup = groupId
+  settingsStore.saveToPlugin()
+})
 watch(groupOptions, (options) => {
-  const hasSelectedGroup = options.some(option => option.value === selectedGroup.value);
-  if (hasSelectedGroup) return;
-  selectedGroup.value = resolveInitialGroup();
-}, { immediate: true });
+  const hasSelectedGroup = options.some((option) => option.value === selectedGroup.value)
+  if (hasSelectedGroup) return
+  selectedGroup.value = resolveInitialGroup()
+}, { immediate: true })
 
 function getEntryKey(entry: FocusPlanDailyReviewEntry): string {
-  return entry.blockId ?? entry.itemId;
+  return entry.blockId ?? entry.itemId
 }
 
 function resolveInitialGroup() {
-  if (props.initialGroupId) return props.initialGroupId;
-  const preferredGroup = settingsStore.focusWorkbench.selectedGroup || settingsStore.defaultGroup || '';
-  if (!preferredGroup) return '';
-  return settingsStore.groups.some(group => group.id === preferredGroup) ? preferredGroup : '';
+  if (props.initialGroupId) return props.initialGroupId
+  const preferredGroup = settingsStore.focusWorkbench.selectedGroup || settingsStore.defaultGroup || ''
+  if (!preferredGroup) return ''
+  return settingsStore.groups.some((group) => group.id === preferredGroup) ? preferredGroup : ''
 }
 
 function handleGroupChange(value: string) {
-  selectedGroup.value = value;
+  selectedGroup.value = value
 }
 
 function selectEntry(entry: FocusPlanDailyReviewEntry) {
-  selectedEntryKey.value = getEntryKey(entry);
+  selectedEntryKey.value = getEntryKey(entry)
 }
 
 function getStatusLabel(status: FocusPlanReviewStatus): string {
-  return t('focusWorkbench').status[status];
+  return t('focusWorkbench').status[status]
 }
 
 function getSummaryByDate(date: string) {
-  return projectStore.getFocusPlanSummaryByDate(date, selectedGroup.value);
+  return projectStore.getFocusPlanSummaryByDate(date, selectedGroup.value)
 }
 
 function handleAddFocusPlan() {
-  if (!canAddFocusPlan.value) return;
+  if (!canAddFocusPlan.value) return
   showFocusPlanItemPickerDialog({
     items: !selectedGroup.value
       ? projectStore.items
-      : projectStore.items.filter(item => item.project?.groupId === selectedGroup.value),
+      : projectStore.items.filter((item) => item.project?.groupId === selectedGroup.value),
     selectedDate: selectedDate.value,
-  });
+  })
 }
 
 function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const restMinutes = minutes % 60;
-  if (restMinutes === 0) return `${hours}h`;
-  return `${hours}h ${restMinutes}m`;
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const restMinutes = minutes % 60
+  if (restMinutes === 0) return `${hours}h`
+  return `${hours}h ${restMinutes}m`
 }
 
 function formatDelta(delta: number): string {
-  const prefix = delta > 0 ? '+' : delta < 0 ? '-' : '';
-  return `${prefix}${formatDuration(Math.abs(delta))}`;
+  const prefix = delta > 0 ? '+' : delta < 0 ? '-' : ''
+  return `${prefix}${formatDuration(Math.abs(delta))}`
 }
 
 async function handleRefresh() {
-  if (!plugin) return;
+  if (!plugin) return
   await plugin.requestRefresh?.({
     type: 'full',
     reason: 'focus-workbench:manual-refresh',
-  });
-  settingsStore.loadFromPlugin();
-  showMessage(t('common').dataRefreshed);
+  })
+  settingsStore.loadFromPlugin()
+  showMessage(t('common').dataRefreshed)
 }
 
 defineExpose({
   handleRefresh,
-});
+})
 </script>
 
 <style lang="scss" scoped>

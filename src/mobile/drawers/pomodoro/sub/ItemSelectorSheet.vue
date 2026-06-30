@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="sheet-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="sheet-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
           <div
             v-if="modelValue"
@@ -10,25 +14,36 @@
             @click.stop
           >
             <!-- Drag Handle -->
-            <div class="sheet-handle" @click="close">
+            <div
+              class="sheet-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
 
             <!-- Header -->
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ t('pomodoroDialog.selectItem') || '选择事项' }}</h4>
+              <h4 class="sheet-title">
+                {{ t('pomodoroDialog.selectItem') || '选择事项' }}
+              </h4>
             </div>
 
             <!-- Content -->
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Expired Items Section -->
-              <div v-if="expiredItems.length > 0" class="item-section">
+              <div
+                v-if="expiredItems.length > 0"
+                class="item-section"
+              >
                 <div class="section-label section-label--expired">
                   <span class="label-badge label-badge--expired">{{ t('pomodoroDialog.expiredItems') || '过期事项' }}</span>
                 </div>
                 <button
                   v-for="item in expiredItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="sheet-option"
                   @click="selectItem(item)"
                 >
@@ -37,20 +52,26 @@
                   </div>
                   <div class="option-info">
                     <span class="option-text">{{ item.content }}</span>
-                    <span v-if="item.project" class="option-meta">{{ item.project.name }}</span>
+                    <span
+                      v-if="item.project"
+                      class="option-meta"
+                    >{{ item.project.name }}</span>
                   </div>
                   <span class="option-date">{{ formatDate(item.date) }}</span>
                 </button>
               </div>
 
               <!-- Today Items Section -->
-              <div v-if="todayItems.length > 0" class="item-section">
+              <div
+                v-if="todayItems.length > 0"
+                class="item-section"
+              >
                 <div class="section-label section-label--today">
                   <span class="label-badge label-badge--today">{{ t('pomodoroDialog.todayItems') || '今日事项' }}</span>
                 </div>
                 <button
                   v-for="item in todayItems"
-                  :key="item.id"
+                  :key="item.blockId || item.id"
                   class="sheet-option"
                   @click="selectItem(item)"
                 >
@@ -59,13 +80,19 @@
                   </div>
                   <div class="option-info">
                     <span class="option-text">{{ item.content }}</span>
-                    <span v-if="item.project" class="option-meta">{{ item.project.name }}</span>
+                    <span
+                      v-if="item.project"
+                      class="option-meta"
+                    >{{ item.project.name }}</span>
                   </div>
                 </button>
               </div>
 
               <!-- Empty State -->
-              <div v-if="expiredItems.length === 0 && todayItems.length === 0" class="sheet-empty">
+              <div
+                v-if="expiredItems.length === 0 && todayItems.length === 0"
+                class="sheet-empty"
+              >
                 <svg class="empty-icon"><use xlink:href="#iconInbox"></use></svg>
                 <span>{{ t('pomodoroDialog.noItems') || '暂无待办事项' }}</span>
               </div>
@@ -73,7 +100,10 @@
 
             <!-- Footer -->
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="close">
+              <button
+                class="sheet-cancel-btn"
+                @click="close"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
             </div>
@@ -85,51 +115,51 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import type { Item } from '@/types/models';
-import dayjs from '@/utils/dayjs';
+import type { Item } from '@/types/models'
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
 
-const props = defineProps<{
-  modelValue: boolean;
-}>();
+defineProps<{
+  modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  select: [item: Item];
-}>();
+  'update:modelValue': [value: boolean]
+  "select": [item: Item]
+}>()
 
-const projectStore = useProjectStore();
-const currentDate = dayjs().format('YYYY-MM-DD');
+const projectStore = useProjectStore()
+const currentDate = dayjs().format('YYYY-MM-DD')
 
 const expiredItems = computed(() => {
-  return projectStore.getExpiredItems('').filter(item => item.status === 'pending');
-});
+  return projectStore.getExpiredItems('').filter((item) => item.status === 'pending')
+})
 
 const todayItems = computed(() => {
   return projectStore.getFutureItems('')
-    .filter(item => item.date === currentDate && item.status === 'pending');
-});
-
-const selectItem = (item: Item) => {
-  emit('select', item);
-  close();
-};
+    .filter((item) => item.date === currentDate && item.status === 'pending')
+})
 
 const close = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
+
+const selectItem = (item: Item) => {
+  emit('select', item)
+  close()
+}
 
 const formatDate = (dateStr: string): string => {
-  const date = dayjs(dateStr);
-  const today = dayjs();
-  const diff = today.diff(date, 'day');
+  const date = dayjs(dateStr)
+  const today = dayjs()
+  const diff = today.diff(date, 'day')
 
-  if (diff === 1) return t('pomodoroDialog.yesterday') || '昨天';
-  if (diff === 2) return t('pomodoroDialog.dayBeforeYesterday') || '前天';
-  return date.format('MM-DD');
-};
+  if (diff === 1) return t('pomodoroDialog.yesterday') || '昨天'
+  if (diff === 2) return t('pomodoroDialog.dayBeforeYesterday') || '前天'
+  return date.format('MM-DD')
+}
 </script>
 
 <style lang="scss" scoped>

@@ -3,43 +3,43 @@
  * 用于插件内部的组件通信
  */
 
-type EventHandler = (...args: any[]) => void;
+type EventHandler = (...args: any[]) => void
 
 class EventBus {
-  private handlers = new Map<string, Set<EventHandler>>();
+  private handlers = new Map<string, Set<EventHandler>>()
 
   /**
    * 订阅事件
    */
   on(event: string, handler: EventHandler): () => void {
     if (!this.handlers.has(event)) {
-      this.handlers.set(event, new Set());
+      this.handlers.set(event, new Set())
     }
-    this.handlers.get(event)!.add(handler);
+    this.handlers.get(event)!.add(handler)
 
     // 返回取消订阅函数
     return () => {
-      this.handlers.get(event)?.delete(handler);
-    };
+      this.handlers.get(event)?.delete(handler)
+    }
   }
 
   /**
    * 触发事件
    */
   emit(event: string, ...args: any[]): void {
-    console.log(`[Task Assistant] Event emitted: ${event}`, args);
-    const handlers = this.handlers.get(event);
+    console.log(`[Task Assistant] Event emitted: ${event}`, args)
+    const handlers = this.handlers.get(event)
     if (handlers) {
-      console.log(`[Task Assistant] Handlers count for ${event}: ${handlers.size}`);
-      handlers.forEach(handler => {
+      console.log(`[Task Assistant] Handlers count for ${event}: ${handlers.size}`)
+      handlers.forEach((handler) => {
         try {
-          handler(...args);
+          handler(...args)
         } catch (error) {
-          console.error(`[Task Assistant] Error in event handler for ${event}:`, error);
+          console.error(`[Task Assistant] Error in event handler for ${event}:`, error)
         }
-      });
+      })
     } else {
-      console.log(`[Task Assistant] No handlers registered for ${event}`);
+      console.log(`[Task Assistant] No handlers registered for ${event}`)
     }
   }
 
@@ -47,20 +47,23 @@ class EventBus {
    * 清除所有事件
    */
   clear(): void {
-    this.handlers.clear();
+    this.handlers.clear()
   }
 }
 
-export const eventBus = new EventBus();
+export const eventBus = new EventBus()
 
 /** BroadcastChannel 名称，用于跨 iframe/上下文通知（如 Dock 与主窗口分离时） */
-export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
+export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh'
 
 export function broadcastSettingsChanged(payload?: object): void {
   try {
-    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    channel.postMessage({ type: 'SETTINGS_CHANGED', ...payload });
-    channel.close();
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
+    channel.postMessage({
+      type: 'SETTINGS_CHANGED',
+      ...payload,
+    })
+    channel.close()
   } catch {
     // 忽略不支持或跨源场景
   }
@@ -68,9 +71,9 @@ export function broadcastSettingsChanged(payload?: object): void {
 
 export function broadcastDataRefreshed(): void {
   try {
-    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    channel.postMessage({ type: 'DATA_REFRESHED' });
-    channel.close();
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
+    channel.postMessage({ type: 'DATA_REFRESHED' })
+    channel.close()
   } catch {
     // 忽略不支持或跨源场景
   }
@@ -78,18 +81,21 @@ export function broadcastDataRefreshed(): void {
 
 export function broadcastPluginUnloading(pluginInstanceId?: string): void {
   try {
-    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    channel.postMessage({ type: 'PLUGIN_UNLOADING', pluginInstanceId });
-    channel.close();
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
+    channel.postMessage({
+      type: 'PLUGIN_UNLOADING',
+      pluginInstanceId,
+    })
+    channel.close()
   } catch {
     // 忽略不支持或跨源场景
   }
 }
 
 export interface WidgetDateRangeChangedPayload {
-  sourceWidgetId: string;
-  targetWidgetId: string;
-  dateRange: { start: string; end: string };
+  sourceWidgetId: string
+  targetWidgetId: string
+  dateRange: { start: string, end: string }
 }
 
 export const Events = {
@@ -114,4 +120,6 @@ export const Events = {
   BREAK_ENDED: 'break:ended',
   POMODORO_AUTO_EXTENDED: 'pomodoro:auto-extended', // 自动延迟番茄钟，通知弹窗关闭
   WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
-};
+  KERNEL_NOTIFICATION: 'kernel:notification',
+  KERNEL_DATE_CHANGED: 'kernel:date-changed',
+}

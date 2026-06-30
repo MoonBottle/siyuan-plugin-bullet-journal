@@ -8,22 +8,22 @@ MCP（Model Context Protocol）服务器允许外部 AI 助手（如 Cursor、Cl
 
 ### 2.1 核心功能
 
-| 功能 | 描述 | 状态 |
-|------|------|------|
-| MCP 服务器 | 内置 MCP 服务 | ✅ |
-| 分组查询 | 查询所有项目分组 | ✅ |
-| 项目查询 | 查询所有项目 | ✅ |
-| 事项筛选 | 按条件筛选事项 | ✅ |
-| 时间查询 | 获取用户当前时间 | ✅ |
+| 功能       | 描述             | 状态 |
+| ---------- | ---------------- | ---- |
+| MCP 服务器 | 内置 MCP 服务    | ✅   |
+| 分组查询   | 查询所有项目分组 | ✅   |
+| 项目查询   | 查询所有项目     | ✅   |
+| 事项筛选   | 按条件筛选事项   | ✅   |
+| 时间查询   | 获取用户当前时间 | ✅   |
 
 ### 2.2 工具列表
 
-| 工具 | 描述 | 参数 |
-|------|------|------|
-| `list_groups` | 查询所有分组 | 无 |
-| `list_projects` | 查询所有项目 | `groupId?` |
-| `filter_items` | 筛选事项 | `projectId?, projectIds?, groupId?, startDate?, endDate?, status?` |
-| `get_user_time` | 获取当前时间 | 无 |
+| 工具            | 描述         | 参数                                                               |
+| --------------- | ------------ | ------------------------------------------------------------------ |
+| `list_groups`   | 查询所有分组 | 无                                                                 |
+| `list_projects` | 查询所有项目 | `groupId?`                                                         |
+| `filter_items`  | 筛选事项     | `projectId?, projectIds?, groupId?, startDate?, endDate?, status?` |
+| `get_user_time` | 获取当前时间 | 无                                                                 |
 
 ### 2.3 验收标准
 
@@ -87,12 +87,12 @@ server.registerTool(
     inputSchema: z.object({})
   },
   async () => {
-    const { groups } = await loadSettings(client);
+    const { groups } = await loadSettings(client)
     return {
       content: [{ type: 'text', text: JSON.stringify(groups, null, 2) }]
-    };
+    }
   }
-);
+)
 ```
 
 #### list_projects
@@ -107,13 +107,13 @@ server.registerTool(
     })
   },
   async (args) => {
-    const { directories } = await loadSettings(client);
-    const result = await executeListProjects(client, directories, args);
+    const { directories } = await loadSettings(client)
+    const result = await executeListProjects(client, directories, args)
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
+    }
   }
-);
+)
 ```
 
 #### filter_items
@@ -133,13 +133,13 @@ server.registerTool(
     })
   },
   async (args) => {
-    const { directories } = await loadSettings(client);
-    const result = await executeFilterItems(client, directories, args);
+    const { directories } = await loadSettings(client)
+    const result = await executeFilterItems(client, directories, args)
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
+    }
   }
-);
+)
 ```
 
 ### 3.4 文件结构
@@ -159,10 +159,10 @@ src/
 
 ### 4.1 环境变量
 
-| 变量 | 必填 | 说明 |
-|------|------|------|
-| `SIYUAN_TOKEN` | 是 | 思源 API Token |
-| `SIYUAN_API_URL` | 否 | 思源 API 地址，默认 `http://127.0.0.1:6806` |
+| 变量             | 必填 | 说明                                        |
+| ---------------- | ---- | ------------------------------------------- |
+| `SIYUAN_TOKEN`   | 是   | 思源 API Token                              |
+| `SIYUAN_API_URL` | 否   | 思源 API 地址，默认 `http://127.0.0.1:6806` |
 
 ### 4.2 MCP 配置示例
 
@@ -200,7 +200,7 @@ function generateMCPConfig(plugin: Plugin) {
         }
       }
     }
-  };
+  }
 }
 ```
 
@@ -243,7 +243,7 @@ function generateMCPConfig(plugin: Plugin) {
 
 AI: [调用 get_user_time]
     [调用 filter_items with startDate, endDate, status='pending']
-    
+
     您本周（3月4日-3月10日）有 5 个待办事项：
     - 周一：需求评审会议
     - 周三：代码审查
@@ -269,11 +269,11 @@ AI: [调用 get_user_time]
 
 ### 7.1 常见问题
 
-| 问题 | 原因 | 解决 |
-|------|------|------|
-| MCP 无法连接 | Token 错误 | 检查 SIYUAN_TOKEN |
-| 无数据返回 | 目录未配置 | 在插件设置中配置目录 |
-| 工具调用失败 | API 地址错误 | 检查 SIYUAN_API_URL |
+| 问题         | 原因         | 解决                 |
+| ------------ | ------------ | -------------------- |
+| MCP 无法连接 | Token 错误   | 检查 SIYUAN_TOKEN    |
+| 无数据返回   | 目录未配置   | 在插件设置中配置目录 |
+| 工具调用失败 | API 地址错误 | 检查 SIYUAN_API_URL  |
 
 ### 7.2 调试方法
 

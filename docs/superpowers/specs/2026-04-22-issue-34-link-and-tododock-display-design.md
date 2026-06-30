@@ -117,12 +117,12 @@
 在 `src/types/models.ts` 中扩展 `Link`：
 
 ```ts
-export type LinkType = 'external' | 'siyuan' | 'block-ref';
+export type LinkType = 'external' | 'siyuan' | 'block-ref'
 
 export interface Link {
-  name: string;
-  url: string;
-  type?: LinkType;
+  name: string
+  url: string
+  type?: LinkType
 }
 ```
 
@@ -130,11 +130,11 @@ export interface Link {
 
 ### 4.2 类型判定规则
 
-| 类型 | 触发方式 | 示例 |
-|------|---------|------|
-| `external` | 普通外部 URL | `https://example.com` |
-| `siyuan` | 显式思源协议链接 | `siyuan://blocks/20260220112000` |
-| `block-ref` | 由 `((blockId '锚文本'))` 解析得到 | `((202604... '设计稿'))` |
+| 类型        | 触发方式                           | 示例                             |
+| ----------- | ---------------------------------- | -------------------------------- |
+| `external`  | 普通外部 URL                       | `https://example.com`            |
+| `siyuan`    | 显式思源协议链接                   | `siyuan://blocks/20260220112000` |
+| `block-ref` | 由 `((blockId '锚文本'))` 解析得到 | `((202604... '设计稿'))`         |
 
 ### 4.3 块引用链接的数据结构
 
@@ -287,6 +287,7 @@ Dock 与详情中展示的链接都按 `Link.type` 区分背景色。
 ((20260422075729-q6vs0km '需求文档'))
 [设计稿](siyuan://blocks/20260422075729-q6vs0km)
 [原型地址](https://example.com)
+
 ```
 
 ---

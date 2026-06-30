@@ -2,109 +2,153 @@
   <!-- Desktop Version -->
   <template v-if="!isMobile">
     <SySettingsSection
-    icon="iconSparkles"
-    :title="(t('settings') as any).ai?.title ?? 'AI 服务配置'"
-    :description="(t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
-  >
-    <!-- 工具调用展示配置 -->
-    <SySettingItemList>
-      <SySettingItem
-        :label="(t('settings') as any).ai?.showToolCalls ?? '显示工具调用详情'"
-        :description="(t('settings') as any).ai?.showToolCallsDesc ?? '在对话中展示 AI 工具调用的详细信息和执行结果'"
-      >
-        <SySwitch
-          :model-value="props.ai.showToolCalls !== false"
-          @update:model-value="handleShowToolCallsChange"
-        />
-      </SySettingItem>
-    </SySettingItemList>
+      icon="iconSparkles"
+      :title="t('settings').ai?.title ?? 'AI 服务配置'"
+      :description="t('settings').ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
+    >
+      <!-- 工具调用展示配置 -->
+      <SySettingItemList>
+        <SySettingItem
+          :label="(t('settings') as any).ai?.showToolCalls ?? '显示工具调用详情'"
+          :description="(t('settings') as any).ai?.showToolCallsDesc ?? '在对话中展示 AI 工具调用的详细信息和执行结果'"
+        >
+          <SySwitch
+            :model-value="props.ai.showToolCalls !== false"
+            @update:model-value="handleShowToolCallsChange"
+          />
+        </SySettingItem>
+      </SySettingItemList>
 
-    <!-- 供应商列表 -->
-    <div class="ai-provider-list">
-      <div v-if="aiData.providers.length === 0" class="ai-provider-empty">
-        {{ (t('settings') as any).ai?.emptyProviders ?? '暂无供应商配置，点击下方按钮添加' }}
-      </div>
-      <div v-else class="custom-list">
-        <div v-for="provider in aiData.providers" :key="provider.id" class="custom-item">
-          <div class="custom-item-header">
-            <div class="custom-item-info">
-              <span class="custom-item-name">{{ provider.name }}</span>
-              <span class="custom-item-model">{{ getProviderLabel(provider.provider) }} · {{ provider.defaultModel }}</span>
-            </div>
-            <div class="custom-item-actions">
-              <SyButton
-                icon="iconEdit"
-                :aria-label="(t('settings') as any).ai?.edit ?? '编辑'"
-                @click="editProvider(provider)"
-              />
-              <SyButton
-                icon="iconTrashcan"
-                :aria-label="(t('settings') as any).projectGroups?.deleteButton ?? '删除'"
-                @click="removeProvider(provider.id)"
-              />
-              <SySwitch
-                :model-value="provider.enabled"
-                @update:model-value="(val) => toggleProviderEnabled(provider.id, val)"
-              />
+      <!-- 供应商列表 -->
+      <div class="ai-provider-list">
+        <div
+          v-if="aiData.providers.length === 0"
+          class="ai-provider-empty"
+        >
+          {{ (t('settings') as any).ai?.emptyProviders ?? '暂无供应商配置，点击下方按钮添加' }}
+        </div>
+        <div
+          v-else
+          class="custom-list"
+        >
+          <div
+            v-for="provider in aiData.providers"
+            :key="provider.id"
+            class="custom-item"
+          >
+            <div class="custom-item-header">
+              <div class="custom-item-info">
+                <span class="custom-item-name">{{ provider.name }}</span>
+                <span class="custom-item-model">{{ getProviderLabel(provider.provider) }} · {{ provider.defaultModel }}</span>
+              </div>
+              <div class="custom-item-actions">
+                <SyButton
+                  icon="iconEdit"
+                  :aria-label="(t('settings') as any).ai?.edit ?? '编辑'"
+                  @click="editProvider(provider)"
+                />
+                <SyButton
+                  icon="iconTrashcan"
+                  :aria-label="t('settings').projectGroups?.deleteButton ?? '删除'"
+                  @click="removeProvider(provider.id)"
+                />
+                <SySwitch
+                  :model-value="provider.enabled"
+                  @update:model-value="(val) => toggleProviderEnabled(provider.id, val)"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <SySettingsActionButton
-      icon="iconAdd"
-      :text="(t('settings') as any).ai?.addProvider ?? '添加供应商'"
-      @click="showAddDialog"
-    />
-  </SySettingsSection>
+      <SySettingsActionButton
+        icon="iconAdd"
+        :text="t('settings').ai?.addProvider ?? '添加供应商'"
+        @click="showAddDialog"
+      />
+    </SySettingsSection>
 
-  <!-- 添加/编辑对话框 -->
-  <div v-if="dialogVisible" class="b3-dialog">
-    <div class="b3-dialog__scrim" @click="closeDialog"></div>
-    <div class="b3-dialog__container">
-      <div class="b3-dialog__header">
-        <div class="b3-dialog__title">{{ isEditing ? ((t('settings') as any).ai?.editProvider ?? '编辑供应商') : ((t('settings') as any).ai?.addProvider ?? '添加供应商') }}</div>
-        <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
-      </div>
-      <div class="b3-dialog__content">
-        <AiProviderEditForm
-          ref="formRef"
-          :provider="formProvider"
-          :is-new="!isEditing"
-          @save="handleFormSave"
-        />
-      </div>
-      <div class="b3-dialog__action">
-        <button class="b3-button b3-button--cancel" @click="closeDialog">
-          {{ t('common').cancel }}
-        </button>
-        <button class="b3-button b3-button--text form-save-btn" @click="saveProvider">
-          {{ t('common').save }}
-        </button>
+    <!-- 添加/编辑对话框 -->
+    <div
+      v-if="dialogVisible"
+      class="b3-dialog"
+    >
+      <div
+        class="b3-dialog__scrim"
+        @click="closeDialog"
+      ></div>
+      <div class="b3-dialog__container">
+        <div class="b3-dialog__header">
+          <div class="b3-dialog__title">
+            {{ isEditing ? ((t('settings') as any).ai?.editProvider ?? '编辑供应商') : ((t('settings') as any).ai?.addProvider ?? '添加供应商') }}
+          </div>
+          <svg
+            class="b3-dialog__close"
+            @click="closeDialog"
+          ><use xlink:href="#iconCloseRound"></use></svg>
+        </div>
+        <div class="b3-dialog__content">
+          <AiProviderEditForm
+            ref="formRef"
+            :provider="formProvider"
+            :is-new="!isEditing"
+            @save="handleFormSave"
+          />
+        </div>
+        <div class="b3-dialog__action">
+          <button
+            class="b3-button b3-button--cancel"
+            @click="closeDialog"
+          >
+            {{ t('common').cancel }}
+          </button>
+          <button
+            class="b3-button b3-button--text form-save-btn"
+            @click="saveProvider"
+          >
+            {{ t('common').save }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
   </template>
 
   <!-- iOS Mobile Version -->
   <template v-else>
     <div class="ios-settings-content">
       <div class="ios-group-header">
-        <div class="header-icon">🤖</div>
+        <div class="header-icon">
+          🤖
+        </div>
         <div class="header-info">
-          <div class="header-title">{{ (t('settings') as any).ai?.title ?? 'AI 服务配置' }}</div>
-          <div class="header-desc">{{ (t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置' }}</div>
+          <div class="header-title">
+            {{ (t('settings') as any).ai?.title ?? 'AI 服务配置' }}
+          </div>
+          <div class="header-desc">
+            {{ (t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置' }}
+          </div>
         </div>
       </div>
 
       <div class="ios-group">
-        <div class="ios-cell" @click="handleShowToolCallsChange(!props.ai.showToolCalls !== false)">
+        <div
+          class="ios-cell"
+          @click="handleShowToolCallsChange(!props.ai.showToolCalls !== false)"
+        >
           <div class="cell-content">
-            <div class="cell-title">{{ (t('settings') as any).ai?.showToolCalls ?? '显示工具调用详情' }}</div>
-            <div class="cell-subtitle">{{ (t('settings') as any).ai?.showToolCallsDesc ?? '在对话中展示 AI 工具调用的详细信息和执行结果' }}</div>
+            <div class="cell-title">
+              {{ (t('settings') as any).ai?.showToolCalls ?? '显示工具调用详情' }}
+            </div>
+            <div class="cell-subtitle">
+              {{ (t('settings') as any).ai?.showToolCallsDesc ?? '在对话中展示 AI 工具调用的详细信息和执行结果' }}
+            </div>
           </div>
           <div class="cell-accessory">
-            <div class="ios-switch" :class="{ on: props.ai.showToolCalls !== false }" @click.stop>
+            <div
+              class="ios-switch"
+              :class="{ on: props.ai.showToolCalls !== false }"
+              @click.stop
+            >
               <div class="switch-thumb"></div>
             </div>
           </div>
@@ -113,48 +157,99 @@
 
       <div class="ios-group">
         <div class="ios-cell-header">
-          {{ (t('settings') as any).ai?.providers ?? '供应商' }}
+          {{ t('settings').ai?.providers ?? '供应商' }}
           <span class="header-count">({{ aiData.providers.length }})</span>
         </div>
-        <div v-if="aiData.providers.length === 0" class="ios-empty">
-          {{ (t('settings') as any).ai?.emptyProviders ?? '暂无供应商配置' }}
+        <div
+          v-if="aiData.providers.length === 0"
+          class="ios-empty"
+        >
+          {{ t('settings').ai?.emptyProviders ?? '暂无供应商配置' }}
         </div>
-        <div v-else class="ios-card">
-          <div v-for="provider in aiData.providers" :key="provider.id" class="ios-cell ios-cell-provider">
-            <div class="provider-icon">{{ provider.name.charAt(0) }}</div>
+        <div
+          v-else
+          class="ios-card"
+        >
+          <div
+            v-for="provider in aiData.providers"
+            :key="provider.id"
+            class="ios-cell ios-cell-provider"
+          >
+            <div class="provider-icon">
+              {{ provider.name.charAt(0) }}
+            </div>
             <div class="provider-info">
-              <div class="provider-name">{{ provider.name }}</div>
-              <div class="provider-meta">{{ getProviderLabel(provider.provider) }} · {{ provider.defaultModel }}</div>
+              <div class="provider-name">
+                {{ provider.name }}
+              </div>
+              <div class="provider-meta">
+                {{ getProviderLabel(provider.provider) }} · {{ provider.defaultModel }}
+              </div>
             </div>
             <div class="provider-actions">
-              <div class="ios-switch-small" :class="{ on: provider.enabled }" @click="toggleProviderEnabled(provider.id, !provider.enabled)">
+              <div
+                class="ios-switch-small"
+                :class="{ on: provider.enabled }"
+                @click="toggleProviderEnabled(provider.id, !provider.enabled)"
+              >
                 <div class="switch-thumb"></div>
               </div>
-              <button class="action-btn" @click="editProvider(provider)">
+              <button
+                class="action-btn"
+                @click="editProvider(provider)"
+              >
                 <svg><use xlink:href="#iconEdit"></use></svg>
               </button>
-              <button class="action-btn delete" @click="removeProvider(provider.id)">
+              <button
+                class="action-btn delete"
+                @click="removeProvider(provider.id)"
+              >
                 <svg><use xlink:href="#iconTrashcan"></use></svg>
               </button>
             </div>
           </div>
         </div>
-        <button class="ios-add-btn" @click="showAddDialog">
+        <button
+          class="ios-add-btn"
+          @click="showAddDialog"
+        >
           <span class="add-icon">+</span>
           {{ (t('settings') as any).ai?.addProvider ?? '添加供应商' }}
         </button>
       </div>
 
       <!-- Dialog -->
-      <div v-if="dialogVisible" class="ios-dialog-overlay" @click="closeDialog">
-        <div class="ios-dialog" @click.stop>
+      <div
+        v-if="dialogVisible"
+        class="ios-dialog-overlay"
+        @click="closeDialog"
+      >
+        <div
+          class="ios-dialog"
+          @click.stop
+        >
           <div class="dialog-header">
-            <button class="cancel-btn" @click="closeDialog">{{ t('common').cancel }}</button>
+            <button
+              class="cancel-btn"
+              @click="closeDialog"
+            >
+              {{ t('common').cancel }}
+            </button>
             <span class="dialog-title">{{ isEditing ? ((t('settings') as any).ai?.editProvider ?? '编辑供应商') : ((t('settings') as any).ai?.addProvider ?? '添加供应商') }}</span>
-            <button class="save-btn" @click="saveProvider">{{ t('common').save }}</button>
+            <button
+              class="save-btn"
+              @click="saveProvider"
+            >
+              {{ t('common').save }}
+            </button>
           </div>
           <div class="dialog-content">
-            <AiProviderEditForm ref="formRef" :provider="formProvider" :is-new="!isEditing" @save="handleFormSave" />
+            <AiProviderEditForm
+              ref="formRef"
+              :provider="formProvider"
+              :is-new="!isEditing"
+              @save="handleFormSave"
+            />
           </div>
         </div>
       </div>
@@ -163,39 +258,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
-import type { AIProviderConfig, AIProvider } from '@/types/ai';
-import { PROVIDER_PRESETS } from '@/types/ai';
-import { t } from '@/i18n';
-import { showMessage } from 'siyuan';
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingsActionButton from './SySettingsActionButton.vue';
-import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
-import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
-import AiProviderEditForm from './AiProviderEditForm.vue';
+import type {
+  AIProviderConfig,
+} from '@/types/ai'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  reactive,
+  ref,
+} from 'vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import { t } from '@/i18n'
+import { PROVIDER_PRESETS } from '@/types/ai'
+import { showConfirmDialog } from '@/utils/dialog'
+import AiProviderEditForm from './AiProviderEditForm.vue'
+import SySettingsActionButton from './SySettingsActionButton.vue'
+import SySettingsSection from './SySettingsSection.vue'
 
 const props = defineProps<{
-  isMobile?: boolean;
+  isMobile?: boolean
   ai: {
-    providers: AIProviderConfig[];
-    activeProviderId: string | null;
-    showToolCalls?: boolean;
-  };
-}>();
+    providers: AIProviderConfig[]
+    activeProviderId: string | null
+    showToolCalls?: boolean
+  }
+}>()
 
 const emit = defineEmits<{
-  'update:ai': [value: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }];
-}>();
+  'update:ai': [value: { providers: AIProviderConfig[], activeProviderId: string | null, showToolCalls?: boolean }]
+}>()
 
-const aiData = computed(() => props.ai);
+const aiData = computed(() => props.ai)
 
 // 对话框状态
-const dialogVisible = ref(false);
-const isEditing = ref(false);
-const editingProviderId = ref<string | null>(null);
-const formRef = ref<InstanceType<typeof AiProviderEditForm> | null>(null);
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const editingProviderId = ref<string | null>(null)
+const formRef = ref<InstanceType<typeof AiProviderEditForm> | null>(null)
 
 // 表单数据
 const formProvider = reactive<AIProviderConfig>({
@@ -206,100 +308,127 @@ const formProvider = reactive<AIProviderConfig>({
   apiKey: '',
   models: [],
   defaultModel: '',
-  enabled: true
-});
+  enabled: true,
+})
 
 function getProviderLabel(provider: string): string {
-  const p = PROVIDER_PRESETS[provider as keyof typeof PROVIDER_PRESETS];
-  return p?.name || provider;
+  const p = PROVIDER_PRESETS[provider as keyof typeof PROVIDER_PRESETS]
+  return p?.name || provider
 }
 
 function toggleProviderEnabled(providerId: string, enabled: boolean) {
-  const providers = props.ai.providers.map(p =>
-    p.id === providerId ? { ...p, enabled } : p
-  );
-  let activeProviderId = props.ai.activeProviderId;
+  const providers = props.ai.providers.map((p) =>
+    p.id === providerId
+      ? {
+          ...p,
+          enabled,
+        }
+      : p,
+  )
+  let activeProviderId = props.ai.activeProviderId
   if (!enabled && activeProviderId === providerId) {
-    activeProviderId = providers.find(p => p.enabled)?.id || null;
+    activeProviderId = providers.find((p) => p.enabled)?.id || null
   }
-  emit('update:ai', { ...props.ai, providers, activeProviderId });
+  emit('update:ai', {
+    ...props.ai,
+    providers,
+    activeProviderId,
+  })
 }
 
 function showAddDialog() {
-  isEditing.value = false;
-  editingProviderId.value = null;
-  formProvider.id = `provider-${Date.now()}`;
-  formProvider.name = '';
-  formProvider.provider = 'openai';
-  formProvider.apiUrl = 'https://api.openai.com/v1/chat/completions';
-  formProvider.apiKey = '';
-  formProvider.models = ['gpt-4.1', 'gpt-4o', 'gpt-4o-mini'];
-  formProvider.defaultModel = 'gpt-4o-mini';
-  formProvider.enabled = true;
-  dialogVisible.value = true;
+  isEditing.value = false
+  editingProviderId.value = null
+  formProvider.id = `provider-${Date.now()}`
+  formProvider.name = ''
+  formProvider.provider = 'openai'
+  formProvider.apiUrl = 'https://api.openai.com/v1/chat/completions'
+  formProvider.apiKey = ''
+  formProvider.models = ['gpt-4.1', 'gpt-4o', 'gpt-4o-mini']
+  formProvider.defaultModel = 'gpt-4o-mini'
+  formProvider.enabled = true
+  dialogVisible.value = true
 }
 
 function editProvider(provider: AIProviderConfig) {
-  isEditing.value = true;
-  editingProviderId.value = provider.id;
-  formProvider.id = provider.id;
-  formProvider.name = provider.name;
-  formProvider.provider = provider.provider;
-  formProvider.apiUrl = provider.apiUrl;
-  formProvider.apiKey = provider.apiKey;
-  formProvider.models = [...provider.models];
-  formProvider.defaultModel = provider.defaultModel;
-  formProvider.enabled = provider.enabled;
-  dialogVisible.value = true;
+  isEditing.value = true
+  editingProviderId.value = provider.id
+  formProvider.id = provider.id
+  formProvider.name = provider.name
+  formProvider.provider = provider.provider
+  formProvider.apiUrl = provider.apiUrl
+  formProvider.apiKey = provider.apiKey
+  formProvider.models = [...provider.models]
+  formProvider.defaultModel = provider.defaultModel
+  formProvider.enabled = provider.enabled
+  dialogVisible.value = true
 }
 
 function closeDialog() {
-  dialogVisible.value = false;
+  dialogVisible.value = false
 }
 
 function handleFormSave(data: Partial<AIProviderConfig>) {
   // 表单内部验证通过后触发此方法
   const provider: AIProviderConfig = {
     ...formProvider,
-    ...data
-  };
-
-  if (isEditing.value && editingProviderId.value) {
-    const providers = props.ai.providers.map(p =>
-      p.id === editingProviderId.value ? provider : p
-    );
-    emit('update:ai', { ...props.ai, providers });
-  } else {
-    const providers = [...props.ai.providers, provider];
-    const activeProviderId = props.ai.activeProviderId || provider.id;
-    emit('update:ai', { ...props.ai, providers, activeProviderId });
+    ...data,
   }
 
-  showMessage((t('settings') as any).ai?.messageApplied ?? '已应用，点击下方「保存」写入配置', 3000);
-  closeDialog();
+  if (isEditing.value && editingProviderId.value) {
+    const providers = props.ai.providers.map((p) =>
+      p.id === editingProviderId.value ? provider : p,
+    )
+    emit('update:ai', {
+      ...props.ai,
+      providers,
+    })
+  } else {
+    const providers = [...props.ai.providers, provider]
+    const activeProviderId = props.ai.activeProviderId || provider.id
+    emit('update:ai', {
+      ...props.ai,
+      providers,
+      activeProviderId,
+    })
+  }
+
+  showMessage(t('settings').ai?.messageApplied ?? '已应用，点击下方「保存」写入配置', 3000)
+  closeDialog()
 }
 
 function saveProvider() {
   // 触发表单组件的保存方法进行验证
-  formRef.value?.handleSave();
+  formRef.value?.handleSave()
 }
 
 function removeProvider(id: string) {
-  const provider = props.ai.providers.find(p => p.id === id);
-  if (!provider) return;
+  const provider = props.ai.providers.find((p) => p.id === id)
+  if (!provider) return
 
-  if (confirm(((t('settings') as any).ai?.confirmDeleteProvider ?? '确定要删除 "{{name}}" 吗？').replace('{{name}}', provider.name))) {
-    const providers = props.ai.providers.filter(p => p.id !== id);
-    let activeProviderId = props.ai.activeProviderId;
-    if (activeProviderId === id) {
-      activeProviderId = providers.find(p => p.enabled)?.id || null;
-    }
-    emit('update:ai', { ...props.ai, providers, activeProviderId });
-  }
+  showConfirmDialog(
+    '',
+    ((t('settings') as any).ai?.confirmDeleteProvider ?? '确定要删除 "{{name}}" 吗？').replace('{{name}}', provider.name),
+    () => {
+      const providers = props.ai.providers.filter((p) => p.id !== id)
+      let activeProviderId = props.ai.activeProviderId
+      if (activeProviderId === id) {
+        activeProviderId = providers.find((p) => p.enabled)?.id || null
+      }
+      emit('update:ai', {
+        ...props.ai,
+        providers,
+        activeProviderId,
+      })
+    },
+  )
 }
 
 function handleShowToolCallsChange(checked: boolean) {
-  emit('update:ai', { ...props.ai, showToolCalls: checked });
+  emit('update:ai', {
+    ...props.ai,
+    showToolCalls: checked,
+  })
 }
 </script>
 

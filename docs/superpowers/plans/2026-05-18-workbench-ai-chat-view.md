@@ -12,20 +12,21 @@
 
 ## 文件结构
 
-| 文件 | 操作 | 职责 |
-|------|------|------|
-| `src/types/workbench.ts` | 修改 | WorkbenchViewType 联合类型添加 `'aiChat'` |
-| `src/workbench/viewRegistry.ts` | 修改 | 注册 aiChat 视图定义 |
-| `src/stores/workbenchStore.ts` | 修改 | getViewEntryDefinition 添加 aiChat 条目 |
-| `src/tabs/AiChatDock.vue` | 修改 | 新增 `embedded` prop，条件隐藏 ConversationSelect + 新建按钮 |
-| `src/components/workbench/view/AiChatView.vue` | **新建** | 工作台 AI 视图容器（两栏布局） |
-| `src/components/workbench/view/WorkbenchViewHost.vue` | 修改 | 添加 aiChat 渲染分支 |
+| 文件                                                  | 操作     | 职责                                                         |
+| ----------------------------------------------------- | -------- | ------------------------------------------------------------ |
+| `src/types/workbench.ts`                              | 修改     | WorkbenchViewType 联合类型添加 `'aiChat'`                    |
+| `src/workbench/viewRegistry.ts`                       | 修改     | 注册 aiChat 视图定义                                         |
+| `src/stores/workbenchStore.ts`                        | 修改     | getViewEntryDefinition 添加 aiChat 条目                      |
+| `src/tabs/AiChatDock.vue`                             | 修改     | 新增 `embedded` prop，条件隐藏 ConversationSelect + 新建按钮 |
+| `src/components/workbench/view/AiChatView.vue`        | **新建** | 工作台 AI 视图容器（两栏布局）                               |
+| `src/components/workbench/view/WorkbenchViewHost.vue` | 修改     | 添加 aiChat 渲染分支                                         |
 
 ---
 
 ### 任务 1：注册 aiChat 到类型系统（types + registry + store）
 
 **文件：**
+
 - 修改：`src/types/workbench.ts:3-11`
 - 修改：`src/workbench/viewRegistry.ts:31-146`
 - 修改：`src/stores/workbenchStore.ts:28-65`
@@ -35,16 +36,16 @@
 在 `src/types/workbench.ts` 的 `WorkbenchViewType` 联合类型末尾添加 `'aiChat'`：
 
 ```typescript
-export type WorkbenchViewType =
-  | 'calendar'
-  | 'gantt'
-  | 'quadrant'
-  | 'project'
-  | 'todo'
-  | 'habit'
-  | 'pomodoroStats'
-  | 'focusWorkbench'
-  | 'aiChat';
+export type WorkbenchViewType
+  = | 'calendar'
+    | 'gantt'
+    | 'quadrant'
+    | 'project'
+    | 'todo'
+    | 'habit'
+    | 'pomodoroStats'
+    | 'focusWorkbench'
+    | 'aiChat'
 ```
 
 - [ ] **步骤 2：在 viewRegistry 中注册 aiChat**
@@ -88,6 +89,7 @@ git commit -m "feat(workbench): register aiChat view type in type system"
 ### 任务 2：AiChatDock 添加 embedded prop
 
 **文件：**
+
 - 修改：`src/tabs/AiChatDock.vue`
 - 参考：[AiChatDock.vue](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/tabs/AiChatDock.vue)
 
@@ -97,8 +99,8 @@ git commit -m "feat(workbench): register aiChat view type in type system"
 
 ```typescript
 const props = defineProps<{
-  embedded?: boolean;
-}>();
+  embedded?: boolean
+}>()
 ```
 
 如果当前代码没有 defineProps，直接在 import 语句之后添加即可。
@@ -171,6 +173,7 @@ git commit -m "feat(ai-chat): add embedded prop to hide conversation selector in
 ### 任务 3：新建 AiChatView.vue 组件
 
 **文件：**
+
 - 创建：`src/components/workbench/view/AiChatView.vue`
 - 参考：
   - [AiChatDock.vue](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/tabs/AiChatDock.vue)（对话管理逻辑参考）
@@ -182,6 +185,60 @@ git commit -m "feat(ai-chat): add embedded prop to hide conversation selector in
 创建文件 `src/components/workbench/view/AiChatView.vue`：
 
 ```vue
+<script setup lang="ts">
+import type { ConversationIndexItem } from '@/services/conversationStorageService'
+import { computed, onMounted, ref } from 'vue'
+import { t } from '@/i18n'
+import { useConversationStorage } from '@/services/conversationStorageService'
+import { useAIStore } from '@/stores'
+import AiChatDock from '@/tabs/AiChatDock.vue'
+
+defineProps<{
+  viewConfig?: Record<string, unknown>
+}>()
+
+const aiStore = useAIStore()
+const { formatConversationTime } = useConversationStorage()
+
+const conversationsList = ref<ConversationIndexItem[]>([])
+
+const activeId = computed(() => aiStore.currentConversationId)
+
+async function refreshConversationsList() {
+  conversationsList.value = await aiStore.getConversationsList()
+}
+
+function formatTime(timestamp?: number): string {
+  if (!timestamp)
+    return ''
+  return formatConversationTime(timestamp)
+}
+
+async function handleNew() {
+  await aiStore.createConversation(t('aiChat').defaultConversationTitle)
+  await refreshConversationsList()
+}
+
+async function handleSelect(id: string) {
+  if (id === activeId.value)
+    return
+  await aiStore.switchConversation(id)
+}
+
+async function handleDelete(id: string, event: MouseEvent) {
+  event.stopPropagation()
+  await aiStore.deleteConversation(id)
+  await refreshConversationsList()
+}
+
+onMounted(async () => {
+  await refreshConversationsList()
+  if (conversationsList.value.length === 0) {
+    await handleNew()
+  }
+})
+</script>
+
 <template>
   <div class="ai-chat-view" data-testid="ai-chat-view">
     <aside class="ai-chat-view__sidebar">
@@ -191,9 +248,9 @@ git commit -m "feat(ai-chat): add embedded prop to hide conversation selector in
           :aria-label="t('aiChat').newConversation"
           @click="handleNew"
         >
-          <svg><use xlink:href="#iconAdd"></use></svg>
+          <svg><use xlink:href="#iconAdd" /></svg>
         </span>
-        <span class="fn__flex-1 fn__space"></span>
+        <span class="fn__flex-1 fn__space" />
         <span class="ai-chat-view__sidebar-count">{{ conversationsList.length }}</span>
       </div>
       <div class="ai-chat-view__sidebar-list">
@@ -204,7 +261,9 @@ git commit -m "feat(ai-chat): add embedded prop to hide conversation selector in
           :class="{ 'is-active': conv.id === activeId }"
           @click="handleSelect(conv.id)"
         >
-          <div class="ai-chat-view__sidebar-item-title">{{ conv.title }}</div>
+          <div class="ai-chat-view__sidebar-item-title">
+            {{ conv.title }}
+          </div>
           <div class="ai-chat-view__sidebar-item-meta">
             <span v-if="conv.source === 'weixin'" class="ai-chat-view__sidebar-item-tag">微信</span>
             <span class="ai-chat-view__sidebar-item-time">{{ formatTime(conv.updatedAt) }}</span>
@@ -220,57 +279,6 @@ git commit -m "feat(ai-chat): add embedded prop to hide conversation selector in
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAIStore } from '@/stores';
-import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
-import { t } from '@/i18n';
-import AiChatDock from '@/tabs/AiChatDock.vue';
-
-defineProps<{
-  viewConfig?: Record<string, unknown>;
-}>();
-
-const aiStore = useAIStore();
-const { formatConversationTime } = useConversationStorage();
-
-const conversationsList = ref<ConversationIndexItem[]>([]);
-
-const activeId = computed(() => aiStore.currentConversationId);
-
-async function refreshConversationsList() {
-  conversationsList.value = await aiStore.getConversationsList();
-}
-
-function formatTime(timestamp?: number): string {
-  if (!timestamp) return '';
-  return formatConversationTime(timestamp);
-}
-
-async function handleNew() {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
-}
-
-async function handleSelect(id: string) {
-  if (id === activeId.value) return;
-  await aiStore.switchConversation(id);
-}
-
-async function handleDelete(id: string, event: MouseEvent) {
-  event.stopPropagation();
-  await aiStore.deleteConversation(id);
-  await refreshConversationsList();
-}
-
-onMounted(async () => {
-  await refreshConversationsList();
-  if (conversationsList.value.length === 0) {
-    await handleNew();
-  }
-});
-</script>
 
 <style lang="scss" scoped>
 .ai-chat-view {
@@ -376,6 +384,7 @@ onMounted(async () => {
 - [ ] **步骤 2：确认依赖的类型和函数存在**
 
 检查以下导入是否有效：
+
 - `useConversationStorage` 是否导出 `formatConversationTime`
 - `t('aiChat').defaultConversationTitle` i18n key 是否存在
 - `t('aiChat').noConversations` i18n key 是否不存在的话需要添加或用内联字符串
@@ -402,6 +411,7 @@ git commit -m "feat(workbench): add AiChatView component with sidebar layout"
 ### 任务 4：在 WorkbenchViewHost 中接入 AiChatView
 
 **文件：**
+
 - 修改：`src/components/workbench/view/WorkbenchViewHost.vue`
 - 参考：[WorkbenchViewHost.vue](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/components/workbench/view/WorkbenchViewHost.vue)
 
@@ -412,7 +422,7 @@ git commit -m "feat(workbench): add AiChatView component with sidebar layout"
 1. 在 import 区域（第 33-38 行附近）添加：
 
 ```typescript
-import AiChatView from '@/components/workbench/view/AiChatView.vue';
+import AiChatView from '@/components/workbench/view/AiChatView.vue'
 ```
 
 2. 在 template 中最后一个 `v-else-if`（project 分支，约第 18-20 行）之后、`v-else` 之前添加：
@@ -474,19 +484,19 @@ git commit -m "fix(workbench): final adjustments for ai chat view integration"
 
 ### 规格覆盖度
 
-| 规格需求 | 对应任务 |
-|---------|---------|
-| WorkbenchViewType 添加 `'aiChat'` | 任务 1 步骤 1 |
-| viewRegistry 注册 aiChat | 任务 1 步骤 2 |
-| workbenchStore.getViewEntryDefinition 添加条目 | 任务 1 步骤 3 |
-| AiChatDock 新增 embedded prop | 任务 2 步骤 1 |
-| embedded 模式隐藏 ConversationSelect | 任务 2 步骤 2 |
-| embedded 模式隐藏新建按钮 | 任务 2 步骤 3 |
-| 新建 AiChatView.vue 两栏布局 | 任务 3 步骤 1 |
-| 左侧边栏：会话列表 + 新建 + 切换 + 删除 | 任务 3 步骤 1 |
-| 通过 aiStore 共享状态通信 | 任务 3 步骤 1（script 部分） |
-| WorkbenchViewHost 接入 | 任务 4 步骤 1 |
-| 回归测试：embedded=false 不影响原有 Dock | 任务 2 步骤 4 + 任务 5 |
+| 规格需求                                       | 对应任务                     |
+| ---------------------------------------------- | ---------------------------- |
+| WorkbenchViewType 添加 `'aiChat'`              | 任务 1 步骤 1                |
+| viewRegistry 注册 aiChat                       | 任务 1 步骤 2                |
+| workbenchStore.getViewEntryDefinition 添加条目 | 任务 1 步骤 3                |
+| AiChatDock 新增 embedded prop                  | 任务 2 步骤 1                |
+| embedded 模式隐藏 ConversationSelect           | 任务 2 步骤 2                |
+| embedded 模式隐藏新建按钮                      | 任务 2 步骤 3                |
+| 新建 AiChatView.vue 两栏布局                   | 任务 3 步骤 1                |
+| 左侧边栏：会话列表 + 新建 + 切换 + 删除        | 任务 3 步骤 1                |
+| 通过 aiStore 共享状态通信                      | 任务 3 步骤 1（script 部分） |
+| WorkbenchViewHost 接入                         | 任务 4 步骤 1                |
+| 回归测试：embedded=false 不影响原有 Dock       | 任务 2 步骤 4 + 任务 5       |
 
 ### 占位符扫描
 

@@ -17,14 +17,15 @@
 
 ### 交互方式
 
-| 方式 | 触发 | 说明 |
-|------|------|------|
-| **UI 面板** | 事项详情 → 设置重复 | 可视化规则选择器（每天/每周/每月等） |
-| **右键菜单** | 右键点击事项 | 点击后打开**设置重复弹框**，用户再选择规则 |
-| **斜杠命令** | `/重复` | 输入 `/重复` 唤起**设置重复弹框** |
-| **手动输入** | 直接编辑 Markdown | 支持 🔁每天、🔁每周 等语法 |
+| 方式         | 触发                | 说明                                       |
+| ------------ | ------------------- | ------------------------------------------ |
+| **UI 面板**  | 事项详情 → 设置重复 | 可视化规则选择器（每天/每周/每月等）       |
+| **右键菜单** | 右键点击事项        | 点击后打开**设置重复弹框**，用户再选择规则 |
+| **斜杠命令** | `/重复`             | 输入 `/重复` 唤起**设置重复弹框**          |
+| **手动输入** | 直接编辑 Markdown   | 支持 🔁每天、🔁每周 等语法                 |
 
 **右键菜单选项**：
+
 - 设置重复规则...（打开弹框）
 - ──────────
 - 跳过本次（仅过期事项显示）
@@ -33,15 +34,15 @@
 
 支持中英文两种语言的可读格式：
 
-| 中文格式 | 英文格式 | 说明 | 创建下次时 |
-|----------|----------|------|------------|
-| `🔁每天` | `🔁daily` | 每天重复 | +1 天 |
-| `🔁每周` | `🔁weekly` | 每周重复 | +7 天，保持星期几 |
-| `🔁每周一三五` | `🔁weekly on Mon,Wed,Fri` | 每周指定周几重复（紧凑格式） | 下周一、三、五 |
-| `🔁每月` | `🔁monthly` | 每月重复（保持当前日号） | +1 月，保持日号（边界处理见 2.4） |
-| `🔁每月15日` | `🔁monthly on day 15` | 每月固定日期重复 | 每月 15 日 |
-| `🔁每年` | `🔁yearly` | 每年重复 | +1 年，保持月日 |
-| `🔁工作日` | `🔁workday` | 工作日重复 | 跳到下一个工作日（见第 8 节） |
+| 中文格式       | 英文格式                  | 说明                         | 创建下次时                        |
+| -------------- | ------------------------- | ---------------------------- | --------------------------------- |
+| `🔁每天`       | `🔁daily`                 | 每天重复                     | +1 天                             |
+| `🔁每周`       | `🔁weekly`                | 每周重复                     | +7 天，保持星期几                 |
+| `🔁每周一三五` | `🔁weekly on Mon,Wed,Fri` | 每周指定周几重复（紧凑格式） | 下周一、三、五                    |
+| `🔁每月`       | `🔁monthly`               | 每月重复（保持当前日号）     | +1 月，保持日号（边界处理见 2.4） |
+| `🔁每月15日`   | `🔁monthly on day 15`     | 每月固定日期重复             | 每月 15 日                        |
+| `🔁每年`       | `🔁yearly`                | 每年重复                     | +1 年，保持月日                   |
+| `🔁工作日`     | `🔁workday`               | 工作日重复                   | 跳到下一个工作日（见第 8 节）     |
 
 #### `🔁每月` vs `🔁每月15日` 的区别
 
@@ -49,16 +50,23 @@
 # 场景：今天是 3月17日
 
 # 🔁每月 - 保持当前日号（17日）
+
 月度汇报 @2026-03-17 🔁每月
+
 # 下次：4月17日 → 5月17日 → 6月17日...
 
 # 🔁每月15日 - 固定每月15日
+
 月度汇报 @2026-03-17 🔁每月15日
+
 # 下次：4月15日 → 5月15日 → 6月15日...
+
 # 注意：从当前日期往后找下个15日（4月15日），不创建过去日期
+
 ```
 
 **选择建议**：
+
 - `🔁每月`：适合「从某天开始，每月同一天」的事项（如每月17日发工资后做报表）
 - `🔁每月15日`：适合「固定在每月某号」的事项（如每月15日开例会）
 
@@ -66,45 +74,53 @@
 
 ### 2.2 结束条件（人类可读格式）
 
-| 中文格式 | 英文格式 | 说明 | 示例 |
-|----------|----------|------|------|
-| `截止到YYYY-MM-DD` | `until YYYY-MM-DD` | 按日期结束 | `🔁每月 截止到2026-12-31` |
-| `剩余N次` | `N times remaining` | 按次数结束 | `🔁每天 剩余10次` |
-| 无参数 | 无参数 | 永不结束 | 不附加 |
+| 中文格式           | 英文格式            | 说明       | 示例                      |
+| ------------------ | ------------------- | ---------- | ------------------------- |
+| `截止到YYYY-MM-DD` | `until YYYY-MM-DD`  | 按日期结束 | `🔁每月 截止到2026-12-31` |
+| `剩余N次`          | `N times remaining` | 按次数结束 | `🔁每天 剩余10次`         |
+| 无参数             | 无参数              | 永不结束   | 不附加                    |
 
 **次数递减规则**：
+
 - 完成事项自动创建下次时，次数减 1
 - 示例：`剩余10次` → 完成 → 新事项为 `剩余9次`
 - 当 `剩余0次` 时，完成事项**不再自动创建**下次
 
 ```markdown
 # 原始事项
+
 背单词 @2026-03-17 🔁每天 剩余3次
 
 # 第1次完成 → 自动创建 剩余2次
+
 背单词 @2026-03-18 🔁每天 剩余2次
 
 # 第2次完成 → 自动创建 剩余1次
+
 背单词 @2026-03-19 🔁每天 剩余1次
 
 # 第3次完成 → 自动创建 剩余0次（不显示次数标记）
+
 背单词 @2026-03-20 🔁每天
 
 # 剩余0次时完成不再自动创建
+
 ```
 
 **结束条件组合**：可同时存在 `截止至` 和 `剩余`，**哪个条件先到先结束**
+
 - `🔁每月截止至2026-12-31剩余10`：到12月31日或创建10次后结束（先到为准）
 
 ### 2.3 完整示例
 
 ```markdown
 月度汇报 @2026-03-17 ⏰14:00 🔁每月截止至2026-12-31
-月度汇报 @2026-03-17 ⏰14:00 🔁每月15日 截止到2026-12-31  // 每月15号
+月度汇报 @2026-03-17 ⏰14:00 🔁每月15日 截止到2026-12-31 // 每月15号
 周会 @2026-03-06 ⏰09:00 🔁每周 剩余52次
 背单词 @2026-03-17 ⏰08:00 🔁每天 剩余30次
 年度总结 @2026-03-17 ⏰10:00 🔁每年
 日报 @2026-03-17 ⏰17:00 🔁工作日
+
 ```
 
 ### 2.4 标记顺序与容错
@@ -112,6 +128,7 @@
 **推荐顺序**：`内容 @日期 ⏰提醒 🔁重复 [截止至日期|剩余次数]`
 
 **容错规则**：
+
 - **不强制顺序**：解析器通过正则匹配，不依赖位置
 - **多语言混用**：取第一个有效标记，后面的忽略
   - `🔁每月weekly` → 解析为 `🔁每月`，`weekly` 忽略
@@ -121,29 +138,30 @@
 
 当原日期在目标月份不存在时，采用「月末对齐」策略：
 
-| 原日期 | 规则 | 下月日期 | 说明 |
-|--------|------|----------|------|
+| 原日期  | 规则     | 下月日期   | 说明           |
+| ------- | -------- | ---------- | -------------- |
 | 1月31日 | `🔁每月` | 2月28/29日 | 取月末最后一天 |
-| 1月31日 | `🔁每月` | 3月31日 | 恢复正常 |
-| 3月31日 | `🔁每月` | 4月30日 | 取月末最后一天 |
-| 5月31日 | `🔁每月` | 6月30日 | 取月末最后一天 |
+| 1月31日 | `🔁每月` | 3月31日    | 恢复正常       |
+| 3月31日 | `🔁每月` | 4月30日    | 取月末最后一天 |
+| 5月31日 | `🔁每月` | 6月30日    | 取月末最后一天 |
 
 **算法**：
+
 ```typescript
 function getNextMonthlyDate(currentDate: string): string {
-  const date = new Date(currentDate);
-  const currentDay = date.getDate();
-  
+  const date = new Date(currentDate)
+  const currentDay = date.getDate()
+
   // 移动到下一月
-  date.setMonth(date.getMonth() + 1);
-  
+  date.setMonth(date.getMonth() + 1)
+
   // 检查是否发生了「月份跳跃」（如 1月31日 → 3月3日）
   if (date.getDate() !== currentDay) {
     // 回退到当月第一天，再减去一天 = 上月最后一天
-    date.setDate(0);
+    date.setDate(0)
   }
-  
-  return formatDate(date);
+
+  return formatDate(date)
 }
 ```
 
@@ -156,36 +174,36 @@ function getNextMonthlyDate(currentDate: string): string {
 ```typescript
 interface Item {
   // ... 现有字段
-  reminder?: ReminderConfig;     // 来自 reminder.md
-  repeatRule?: RepeatRule;       // 重复规则
-  endCondition?: EndCondition;   // 结束条件
+  reminder?: ReminderConfig // 来自 reminder.md
+  repeatRule?: RepeatRule // 重复规则
+  endCondition?: EndCondition // 结束条件
 }
 
 // 重复规则类型
-type RepeatRule = 
-  | { type: 'daily' }
-  | { type: 'weekly'; daysOfWeek?: number[] }  // daysOfWeek 指定周几（0=周日，1=周一...）
-  | { type: 'monthly'; dayOfMonth?: number }  // dayOfMonth 指定每月几号
-  | { type: 'yearly' }
-  | { type: 'workday' };
+type RepeatRule
+  = | { type: 'daily' }
+    | { type: 'weekly', daysOfWeek?: number[] } // daysOfWeek 指定周几（0=周日，1=周一...）
+    | { type: 'monthly', dayOfMonth?: number } // dayOfMonth 指定每月几号
+    | { type: 'yearly' }
+    | { type: 'workday' }
 
 // 结束条件类型
 interface EndCondition {
-  type: 'never' | 'date' | 'count';
-  endDate?: string;    // YYYY-MM-DD，type=date 时使用
-  maxCount?: number;   // type=count 时使用（仅作参考，不强制）
+  type: 'never' | 'date' | 'count'
+  endDate?: string // YYYY-MM-DD，type=date 时使用
+  maxCount?: number // type=count 时使用（仅作参考，不强制）
 }
 ```
 
 ### 3.2 解析规则
 
-| 标记 | 解析结果 |
-|------|----------|
-| `🔁每月` | `repeatRule: { type: 'monthly' }` |
-| `🔁每月:15日` | `repeatRule: { type: 'monthly', dayOfMonth: 15 }` |
-| `🔁每周一三五` | `repeatRule: { type: 'weekly', daysOfWeek: [1, 3, 5] }` | 每周一、三、五 |
+| 标记                     | 解析结果                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------ | -------------- |
+| `🔁每月`                 | `repeatRule: { type: 'monthly' }`                                                          |
+| `🔁每月:15日`            | `repeatRule: { type: 'monthly', dayOfMonth: 15 }`                                          |
+| `🔁每周一三五`           | `repeatRule: { type: 'weekly', daysOfWeek: [1, 3, 5] }`                                    | 每周一、三、五 |
 | `🔁每月截止至2026-12-31` | `repeatRule: { type: 'monthly' }`, `endCondition: { type: 'date', endDate: '2026-12-31' }` |
-| `🔁每周剩余52` | `repeatRule: { type: 'weekly' }`, `endCondition: { type: 'count', maxCount: 52 }` |
+| `🔁每周剩余52`           | `repeatRule: { type: 'weekly' }`, `endCondition: { type: 'count', maxCount: 52 }`          |
 
 ---
 
@@ -196,23 +214,30 @@ interface EndCondition {
 **核心设计**：用户**标记事项为 `#done` 时自动创建下次**，无需手动点击「创建下次」按钮。
 
 **流程**：
+
 ```
 用户标记 #done → 系统自动创建下次 occurrence → 原事项保留 #done 标记
 ```
 
 **示例**：
+
 ```markdown
 # 原事项
+
 周会 @2026-03-17 🔁每周
 
 # 用户添加 #done 后
+
 周会 @2026-03-17 🔁每周 #done
 
 # 系统自动创建（同级插入新 block）
+
 周会 @2026-03-24 🔁每周
+
 ```
 
 **条件检查**：
+
 - 有 `repeatRule` 时，标记 `#done` 即触发自动创建
 - 检查结束条件，满足任一即停止创建
 
@@ -221,6 +246,7 @@ interface EndCondition {
 **场景**：用户忘记标记 `#done` 时，事项会显示在「**过期**」分组中提醒处理。
 
 **过期判断**：
+
 - 事项日期 < 今天 且 状态为 pending → 显示在「过期」分组
 - 用户看到过期事项后，可选择：
   1. **标记完成**：触发自动创建下次
@@ -234,10 +260,10 @@ interface EndCondition {
 
 1. 根据 repeatRule 计算下一日期：
    - daily: date + 1 天
-   - weekly: 
+   - weekly:
      * 有 daysOfWeek: 找下一个最近的指定周几
      * 无 daysOfWeek: date + 7 天
-   - monthly: 
+   - monthly:
      * 有 dayOfMonth: 下个月指定日期
      * 无 dayOfMonth: date + 1 月，边界处理见 2.4
    - yearly: date + 1 年
@@ -269,24 +295,31 @@ interface EndCondition {
 **使用场景**：用户某次无法执行（如生病、出差），需要跳过当前周期直接到下一个周期。
 
 **显示条件**：
+
 - **仅当事项已过期**（事项日期 ≤ 今天）时才显示「跳过本次」按钮
 - 避免用户过早跳过未来的事项
 
 **实现方案**：
+
 - 在事项详情弹框中增加「**跳过本次**」按钮
 - **直接修改当前事项的日期**为下一个周期的日期
 - 不涉及属性存储，简单直接
 
 **示例**：
+
 ```markdown
 # 当前事项（3月17日已过期，用户生病无法参加）
+
 周会 @2026-03-17 ⏰09:00 🔁每周
 
 # 用户点击「跳过本次」后，直接修改为
+
 周会 @2026-03-24 ⏰09:00 🔁每周
+
 ```
 
 **UI 交互**：
+
 1. 用户在过期事项详情中点击「跳过本次」
 2. 系统根据 `repeatRule` 计算下一周期日期
 3. 直接修改当前 block 的日期
@@ -340,10 +373,10 @@ interface EndCondition {
 
 ### 阶段二：创建下次
 
-5. 日期计算：实现 `getNextOccurrenceDate(date, repeatRule)` 
+5. 日期计算：实现 `getNextOccurrenceDate(date, repeatRule)`
    - 包含月份边界处理
    - 支持 `dayOfMonth` 指定日期
-6. 结束条件检查：实现 `canCreateNext(item)` 
+6. 结束条件检查：实现 `canCreateNext(item)`
 7. 创建下次：实现 `createNextOccurrence(plugin, item)`，插入新 block
 8. UI：ItemDetailDialog 监听 `#done` 状态自动创建，过期显示「跳过本次」按钮
 
@@ -359,39 +392,41 @@ interface EndCondition {
 
 采用 **`chinese-days` 库**（npm 包）：
 
-| 特性 | 说明 |
-|------|------|
-| 数据源 | 跟随国务院发布自动更新 |
-| 时间范围 | 2004-2024+ 年 |
-| 体积 | gzip 后 7kb |
-| 功能 | 节假日判断、调休识别、工作日计算 |
-| CDN | 支持 `https://cdn.jsdelivr.net/npm/chinese-days/dist/index.min.js` |
+| 特性     | 说明                                                               |
+| -------- | ------------------------------------------------------------------ |
+| 数据源   | 跟随国务院发布自动更新                                             |
+| 时间范围 | 2004-2024+ 年                                                      |
+| 体积     | gzip 后 7kb                                                        |
+| 功能     | 节假日判断、调休识别、工作日计算                                   |
+| CDN      | 支持 `https://cdn.jsdelivr.net/npm/chinese-days/dist/index.min.js` |
 
 ### 8.2 实现方式
 
 **Phase 1**：使用简单周一到周五（内置）
+
 ```typescript
 function isWorkdaySimple(date: Date): boolean {
-  const day = date.getDay();
-  return day !== 0 && day !== 6; // 非周末即工作日
+  const day = date.getDay()
+  return day !== 0 && day !== 6 // 非周末即工作日
 }
 ```
 
 **Phase 2**：引入 `chinese-days` 库
+
 ```typescript
-import { isWorkday, getNextWorkday } from 'chinese-days';
+import { getNextWorkday, isWorkday } from 'chinese-days'
 
 function getNextWorkdayDate(date: string): string {
-  const current = new Date(date);
-  let next = new Date(current);
-  next.setDate(next.getDate() + 1);
-  
+  const current = new Date(date)
+  const next = new Date(current)
+  next.setDate(next.getDate() + 1)
+
   // 跳过非工作日（周末+节假日）
   while (!isWorkday(formatDate(next))) {
-    next.setDate(next.getDate() + 1);
+    next.setDate(next.getDate() + 1)
   }
-  
-  return formatDate(next);
+
+  return formatDate(next)
 }
 ```
 
@@ -438,66 +473,85 @@ function getNextWorkdayDate(date: string): string {
 
 ```markdown
 # 原始事项
+
 月度汇报 @2026-03-17 ⏰14:00 🔁每月截止至2026-12-31
 
 # 用户标记 #done 后（自动创建下次）
+
 月度汇报 @2026-03-17 ⏰14:00 🔁每月截止至2026-12-31 #done
-月度汇报 @2026-04-17 ⏰14:00 🔁每月截止至2026-12-31  ← 自动创建
+月度汇报 @2026-04-17 ⏰14:00 🔁每月截止至2026-12-31 ← 自动创建
 
 # 若用户跳过 2026-04-17（过期后点击跳过）
-月度汇报 @2026-05-17 ⏰14:00 🔁每月截止至2026-12-31  ← 日期直接修改
+
+月度汇报 @2026-05-17 ⏰14:00 🔁每月截止至2026-12-31 ← 日期直接修改
+
 ```
 
 ### 次数递减示例
 
 ```markdown
 # 原始事项（还剩3次）
+
 背单词 @2026-03-17 ⏰08:00 🔁每天剩余3
 
 # 标记 #done → 自动创建 剩余2
+
 背单词 @2026-03-18 ⏰08:00 🔁每天剩余2
 
 # 再次标记 #done → 自动创建 剩余1
+
 背单词 @2026-03-19 ⏰08:00 🔁每天剩余1
 
 # 再次标记 #done → 自动创建 剩余0
+
 背单词 @2026-03-20 ⏰08:00 🔁每天剩余0
 
 # 剩余0 时标记 #done 不再自动创建
+
 ```
 
 ### 固定日期示例
 
 ```markdown
 # 场景：今天是 3月17日，想每月15号开会
+
 周会 @2026-03-17 🔁每月:15日
 
 # 标记 #done → 自动创建（从当前日期往后找下个15日）
+
 周会 @2026-04-15 🔁每月:15日
 
 # 继续标记 #done
+
 周会 @2026-05-15 🔁每月:15日
+
 ```
 
 ### 固定周几示例
 
 ```markdown
 # 场景：每周一、三、五健身（今天是周二 3月18日）
+
 健身 @2026-03-18 🔁每周:1,3,5
 
 # 标记 #done → 自动创建（下个指定日是周三）
+
 健身 @2026-03-19 🔁每周:1,3,5
 
 # 继续标记 #done → 自动创建（周五）
+
 健身 @2026-03-21 🔁每周:1,3,5
 
 # 继续标记 #done → 自动创建（下周一）
+
 健身 @2026-03-24 🔁每周:1,3,5
 
 # 周几编号：0=周日，1=周一，2=周二，3=周三，4=周四，5=周五，6=周六
+
 ```
 
 **标记顺序约定**：
+
 ```
 内容 @日期 [⏰提醒时间] [🔁重复规则] [截止至日期|剩余次数] [状态标签]
 ```

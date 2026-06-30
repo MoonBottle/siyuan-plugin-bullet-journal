@@ -23,8 +23,7 @@
         v-for="day in weekDayLabels"
         :key="day"
         class="date-picker-week-grid__weekday"
-        >{{ day }}</span
-      >
+      >{{ day }}</span>
     </div>
 
     <div class="date-picker-week-grid__days">
@@ -50,21 +49,21 @@
         :data-testid="`date-picker-week-cell-${date}`"
         type="button"
         :title="getCellMarkerLabel(getSummaryByDate(date))"
-        @click="emit('date-click', date, $event); ($event.currentTarget as HTMLElement)?.blur()"
+        @click="emit('dateClick', date, $event); ($event.currentTarget as HTMLElement)?.blur()"
       >
         <span class="date-picker-week-grid__day-num">{{
           dayjs(date).format('D')
         }}</span>
         <span class="date-picker-week-grid__marker">
           <span
-              v-if="hasMarker(getSummaryByDate(date))"
-              class="date-picker-week-grid__dot"
-              :class="{
-                'date-picker-week-grid__dot--overdue': getDotType(getSummaryByDate(date)) === 'overdue',
-                'date-picker-week-grid__dot--pending': getDotType(getSummaryByDate(date)) === 'pending',
-                'date-picker-week-grid__dot--completed': getDotType(getSummaryByDate(date)) === 'completed',
-              }"
-            ></span>
+            v-if="hasMarker(getSummaryByDate(date))"
+            class="date-picker-week-grid__dot"
+            :class="{
+              'date-picker-week-grid__dot--overdue': getDotType(getSummaryByDate(date)) === 'overdue',
+              'date-picker-week-grid__dot--pending': getDotType(getSummaryByDate(date)) === 'pending',
+              'date-picker-week-grid__dot--completed': getDotType(getSummaryByDate(date)) === 'completed',
+            }"
+          ></span>
         </span>
       </button>
     </div>
@@ -72,10 +71,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { getCurrentLocale, t } from '@/i18n';
-import type { DatePickerDailySummary } from './datePickerUtils';
+import type { DatePickerDailySummary } from './datePickerUtils'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import {
+  getCurrentLocale,
+  t,
+} from '@/i18n'
+import dayjs from '@/utils/dayjs'
 import {
   getCellMarkerLabel,
   getDotType,
@@ -83,79 +89,78 @@ import {
   hasMarker,
   hasOverdue,
   hasPending,
-} from './datePickerUtils';
+} from './datePickerUtils'
 
 const props = defineProps<{
-  selectedDate: string;
-  rangeStart: string;
-  rangeEnd: string;
-  getSummaryByDate: (date: string) => DatePickerDailySummary;
-}>();
+  selectedDate: string
+  rangeStart: string
+  rangeEnd: string
+  getSummaryByDate: (date: string) => DatePickerDailySummary
+}>()
 
 const emit = defineEmits<{
-  'date-click': [date: string, event: MouseEvent];
-}>();
+  dateClick: [date: string, event: MouseEvent]
+}>()
 
-const today = dayjs().format('YYYY-MM-DD');
-const weekDayLabels = computed(() => t('calendar').weekDays);
+const today = dayjs().format('YYYY-MM-DD')
+const weekDayLabels = computed(() => t('calendar').weekDays)
 
-const viewWeekStart = ref(getMonday(props.selectedDate));
+const viewWeekStart = ref(getMonday(props.selectedDate))
 
 watch(
   () => props.selectedDate,
   (value) => {
-    const nextMonday = getMonday(value);
+    const nextMonday = getMonday(value)
     if (nextMonday !== viewWeekStart.value) {
-      viewWeekStart.value = nextMonday;
+      viewWeekStart.value = nextMonday
     }
   },
-);
+)
 
 function getMonday(dateStr: string): string {
-  const d = dayjs(dateStr);
-  let dow: number = d.day();
-  if (dow === 0) dow = 7;
-  return d.subtract(dow - 1, 'day').format('YYYY-MM-DD');
+  const d = dayjs(dateStr)
+  let dow: number = d.day()
+  if (dow === 0) dow = 7
+  return d.subtract(dow - 1, 'day').format('YYYY-MM-DD')
 }
 
 const weekDates = computed(() => {
-  const monday = dayjs(viewWeekStart.value);
+  const monday = dayjs(viewWeekStart.value)
   return Array.from({ length: 7 }, (_, i) =>
-    monday.add(i, 'day').format('YYYY-MM-DD'),
-  );
-});
+    monday.add(i, 'day').format('YYYY-MM-DD'))
+})
 
 const title = computed(() => {
-  const monday = dayjs(viewWeekStart.value);
-  const sunday = monday.add(6, 'day');
-  const locale = getCurrentLocale();
+  const monday = dayjs(viewWeekStart.value)
+  const sunday = monday.add(6, 'day')
+  const locale = getCurrentLocale()
   if (locale.startsWith('en')) {
     if (monday.month() === sunday.month()) {
-      return `${monday.format('MMM D')} – ${sunday.format('D, YYYY')}`;
+      return `${monday.format('MMM D')} – ${sunday.format('D, YYYY')}`
     }
-    return `${monday.format('MMM D')} – ${sunday.format('MMM D, YYYY')}`;
+    return `${monday.format('MMM D')} – ${sunday.format('MMM D, YYYY')}`
   }
   if (monday.month() === sunday.month()) {
-    return `${monday.format('M月D日')} – ${sunday.format('D日')}`;
+    return `${monday.format('M月D日')} – ${sunday.format('D日')}`
   }
-  return `${monday.format('M月D日')} – ${sunday.format('M月D日')}`;
-});
+  return `${monday.format('M月D日')} – ${sunday.format('M月D日')}`
+})
 
 function prevWeek() {
   viewWeekStart.value = dayjs(viewWeekStart.value)
     .subtract(1, 'week')
-    .format('YYYY-MM-DD');
+    .format('YYYY-MM-DD')
 }
 
 function nextWeek() {
   viewWeekStart.value = dayjs(viewWeekStart.value)
     .add(1, 'week')
-    .format('YYYY-MM-DD');
+    .format('YYYY-MM-DD')
 }
 
 function isInRange(date: string): boolean {
-  if (!props.rangeStart || !props.rangeEnd || !date) return false;
-  return date >= props.rangeStart && date <= props.rangeEnd;
+  if (!props.rangeStart || !props.rangeEnd || !date) return false
+  return date >= props.rangeStart && date <= props.rangeEnd
 }
 </script>
 
@@ -246,9 +251,7 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-week-grid__cell--in-range:not(
-  .date-picker-week-grid__cell--selected
-) {
+.date-picker-week-grid__cell--in-range:not(.date-picker-week-grid__cell--selected) {
   background: var(--b3-theme-surface-lighter);
 }
 
@@ -258,20 +261,15 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-week-grid__cell--overdue:not(
-  .date-picker-week-grid__cell--selected
-) {
+.date-picker-week-grid__cell--overdue:not(.date-picker-week-grid__cell--selected) {
   background: rgba(210, 63, 49, 0.08);
 }
 
-.date-picker-week-grid__cell--completed:not(
-  .date-picker-week-grid__cell--selected
-) {
+.date-picker-week-grid__cell--completed:not(.date-picker-week-grid__cell--selected) {
   background: var(--b3-theme-surface);
 }
 
-.date-picker-week-grid__cell--pending
-  .date-picker-week-grid__day-num {
+.date-picker-week-grid__cell--pending .date-picker-week-grid__day-num {
   font-weight: 600;
 }
 

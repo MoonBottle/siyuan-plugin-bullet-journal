@@ -1,5 +1,11 @@
 <template>
-  <div class="item-detail-content" :class="{ 'item-detail-content--embedded': embedded }">
+  <div
+    class="item-detail-content"
+    :class="{
+      'item-detail-content--embedded': embedded,
+      'item-detail-content--readonly': readonly,
+    }"
+  >
     <div class="item-detail-cards">
       <Card
         v-if="project"
@@ -8,21 +14,36 @@
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').project }}</span>
+          <div class="card-label">
+            {{ t('todo').project }}
+          </div>
+          <div
+            v-if="projectGroupName"
+            class="tag-badge group-tag"
+          >
+            {{ projectGroupName }}
+          </div>
         </template>
         <div class="card-content-row">
           <span class="card-text">{{ project.name }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(project.name, 'project')"
           >
-            <svg v-if="copiedState.project" class="copied-icon"><use xlink:href="#iconCheck"></use></svg>
+            <svg
+              v-if="copiedState.project"
+              class="copied-icon"
+            ><use xlink:href="#iconCheck"></use></svg>
             <svg v-else><use xlink:href="#iconCopy"></use></svg>
           </span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="projectLinks" @link-click="handleLinkClick" />
+          <TodoTypedLinks
+            :links="projectLinks"
+            @link-click="handleLinkClick"
+          />
         </template>
       </Card>
 
@@ -33,23 +54,36 @@
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').task }}</span>
-          <span v-if="task.level" class="task-level-badge" :class="'level-' + task.level.toLowerCase()">
+          <div class="card-label">
+            {{ t('todo').task }}
+          </div>
+          <div
+            v-if="task.level"
+            class="tag-badge"
+            :class="`level-${task.level.toLowerCase()}`"
+          >
             {{ task.level }}
-          </span>
+          </div>
         </template>
         <div class="card-content-row">
           <span class="card-text">{{ task.name }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(task.name, 'task')"
           >
-            <svg v-if="copiedState.task" class="copied-icon"><use xlink:href="#iconCheck"></use></svg>
+            <svg
+              v-if="copiedState.task"
+              class="copied-icon"
+            ><use xlink:href="#iconCheck"></use></svg>
             <svg v-else><use xlink:href="#iconCopy"></use></svg>
           </span>
         </div>
-        <div v-if="taskTags.length" class="item-tags-row">
+        <div
+          v-if="taskTags.length && !readonly"
+          class="item-tags-row"
+        >
           <span
             v-for="tag in taskTags"
             :key="tag"
@@ -57,22 +91,56 @@
           >#{{ tag }}</span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="taskLinks" @link-click="handleLinkClick" />
+          <TodoTypedLinks
+            :links="taskLinks"
+            @link-click="handleLinkClick"
+          />
         </template>
       </Card>
 
       <Card
-        :status="itemStatus"
+        :status="itemStatus as CardStatus"
         :show-header="true"
         :show-footer="itemLinks.length > 0"
         :hover-effect="false"
       >
         <template #header>
-          <span class="card-label">{{ t('todo').item }}</span>
-          <span v-if="props.item.priority" class="priority-badge-header">
-            {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
-          </span>
-          <span class="status-tag" :class="statusInfo.class">{{ statusInfo.text }}</span>
+          <div class="card-label-row">
+            <div class="card-label">
+              {{ t('todo').item }}
+            </div>
+            <div
+              v-if="navigationInfo && navigationInfo.total > 1"
+              class="item-nav"
+            >
+              <button
+                class="item-nav-btn"
+                :disabled="!navigationInfo.canPrev"
+                @click="emit('navigatePrev')"
+              >
+                <svg><use xlink:href="#iconLeft"></use></svg>
+              </button>
+              <span class="item-nav-indicator">{{ navigationInfo.currentIndex + 1 }} / {{ navigationInfo.total }}</span>
+              <button
+                class="item-nav-btn"
+                :disabled="!navigationInfo.canNext"
+                @click="emit('navigateNext')"
+              >
+                <svg><use xlink:href="#iconRight"></use></svg>
+              </button>
+            </div>
+          </div>
+          <div class="header-tags">
+            <div
+              v-if="props.item.priority"
+              class="priority-emoji"
+              @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, PRIORITY_CONFIG[props.item.priority].label)"
+              @mouseleave="hideTooltip"
+            >
+              {{ PRIORITY_CONFIG[props.item.priority].emoji }}
+            </div>
+            <ItemStatusTag :item="props.item" />
+          </div>
         </template>
 
         <div class="item-meta">
@@ -80,80 +148,104 @@
             <span class="meta-item">
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').time)"
-                @mouseleave="hideIconTooltip"
-              >📅</span>
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').time)"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaCalendarDays"></use></svg></span>
               <span
                 class="meta-text"
                 :class="{ 'has-tooltip': timeDisplayNeedsTooltip }"
-                @mouseenter="(e) => timeDisplayNeedsTooltip && showIconTooltip(e.currentTarget as HTMLElement, timeDisplay)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="(e) => timeDisplayNeedsTooltip && showTooltip(e.currentTarget as HTMLElement, timeDisplay)"
+                @mouseleave="hideTooltip"
               >{{ timeDisplayTruncated }}</span>
             </span>
-            <span v-if="duration" class="meta-item">
+            <span
+              v-if="duration"
+              class="meta-item"
+            >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
-                @mouseleave="hideIconTooltip"
-              >⏱️</span>
-              <span class="meta-text">{{ duration }}</span>
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaClockCheck"></use></svg></span>
               <span
-                class="copy-btn small b3-tooltips b3-tooltips__nw"
-                :aria-label="t('common').copy"
-                @click.stop="handleCopy(duration, 'duration')"
-              >
-                <svg v-if="copiedState.duration" class="copied-icon"><use xlink:href="#iconCheck"></use></svg>
-                <svg v-else><use xlink:href="#iconCopy"></use></svg>
-              </span>
+                class="meta-text copyable"
+                :class="{ copied: copiedState.duration }"
+                @click="!readonly && handleCopy(duration, 'duration')"
+              >{{ duration }}</span>
             </span>
-            <span v-if="focusTotalTimeDisplay" class="meta-item">
+            <span
+              v-if="focusPlanDisplay && !readonly"
+              class="meta-item"
+            >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
-                @mouseleave="hideIconTooltip"
-              >🍅</span>
-              <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaClockPlus"></use></svg></span>
               <span
-                class="copy-btn small b3-tooltips b3-tooltips__nw"
-                :aria-label="t('common').copy"
-                @click.stop="handleCopy(focusTotalTimeDisplay, 'focusTime')"
-              >
-                <svg v-if="copiedState.focusTime" class="copied-icon"><use xlink:href="#iconCheck"></use></svg>
-                <svg v-else><use xlink:href="#iconCopy"></use></svg>
-              </span>
+                class="meta-text"
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, getFocusPlanTooltip(props.item.focusPlan))"
+                @mouseleave="hideTooltip"
+              >{{ focusPlanDurationShort }}</span>
             </span>
-            <span v-if="focusPlanDisplay" class="meta-item">
+            <span
+              v-if="focusTotalTimeDisplay"
+              class="meta-item"
+            >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
-                @mouseleave="hideIconTooltip"
-              >⏳</span>
-              <span class="meta-text">{{ focusPlanDisplay }}</span>
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaTimer"></use></svg></span>
+              <span
+                class="meta-text copyable"
+                :class="{ copied: copiedState.focusTime }"
+                @mouseenter="(e) => focusTotalTimeTooltip && showTooltip(e.currentTarget as HTMLElement, focusTotalTimeTooltip)"
+                @mouseleave="hideTooltip"
+                @click="!readonly && handleCopy(focusTotalTimeDisplay, 'focusTime')"
+              >{{ focusTotalTimeDisplay }}</span>
             </span>
-            <span v-if="focusPlanReview" class="meta-item">
+            <span
+              v-if="focusPlanReview && !readonly"
+              class="meta-item"
+            >
               <span
                 class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
-                @mouseleave="hideIconTooltip"
-              >Δ</span>
-              <span class="meta-text">{{ focusDeltaDisplay }}</span>
+                @mouseenter="(e) => showTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
+                @mouseleave="hideTooltip"
+              ><svg><use xlink:href="#iconTaClockDiff"></use></svg></span>
+              <span
+                class="meta-text"
+                @mouseenter="(e) => focusDeltaTooltip && showTooltip(e.currentTarget as HTMLElement, focusDeltaTooltip)"
+                @mouseleave="hideTooltip"
+              >{{ focusDeltaDisplay }}</span>
             </span>
           </div>
         </div>
 
-        <div v-if="itemContent" class="item-content-row">
+        <div
+          v-if="itemContent"
+          class="item-content-row"
+        >
           <span class="card-text">{{ itemContent }}</span>
           <span
+            v-if="!readonly"
             class="copy-btn b3-tooltips b3-tooltips__nw"
             :aria-label="t('common').copy"
             @click.stop="handleCopy(itemContent, 'content')"
           >
-            <svg v-if="copiedState.content" class="copied-icon"><use xlink:href="#iconCheck"></use></svg>
+            <svg
+              v-if="copiedState.content"
+              class="copied-icon"
+            ><use xlink:href="#iconCheck"></use></svg>
             <svg v-else><use xlink:href="#iconCopy"></use></svg>
           </span>
         </div>
 
-        <div v-if="itemTags.length" class="item-tags-row">
+        <div
+          v-if="itemTags.length && !readonly"
+          class="item-tags-row"
+        >
           <span
             v-for="tag in itemTags"
             :key="tag"
@@ -161,33 +253,30 @@
           >#{{ tag }}</span>
         </div>
 
-        <div v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring))" class="item-actions-row">
+        <div
+          v-if="showActionRow && ((!readonly && !isCompletedOrAbandoned) || hasReminder || hasRecurring)"
+          class="item-actions-row"
+        >
           <TodoItemActionButtons
             :has-reminder="hasReminder"
             :has-recurring="hasRecurring"
-            :is-readonly="isCompletedOrAbandoned"
-            :show-reminder="!isCompletedOrAbandoned || hasReminder"
-            :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
+            :is-readonly="readonly || isCompletedOrAbandoned"
+            :show-reminder="(!readonly && !isCompletedOrAbandoned) || hasReminder"
+            :show-recurring="((!readonly && !isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
             :reminder-text="reminderText"
             :recurring-text="recurringText"
             :reminder-tooltip="reminderButtonTooltip"
             :recurring-tooltip="recurringButtonTooltip"
-            @set-reminder="emit('set-reminder')"
-            @set-recurring="emit('set-recurring')"
+            @setReminder="emit('setReminder')"
+            @setRecurring="emit('setRecurring')"
           />
-
-          <button
-            v-if="showSkipButton"
-            class="action-btn skip-btn b3-tooltips b3-tooltips__n"
-            :aria-label="skipButtonTooltip"
-            @click="emit('skip-occurrence')"
-          >
-            <span class="action-text">{{ t('recurring.skipThis') }}</span>
-          </button>
         </div>
 
         <template #footer>
-          <TodoTypedLinks :links="itemLinks" @link-click="handleLinkClick" />
+          <TodoTypedLinks
+            :links="itemLinks"
+            @link-click="handleLinkClick"
+          />
         </template>
       </Card>
     </div>
@@ -195,47 +284,92 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue';
-import { showMessage } from 'siyuan';
-import Card from '@/components/common/Card.vue';
-import { t } from '@/i18n';
-import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
-import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
-import { buildFocusPlanReview, formatFocusPlanDisplay } from '@/utils/focusPlanReview';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { getNextOccurrenceDate, generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { useSettingsStore } from '@/stores';
-import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import { openDocumentAtLine, optimizeDateTimeExpressions } from '@/utils/fileUtils';
-import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { Item, Project, Task, PomodoroRecord, Link } from '@/types/models';
-import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue';
-import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
+import type { CardStatus } from '@/components/common/Card.vue'
+import type {
+  Item,
+  Link,
+  PomodoroRecord,
+  Project,
+  Task,
+} from '@/types/models'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  reactive,
+} from 'vue'
+import Card from '@/components/common/Card.vue'
+import ItemStatusTag from '@/components/common/ItemStatusTag.vue'
+import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue'
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue'
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+  getNextOccurrenceDate,
+} from '@/parser/recurringParser'
+import { calculateReminderTime } from '@/parser/reminderParser'
+import { useSettingsStore } from '@/stores'
+import {
+  getDateRangeStatus,
+  getTimeRangeStatus,
+} from '@/utils/dateRangeUtils'
+import {
+  calculateDuration,
+  formatDateLabel,
+  formatTimeRange,
+} from '@/utils/dateUtils'
+import dayjs from '@/utils/dayjs'
+import {
+  calculateTotalFocusMinutes,
+  formatFocusDuration,
+  formatFocusDurationShort,
+} from '@/utils/dialog'
+import { formatReminderDisplay } from '@/utils/displayUtils'
+import {
+  openDocumentAtLine,
+  optimizeDateTimeExpressions,
+} from '@/utils/fileUtils'
+import {
+  buildFocusPlanReview,
+} from '@/utils/focusPlanReview'
+import {
+  getFocusPlanDisplay,
+  getFocusPlanTooltip,
+} from '@/utils/format'
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
-  item: Item;
-  showAllDates?: boolean;
-  showActionRow?: boolean;
-  closeOnSiyuanLink?: boolean;
-  embedded?: boolean;
+  item: Item
+  showAllDates?: boolean
+  showActionRow?: boolean
+  closeOnSiyuanLink?: boolean
+  embedded?: boolean
+  readonly?: boolean
+  navigationInfo?: { currentIndex: number, total: number, canPrev: boolean, canNext: boolean }
 }>(), {
   showAllDates: false,
   showActionRow: true,
   closeOnSiyuanLink: false,
   embedded: false,
-});
+  readonly: false,
+})
 
 const emit = defineEmits<{
-  close: [];
-  'set-reminder': [];
-  'set-recurring': [];
-  'skip-occurrence': [];
-}>();
+  close: []
+  setReminder: []
+  setRecurring: []
+  navigatePrev: []
+  navigateNext: []
+}>()
 
-const settingsStore = useSettingsStore();
+const DATETIME_PREFIX_RE = /^(?:@|📅)/
+
+const settingsStore = useSettingsStore()
 
 const copiedState = reactive<Record<string, boolean>>({
   project: false,
@@ -243,50 +377,68 @@ const copiedState = reactive<Record<string, boolean>>({
   content: false,
   duration: false,
   focusTime: false,
-});
+})
 
-const project = computed<Project | null>(() => props.item.project || null);
-const projectLinks = computed(() => project.value?.links || []);
-const task = computed<Task | null>(() => props.item.task || null);
-const taskLinks = computed(() => task.value?.links || []);
-const itemLinks = computed(() => props.item.links || []);
-const itemContent = computed(() => props.item.content || '');
-const itemTags = computed(() => (props.item.tags ?? []).filter(Boolean));
-const taskTags = computed(() => (task.value?.tags ?? []).filter(Boolean));
-const focusPlanDisplay = computed(() => formatFocusPlanDisplay(props.item.focusPlan));
-const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []));
+const project = computed<Project | null>(() => props.item.project || null)
+const projectLinks = computed(() => project.value?.links || [])
+const projectGroupName = computed(() => {
+  if (!project.value?.groupId) return ''
+  return settingsStore.groups.find((g) => g.id === project.value!.groupId)?.name || ''
+})
+const task = computed<Task | null>(() => props.item.task || null)
+const taskLinks = computed(() => task.value?.links || [])
+const itemLinks = computed(() => props.item.links || [])
+const itemContent = computed(() => props.item.content || '')
+const itemTags = computed(() => (props.item.tags ?? []).filter(Boolean))
+const taskTags = computed(() => (task.value?.tags ?? []).filter(Boolean))
+const focusPlanDisplay = computed(() => getFocusPlanDisplay(props.item.focusPlan))
+const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []))
 const focusPlanReview = computed(() => {
-  if (!props.item.focusPlan) return null;
+  if (!props.item.focusPlan) return null
   return buildFocusPlanReview({
     itemStatus: props.item.status,
     estimatedMinutes: props.item.focusPlan.normalizedMinutes,
     actualMinutes: actualFocusMinutes.value,
-  });
-});
+  })
+})
 const focusDeltaDisplay = computed(() => {
-  if (!focusPlanReview.value) return '';
-  const absValue = Math.abs(focusPlanReview.value.deltaMinutes);
-  const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : '';
-  return `${prefix}${formatFocusDuration(absValue)}`;
-});
+  if (!focusPlanReview.value) return ''
+  const absValue = Math.abs(focusPlanReview.value.deltaMinutes)
+  const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : ''
+  return `${prefix}${formatFocusDurationShort(absValue)}`
+})
+const focusDeltaTooltip = computed(() => {
+  if (!focusPlanReview.value) return ''
+  const absValue = Math.abs(focusPlanReview.value.deltaMinutes)
+  const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : ''
+  return `${prefix}${formatFocusDuration(absValue)}`
+})
+const focusPlanDurationShort = computed(() => {
+  if (!focusPlanDisplay.value) return ''
+  return formatFocusDurationShort(focusPlanDisplay.value.minutes)
+})
 
 const timeDisplay = computed(() => {
   if (!props.showAllDates) {
-    const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow);
-    const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-    return `${dateLabel}${timeRange ? ' ' + timeRange : ''}`;
+    const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow)
+    const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
+    return `${dateLabel}${timeRange ? ` ${timeRange}` : ''}`
   }
-  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
-    { date: props.item.date, startDateTime: props.item.startDateTime, endDateTime: props.item.endDateTime },
-  ];
+  const allItems: Array<{ date: string, startDateTime?: string, endDateTime?: string }> = [
+    {
+      date: props.item.date,
+      startDateTime: props.item.startDateTime,
+      endDateTime: props.item.endDateTime,
+    },
+  ]
   if (props.item.siblingItems?.length) {
-    allItems.push(...props.item.siblingItems);
+    allItems.push(...props.item.siblingItems)
   }
-  return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '');
-});
+  return optimizeDateTimeExpressions(allItems).replace(DATETIME_PREFIX_RE, '')
+})
 
-const timeDisplayNeedsTooltip = computed(() => timeDisplay.value.length > 30);
-const timeDisplayTruncated = computed(() => timeDisplayNeedsTooltip.value ? `${timeDisplay.value.slice(0, 27)}...` : timeDisplay.value);
+const timeDisplayNeedsTooltip = computed(() => timeDisplay.value.length > 30)
+const timeDisplayTruncated = computed(() => timeDisplayNeedsTooltip.value ? `${timeDisplay.value.slice(0, 27)}...` : timeDisplay.value)
 
 const duration = computed(() => {
   if (!props.showAllDates) {
@@ -296,19 +448,23 @@ const duration = computed(() => {
         props.item.endDateTime,
         settingsStore.lunchBreakStart,
         settingsStore.lunchBreakEnd,
-      );
+      )
     }
-    return '';
+    return ''
   }
 
-  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
-    { date: props.item.date, startDateTime: props.item.startDateTime, endDateTime: props.item.endDateTime },
-  ];
+  const allItems: Array<{ date: string, startDateTime?: string, endDateTime?: string }> = [
+    {
+      date: props.item.date,
+      startDateTime: props.item.startDateTime,
+      endDateTime: props.item.endDateTime,
+    },
+  ]
   if (props.item.siblingItems?.length) {
-    allItems.push(...props.item.siblingItems);
+    allItems.push(...props.item.siblingItems)
   }
 
-  let totalMinutes = 0;
+  let totalMinutes = 0
   for (const item of allItems) {
     if (item.startDateTime && item.endDateTime) {
       const value = calculateDuration(
@@ -316,74 +472,65 @@ const duration = computed(() => {
         item.endDateTime,
         settingsStore.lunchBreakStart,
         settingsStore.lunchBreakEnd,
-      );
+      )
       if (value) {
-        const [hours, mins] = value.split(':').map(Number);
-        totalMinutes += hours * 60 + mins;
+        const [hours, mins] = value.split(':').map(Number)
+        totalMinutes += hours * 60 + mins
       }
     }
   }
-  if (totalMinutes === 0) return '';
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes > 0 ? `${hours}:${minutes.toString().padStart(2, '0')}` : `${hours}:00`;
-});
+  if (totalMinutes === 0) return ''
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return minutes > 0 ? `${hours}:${minutes.toString().padStart(2, '0')}` : `${hours}:00`
+})
 
 function filterPomodorosByDate(pomodoros: PomodoroRecord[] | undefined, date: string): PomodoroRecord[] {
-  if (!pomodoros) return [];
-  return pomodoros.filter(p => p.date === date);
+  if (!pomodoros) return []
+  return pomodoros.filter((p) => p.date === date)
 }
 
 const focusTotalTimeDisplay = computed(() => {
   const pomodorosToCount = props.showAllDates
     ? [...(props.item.pomodoros ?? [])]
-    : filterPomodorosByDate(props.item.pomodoros, props.item.date);
-  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
-  return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
-});
+    : filterPomodorosByDate(props.item.pomodoros, props.item.date)
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount)
+  return totalFocusMinutes > 0 ? formatFocusDurationShort(totalFocusMinutes) : ''
+})
+const focusTotalTimeTooltip = computed(() => {
+  const pomodorosToCount = props.showAllDates
+    ? [...(props.item.pomodoros ?? [])]
+    : filterPomodorosByDate(props.item.pomodoros, props.item.date)
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount)
+  return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : ''
+})
 
 const itemStatus = computed(() => {
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  if (props.item.status === 'completed') return 'completed';
-  if (props.item.status === 'abandoned') return 'abandoned';
+  const todayStr = dayjs().format('YYYY-MM-DD')
+  if (props.item.status === 'completed') return 'completed'
+  if (props.item.status === 'abandoned') return 'abandoned'
   if (props.item.dateRangeStart && props.item.dateRangeEnd) {
-    const rangeStatus = getDateRangeStatus(props.item, todayStr);
-    return rangeStatus ?? (getEffectiveDate(props.item) < todayStr ? 'expired' : 'pending');
+    const rangeStatus = getDateRangeStatus(props.item, todayStr)
+    return rangeStatus ?? (getEffectiveDate(props.item) < todayStr ? 'expired' : 'pending')
   }
-  const timeStatus = getTimeRangeStatus(props.item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-  if (timeStatus) return timeStatus;
-  return getEffectiveDate(props.item) < todayStr ? 'expired' : 'pending';
-});
+  const timeStatus = getTimeRangeStatus(props.item, dayjs().format('YYYY-MM-DD HH:mm:ss'))
+  if (timeStatus) return timeStatus
+  return getEffectiveDate(props.item) < todayStr ? 'expired' : 'pending'
+})
 
-const statusInfo = computed(() => {
-  const statusMap: Record<string, { text: string; class: string }> = {
-    pending: { text: t('todo').pending, class: 'pending' },
-    in_progress: { text: t('todo').inProgress, class: 'in-progress' },
-    completed: { text: t('todo').completed, class: 'completed' },
-    abandoned: { text: t('todo').abandoned, class: 'abandoned' },
-    expired: { text: t('todo').expired, class: 'expired' },
-  };
-  return statusMap[itemStatus.value] || statusMap.pending;
-});
-
-const isCompletedOrAbandoned = computed(() => itemStatus.value === 'completed' || itemStatus.value === 'abandoned');
-const hasReminder = computed(() => props.item.reminder?.enabled);
-const reminderText = computed(() => !hasReminder.value ? t('reminder.setReminder') : formatReminderDisplay(props.item.reminder, t));
-const hasRecurring = computed(() => !!props.item.repeatRule);
-const canSetRecurring = computed(() => !props.item.siblingItems?.length);
+const isCompletedOrAbandoned = computed(() => itemStatus.value === 'completed' || itemStatus.value === 'abandoned')
+const hasReminder = computed(() => props.item.reminder?.enabled)
+const reminderText = computed(() => !hasReminder.value ? t('reminder.setReminder') : formatReminderDisplay(props.item.reminder, t))
+const hasRecurring = computed(() => !!props.item.repeatRule)
+const canSetRecurring = computed(() => !props.item.siblingItems?.length)
 const recurringText = computed(() => {
-  if (!hasRecurring.value) return t('recurring.setRecurring');
-  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false });
-  const endMarker = generateEndConditionMarker(props.item.endCondition);
-  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
-});
-const showSkipButton = computed(() => hasRecurring.value && itemStatus.value === 'expired');
-const skipButtonTooltip = computed(() => {
-  if (!props.item.repeatRule) return '';
-  return t('recurring.skipTooltip', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) });
-});
+  if (!hasRecurring.value) return t('recurring.setRecurring')
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false })
+  const endMarker = generateEndConditionMarker(props.item.endCondition)
+  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker
+})
 const reminderButtonTooltip = computed(() => {
-  if (!hasReminder.value || !props.item.reminder) return '';
+  if (!hasReminder.value || !props.item.reminder) return ''
   const reminderTime = calculateReminderTime(
     props.item.date,
     props.item.startDateTime,
@@ -391,53 +538,54 @@ const reminderButtonTooltip = computed(() => {
     undefined,
     undefined,
     props.item.reminder,
-  );
-  if (!reminderTime) return '';
-  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm');
+  )
+  if (!reminderTime) return ''
+  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm')
   return reminderTime < Date.now()
     ? t('reminder.lastReminder', { time: formattedTime })
-    : t('reminder.nextReminder', { time: formattedTime });
-});
+    : t('reminder.nextReminder', { time: formattedTime })
+})
 const recurringButtonTooltip = computed(() => {
-  if (!hasRecurring.value || !props.item.repeatRule) return '';
-  return t('recurring.nextOccurrence', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) });
-});
+  if (!hasRecurring.value || !props.item.repeatRule) return ''
+  return t('recurring.nextOccurrence', { date: getNextOccurrenceDate(props.item.date, props.item.repeatRule) })
+})
 
 function getEffectiveDate(item: Item): string {
-  return item.dateRangeEnd || item.date;
+  return item.dateRangeEnd || item.date
 }
 
 async function handleCopy(text: string, key: string) {
-  if (!text) return;
+  if (!text) return
   try {
-    await navigator.clipboard.writeText(text);
-    copiedState[key] = true;
+    await navigator.clipboard.writeText(text)
+    copiedState[key] = true
+    showMessage(t('common').copySuccess, 1000, 'info')
     setTimeout(() => {
-      copiedState[key] = false;
-    }, 2000);
+      copiedState[key] = false
+    }, 1000)
   } catch (err) {
-    console.error('复制失败:', err);
+    console.error('复制失败:', err)
   }
 }
 
 async function handleLinkClick(link: Link) {
   if (link.type === 'attachment') {
-    const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId);
+    const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId)
     if (!targetBlockId || !props.item.docId) {
-      showMessage(t('common').blockIdError, 'error');
-      return;
+      showMessage(t('common').blockIdError, 2000, 'error')
+      return
     }
-    const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId);
+    const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId)
     if (!opened) {
-      showMessage(t('common').blockIdError, 'error');
-      return;
+      showMessage(t('common').blockIdError, 2000, 'error')
+      return
     }
-    if (props.closeOnSiyuanLink) emit('close');
-    return;
+    if (props.closeOnSiyuanLink) emit('close')
+    return
   }
 
   if (link.url.startsWith('siyuan://') && props.closeOnSiyuanLink) {
-    emit('close');
+    emit('close')
   }
 }
 </script>
@@ -453,14 +601,29 @@ async function handleLinkClick(link: Link) {
   }
 }
 
+.item-detail-content--readonly {
+  :deep(.typed-link) {
+    pointer-events: none;
+    cursor: default;
+  }
+}
+
 .item-detail-cards {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .card-label {
-  font-size: 12px;
+  font-size: 13px;
+  height: 20px;
+  line-height: 20px;
   font-weight: 600;
   color: var(--b3-theme-on-surface);
   text-transform: uppercase;
@@ -480,6 +643,9 @@ async function handleLinkClick(link: Link) {
   color: var(--b3-theme-on-background);
   word-break: break-word;
   flex: 1;
+  min-height: 20px;
+  line-height: 20px;
+  display: flex;
 }
 
 .copy-btn {
@@ -503,48 +669,14 @@ async function handleLinkClick(link: Link) {
     fill: currentColor;
   }
 
-  &.small {
-    width: 16px;
-    height: 16px;
-
-    svg {
-      width: 12px;
-      height: 12px;
-    }
-  }
-
   .copied-icon {
     color: var(--b3-theme-success);
   }
 }
 
-.task-level-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-
-  &.level-l1 { background: #4caf50; }
-  &.level-l2 { background: #ff9800; }
-  &.level-l3 { background: #f44336; }
+.item-meta {
+  margin-bottom: 8px;
 }
-
-.status-tag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-
-  &.pending { background: var(--b3-theme-primary); color: var(--b3-theme-on-primary); }
-  &.in-progress { background: #ff9800; color: #fff; }
-  &.completed { background: var(--b3-theme-success); color: var(--b3-theme-on-success); }
-  &.abandoned { background: var(--b3-theme-on-surface); color: var(--b3-theme-background); }
-  &.expired { background: #f44336; color: #fff; }
-}
-
-.item-meta { margin-bottom: 8px; }
 
 .meta-row {
   display: flex;
@@ -561,8 +693,18 @@ async function handleLinkClick(link: Link) {
 }
 
 .meta-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
   cursor: help;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .meta-text {
@@ -571,13 +713,30 @@ async function handleLinkClick(link: Link) {
   &.has-tooltip {
     cursor: help;
   }
+
+  &.copyable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0 4px;
+    margin: 0 -4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--b3-theme-background);
+    }
+
+    &.copied {
+      color: var(--b3-theme-success);
+    }
+  }
 }
 
 .item-content-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
 }
@@ -595,7 +754,7 @@ async function handleLinkClick(link: Link) {
   padding: 2px 10px;
   border-radius: 999px;
   background: var(--b3-theme-primary-lightest);
-  color: var(--b3-theme-primary);
+  color: var(--b3-theme-on-surface);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.6;
@@ -605,32 +764,103 @@ async function handleLinkClick(link: Link) {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
 }
 
-.skip-btn {
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-surface);
-  border-color: var(--b3-border-color);
-
-  &:hover {
-    background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
+.header-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.priority-badge-header {
+.item-nav {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  margin-left: 4px;
+}
+
+.item-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
   background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--b3-theme-background);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+}
+
+.item-nav-indicator {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  min-width: 32px;
+  text-align: center;
+  user-select: none;
+}
+
+.tag-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 8px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
-  margin-left: auto;
-  margin-right: 4px;
+  height: 16px;
+  white-space: nowrap;
+
+  &.level-l1 {
+    background: color-mix(in srgb, var(--b3-card-success-background) 50%, transparent);
+    color: var(--b3-card-success-color);
+  }
+  &.level-l2 {
+    background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
+    color: var(--b3-card-warning-color);
+  }
+  &.level-l3 {
+    background: color-mix(in srgb, var(--b3-card-error-background) 50%, transparent);
+    color: var(--b3-card-error-color);
+  }
+}
+
+.group-tag {
+  background: color-mix(in srgb, var(--b3-card-warning-background) 50%, transparent);
+  color: var(--b3-card-warning-color);
+}
+
+.priority-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: help;
+  margin-top: 2px;
 }
 </style>

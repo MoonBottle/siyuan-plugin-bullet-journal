@@ -2,22 +2,22 @@
  * 斜杠命令工具函数
  */
 
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { useProjectStore } from '@/stores';
-import { generateSlashPatterns, processLineText } from './stringUtils';
+import type { Item } from '@/types/models'
+import { useProjectStore } from '@/stores'
+import { getSharedPinia } from '@/utils/sharedPinia'
 
-import type { Item } from '@/types/models';
+import { processLineText } from './stringUtils'
 
-export { generateSlashPatterns, processLineText };
+export { processLineText }
 
 /**
  * 格式化日期为 YYYY-MM-DD
  */
 export function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**
@@ -26,16 +26,16 @@ export function formatDate(date: Date): string {
  * 包括 siblingItems 中的日期时间
  */
 export async function extractDatesFromBlock(
-  blockId: string
-): Promise<Array<{ date: string; startDateTime?: string; endDateTime?: string }>> {
-  const pinia = getSharedPinia();
+  blockId: string,
+): Promise<Array<{ date: string, startDateTime?: string, endDateTime?: string }>> {
+  const pinia = getSharedPinia()
   if (!pinia) {
-    console.log('[JTDBG][extractDatesFromBlock] no pinia', { blockId });
-    return [];
+    console.log('[JTDBG][extractDatesFromBlock] no pinia', { blockId })
+    return []
   }
 
-  const projectStore = useProjectStore(pinia);
-  const item = projectStore.getItemByBlockId(blockId);
+  const projectStore = useProjectStore(pinia)
+  const item = projectStore.getItemByBlockId(blockId)
   console.log('[JTDBG][extractDatesFromBlock] lookup', {
     blockId,
     found: !!item,
@@ -52,7 +52,7 @@ export async function extractDatesFromBlock(
           isTaskList: item.isTaskList,
         }
       : null,
-  });
+  })
   console.log(`[JTDBG][extractDatesFromBlock][lookup.json] ${JSON.stringify({
     blockId,
     found: !!item,
@@ -69,7 +69,7 @@ export async function extractDatesFromBlock(
           isTaskList: item.isTaskList,
         }
       : null,
-  })}`);
+  })}`)
   console.log(`[JTDBG] extractDatesFromBlock.lookup ${JSON.stringify({
     blockId,
     found: !!item,
@@ -86,37 +86,41 @@ export async function extractDatesFromBlock(
           isTaskList: item.isTaskList,
         }
       : null,
-  })}`);
+  })}`)
 
   if (item) {
-    const items: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
-      { date: item.date, startDateTime: item.startDateTime, endDateTime: item.endDateTime }
-    ];
+    const items: Array<{ date: string, startDateTime?: string, endDateTime?: string }> = [
+      {
+        date: item.date,
+        startDateTime: item.startDateTime,
+        endDateTime: item.endDateTime,
+      },
+    ]
     // 添加 siblingItems 中的日期时间
     if (item.siblingItems) {
-      items.push(...item.siblingItems.map(s => ({
+      items.push(...item.siblingItems.map((s) => ({
         date: s.date,
         startDateTime: s.startDateTime,
-        endDateTime: s.endDateTime
-      })));
+        endDateTime: s.endDateTime,
+      })))
     }
     console.log('[JTDBG][extractDatesFromBlock] result', {
       blockId,
       items,
-    });
+    })
     console.log(`[JTDBG][extractDatesFromBlock][result.json] ${JSON.stringify({
       blockId,
       items,
-    })}`);
+    })}`)
     console.log(`[JTDBG] extractDatesFromBlock.result ${JSON.stringify({
       blockId,
       items,
-    })}`);
-    return items;
+    })}`)
+    return items
   }
 
-  console.log('[JTDBG][extractDatesFromBlock] no item found', { blockId });
-  return [];
+  console.log('[JTDBG][extractDatesFromBlock] no item found', { blockId })
+  return []
 }
 
 /**
@@ -127,39 +131,39 @@ export async function extractDatesFromBlock(
  */
 export function findNearestDate(items: Array<{ date: string }>): string {
   if (items.length === 0) {
-    return formatDate(new Date()); // 今天
+    return formatDate(new Date()) // 今天
   }
   if (items.length === 1) {
-    return items[0].date;
+    return items[0].date
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayTime = today.getTime();
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayTime = today.getTime()
 
-  let nearestDate = items[0].date;
-  let minDiff = Math.abs(new Date(items[0].date).getTime() - todayTime);
-  let isAfterToday = new Date(items[0].date).getTime() >= todayTime;
+  let nearestDate = items[0].date
+  let minDiff = Math.abs(new Date(items[0].date).getTime() - todayTime)
+  let isAfterToday = new Date(items[0].date).getTime() >= todayTime
 
   for (let i = 1; i < items.length; i++) {
-    const dateTime = new Date(items[i].date).getTime();
-    const diff = Math.abs(dateTime - todayTime);
-    const afterToday = dateTime >= todayTime;
+    const dateTime = new Date(items[i].date).getTime()
+    const diff = Math.abs(dateTime - todayTime)
+    const afterToday = dateTime >= todayTime
 
     // 如果间隔更小，更新最近日期
     if (diff < minDiff) {
-      minDiff = diff;
-      nearestDate = items[i].date;
-      isAfterToday = afterToday;
+      minDiff = diff
+      nearestDate = items[i].date
+      isAfterToday = afterToday
     }
     // 如果间隔相同，优先取今天之后的日期
     else if (diff === minDiff && afterToday && !isAfterToday) {
-      nearestDate = items[i].date;
-      isAfterToday = true;
+      nearestDate = items[i].date
+      isAfterToday = true
     }
   }
 
-  return nearestDate;
+  return nearestDate
 }
 
 /**
@@ -167,11 +171,11 @@ export function findNearestDate(items: Array<{ date: string }>): string {
  * 直接从 pinia store 中获取，避免重新解析
  */
 export async function extractItemFromBlock(blockId: string): Promise<Item | null> {
-  const pinia = getSharedPinia();
-  if (!pinia) return null;
+  const pinia = getSharedPinia()
+  if (!pinia) return null
 
-  const projectStore = useProjectStore(pinia);
-  const item = projectStore.getItemByBlockId(blockId);
+  const projectStore = useProjectStore(pinia)
+  const item = projectStore.getItemByBlockId(blockId)
 
-  return item || null;
+  return item || null
 }

@@ -1,9 +1,18 @@
 // @vitest-environment happy-dom
 
-import { createApp, nextTick } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
 
-const mockOpenCustomTab = vi.fn();
+const mockOpenCustomTab = vi.fn()
 const mockProjectStore = {
   getTodayPomodoros: vi.fn(() => [{ id: '1' }]),
   getTodayFocusMinutes: vi.fn(() => 10),
@@ -13,23 +22,23 @@ const mockProjectStore = {
     estimatedMinutes: 145,
     actualMinutes: 10,
   })),
-};
+}
 
 vi.mock('@/stores', () => ({
   useProjectStore: () => mockProjectStore,
-}));
+}))
 
 vi.mock('@/main', () => ({
   usePlugin: () => ({
     openCustomTab: mockOpenCustomTab,
   }),
-}));
+}))
 
 vi.mock('@/constants', () => ({
   TAB_TYPES: {
     FOCUS_WORKBENCH: 'bullet-journal-focus-workbench',
   },
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
@@ -39,57 +48,57 @@ vi.mock('@/i18n', () => ({
         todayFocusDuration: '今日专注总时长',
         totalPomodoros: '历史专注总次数',
         totalFocusDuration: '累计专注总时长',
-      };
+      }
     }
     if (key === 'focusPlan') {
       return {
         estimatedShort: '预计',
         variance: '偏差',
-      };
+      }
     }
     if (key === 'focusWorkbench') {
       return {
         openReview: '打开专注工作台',
-      };
+      }
     }
-    return {};
+    return {}
   }),
-}));
+}))
 
 async function mountComponent() {
-  const { default: PomodoroStats } = await import('@/components/pomodoro/PomodoroStats.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(PomodoroStats);
-  app.mount(container);
-  await nextTick();
+  const { default: PomodoroStats } = await import('@/components/pomodoro/PomodoroStats.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(PomodoroStats)
+  app.mount(container)
+  await nextTick()
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('PomodoroStats', () => {
+describe('pomodoroStats', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('clicking estimated or variance card opens focus review tab', async () => {
-    const mounted = await mountComponent();
+    const mounted = await mountComponent()
 
     expect(mounted.container.querySelector('[aria-label="打开专注工作台"]')).toBeTruthy();
 
     (mounted.container.querySelector('[data-testid="focus-workbench-entry-estimated"]') as HTMLButtonElement).click();
-    (mounted.container.querySelector('[data-testid="focus-workbench-entry-variance"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-entry-variance"]') as HTMLButtonElement).click()
 
-    expect(mockOpenCustomTab).toHaveBeenCalledTimes(2);
-    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(1, 'bullet-journal-focus-workbench');
-    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(2, 'bullet-journal-focus-workbench');
+    expect(mockOpenCustomTab).toHaveBeenCalledTimes(2)
+    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(1, 'bullet-journal-focus-workbench')
+    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(2, 'bullet-journal-focus-workbench')
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

@@ -1,1 +1,1 @@
-export { default as vSwipe } from './vSwipe';
+export { default as vSwipe } from './vSwipe'

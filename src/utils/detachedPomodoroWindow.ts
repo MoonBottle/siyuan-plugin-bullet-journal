@@ -1,123 +1,143 @@
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
+import {
+  ICON_CHECK,
+  ICON_COFFEE,
+  ICON_PAUSE,
+  ICON_PLAY,
+  ICON_SKIP_BREAK,
+  ICON_TOMATO,
+} from '@/constants/icons'
 
-export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete';
+export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete'
 
 export interface DetachedPomodoroWindowHost {
-  isAvailable(): boolean;
-  show(state: FloatingPomodoroViewState): void;
-  update(state: FloatingPomodoroViewState): void;
-  hide(): void;
-  destroy(): void;
+  isAvailable: () => boolean
+  show: (state: FloatingPomodoroViewState) => void
+  update: (state: FloatingPomodoroViewState) => void
+  hide: () => void
+  destroy: () => void
 }
 
 interface RemoteLike {
-  BrowserWindow: BrowserWindowConstructorLike;
+  BrowserWindow: BrowserWindowConstructorLike
   screen?: {
     getPrimaryDisplay?: () => {
       workArea?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      };
-    };
-  };
+        x: number
+        y: number
+        width: number
+        height: number
+      }
+    }
+  }
 }
 
 interface BrowserWindowConstructorLike {
-  new (options: Record<string, unknown>): BrowserWindowLike;
-  getAllWindows?: () => BrowserWindowLike[];
+  new (options: Record<string, unknown>): BrowserWindowLike
+  getAllWindows?: () => BrowserWindowLike[]
 }
 
 interface BrowserWindowLike {
-  loadURL?: (url: string) => void;
-  showInactive?: () => void;
-  show?: () => void;
-  close?: () => void;
-  isDestroyed?: () => boolean;
-  isVisible?: () => boolean;
+  loadURL?: (url: string) => void
+  showInactive?: () => void
+  show?: () => void
+  close?: () => void
+  isDestroyed?: () => boolean
+  isVisible?: () => boolean
   webContents?: {
-    executeJavaScript?: (code: string) => Promise<unknown> | unknown;
-    on?: (event: string, listener: (...args: any[]) => void) => void;
-  };
-  on?: (event: string, listener: (...args: any[]) => void) => void;
-  once?: (event: string, listener: (...args: any[]) => void) => void;
-  setAlwaysOnTop?: (flag: boolean, level?: string) => void;
-  getTitle?: () => string;
-  setPosition?: (x: number, y: number) => void;
+    executeJavaScript?: (code: string) => Promise<unknown> | unknown
+    on?: (event: string, listener: (...args: any[]) => void) => void
+  }
+  on?: (event: string, listener: (...args: any[]) => void) => void
+  once?: (event: string, listener: (...args: any[]) => void) => void
+  setAlwaysOnTop?: (flag: boolean, level?: string) => void
+  getTitle?: () => string
+  getPosition?: () => [number, number]
+  setPosition?: (x: number, y: number) => void
   setVisibleOnAllWorkspaces?: (
     visible: boolean,
-    options?: { visibleOnFullScreen?: boolean }
-  ) => void;
+    options?: { visibleOnFullScreen?: boolean },
+  ) => void
 }
 
 interface DetachedPomodoroWindowSupportInput {
-  frontEnd: string | undefined;
-  runtimeRequire?: ((id: string) => any) | undefined;
+  frontEnd: string | undefined
+  runtimeRequire?: ((id: string) => any) | undefined
 }
 
 interface CreateDetachedPomodoroWindowHostOptions
   extends DetachedPomodoroWindowSupportInput {
-  createMarkup: () => string;
+  createMarkup: () => string
   applyViewState: (
     host: HTMLElement,
-    state: FloatingPomodoroViewState
-  ) => void;
-  onAction: (action: DetachedPomodoroAction) => void;
+    state: FloatingPomodoroViewState,
+  ) => void
+  onAction: (action: DetachedPomodoroAction) => void
 }
 
-const ROOT_ID = 'bullet-journal-detached-pomodoro-root';
-const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__';
-const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action';
-const DETACHED_HOST_CLASS = 'detached-floating-tomato';
-const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window';
-const DETACHED_WINDOW_WIDTH = 372;
-const DETACHED_WINDOW_HEIGHT = 84;
-const DETACHED_WINDOW_MARGIN_RIGHT = 24;
-const DETACHED_WINDOW_MARGIN_BOTTOM = 24;
-const THEME_VARIABLE_PREFIX = '--b3-';
+const ROOT_ID = 'bullet-journal-detached-pomodoro-root'
+const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__'
+const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action'
+const DETACHED_HOST_CLASS = 'detached-floating-tomato'
+const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window'
+const DETACHED_WINDOW_WIDTH = 372
+const DETACHED_WINDOW_HEIGHT = 84
+const DETACHED_WINDOW_MARGIN_RIGHT = 24
+const DETACHED_WINDOW_MARGIN_BOTTOM = 24
+const THEME_VARIABLE_PREFIX = '--b3-'
 
 export function detectDetachedPomodoroWindowSupport(
-  input: DetachedPomodoroWindowSupportInput
+  input: DetachedPomodoroWindowSupportInput,
 ): boolean {
   if (input.frontEnd !== 'desktop' || !input.runtimeRequire) {
-    return false;
+    return false
   }
 
   try {
-    const remote = input.runtimeRequire('@electron/remote');
-    return typeof remote?.BrowserWindow === 'function';
+    const remote = input.runtimeRequire('@electron/remote')
+    return typeof remote?.BrowserWindow === 'function'
   } catch {
-    return false;
+    return false
   }
 }
 
 export function createDetachedPomodoroWindowHost(
-  options: CreateDetachedPomodoroWindowHostOptions
+  options: CreateDetachedPomodoroWindowHostOptions,
 ): DetachedPomodoroWindowHost {
-  const remote = getRemote(options);
+  const remote = getRemote(options)
   if (!remote) {
-    return createNoopHost();
+    return createNoopHost()
   }
 
-  let detachedWindow: BrowserWindowLike | null = null;
-  let lastRenderedPayload: RenderedPayload | null = null;
+  let detachedWindow: BrowserWindowLike | null = null
+  let lastRenderedPayload: RenderedPayload | null = null
+  let savedPosition: { x: number, y: number } | null = null
 
   const handleActionMessage = (_event: unknown, channel: string, action: DetachedPomodoroAction) => {
     if (channel !== ACTION_CHANNEL) {
-      return;
+      return
     }
     if (action === 'pause' || action === 'resume' || action === 'complete') {
-      options.onAction(action);
+      options.onAction(action)
     }
-  };
+  }
 
-  const ensureWindow = () => {
+  const syncPayload = (payload: RenderedPayload) => {
+    const currentWindow = ensureWindow()
+    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`
+    currentWindow.webContents?.executeJavaScript?.(script)
+    currentWindow.showInactive?.()
+    if (!currentWindow.isVisible?.()) {
+      currentWindow.show?.()
+    }
+  }
+
+  function ensureWindow() {
     if (detachedWindow && !detachedWindow.isDestroyed?.()) {
-      return detachedWindow;
+      return detachedWindow
     }
 
-    closeLingeringDetachedPomodoroWindows(remote);
+    closeLingeringDetachedPomodoroWindows(remote)
 
     detachedWindow = new remote.BrowserWindow({
       width: DETACHED_WINDOW_WIDTH,
@@ -140,87 +160,93 @@ export function createDetachedPomodoroWindowHost(
         contextIsolation: false,
         backgroundThrottling: false,
       },
-    });
+    })
 
-    positionDetachedWindow(detachedWindow, remote);
-    detachedWindow.setAlwaysOnTop?.(true, 'screen-saver');
-    detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true });
-    detachedWindow.webContents?.on?.('ipc-message', handleActionMessage);
+    if (savedPosition) {
+      detachedWindow.setPosition?.(savedPosition.x, savedPosition.y)
+    }
+    else {
+      positionDetachedWindow(detachedWindow, remote)
+    }
+    detachedWindow.setAlwaysOnTop?.(true, 'screen-saver')
+    detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true })
+    detachedWindow.on?.('moved', () => {
+      const pos = detachedWindow?.getPosition?.()
+      if (pos) {
+        savedPosition = {
+          x: pos[0],
+          y: pos[1],
+        }
+      }
+    })
+    detachedWindow.webContents?.on?.('ipc-message', handleActionMessage)
     detachedWindow.loadURL?.(
-      `data:text/html;charset=UTF-8,${encodeURIComponent(buildDetachedWindowHtml())}`
-    );
+      `data:text/html;charset=UTF-8,${encodeURIComponent(buildDetachedWindowHtml())}`,
+    )
     detachedWindow.once?.('ready-to-show', () => {
-      detachedWindow?.showInactive?.();
+      detachedWindow?.showInactive?.()
       if (!detachedWindow?.isVisible?.()) {
-        detachedWindow?.show?.();
+        detachedWindow?.show?.()
       }
       if (lastRenderedPayload) {
-        syncPayload(lastRenderedPayload);
+        syncPayload(lastRenderedPayload)
       }
-    });
+    })
 
-    return detachedWindow;
-  };
+    return detachedWindow
+  }
 
   const renderPayload = (state: FloatingPomodoroViewState): RenderedPayload => {
-    const host = document.createElement('div');
-    host.className = `floating-tomato-btn ${DETACHED_HOST_CLASS}`;
-    host.innerHTML = options.createMarkup();
-    options.applyViewState(host, state);
+    const host = document.createElement('div')
+    host.className = `floating-tomato-btn ${DETACHED_HOST_CLASS}`
+    host.innerHTML = options.createMarkup()
+    options.applyViewState(host, state)
     return {
       className: host.className,
       innerHTML: host.innerHTML,
       themeStyleText: collectSiyuanThemeStyleText(),
+      tooltipCssRules: collectTooltipCssRules(),
       state: {
         phase: state.phase,
         isPaused: state.isPaused,
+        deadlineTimestamp: state.deadlineTimestamp,
       },
-    };
-  };
-
-  const syncPayload = (payload: RenderedPayload) => {
-    const currentWindow = ensureWindow();
-    const script = `window.${UPDATE_FN}(${JSON.stringify(payload)});`;
-    currentWindow.webContents?.executeJavaScript?.(script);
-    currentWindow.showInactive?.();
-    if (!currentWindow.isVisible?.()) {
-      currentWindow.show?.();
     }
-  };
+  }
 
   return {
     isAvailable: () => true,
     show: (state) => {
-      lastRenderedPayload = renderPayload(state);
-      syncPayload(lastRenderedPayload);
+      lastRenderedPayload = renderPayload(state)
+      syncPayload(lastRenderedPayload)
     },
     update: (state) => {
-      lastRenderedPayload = renderPayload(state);
-      syncPayload(lastRenderedPayload);
+      lastRenderedPayload = renderPayload(state)
+      syncPayload(lastRenderedPayload)
     },
     hide: () => {
-      closeDetachedWindow(detachedWindow);
-      detachedWindow = null;
+      closeDetachedWindow(detachedWindow)
+      detachedWindow = null
     },
     destroy: () => {
-      closeDetachedWindow(detachedWindow);
-      detachedWindow = null;
-      lastRenderedPayload = null;
+      closeDetachedWindow(detachedWindow)
+      detachedWindow = null
+      lastRenderedPayload = null
     },
-  };
+  }
 }
 
 function getRemote(
-  options: DetachedPomodoroWindowSupportInput
+  options: DetachedPomodoroWindowSupportInput,
 ): RemoteLike | null {
   if (!detectDetachedPomodoroWindowSupport(options)) {
-    return null;
+    return null
   }
 
   try {
-    return options.runtimeRequire?.('@electron/remote') ?? null;
+    return options.runtimeRequire?.('@electron/remote') ?? null
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -231,78 +257,101 @@ function createNoopHost(): DetachedPomodoroWindowHost {
     update: () => {},
     hide: () => {},
     destroy: () => {},
-  };
+  }
 }
 
 function closeDetachedWindow(windowInstance: BrowserWindowLike | null) {
   if (!windowInstance || windowInstance.isDestroyed?.()) {
-    return;
+    return
   }
 
-  windowInstance.close?.();
+  windowInstance.close?.()
 }
 
 function closeLingeringDetachedPomodoroWindows(remote: RemoteLike) {
-  const allWindows = remote.BrowserWindow.getAllWindows?.() ?? [];
+  const allWindows = remote.BrowserWindow.getAllWindows?.() ?? []
 
   for (const windowInstance of allWindows) {
     if (windowInstance.isDestroyed?.()) {
-      continue;
+      continue
     }
 
     if (windowInstance.getTitle?.() !== DETACHED_WINDOW_TITLE) {
-      continue;
+      continue
     }
 
-    windowInstance.close?.();
+    windowInstance.close?.()
   }
 }
 
 function positionDetachedWindow(
   windowInstance: BrowserWindowLike,
-  remote: RemoteLike
+  remote: RemoteLike,
 ) {
-  const workArea = remote.screen?.getPrimaryDisplay?.()?.workArea;
+  const workArea = remote.screen?.getPrimaryDisplay?.()?.workArea
   if (!workArea) {
-    return;
+    return
   }
 
   const x =
-    workArea.x +
-    Math.max(0, workArea.width - DETACHED_WINDOW_WIDTH - DETACHED_WINDOW_MARGIN_RIGHT);
+    workArea.x
+    + Math.max(0, workArea.width - DETACHED_WINDOW_WIDTH - DETACHED_WINDOW_MARGIN_RIGHT)
   const y =
-    workArea.y +
-    Math.max(0, workArea.height - DETACHED_WINDOW_HEIGHT - DETACHED_WINDOW_MARGIN_BOTTOM);
+    workArea.y
+    + Math.max(0, workArea.height - DETACHED_WINDOW_HEIGHT - DETACHED_WINDOW_MARGIN_BOTTOM)
 
-  windowInstance.setPosition?.(x, y);
+  windowInstance.setPosition?.(x, y)
 }
 
 function collectSiyuanThemeStyleText(): string {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return '';
+    return ''
   }
 
-  const computedStyle = window.getComputedStyle?.(document.documentElement);
+  const computedStyle = window.getComputedStyle?.(document.documentElement)
   if (!computedStyle) {
-    return '';
+    return ''
   }
 
-  const declarations: string[] = [];
+  const declarations: string[] = []
   for (let index = 0; index < computedStyle.length; index += 1) {
-    const propertyName = computedStyle.item(index);
+    const propertyName = computedStyle.item(index)
     if (!propertyName.startsWith(THEME_VARIABLE_PREFIX)) {
-      continue;
+      continue
     }
 
-    const propertyValue = computedStyle.getPropertyValue(propertyName).trim();
+    const propertyValue = computedStyle.getPropertyValue(propertyName).trim()
     if (!propertyValue) {
-      continue;
+      continue
     }
 
-    declarations.push(`${propertyName}: ${propertyValue};`);
+    declarations.push(`${propertyName}: ${propertyValue};`)
   }
 
-  return declarations.join(' ');
+  return declarations.join(' ')
+}
+
+/** 收集主窗口中所有包含 .b3-tooltips 的样式规则 */
+function collectTooltipCssRules(): string {
+  if (typeof document === 'undefined') {
+    return ''
+  }
+
+  const rules: string[] = []
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        const selectorText = (rule as CSSStyleRule).selectorText
+        if (selectorText && selectorText.includes('.b3-tooltips')) {
+          rules.push(rule.cssText)
+        }
+      }
+    } catch {
+      // 跨域样式表无法访问，忽略
+    }
+  }
+
+  return rules.join('\n')
 }
 
 function buildDetachedWindowHtml(): string {
@@ -311,15 +360,19 @@ function buildDetachedWindowHtml(): string {
   <head>
     <meta charset="utf-8" />
     <style>
-      html, body {
+      html {
         margin: 0;
         padding: 0;
         background: transparent;
-        overflow: hidden;
         width: 100%;
         height: 100%;
       }
       body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -330,6 +383,7 @@ function buildDetachedWindowHtml(): string {
       }
       #${ROOT_ID} {
         display: block;
+        overflow: hidden;
       }
       .floating-tomato-btn {
         display: block;
@@ -364,13 +418,13 @@ function buildDetachedWindowHtml(): string {
         justify-content: center;
         width: 18px;
         height: 18px;
-        color: var(--b3-theme-primary);
         flex: 0 0 auto;
       }
       .floating-tomato-icon svg {
         width: 16px;
         height: 16px;
         fill: currentColor;
+        stroke: currentColor;
       }
       .floating-tomato-summary {
         min-width: 0;
@@ -453,7 +507,7 @@ function buildDetachedWindowHtml(): string {
         display: none !important;
       }
       .floating-tomato-action--complete {
-        color: var(--b3-theme-primary);
+        color: var(--b3-theme-on-surface);
         background: color-mix(
           in srgb,
           var(--b3-theme-primary) 12%,
@@ -472,38 +526,68 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-btn.is-paused .floating-tomato-status {
         color: var(--b3-card-warning-color);
       }
-      .sy-icon-tooltip {
+      /* tooltip 包装容器：position: fixed 定位到触发元素位置，逃逸 overflow 裁剪 */
+      #sy-tooltip-wrapper {
         position: fixed;
-        z-index: 2147483647;
-        max-width: min(300px, 90vw);
-        padding: 6px 10px;
-        background: var(--b3-tooltip-background, #2f2f2f);
-        color: var(--b3-tooltip-color, #fff);
-        font-size: 12px;
-        line-height: 1.4;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        white-space: nowrap;
         pointer-events: none;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.15s, visibility 0.15s;
+        z-index: 2147483647;
       }
-      .sy-icon-tooltip.visible {
-        opacity: 1;
-        visibility: visible;
+      /* 内部 .b3-tooltips 元素的覆盖，与主窗口 index.scss 对齐 */
+      .sy-fixed-tooltip {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible !important;
+        cursor: default !important;
+      }
+      .sy-fixed-tooltip::after {
+        opacity: 0 !important;
+        transform: scale(0.9) !important;
+        transition: opacity 150ms cubic-bezier(0, 0, 0.2, 1), transform 150ms cubic-bezier(0, 0, 0.2, 1) !important;
+      }
+      .sy-fixed-tooltip:hover::after {
+        opacity: 0 !important;
+        transform: scale(0.9) !important;
+      }
+      .sy-fixed-tooltip.sy-tip-visible::after {
+        opacity: 1 !important;
+        transform: scale(1) !important;
       }
     </style>
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">${ICON_TOMATO}${ICON_COFFEE}${ICON_PLAY}${ICON_PAUSE}${ICON_CHECK}${ICON_SKIP_BREAK}</svg>
     <div id="${ROOT_ID}"></div>
-    <div id="bullet-journal-detached-tooltip" class="sy-icon-tooltip"></div>
+    <div id="sy-tooltip-wrapper"><span class="b3-tooltips b3-tooltips__n sy-fixed-tooltip"></span></div>
     <script>
       (() => {
         const root = document.getElementById('${ROOT_ID}');
-        const tooltip = document.getElementById('bullet-journal-detached-tooltip');
+        const tooltipWrapper = document.getElementById('sy-tooltip-wrapper');
+        const tooltipInner = tooltipWrapper?.firstElementChild;
         let currentState = { phase: 'focus', isPaused: false };
         let activeTooltipTrigger = null;
+        let countdownDeadline = null;
+        let countdownIntervalId = null;
+        const formatClockFromDeadline = () => {
+          if (countdownDeadline === null || !Number.isFinite(countdownDeadline)) return null;
+          const diffMs = countdownDeadline - Date.now();
+          if (diffMs <= 0) return '00:00';
+          const totalSec = Math.floor(diffMs / 1000);
+          const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+          const ss = String(totalSec % 60).padStart(2, '0');
+          return mm + ':' + ss;
+        };
+        const tickClock = () => {
+          if (currentState.isPaused) return;
+          const text = formatClockFromDeadline();
+          if (text === null) return;
+          const el = document.querySelector('.floating-tomato-primary');
+          if (el) el.textContent = text;
+        };
+        const startLocalTimer = () => {
+          if (countdownIntervalId !== null) return;
+          countdownIntervalId = setInterval(tickClock, 1000);
+        };
         const sendAction = (action) => {
           try {
             const electron = window.require?.('electron');
@@ -512,36 +596,67 @@ function buildDetachedWindowHtml(): string {
         };
         const hideTooltip = () => {
           activeTooltipTrigger = null;
-          tooltip?.classList.remove('visible');
+          if (tooltipInner) {
+            // 只移除可见性类，保留 aria-label 和位置让淡出动画在原位完成
+            tooltipInner.classList.remove('sy-tip-visible');
+          }
         };
-        const showTooltip = (el, text) => {
-          if (!tooltip || !text) return;
+        const showTooltip = (el, text, skipHide = false) => {
+          if (!tooltipWrapper || !tooltipInner || !text) return;
+          if (!skipHide) hideTooltip();
           activeTooltipTrigger = el;
-          tooltip.textContent = text;
+          tooltipInner.setAttribute('aria-label', text);
+          tooltipInner.className = 'b3-tooltips b3-tooltips__n sy-fixed-tooltip';
           const rect = el.getBoundingClientRect();
-          const margin = 8;
-          tooltip.style.left = rect.left + rect.width / 2 + 'px';
-          tooltip.style.top = rect.top - 4 + 'px';
-          tooltip.style.transform = 'translate(-50%, -100%)';
-          tooltip.classList.add('visible');
+          tooltipWrapper.style.left = rect.left + 'px';
+          tooltipWrapper.style.top = rect.top + 'px';
+          tooltipWrapper.style.width = rect.width + 'px';
+          tooltipWrapper.style.height = rect.height + 'px';
+          tooltipInner.classList.add('sy-tip-visible');
           requestAnimationFrame(() => {
             if (activeTooltipTrigger !== el) return;
-            const tipRect = tooltip.getBoundingClientRect();
-            if (tipRect.right > window.innerWidth - margin) {
-              tooltip.style.left = window.innerWidth - tipRect.width / 2 - margin + 'px';
+            const tipRect = tooltipInner.getBoundingClientRect();
+            if (tipRect.right > window.innerWidth - 8) {
+              tooltipWrapper.style.left = (window.innerWidth - tipRect.width - 8) + 'px';
             }
-            if (tipRect.left < margin) {
-              tooltip.style.left = tipRect.width / 2 + margin + 'px';
+            if (tipRect.left < 8) {
+              tooltipWrapper.style.left = '8px';
             }
           });
         };
         window.${UPDATE_FN} = (payload) => {
           if (!root || !payload) return;
           document.documentElement.style.cssText = payload.themeStyleText || '';
+          // 注入主题的 .b3-tooltips 样式规则
+          if (payload.tooltipCssRules) {
+            let tooltipStyle = document.getElementById('sy-tooltip-theme-rules');
+            if (!tooltipStyle) {
+              tooltipStyle = document.createElement('style');
+              tooltipStyle.id = 'sy-tooltip-theme-rules';
+              document.head.appendChild(tooltipStyle);
+            }
+            tooltipStyle.textContent = payload.tooltipCssRules;
+          }
           currentState = payload.state || currentState;
+          countdownDeadline = (payload.state && typeof payload.state.deadlineTimestamp === 'number')
+            ? payload.state.deadlineTimestamp
+            : null;
+          startLocalTimer();
           root.className = payload.className || '';
+          // 保存当前 tooltip 状态，innerHTML 替换后恢复
+          const savedTooltipText = activeTooltipTrigger?.dataset?.tooltip || null;
           root.innerHTML = payload.innerHTML || '';
-          hideTooltip();
+          // innerHTML 替换后触发元素被移除，在新 DOM 中查找同 data-tooltip 元素并恢复
+          if (savedTooltipText) {
+            const newEl = root.querySelector('[data-tooltip="' + savedTooltipText + '"]');
+            if (newEl instanceof HTMLElement) {
+              // 跳过 hide，直接更新位置和内容，避免闪烁
+              showTooltip(newEl, savedTooltipText, true);
+            } else {
+              hideTooltip();
+            }
+          }
+          tickClock();
         };
         document.addEventListener('click', (event) => {
           const actionEl = event.target instanceof Element
@@ -578,15 +693,17 @@ function buildDetachedWindowHtml(): string {
       })();
     </script>
   </body>
-</html>`;
+</html>`
 }
 
 interface RenderedPayload {
-  className: string;
-  innerHTML: string;
-  themeStyleText: string;
+  className: string
+  innerHTML: string
+  themeStyleText: string
+  tooltipCssRules: string
   state: {
-    phase: FloatingPomodoroViewState['phase'];
-    isPaused: boolean;
-  };
+    phase: FloatingPomodoroViewState['phase']
+    isPaused: boolean
+    deadlineTimestamp?: number
+  }
 }

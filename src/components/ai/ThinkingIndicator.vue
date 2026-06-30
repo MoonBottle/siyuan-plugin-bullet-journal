@@ -13,17 +13,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
+import { computed } from 'vue'
+import { t } from '@/i18n'
 
 const props = defineProps<{
   /** 自定义标题，默认使用 i18n 的 thinkingTitle */
-  title?: string;
-}>();
+  title?: string
+}>()
 
 const title = computed(() => {
-  return props.title ?? (t('aiChat') as Record<string, string>).thinkingTitle ?? '思考中';
-});
+  return props.title ?? (t('aiChat') as Record<string, string>).thinkingTitle ?? '思考中'
+})
 </script>
 
 <style lang="scss" scoped>
@@ -80,7 +80,9 @@ const title = computed(() => {
 }
 
 @keyframes loading-bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
   40% {

@@ -30,6 +30,7 @@ npm run lint:fix     # Lint and auto-fix
 ### Plugin Entry & Lifecycle
 
 `src/index.ts` exports `TaskAssistantPlugin extends Plugin` (SiYuan's plugin base class). `onload()`:
+
 1. Inits i18n and settings
 2. Creates a **shared Pinia instance** (all tabs/docks share one store to prevent state divergence via `src/utils/sharedPinia.ts`)
 3. Registers 4 Tabs (Calendar, Gantt, Project, PomodoroStats) and 3 Docks (Todo, AI Chat, Pomodoro)
@@ -59,6 +60,7 @@ SiYuan notes (markdown with markers)
 ### Build Pipeline
 
 Two separate Vite builds:
+
 1. **MCP server** (`vite.mcp.config.ts`) — ESM, Node 18 target, bundles all deps into `dist/mcp-server.js`
 2. **Plugin** (`vite.config.ts`) — CJS library (SiYuan requirement), Vue + SCSS, static file copy. Production removes console.log and creates `package.zip`
 
@@ -81,3 +83,27 @@ Vue 3.5 + Pinia 3 + TypeScript 5.8 + Vite 8 + SASS | FullCalendar 6 | dhtmlx-gan
 - **i18n:** Custom lightweight system — `t('key.path')` function, JSON files in `src/i18n/`
 - **Testing:** Vitest with `@` alias; `siyuan` module mocked at `test/__mocks__/siyuan.ts`
 - **Custom ESLint plugin:** `src/utils/eslint/i18n-validate-keys.mjs` validates i18n key usage
+
+## 重要
+- 禁止使用动态 import，必须使用静态 import
+- 修改后需要验证 npm run test 是否成功
+- 修改后需要验证 npm run lint 是否成功
+- 修改后需要验证 npm run typecheck 是否成功
+- PowerShell 不支持 heredoc 语法
+
+反例：
+```
+git add src/components/pomodoro/PomodoroTimerDialog.vue && git commit -m "$(cat <<'EOF'
+style(pomodoro): 移除待办事项列表的最大高度限制
+
+左侧待办事项列表高度现在可以自适应右侧内容高度，
+避免在右侧内容较高时出现不必要的滚动条。
+
+EOF
+)"
+```
+
+正例：
+```
+git add src/components/pomodoro/PomodoroTimerDialog.vue; git commit -m "style(pomodoro): 移除待办事项列表的最大高度限制`n`n左侧待办事项列表高度现在可以自适应右侧内容高度，`n避免在右侧内容较高时出现不必要的滚动条。"
+```

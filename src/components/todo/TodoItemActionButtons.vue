@@ -1,78 +1,92 @@
 <template>
-  <div v-if="showActions" class="todo-item-actions">
+  <div
+    v-if="showActions"
+    class="todo-item-actions"
+  >
     <button
-      v-if="showReminder"
+      v-if="showReminder && (!isReadonly || hasReminder)"
       class="action-btn"
-      :class="{ active: hasReminder, readonly: isReadonly }"
+      :class="{
+        active: hasReminder, readonly: isReadonly,
+      }"
       :disabled="isReadonly"
       :aria-label="reminderTooltip || reminderText"
       @mouseenter="handleShowTooltip($event, reminderTooltip || reminderText)"
       @mouseleave="handleHideTooltip"
-      @focus="handleShowTooltip($event, reminderTooltip || reminderText)"
-      @blur="handleHideTooltip"
-      @click.stop="$emit('set-reminder')"
+      @click.stop="$emit('setReminder')"
     >
-      <span class="action-icon">⏰</span>
+      <span class="action-icon"><svg><use xlink:href="#iconTaAlarmClock"></use></svg></span>
       <span class="action-text">{{ reminderText }}</span>
     </button>
 
     <button
-      v-if="showRecurring"
+      v-if="showRecurring && (!isReadonly || hasRecurring)"
       class="action-btn"
-      :class="{ active: hasRecurring, readonly: isReadonly }"
+      :class="{
+        active: hasRecurring, readonly: isReadonly,
+      }"
       :disabled="isReadonly"
       :aria-label="recurringTooltip || recurringText"
       @mouseenter="handleShowTooltip($event, recurringTooltip || recurringText)"
       @mouseleave="handleHideTooltip"
-      @focus="handleShowTooltip($event, recurringTooltip || recurringText)"
-      @blur="handleHideTooltip"
-      @click.stop="$emit('set-recurring')"
+      @click.stop="$emit('setRecurring')"
     >
-      <span class="action-icon">🔁</span>
+      <span class="action-icon"><svg><use xlink:href="#iconTaRepeat"></use></svg></span>
       <span class="action-text">{{ recurringText }}</span>
     </button>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import {
+  computed,
+  onBeforeUnmount,
+} from 'vue'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
-  hasReminder: boolean;
-  hasRecurring: boolean;
-  isReadonly: boolean;
-  showReminder: boolean;
-  showRecurring: boolean;
-  reminderText: string;
-  recurringText: string;
-  reminderTooltip?: string;
-  recurringTooltip?: string;
-}>();
+  hasReminder: boolean
+  hasRecurring: boolean
+  isReadonly: boolean
+  showReminder: boolean
+  showRecurring: boolean
+  reminderText: string
+  recurringText: string
+  reminderTooltip?: string
+  recurringTooltip?: string
+}>()
 
 defineEmits<{
-  'set-reminder': [];
-  'set-recurring': [];
-}>();
+  setReminder: []
+  setRecurring: []
+}>()
 
-const showActions = computed(() => props.showReminder || props.showRecurring);
+const showActions = computed(() => {
+  const showReminderBtn = props.showReminder && (!props.isReadonly || props.hasReminder)
+  const showRecurringBtn = props.showRecurring && (!props.isReadonly || props.hasRecurring)
+  return showReminderBtn || showRecurringBtn
+})
 
 function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
   if (!text)
-    return;
-  const target = event.currentTarget;
+    return
+  const target = event.currentTarget
   if (!(target instanceof HTMLElement))
-    return;
-  showIconTooltip(target, text);
+    return
+  showTooltip(target, text)
 }
 
 function handleHideTooltip() {
-  hideIconTooltip();
+  hideTooltip()
 }
 
 onBeforeUnmount(() => {
-  hideIconTooltip();
-});
+  hideTooltip()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -102,13 +116,12 @@ onBeforeUnmount(() => {
 
   &.active {
     background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
+    // border-color: var(--b3-theme-primary);
     color: var(--b3-theme-primary);
   }
 
   &.readonly {
     cursor: default;
-    opacity: 0.8;
 
     &:hover {
       background: var(--b3-theme-surface);
@@ -122,6 +135,16 @@ onBeforeUnmount(() => {
 }
 
 .action-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 </style>

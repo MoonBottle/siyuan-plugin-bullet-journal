@@ -17,7 +17,10 @@
           style="overscroll-behavior: contain; touch-action: pan-y;"
           @click.stop
         >
-          <div class="mobile-habit-detail-sheet__handle" aria-hidden="true"></div>
+          <div
+            class="mobile-habit-detail-sheet__handle"
+            aria-hidden="true"
+          ></div>
 
           <div class="mobile-habit-detail-sheet__header">
             <div
@@ -35,8 +38,8 @@
               @click="handleArchiveAction"
             >
               <svg
-                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
-                @mouseleave="hideIconTooltip"
+                @mouseenter="showTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+                @mouseleave="hideTooltip"
               ><use :xlink:href="habit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
             </button>
 
@@ -47,9 +50,9 @@
               @click="handleClose"
             >
               <svg
-                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
-                @mouseleave="hideIconTooltip"
-              ><use xlink:href="#iconCloseRound"></use></svg>
+                @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
+                @mouseleave="hideTooltip"
+              ><use xlink:href="#iconTaSquareX"></use></svg>
             </button>
           </div>
 
@@ -66,37 +69,43 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n';
-import type { Habit, HabitStats } from '@/types/models';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import { t } from '@/i18n'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
-  open: boolean;
-  habit: Habit | null;
-  selectedDate: string;
-  viewMonth: string;
-  stats: HabitStats | null | undefined;
-}>();
+  open: boolean
+  habit: Habit | null
+  selectedDate: string
+  viewMonth: string
+  stats: HabitStats | null | undefined
+}>()
 
 const emit = defineEmits<{
-  archive: [];
-  close: [];
-  unarchive: [];
-}>();
+  archive: []
+  close: []
+  unarchive: []
+}>()
 
 function handleArchiveAction() {
-  hideIconTooltip();
+  hideTooltip()
   if (props.habit?.archivedAt) {
-    emit('unarchive');
-    return;
+    emit('unarchive')
+    return
   }
 
-  emit('archive');
+  emit('archive')
 }
 
 function handleClose() {
-  hideIconTooltip();
-  emit('close');
+  hideTooltip()
+  emit('close')
 }
 </script>
 

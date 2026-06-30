@@ -3,20 +3,34 @@
  * 处理事项优先级的解析、生成和排序
  */
 
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
+
+const PRIORITY_EMOJI_RE = /[🔥🌱🍃]/gu
 
 /**
  * 优先级配置
  */
 export const PRIORITY_CONFIG: Record<PriorityLevel, {
-  emoji: string;
-  label: string;
-  sortOrder: number;
+  emoji: string
+  label: string
+  sortOrder: number
 }> = {
-  high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
-  medium: { emoji: '🌱', label: '中优先级', sortOrder: 1 },
-  low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
-};
+  high: {
+    emoji: '🔥',
+    label: '高优先级',
+    sortOrder: 0,
+  },
+  medium: {
+    emoji: '🌱',
+    label: '中优先级',
+    sortOrder: 1,
+  },
+  low: {
+    emoji: '🍃',
+    label: '低优先级',
+    sortOrder: 2,
+  },
+}
 
 /**
  * 从行内容解析优先级
@@ -24,17 +38,17 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
  * @returns PriorityLevel 或 undefined
  */
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
-  if (line.includes('🔥')) return 'high';
-  if (line.includes('🌱')) return 'medium';
-  if (line.includes('🍃')) return 'low';
-  return undefined;
+  if (line.includes('🔥')) return 'high'
+  if (line.includes('🌱')) return 'medium'
+  if (line.includes('🍃')) return 'low'
+  return undefined
 }
 
 /**
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌱🍃]/gu, '').trim();
+  return content.replace(PRIORITY_EMOJI_RE, '').trim()
 }
 
 /**
@@ -45,8 +59,8 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
     high: '🔥',
     medium: '🌱',
     low: '🍃',
-  };
-  return emojiMap[priority] || '';
+  }
+  return emojiMap[priority] || ''
 }
 
 /**
@@ -57,8 +71,8 @@ export function getPrioritySortOrder(priority?: PriorityLevel): number {
     high: 0,
     medium: 1,
     low: 2,
-  };
-  return priority !== undefined ? orderMap[priority] : 3;
+  }
+  return priority !== undefined ? orderMap[priority] : 3
 }
 
 /**
@@ -67,7 +81,7 @@ export function getPrioritySortOrder(priority?: PriorityLevel): number {
  */
 export function comparePriority(
   a?: PriorityLevel,
-  b?: PriorityLevel
+  b?: PriorityLevel,
 ): number {
-  return getPrioritySortOrder(a) - getPrioritySortOrder(b);
+  return getPrioritySortOrder(a) - getPrioritySortOrder(b)
 }

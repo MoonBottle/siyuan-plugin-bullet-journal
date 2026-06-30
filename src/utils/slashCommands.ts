@@ -3,202 +3,257 @@
  * 注册和管理所有斜杠命令
  */
 
-import { showMessage } from 'siyuan';
-import { createApp } from 'vue';
-import { t } from '@/i18n';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
-import { usePlugin } from '@/main';
+import type { HabitBlockWriter } from '@/services/habitService'
+import type { CustomSlashCommand } from '@/settings/types'
+import type {
+  CheckInRecord,
+  Habit,
+  Item,
+  ProjectDirectory,
+} from '@/types/models'
+
+import type {
+  BlockPatch,
+  BlockWriteContext,
+  InsertableBlockPatch,
+} from '@/utils/blockWriter'
+import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation'
+import dayjs from 'dayjs'
+import { showMessage } from 'siyuan'
+import { createApp } from 'vue'
 import {
-  generateSlashPatterns,
-  processLineText,
-  formatDate,
-  extractDatesFromBlock,
-  findNearestDate,
-  extractItemFromBlock
-} from '@/utils/slashCommandUtils';
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
-import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
-import dayjs from 'dayjs';
-import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/models';
-import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
-import { parsePriorityFromLine } from '@/parser/priorityParser';
-import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
+  getHPathByID,
+} from '@/api'
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue'
 import {
+  SLASH_COMMAND_FILTERS,
+  TAB_TYPES,
+} from '@/constants'
+import { t } from '@/i18n'
+import {
+  parseHabitLine,
+  parseHabitRecordLine,
+} from '@/parser/habitParser'
+import { parsePriorityFromLine } from '@/parser/priorityParser'
+import {
+  checkIn,
+  checkInCount,
+
+} from '@/services/habitService'
+import {
+  usePomodoroStore,
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import {
+
+
+
+
   insertBlockAfter,
   writeBlock,
-  type BlockPatch,
-  type DatePatch,
-  type InsertableBlockPatch,
-} from '@/utils/blockWriter';
-import { findSlashCommandStartOffset } from '@/utils/blockWriter/slashRange';
+} from '@/utils/blockWriter'
+import { getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange'
 import {
-  RefreshReasons,
+  createDialog,
+  showDatePickerDialog,
+  showFocusPlanDialog,
+  showHabitCreateDialog,
+  showItemDetailModal,
+  showPrioritySettingDialog,
+  showRecurringSettingDialog,
+  showReminderSettingDialog,
+} from '@/utils/dialog'
+import {
   createFullRefreshRequest,
+  RefreshReasons,
   submitRefreshRequest,
-} from '@/utils/refreshRequests';
-import { checkIn, checkInCount, type HabitBlockWriter } from '@/services/habitService';
-import type { CheckInRecord } from '@/types/models';
-import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
+} from '@/utils/refreshRequests'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import {
+  buildCandidateSemanticLine,
+  resolveItemForSlashCommand,
+} from '@/utils/slashCommandItemResolver'
+
+import {
+  extractDatesFromBlock,
+  findNearestDate,
+  formatDate,
+  processLineText,
+} from '@/utils/slashCommandUtils'
+
+const MULTI_WHITESPACE_RE = /\s+/gu
+const TASK_LIST_DONE_RE = /\[\s*x\s*\]/i
 
 function removeSlashCommandViaWriter(
   protyle: any,
   nodeElement: HTMLElement | null | undefined,
   options?: {
-    blockId?: string;
-    suffix?: string;
+    blockId?: string
+    listItemBlockId?: string
+    writeContext?: BlockWriteContext | null
   },
 ): Promise<boolean> {
-  const blockId = options?.blockId || nodeElement?.getAttribute('data-node-id');
-  if (!nodeElement || !blockId) {
-    return Promise.resolve(false);
+  const fallbackBlockId = options?.blockId || nodeElement?.getAttribute('data-node-id')
+  const writeContext = resolveSlashAwareWriteContext(
+    options?.writeContext
+    ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
+      blockId: fallbackBlockId,
+      listItemBlockId: options?.listItemBlockId,
+    }),
+    {
+      blockId: fallbackBlockId,
+      listItemBlockId: options?.listItemBlockId,
+      nodeElement,
+      protyle,
+    },
+  )
+
+  if (!writeContext) {
+    return Promise.resolve(false)
   }
-  return writeBlock(
-    { blockId, nodeElement, protyle },
-    options?.suffix
-      ? { type: 'removeSlashCommand', suffix: options.suffix }
-      : { type: 'removeSlashCommand' },
-  );
+  return writeBlock(writeContext, { type: 'removeSlashCommand' })
+}
+
+function captureDeferredSlashWriteContext(
+  protyle: any,
+  nodeElement: HTMLElement | null | undefined,
+  options?: {
+    blockId?: string
+    listItemBlockId?: string
+  },
+): BlockWriteContext | null {
+  const blockId = options?.blockId || nodeElement?.getAttribute('data-node-id')
+  if (!nodeElement || !blockId) {
+    return null
+  }
+
+  const context: BlockWriteContext = {
+    blockId,
+    listItemBlockId: options?.listItemBlockId,
+    nodeElement,
+    protyle,
+  }
+
+  const activeSlash = getActiveSlashRange()
+  if (!activeSlash) {
+    return context
+  }
+
+  const isCurrentBlock = activeSlash.blockId === blockId
+    || nodeElement.contains(activeSlash.range.startContainer)
+  if (!isCurrentBlock) {
+    return context
+  }
+
+  context.slashRange = activeSlash.range.cloneRange()
+  context.slashStartOffset = activeSlash.slashStartOffset
+  context.slashEndOffset = activeSlash.slashEndOffset
+  return context
+}
+
+function resolveSlashAwareWriteContext(
+  capturedContext: BlockWriteContext | null | undefined,
+  options: {
+    blockId?: string | null
+    listItemBlockId?: string
+    nodeElement?: HTMLElement | null
+    protyle?: any
+  },
+): BlockWriteContext | null {
+  const blockId = options.blockId || capturedContext?.blockId || options.nodeElement?.getAttribute('data-node-id')
+  const nodeElement = options.nodeElement ?? capturedContext?.nodeElement
+  if (!blockId || !nodeElement) {
+    return null
+  }
+
+  return {
+    blockId,
+    listItemBlockId: options.listItemBlockId ?? capturedContext?.listItemBlockId,
+    nodeElement,
+    protyle: options.protyle ?? capturedContext?.protyle,
+    slashRange: capturedContext?.slashRange,
+    slashStartOffset: capturedContext?.slashStartOffset,
+    slashEndOffset: capturedContext?.slashEndOffset,
+  }
 }
 
 function createCurrentBlockHabitWriter(
   protyle: any,
   nodeElement: HTMLElement | null | undefined,
 ): HabitBlockWriter | undefined {
-  const currentBlockId = nodeElement?.getAttribute('data-node-id');
+  const currentBlockId = nodeElement?.getAttribute('data-node-id')
   if (!currentBlockId) {
-    return undefined;
+    return undefined
   }
 
   return {
     insertAfter: (previousBlockId: string, patch: InsertableBlockPatch) => {
-      return insertBlockAfter(previousBlockId, patch);
+      return insertBlockAfter(previousBlockId, patch)
     },
     update: (blockId: string, patch: BlockPatch) => {
       if (blockId === currentBlockId) {
-        return writeBlock({ blockId, nodeElement, protyle }, patch);
+        return writeBlock({
+          blockId,
+          nodeElement,
+          protyle,
+        }, patch)
       }
-      return writeBlock({ blockId }, patch);
+      return writeBlock({ blockId }, patch)
     },
-  };
-}
-
-function cleanupActiveSlashCommandLocally(nodeElement?: HTMLElement | null): void {
-  const selection = window.getSelection();
-  const showText = typeof NodeFilter === 'undefined' ? 4 : NodeFilter.SHOW_TEXT;
-  const filterAccept = typeof NodeFilter === 'undefined' ? 1 : NodeFilter.FILTER_ACCEPT;
-  const filterSkip = typeof NodeFilter === 'undefined' ? 3 : NodeFilter.FILTER_SKIP;
-
-  let textNode: Text | null = null;
-  let currentOffset = 0;
-
-  if (selection && selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    if (range.startContainer.nodeType === Node.TEXT_NODE) {
-      textNode = range.startContainer as Text;
-      currentOffset = range.startOffset;
-    }
   }
-
-  if (!textNode && nodeElement) {
-    const walker = document.createTreeWalker(nodeElement, showText, {
-      acceptNode(node) {
-        return (node.textContent ?? '').trim().length > 0
-          ? filterAccept
-          : filterSkip;
-      },
-    });
-
-    while (walker.nextNode()) {
-      textNode = walker.currentNode as Text;
-    }
-
-    if (textNode) {
-      currentOffset = textNode.textContent?.length ?? 0;
-    }
-  }
-
-  if (!textNode) {
-    return;
-  }
-
-  const textContent = textNode.textContent || '';
-  const slashIndex = findSlashCommandStartOffset(textContent, currentOffset);
-  if (slashIndex === -1) {
-    return;
-  }
-
-  let deleteStart = slashIndex;
-  if (deleteStart > 0 && /\s/.test(textContent[deleteStart - 1])) {
-    deleteStart -= 1;
-  }
-
-  const newText = textContent.slice(0, deleteStart) + textContent.slice(currentOffset);
-  textNode.textContent = newText;
-
-  const blockElement = textNode.parentElement?.closest('[data-node-id]') as HTMLElement | null;
-  if (blockElement) {
-    const now = new Date();
-    const updated = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-    blockElement.setAttribute('updated', updated);
-  }
-
-  const nextRange = document.createRange();
-  nextRange.setStart(textNode, Math.min(deleteStart, newText.length));
-  nextRange.collapse(true);
-  selection?.removeAllRanges();
-  selection?.addRange(nextRange);
 }
 
 /**
  * 斜杠命令配置接口
  */
 export interface SlashCommandConfig {
-  pluginName: string;
-  openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void;
-  openPomodoroDock: () => void;
-  openTodoDock: () => void;
-  openHabitDock: (target?: HabitDockNavigationTarget) => void;
-  customSlashCommands?: CustomSlashCommand[];
+  pluginName: string
+  openCustomTab: (tabType: string, options?: { initialDate?: string, initialView?: string }) => void
+  openPomodoroDock: () => void
+  openTodoDock: () => void
+  openHabitDock: (target?: HabitDockNavigationTarget) => void
+  customSlashCommands?: CustomSlashCommand[]
 }
 
 function getAllHabits(): Habit[] {
   try {
-    const pinia = getSharedPinia() || undefined;
-    const projectStore = useProjectStore(pinia as any);
-    return projectStore.getHabits('');
+    const pinia = getSharedPinia() || undefined
+    const projectStore = useProjectStore(pinia as any)
+    return projectStore.getHabits('')
   } catch {
-    return [];
+    return []
   }
 }
 
 function findHabitByDefinitionBlockId(blockId?: string): Habit | null {
-  if (!blockId) return null;
-  return getAllHabits().find(habit => habit.blockId === blockId) ?? null;
+  if (!blockId) return null
+  return getAllHabits().find((habit) => habit.blockId === blockId) ?? null
 }
 
-function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; record: CheckInRecord } | null {
-  if (!blockId) return null;
+function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit, record: CheckInRecord } | null {
+  if (!blockId) return null
   for (const habit of getAllHabits()) {
-    const record = habit.records.find(item => item.blockId === blockId);
+    const record = habit.records.find((item) => item.blockId === blockId)
     if (record) {
-      return { habit, record };
+      return {
+        habit,
+        record,
+      }
     }
   }
-  return null;
+  return null
 }
 
 function notifyHabitDataRefresh(): void {
-  submitRefreshRequest(createFullRefreshRequest(RefreshReasons.SLASH_COMMAND_HABIT_DATA));
+  submitRefreshRequest(createFullRefreshRequest(RefreshReasons.SLASH_COMMAND_HABIT_DATA))
 }
 
 /**
  * 创建斜杠命令
  */
 export function createSlashCommands(config: SlashCommandConfig) {
-  const today = formatDate(new Date());
+  const today = formatDate(new Date())
 
   const builtinCommands = [
     {
@@ -208,7 +263,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">@${today}</span>
       </div>`,
       id: 'bullet-journal-mark-today',
-      callback: getActionHandler('today', config, SLASH_COMMAND_FILTERS.TODAY)
+      callback: getActionHandler('today', config, SLASH_COMMAND_FILTERS.TODAY),
     },
     {
       filter: SLASH_COMMAND_FILTERS.TOMORROW,
@@ -217,7 +272,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">@${dayjs().add(1, 'day').format('YYYY-MM-DD')}</span>
       </div>`,
       id: 'bullet-journal-mark-tomorrow',
-      callback: getActionHandler('tomorrow', config, SLASH_COMMAND_FILTERS.TOMORROW)
+      callback: getActionHandler('tomorrow', config, SLASH_COMMAND_FILTERS.TOMORROW),
     },
     {
       filter: SLASH_COMMAND_FILTERS.DATE,
@@ -226,7 +281,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Date</span>
       </div>`,
       id: 'bullet-journal-mark-date',
-      callback: getActionHandler('date', config, SLASH_COMMAND_FILTERS.DATE)
+      callback: getActionHandler('date', config, SLASH_COMMAND_FILTERS.DATE),
     },
     {
       filter: SLASH_COMMAND_FILTERS.DONE,
@@ -235,7 +290,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">✓</span>
       </div>`,
       id: 'bullet-journal-mark-done',
-      callback: getActionHandler('done', config, SLASH_COMMAND_FILTERS.DONE)
+      callback: getActionHandler('done', config, SLASH_COMMAND_FILTERS.DONE),
     },
     {
       filter: SLASH_COMMAND_FILTERS.ABANDON,
@@ -244,7 +299,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">✗</span>
       </div>`,
       id: 'bullet-journal-mark-abandon',
-      callback: getActionHandler('abandon', config, SLASH_COMMAND_FILTERS.ABANDON)
+      callback: getActionHandler('abandon', config, SLASH_COMMAND_FILTERS.ABANDON),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR,
@@ -253,7 +308,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar</span>
       </div>`,
       id: 'bullet-journal-open-calendar',
-      callback: getActionHandler('calendar', config, SLASH_COMMAND_FILTERS.CALENDAR)
+      callback: getActionHandler('calendar', config, SLASH_COMMAND_FILTERS.CALENDAR),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_DAY,
@@ -262,7 +317,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Day</span>
       </div>`,
       id: 'bullet-journal-open-calendar-day',
-      callback: getActionHandler('calendarDay', config, SLASH_COMMAND_FILTERS.CALENDAR_DAY)
+      callback: getActionHandler('calendarDay', config, SLASH_COMMAND_FILTERS.CALENDAR_DAY),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_WEEK,
@@ -271,7 +326,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Week</span>
       </div>`,
       id: 'bullet-journal-open-calendar-week',
-      callback: getActionHandler('calendarWeek', config, SLASH_COMMAND_FILTERS.CALENDAR_WEEK)
+      callback: getActionHandler('calendarWeek', config, SLASH_COMMAND_FILTERS.CALENDAR_WEEK),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_MONTH,
@@ -280,7 +335,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Month</span>
       </div>`,
       id: 'bullet-journal-open-calendar-month',
-      callback: getActionHandler('calendarMonth', config, SLASH_COMMAND_FILTERS.CALENDAR_MONTH)
+      callback: getActionHandler('calendarMonth', config, SLASH_COMMAND_FILTERS.CALENDAR_MONTH),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_LIST,
@@ -289,7 +344,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar List</span>
       </div>`,
       id: 'bullet-journal-open-calendar-list',
-      callback: getActionHandler('calendarList', config, SLASH_COMMAND_FILTERS.CALENDAR_LIST)
+      callback: getActionHandler('calendarList', config, SLASH_COMMAND_FILTERS.CALENDAR_LIST),
     },
     {
       filter: SLASH_COMMAND_FILTERS.GANTT,
@@ -298,7 +353,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Gantt</span>
       </div>`,
       id: 'bullet-journal-open-gantt',
-      callback: getActionHandler('gantt', config, SLASH_COMMAND_FILTERS.GANTT)
+      callback: getActionHandler('gantt', config, SLASH_COMMAND_FILTERS.GANTT),
     },
     {
       filter: SLASH_COMMAND_FILTERS.FOCUS,
@@ -307,7 +362,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🍅</span>
       </div>`,
       id: 'bullet-journal-start-focus',
-      callback: getActionHandler('focus', config, SLASH_COMMAND_FILTERS.FOCUS)
+      callback: getActionHandler('focus', config, SLASH_COMMAND_FILTERS.FOCUS),
     },
     {
       filter: SLASH_COMMAND_FILTERS.TODO,
@@ -316,7 +371,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Todo</span>
       </div>`,
       id: 'bullet-journal-open-todo-dock',
-      callback: getActionHandler('todo', config, SLASH_COMMAND_FILTERS.TODO)
+      callback: getActionHandler('todo', config, SLASH_COMMAND_FILTERS.TODO),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
@@ -325,7 +380,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Dir</span>
       </div>`,
       id: 'bullet-journal-set-project-dir',
-      callback: getActionHandler('setProjectDir', config, SLASH_COMMAND_FILTERS.SET_PROJECT_DIR)
+      callback: getActionHandler('setProjectDir', config, SLASH_COMMAND_FILTERS.SET_PROJECT_DIR),
     },
     {
       filter: SLASH_COMMAND_FILTERS.MARK_AS_TASK,
@@ -334,7 +389,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Task</span>
       </div>`,
       id: 'bullet-journal-mark-task',
-      callback: getActionHandler('markAsTask', config, SLASH_COMMAND_FILTERS.MARK_AS_TASK)
+      callback: getActionHandler('markAsTask', config, SLASH_COMMAND_FILTERS.MARK_AS_TASK),
     },
     {
       filter: SLASH_COMMAND_FILTERS.VIEW_DETAIL,
@@ -343,7 +398,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Detail</span>
       </div>`,
       id: 'bullet-journal-view-detail',
-      callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
+      callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN,
@@ -352,7 +407,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🍅 ⏳</span>
       </div>`,
       id: 'bullet-journal-set-focus-plan',
-      callback: getActionHandler('setFocusPlan', config, SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN)
+      callback: getActionHandler('setFocusPlan', config, SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_REMINDER,
@@ -361,7 +416,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">⏰</span>
       </div>`,
       id: 'bullet-journal-set-reminder',
-      callback: getActionHandler('setReminder', config, SLASH_COMMAND_FILTERS.SET_REMINDER)
+      callback: getActionHandler('setReminder', config, SLASH_COMMAND_FILTERS.SET_REMINDER),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_RECURRING,
@@ -370,16 +425,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🔁</span>
       </div>`,
       id: 'bullet-journal-set-recurring',
-      callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING)
-    },
-    {
-      filter: SLASH_COMMAND_FILTERS.CREATE_SKILL,
-      html: `<div class="b3-list-item__first">
-          <span class="b3-list-item__text">${t('slash').createSkill}</span>
-          <span class="b3-list-item__meta">AI Skill</span>
-      </div>`,
-      id: 'bullet-journal-create-skill',
-      callback: getActionHandler('createSkill', config, SLASH_COMMAND_FILTERS.CREATE_SKILL)
+      callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING),
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_PRIORITY,
@@ -388,7 +434,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🔥🌱🍃</span>
       </div>`,
       id: 'bullet-journal-set-priority',
-      callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY)
+      callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY),
     },
     {
       filter: SLASH_COMMAND_FILTERS.HABIT,
@@ -397,7 +443,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🎯</span>
       </div>`,
       id: 'bullet-journal-create-habit',
-      callback: getActionHandler('createHabit', config, SLASH_COMMAND_FILTERS.HABIT)
+      callback: getActionHandler('createHabit', config, SLASH_COMMAND_FILTERS.HABIT),
     },
     {
       filter: SLASH_COMMAND_FILTERS.CHECK_IN,
@@ -406,7 +452,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">✅</span>
       </div>`,
       id: 'bullet-journal-check-in',
-      callback: getActionHandler('checkIn', config, SLASH_COMMAND_FILTERS.CHECK_IN)
+      callback: getActionHandler('checkIn', config, SLASH_COMMAND_FILTERS.CHECK_IN),
     },
     {
       filter: SLASH_COMMAND_FILTERS.HABIT_DOCK,
@@ -415,23 +461,23 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">📋</span>
       </div>`,
       id: 'bullet-journal-habit-dock',
-      callback: () => { config.openHabitDock(); }
-    }
-  ];
+      callback: () => { config.openHabitDock() },
+    },
+  ]
 
   // 创建自定义命令
-  const customCommands = createCustomSlashCommands(config.customSlashCommands || [], config);
+  const customCommands = createCustomSlashCommands(config.customSlashCommands || [], config)
 
   // 合并所有命令并去重（自定义命令优先）
-  const allCommands = [...builtinCommands, ...customCommands];
-  const commandMap = new Map<string, typeof allCommands[0]>();
+  const allCommands = [...builtinCommands, ...customCommands]
+  const commandMap = new Map<string, typeof allCommands[0]>()
 
   for (const cmd of allCommands) {
     // 使用命令的 id 作为唯一标识
-    commandMap.set(cmd.id, cmd);
+    commandMap.set(cmd.id, cmd)
   }
 
-  return Array.from(commandMap.values());
+  return Array.from(commandMap.values())
 }
 
 /**
@@ -439,17 +485,17 @@ export function createSlashCommands(config: SlashCommandConfig) {
  */
 function createCustomSlashCommands(
   customCommands: CustomSlashCommand[],
-  config: SlashCommandConfig
-): Array<{ filter: string[]; html: string; id: string; callback: Function }> {
-  return customCommands.map(cmd => ({
+  config: SlashCommandConfig,
+): Array<{ filter: string[], html: string, id: string, callback: (...args: any[]) => any }> {
+  return customCommands.map((cmd) => ({
     filter: cmd.commands,
     html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${cmd.name}</span>
           <span class="b3-list-item__meta">${getActionLabel(cmd.action)}</span>
       </div>`,
     id: `bullet-journal-custom-${cmd.id}`,
-    callback: getActionHandler(cmd.action, config, cmd.commands)
-  }));
+    callback: getActionHandler(cmd.action, config, cmd.commands),
+  }))
 }
 
 /**
@@ -457,58 +503,58 @@ function createCustomSlashCommands(
  * 根据块 ID 找到所在文档，将文档路径添加到项目目录
  */
 async function setAsProjectDir(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
   try {
     // 获取文档路径
-    const hPath = await getHPathByID(blockId);
+    const hPath = await getHPathByID(blockId)
     if (!hPath) {
-      showMessage('无法获取文档路径', 2000, 'error');
-      return;
+      showMessage('无法获取文档路径', 2000, 'error')
+      return
     }
 
     // 获取设置 store
-    const pinia = getSharedPinia();
+    const pinia = getSharedPinia()
     if (!pinia) {
-      showMessage('无法获取设置', 2000, 'error');
-      return;
+      showMessage('无法获取设置', 2000, 'error')
+      return
     }
 
-    const settingsStore = useSettingsStore(pinia);
-    const existingPaths = settingsStore.directories.map(d => d.path);
+    const settingsStore = useSettingsStore(pinia)
+    const existingPaths = settingsStore.directories.map((d) => d.path)
 
     // 检查是否已存在
     if (existingPaths.includes(hPath)) {
-      showMessage(t('common').dirsExist, 3000, 'info');
-      return;
+      showMessage(t('common').dirsExist, 3000, 'info')
+      return
     }
 
     // 添加新目录
     const newDir: ProjectDirectory = {
-      id: 'dir-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      id: `dir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       path: hPath,
       enabled: true,
-      groupId: settingsStore.defaultGroup || undefined
-    };
+      groupId: settingsStore.defaultGroup || undefined,
+    }
 
-    settingsStore.directories.push(newDir);
-    settingsStore.saveToPlugin();
+    settingsStore.directories.push(newDir)
+    settingsStore.saveToPlugin()
 
     submitRefreshRequest(
       createFullRefreshRequest(
         RefreshReasons.SLASH_COMMAND_SET_PROJECT_DIR,
-        settingsStore.$state as Record<string, unknown>,
+        settingsStore.$state as unknown as Record<string, unknown>,
       ),
-    );
+    )
 
-    showMessage(t('slash').setProjectDirSuccess, 3000, 'info');
+    showMessage(t('slash').setProjectDirSuccess, 3000, 'info')
   } catch (error) {
-    console.error('[Task Assistant] Failed to set project dir:', error);
-    showMessage('设置项目目录失败', 3000, 'error');
+    console.error('[Task Assistant] Failed to set project dir:', error)
+    showMessage('设置项目目录失败', 3000, 'error')
   }
 }
 
@@ -517,35 +563,44 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
  * 打开事项详情弹框
  */
 async function viewDetail(nodeElement: HTMLElement, protyle?: any) {
-  const item = await getValidatedItemFromNode(nodeElement, protyle);
+  const item = await getValidatedItemFromNode(nodeElement, protyle)
   if (!item) {
-    return;
+    return
   }
 
   // 打开详情弹框 - 斜杠命令展示所有日期
-  showItemDetailModal(item, { showAllDates: true });
+  showItemDetailModal(item, { showAllDates: true })
 }
 
 async function getValidatedItemFromNode(
   nodeElement: HTMLElement,
   protyle?: any,
 ): Promise<Item | null> {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return null;
+    showMessage('无法获取块ID', 2000, 'error')
+    return null
   }
 
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
-    if (protyle) {
-      void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
-    }
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return null;
+  const item = await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
+  if (item) {
+    return item
   }
 
-  return item;
+  const pinia = getSharedPinia()
+  const storeItem = pinia ? useProjectStore(pinia).getItemByBlockId?.(blockId) : null
+  if (storeItem) {
+    return storeItem as Item
+  }
+
+  if (protyle) {
+    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId })
+  }
+  showMessage('当前块不是有效的事项', 2000, 'error')
+  return null
 }
 
 /**
@@ -555,12 +610,12 @@ async function getValidatedItemFromNode(
 export function getActionHandler(
   action: CustomSlashCommand['action'],
   config: SlashCommandConfig,
-  filter: string[]
+  filter: string[],
 ): (protyle: any, nodeElement: HTMLElement) => void {
   switch (action) {
     case 'today':
       return (protyle, nodeElement) => {
-        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null
         console.log('[SlashCommand] today handler target', {
           nodeTag: nodeElement.tagName,
           nodeType: nodeElement.getAttribute('data-type'),
@@ -569,7 +624,7 @@ export function getActionHandler(
           innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
-        });
+        })
         console.log('[JTDBG][slash.today] target', {
           nodeTag: nodeElement.tagName,
           nodeType: nodeElement.getAttribute('data-type'),
@@ -579,12 +634,12 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           outerHTML: nodeElement.outerHTML.slice(0, 500),
           textPreview: (nodeElement.textContent || '').slice(0, 200),
-        });
-        markAsTodayItem(protyle, nodeElement);
-      };
+        })
+        markAsTodayItem(protyle, nodeElement)
+      }
     case 'tomorrow':
       return (protyle, nodeElement) => {
-        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null
         console.log('[SlashCommand] tomorrow handler target', {
           nodeTag: nodeElement.tagName,
           nodeType: nodeElement.getAttribute('data-type'),
@@ -593,12 +648,12 @@ export function getActionHandler(
           innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
-        });
-        markAsTomorrowItem(protyle, nodeElement);
-      };
+        })
+        markAsTomorrowItem(protyle, nodeElement)
+      }
     case 'date':
       return (protyle, nodeElement) => {
-        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null
         console.log('[SlashCommand] date handler target', {
           nodeTag: nodeElement.tagName,
           nodeType: nodeElement.getAttribute('data-type'),
@@ -607,256 +662,339 @@ export function getActionHandler(
           innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
-        });
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        markAsDateItem(protyle, nodeElement);
-      };
+        })
+        markAsDateItem(protyle, nodeElement)
+      }
     case 'done':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          const completedTag = getStatusTag('completed');
-          const blockContent = nodeElement.textContent || '';
+          const completedTag = getStatusTag('completed')
+          const blockContent = nodeElement.textContent || ''
           // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
-          const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
-          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
+          const isTaskListDone = TASK_LIST_DONE_RE.test(blockContent)
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id')
           if (!blockId) {
-            return;
+            return
           }
-          if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
-            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
-            showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
-            return;
-          }
-
-          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
-          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
-          if (!isTaskListBlock) {
-            await waitForProtyleTransactionsFlush();
-          }
-          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'completed' });
-          showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
-        })();
-      };
-    case 'abandon':
-      return (protyle, nodeElement) => {
-        void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
-          if (!item) {
-            return;
-          }
-
-          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
-          if (!blockId) {
-            return;
-          }
-
-          const writeContext = {
+          const writeContext = resolveSlashAwareWriteContext(capturedWriteContext, {
             blockId,
             listItemBlockId: item.listItemBlockId,
             nodeElement,
             protyle,
-          };
+          })
+          if (!writeContext) {
+            return
+          }
+          console.log('[BJ-MutationPlanner][slash.done] resolved context', {
+            blockId,
+            itemStatus: item.status,
+            listItemBlockId: item.listItemBlockId,
+            hasSlashRange: Boolean(writeContext.slashRange),
+            slashStartOffset: writeContext.slashStartOffset,
+            blockPreview: (blockContent || '').replace(MULTI_WHITESPACE_RE, ' ').slice(0, 160),
+          })
+          if (item.status === 'completed' || (completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
+            void writeBlock(writeContext, { type: 'removeSlashCommand' })
+            showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info')
+            return
+          }
 
-          const abandonedTag = getStatusTag('abandoned');
-          const blockContent = nodeElement.textContent || '';
-          if (abandonedTag && blockContent.includes(abandonedTag)) {
-            void writeBlock(writeContext, { type: 'removeSlashCommand' });
-            showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
-            return;
+          const success = await writeBlock(
+            writeContext,
+            [
+              { type: 'removeSlashCommand' },
+              {
+                type: 'setStatus',
+                status: 'completed',
+              },
+            ],
+          )
+          if (success) {
+            showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info')
+          }
+        })()
+      }
+    case 'abandon':
+      return (protyle, nodeElement) => {
+        void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
+          if (!item) {
+            return
+          }
+
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id')
+          if (!blockId) {
+            return
+          }
+
+          const writeContext = resolveSlashAwareWriteContext(capturedWriteContext, {
+            blockId,
+            listItemBlockId: item.listItemBlockId,
+            nodeElement,
+            protyle,
+          })
+          if (!writeContext) {
+            return
+          }
+
+          const abandonedTag = getStatusTag('abandoned')
+          const blockContent = nodeElement.textContent || ''
+          console.log('[BJ-MutationPlanner][slash.abandon] resolved context', {
+            blockId,
+            itemStatus: item.status,
+            listItemBlockId: item.listItemBlockId,
+            hasSlashRange: Boolean(writeContext.slashRange),
+            slashStartOffset: writeContext.slashStartOffset,
+            blockPreview: blockContent.replace(MULTI_WHITESPACE_RE, ' ').slice(0, 160),
+          })
+          if (item.status === 'abandoned' || (abandonedTag && blockContent.includes(abandonedTag))) {
+            void writeBlock(writeContext, { type: 'removeSlashCommand' })
+            showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info')
+            return
           }
 
           const success = await writeBlock(writeContext, [
             { type: 'removeSlashCommand' },
-            { type: 'setStatus', status: 'abandoned' },
-          ]);
+            {
+              type: 'setStatus',
+              status: 'abandoned',
+            },
+          ])
           if (success) {
-            showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+            showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info')
           }
-        })();
-      };
+        })()
+      }
     case 'calendar':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openCalendarForBlock(nodeElement, config.openCustomTab);
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openCalendarForBlock(nodeElement, config.openCustomTab)
+      }
     case 'calendarDay':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'day')
+      }
     case 'calendarWeek':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'week')
+      }
     case 'calendarMonth':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'month')
+      }
     case 'calendarList':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'list')
+      }
     case 'gantt':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        openGanttForBlock(nodeElement, config.openCustomTab);
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        openGanttForBlock(nodeElement, config.openCustomTab)
+      }
     case 'focus':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement);
-          startFocusFromSlash(nodeElement, config.openPomodoroDock, item);
-        })();
-      };
+          void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
+          startFocusFromSlash(nodeElement, config.openPomodoroDock, item)
+        })()
+      }
     case 'todo':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        config.openTodoDock();
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        config.openTodoDock()
+      }
     case 'setProjectDir':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        setAsProjectDir(nodeElement);
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        setAsProjectDir(nodeElement)
+      }
     case 'markAsTask':
       return (protyle, nodeElement) => {
-        const blockId = nodeElement.getAttribute('data-node-id');
+        const blockId = nodeElement.getAttribute('data-node-id')
         if (!blockId) {
-          return;
+          return
         }
-        const taskTag = t('taskTag');
-        const blockContent = nodeElement.textContent || '';
+        const writeContext = resolveSlashAwareWriteContext(
+          captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+          {
+            blockId,
+            nodeElement,
+            protyle,
+          },
+        )
+        if (!writeContext) {
+          return
+        }
+        const taskTag = t('taskTag')
+        const blockContent = nodeElement.textContent || ''
         if (blockContent.includes(taskTag)) {
-          void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
-          showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
-          return;
+          void writeBlock(writeContext, { type: 'removeSlashCommand' })
+          showMessage(t('slash').alreadyMarkedTask, 2000, 'info')
+          return
         }
-        void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand', suffix: taskTag });
-        showMessage(t('slash').markTaskSuccess, 2000, 'info');
-      };
+        void writeBlock(
+          writeContext,
+          [
+            { type: 'removeSlashCommand' },
+            {
+              type: 'setTaskTag',
+              tag: taskTag,
+            },
+          ],
+        )
+        showMessage(t('slash').markTaskSuccess, 2000, 'info')
+      }
     case 'viewDetail':
       return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        viewDetail(nodeElement, protyle);
-      };
+        void removeSlashCommandViaWriter(protyle, nodeElement)
+        viewDetail(nodeElement, protyle)
+      }
     case 'setFocusPlan':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
-          setFocusPlanForBlock(nodeElement, item);
-        })();
-      };
+          setFocusPlanForBlock(protyle, nodeElement, item, capturedWriteContext)
+        })()
+      }
     case 'setReminder':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
-          setReminderForBlock(nodeElement, item);
-        })();
-      };
+          setReminderForBlock(protyle, nodeElement, item, capturedWriteContext)
+        })()
+      }
     case 'setRecurring':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
-          setRecurringForBlock(nodeElement, item);
-        })();
-      };
-    case 'createSkill':
-      return (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        createSkillFromSlash(nodeElement);
-      };
+          setRecurringForBlock(protyle, nodeElement, item, capturedWriteContext)
+        })()
+      }
     case 'setPriority':
       return (protyle, nodeElement) => {
         void (async () => {
-          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          })
+          const item = await getValidatedItemFromNode(nodeElement, protyle)
           if (!item) {
-            return;
+            return
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
-          setPriorityForBlock(nodeElement, item);
-        })();
-      };
+          setPriorityForBlock(protyle, nodeElement, item, capturedWriteContext)
+        })()
+      }
     case 'createHabit':
       return (protyle, nodeElement) => {
-        const blockText = nodeElement?.textContent || '';
-        const text = processLineText(blockText, filter).trim();
-        const blockId = nodeElement?.getAttribute?.('data-node-id') || '';
-        const parsedHabit = parseHabitLine(text);
-        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
-        const parsedRecord = parseHabitRecordLine(text, blockId);
+        const blockText = nodeElement?.textContent || ''
+        const text = processLineText(blockText, filter).trim()
+        const blockId = nodeElement?.getAttribute?.('data-node-id') || ''
+        const parsedHabit = parseHabitLine(text)
+        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId)
+        const parsedRecord = parseHabitRecordLine(text, blockId)
 
-        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId })
 
         if (matchedRecord || parsedRecord) {
-          showMessage(t('slash').checkIn || '打卡', 2000, 'info');
-          return;
+          showMessage(t('slash').checkIn || '打卡', 2000, 'info')
+          return
         }
 
         showHabitCreateDialog((markdown) => {
           if (!blockId) {
-            return;
+            return
           }
 
-          const nextHabit = parseHabitLine(markdown);
+          const nextHabit = parseHabitLine(markdown)
           if (!nextHabit) {
-            return;
+            return
           }
 
           void (parsedHabit
-            ? writeBlock({ blockId, nodeElement, protyle }, { type: 'setHabitDefinition', habit: nextHabit })
-            : insertBlockAfter(blockId, { type: 'setHabitDefinition', habit: nextHabit }));
-        }, parsedHabit || undefined);
-      };
+            ? writeBlock({
+                blockId,
+                nodeElement,
+                protyle,
+              }, {
+                type: 'setHabitDefinition',
+                habit: nextHabit,
+              })
+            : insertBlockAfter(blockId, {
+                type: 'setHabitDefinition',
+                habit: nextHabit,
+              }))
+        }, parsedHabit || undefined)
+      }
     case 'checkIn':
       return async (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        const text = nodeElement?.textContent?.trim() || '';
-        const blockId = nodeElement?.getAttribute?.('data-node-id');
-        const parsedHabit = parseHabitLine(text);
-        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
-        const parsedRecord = parseHabitRecordLine(text, blockId || '');
-        const currentDate = dayjs().format('YYYY-MM-DD');
-        const sharedPinia = getSharedPinia();
-        const settingsStore = sharedPinia ? useSettingsStore(sharedPinia) : useSettingsStore();
-        const habitCheckInTimePrecision = settingsStore.habitCheckInTimePrecision || 'day';
-        const habitWriter = createCurrentBlockHabitWriter(protyle, nodeElement);
-        const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
-        const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null);
-        const isRecordContext = Boolean(activeRecordMatch || parsedRecord);
+        const blockId = nodeElement?.getAttribute?.('data-node-id')
+        const activeSlash = getActiveSlashRange()
+        const candidateText = nodeElement && activeSlash && (activeSlash.blockId === blockId || nodeElement.contains(activeSlash.range.startContainer))
+          ? buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset, activeSlash.slashEndOffset)
+          : null
+
+        await removeSlashCommandViaWriter(protyle, nodeElement)
+        const text = candidateText ?? nodeElement?.textContent?.trim() ?? ''
+        const parsedHabit = parseHabitLine(text)
+        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId)
+        const parsedRecord = parseHabitRecordLine(text, blockId || '')
+        const currentDate = dayjs().format('YYYY-MM-DD')
+        const sharedPinia = getSharedPinia()
+        const settingsStore = sharedPinia ? useSettingsStore(sharedPinia) : useSettingsStore()
+        const habitCheckInTimePrecision = settingsStore.habitCheckInTimePrecision || 'day'
+        const habitWriter = createCurrentBlockHabitWriter(protyle, nodeElement)
+        const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null
+        const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null)
+        const isRecordContext = Boolean(activeRecordMatch || parsedRecord)
 
         if (!parsedHabit || !blockId) {
           if (!isRecordContext) {
-            config.openHabitDock();
-            return;
+            config.openHabitDock()
+            return
           }
 
           if (activeRecordMatch && activeRecordMatch.record.date !== currentDate) {
@@ -864,22 +1002,22 @@ export function getActionHandler(
               habitId: activeRecordMatch.habit.blockId,
               date: activeRecordMatch.record.date,
               recordBlockId: activeRecordMatch.record.blockId,
-            });
-            return;
+            })
+            return
           }
 
           if (activeRecordMatch?.habit.type === 'count') {
-            const targetValue = activeRecordMatch.record.targetValue ?? activeRecordMatch.habit.target ?? 0;
-            const currentValue = activeRecordMatch.record.currentValue ?? 0;
+            const targetValue = activeRecordMatch.record.targetValue ?? activeRecordMatch.habit.target ?? 0
+            const currentValue = activeRecordMatch.record.currentValue ?? 0
             if (currentValue >= targetValue) {
-              showMessage(t('habit').targetReached || '已达标', 2000, 'info');
-              return;
+              showMessage(t('habit').targetReached || '已达标', 2000, 'info')
+              return
             }
-            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
+            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, habitWriter, habitCheckInTimePrecision)
             if (success) {
-              notifyHabitDataRefresh();
+              notifyHabitDataRefresh()
             }
-            return;
+            return
           }
 
           if (parsedRecord?.currentValue !== undefined) {
@@ -902,62 +1040,62 @@ export function getActionHandler(
                 targetValue: parsedRecord.targetValue,
                 unit: parsedRecord.unit,
               }],
-            };
-            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
-            if (success) {
-              notifyHabitDataRefresh();
             }
-            return;
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision)
+            if (success) {
+              notifyHabitDataRefresh()
+            }
+            return
           }
 
-          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info');
-          return;
+          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info')
+          return
         }
 
         if (!matchedHabit) {
-          showMessage('习惯数据未就绪，请稍后重试', 2000, 'info');
-          return;
+          showMessage('习惯数据未就绪，请稍后重试', 2000, 'info')
+          return
         }
 
-        const habit: Habit = matchedHabit;
+        const habit: Habit = matchedHabit
         if (habit.archivedAt) {
-          showMessage(t('habit').archivedCannotCheckIn || '习惯已归档', 2000, 'info');
-          return;
+          showMessage(t('habit').archivedCannotCheckIn || '习惯已归档', 2000, 'info')
+          return
         }
 
-        const todayRecord = habit.records.find(record => record.date === currentDate);
+        const todayRecord = habit.records.find((record) => record.date === currentDate)
         if (todayRecord) {
           if (habit.type === 'count') {
-            const targetValue = todayRecord.targetValue ?? habit.target ?? 0;
-            const currentValue = todayRecord.currentValue ?? 0;
+            const targetValue = todayRecord.targetValue ?? habit.target ?? 0
+            const currentValue = todayRecord.currentValue ?? 0
             if (currentValue >= targetValue) {
-              showMessage(t('habit').targetReached || '已达标', 2000, 'info');
-              return;
+              showMessage(t('habit').targetReached || '已达标', 2000, 'info')
+              return
             }
-            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision)
             if (success) {
-              notifyHabitDataRefresh();
+              notifyHabitDataRefresh()
             }
-            return;
+            return
           }
-          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info');
-          return;
+          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info')
+          return
         }
 
         if (habit.type === 'count') {
-          const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
+          const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision)
           if (success) {
-            notifyHabitDataRefresh();
+            notifyHabitDataRefresh()
           }
         } else {
-          const success = await checkIn(habit, currentDate, habitWriter, habitCheckInTimePrecision);
+          const success = await checkIn(habit, currentDate, habitWriter, habitCheckInTimePrecision)
           if (success) {
-            notifyHabitDataRefresh();
+            notifyHabitDataRefresh()
           }
         }
-      };
+      }
     default:
-      return () => {};
+      return () => {}
   }
 }
 
@@ -985,25 +1123,9 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     setFocusPlan: 'Focus Plan',
     setReminder: 'Reminder',
     setRecurring: 'Recurring',
-    createSkill: 'AI Skill',
-    setPriority: 'Priority'
-  };
-  return labels[action] || action;
-}
-
-async function writeDatePatchForSlashCommand(
-  protyle: any,
-  nodeElement: HTMLElement,
-  patch: Omit<DatePatch, 'type'>,
-): Promise<boolean> {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) {
-    return false;
+    setPriority: 'Priority',
   }
-  return writeBlock(
-    { blockId, nodeElement, protyle },
-    { type: 'addDate', ...patch },
-  );
+  return labels[action] || action
 }
 
 /**
@@ -1014,33 +1136,47 @@ async function markAsTodayItem(
   protyle: any,
   nodeElement: HTMLElement,
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  console.log('[SlashCommand] markAsTodayItem called', { blockId });
+  const blockId = nodeElement.getAttribute('data-node-id')
+  console.log('[SlashCommand] markAsTodayItem called', { blockId })
 
   if (!blockId) {
-    console.log('[SlashCommand] markAsTodayItem: no blockId');
-    return;
+    console.log('[SlashCommand] markAsTodayItem: no blockId')
+    return
+  }
+  const writeContext = resolveSlashAwareWriteContext(
+    captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+    {
+      blockId,
+      nodeElement,
+      protyle,
+    },
+  )
+  if (!writeContext) {
+    return
   }
 
-  const today = formatDate(new Date());
-  console.log('[SlashCommand] markAsTodayItem: today date', today);
+  const today = formatDate(new Date())
+  console.log('[SlashCommand] markAsTodayItem: today date', today)
 
   // 从 pinia 中获取已有日期时间信息
-  const existingItems = await extractDatesFromBlock(blockId);
-  console.log('[SlashCommand] markAsTodayItem: existing items', existingItems);
+  const existingItems = await extractDatesFromBlock(blockId)
+  console.log('[SlashCommand] markAsTodayItem: existing items', existingItems)
   console.log('[JTDBG][slash.today] existingItems', {
     blockId,
     existingItems,
-  });
+  })
 
   // 检查今天是否已存在
-  const todayItem = existingItems.find(item => item.date === today);
+  const todayItem = existingItems.find((item) => item.date === today)
   if (todayItem) {
-    console.log('[SlashCommand] markAsTodayItem: today already exists');
+    console.log('[SlashCommand] markAsTodayItem: today already exists')
     // 日期已存在，删除斜杠命令并提示
-    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
-    showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
-    return;
+    await removeSlashCommandViaWriter(protyle, nodeElement, {
+      blockId,
+      writeContext,
+    })
+    showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info')
+    return
   }
 
   console.log('[SlashCommand] markAsTodayItem: calling writeBlock addDate', {
@@ -1048,16 +1184,16 @@ async function markAsTodayItem(
     today,
     existingItemsCount: existingItems.length,
     hasProtyle: !!protyle,
-  });
+  })
   console.log('[JTDBG][slash.today] call writeBlock.addDate', {
     blockId,
     today,
     existingItems,
     hasProtyle: !!protyle,
-  });
+  })
 
   const success = await writeBlock(
-    { blockId, nodeElement, protyle },
+    writeContext,
     [
       { type: 'removeSlashCommand' },
       {
@@ -1067,18 +1203,18 @@ async function markAsTodayItem(
         siblingItems: existingItems.length > 0 ? existingItems : undefined,
       },
     ],
-  );
+  )
 
-  console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success);
+  console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success)
   console.log('[JTDBG][slash.today] writeBlock.addDate result', {
     blockId,
     success,
-  });
+  })
 
   if (success) {
-    showMessage(t('slash').markSuccess, 2000, 'info');
+    showMessage(t('slash').markSuccess, 2000, 'info')
   } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
+    showMessage(t('slash').markFailed, 2000, 'error')
   }
 }
 
@@ -1090,24 +1226,38 @@ async function markAsTomorrowItem(
   protyle: any,
   nodeElement: HTMLElement,
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
+  const blockId = nodeElement.getAttribute('data-node-id')
+  if (!blockId) return
+  const writeContext = resolveSlashAwareWriteContext(
+    captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+    {
+      blockId,
+      nodeElement,
+      protyle,
+    },
+  )
+  if (!writeContext) {
+    return
+  }
 
-  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD')
 
   // 从 pinia 中获取已有日期时间信息
-  const existingItems = await extractDatesFromBlock(blockId);
+  const existingItems = await extractDatesFromBlock(blockId)
 
   // 检查明天是否已存在
-  const tomorrowItem = existingItems.find(item => item.date === tomorrow);
+  const tomorrowItem = existingItems.find((item) => item.date === tomorrow)
   if (tomorrowItem) {
-    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
-    showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
-    return;
+    await removeSlashCommandViaWriter(protyle, nodeElement, {
+      blockId,
+      writeContext,
+    })
+    showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info')
+    return
   }
 
   const success = await writeBlock(
-    { blockId, nodeElement, protyle },
+    writeContext,
     [
       { type: 'removeSlashCommand' },
       {
@@ -1117,12 +1267,12 @@ async function markAsTomorrowItem(
         siblingItems: existingItems.length > 0 ? existingItems : undefined,
       },
     ],
-  );
+  )
 
   if (success) {
-    showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
+    showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info')
   } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
+    showMessage(t('slash').markFailed, 2000, 'error')
   }
 }
 
@@ -1134,113 +1284,50 @@ async function markAsDateItem(
   protyle: any,
   nodeElement: HTMLElement,
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
+  const blockId = nodeElement.getAttribute('data-node-id')
+  if (!blockId) return
 
-  // 从 pinia 中获取已有日期时间信息
-  const existingItems = await extractDatesFromBlock(blockId);
+  await removeSlashCommandViaWriter(protyle, nodeElement, { blockId })
 
-  // 使用 showDatePickerDialog 选择日期
+  const existingItems = await extractDatesFromBlock(blockId)
+
   showDatePickerDialog(
     t('slash').selectDateTitle || '选择日期',
     dayjs().format('YYYY-MM-DD'),
     async (selectedDate) => {
-      // 检查日期是否已存在
-      const existingItem = existingItems.find(item => item.date === selectedDate);
+      const existingItem = existingItems.find((item) => item.date === selectedDate)
       if (existingItem) {
-        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
-        showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
-        return;
+        showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info')
+        return
       }
 
-      const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
-        date: selectedDate,
-        allDay: true,
-        siblingItems: existingItems.length > 0 ? existingItems : undefined,
-      });
+      const success = await writeBlock(
+        { blockId },
+        {
+          type: 'addDate',
+          date: selectedDate,
+          allDay: true,
+          siblingItems: existingItems.length > 0 ? existingItems : undefined,
+        },
+      )
 
       if (success) {
-        cleanupActiveSlashCommandLocally(nodeElement);
-        showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
+        showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info')
       } else {
-        showMessage(t('slash').markFailed, 2000, 'error');
+        showMessage(t('slash').markFailed, 2000, 'error')
       }
-    }
-  );
+    },
+  )
 }
 
 /**
  * 根据状态获取标签
  */
 function getStatusTag(status: 'completed' | 'abandoned'): string {
-  return t('statusTag')[status] || '';
+  return t('statusTag')[status] || ''
 }
 
-/**
- * 等待 protyle 事务队列清空
- */
-async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
-  const start = Date.now();
-  const siyuanWin = window as any;
-  while (siyuanWin.siyuan?.transactions?.length > 0 && Date.now() - start < timeout) {
-    await new Promise(r => setTimeout(r, 100));
-  }
-  await new Promise(r => setTimeout(r, 200));
-}
 
-/**
- * 标记为已完成
- */
-async function markAsDone(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
-
-  // 检查是否已完成
-  const blockContent = nodeElement.textContent || '';
-  const completedTag = getStatusTag('completed');
-  if (completedTag && blockContent.includes(completedTag)) {
-    showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
-    return;
-  }
-
-  // 标记事项完成
-  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'completed' });
-
-  if (success) {
-    showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
-    
-    // 注意：重复事项的自动创建由 WebSocket 处理器处理
-    // 避免重复调用 createNextOccurrence
-    
-    // 数据刷新会触发统一检测逻辑
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
-  }
-}
-
-/**
- * 标记为已放弃
- */
-async function markAsAbandoned(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
-
-  // 检查是否已放弃
-  const blockContent = nodeElement.textContent || '';
-  const abandonedTag = getStatusTag('abandoned');
-  if (abandonedTag && blockContent.includes(abandonedTag)) {
-    showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
-    return;
-  }
-
-  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'abandoned' });
-
-  if (success) {
-    showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
-  }
-}
 
 
 
@@ -1249,20 +1336,23 @@ async function markAsAbandoned(nodeElement: HTMLElement) {
  */
 async function openCalendarForBlock(
   nodeElement: HTMLElement,
-  openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void,
-  initialView?: string
+  openCustomTab: (tabType: string, options?: { initialDate?: string, initialView?: string }) => void,
+  initialView?: string,
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
 
-  let targetDate: string;
+  let targetDate: string
   if (!blockId) {
-    targetDate = formatDate(new Date());
+    targetDate = formatDate(new Date())
   } else {
-    const items = await extractDatesFromBlock(blockId);
-    targetDate = findNearestDate(items);
+    const items = await extractDatesFromBlock(blockId)
+    targetDate = findNearestDate(items)
   }
 
-  openCustomTab(TAB_TYPES.CALENDAR, { initialDate: targetDate, initialView });
+  openCustomTab(TAB_TYPES.CALENDAR, {
+    initialDate: targetDate,
+    initialView,
+  })
 }
 
 /**
@@ -1270,19 +1360,19 @@ async function openCalendarForBlock(
  */
 async function openGanttForBlock(
   nodeElement: HTMLElement,
-  openCustomTab: (tabType: string, options?: { initialDate?: string }) => void
+  openCustomTab: (tabType: string, options?: { initialDate?: string }) => void,
 ) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
 
-  let targetDate: string;
+  let targetDate: string
   if (!blockId) {
-    targetDate = formatDate(new Date());
+    targetDate = formatDate(new Date())
   } else {
-    const items = await extractDatesFromBlock(blockId);
-    targetDate = findNearestDate(items);
+    const items = await extractDatesFromBlock(blockId)
+    targetDate = findNearestDate(items)
   }
 
-  openCustomTab(TAB_TYPES.GANTT, { initialDate: targetDate });
+  openCustomTab(TAB_TYPES.GANTT, { initialDate: targetDate })
 }
 
 
@@ -1295,18 +1385,18 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
-    height: 'auto'
-  });
+    height: 'auto',
+  })
 
   // 自动聚焦到弹框内，使 ESC 键立即生效
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement
     if (focusableEl) {
-      focusableEl.focus();
+      focusableEl.focus()
     }
-  });
+  })
 
-  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount')
   if (mountEl) {
     const app = createApp(PomodoroTimerDialog, {
       closeDialog: () => dialog.destroy(),
@@ -1314,10 +1404,10 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
       hideItemList: true,
       onStartFocus: () => {
         // 开始专注后打开番茄钟 Dock
-        openPomodoroDock();
-      }
-    });
-    app.mount(mountEl);
+        openPomodoroDock()
+      },
+    })
+    app.mount(mountEl)
   }
 }
 
@@ -1329,215 +1419,158 @@ async function startFocusFromSlash(
   openPomodoroDock: () => void,
   item?: Item,
 ) {
-  const pinia = getSharedPinia();
-  if (!pinia) return;
+  const pinia = getSharedPinia()
+  if (!pinia) return
 
-  const pomodoroStore = usePomodoroStore(pinia);
+  const pomodoroStore = usePomodoroStore(pinia)
   if (pomodoroStore.isFocusing || pomodoroStore.isBreakActive) {
-    showMessage(t('slash').alreadyFocusing, 2000, 'info');
-    return;
+    showMessage(t('slash').alreadyFocusing, 2000, 'info')
+    return
   }
 
-  const blockId = nodeElement.getAttribute('data-node-id');
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
-  const preselectedItem = item || await extractItemFromBlock(blockId);
+  const preselectedItem = item || await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
   if (!preselectedItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
   // 打开预选弹框（无左侧列表），传递 blockId 而非 item 引用
   // 这样弹框内部可以实时从 store 获取最新的 item 数据
-  openPomodoroDialogWithItem(blockId, openPomodoroDock);
+  openPomodoroDialogWithItem(blockId, openPomodoroDock)
 }
 
 
-/**
- * 为块设置提醒
- */
-async function setReminderForBlock(nodeElement: HTMLElement, item?: Item) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+async function setReminderForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
   if (!targetItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
-  // 打开提醒设置弹框
-  showReminderSettingDialog(targetItem);
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
+
+  showReminderSettingDialog(targetItem)
 }
 
-async function setFocusPlanForBlock(nodeElement: HTMLElement, item?: Item) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+async function setFocusPlanForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
   if (!targetItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
-  showFocusPlanDialog(targetItem);
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
+
+  showFocusPlanDialog(targetItem)
 }
 
 /**
  * 为块设置重复
  */
-async function setRecurringForBlock(nodeElement: HTMLElement, item?: Item) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+async function setRecurringForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
   if (!targetItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
-  // 打开重复设置弹框
-  showRecurringSettingDialog(targetItem);
-}
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
 
-/**
- * 导入 CreateSkillDialog 组件
- */
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
-
-/**
- * 从斜杠命令创建技能
- * 将当前文档转换为技能文档
- */
-async function createSkillFromSlash(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
-  }
-  
-  // 获取当前文档信息
-  let docId: string;
-  let notebook: string;
-  let docPath: string;
-  
-  try {
-    const block = await getBlockByID(blockId);
-    if (!block) {
-      showMessage('无法获取文档信息', 2000, 'error');
-      return;
-    }
-    
-    // 获取文档根块
-    docId = block.root_id;
-    notebook = block.box;
-    docPath = block.hpath || '';
-  } catch (error) {
-    console.error('[SlashCommand] Failed to get document info:', error);
-    showMessage('无法获取文档信息', 2000, 'error');
-    return;
-  }
-  
-  // 创建容器元素
-  const container = document.createElement('div');
-  
-  // 创建 Vue 应用
-  const app = createApp(CreateSkillDialog, {
-    mode: 'existing',
-    docId,
-    notebook,
-    docPath,
-    onClose: () => {
-      dialog.destroy();
-    },
-    onCreated: async (_docId: string, skillName?: string) => {
-      console.log('[SlashCommand] onCreated called:', { _docId, skillName });
-      showMessage('技能创建成功！', 3000, 'info');
-      // 使用 ID 重命名文档为技能名称
-      if (skillName && _docId) {
-        console.log('[SlashCommand] Renaming document by ID:', { docId: _docId, newName: skillName });
-        try {
-          const result = await renameDocByID(_docId, skillName);
-          console.log('[SlashCommand] renameDocByID result:', result);
-          if (result === null) {
-            console.log('[SlashCommand] Rename successful');
-          } else {
-            console.error('[SlashCommand] Rename failed: API returned unexpected result');
-          }
-        } catch (error) {
-          console.error('[SlashCommand] Failed to rename document:', error);
-        }
-      } else {
-        console.log('[SlashCommand] Skip rename: missing params', { skillName, docId: _docId });
-      }
-    }
-  });
-  
-  app.use(getSharedPinia());
-  app.mount(container);
-  
-  // 打开创建技能对话框
-  const dialog = createDialog({
-    title: t('slash').createSkillTitle,
-    content: '',
-    width: '480px',
-    height: 'auto'
-  });
-  
-  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
-  if (bodyEl) {
-    bodyEl.appendChild(container);
-  }
-  
-  // 自动聚焦到弹框内，使 ESC 键立即生效
-  requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
-    if (focusableEl) {
-      focusableEl.focus();
-    }
-  });
+  showRecurringSettingDialog(targetItem)
 }
 
 /**
  * 为块设置优先级
  */
-async function setPriorityForBlock(nodeElement: HTMLElement, item?: Item) {
-  const blockId = nodeElement.getAttribute('data-node-id');
+async function setPriorityForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
+  const blockId = nodeElement.getAttribute('data-node-id')
   if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
+    showMessage('无法获取块ID', 2000, 'error')
+    return
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({
+    blockId,
+    nodeElement,
+  })
   if (!targetItem) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
-    return;
+    showMessage('当前块不是有效的事项', 2000, 'error')
+    return
   }
 
-  const blockContent = nodeElement.textContent || targetItem.content || '';
-  const currentPriority = parsePriorityFromLine(blockContent);
+  const blockContent = nodeElement.textContent || targetItem.content || ''
+  const currentPriority = parsePriorityFromLine(blockContent)
+
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext })
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
     const success = await writeBlock(
-      { blockId },
-      { type: 'setPriority', priority },
-    );
+      { blockId: targetItem.blockId || blockId },
+      {
+        type: 'setPriority',
+        priority,
+      },
+    )
     if (success) {
-      showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');
+      showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info')
     } else {
-      showMessage('设置优先级失败', 2000, 'error');
+      showMessage('设置优先级失败', 2000, 'error')
     }
-  });
+  })
 }

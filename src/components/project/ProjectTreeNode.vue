@@ -2,23 +2,23 @@
   <div class="project-tree-node">
     <button
       type="button"
+      class="project-task-row"
       :class="[
-        'project-task-row',
         `project-task-row--${node.task.level.toLowerCase()}`,
         {
-          'project-task-row--active': selectedTaskId === node.task.id,
-          'project-task-row--matched': matchedTaskIds.has(node.task.id),
+          'project-task-row--active': selectedTaskBlockId === (node.task.blockId ?? node.task.id),
+          'project-task-row--matched': matchedTaskBlockIds.has(node.task.blockId ?? node.task.id),
         },
       ]"
-      :data-task-id="node.task.id"
+      :data-task-block-id="node.task.blockId ?? node.task.id"
       :data-depth="String(node.depth)"
       :style="{ paddingLeft: `${12 + node.depth * 18}px` }"
-      @click="$emit('select-task', node.task.id)"
+      @click="$emit('selectTask', node.task.blockId ?? node.task.id)"
     >
       <span
         class="project-task-row__toggle"
-        :data-testid="`toggle-task-${node.task.id}`"
-        @click.stop="$emit('toggle-task', node.task.id)"
+        :data-testid="`toggle-task-${node.task.blockId ?? node.task.id}`"
+        @click.stop="$emit('toggleTask', node.task.blockId ?? node.task.id)"
       >
         {{ expanded ? '▾' : '▸' }}
       </span>
@@ -29,68 +29,112 @@
 
     <template v-if="expanded">
       <button
-        v-for="item in node.items"
-        :key="item.id"
+        v-for="entry in node.items"
+        :key="getItemBlockId(entry)"
         type="button"
+        class="project-item-row"
         :class="[
-          'project-item-row',
           {
-            'project-item-row--active': selectedItemId === item.id,
-            'project-item-row--matched': matchedItemIds.has(item.id),
+            'project-item-row--active': selectedItemBlockId === getItemBlockId(entry),
+            'project-item-row--matched': matchedItemBlockIds.has(getItemBlockId(entry)),
           },
         ]"
-        :data-item-id="item.id"
+        :data-item-block-id="getItemBlockId(entry)"
         :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
-        @click="$emit('select-item', item.id)"
+        @click="$emit('selectItem', getItemBlockId(entry))"
       >
-        <span :class="['project-item-row__status', `project-item-row__status--${item.status}`]"></span>
-        <span class="project-item-row__content">{{ item.content }}</span>
-        <span class="project-item-row__meta">{{ getItemMeta(item) }}</span>
+        <span
+          class="project-item-row__status"
+          :class="[`project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"
+        ></span>
+        <span class="project-item-row__content">{{ 'isMerged' in entry ? (entry as MergedItem).content : (entry as Item).content }}</span>
+        <span class="project-item-row__meta">{{ getItemMeta(entry) }}</span>
+        <span
+          v-if="getItemPriority(entry)"
+          class="project-item-row__priority"
+          @mouseenter="handlePriorityMouseEnter($event, getItemPriority(entry)!)"
+          @mouseleave="handlePriorityMouseLeave"
+        >
+          {{ PRIORITY_CONFIG[getItemPriority(entry)!].emoji }}
+        </span>
       </button>
 
       <ProjectTreeNode
         v-for="child in node.children"
-        :key="child.task.id"
+        :key="child.task.blockId ?? child.task.id"
         :node="child"
-        :expanded-task-ids="expandedTaskIds"
-        :matched-task-ids="matchedTaskIds"
-        :matched-item-ids="matchedItemIds"
-        :selected-task-id="selectedTaskId"
-        :selected-item-id="selectedItemId"
-        @toggle-task="$emit('toggle-task', $event)"
-        @select-task="$emit('select-task', $event)"
-        @select-item="$emit('select-item', $event)"
+        :expanded-task-block-ids="expandedTaskBlockIds"
+        :matched-task-block-ids="matchedTaskBlockIds"
+        :matched-item-block-ids="matchedItemBlockIds"
+        :selected-task-block-id="selectedTaskBlockId"
+        :selected-item-block-id="selectedItemBlockId"
+        @toggleTask="$emit('toggleTask', $event)"
+        @selectTask="$emit('selectTask', $event)"
+        @selectItem="$emit('selectItem', $event)"
       />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { getTaskItemProgress } from '@/utils/projectTaskTree';
-import type { Item } from '@/types/models';
-import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
+import type {
+  Item,
+  PriorityLevel,
+} from '@/types/models'
+import type {
+  MergedItem,
+  ProjectTaskTreeNode,
+} from '@/utils/projectTaskTree'
+import { computed } from 'vue'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import { getTaskItemProgress } from '@/utils/projectTaskTree'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
-  node: ProjectTaskTreeNode;
-  expandedTaskIds: Set<string>;
-  matchedTaskIds: Set<string>;
-  matchedItemIds: Set<string>;
-  selectedTaskId: string;
-  selectedItemId: string;
-}>();
+  node: ProjectTaskTreeNode
+  expandedTaskBlockIds: Set<string>
+  matchedTaskBlockIds: Set<string>
+  matchedItemBlockIds: Set<string>
+  selectedTaskBlockId: string
+  selectedItemBlockId: string
+}>()
 
 defineEmits<{
-  (event: 'toggle-task', taskId: string): void;
-  (event: 'select-task', taskId: string): void;
-  (event: 'select-item', itemId: string): void;
-}>();
+  (event: 'toggleTask', taskBlockId: string): void
+  (event: 'selectTask', taskBlockId: string): void
+  (event: 'selectItem', itemBlockId: string): void
+}>()
 
-const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id));
-const progress = computed(() => getTaskItemProgress(props.node.task));
+const expanded = computed(() => props.expandedTaskBlockIds.has(props.node.task.blockId ?? props.node.task.id))
+const progress = computed(() => getTaskItemProgress(props.node.items))
 
-function getItemMeta(item: Item): string {
-  return [item.date, item.priority].filter(Boolean).join(' · ');
+function getItemBlockId(entry: Item | MergedItem): string {
+  if ('isMerged' in entry) return (entry as MergedItem).blockId
+  return (entry as Item).blockId ?? (entry as Item).id
+}
+
+function getItemPriority(entry: Item | MergedItem): PriorityLevel | undefined {
+  return entry.priority
+}
+
+function getItemMeta(entry: Item | MergedItem): string {
+  if ('isMerged' in entry) {
+    return [entry.dateRange].filter(Boolean).join(' · ')
+  }
+  return [entry.date].filter(Boolean).join(' · ')
+}
+
+function handlePriorityMouseEnter(event: MouseEvent, priority: PriorityLevel) {
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
+  showTooltip(el, PRIORITY_CONFIG[priority].label)
+}
+
+function handlePriorityMouseLeave() {
+  hideTooltip()
 }
 </script>
 
@@ -157,5 +201,15 @@ function getItemMeta(item: Item): string {
 
 .project-item-row__status--abandoned {
   background: var(--b3-theme-on-surface);
+}
+
+.project-item-row__priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  cursor: default;
 }
 </style>

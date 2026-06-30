@@ -1,33 +1,39 @@
+import type {
+  Item,
+  PriorityLevel,
+} from '@/types/models'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
 // src/tabs/mobile/composables/useMobileTodo.ts
-import { computed, reactive } from 'vue';
-import type { Item, PriorityLevel } from '@/types/models';
-import type { TodoDateFilterType } from '@/utils/todoDateFilter';
+import {
+  computed,
+  reactive,
+} from 'vue'
 
 export interface DateRange {
-  start: string;
-  end: string;
+  start: string
+  end: string
 }
 
 export interface MobileTodoState {
   // Search & filters
-  searchQuery: string;
-  selectedGroup: string;
-  dateFilterType: TodoDateFilterType;
-  dateRange: DateRange | null;
-  selectedPriorities: PriorityLevel[];
-  
+  searchQuery: string
+  selectedGroup: string
+  dateFilterType: TodoDateFilterType
+  dateRange: DateRange | null
+  selectedPriorities: PriorityLevel[]
+
   // UI state
-  showFilterDrawer: boolean;
-  showActionDrawer: boolean;
-  showItemDetail: boolean;
-  showQuickCreate: boolean;
-  showProjectDetail: boolean;
-  showTaskDetail: boolean;
-  
+  showFilterDrawer: boolean
+  showActionDrawer: boolean
+  showItemDetail: boolean
+  showQuickCreate: boolean
+  showProjectDetail: boolean
+  showTaskDetail: boolean
+
   // Selected items
-  selectedItem: Item | null;
-  selectedProjectId: string | null;
-  selectedTaskBlockId: string | null;
+  selectedItem: Item | null
+  selectedProjectId: string | null
+  selectedTaskBlockId: string | null
 }
 
 export function useMobileTodo() {
@@ -37,62 +43,62 @@ export function useMobileTodo() {
     dateFilterType: 'today',
     dateRange: null,
     selectedPriorities: [],
-    
+
     showFilterDrawer: false,
     showActionDrawer: false,
     showItemDetail: false,
     showQuickCreate: false,
     showProjectDetail: false,
     showTaskDetail: false,
-    
+
     selectedItem: null,
     selectedProjectId: null,
     selectedTaskBlockId: null,
-  });
+  })
 
   const hasActiveFilters = computed(() => {
-    return state.selectedGroup !== '' ||
-           state.searchQuery !== '' ||
-           state.dateFilterType !== 'today' ||
-           state.selectedPriorities.length > 0;
-  });
+    return state.selectedGroup !== ''
+      || state.searchQuery !== ''
+      || state.dateFilterType !== 'today'
+      || state.selectedPriorities.length > 0
+  })
 
   const togglePriority = (priority: PriorityLevel) => {
-    const index = state.selectedPriorities.indexOf(priority);
+    const index = state.selectedPriorities.indexOf(priority)
     if (index > -1) {
-      state.selectedPriorities.splice(index, 1);
+      state.selectedPriorities.splice(index, 1)
     } else {
-      state.selectedPriorities.push(priority);
+      state.selectedPriorities.push(priority)
     }
-  };
+  }
 
   const resetFilters = () => {
-    state.selectedGroup = '';
-    state.searchQuery = '';
-    state.dateFilterType = 'today';
-    state.dateRange = null;
-    state.selectedPriorities = [];
-  };
+    state.selectedGroup = ''
+    state.searchQuery = ''
+    state.dateFilterType = 'today'
+    state.dateRange = null
+    state.selectedPriorities = []
+  }
 
   const openActionDrawer = (item: Item) => {
-    state.selectedItem = item;
-    state.showActionDrawer = true;
-  };
+    state.selectedItem = item
+    state.showActionDrawer = true
+  }
 
   const openItemDetail = (item: Item) => {
-    state.selectedItem = item;
-    state.showItemDetail = true;
-  };
+    state.selectedItem = item
+    state.showItemDetail = true
+  }
 
-  const openQuickCreate = (context?: { projectId?: string; taskBlockId?: string }) => {
+  const openQuickCreate = (context?: { projectId?: string, taskBlockId?: string }) => {
     if (context?.projectId) {
-      state.selectedProjectId = context.projectId;
+      state.selectedProjectId = context.projectId
     }
     if (context?.taskBlockId) {
-      state.selectedTaskBlockId = context.taskBlockId;
+      state.selectedTaskBlockId = context.taskBlockId
     }
-    state.showQuickCreate = true;
-  };
+    state.showQuickCreate = true
+  }
 
   return {
     state,
@@ -102,5 +108,5 @@ export function useMobileTodo() {
     openActionDrawer,
     openItemDetail,
     openQuickCreate,
-  };
+  }
 }

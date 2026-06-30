@@ -42,32 +42,32 @@
 
 ## 3. 斜杠命令
 
-| 功能 | 别名 | 手工验证点 |
-| --- | --- | --- |
-| 标记今天 | `/jt` `/today` | 移除斜杠文本；给事项追加今天日期；已有今天日期时只提示，不重复写入。 |
-| 标记明天 | `/mt` `/tomorrow` | 移除斜杠文本；追加明天日期；已有明天日期时不重复写入。 |
-| 选择日期 | `/rq` `/date` | 弹日期选择；保存后追加指定日期；已存在同日期时不重复写入。 |
-| 标记完成 | `/wc` `/done` | 移除斜杠文本；事项变 completed；已完成时仅提示。任务列表场景额外验证 recurrence 自动续写。 |
-| 标记放弃 | `/fq` `/abandon` | 移除斜杠文本；事项变 abandoned；已放弃时仅提示。 |
-| 打开日历 | `/rl` `/calendar` | 移除斜杠文本；打开 Calendar Tab；初始日期落在事项最近日期。 |
-| 打开日历-日 | `/rlt` `/calendarday` | 打开 Calendar，初始 view 为 day。 |
-| 打开日历-周 | `/rlz` `/calendarweek` | 打开 Calendar，初始 view 为 week。 |
-| 打开日历-月 | `/rly` `/calendarmonth` | 打开 Calendar，初始 view 为 month。 |
-| 打开日历-列表 | `/rll` `/calendarlist` | 打开 Calendar，初始 view 为 list。 |
-| 打开甘特 | `/gt` `/gantt` | 移除斜杠文本；打开 Gantt Tab；初始日期落在事项最近日期。 |
-| 开始专注 | `/zz` `/focus` | 移除斜杠文本；打开番茄钟启动弹窗并预选当前事项；已有 active focus / break 时只提示。 |
-| 打开待办面板 | `/db` `/todo` | 移除斜杠文本；打开 Todo Dock。 |
-| 设为项目目录 | `/ml` `/projectdir` | 把当前文档路径加入目录设置；默认挂到默认 group；重复目录不重复添加。 |
-| 标记任务 | `/rw` `/task` | 移除斜杠文本；给当前块追加任务标记；已有任务标记时只提示。 |
-| 查看详情 | `/xq` `/detail` | 移除斜杠文本；打开事项详情弹窗；详情里显示全部日期。 |
-| 设置 focus plan | `/yj` `/focusplan` | 移除斜杠文本；打开 focus plan 弹窗；保存/清空后块内容和 UI 同步更新。 |
-| 设置提醒 | `/tx` `/reminder` | 移除斜杠文本；打开 reminder 弹窗；保存/关闭提醒后块内容和 UI 同步更新。 |
-| 设置重复 | `/cf` `/recurring` | 移除斜杠文本；打开 recurring 弹窗；保存/清空后块内容和 UI 同步更新。 |
-| 创建技能 | `/cjskill` `/create-skill` `/skill` | 在当前文档上打开创建技能弹窗；创建成功后文档转为技能文档并按技能名重命名。 |
-| 设置优先级 | `/yxj` `/priority` | 移除斜杠文本；弹优先级选择；可设置 high/medium/low，也可清空。 |
-| 新建/编辑习惯 | `/xg` `/habit` | 普通文本场景创建 habit；已有 habit 定义场景更新原定义；在 record 上输入时不创建新 habit。 |
-| 习惯打卡 | `/dk` `/checkin` | habit 定义上执行会打卡；count habit 会 +1；今日已打卡/达标时提示；非 habit 块会打开 Habit Dock。 |
-| 打开习惯面板 | `/xgd` `/habits` | 直接打开 Habit Dock。 |
+| 功能            | 别名                                | 手工验证点                                                                                       |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 标记今天        | `/jt` `/today`                      | 移除斜杠文本；给事项追加今天日期；已有今天日期时只提示，不重复写入。                             |
+| 标记明天        | `/mt` `/tomorrow`                   | 移除斜杠文本；追加明天日期；已有明天日期时不重复写入。                                           |
+| 选择日期        | `/rq` `/date`                       | 弹日期选择；保存后追加指定日期；已存在同日期时不重复写入。                                       |
+| 标记完成        | `/wc` `/done`                       | 移除斜杠文本；事项变 completed；已完成时仅提示。任务列表场景额外验证 recurrence 自动续写。       |
+| 标记放弃        | `/fq` `/abandon`                    | 移除斜杠文本；事项变 abandoned；已放弃时仅提示。                                                 |
+| 打开日历        | `/rl` `/calendar`                   | 移除斜杠文本；打开 Calendar Tab；初始日期落在事项最近日期。                                      |
+| 打开日历-日     | `/rlt` `/calendarday`               | 打开 Calendar，初始 view 为 day。                                                                |
+| 打开日历-周     | `/rlz` `/calendarweek`              | 打开 Calendar，初始 view 为 week。                                                               |
+| 打开日历-月     | `/rly` `/calendarmonth`             | 打开 Calendar，初始 view 为 month。                                                              |
+| 打开日历-列表   | `/rll` `/calendarlist`              | 打开 Calendar，初始 view 为 list。                                                               |
+| 打开甘特        | `/gt` `/gantt`                      | 移除斜杠文本；打开 Gantt Tab；初始日期落在事项最近日期。                                         |
+| 开始专注        | `/zz` `/focus`                      | 移除斜杠文本；打开番茄钟启动弹窗并预选当前事项；已有 active focus / break 时只提示。             |
+| 打开待办面板    | `/db` `/todo`                       | 移除斜杠文本；打开 Todo Dock。                                                                   |
+| 设为项目目录    | `/ml` `/projectdir`                 | 把当前文档路径加入目录设置；默认挂到默认 group；重复目录不重复添加。                             |
+| 标记任务        | `/rw` `/task`                       | 移除斜杠文本；给当前块追加任务标记；已有任务标记时只提示。                                       |
+| 查看详情        | `/xq` `/detail`                     | 移除斜杠文本；打开事项详情弹窗；详情里显示全部日期。                                             |
+| 设置 focus plan | `/yj` `/focusplan`                  | 移除斜杠文本；打开 focus plan 弹窗；保存/清空后块内容和 UI 同步更新。                            |
+| 设置提醒        | `/tx` `/reminder`                   | 移除斜杠文本；打开 reminder 弹窗；保存/关闭提醒后块内容和 UI 同步更新。                          |
+| 设置重复        | `/cf` `/recurring`                  | 移除斜杠文本；打开 recurring 弹窗；保存/清空后块内容和 UI 同步更新。                             |
+| 创建技能        | `/cjskill` `/create-skill` `/skill` | 在当前文档上打开创建技能弹窗；创建成功后文档转为技能文档并按技能名重命名。                       |
+| 设置优先级      | `/yxj` `/priority`                  | 移除斜杠文本；弹优先级选择；可设置 high/medium/low，也可清空。                                   |
+| 新建/编辑习惯   | `/xg` `/habit`                      | 普通文本场景创建 habit；已有 habit 定义场景更新原定义；在 record 上输入时不创建新 habit。        |
+| 习惯打卡        | `/dk` `/checkin`                    | habit 定义上执行会打卡；count habit 会 +1；今日已打卡/达标时提示；非 habit 块会打开 Habit Dock。 |
+| 打开习惯面板    | `/xgd` `/habits`                    | 直接打开 Habit Dock。                                                                            |
 
 ### 斜杠命令边界补测
 

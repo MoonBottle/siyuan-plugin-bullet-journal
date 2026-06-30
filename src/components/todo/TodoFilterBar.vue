@@ -1,6 +1,9 @@
 <template>
   <div class="todo-filter-card">
-    <div v-if="showSearch" class="search-row">
+    <div
+      v-if="showSearch"
+      class="search-row"
+    >
       <div class="search-box">
         <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
         <input
@@ -10,7 +13,11 @@
           class="search-input"
           @input="handleSearchInput"
         />
-        <button v-if="searchQuery" class="clear-btn" @click="$emit('update:searchQuery', '')">
+        <button
+          v-if="searchQuery"
+          class="clear-btn"
+          @click="$emit('update:searchQuery', '')"
+        >
           <svg><use xlink:href="#iconClose"></use></svg>
         </button>
       </div>
@@ -28,7 +35,10 @@
         @click="handleTagBoxClick"
       >
         <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-        <div v-if="displaySelectedTags.length" class="selected-tag-chips">
+        <div
+          v-if="displaySelectedTags.length"
+          class="selected-tag-chips"
+        >
           <button
             v-for="tag in displaySelectedTags"
             :key="`selected-${tag}`"
@@ -49,18 +59,24 @@
           @input="handleTagQueryInput"
           @keydown="handleTagInputKeydown"
         />
-        <button v-if="tagQuery" class="clear-btn" @click.stop="$emit('update:tagQuery', '')">
+        <button
+          v-if="tagQuery"
+          class="clear-btn"
+          @click.stop="$emit('update:tagQuery', '')"
+        >
           <svg><use xlink:href="#iconClose"></use></svg>
         </button>
       </div>
 
-      <div v-if="showTagDropdown" class="tag-dropdown tag-options">
+      <div
+        v-if="showTagDropdown"
+        class="tag-dropdown tag-options"
+      >
         <button
-          v-for="(option, index) in filteredTagOptions"
+          v-for="option in filteredTagOptions"
           :key="option.name"
+          class="tag-chip tag-option"
           :class="[
-            'tag-chip',
-            'tag-option',
             {
               'tag-chip--selected': isTagSelected(option.name),
               'tag-option--highlighted': highlightedTagName === option.name,
@@ -87,15 +103,15 @@
         :model-value="dateFilterType"
         :options="dateFilterOptions"
         class="date-filter-select"
-        @update:model-value="value => $emit('update:dateFilterType', value)"
-        @change="value => $emit('change:dateFilterType', value)"
+        @update:model-value="value => $emit('update:dateFilterType', value as TodoDateFilterType)"
+        @change="value => $emit('changeDateFilterType', value as TodoDateFilterType)"
       />
 
       <button
         v-if="showSortTrigger"
         class="sort-trigger b3-tooltips b3-tooltips__n"
         :aria-label="t('todo.sortSettings')"
-        @click="$emit('toggle-sort-panel')"
+        @click="$emit('toggleSortPanel')"
       >
         <svg><use xlink:href="#iconSort"></use></svg>
       </button>
@@ -104,16 +120,20 @@
         <button
           v-for="p in priorityOptions"
           :key="p.value"
-          :class="['priority-btn', 'b3-tooltips', 'b3-tooltips__n', { active: selectedPriorities.includes(p.value) }]"
+          class="priority-btn b3-tooltips b3-tooltips__n"
+          :class="[{ active: selectedPriorities.includes(p.value) }]"
           :aria-label="PRIORITY_CONFIG[p.value].label"
-          @click="$emit('toggle-priority', p.value)"
+          @click="$emit('togglePriority', p.value)"
         >
           {{ p.emoji }}
         </button>
       </div>
     </div>
 
-    <div v-if="dateFilterType === 'custom'" class="date-range-row">
+    <div
+      v-if="dateFilterType === 'custom'"
+      class="date-range-row"
+    >
       <input
         :value="startDate"
         type="date"
@@ -129,7 +149,10 @@
       />
     </div>
 
-    <div v-if="showSortPanel" class="sort-panel">
+    <div
+      v-if="showSortPanel"
+      class="sort-panel"
+    >
       <div
         v-for="(rule, index) in sortRules"
         :key="`${rule.field}-${index}`"
@@ -139,19 +162,19 @@
           :model-value="rule.field"
           :options="availableFieldOptions(index)"
           class="sort-field-select"
-          @change="value => $emit('update-sort-field', index, String(value ?? ''))"
+          @change="value => $emit('updateSortField', index, String(value ?? ''))"
         />
         <SySelect
           :model-value="rule.direction"
           :options="sortDirectionOptions"
           class="sort-direction-select"
-          @change="value => $emit('update-sort-direction', index, String(value ?? ''))"
+          @change="value => $emit('updateSortDirection', index, String(value ?? ''))"
         />
         <button
           class="sort-rule-btn b3-tooltips b3-tooltips__n"
           :aria-label="t('todo.sortMoveUp')"
           :disabled="index === 0"
-          @click="$emit('move-sort-rule', index, -1)"
+          @click="$emit('moveSortRule', index, -1)"
         >
           <svg><use xlink:href="#iconUp"></use></svg>
         </button>
@@ -159,7 +182,7 @@
           class="sort-rule-btn b3-tooltips b3-tooltips__n"
           :aria-label="t('todo.sortMoveDown')"
           :disabled="index === sortRules.length - 1"
-          @click="$emit('move-sort-rule', index, 1)"
+          @click="$emit('moveSortRule', index, 1)"
         >
           <svg><use xlink:href="#iconDown"></use></svg>
         </button>
@@ -167,17 +190,23 @@
           class="sort-rule-btn b3-tooltips b3-tooltips__n"
           :aria-label="t('todo.sortRemoveRule')"
           :disabled="sortRules.length <= 1"
-          @click="$emit('remove-sort-rule', index)"
+          @click="$emit('removeSortRule', index)"
         >
           <svg><use xlink:href="#iconClose"></use></svg>
         </button>
       </div>
 
       <div class="sort-panel-actions">
-        <button class="b3-button b3-button--outline" @click="$emit('add-sort-rule')">
+        <button
+          class="b3-button b3-button--outline"
+          @click="$emit('addSortRule')"
+        >
           {{ t('todo.sortAddRule') }}
         </button>
-        <button class="b3-button b3-button--text" @click="$emit('reset-sort-rules')">
+        <button
+          class="b3-button b3-button--text"
+          @click="$emit('resetSortRules')"
+        >
           {{ t('todo.sortReset') }}
         </button>
       </div>
@@ -186,258 +215,269 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import { t } from '@/i18n';
-import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
-import type { PriorityLevel } from '@/types/models';
-import type { TodoDateFilterType } from '@/utils/todoDateFilter';
+import type {
+  TodoSortDirection,
+  TodoSortField,
+  TodoSortRule,
+} from '@/settings'
+import type { PriorityLevel } from '@/types/models'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
 
-type SelectOption = {
-  value: string;
-  label: string;
-};
+interface SelectOption {
+  value: string
+  label: string
+}
 
-type TagOption = {
-  name: string;
-  count: number;
-};
+interface TagOption {
+  name: string
+  count: number
+}
 
 const props = withDefaults(defineProps<{
-  selectedGroup: string;
-  searchQuery: string;
-  tagQuery?: string;
-  selectedTags?: string[];
-  dateFilterType: TodoDateFilterType;
-  selectedPriorities: PriorityLevel[];
-  startDate: string;
-  endDate: string;
-  showSortPanel: boolean;
-  showSortTrigger?: boolean;
-  showSearch?: boolean;
-  sortRules: TodoSortRule[];
-  groupOptions: SelectOption[];
-  tagOptions?: TagOption[];
-  dateFilterOptions: SelectOption[];
-  priorityOptions: Array<{ value: PriorityLevel; emoji: string }>;
-  sortDirectionOptions: Array<{ value: TodoSortDirection; label: string }>;
-  availableFieldOptions: (index: number) => Array<{ value: TodoSortField; label: string }>;
+  selectedGroup: string
+  searchQuery: string
+  tagQuery?: string
+  selectedTags?: string[]
+  dateFilterType: TodoDateFilterType
+  selectedPriorities: PriorityLevel[]
+  startDate: string
+  endDate: string
+  showSortPanel: boolean
+  showSortTrigger?: boolean
+  showSearch?: boolean
+  sortRules: TodoSortRule[]
+  groupOptions: SelectOption[]
+  tagOptions?: TagOption[]
+  dateFilterOptions: SelectOption[]
+  priorityOptions: Array<{ value: PriorityLevel, emoji: string }>
+  sortDirectionOptions: Array<{ value: TodoSortDirection, label: string }>
+  availableFieldOptions: (index: number) => Array<{ value: TodoSortField, label: string }>
 }>(), {
   showSearch: true,
   showSortTrigger: true,
   tagQuery: '',
   selectedTags: () => [],
   tagOptions: () => [],
-});
+})
 
 const emit = defineEmits<{
-  (event: 'update:selectedGroup', value: string): void;
-  (event: 'update:searchQuery', value: string): void;
-  (event: 'update:tagQuery', value: string): void;
-  (event: 'update:selectedTags', value: string[]): void;
-  (event: 'update:dateFilterType', value: TodoDateFilterType): void;
-  (event: 'change:dateFilterType', value: TodoDateFilterType): void;
-  (event: 'update:startDate', value: string): void;
-  (event: 'update:endDate', value: string): void;
-  (event: 'toggle-priority', value: PriorityLevel): void;
-  (event: 'toggle-sort-panel'): void;
-  (event: 'update-sort-field', index: number, value: string): void;
-  (event: 'update-sort-direction', index: number, value: string): void;
-  (event: 'move-sort-rule', index: number, delta: number): void;
-  (event: 'remove-sort-rule', index: number): void;
-  (event: 'add-sort-rule'): void;
-  (event: 'reset-sort-rules'): void;
-}>();
+  (event: 'update:selectedGroup', value: string): void
+  (event: 'update:searchQuery', value: string): void
+  (event: 'update:tagQuery', value: string): void
+  (event: 'update:selectedTags', value: string[]): void
+  (event: 'update:dateFilterType', value: TodoDateFilterType): void
+  (event: 'changeDateFilterType', value: TodoDateFilterType): void
+  (event: 'update:startDate', value: string): void
+  (event: 'update:endDate', value: string): void
+  (event: 'togglePriority', value: PriorityLevel): void
+  (event: 'toggleSortPanel'): void
+  (event: 'updateSortField', index: number, value: string): void
+  (event: 'updateSortDirection', index: number, value: string): void
+  (event: 'moveSortRule', index: number, delta: number): void
+  (event: 'removeSortRule', index: number): void
+  (event: 'addSortRule'): void
+  (event: 'resetSortRules'): void
+}>()
+
+const LEADING_HASH_RE = /^#/
 
 function handleSearchInput(event: Event) {
-  const target = event.target as HTMLInputElement | null;
+  const target = event.target as HTMLInputElement | null
   if (!target) {
-    return;
+    return
   }
-  emit('update:searchQuery', target.value);
+  emit('update:searchQuery', target.value)
 }
 
-const tagSearchRoot = ref<HTMLElement | null>(null);
-const tagSearchRow = ref<HTMLElement | null>(null);
-const tagSearchInput = ref<HTMLInputElement | null>(null);
-const isTagDropdownOpen = ref(false);
-const highlightedTagIndex = ref(-1);
+const tagSearchRoot = ref<HTMLElement | null>(null)
+const tagSearchRow = ref<HTMLElement | null>(null)
+const tagSearchInput = ref<HTMLInputElement | null>(null)
+const isTagDropdownOpen = ref(false)
+const highlightedTagIndex = ref(-1)
 
 const normalizedTagQuery = computed(() => {
-  return normalizeTagQuery(props.tagQuery);
-});
+  return normalizeTagQuery(props.tagQuery)
+})
 
 const normalizedSelectedTags = computed(() => {
-  return new Set(props.selectedTags.map(tag => normalizeSelectedTag(tag)));
-});
+  return new Set(props.selectedTags.map((tag) => normalizeSelectedTag(tag)))
+})
 
 const displaySelectedTags = computed(() => {
-  const seen = new Set<string>();
+  const seen = new Set<string>()
 
   return props.selectedTags.filter((tag) => {
-    const normalizedTag = normalizeSelectedTag(tag);
+    const normalizedTag = normalizeSelectedTag(tag)
     if (!normalizedTag || seen.has(normalizedTag)) {
-      return false;
+      return false
     }
-    seen.add(normalizedTag);
-    return true;
-  });
-});
+    seen.add(normalizedTag)
+    return true
+  })
+})
 
 const tagInputPlaceholder = computed(() => {
-  return displaySelectedTags.value.length > 0 ? '' : '筛选标签';
-});
+  return displaySelectedTags.value.length > 0 ? '' : '筛选标签'
+})
 
 const filteredTagOptions = computed(() => {
   if (!normalizedTagQuery.value) {
-    return props.tagOptions;
+    return props.tagOptions
   }
 
-  return props.tagOptions.filter(option =>
+  return props.tagOptions.filter((option) =>
     option.name.toLocaleLowerCase().includes(normalizedTagQuery.value),
-  );
-});
+  )
+})
 
 const showTagDropdown = computed(() => {
-  return isTagDropdownOpen.value && filteredTagOptions.value.length > 0;
-});
+  return isTagDropdownOpen.value && filteredTagOptions.value.length > 0
+})
 
 function normalizeTagQuery(query?: string) {
-  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase();
+  return (query || '').trim().replace(LEADING_HASH_RE, '').toLocaleLowerCase()
 }
 
 function normalizeSelectedTag(tag?: string) {
-  return (tag || '').toLocaleLowerCase();
+  return (tag || '').toLocaleLowerCase()
 }
 
 function handleTagQueryInput(event: Event) {
-  const target = event.target as HTMLInputElement | null;
+  const target = event.target as HTMLInputElement | null
   if (!target) {
-    return;
+    return
   }
-  highlightedTagIndex.value = -1;
-  emit('update:tagQuery', target.value);
+  highlightedTagIndex.value = -1
+  emit('update:tagQuery', target.value)
 }
 
 function openTagDropdown() {
-  isTagDropdownOpen.value = true;
+  isTagDropdownOpen.value = true
 }
 
 function closeTagDropdown() {
-  isTagDropdownOpen.value = false;
-  highlightedTagIndex.value = -1;
+  isTagDropdownOpen.value = false
+  highlightedTagIndex.value = -1
 }
 
 function isTagSelected(tag: string) {
-  return normalizedSelectedTags.value.has(normalizeSelectedTag(tag));
+  return normalizedSelectedTags.value.has(normalizeSelectedTag(tag))
 }
 
 function toggleTag(tag: string) {
-  const normalizedTargetTag = normalizeSelectedTag(tag);
-  const tagAlreadySelected = isTagSelected(tag);
+  const normalizedTargetTag = normalizeSelectedTag(tag)
+  const tagAlreadySelected = isTagSelected(tag)
   const nextTagsWithoutTarget = props.selectedTags.filter(
-    selectedTag => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
-  );
+    (selectedTag) => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
+  )
   const nextTags = tagAlreadySelected
     ? nextTagsWithoutTarget
-    : [...nextTagsWithoutTarget, tag];
+    : [...nextTagsWithoutTarget, tag]
 
-  emit('update:selectedTags', nextTags);
-  emit('update:tagQuery', '');
-  highlightedTagIndex.value = -1;
+  emit('update:selectedTags', nextTags)
+  emit('update:tagQuery', '')
+  highlightedTagIndex.value = -1
 }
 
 function removeTag(tag: string) {
   if (!isTagSelected(tag)) {
-    return;
+    return
   }
 
-  toggleTag(tag);
+  toggleTag(tag)
 }
 
 function handleTagInputKeydown(event: KeyboardEvent) {
   if (event.key === 'Backspace' && !props.tagQuery && displaySelectedTags.value.length > 0) {
-    event.preventDefault();
-    const lastTag = displaySelectedTags.value[displaySelectedTags.value.length - 1];
+    event.preventDefault()
+    const lastTag = displaySelectedTags.value.at(-1)
     if (lastTag) {
-      removeTag(lastTag);
+      removeTag(lastTag)
     }
-    return;
+    return
   }
 
   if (event.key === 'Escape') {
-    closeTagDropdown();
-    return;
+    closeTagDropdown()
+    return
   }
 
   if (!filteredTagOptions.value.length) {
-    return;
+    return
   }
 
   if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    openTagDropdown();
+    event.preventDefault()
+    openTagDropdown()
     highlightedTagIndex.value = highlightedTagIndex.value < 0
       ? 0
-      : (highlightedTagIndex.value + 1) % filteredTagOptions.value.length;
-    return;
+      : (highlightedTagIndex.value + 1) % filteredTagOptions.value.length
+    return
   }
 
   if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    openTagDropdown();
+    event.preventDefault()
+    openTagDropdown()
     highlightedTagIndex.value = highlightedTagIndex.value < 0
       ? filteredTagOptions.value.length - 1
-      : (highlightedTagIndex.value - 1 + filteredTagOptions.value.length) % filteredTagOptions.value.length;
-    return;
+      : (highlightedTagIndex.value - 1 + filteredTagOptions.value.length) % filteredTagOptions.value.length
+    return
   }
 
   if (event.key === 'Enter') {
-    event.preventDefault();
+    event.preventDefault()
     const activeOption = highlightedTagIndex.value >= 0
       ? filteredTagOptions.value[highlightedTagIndex.value]
-      : filteredTagOptions.value[0];
+      : filteredTagOptions.value[0]
     if (activeOption) {
-      toggleTag(activeOption.name);
+      toggleTag(activeOption.name)
     }
   }
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
-  const target = event.target;
+  const target = event.target
   if (!(target instanceof Node)) {
-    return;
+    return
   }
 
   if (tagSearchRow.value?.contains(target)) {
-    return;
+    return
   }
 
-  closeTagDropdown();
+  closeTagDropdown()
 }
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown);
-});
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
+})
 
 const highlightedTagName = computed(() => {
-  return filteredTagOptions.value[highlightedTagIndex.value]?.name ?? '';
-});
+  return filteredTagOptions.value[highlightedTagIndex.value]?.name ?? ''
+})
 
 function handleTagInputFocus() {
-  highlightedTagIndex.value = -1;
-  openTagDropdown();
+  highlightedTagIndex.value = -1
+  openTagDropdown()
 }
 
 function handleTagBoxClick() {
-  highlightedTagIndex.value = -1;
-  openTagDropdown();
-  tagSearchInput.value?.focus();
+  highlightedTagIndex.value = -1
+  openTagDropdown()
+  tagSearchInput.value?.focus()
 }
 </script>
 
@@ -499,7 +539,9 @@ function handleTagBoxClick() {
         opacity: 0.4;
         color: var(--b3-theme-on-surface);
 
-        &:hover { opacity: 0.8; }
+        &:hover {
+          opacity: 0.8;
+        }
       }
     }
   }
@@ -559,7 +601,9 @@ function handleTagBoxClick() {
       opacity: 0.4;
       color: var(--b3-theme-on-surface);
 
-      &:hover { opacity: 0.8; }
+      &:hover {
+        opacity: 0.8;
+      }
     }
   }
 
@@ -667,7 +711,8 @@ function handleTagBoxClick() {
         transition: all 0.2s;
         padding: 0;
 
-        &:hover, &.active {
+        &:hover,
+        &.active {
           background: var(--b3-theme-primary-lightest);
         }
       }

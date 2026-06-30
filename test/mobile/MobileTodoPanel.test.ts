@@ -1,8 +1,19 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
-import MobileTodoPanel from '@/mobile/panels/MobileTodoPanel.vue';
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+} from 'vue'
+import MobileTodoPanel from '@/mobile/panels/MobileTodoPanel.vue'
 
 const {
   mockLoadFromPlugin,
@@ -10,6 +21,7 @@ const {
   mockShowMessage,
   mockBuildTodoDateRange,
   mockWriteBlock,
+  mockCompleteItem,
 } = vi.hoisted(() => ({
   mockLoadFromPlugin: vi.fn(),
   mockRefresh: vi.fn(async () => {}),
@@ -19,16 +31,17 @@ const {
     end: '2026-05-01',
   })),
   mockWriteBlock: vi.fn(async () => true),
-}));
+  mockCompleteItem: vi.fn(async () => true),
+}))
 
 vi.mock('@/mobile/components/todo/MobileFilterBar.vue', () => ({
   default: defineComponent({
     name: 'MobileFilterBarStub',
     setup() {
-      return () => h('div', { 'data-testid': 'filter-bar' }, 'filter');
+      return () => h('div', { 'data-testid': 'filter-bar' }, 'filter')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/components/todo/MobileTodoList.vue', () => ({
   default: defineComponent({
@@ -48,25 +61,25 @@ vi.mock('@/mobile/components/todo/MobileTodoList.vue', () => ({
         }, 'list'),
         h('button', {
           'data-testid': 'todo-list-complete',
-          onClick: () => emit('item-complete', {
+          "onClick": () => emit('item-complete', {
             blockId: 'panel-item',
             date: '2026-05-01',
             status: 'pending',
           }),
         }, 'complete'),
-      ]);
+      ])
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/filter/FilterDrawer.vue', () => ({
   default: defineComponent({
     name: 'FilterDrawerStub',
     setup() {
-      return () => h('div', { 'data-testid': 'filter-drawer' }, 'filter-drawer');
+      return () => h('div', { 'data-testid': 'filter-drawer' }, 'filter-drawer')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/action/ActionDrawer.vue', () => ({
   default: defineComponent({
@@ -77,13 +90,13 @@ vi.mock('@/mobile/drawers/action/ActionDrawer.vue', () => ({
         'button',
         {
           'data-testid': 'action-drawer-pomodoro',
-          onClick: () => emit('open-pomodoro', { blockId: 'action-item' }),
+          "onClick": () => emit('open-pomodoro', { blockId: 'action-item' }),
         },
         'action-pomodoro',
-      );
+      )
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/item/MobileItemDetail.vue', () => ({
   default: defineComponent({
@@ -94,13 +107,13 @@ vi.mock('@/mobile/drawers/item/MobileItemDetail.vue', () => ({
         'button',
         {
           'data-testid': 'item-detail-pomodoro',
-          onClick: () => emit('open-pomodoro', { blockId: 'detail-item' }),
+          "onClick": () => emit('open-pomodoro', { blockId: 'detail-item' }),
         },
         'detail-pomodoro',
-      );
+      )
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/task/TaskItemDetail.vue', () => ({
   default: defineComponent({
@@ -111,58 +124,58 @@ vi.mock('@/mobile/drawers/task/TaskItemDetail.vue', () => ({
         'button',
         {
           'data-testid': 'task-item-detail-pomodoro',
-          onClick: () => emit('open-pomodoro', { blockId: 'task-detail-item' }),
+          "onClick": () => emit('open-pomodoro', { blockId: 'task-detail-item' }),
         },
         'task-detail-pomodoro',
-      );
+      )
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/project/ProjectDetail.vue', () => ({
   default: defineComponent({
     name: 'ProjectDetailStub',
     setup() {
-      return () => h('div', { 'data-testid': 'project-detail' }, 'project-detail');
+      return () => h('div', { 'data-testid': 'project-detail' }, 'project-detail')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/task/TaskDetail.vue', () => ({
   default: defineComponent({
     name: 'TaskDetailStub',
     setup() {
-      return () => h('div', { 'data-testid': 'task-detail' }, 'task-detail');
+      return () => h('div', { 'data-testid': 'task-detail' }, 'task-detail')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/quick-create/QuickCreateDrawer.vue', () => ({
   default: defineComponent({
     name: 'QuickCreateDrawerStub',
     setup() {
-      return () => h('div', { 'data-testid': 'quick-create-drawer' }, 'quick-create');
+      return () => h('div', { 'data-testid': 'quick-create-drawer' }, 'quick-create')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/pomodoro/MobileReminderDrawer.vue', () => ({
   default: defineComponent({
     name: 'MobileReminderDrawerStub',
     setup() {
-      return () => h('div', { 'data-testid': 'reminder-drawer' }, 'reminder');
+      return () => h('div', { 'data-testid': 'reminder-drawer' }, 'reminder')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/drawers/pomodoro/MobileRecurringDrawer.vue', () => ({
   default: defineComponent({
     name: 'MobileRecurringDrawerStub',
     setup() {
-      return () => h('div', { 'data-testid': 'recurring-drawer' }, 'recurring');
+      return () => h('div', { 'data-testid': 'recurring-drawer' }, 'recurring')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/composables/useItemDetail', () => ({
   useItemDetail: () => ({
@@ -171,7 +184,7 @@ vi.mock('@/mobile/composables/useItemDetail', () => ({
     openProject: vi.fn(),
     openTask: vi.fn(),
   }),
-}));
+}))
 
 vi.mock('@/stores', () => ({
   useProjectStore: () => ({
@@ -193,21 +206,29 @@ vi.mock('@/stores', () => ({
     loadFromPlugin: mockLoadFromPlugin,
     $patch: vi.fn(),
   }),
-}));
+}))
 
 vi.mock('@/main', () => ({
   getCurrentPlugin: vi.fn(),
   usePlugin: () => ({ name: 'test-plugin' }),
-}));
+}))
 
 vi.mock('@/utils/dialog', () => ({
   showMessage: mockShowMessage,
   showPomodoroTimerDialog: vi.fn(),
-}));
+}))
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: mockWriteBlock,
-}));
+}))
+
+vi.mock('@/utils/itemActions', () => ({
+  completeItem: mockCompleteItem,
+  migrateItem: vi.fn(async () => true),
+  migrateItemToToday: vi.fn(async () => true),
+  migrateItemToDate: vi.fn(async () => true),
+  abandonItem: vi.fn(async () => true),
+}))
 
 vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
@@ -217,40 +238,40 @@ vi.mock('@/utils/eventBus', () => ({
   eventBus: {
     on: vi.fn(() => () => {}),
   },
-}));
+}))
 
 vi.mock('@/utils/refreshChannelGuard', () => ({
   createRefreshChannelGuard: vi.fn(() => ({
     dispose: vi.fn(),
   })),
-}));
+}))
 
 vi.mock('@/utils/viewDebug', () => ({
   buildViewDebugContext: vi.fn(() => ({})),
-}));
+}))
 
 vi.mock('@/utils/todoDateFilter', () => ({
   buildCompletedTodoDateRange: vi.fn(() => null),
   buildTodoDateRange: mockBuildTodoDateRange,
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'common')
-      return { dataRefreshed: 'Data refreshed' };
+      return { dataRefreshed: 'Data refreshed' }
     if (key === 'mobile.filter.applied')
-      return 'Filters applied';
+      return 'Filters applied'
     if (key === 'mobile.status.updated')
-      return 'Status updated';
+      return 'Status updated'
     if (key === 'mobile.create.success')
-      return 'Create success';
+      return 'Create success'
     if (key === 'statusTag')
-      return { completed: '✅' };
+      return { completed: '✅' }
     if (key === 'todo')
-      return { complete: 'Complete' };
-    return key;
+      return { complete: 'Complete' }
+    return key
   }),
-}));
+}))
 
 vi.mock('@/utils/dayjs', () => ({
   default: () => ({
@@ -259,12 +280,12 @@ vi.mock('@/utils/dayjs', () => ({
       format: () => '2026-05-08',
     }),
   }),
-}));
+}))
 
 function mountPanel() {
-  const events: Array<{ name: string, payload: unknown }> = [];
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const events: Array<{ name: string, payload: unknown }> = []
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
   const Root = defineComponent({
     components: { MobileTodoPanel },
@@ -272,85 +293,90 @@ function mountPanel() {
       return () =>
         h(MobileTodoPanel, {
           onOpenPomodoro: (payload: unknown) => {
-            events.push({ name: 'open-pomodoro', payload });
+            events.push({
+              name: 'open-pomodoro',
+              payload,
+            })
           },
-        });
+        })
     },
-  });
+  })
 
-  const app = createApp(Root);
-  app.mount(container);
+  const app = createApp(Root)
+  app.mount(container)
 
   return {
     container,
     events,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 afterEach(() => {
-  document.body.innerHTML = '';
-  vi.clearAllMocks();
-});
+  document.body.innerHTML = ''
+  vi.clearAllMocks()
+})
 
-describe('MobileTodoPanel', () => {
+describe('mobileTodoPanel', () => {
   it('renders the todo shell without legacy habit or bottom nav placeholders', async () => {
-    const mounted = mountPanel();
-    await nextTick();
+    const mounted = mountPanel()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="filter-bar"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="todo-list"]')).not.toBeNull();
-    expect(mounted.container.textContent).not.toContain('MobileBottomNav');
-    expect(mounted.container.textContent).not.toContain('MobileHabitDock');
-    expect(mounted.container.textContent).not.toContain('MobilePomodoroDrawer');
+    expect(mounted.container.querySelector('[data-testid="filter-bar"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="todo-list"]')).not.toBeNull()
+    expect(mounted.container.textContent).not.toContain('MobileBottomNav')
+    expect(mounted.container.textContent).not.toContain('MobileHabitDock')
+    expect(mounted.container.textContent).not.toContain('MobilePomodoroDrawer')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('emits open-pomodoro with the item block id from the detail drawer path', async () => {
-    const mounted = mountPanel();
+    const mounted = mountPanel()
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid="item-detail-pomodoro"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid="item-detail-pomodoro"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
     expect(mounted.events).toEqual([
       {
         name: 'open-pomodoro',
         payload: { blockId: 'detail-item' },
       },
-    ]);
+    ])
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('initializes with an active date range and does not announce filters on mount', async () => {
-    const mounted = mountPanel();
+    const mounted = mountPanel()
+    await nextTick()
+
+    expect(mockBuildTodoDateRange).toHaveBeenCalled()
+    expect(mounted.container.querySelector('[data-testid="todo-list"]')?.getAttribute('data-date-range')).toContain('2026-05-01')
+    expect(mockShowMessage).not.toHaveBeenCalledWith('Filters applied')
+
+    mounted.unmount()
+  })
+
+  it('uses completeItem for quick complete from the list', async () => {
+    const mounted = mountPanel()
     await nextTick();
 
-    expect(mockBuildTodoDateRange).toHaveBeenCalled();
-    expect(mounted.container.querySelector('[data-testid="todo-list"]')?.getAttribute('data-date-range')).toContain('2026-05-01');
-    expect(mockShowMessage).not.toHaveBeenCalledWith('Filters applied');
+    (mounted.container.querySelector('[data-testid="todo-list-complete"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    mounted.unmount();
-  });
+    expect(mockCompleteItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'panel-item',
+        status: 'pending',
+      }),
+    )
+    expect(mockShowMessage).toHaveBeenCalledWith('Complete')
 
-  it('uses BlockWriter for quick complete from the list', async () => {
-    const mounted = mountPanel();
-    await nextTick();
-
-    (mounted.container.querySelector('[data-testid="todo-list-complete"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
-
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'panel-item' },
-      { type: 'setStatus', status: 'completed' },
-    );
-    expect(mockShowMessage).toHaveBeenCalledWith('Complete');
-
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

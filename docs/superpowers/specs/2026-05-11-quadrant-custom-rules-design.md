@@ -95,24 +95,24 @@
 建议结构：
 
 ```ts
-type QuadrantPriorityValue = 'high' | 'medium' | 'low' | 'none';
-type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'undated';
+type QuadrantPriorityValue = 'high' | 'medium' | 'low' | 'none'
+type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'undated'
 
-type QuadrantRuleChain = {
-  priority?: QuadrantPriorityValue[];
-  date?: QuadrantDateValue[];
-};
+interface QuadrantRuleChain {
+  priority?: QuadrantPriorityValue[]
+  date?: QuadrantDateValue[]
+}
 
-type QuadrantPanelConfig = {
-  id: 'q1' | 'q2' | 'q3' | 'q4';
-  title: string;
-  rules: QuadrantRuleChain;
-};
+interface QuadrantPanelConfig {
+  id: 'q1' | 'q2' | 'q3' | 'q4'
+  title: string
+  rules: QuadrantRuleChain
+}
 
-type QuadrantConfigFile = {
-  version: 1;
-  panels: QuadrantPanelConfig[];
-};
+interface QuadrantConfigFile {
+  version: 1
+  panels: QuadrantPanelConfig[]
+}
 ```
 
 默认配置：
@@ -313,13 +313,13 @@ type QuadrantConfigFile = {
 现状：
 
 ```ts
-export type WorkbenchQuadrantKey = 'high' | 'medium' | 'low' | 'none';
+export type WorkbenchQuadrantKey = 'high' | 'medium' | 'low' | 'none'
 ```
 
 需要改为新的稳定标识：
 
 ```ts
-export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4';
+export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4'
 ```
 
 这样工作台配置与象限标题解耦。即使用户把标题改成任意文案，工作台引用关系也不会失效。

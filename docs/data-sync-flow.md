@@ -308,11 +308,11 @@ submitRefreshRequest(createFullRefreshRequest(...))
 
 当前 `projectStore` 里和“数据重建”相关的主要有三条路径：
 
-| 路径 | 入口 | 是否首次加载 | 是否显示全屏 loading | 数据写入方式 |
-| --- | --- | --- | --- | --- |
-| `loadProjects()` | 插件 `onload()` 初始加载 | 是 | 是 | 分批追加写入 |
-| `refreshFull()` | `refresh()` 在 full path 下调用 | 否 | 否 | 完整构建后一次性替换 |
-| `refreshDirtyDocs()` | `refresh()` 在 directed path 下调用 | 否 | 否 | 仅更新脏文档对应项目 |
+| 路径                 | 入口                                | 是否首次加载 | 是否显示全屏 loading | 数据写入方式         |
+| -------------------- | ----------------------------------- | ------------ | -------------------- | -------------------- |
+| `loadProjects()`     | 插件 `onload()` 初始加载            | 是           | 是                   | 分批追加写入         |
+| `refreshFull()`      | `refresh()` 在 full path 下调用     | 否           | 否                   | 完整构建后一次性替换 |
+| `refreshDirtyDocs()` | `refresh()` 在 directed path 下调用 | 否           | 否                   | 仅更新脏文档对应项目 |
 
 ### `loadProjects()`
 

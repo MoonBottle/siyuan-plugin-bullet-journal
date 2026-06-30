@@ -1,8 +1,9 @@
 <template>
   <div
-    :class="['habit-list-item', {
+    class="habit-list-item"
+    :class="[{
       'habit-list-item--completed': isCompleted,
-      'habit-list-item--count': habit.type === 'count'
+      'habit-list-item--count': habit.type === 'count',
     }]"
   >
     <div
@@ -12,19 +13,28 @@
     >
       <div class="habit-list-item__header">
         <span class="habit-list-item__name">{{ habit.name }}</span>
-        <span v-if="stats" class="habit-list-item__streak">
+        <span
+          v-if="stats"
+          class="habit-list-item__streak"
+        >
           {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
         </span>
       </div>
-      <div v-if="showPeriodCompletedStatus" class="habit-list-item__period-status">
+      <div
+        v-if="showPeriodCompletedStatus"
+        class="habit-list-item__period-status"
+      >
         {{ periodCompletedText }}
       </div>
 
-      <div v-if="habit.type !== 'binary'" class="habit-list-item__progress">
+      <div
+        v-if="habit.type !== 'binary'"
+        class="habit-list-item__progress"
+      >
         <div class="habit-list-item__progress-bar">
           <div
             class="habit-list-item__progress-fill"
-            :style="{ width: progressPercent + '%' }"
+            :style="{ width: `${progressPercent}%` }"
           ></div>
         </div>
         <span class="habit-list-item__progress-text">
@@ -65,7 +75,7 @@
         class="habit-calendar-btn b3-tooltips b3-tooltips__n"
         data-testid="habit-list-item-open-doc"
         :aria-label="t('todo').openDoc"
-        @click.stop="emit('open-doc', habit)"
+        @click.stop="emit('openDoc', habit)"
       >
         <svg><use xlink:href="#iconFile"></use></svg>
       </button>
@@ -74,12 +84,10 @@
         <!-- 二元型打卡按钮 -->
         <button
           v-if="habit.type === 'binary'"
-          :class="['habit-action-btn', {
+          class="habit-action-btn habit-action-btn--binary b3-tooltips b3-tooltips__n"
+          :class="[{
             'habit-action-btn--done': dayState.isCompleted,
             'habit-action-btn--missed': dayState.isMissed,
-            'habit-action-btn--binary': true,
-            'b3-tooltips': true,
-            'b3-tooltips__n': true,
           }]"
           data-testid="habit-list-item-check-in"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
@@ -113,12 +121,10 @@
         <!-- 计数型 +1 按钮 -->
         <button
           v-else
-          :class="['habit-action-btn', {
+          class="habit-action-btn habit-action-btn--count b3-tooltips b3-tooltips__n"
+          :class="[{
             'habit-action-btn--done': dayState.isCompleted,
             'habit-action-btn--missed': dayState.isMissed,
-            'habit-action-btn--count': true,
-            'b3-tooltips': true,
-            'b3-tooltips__n': true,
           }]"
           data-testid="habit-list-item-increment"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
@@ -150,7 +156,12 @@
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <circle class="habit-action-btn__progress-track" cx="12" cy="12" r="8" />
+            <circle
+              class="habit-action-btn__progress-track"
+              cx="12"
+              cy="12"
+              r="8"
+            />
             <circle
               class="habit-action-btn__progress-value"
               cx="12"
@@ -166,7 +177,9 @@
     <div
       v-if="contextMenu.visible"
       class="habit-list-item__menu"
-      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+      :style="{
+        left: `${contextMenu.x}px`, top: `${contextMenu.y}px`,
+      }"
     >
       <button
         v-if="contextMenu.action === 'mark-missed'"
@@ -191,234 +204,244 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { getHabitEndDate } from '@/domain/habit/habitPeriod';
-import { getNextEligibleHabitDate } from '@/domain/habit/habitStatus';
-import { t } from '@/i18n';
-import type { Habit, HabitDayState, HabitPeriodState, HabitStats } from '@/types/models';
-import dayjs from '@/utils/dayjs';
+import type {
+  Habit,
+  HabitDayState,
+  HabitPeriodState,
+  HabitStats,
+} from '@/types/models'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+} from 'vue'
+import { getHabitEndDate } from '@/domain/habit/habitPeriod'
+import { getNextEligibleHabitDate } from '@/domain/habit/habitStatus'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
 
 const props = defineProps<{
-  habit: Habit;
-  dayState: HabitDayState;
-  periodState: HabitPeriodState;
-  stats?: HabitStats;
-  currentDate?: string;
-  isMobile?: boolean;
-  readonlyActions?: boolean;
-}>();
+  habit: Habit
+  dayState: HabitDayState
+  periodState: HabitPeriodState
+  stats?: HabitStats
+  currentDate?: string
+  isMobile?: boolean
+  readonlyActions?: boolean
+}>()
 
 const emit = defineEmits<{
-  'check-in': [habit: Habit];
-  'increment': [habit: Habit];
-  'mark-missed': [habit: Habit, date: string];
-  'reset-record': [habit: Habit, date: string];
-  'open-doc': [habit: Habit];
-  'open-detail': [habit: Habit];
-}>();
+  checkIn: [habit: Habit]
+  increment: [habit: Habit]
+  markMissed: [habit: Habit, date: string]
+  resetRecord: [habit: Habit, date: string]
+  openDoc: [habit: Habit]
+  openDetail: [habit: Habit]
+}>()
 
-const isMobile = computed(() => props.isMobile === true);
+const isMobile = computed(() => props.isMobile === true)
 
 const isCompleted = computed(() => {
-  return props.dayState.isCompleted;
-});
+  return props.dayState.isCompleted
+})
 
 const periodCompletedText = computed(() => {
   return props.periodState.periodType === 'day'
     ? t('habit').todayChecked
-    : t('habit').periodCompleted;
-});
+    : t('habit').periodCompleted
+})
 
 const showPeriodCompletedStatus = computed(() => {
   if (!props.periodState.isCompleted) {
-    return false;
+    return false
   }
 
   if (props.periodState.periodType === 'interval') {
-    return false;
+    return false
   }
 
-  return props.periodState.periodType !== 'day';
-});
+  return props.periodState.periodType !== 'day'
+})
 
 const dayCurrentValue = computed(() => {
-  return props.dayState.currentValue ?? 0;
-});
+  return props.dayState.currentValue ?? 0
+})
 
-const progressCircumference = 2 * Math.PI * 8;
+const progressCircumference = 2 * Math.PI * 8
 
 const progressPercent = computed(() => {
-  if (!props.habit.target) return 0;
-  return Math.min((dayCurrentValue.value / props.habit.target) * 100, 100);
-});
+  if (!props.habit.target) return 0
+  return Math.min((dayCurrentValue.value / props.habit.target) * 100, 100)
+})
 
-const actionProgress = computed(() => progressPercent.value / 100);
+const actionProgress = computed(() => progressPercent.value / 100)
 const hasPartialProgress = computed(() => {
   if (props.habit.type !== 'count') {
-    return false;
+    return false
   }
 
-  return !props.dayState.isCompleted && !props.dayState.isMissed && (props.dayState.currentValue ?? 0) > 0;
-});
+  return !props.dayState.isCompleted && !props.dayState.isMissed && (props.dayState.currentValue ?? 0) > 0
+})
 
 const contextMenu = ref({
   visible: false,
   x: 0,
   y: 0,
   action: 'reset-record' as 'mark-missed' | 'reset-record',
-});
+})
 
-const referenceDate = computed(() => props.currentDate || props.dayState.date);
-const actualToday = computed(() => dayjs().format('YYYY-MM-DD'));
-const isReferenceToday = computed(() => referenceDate.value === actualToday.value);
+const referenceDate = computed(() => props.currentDate || props.dayState.date)
+const actualToday = computed(() => dayjs().format('YYYY-MM-DD'))
+const isReferenceToday = computed(() => referenceDate.value === actualToday.value)
 
 const frequencySummary = computed(() => {
-  const frequency = props.habit.frequency;
+  const frequency = props.habit.frequency
   if (!frequency || frequency.type === 'daily') {
-    return t('habit').freqDaily;
+    return t('habit').freqDaily
   }
 
   if (frequency.type === 'every_n_days') {
-    return t('habit').freqEveryNDays.replace('N', String(frequency.interval || 2));
+    return t('habit').freqEveryNDays.replace('N', String(frequency.interval || 2))
   }
 
   if (frequency.type === 'weekly') {
-    return t('habit').freqWeekly;
+    return t('habit').freqWeekly
   }
 
   if (frequency.type === 'n_per_week') {
-    return t('habit').freqNPerWeek.replace('N', String(frequency.daysPerWeek || 1));
+    return t('habit').freqNPerWeek.replace('N', String(frequency.daysPerWeek || 1))
   }
 
   if (frequency.type === 'weekly_days') {
-    const labels = t('calendar').weekDays;
+    const labels = t('calendar').weekDays
     const days = (frequency.daysOfWeek || [])
-      .map(day => labels[(day + 6) % 7] || '')
+      .map((day) => labels[(day + 6) % 7] || '')
       .filter(Boolean)
-      .join('、');
-    return days ? `${t('habit').freqWeekly}${days}` : t('habit').freqWeeklyDays;
+      .join('、')
+    return days ? `${t('habit').freqWeekly}${days}` : t('habit').freqWeeklyDays
   }
 
   if (frequency.type === 'ebbinghaus') {
-    return t('habit').freqEbbinghaus || '艾宾浩斯';
+    return t('habit').freqEbbinghaus || '艾宾浩斯'
   }
 
-  return t('habit').frequencyLabel;
-});
+  return t('habit').frequencyLabel
+})
 
 const isDueToday = computed(() => {
   if (!isReferenceToday.value) {
-    return false;
+    return false
   }
 
   return !props.habit.archivedAt
     && props.periodState.eligibleToday
     && !props.periodState.isCompleted
     && !props.dayState.isCompleted
-    && !props.dayState.isMissed;
-});
+    && !props.dayState.isMissed
+})
 
 const selectedDayStatusKind = computed<'completed' | 'missed' | 'not-needed' | 'pending' | null>(() => {
   if (isReferenceToday.value) {
-    return null;
+    return null
   }
 
   if (props.dayState.isCompleted) {
-    return 'completed';
+    return 'completed'
   }
 
   if (props.dayState.isMissed) {
-    return 'missed';
+    return 'missed'
   }
 
   if (!props.periodState.eligibleToday) {
-    return 'not-needed';
+    return 'not-needed'
   }
 
-  return 'pending';
-});
+  return 'pending'
+})
 
 const scheduleHint = computed(() => {
   if (props.habit.archivedAt) {
-    return t('habit').archived;
+    return t('habit').archived
   }
 
-  const endDate = getHabitEndDate(props.habit);
+  const endDate = getHabitEndDate(props.habit)
   if (endDate && referenceDate.value > endDate) {
-    return t('habit').completed;
+    return t('habit').completed
   }
 
   if (!isReferenceToday.value) {
     if (props.habit.frequency?.type === 'ebbinghaus') {
       if (props.dayState.isCompleted) {
-        return t('habit').selectedDayCompleted;
+        return t('habit').selectedDayCompleted
       }
 
       if (props.dayState.isMissed) {
-        return t('habit').selectedDayMissed;
+        return t('habit').selectedDayMissed
       }
 
       if (props.dayState.isOverdue) {
-        return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+        return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0))
       }
 
       if (props.dayState.isDue) {
-        return t('habit').selectedDayPending;
+        return t('habit').selectedDayPending
       }
 
-      return t('habit').selectedDayNotNeeded;
+      return t('habit').selectedDayNotNeeded
     }
 
     if (props.dayState.isCompleted) {
-      return t('habit').selectedDayCompleted;
+      return t('habit').selectedDayCompleted
     }
 
     if (props.dayState.isMissed) {
-      return t('habit').selectedDayMissed;
+      return t('habit').selectedDayMissed
     }
 
     if (!props.periodState.eligibleToday) {
-      return t('habit').selectedDayNotNeeded;
+      return t('habit').selectedDayNotNeeded
     }
 
-    return t('habit').selectedDayPending;
+    return t('habit').selectedDayPending
   }
 
   if (isReferenceToday.value) {
     if (props.habit.frequency?.type === 'ebbinghaus' && props.dayState.isOverdue) {
-      return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+      return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0))
     }
 
     if (isDueToday.value) {
-      return t('habit').dueToday;
+      return t('habit').dueToday
     }
 
     if (!props.periodState.eligibleToday) {
-      return t('habit').noNeedToday;
+      return t('habit').noNeedToday
     }
   }
 
-  let searchFrom = dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD');
+  let searchFrom = dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD')
   if (props.habit.frequency?.type === 'weekly' || props.habit.frequency?.type === 'n_per_week') {
-    searchFrom = dayjs(props.periodState.periodEnd).add(1, 'day').format('YYYY-MM-DD');
+    searchFrom = dayjs(props.periodState.periodEnd).add(1, 'day').format('YYYY-MM-DD')
   }
 
-  const nextDate = getNextEligibleHabitDate(props.habit, searchFrom);
+  const nextDate = getNextEligibleHabitDate(props.habit, searchFrom)
   if (!nextDate) {
-    return t('habit').completed;
+    return t('habit').completed
   }
 
   if (isReferenceToday.value && nextDate === dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD')) {
-    return t('habit').dueTomorrow;
+    return t('habit').dueTomorrow
   }
 
-  return t('habit').dueOn.replace('{date}', dayjs(nextDate).format('M月D日'));
-});
+  return t('habit').dueOn.replace('{date}', dayjs(nextDate).format('M月D日'))
+})
 
 const metaClassNames = computed(() => ({
   'habit-list-item__meta--due': isDueToday.value,
   'habit-list-item__meta--selected-day': selectedDayStatusKind.value !== null,
-}));
+}))
 
 const metaStatusClassNames = computed(() => ({
   'habit-list-item__meta-status--today': isReferenceToday.value,
@@ -427,77 +450,77 @@ const metaStatusClassNames = computed(() => ({
   'habit-list-item__meta-status--missed': selectedDayStatusKind.value === 'missed',
   'habit-list-item__meta-status--not-needed': selectedDayStatusKind.value === 'not-needed',
   'habit-list-item__meta-status--pending': selectedDayStatusKind.value === 'pending',
-}));
+}))
 
 const metaStatusMarker = computed(() => {
   if (isReferenceToday.value) {
-    return 'dot';
+    return 'dot'
   }
 
   switch (selectedDayStatusKind.value) {
     case 'completed':
-      return 'check';
+      return 'check'
     case 'missed':
-      return 'minus';
+      return 'minus'
     case 'not-needed':
-      return 'dash';
+      return 'dash'
     case 'pending':
-      return 'ring';
+      return 'ring'
     default:
-      return 'dot';
+      return 'dot'
   }
-});
+})
 
 function handleMainClick() {
-  closeContextMenu();
-  emit('open-detail', props.habit);
+  closeContextMenu()
+  emit('openDetail', props.habit)
 }
 
 function handleBinaryActionClick() {
-  closeContextMenu();
+  closeContextMenu()
   if (props.dayState.isMissed) {
-    emit('reset-record', props.habit, referenceDate.value);
-    return;
+    emit('resetRecord', props.habit, referenceDate.value)
+    return
   }
 
   if (props.dayState.isCompleted) {
-    return;
+    return
   }
 
-  emit('check-in', props.habit);
+  emit('checkIn', props.habit)
 }
 
 function handleCountActionClick() {
-  closeContextMenu();
+  closeContextMenu()
   if (props.dayState.isMissed) {
-    emit('reset-record', props.habit, referenceDate.value);
-    return;
+    emit('resetRecord', props.habit, referenceDate.value)
+    return
   }
 
   if (props.dayState.isCompleted) {
-    return;
+    return
   }
 
-  emit('increment', props.habit);
+  emit('increment', props.habit)
 }
 
 function handleActionContextMenu(event: MouseEvent) {
   if (!props.periodState.eligibleToday) {
-    closeContextMenu();
-    return;
+    closeContextMenu()
+    return
   }
 
-  const menuWidth = 96;
-  const menuHeight = 40;
-  const viewportPadding = 8;
+  const menuWidth = 96
+  const menuHeight = 40
+  const viewportPadding = 8
   const x = Math.max(
     viewportPadding,
     Math.min(window.innerWidth - menuWidth - viewportPadding, event.clientX - menuWidth),
-  );
+  )
   const y = Math.max(
     viewportPadding,
     Math.min(window.innerHeight - menuHeight - viewportPadding, event.clientY),
-  );
+  )
 
   contextMenu.value = {
     visible: true,
@@ -506,35 +529,35 @@ function handleActionContextMenu(event: MouseEvent) {
     action: props.dayState.isCompleted || props.dayState.isMissed || hasPartialProgress.value
       ? 'reset-record'
       : 'mark-missed',
-  };
+  }
 }
 
 function closeContextMenu() {
-  contextMenu.value.visible = false;
+  contextMenu.value.visible = false
 }
 
 function handleMenuAction() {
-  const action = contextMenu.value.action;
-  closeContextMenu();
+  const action = contextMenu.value.action
+  closeContextMenu()
   if (action === 'mark-missed') {
-    emit('mark-missed', props.habit, referenceDate.value);
-    return;
+    emit('markMissed', props.habit, referenceDate.value)
+    return
   }
 
-  emit('reset-record', props.habit, referenceDate.value);
+  emit('resetRecord', props.habit, referenceDate.value)
 }
 
 function handleDocumentClick() {
-  closeContextMenu();
+  closeContextMenu()
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick);
-});
+  document.addEventListener('click', handleDocumentClick)
+})
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick);
-});
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <style scoped>
@@ -548,7 +571,9 @@ onUnmounted(() => {
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .habit-list-item:hover {
@@ -797,7 +822,10 @@ onUnmounted(() => {
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .habit-action-btn--done,

@@ -1,7 +1,7 @@
 # 移动端番茄钟适配设计方案
 
-> 日期：2026-04-11  
-> 项目：思源笔记任务助手插件  
+> 日期：2026-04-11
+> 项目：思源笔记任务助手插件
 > 作者：Claude
 
 ---
@@ -9,6 +9,7 @@
 ## 1. 概述
 
 为「任务助手」插件优化移动端体验，包括：
+
 - 移动端跳过桌面 Tab 注册
 - 待办列表添加下拉刷新
 - 底部导航刷新按钮改为番茄钟入口
@@ -20,17 +21,17 @@
 
 ### 2.1 视觉风格（参考 QuickCreateDrawer）
 
-| 元素 | 规范 |
-|------|------|
-| **抽屉结构** | Teleport to body + fade/slide-up 双层动画 |
-| **圆角** | 顶部 24px，内部卡片 12px，按钮 12px |
-| **动画** | 0.2s ease，点击 scale(0.98)，滑入 cubic-bezier(0.32, 0.72, 0, 1) |
-| **颜色** | 思源主题变量 `--b3-theme-*` |
-| **阴影** | `0 -4px 24px rgba(0, 0, 0, 0.15)` |
-| **安全区域** | `env(safe-area-inset-bottom)` 底部适配 |
-| **表单区块** | `form-section` + `section-label` |
-| **按钮** | 底部双按钮（cancel-btn + confirm-btn）|
-| **字体** | 标题 17px font-weight: 600，正文 15px，辅助 13px |
+| 元素         | 规范                                                             |
+| ------------ | ---------------------------------------------------------------- |
+| **抽屉结构** | Teleport to body + fade/slide-up 双层动画                        |
+| **圆角**     | 顶部 24px，内部卡片 12px，按钮 12px                              |
+| **动画**     | 0.2s ease，点击 scale(0.98)，滑入 cubic-bezier(0.32, 0.72, 0, 1) |
+| **颜色**     | 思源主题变量 `--b3-theme-*`                                      |
+| **阴影**     | `0 -4px 24px rgba(0, 0, 0, 0.15)`                                |
+| **安全区域** | `env(safe-area-inset-bottom)` 底部适配                           |
+| **表单区块** | `form-section` + `section-label`                                 |
+| **按钮**     | 底部双按钮（cancel-btn + confirm-btn）                           |
+| **字体**     | 标题 17px font-weight: 600，正文 15px，辅助 13px                 |
 
 ### 2.2 交互规范
 
@@ -48,6 +49,7 @@
 **文件**：`src/index.ts`
 
 **修改点**：
+
 ```typescript
 private registerTabs() {
   // 桌面端才注册这些 Tabs
@@ -70,12 +72,14 @@ private registerTabs() {
 **文件**：`src/tabs/mobile/components/MobileTodoList.vue`
 
 **实现**：
+
 - 添加 touch 事件监听（touchstart/touchmove/touchend）
 - 下拉距离 > 80px 触发刷新
 - 刷新指示器：旋转动画 + 文字提示（"下拉刷新"/"释放刷新"/"刷新中..."）
 - 触发 `projectStore.refresh()` 重新加载数据
 
 **视觉设计**：
+
 ```
 ┌─────────────────────┐
 │    ↓ 下拉刷新        │  <- 下拉时显示
@@ -93,6 +97,7 @@ private registerTabs() {
 **文件**：`src/tabs/mobile/components/MobileBottomNav.vue`
 
 **修改前**：
+
 ```
 ┌─────────────────────────────────────┐
 │  [↻ 刷新]      [➕]    [⚙️ 更多]   │
@@ -100,6 +105,7 @@ private registerTabs() {
 ```
 
 **修改后**：
+
 ```
 ┌─────────────────────────────────────┐
 │  [🍅 番茄钟]   [➕]    [⚙️ 更多]   │
@@ -107,6 +113,7 @@ private registerTabs() {
 ```
 
 **行为**：
+
 - 点击番茄钟图标 → 打开 `MobilePomodoroDrawer`
 - 中间创建按钮保持不变
 - 右侧更多按钮保持不变
@@ -196,15 +203,19 @@ src/tabs/mobile/
 | modelValue | boolean | 显示/隐藏 |
 
 **状态判断**：
+
 ```typescript
 const currentView = computed(() => {
-  if (pomodoroStore.isFocusing) return 'active';
-  if (pomodoroStore.isBreakActive) return 'break';
-  return 'starter';
-});
+  if (pomodoroStore.isFocusing)
+    return 'active'
+  if (pomodoroStore.isBreakActive)
+    return 'break'
+  return 'starter'
+})
 ```
 
 **结构**：
+
 ```vue
 <Teleport to="body">
   <Transition name="fade">
@@ -215,7 +226,7 @@ const currentView = computed(() => {
           <div class="drawer-handle" @click="close">
             <div class="handle-bar"></div>
           </div>
-          
+
           <!-- 动态内容 -->
           <div class="drawer-content">
             <MobileTimerStarter v-if="currentView === 'starter'" />
@@ -236,14 +247,16 @@ const currentView = computed(() => {
 **职责**：选择事项、设置时长、开始专注
 
 **数据结构**：
+
 ```typescript
-const selectedItem = ref<Item | null>(null);
-const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
-const selectedDuration = ref(25); // 默认25分钟
-const customDuration = ref(25);
+const selectedItem = ref<Item | null>(null)
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown')
+const selectedDuration = ref(25) // 默认25分钟
+const customDuration = ref(25)
 ```
 
 **UI 结构**：
+
 ```
 ┌─────────────────────────────┐
 │         拖动手柄             │
@@ -272,6 +285,7 @@ const customDuration = ref(25);
 ```
 
 **事项选择 Sheet**：
+
 - 过期事项（Expired Items）
 - 今日事项（Today Items）
 - 空状态提示
@@ -285,6 +299,7 @@ const customDuration = ref(25);
 **核心逻辑**：完全复用 `pomodoroStore`
 
 **UI 结构**：
+
 ```
 ┌─────────────────────────────┐
 │         拖动手柄             │
@@ -315,12 +330,14 @@ const customDuration = ref(25);
 ```
 
 **圆形进度条**：
+
 - SVG circle
 - 半径 54px，周长 339.292px
 - stroke-dasharray + stroke-dashoffset 控制进度
 - 颜色：`--b3-theme-primary`
 
 **暂停状态**：
+
 - 进度条颜色变为灰色
 - 显示 "已暂停" badge
 - 按钮变为 "继续"
@@ -332,6 +349,7 @@ const customDuration = ref(25);
 **职责**：休息倒计时展示、跳过休息
 
 **UI 结构**：
+
 ```
 ┌─────────────────────────────┐
 │         拖动手柄             │
@@ -353,14 +371,23 @@ const customDuration = ref(25);
 ```
 
 **呼吸动画**：
+
 ```css
 @keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.1); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
 }
 .breathing-circle {
   animation: breathe 3s ease-in-out infinite;
 }
+
 ```
 
 ---
@@ -370,6 +397,7 @@ const customDuration = ref(25);
 **职责**：专注完成后补填说明、选择休息
 
 **状态 1：补填说明（未保存）**
+
 ```
 ┌─────────────────────────────┐
 │         拖动手柄             │
@@ -404,6 +432,7 @@ const customDuration = ref(25);
 ```
 
 **状态 2：休息选项（已保存）**
+
 ```
 ┌─────────────────────────────┐
 │         拖动手柄             │
@@ -427,6 +456,7 @@ const customDuration = ref(25);
 ```
 
 **逻辑**：
+
 - 调用 `pomodoroStore.savePomodoroRecordFromPending()` 保存记录
 - 调用 `pomodoroStore.startBreak()` 开始休息
 - 监听 `POMODORO_AUTO_EXTENDED` 事件（自动延迟时关闭弹窗）
@@ -438,10 +468,12 @@ const customDuration = ref(25);
 ### 6.1 状态管理
 
 **完全复用现有 Store**：
+
 - `pomodoroStore.ts` - 番茄钟所有状态和方法
 - `projectStore.ts` - 事项数据、项目数据
 
 **不重复实现**：
+
 - 专注计时逻辑
 - 数据持久化（active-pomodoro.json）
 - 记录保存（appendBlock/setBlockAttrs）
@@ -453,23 +485,23 @@ const customDuration = ref(25);
 // 监听事件（与桌面版一致）
 eventBus.on(Events.POMODORO_STARTED, () => {
   // 刷新 UI
-});
+})
 
 eventBus.on(Events.POMODORO_COMPLETED, () => {
   // 显示完成抽屉
-});
+})
 
 eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
   // 自动延迟时关闭弹窗
-});
+})
 
 eventBus.on(Events.BREAK_STARTED, () => {
   // 切换到休息视图
-});
+})
 
 eventBus.on(Events.BREAK_ENDED, () => {
   // 切换到空闲视图
-});
+})
 ```
 
 ---
@@ -481,7 +513,10 @@ eventBus.on(Events.BREAK_ENDED, () => {
 ```scss
 .drawer-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
   z-index: 1002;
@@ -528,6 +563,7 @@ eventBus.on(Events.BREAK_ENDED, () => {
   justify-content: flex-end;
   gap: 12px;
 }
+
 ```
 
 ### 7.2 按钮样式
@@ -543,8 +579,10 @@ eventBus.on(Events.BREAK_ENDED, () => {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  
-  &:active { transform: scale(0.98); }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .confirm-btn {
@@ -557,10 +595,16 @@ eventBus.on(Events.BREAK_ENDED, () => {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  
-  &:active { transform: scale(0.98); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
+
 ```
 
 ### 7.3 卡片样式
@@ -586,32 +630,40 @@ eventBus.on(Events.BREAK_ENDED, () => {
   color: var(--b3-theme-on-background);
   font-weight: 500;
 }
+
 ```
 
 ### 7.4 动画
 
 ```scss
 // 淡入淡出
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.25s ease;
 }
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
 // 上滑
-.slide-up-enter-active, .slide-up-leave-active {
+.slide-up-enter-active,
+.slide-up-leave-active {
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.slide-up-enter-from, .slide-up-leave-to {
+.slide-up-enter-from,
+.slide-up-leave-to {
   transform: translateY(100%);
 }
 
 // 点击反馈
 .clickable {
   transition: transform 0.2s ease;
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
+
 ```
 
 ---
@@ -619,21 +671,25 @@ eventBus.on(Events.BREAK_ENDED, () => {
 ## 8. 实现清单
 
 ### Phase 1：基础改造
+
 - [ ] 修改 `src/index.ts` - 移动端跳过 Tab 注册
 - [ ] 修改 `MobileBottomNav.vue` - 刷新按钮改为番茄钟按钮
 - [ ] 修改 `MobileTodoList.vue` - 添加下拉刷新
 
 ### Phase 2：番茄钟核心
+
 - [ ] 创建 `MobilePomodoroDrawer.vue` - 主抽屉容器
 - [ ] 创建 `MobileTimerStarter.vue` - 开始专注
 - [ ] 创建 `MobileActiveTimer.vue` - 专注中
 - [ ] 创建 `MobileBreakTimer.vue` - 休息中
 
 ### Phase 3：完成流程
+
 - [ ] 创建 `MobileComplete.vue` - 专注完成抽屉
 - [ ] 集成完成流程到 MobilePomodoroDrawer
 
 ### Phase 4：测试优化
+
 - [ ] 测试各种状态流转
 - [ ] 测试响应式适配
 - [ ] 测试深色模式

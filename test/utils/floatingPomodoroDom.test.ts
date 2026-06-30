@@ -1,22 +1,26 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, it } from 'vitest';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
 import {
   applyFloatingPomodoroViewState,
   createFloatingPomodoroMarkup,
-} from '@/utils/floatingPomodoroDom';
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+} from '@/utils/floatingPomodoroDom'
 
 function createHost() {
-  const host = document.createElement('div');
-  host.className = 'floating-tomato-btn';
-  host.innerHTML = createFloatingPomodoroMarkup();
-  return host;
+  const host = document.createElement('div')
+  host.className = 'floating-tomato-btn'
+  host.innerHTML = createFloatingPomodoroMarkup()
+  return host
 }
 
 describe('applyFloatingPomodoroViewState', () => {
   it('renders focus content and actions', () => {
-    const host = createHost();
+    const host = createHost()
     const state: FloatingPomodoroViewState = {
       phase: 'focus',
       status: '专注中',
@@ -27,30 +31,30 @@ describe('applyFloatingPomodoroViewState', () => {
       pauseResumeLabel: '暂停',
       endLabel: '结束专注',
       isPaused: false,
-    };
+    }
 
-    applyFloatingPomodoroViewState(host, state);
+    applyFloatingPomodoroViewState(host, state)
 
-    expect(host.classList.contains('is-break')).toBe(false);
-    expect(host.classList.contains('is-paused')).toBe(false);
-    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('专注中');
-    expect(host.querySelector('.floating-tomato-primary')?.textContent).toBe('18:05');
-    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Write capsule spec');
-    expect(host.querySelector('.floating-tomato-secondary')?.textContent).toBe('已专注 6 分钟 / 目标 25 分钟');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(false);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(false);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('暂停');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.getAttribute('aria-label')).toBe('结束专注');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.dataset.tooltip).toBe('暂停');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('title')).toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete svg')).not.toBeNull();
-    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.3)');
-  });
+    expect(host.classList.contains('is-break')).toBe(false)
+    expect(host.classList.contains('is-paused')).toBe(false)
+    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('专注中')
+    expect(host.querySelector('.floating-tomato-primary')?.textContent).toBe('18:05')
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Write capsule spec')
+    expect(host.querySelector('.floating-tomato-secondary')?.textContent).toBe('已专注 6 分钟 / 目标 25 分钟')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(false)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(false)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(true)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('暂停')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.getAttribute('aria-label')).toBe('结束专注')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.dataset.tooltip).toBe('暂停')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('title')).toBeNull()
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull()
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete svg')).not.toBeNull()
+    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.3)')
+  })
 
   it('renders break content and hides focus actions', () => {
-    const host = createHost();
+    const host = createHost()
     const state: FloatingPomodoroViewState = {
       phase: 'break',
       status: '休息中',
@@ -60,26 +64,26 @@ describe('applyFloatingPomodoroViewState', () => {
       progress: 0.16,
       skipBreakLabel: '跳过休息',
       isPaused: false,
-    };
+    }
 
-    applyFloatingPomodoroViewState(host, state);
+    applyFloatingPomodoroViewState(host, state)
 
-    expect(host.classList.contains('is-break')).toBe(true);
-    expect(host.classList.contains('has-item-title')).toBe(false);
-    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('休息中');
-    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(false);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.getAttribute('aria-label')).toBe('跳过休息');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.dataset.tooltip).toBe('跳过休息');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.getAttribute('title')).toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip svg')).not.toBeNull();
-    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.16)');
-  });
+    expect(host.classList.contains('is-break')).toBe(true)
+    expect(host.classList.contains('has-item-title')).toBe(false)
+    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('休息中')
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(true)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(true)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(false)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.getAttribute('aria-label')).toBe('跳过休息')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.dataset.tooltip).toBe('跳过休息')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.getAttribute('title')).toBeNull()
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip svg')).not.toBeNull()
+    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.16)')
+  })
 
   it('keeps the item row visible when focus state has a title', () => {
-    const host = createHost();
+    const host = createHost()
 
     applyFloatingPomodoroViewState(host, {
       phase: 'focus',
@@ -91,14 +95,14 @@ describe('applyFloatingPomodoroViewState', () => {
       pauseResumeLabel: '暂停',
       endLabel: '结束专注',
       isPaused: false,
-    });
+    })
 
-    expect(host.classList.contains('has-item-title')).toBe(true);
-    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Draft note');
-  });
+    expect(host.classList.contains('has-item-title')).toBe(true)
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Draft note')
+  })
 
   it('updates paused class and clamps progress when reapplying state', () => {
-    const host = createHost();
+    const host = createHost()
     applyFloatingPomodoroViewState(host, {
       phase: 'focus',
       status: '专注中',
@@ -109,7 +113,7 @@ describe('applyFloatingPomodoroViewState', () => {
       pauseResumeLabel: '暂停',
       endLabel: '结束专注',
       isPaused: false,
-    });
+    })
 
     applyFloatingPomodoroViewState(host, {
       phase: 'focus',
@@ -121,13 +125,13 @@ describe('applyFloatingPomodoroViewState', () => {
       pauseResumeLabel: '继续',
       endLabel: '结束专注',
       isPaused: true,
-    });
+    })
 
-    expect(host.classList.contains('is-break')).toBe(false);
-    expect(host.classList.contains('is-paused')).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('继续');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.dataset.tooltip).toBe('继续');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull();
-    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(1)');
-  });
-});
+    expect(host.classList.contains('is-break')).toBe(false)
+    expect(host.classList.contains('is-paused')).toBe(true)
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('继续')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.dataset.tooltip).toBe('继续')
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull()
+    expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(1)')
+  })
+})

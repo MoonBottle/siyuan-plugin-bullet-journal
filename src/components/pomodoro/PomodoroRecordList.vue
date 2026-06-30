@@ -4,21 +4,40 @@
       <span class="header-title">{{ t('pomodoroRecord').title }}</span>
     </div>
     <div class="record-list-content">
-      <div v-if="sortedGroupedPomodoros.length === 0" class="empty-guide">
+      <div
+        v-if="sortedGroupedPomodoros.length === 0"
+        class="empty-guide"
+      >
         <div class="empty-guide-icon">
-          <TomatoIcon :width="48" :height="48" />
+          <PomodoroIcon
+            :width="48"
+            :height="48"
+          />
         </div>
-        <div class="empty-guide-title">{{ t('pomodoroRecord').emptyGuideTitle }}</div>
-        <div class="empty-guide-desc">{{ t('pomodoroRecord').emptyGuideDesc }}</div>
+        <div class="empty-guide-title">
+          {{ t('pomodoroRecord').emptyGuideTitle }}
+        </div>
+        <div class="empty-guide-desc">
+          {{ t('pomodoroRecord').emptyGuideDesc }}
+        </div>
         <div class="empty-guide-actions">
-          <button class="b3-button b3-button--outline" @click="handleCreateExample">
+          <button
+            class="b3-button b3-button--outline"
+            @click="handleCreateExample"
+          >
             <svg><use xlink:href="#iconAdd"></use></svg>
             <span>{{ t('pomodoroRecord').createExampleDoc }}</span>
           </button>
         </div>
       </div>
-      <div v-for="[date, records] in sortedGroupedPomodoros" :key="date" class="date-group">
-        <div class="date-header">{{ formatDate(date) }}</div>
+      <div
+        v-for="[date, records] in sortedGroupedPomodoros"
+        :key="date"
+        class="date-group"
+      >
+        <div class="date-header">
+          {{ formatDate(date) }}
+        </div>
         <div class="record-items">
           <div
             v-for="record in records"
@@ -27,14 +46,28 @@
             @click="handleRecordClick(record)"
           >
             <div class="record-icon">
-              <TomatoIcon :width="16" :height="16" />
+              <PomodoroIcon
+                :width="16"
+                :height="16"
+              />
             </div>
             <div class="record-info">
-              <div class="record-time">{{ formatTimeRange(record) }}</div>
-              <div class="record-source">{{ getRecordSource(record) }}</div>
-              <div v-if="record.description" class="record-desc">{{ record.description }}</div>
+              <div class="record-time">
+                {{ formatTimeRange(record) }}
+              </div>
+              <div class="record-source">
+                {{ getRecordSource(record) }}
+              </div>
+              <div
+                v-if="record.description"
+                class="record-desc"
+              >
+                {{ record.description }}
+              </div>
             </div>
-            <div class="record-duration">{{ record.actualDurationMinutes !== undefined ? record.actualDurationMinutes : record.durationMinutes }}m</div>
+            <div class="record-duration">
+              {{ record.actualDurationMinutes !== undefined ? record.actualDurationMinutes : record.durationMinutes }}m
+            </div>
           </div>
         </div>
       </div>
@@ -43,45 +76,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import type { PomodoroRecord } from '@/types/models';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { usePlugin } from '@/main';
-import TomatoIcon from '@/components/icons/TomatoIcon.vue';
-import { t } from '@/i18n';
-import { createExampleDocument } from '@/utils/exampleDocUtils';
+import type { PomodoroRecord } from '@/types/models'
+import {
+  computed,
+  ref,
+} from 'vue'
+import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import {
+  useProjectStore,
+} from '@/stores'
+import { createExampleDocument } from '@/utils/exampleDocUtils'
+import { openDocumentAtLine } from '@/utils/fileUtils'
 
-const plugin = usePlugin() as any;
+const plugin = usePlugin() as any
 
-const projectStore = useProjectStore();
-const settingsStore = useSettingsStore();
+const projectStore = useProjectStore()
 
 // 防止重复点击的执行锁
-const isProcessing = ref(false);
+const isProcessing = ref(false)
 
-const groupedPomodoros = computed(() => projectStore.getPomodorosByDate(''));
+const groupedPomodoros = computed(() => projectStore.getPomodorosByDate(''))
 
 // 按日期降序排序，每天内的记录也按时间倒序排列
 const sortedGroupedPomodoros = computed(() => {
-  const entries = Array.from(groupedPomodoros.value.entries());
-  entries.sort((a, b) => b[0].localeCompare(a[0]));
+  const entries = Array.from(groupedPomodoros.value.entries())
+  entries.sort((a, b) => b[0].localeCompare(a[0]))
   // 每天内的记录按开始时间倒序排列
   entries.forEach(([_, records]) => {
-    records.sort((a, b) => b.startTime.localeCompare(a.startTime));
-  });
-  return entries;
-});
+    records.sort((a, b) => b.startTime.localeCompare(a.startTime))
+  })
+  return entries
+})
 
 /**
  * 格式化日期显示
  * 如：3月8日, 1月21日
  */
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${month}月${day}日`;
+  const date = new Date(dateStr)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${month}月${day}日`
 }
 
 /**
@@ -89,12 +126,12 @@ function formatDate(dateStr: string): string {
  * 如：12:00 - 12:25
  */
 function formatTimeRange(record: PomodoroRecord): string {
-  const startTime = record.startTime.substring(0, 5); // HH:mm
+  const startTime = record.startTime.substring(0, 5) // HH:mm
   if (record.endTime) {
-    const endTime = record.endTime.substring(0, 5);
-    return `${startTime} - ${endTime}`;
+    const endTime = record.endTime.substring(0, 5)
+    return `${startTime} - ${endTime}`
   }
-  return startTime;
+  return startTime
 }
 
 /**
@@ -105,9 +142,9 @@ function getRecordSource(record: PomodoroRecord): string {
     // 查找对应的事项
     for (const project of projectStore.projects) {
       for (const task of project.tasks) {
-        const item = task.items.find(i => i.id === record.itemId);
+        const item = task.items.find((i) => i.id === record.itemId)
         if (item) {
-          return item.content;
+          return item.content
         }
       }
     }
@@ -115,50 +152,50 @@ function getRecordSource(record: PomodoroRecord): string {
   if (record.taskId) {
     // 查找对应的任务
     for (const project of projectStore.projects) {
-      const task = project.tasks.find(t => t.id === record.taskId);
+      const task = project.tasks.find((t) => t.id === record.taskId)
       if (task) {
-        return task.name;
+        return task.name
       }
     }
   }
   if (record.projectId) {
     // 查找对应的项目
-    const project = projectStore.projects.find(p => p.id === record.projectId);
+    const project = projectStore.projects.find((p) => p.id === record.projectId)
     if (project) {
-      return project.name;
+      return project.name
     }
   }
-  return t('pomodoroRecord').unknown;
+  return t('pomodoroRecord').unknown
 }
 
 /**
  * 点击记录跳转到思源笔记对应位置
  */
 async function handleRecordClick(record: PomodoroRecord) {
-  if (!record.blockId || !plugin) return;
+  if (!record.blockId || !plugin) return
 
   // 从 blockId 提取 docId（思源 blockId 格式为 docId-blockHash）
-  const docId = record.blockId.substring(0, 22);
+  const docId = record.blockId.substring(0, 22)
 
-  await openDocumentAtLine(docId, undefined, record.blockId);
+  await openDocumentAtLine(docId, undefined, record.blockId)
 }
 
 /**
  * 创建示例文档
  */
 async function handleCreateExample() {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
+  if (isProcessing.value) return
+  isProcessing.value = true
   try {
-    const docId = await createExampleDocument();
+    const docId = await createExampleDocument()
     if (docId && plugin) {
       await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-record-list:create-example',
-      });
+      })
     }
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
 }
 </script>

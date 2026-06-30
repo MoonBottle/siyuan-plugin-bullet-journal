@@ -38,6 +38,7 @@
 ## Task 1: 建立统一通知出口并写透回退顺序
 
 **Files:**
+
 - Modify: `src/utils/notification.ts`
 - Create: `test/utils/notification.test.ts`
 
@@ -46,33 +47,33 @@
 创建 `test/utils/notification.test.ts`：
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockShowMessage = vi.fn();
-const mockSendNotification = vi.fn();
-const mockCancelNotification = vi.fn();
+const mockShowMessage = vi.fn()
+const mockSendNotification = vi.fn()
+const mockCancelNotification = vi.fn()
 
 vi.mock('@/utils/dialog', () => ({
   showMessage: (...args: unknown[]) => mockShowMessage(...args),
-}));
+}))
 
 vi.mock('@/main', () => ({
   getCurrentPlugin: vi.fn(() => ({ isMobile: false })),
-}));
+}))
 
 vi.mock('@/stores/aiStore', () => ({
   useAIStore: vi.fn(() => ({ sendWechatNotification: vi.fn().mockResolvedValue(undefined) })),
-}));
+}))
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
-}));
+}))
 
 describe('notification utils', () => {
   beforeEach(() => {
-    vi.resetModules();
-    mockShowMessage.mockReset();
-    mockSendNotification.mockReset();
+    vi.resetModules()
+    mockShowMessage.mockReset()
+    mockSendNotification.mockReset()
     mockCancelNotification.mockReset();
     (globalThis as any).window = globalThis;
     (globalThis as any).siyuan = {
@@ -80,69 +81,69 @@ describe('notification utils', () => {
         sendNotification: mockSendNotification,
         cancelNotification: mockCancelNotification,
       },
-    };
-  });
+    }
+  })
 
   it('prefers native immediate notification before browser Notification', async () => {
-    mockSendNotification.mockResolvedValue(42);
-    const NotificationCtor = vi.fn();
+    mockSendNotification.mockResolvedValue(42)
+    const NotificationCtor = vi.fn()
     vi.stubGlobal('Notification', NotificationCtor as any);
-    (Notification as any).permission = 'granted';
+    (Notification as any).permission = 'granted'
 
-    const mod = await import('@/utils/notification');
-    await mod.showSystemNotification('Title', 'Body');
+    const mod = await import('@/utils/notification')
+    await mod.showSystemNotification('Title', 'Body')
 
     expect(mockSendNotification).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Title',
       body: 'Body',
-    }));
-    expect(NotificationCtor).not.toHaveBeenCalled();
-    expect(mockShowMessage).not.toHaveBeenCalled();
-  });
+    }))
+    expect(NotificationCtor).not.toHaveBeenCalled()
+    expect(mockShowMessage).not.toHaveBeenCalled()
+  })
 
   it('falls back to browser Notification when native immediate notification fails', async () => {
-    mockSendNotification.mockRejectedValue(new Error('native failed'));
-    const close = vi.fn();
-    const NotificationCtor = vi.fn(() => ({ close }));
+    mockSendNotification.mockRejectedValue(new Error('native failed'))
+    const close = vi.fn()
+    const NotificationCtor = vi.fn(() => ({ close }))
     vi.stubGlobal('Notification', NotificationCtor as any);
-    (Notification as any).permission = 'granted';
+    (Notification as any).permission = 'granted'
 
-    const mod = await import('@/utils/notification');
-    await mod.showSystemNotification('Title', 'Body');
+    const mod = await import('@/utils/notification')
+    await mod.showSystemNotification('Title', 'Body')
 
-    expect(NotificationCtor).toHaveBeenCalled();
-    expect(mockShowMessage).not.toHaveBeenCalled();
-  });
+    expect(NotificationCtor).toHaveBeenCalled()
+    expect(mockShowMessage).not.toHaveBeenCalled()
+  })
 
   it('falls back to showMessage when browser Notification is unavailable', async () => {
-    mockSendNotification.mockResolvedValue(-1);
+    mockSendNotification.mockResolvedValue(-1)
     vi.unstubAllGlobals();
     (globalThis as any).window = globalThis;
-    (globalThis as any).siyuan = { platformUtils: { sendNotification: mockSendNotification, cancelNotification: mockCancelNotification } };
+    (globalThis as any).siyuan = { platformUtils: { sendNotification: mockSendNotification, cancelNotification: mockCancelNotification } }
 
-    const mod = await import('@/utils/notification');
-    await mod.showSystemNotification('Title', 'Body');
+    const mod = await import('@/utils/notification')
+    await mod.showSystemNotification('Title', 'Body')
 
-    expect(mockShowMessage).toHaveBeenCalledWith('Title: Body');
-  });
+    expect(mockShowMessage).toHaveBeenCalledWith('Title: Body')
+  })
 
   it('schedules and cancels native mobile notifications', async () => {
-    mockSendNotification.mockResolvedValue(99);
-    const mod = await import('@/utils/notification');
+    mockSendNotification.mockResolvedValue(99)
+    const mod = await import('@/utils/notification')
 
-    const id = await mod.scheduleNativeNotification('Later', 'Body', { delayInSeconds: 90 });
-    const canceled = await mod.cancelNativeNotification(id);
+    const id = await mod.scheduleNativeNotification('Later', 'Body', { delayInSeconds: 90 })
+    const canceled = await mod.cancelNativeNotification(id)
 
-    expect(id).toBe(99);
+    expect(id).toBe(99)
     expect(mockSendNotification).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Later',
       body: 'Body',
       delayInSeconds: 90,
-    }));
-    expect(canceled).toBe(true);
-    expect(mockCancelNotification).toHaveBeenCalledWith(99);
-  });
-});
+    }))
+    expect(canceled).toBe(true)
+    expect(mockCancelNotification).toHaveBeenCalledWith(99)
+  })
+})
 ```
 
 - [ ] **Step 2: 跑测试确认它先失败**
@@ -250,6 +251,7 @@ git commit -m "feat(notification): unify native and fallback delivery"
 ## Task 2: 补移动端预约 registry
 
 **Files:**
+
 - Create: `src/services/mobileNotificationRegistry.ts`
 - Create: `test/services/mobileNotificationRegistry.test.ts`
 
@@ -258,18 +260,18 @@ git commit -m "feat(notification): unify native and fallback delivery"
 创建 `test/services/mobileNotificationRegistry.test.ts`：
 
 ```ts
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   clearMobileNotificationRegistry,
   loadMobileNotificationRegistry,
-  saveMobileNotificationRegistryEntry,
   removeMobileNotificationRegistryEntry,
-} from '@/services/mobileNotificationRegistry';
+  saveMobileNotificationRegistryEntry,
+} from '@/services/mobileNotificationRegistry'
 
 describe('mobileNotificationRegistry', () => {
   beforeEach(() => {
-    localStorage.clear();
-  });
+    localStorage.clear()
+  })
 
   it('persists entries keyed by entryKey', () => {
     saveMobileNotificationRegistryEntry({
@@ -281,11 +283,11 @@ describe('mobileNotificationRegistry', () => {
       kind: 'reminder',
       status: 'scheduled',
       updatedAt: '2026-05-06T10:00:00.000Z',
-    });
+    })
 
-    const registry = loadMobileNotificationRegistry();
-    expect(registry['task-1|2026-05-06|1000']?.notificationId).toBe(15);
-  });
+    const registry = loadMobileNotificationRegistry()
+    expect(registry['task-1|2026-05-06|1000']?.notificationId).toBe(15)
+  })
 
   it('drops malformed entries during load', () => {
     localStorage.setItem('task-assistant-mobile-notification-registry', JSON.stringify({
@@ -303,29 +305,29 @@ describe('mobileNotificationRegistry', () => {
         entryKey: '',
         notificationId: 'x',
       },
-    }));
+    }))
 
-    const registry = loadMobileNotificationRegistry();
-    expect(Object.keys(registry)).toEqual(['good']);
-  });
+    const registry = loadMobileNotificationRegistry()
+    expect(Object.keys(registry)).toEqual(['good'])
+  })
 
   it('removes a single entry without touching others', () => {
-    saveMobileNotificationRegistryEntry({ entryKey: 'a', notificationId: 1, scheduledAt: 1, delayInSeconds: 1, planKey: 'a', kind: 'reminder', status: 'scheduled', updatedAt: 'x' });
-    saveMobileNotificationRegistryEntry({ entryKey: 'b', notificationId: 2, scheduledAt: 2, delayInSeconds: 2, planKey: 'b', kind: 'habit', status: 'scheduled', updatedAt: 'y' });
+    saveMobileNotificationRegistryEntry({ entryKey: 'a', notificationId: 1, scheduledAt: 1, delayInSeconds: 1, planKey: 'a', kind: 'reminder', status: 'scheduled', updatedAt: 'x' })
+    saveMobileNotificationRegistryEntry({ entryKey: 'b', notificationId: 2, scheduledAt: 2, delayInSeconds: 2, planKey: 'b', kind: 'habit', status: 'scheduled', updatedAt: 'y' })
 
-    removeMobileNotificationRegistryEntry('a');
+    removeMobileNotificationRegistryEntry('a')
 
-    const registry = loadMobileNotificationRegistry();
-    expect(registry.a).toBeUndefined();
-    expect(registry.b?.notificationId).toBe(2);
-  });
+    const registry = loadMobileNotificationRegistry()
+    expect(registry.a).toBeUndefined()
+    expect(registry.b?.notificationId).toBe(2)
+  })
 
   it('clears the registry', () => {
-    saveMobileNotificationRegistryEntry({ entryKey: 'a', notificationId: 1, scheduledAt: 1, delayInSeconds: 1, planKey: 'a', kind: 'pomodoro-focus-end', status: 'scheduled', updatedAt: 'x' });
-    clearMobileNotificationRegistry();
-    expect(loadMobileNotificationRegistry()).toEqual({});
-  });
-});
+    saveMobileNotificationRegistryEntry({ entryKey: 'a', notificationId: 1, scheduledAt: 1, delayInSeconds: 1, planKey: 'a', kind: 'pomodoro-focus-end', status: 'scheduled', updatedAt: 'x' })
+    clearMobileNotificationRegistry()
+    expect(loadMobileNotificationRegistry()).toEqual({})
+  })
+})
 ```
 
 - [ ] **Step 2: 跑测试确认 registry 还没实现**
@@ -417,6 +419,7 @@ git commit -m "feat(notification): add mobile notification registry"
 ## Task 3: 实现移动端预约同步器并接通事项/习惯提醒
 
 **Files:**
+
 - Create: `src/services/mobileNotificationScheduler.ts`
 - Modify: `src/services/reminderService.ts`
 - Modify: `src/index.ts`
@@ -428,37 +431,37 @@ git commit -m "feat(notification): add mobile notification registry"
 在 `test/services/mobileNotificationScheduler.test.ts` 创建以下用例：
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
-import { MobileNotificationScheduler } from '@/services/mobileNotificationScheduler';
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MobileNotificationScheduler } from '@/services/mobileNotificationScheduler'
 
-const mockScheduleNativeNotification = vi.fn();
-const mockCancelNativeNotification = vi.fn();
+const mockScheduleNativeNotification = vi.fn()
+const mockCancelNativeNotification = vi.fn()
 
 vi.mock('@/utils/notification', () => ({
   scheduleNativeNotification: (...args: unknown[]) => mockScheduleNativeNotification(...args),
   cancelNativeNotification: (...args: unknown[]) => mockCancelNativeNotification(...args),
-}));
+}))
 
 vi.mock('@/parser/reminderParser', () => ({
   calculateReminderTime: vi.fn((_date, _start, _end, _a, _b, reminder) => reminder?.__mockReminderTime ?? 0),
-}));
+}))
 
 vi.mock('@/services/habitReminder', () => ({
   getHabitReminderEntries: vi.fn(() => []),
-}));
+}))
 
 describe('MobileNotificationScheduler', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    localStorage.clear();
-    mockScheduleNativeNotification.mockReset();
-    mockCancelNativeNotification.mockReset();
-  });
+    setActivePinia(createPinia())
+    localStorage.clear()
+    mockScheduleNativeNotification.mockReset()
+    mockCancelNativeNotification.mockReset()
+  })
 
   it('creates mobile reservations for future item reminders', async () => {
-    mockScheduleNativeNotification.mockResolvedValue(101);
-    const scheduler = new MobileNotificationScheduler();
+    mockScheduleNativeNotification.mockResolvedValue(101)
+    const scheduler = new MobileNotificationScheduler()
 
     await scheduler.syncFromProjects({
       currentDate: '2026-05-06',
@@ -477,46 +480,46 @@ describe('MobileNotificationScheduler', () => {
         }],
       }],
       getHabits: () => [],
-    } as any);
+    } as any)
 
-    expect(mockScheduleNativeNotification).toHaveBeenCalledTimes(1);
-  });
+    expect(mockScheduleNativeNotification).toHaveBeenCalledTimes(1)
+  })
 
   it('skips unchanged planKey entries', async () => {
-    mockScheduleNativeNotification.mockResolvedValue(101);
-    const scheduler = new MobileNotificationScheduler();
-    const store = { currentDate: '2026-05-06', projects: [{ tasks: [{ items: [{ id: 'item-1', blockId: 'block-1', docId: 'doc-1', lineNumber: 1, date: '2026-05-06', content: '开会', status: 'pending', reminder: { enabled: true, type: 'absolute', time: '09:00', __mockReminderTime: Date.now() + 60000 } }] }] }], getHabits: () => [] } as any;
+    mockScheduleNativeNotification.mockResolvedValue(101)
+    const scheduler = new MobileNotificationScheduler()
+    const store = { currentDate: '2026-05-06', projects: [{ tasks: [{ items: [{ id: 'item-1', blockId: 'block-1', docId: 'doc-1', lineNumber: 1, date: '2026-05-06', content: '开会', status: 'pending', reminder: { enabled: true, type: 'absolute', time: '09:00', __mockReminderTime: Date.now() + 60000 } }] }] }], getHabits: () => [] } as any
 
-    await scheduler.syncFromProjects(store);
-    await scheduler.syncFromProjects(store);
+    await scheduler.syncFromProjects(store)
+    await scheduler.syncFromProjects(store)
 
-    expect(mockScheduleNativeNotification).toHaveBeenCalledTimes(1);
-  });
+    expect(mockScheduleNativeNotification).toHaveBeenCalledTimes(1)
+  })
 
   it('cancels stale reservations when the source item disappears', async () => {
-    mockScheduleNativeNotification.mockResolvedValue(101);
-    mockCancelNativeNotification.mockResolvedValue(true);
-    const scheduler = new MobileNotificationScheduler();
+    mockScheduleNativeNotification.mockResolvedValue(101)
+    mockCancelNativeNotification.mockResolvedValue(true)
+    const scheduler = new MobileNotificationScheduler()
 
-    const store = { currentDate: '2026-05-06', projects: [{ tasks: [{ items: [{ id: 'item-1', blockId: 'block-1', docId: 'doc-1', lineNumber: 1, date: '2026-05-06', content: '开会', status: 'pending', reminder: { enabled: true, type: 'absolute', time: '09:00', __mockReminderTime: Date.now() + 60000 } }] }] }], getHabits: () => [] } as any;
-    await scheduler.syncFromProjects(store);
-    store.projects[0].tasks[0].items = [];
+    const store = { currentDate: '2026-05-06', projects: [{ tasks: [{ items: [{ id: 'item-1', blockId: 'block-1', docId: 'doc-1', lineNumber: 1, date: '2026-05-06', content: '开会', status: 'pending', reminder: { enabled: true, type: 'absolute', time: '09:00', __mockReminderTime: Date.now() + 60000 } }] }] }], getHabits: () => [] } as any
+    await scheduler.syncFromProjects(store)
+    store.projects[0].tasks[0].items = []
 
-    await scheduler.syncFromProjects(store);
+    await scheduler.syncFromProjects(store)
 
-    expect(mockCancelNativeNotification).toHaveBeenCalledWith(101);
-  });
-});
+    expect(mockCancelNativeNotification).toHaveBeenCalledWith(101)
+  })
+})
 ```
 
 并在 `test/services/reminderService.test.ts` 增加移动端分流断言：
 
 ```ts
 it('mobile start should not request browser notification permission', () => {
-  const projectStore = makeStore([], []);
-  service.start({ isMobile: true } as any, projectStore as any);
-  expect(mockNotificationRequestPermission).not.toHaveBeenCalled();
-});
+  const projectStore = makeStore([], [])
+  service.start({ isMobile: true } as any, projectStore as any)
+  expect(mockNotificationRequestPermission).not.toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: 跑测试确认移动调度器尚未实现**
@@ -534,50 +537,56 @@ Expected: FAIL，原因应为 scheduler 模块不存在，且 `ReminderService.s
 创建 `src/services/mobileNotificationScheduler.ts`：
 
 ```ts
-import dayjs from '@/utils/dayjs';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { getHabitReminderEntries } from '@/services/habitReminder';
+import { calculateReminderTime } from '@/parser/reminderParser'
+import { getHabitReminderEntries } from '@/services/habitReminder'
 import {
   loadMobileNotificationRegistry,
   removeMobileNotificationRegistryEntry,
   saveMobileNotificationRegistryEntry,
-} from '@/services/mobileNotificationRegistry';
-import { scheduleNativeNotification, cancelNativeNotification } from '@/utils/notification';
+} from '@/services/mobileNotificationRegistry'
+import dayjs from '@/utils/dayjs'
+import { cancelNativeNotification, scheduleNativeNotification } from '@/utils/notification'
 
-const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000
 
 export class MobileNotificationScheduler {
-  private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private syncTimer: ReturnType<typeof setTimeout> | null = null
 
   scheduleSync(projectStore: any): void {
-    if (this.syncTimer) clearTimeout(this.syncTimer);
+    if (this.syncTimer)
+      clearTimeout(this.syncTimer)
     this.syncTimer = setTimeout(() => {
-      void this.syncFromProjects(projectStore);
-    }, 200);
+      void this.syncFromProjects(projectStore)
+    }, 200)
   }
 
   async syncFromProjects(projectStore: any): Promise<void> {
-    const now = Date.now();
-    const registry = loadMobileNotificationRegistry();
-    const liveEntryKeys = new Set<string>();
+    const now = Date.now()
+    const registry = loadMobileNotificationRegistry()
+    const liveEntryKeys = new Set<string>()
 
     for (const project of projectStore?.projects || []) {
       for (const task of project?.tasks || []) {
         for (const item of task?.items || []) {
-          if (!item?.reminder?.enabled) continue;
-          if (item.status === 'completed' || item.status === 'abandoned') continue;
-          const reminderTime = calculateReminderTime(item.date, item.startDateTime, item.endDateTime, undefined, undefined, item.reminder);
-          if (!Number.isFinite(reminderTime) || reminderTime <= now || reminderTime > now + FUTURE_WINDOW_MS) continue;
-          const entryKey = `${item.blockId}-${item.date}-${reminderTime}`;
-          const planKey = `${entryKey}|${item.content}`;
-          liveEntryKeys.add(entryKey);
-          if (registry[entryKey]?.planKey === planKey) continue;
+          if (!item?.reminder?.enabled)
+            continue
+          if (item.status === 'completed' || item.status === 'abandoned')
+            continue
+          const reminderTime = calculateReminderTime(item.date, item.startDateTime, item.endDateTime, undefined, undefined, item.reminder)
+          if (!Number.isFinite(reminderTime) || reminderTime <= now || reminderTime > now + FUTURE_WINDOW_MS)
+            continue
+          const entryKey = `${item.blockId}-${item.date}-${reminderTime}`
+          const planKey = `${entryKey}|${item.content}`
+          liveEntryKeys.add(entryKey)
+          if (registry[entryKey]?.planKey === planKey)
+            continue
           if (registry[entryKey]) {
-            await cancelNativeNotification(registry[entryKey].notificationId);
+            await cancelNativeNotification(registry[entryKey].notificationId)
           }
-          const delayInSeconds = Math.max(1, Math.ceil((reminderTime - now) / 1000));
-          const notificationId = await scheduleNativeNotification(`⏰ ${item.project?.name || '提醒'}`, item.task?.name ? `${item.task.name}: ${item.content}` : item.content, { delayInSeconds });
-          if (notificationId === null) continue;
+          const delayInSeconds = Math.max(1, Math.ceil((reminderTime - now) / 1000))
+          const notificationId = await scheduleNativeNotification(`⏰ ${item.project?.name || '提醒'}`, item.task?.name ? `${item.task.name}: ${item.content}` : item.content, { delayInSeconds })
+          if (notificationId === null)
+            continue
           saveMobileNotificationRegistryEntry({
             entryKey,
             notificationId,
@@ -587,7 +596,7 @@ export class MobileNotificationScheduler {
             kind: 'reminder',
             status: 'scheduled',
             updatedAt: new Date().toISOString(),
-          });
+          })
         }
       }
     }
@@ -597,15 +606,17 @@ export class MobileNotificationScheduler {
     }
 
     for (const [entryKey, entry] of Object.entries(registry)) {
-      if (entry.kind === 'pomodoro-focus-end' || entry.kind === 'pomodoro-break-end') continue;
-      if (liveEntryKeys.has(entryKey)) continue;
-      await cancelNativeNotification(entry.notificationId);
-      removeMobileNotificationRegistryEntry(entryKey);
+      if (entry.kind === 'pomodoro-focus-end' || entry.kind === 'pomodoro-break-end')
+        continue
+      if (liveEntryKeys.has(entryKey))
+        continue
+      await cancelNativeNotification(entry.notificationId)
+      removeMobileNotificationRegistryEntry(entryKey)
     }
   }
 }
 
-export const mobileNotificationScheduler = new MobileNotificationScheduler();
+export const mobileNotificationScheduler = new MobileNotificationScheduler()
 ```
 
 在 `src/services/reminderService.ts` 的 `start()` 和 `requestNotificationPermission()` 路径增加移动端保护：
@@ -662,6 +673,7 @@ git commit -m "feat(notification): add mobile reminder scheduling"
 ## Task 4: 接通番茄专注结束与休息结束的移动预约
 
 **Files:**
+
 - Modify: `src/stores/pomodoroStore.ts`
 - Modify: `src/services/mobileNotificationScheduler.ts`
 - Modify: `test/stores/pomodoroStore.test.ts`
@@ -672,10 +684,10 @@ git commit -m "feat(notification): add mobile reminder scheduling"
 在 `test/stores/pomodoroStore.test.ts` 增加 scheduler mock：
 
 ```ts
-const mockSchedulePomodoroFocusEnd = vi.fn();
-const mockCancelPomodoroFocusEnd = vi.fn();
-const mockSchedulePomodoroBreakEnd = vi.fn();
-const mockCancelPomodoroBreakEnd = vi.fn();
+const mockSchedulePomodoroFocusEnd = vi.fn()
+const mockCancelPomodoroFocusEnd = vi.fn()
+const mockSchedulePomodoroBreakEnd = vi.fn()
+const mockCancelPomodoroBreakEnd = vi.fn()
 
 vi.mock('@/services/mobileNotificationScheduler', () => ({
   mobileNotificationScheduler: {
@@ -685,33 +697,33 @@ vi.mock('@/services/mobileNotificationScheduler', () => ({
     cancelPomodoroBreakEnd: (...args: unknown[]) => mockCancelPomodoroBreakEnd(...args),
     isMobileSchedulerEnabled: vi.fn(() => true),
   },
-}));
+}))
 
 it('startPomodoro schedules focus-end notification on mobile', async () => {
-  const store = usePomodoroStore();
-  await store.startPomodoro({ id: 'i1', blockId: 'b1', docId: 'd1', content: '测试', status: 'pending', lineNumber: 1 } as any, 25, 'b1', { isMobile: true });
-  expect(mockSchedulePomodoroFocusEnd).toHaveBeenCalled();
-});
+  const store = usePomodoroStore()
+  await store.startPomodoro({ id: 'i1', blockId: 'b1', docId: 'd1', content: '测试', status: 'pending', lineNumber: 1 } as any, 25, 'b1', { isMobile: true })
+  expect(mockSchedulePomodoroFocusEnd).toHaveBeenCalled()
+})
 
 it('pausePomodoro cancels focus-end notification on mobile', async () => {
-  const store = usePomodoroStore();
-  store.$patch({ activePomodoro: { blockId: 'b1', itemId: 'i1', itemContent: '测试', startTime: Date.now(), targetDurationMinutes: 25, accumulatedSeconds: 10, remainingSeconds: 1490, isPaused: false, pauseCount: 0, totalPausedSeconds: 0, timerMode: 'countdown' } as any });
-  await store.pausePomodoro({ isMobile: true });
-  expect(mockCancelPomodoroFocusEnd).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'b1' }));
-});
+  const store = usePomodoroStore()
+  store.$patch({ activePomodoro: { blockId: 'b1', itemId: 'i1', itemContent: '测试', startTime: Date.now(), targetDurationMinutes: 25, accumulatedSeconds: 10, remainingSeconds: 1490, isPaused: false, pauseCount: 0, totalPausedSeconds: 0, timerMode: 'countdown' } as any })
+  await store.pausePomodoro({ isMobile: true })
+  expect(mockCancelPomodoroFocusEnd).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'b1' }))
+})
 
 it('startBreak schedules break-end notification on mobile', async () => {
-  const store = usePomodoroStore();
-  await store.startBreak(5, { isMobile: true });
-  expect(mockSchedulePomodoroBreakEnd).toHaveBeenCalled();
-});
+  const store = usePomodoroStore()
+  await store.startBreak(5, { isMobile: true })
+  expect(mockSchedulePomodoroBreakEnd).toHaveBeenCalled()
+})
 
 it('stopBreak cancels break-end notification on mobile', async () => {
-  const store = usePomodoroStore();
-  store.$patch({ isBreakActive: true, breakRemainingSeconds: 60, breakTotalSeconds: 300 });
-  await store.stopBreak({ isMobile: true });
-  expect(mockCancelPomodoroBreakEnd).toHaveBeenCalled();
-});
+  const store = usePomodoroStore()
+  store.$patch({ isBreakActive: true, breakRemainingSeconds: 60, breakTotalSeconds: 300 })
+  await store.stopBreak({ isMobile: true })
+  expect(mockCancelPomodoroBreakEnd).toHaveBeenCalled()
+})
 ```
 
 并在 `test/services/mobileNotificationScheduler.test.ts` 补两组新断言：
@@ -719,11 +731,11 @@ it('stopBreak cancels break-end notification on mobile', async () => {
 ```ts
 it('rebuilds focus-end reservation when expected end changes', async () => {
   // 先 schedule，再 cancel + reschedule
-});
+})
 
 it('cleans stale break-end reservations when break stops', async () => {
   // 先写入 registry，再 clear
-});
+})
 ```
 
 - [ ] **Step 2: 跑测试确认番茄预约钩子尚未接入**
@@ -764,8 +776,8 @@ async cancelPomodoroBreakEnd(data: { breakKey?: string }): Promise<void> { ... }
 `entryKey` 建议分别使用：
 
 ```ts
-const focusEntryKey = `pomodoro-focus:${blockId}:${expectedEndAt}`;
-const breakEntryKey = `pomodoro-break:${breakKey}:${expectedEndAt}`;
+const focusEntryKey = `pomodoro-focus:${blockId}:${expectedEndAt}`
+const breakEntryKey = `pomodoro-break:${breakKey}:${expectedEndAt}`
 ```
 
 在 `src/stores/pomodoroStore.ts` 的这些位置补调用：
@@ -776,13 +788,13 @@ if (mobileNotificationScheduler.isMobileSchedulerEnabled(plugin)) {
     blockId: parentBlockId,
     itemContent: item.content,
     remainingSeconds,
-  });
+  })
 }
 ```
 
 ```ts
 if (mobileNotificationScheduler.isMobileSchedulerEnabled(plugin)) {
-  await mobileNotificationScheduler.cancelPomodoroFocusEnd({ blockId: this.activePomodoro.blockId });
+  await mobileNotificationScheduler.cancelPomodoroFocusEnd({ blockId: this.activePomodoro.blockId })
 }
 ```
 
@@ -791,13 +803,13 @@ if (mobileNotificationScheduler.isMobileSchedulerEnabled(plugin ?? usePlugin()))
   await mobileNotificationScheduler.schedulePomodoroBreakEnd({
     breakKey: `${startTime}-${totalSeconds}`,
     remainingSeconds: totalSeconds,
-  });
+  })
 }
 ```
 
 ```ts
 if (mobileNotificationScheduler.isMobileSchedulerEnabled(plugin)) {
-  await mobileNotificationScheduler.cancelPomodoroBreakEnd({});
+  await mobileNotificationScheduler.cancelPomodoroBreakEnd({})
 }
 ```
 
@@ -823,6 +835,7 @@ git commit -m "feat(pomodoro): schedule mobile focus and break notifications"
 ## Task 5: 做整体验证并清理回归点
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Modify: `src/tabs/PomodoroDock.vue`
 - Modify: `test/services/reminderService.test.ts`
@@ -835,24 +848,24 @@ git commit -m "feat(pomodoro): schedule mobile focus and break notifications"
 
 ```ts
 it('desktop start still requests browser permission as fallback preparation', () => {
-  const projectStore = makeStore([], []);
-  service.start({ isMobile: false } as any, projectStore as any);
-  expect(mockNotificationRequestPermission).toHaveBeenCalled();
-});
+  const projectStore = makeStore([], [])
+  service.start({ isMobile: false } as any, projectStore as any)
+  expect(mockNotificationRequestPermission).toHaveBeenCalled()
+})
 ```
 
 在 `test/utils/notification.test.ts` 增加：
 
 ```ts
 it('showPomodoroCompleteNotification uses the unified system notification path', async () => {
-  mockSendNotification.mockResolvedValue(123);
-  const mod = await import('@/utils/notification');
-  await mod.showPomodoroCompleteNotification('写周报', 25);
+  mockSendNotification.mockResolvedValue(123)
+  const mod = await import('@/utils/notification')
+  await mod.showPomodoroCompleteNotification('写周报', 25)
   expect(mockSendNotification).toHaveBeenCalledWith(expect.objectContaining({
     title: expect.any(String),
     body: expect.stringContaining('25'),
-  }));
-});
+  }))
+})
 ```
 
 - [ ] **Step 2: 跑目标测试，确认还有必要的收尾差异**
@@ -870,9 +883,9 @@ Expected: 如有失败，应集中在 `PomodoroDock.vue` 仍无条件请求浏�
 在 `src/tabs/PomodoroDock.vue` 把权限请求改成只在桌面端做预热：
 
 ```ts
-const plugin = usePlugin();
+const plugin = usePlugin()
 if (!plugin?.isMobile) {
-  await requestNotificationPermission();
+  await requestNotificationPermission()
 }
 ```
 
@@ -880,9 +893,10 @@ if (!plugin?.isMobile) {
 
 ```ts
 if (this.isMobile) {
-  void mobileNotificationScheduler.syncFromProjects(projectStore);
-} else {
-  reminderService.start(this, projectStore);
+  void mobileNotificationScheduler.syncFromProjects(projectStore)
+}
+else {
+  reminderService.start(this, projectStore)
 }
 ```
 

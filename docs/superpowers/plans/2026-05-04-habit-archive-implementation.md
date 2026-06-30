@@ -53,6 +53,7 @@
 ### Task 1: Parse And Model `archivedAt`
 
 **Files:**
+
 - Modify: `src/types/models.ts`
 - Modify: `src/parser/habitParser.ts`
 - Test: `test/parser/habitParser.test.ts`
@@ -63,22 +64,22 @@ Add cases like:
 
 ```ts
 it('parses archivedAt from a habit definition line', () => {
-  const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04');
+  const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04')
 
-  expect(result).not.toBeNull();
-  expect(result?.archivedAt).toBe('2026-05-04');
-});
+  expect(result).not.toBeNull()
+  expect(result?.archivedAt).toBe('2026-05-04')
+})
 
 it('does not treat malformed archive text as archived', () => {
-  const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦今天');
+  const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦今天')
 
-  expect(result).not.toBeNull();
-  expect(result?.archivedAt).toBeUndefined();
-});
+  expect(result).not.toBeNull()
+  expect(result?.archivedAt).toBeUndefined()
+})
 
 it('does not parse archive markers on record lines', () => {
-  expect(parseCheckInRecordLine('喝水 3/8杯 📅2026-05-01 📦2026-05-04', 'habit-1')).toBeNull();
-});
+  expect(parseCheckInRecordLine('喝水 3/8杯 📅2026-05-01 📦2026-05-04', 'habit-1')).toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -90,6 +91,7 @@ npx vitest run test/parser/habitParser.test.ts
 ```
 
 Expected:
+
 - FAIL
 - `archivedAt` is missing from parsed results
 - record-line archive marker test fails against current parser behavior
@@ -101,16 +103,16 @@ In `src/types/models.ts`, extend the interface:
 ```ts
 export interface Habit {
   // ...
-  archivedAt?: string;
+  archivedAt?: string
 }
 ```
 
 In `src/parser/habitParser.ts`, add archive marker parsing near other habit markers:
 
 ```ts
-const archiveMatch = line.match(/(?:^|\s)📦(\d{4}-\d{2}-\d{2})(?=\s|$)/);
+const archiveMatch = line.match(/(?:^|\s)📦(\d{4}-\d{2}-\d{2})(?=\s|$)/)
 if (archiveMatch) {
-  result.archivedAt = archiveMatch[1];
+  result.archivedAt = archiveMatch[1]
 }
 ```
 
@@ -118,7 +120,7 @@ And reject archive markers in check-in records:
 
 ```ts
 if (normalizedLine.includes('📦')) {
-  return null;
+  return null
 }
 ```
 
@@ -133,6 +135,7 @@ npx vitest run test/parser/habitParser.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -147,6 +150,7 @@ git commit -m "feat(habit): parse archive marker"
 ### Task 2: Hide Archived Habits From Active Workspace Lists
 
 **Files:**
+
 - Modify: `src/composables/useHabitWorkspace.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 
@@ -165,13 +169,13 @@ it('filters archived habits out of the default workspace list', async () => {
       { ...createHabit('active-1'), archivedAt: undefined },
       { ...createHabit('archived-1'), archivedAt: '2026-05-04' },
     ],
-  }] as any;
+  }] as any
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  expect(workspace.habits.value.map(h => h.blockId)).toEqual(['active-1']);
-});
+  expect(workspace.habits.value.map(h => h.blockId)).toEqual(['active-1'])
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -183,6 +187,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - FAIL
 - Archived habit still appears in `habits.value`
 
@@ -194,10 +199,10 @@ In `src/composables/useHabitWorkspace.ts`, filter the computed habit list:
 const habits = computed(() => {
   const source = groupId.value
     ? projectStore.getHabitsByGroup(groupId.value)
-    : projectStore.habits;
+    : projectStore.habits
 
-  return source.filter(habit => !habit.archivedAt);
-});
+  return source.filter(habit => !habit.archivedAt)
+})
 ```
 
 Do not remove archived habits from the store itself; only hide them from the active workspace list.
@@ -211,6 +216,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -225,6 +231,7 @@ git commit -m "feat(habit): hide archived habits from active workspace"
 ### Task 3: Block Check-In And Increment For Archived Habits
 
 **Files:**
+
 - Modify: `src/composables/useHabitWorkspace.ts`
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
@@ -236,24 +243,24 @@ Add tests like:
 
 ```ts
 it('does not call binary check-in service for archived habits', async () => {
-  const archivedHabit = { ...createHabit('habit-1'), archivedAt: '2026-05-04' };
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const archivedHabit = { ...createHabit('habit-1'), archivedAt: '2026-05-04' }
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  await workspace.checkInHabit(archivedHabit as any);
+  await workspace.checkInHabit(archivedHabit as any)
 
-  expect(checkIn).not.toHaveBeenCalled();
-});
+  expect(checkIn).not.toHaveBeenCalled()
+})
 
 it('does not call count check-in service for archived habits', async () => {
-  const archivedHabit = { ...createHabit('habit-1'), type: 'count', target: 8, unit: '杯', archivedAt: '2026-05-04' };
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const archivedHabit = { ...createHabit('habit-1'), type: 'count', target: 8, unit: '杯', archivedAt: '2026-05-04' }
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  await workspace.incrementHabit(archivedHabit as any);
+  await workspace.incrementHabit(archivedHabit as any)
 
-  expect(checkInCount).not.toHaveBeenCalled();
-});
+  expect(checkInCount).not.toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -265,6 +272,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - FAIL
 - Archived habits still call `checkIn` / `checkInCount`
 
@@ -274,7 +282,7 @@ Add a shared guard inside `useHabitWorkspace`:
 
 ```ts
 function isHabitArchived(habit: Habit) {
-  return Boolean(habit.archivedAt);
+  return Boolean(habit.archivedAt)
 }
 ```
 
@@ -283,16 +291,16 @@ Use it in actions:
 ```ts
 async function checkInHabit(habit: Habit) {
   if (isHabitArchived(habit)) {
-    showMessage(t('habit').archivedCannotCheckIn);
-    return false;
+    showMessage(t('habit').archivedCannotCheckIn)
+    return false
   }
   // existing behavior
 }
 
 async function incrementHabit(habit: Habit) {
   if (isHabitArchived(habit)) {
-    showMessage(t('habit').archivedCannotCheckIn);
-    return false;
+    showMessage(t('habit').archivedCannotCheckIn)
+    return false
   }
   // existing behavior
 }
@@ -316,6 +324,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -330,6 +339,7 @@ git commit -m "feat(habit): block archived habit check-ins"
 ### Task 4: Add Archive/Unarchive Mutation Service
 
 **Files:**
+
 - Modify: `src/services/habitService.ts`
 - Test: `test/services/habitService.test.ts`
 
@@ -339,20 +349,20 @@ Add tests like:
 
 ```ts
 it('archives a habit by appending 📦YYYY-MM-DD to the definition line', async () => {
-  vi.mocked(getBlockByID).mockResolvedValue({ markdown: '喝水 🎯2026-04-01 8杯 🔄每天' } as any);
+  vi.mocked(getBlockByID).mockResolvedValue({ markdown: '喝水 🎯2026-04-01 8杯 🔄每天' } as any)
 
-  await archiveHabit(createHabit({ blockId: 'habit-1' }) as any, '2026-05-04');
+  await archiveHabit(createHabit({ blockId: 'habit-1' }) as any, '2026-05-04')
 
-  expect(updateBlock).toHaveBeenCalledWith('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04');
-});
+  expect(updateBlock).toHaveBeenCalledWith('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04')
+})
 
 it('unarchives a habit by removing the 📦YYYY-MM-DD marker only', async () => {
-  vi.mocked(getBlockByID).mockResolvedValue({ markdown: '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04' } as any);
+  vi.mocked(getBlockByID).mockResolvedValue({ markdown: '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04' } as any)
 
-  await unarchiveHabit(createHabit({ blockId: 'habit-1', archivedAt: '2026-05-04' }) as any);
+  await unarchiveHabit(createHabit({ blockId: 'habit-1', archivedAt: '2026-05-04' }) as any)
 
-  expect(updateBlock).toHaveBeenCalledWith('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天');
-});
+  expect(updateBlock).toHaveBeenCalledWith('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -364,6 +374,7 @@ npx vitest run test/services/habitService.test.ts
 ```
 
 Expected:
+
 - FAIL
 - `archiveHabit` / `unarchiveHabit` do not exist yet
 
@@ -373,23 +384,25 @@ In `src/services/habitService.ts`, add:
 
 ```ts
 export async function archiveHabit(habit: Habit, archiveDate: string): Promise<boolean> {
-  const block = await getBlockByID(habit.blockId);
-  const markdown = block?.markdown?.trim();
-  if (!markdown || habit.archivedAt) return false;
+  const block = await getBlockByID(habit.blockId)
+  const markdown = block?.markdown?.trim()
+  if (!markdown || habit.archivedAt)
+    return false
 
-  const next = `${markdown} 📦${archiveDate}`;
-  await updateBlock(habit.blockId, next);
-  return true;
+  const next = `${markdown} 📦${archiveDate}`
+  await updateBlock(habit.blockId, next)
+  return true
 }
 
 export async function unarchiveHabit(habit: Habit): Promise<boolean> {
-  const block = await getBlockByID(habit.blockId);
-  const markdown = block?.markdown;
-  if (!markdown || !habit.archivedAt) return false;
+  const block = await getBlockByID(habit.blockId)
+  const markdown = block?.markdown
+  if (!markdown || !habit.archivedAt)
+    return false
 
-  const next = markdown.replace(/\s*📦\d{4}-\d{2}-\d{2}(?=\s|$)/, '').trim();
-  await updateBlock(habit.blockId, next);
-  return true;
+  const next = markdown.replace(/\s*📦\d{4}-\d{2}-\d{2}(?=\s|$)/, '').trim()
+  await updateBlock(habit.blockId, next)
+  return true
 }
 ```
 
@@ -404,6 +417,7 @@ npx vitest run test/services/habitService.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -418,6 +432,7 @@ git commit -m "feat(habit): add archive mutation service"
 ### Task 5: Surface Archive Actions In Desktop Habit Detail
 
 **Files:**
+
 - Modify: `src/components/habit/HabitWorkspaceDetailPane.vue`
 - Modify: `src/tabs/DesktopHabitDock.vue`
 - Test: `test/tabs/DesktopHabitDock.test.ts`
@@ -429,14 +444,14 @@ Add tests that assert:
 ```ts
 it('renders an archive action for active habits in detail mode', async () => {
   // enter detail
-  expect(mounted.container.querySelector('[data-testid="habit-detail-archive"]')).not.toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-detail-archive"]')).not.toBeNull()
+})
 
 it('renders an unarchive action for archived habits in detail mode', async () => {
-  mounted.projectStore.projects[0].habits = [createHabit({ archivedAt: '2026-05-04' })];
+  mounted.projectStore.projects[0].habits = [createHabit({ archivedAt: '2026-05-04' })]
   // select archived habit directly
-  expect(mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')).not.toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')).not.toBeNull()
+})
 ```
 
 Also assert archived detail disables today actions, for example by stubbing `HabitCountInput` or checking a disabled prop/test id path exposed by the pane.
@@ -450,6 +465,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts
 ```
 
 Expected:
+
 - FAIL
 - No archive/unarchive action exists in detail
 
@@ -459,16 +475,16 @@ In `HabitWorkspaceDetailPane.vue`, add props and emits:
 
 ```ts
 const props = defineProps<{
-  selectedHabit: Habit;
+  selectedHabit: Habit
   // ...
-  isArchived?: boolean;
-}>();
+  isArchived?: boolean
+}>()
 
 const emit = defineEmits<{
-  'archive': [];
-  'unarchive': [];
-  'open-doc': [];
-}>();
+  'archive': []
+  'unarchive': []
+  'open-doc': []
+}>()
 ```
 
 Render mutually exclusive actions:
@@ -481,6 +497,7 @@ Render mutually exclusive actions:
 >
   {{ t('habit').archive }}
 </button>
+
 <button
   v-else
   data-testid="habit-detail-unarchive"
@@ -509,6 +526,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -523,6 +541,7 @@ git commit -m "feat(habit): add desktop archive actions"
 ### Task 6: Wire Archive/Unarchive Through `useHabitWorkspace`
 
 **Files:**
+
 - Modify: `src/composables/useHabitWorkspace.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 
@@ -532,24 +551,24 @@ Add tests such as:
 
 ```ts
 it('archives the selected habit through the habit service', async () => {
-  archiveHabit.mockResolvedValue(true);
-  const workspace = useHabitWorkspace();
-  workspace.selectHabit(habit);
+  archiveHabit.mockResolvedValue(true)
+  const workspace = useHabitWorkspace()
+  workspace.selectHabit(habit)
 
-  await workspace.archiveSelectedHabit();
+  await workspace.archiveSelectedHabit()
 
-  expect(archiveHabit).toHaveBeenCalledWith(expect.objectContaining({ blockId: habit.blockId }), expect.any(String));
-});
+  expect(archiveHabit).toHaveBeenCalledWith(expect.objectContaining({ blockId: habit.blockId }), expect.any(String))
+})
 
 it('unarchives the selected habit through the habit service', async () => {
-  unarchiveHabit.mockResolvedValue(true);
-  const workspace = useHabitWorkspace();
-  workspace.selectHabit({ ...habit, archivedAt: '2026-05-04' } as any);
+  unarchiveHabit.mockResolvedValue(true)
+  const workspace = useHabitWorkspace()
+  workspace.selectHabit({ ...habit, archivedAt: '2026-05-04' } as any)
 
-  await workspace.unarchiveSelectedHabit();
+  await workspace.unarchiveSelectedHabit()
 
-  expect(unarchiveHabit).toHaveBeenCalled();
-});
+  expect(unarchiveHabit).toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -561,6 +580,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - FAIL
 - New composable actions do not exist yet
 
@@ -570,13 +590,15 @@ Add actions like:
 
 ```ts
 async function archiveSelectedHabit() {
-  if (!selectedHabit.value || selectedHabit.value.archivedAt) return false;
-  return archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'));
+  if (!selectedHabit.value || selectedHabit.value.archivedAt)
+    return false
+  return archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'))
 }
 
 async function unarchiveSelectedHabit() {
-  if (!selectedHabit.value || !selectedHabit.value.archivedAt) return false;
-  return unarchiveHabit(selectedHabit.value);
+  if (!selectedHabit.value || !selectedHabit.value.archivedAt)
+    return false
+  return unarchiveHabit(selectedHabit.value)
 }
 ```
 
@@ -591,6 +613,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -605,6 +628,7 @@ git commit -m "feat(habit): wire archive actions through workspace"
 ### Task 7: Add Mobile Detail Archive Actions
 
 **Files:**
+
 - Modify: `src/mobile/components/habit/MobileHabitDetailSheet.vue`
 - Modify: `src/mobile/panels/MobileHabitPanel.vue`
 - Test: `test/mobile/MobileHabitDetailSheet.test.ts`
@@ -615,13 +639,13 @@ Add assertions that the sheet:
 
 ```ts
 it('shows archive action for active habits', async () => {
-  expect(screen.getByTestId('mobile-habit-archive')).not.toBeNull();
-});
+  expect(screen.getByTestId('mobile-habit-archive')).not.toBeNull()
+})
 
 it('shows unarchive action for archived habits', async () => {
   // mount with archivedAt
-  expect(screen.getByTestId('mobile-habit-unarchive')).not.toBeNull();
-});
+  expect(screen.getByTestId('mobile-habit-unarchive')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -633,6 +657,7 @@ npx vitest run test/mobile/MobileHabitDetailSheet.test.ts
 ```
 
 Expected:
+
 - FAIL
 
 - [ ] **Step 3: Write minimal implementation**
@@ -647,6 +672,7 @@ In the mobile detail header/actions area, mirror desktop semantics:
 >
   {{ t('habit').archive }}
 </button>
+
 <button
   v-else
   data-testid="mobile-habit-unarchive"
@@ -667,6 +693,7 @@ npx vitest run test/mobile/MobileHabitDetailSheet.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -681,6 +708,7 @@ git commit -m "feat(habit): add mobile archive actions"
 ### Task 8: Stop Archived Habits From Producing Reminders
 
 **Files:**
+
 - Modify: `src/services/habitReminder.ts`
 - Test: `test/services/habitReminder.test.ts`
 
@@ -696,10 +724,10 @@ it('does not create reminder entries for archived habits', () => {
       archivedAt: '2026-05-04',
       reminder: { time: '09:00' },
     } as any,
-  ], '2026-05-04');
+  ], '2026-05-04')
 
-  expect(entries).toEqual([]);
-});
+  expect(entries).toEqual([])
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -711,6 +739,7 @@ npx vitest run test/services/habitReminder.test.ts
 ```
 
 Expected:
+
 - FAIL
 
 - [ ] **Step 3: Write minimal implementation**
@@ -719,14 +748,15 @@ In `getHabitReminderEntries()` and any lower-level reminder eligibility function
 
 ```ts
 if (habit.archivedAt) {
-  return false;
+  return false
 }
 ```
 
 or:
 
 ```ts
-if (habit.archivedAt) continue;
+if (habit.archivedAt)
+  continue
 ```
 
 depending on the function layer.
@@ -740,6 +770,7 @@ npx vitest run test/services/habitReminder.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -754,6 +785,7 @@ git commit -m "feat(habit): skip reminders for archived habits"
 ### Task 9: Make `/dk` Respect Archived Habits
 
 **Files:**
+
 - Modify: `src/utils/slashCommands.ts`
 - Test: `test/utils/slashCommands.habit.test.ts`
 
@@ -763,19 +795,19 @@ Add:
 
 ```ts
 it('/dk on an archived habit definition line should stop with archived message', async () => {
-  const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+  const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk'])
   mockProjectStore.habits = [{
     ...createHabit(),
     archivedAt: '2026-05-04',
-  }] as any;
+  }] as any
 
   await handler?.({
     nodeElement: createHabitDefinitionNode('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04'),
-  } as any);
+  } as any)
 
-  expect(checkIn).not.toHaveBeenCalled();
-  expect(showMessage).toHaveBeenCalledWith('习惯已归档');
-});
+  expect(checkIn).not.toHaveBeenCalled()
+  expect(showMessage).toHaveBeenCalledWith('习惯已归档')
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -787,6 +819,7 @@ npx vitest run test/utils/slashCommands.habit.test.ts
 ```
 
 Expected:
+
 - FAIL
 
 - [ ] **Step 3: Write minimal implementation**
@@ -795,9 +828,9 @@ In the habit branch of `/dk`, after locating the store habit:
 
 ```ts
 if (habit.archivedAt) {
-  showMessage(t('habit').archivedCannotCheckIn);
-  return;
+  showMessage(t('habit').archivedCannotCheckIn)
 }
+
 ```
 
 Apply the same guard before both binary and count paths.
@@ -811,6 +844,7 @@ npx vitest run test/utils/slashCommands.habit.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -825,6 +859,7 @@ git commit -m "feat(habit): block slash check-in for archived habits"
 ### Task 10: Final Focused Regression
 
 **Files:**
+
 - Test: `test/parser/habitParser.test.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 - Test: `test/services/habitService.test.ts`
@@ -842,6 +877,7 @@ npx vitest run test/parser/habitParser.test.ts test/composables/useHabitWorkspac
 ```
 
 Expected:
+
 - PASS
 - No archive-related failures
 
@@ -854,6 +890,7 @@ npx vitest run test/components/habit/HabitListItem.test.ts test/components/habit
 ```
 
 Expected:
+
 - PASS
 - No regression in list/detail/log rendering
 

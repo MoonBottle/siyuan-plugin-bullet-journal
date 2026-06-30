@@ -52,6 +52,7 @@
 ### Task 1: Add the floating display mode setting and UI
 
 **Files:**
+
 - Modify: `src/settings/types.ts`
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
@@ -64,9 +65,9 @@ Add a test to `test/stores/settingsStore.test.ts` that proves the new mode defau
 
 ```ts
 it('defaults pomodoro floating display mode to inline', () => {
-  const settings = structuredClone(defaultSettings);
-  expect(settings.pomodoro?.floatingDisplayMode).toBe('inline');
-});
+  const settings = structuredClone(defaultSettings)
+  expect(settings.pomodoro?.floatingDisplayMode).toBe('inline')
+})
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -84,14 +85,14 @@ Expected: FAIL with `expected undefined to be 'inline'` or equivalent missing-pr
 Update `src/settings/types.ts` to introduce the mode union and default value.
 
 ```ts
-export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both';
+export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both'
 
 export interface PomodoroSettings {
-  enableStatusBar?: boolean;
-  enableStatusBarTimer?: boolean;
-  enableFloatingButton?: boolean;
-  floatingDisplayMode?: PomodoroFloatingDisplayMode;
-  recordMode: 'block' | 'attr';
+  enableStatusBar?: boolean
+  enableStatusBarTimer?: boolean
+  enableFloatingButton?: boolean
+  floatingDisplayMode?: PomodoroFloatingDisplayMode
+  recordMode: 'block' | 'attr'
 }
 
 export const defaultPomodoroSettings: PomodoroSettings = {
@@ -100,7 +101,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableFloatingButton: true,
   floatingDisplayMode: 'inline',
   recordMode: 'block',
-};
+}
 ```
 
 - [ ] **Step 4: Add i18n copy for the new selector**
@@ -136,7 +137,7 @@ const floatingDisplayModeOptions = [
   { value: 'inline', label: t('settings').pomodoro.floatingDisplayModeInline },
   { value: 'desktop', label: t('settings').pomodoro.floatingDisplayModeDesktop },
   { value: 'both', label: t('settings').pomodoro.floatingDisplayModeBoth },
-];
+]
 ```
 
 ```vue
@@ -176,6 +177,7 @@ git commit -m "feat(settings): add pomodoro floating display modes"
 ### Task 2: Add the detached window utility with tests first
 
 **Files:**
+
 - Create: `src/utils/detachedPomodoroWindow.ts`
 - Test: `test/utils/detachedPomodoroWindow.test.ts`
 
@@ -184,32 +186,32 @@ git commit -m "feat(settings): add pomodoro floating display modes"
 Create `test/utils/detachedPomodoroWindow.test.ts` with coverage for capability detection and lifecycle.
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest'
 import {
   createDetachedPomodoroWindowHost,
   detectDetachedPomodoroWindowSupport,
-} from '@/utils/detachedPomodoroWindow';
+} from '@/utils/detachedPomodoroWindow'
 
 describe('detectDetachedPomodoroWindowSupport', () => {
   it('returns false outside desktop frontend', () => {
     expect(detectDetachedPomodoroWindowSupport({
       frontEnd: 'mobile',
       runtimeRequire: vi.fn(),
-    })).toBe(false);
-  });
+    })).toBe(false)
+  })
 
   it('returns true when BrowserWindow is available in desktop frontend', () => {
     const runtimeRequire = vi.fn(() => ({
       BrowserWindow: vi.fn(),
       getCurrentWindow: vi.fn(),
-    }));
+    }))
 
     expect(detectDetachedPomodoroWindowSupport({
       frontEnd: 'desktop',
       runtimeRequire,
-    })).toBe(true);
-  });
-});
+    })).toBe(true)
+  })
+})
 
 describe('createDetachedPomodoroWindowHost', () => {
   it('falls back to unavailable host when support detection fails', () => {
@@ -219,11 +221,11 @@ describe('createDetachedPomodoroWindowHost', () => {
       createMarkup: () => '<div />',
       applyViewState: vi.fn(),
       onAction: vi.fn(),
-    });
+    })
 
-    expect(host.isAvailable()).toBe(false);
-  });
-});
+    expect(host.isAvailable()).toBe(false)
+  })
+})
 ```
 
 - [ ] **Step 2: Run the detached-window test to verify it fails**
@@ -241,29 +243,30 @@ Expected: FAIL because `@/utils/detachedPomodoroWindow` does not exist yet.
 Create `src/utils/detachedPomodoroWindow.ts` with a narrow API surface.
 
 ```ts
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 
 export interface DetachedPomodoroWindowHost {
-  isAvailable(): boolean;
-  show(state: FloatingPomodoroViewState): void;
-  update(state: FloatingPomodoroViewState): void;
-  hide(): void;
-  destroy(): void;
+  isAvailable: () => boolean
+  show: (state: FloatingPomodoroViewState) => void
+  update: (state: FloatingPomodoroViewState) => void
+  hide: () => void
+  destroy: () => void
 }
 
 export function detectDetachedPomodoroWindowSupport(input: {
-  frontEnd: string | undefined;
-  runtimeRequire?: ((id: string) => any) | undefined;
+  frontEnd: string | undefined
+  runtimeRequire?: ((id: string) => any) | undefined
 }): boolean {
   if (input.frontEnd !== 'desktop' || !input.runtimeRequire) {
-    return false;
+    return false
   }
 
   try {
-    const remote = input.runtimeRequire('@electron/remote');
-    return typeof remote?.BrowserWindow === 'function';
-  } catch {
-    return false;
+    const remote = input.runtimeRequire('@electron/remote')
+    return typeof remote?.BrowserWindow === 'function'
+  }
+  catch {
+    return false
   }
 }
 ```
@@ -283,7 +286,7 @@ Implement `createDetachedPomodoroWindowHost(...)` so that:
 Within the same file, expose only three actions from the detached window DOM:
 
 ```ts
-export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete';
+export type DetachedPomodoroAction = 'pause' | 'resume' | 'complete'
 ```
 
 When building the HTML shell, register:
@@ -291,7 +294,7 @@ When building the HTML shell, register:
 ```ts
 window.__BULLET_JOURNAL_POMODORO_ACTION__ = (action) => {
   // bridged back to host callback
-};
+}
 ```
 
 Then map the floating capsule buttons to:
@@ -306,7 +309,7 @@ Add test coverage with fake `BrowserWindow` and fake `webContents`.
 
 ```ts
 it('calls executeJavaScript when updating an existing detached window', () => {
-  const executeJavaScript = vi.fn();
+  const executeJavaScript = vi.fn()
   const BrowserWindow = vi.fn(() => ({
     loadURL: vi.fn(),
     showInactive: vi.fn(),
@@ -317,7 +320,7 @@ it('calls executeJavaScript when updating an existing detached window', () => {
     once: vi.fn(),
     setAlwaysOnTop: vi.fn(),
     setVisibleOnAllWorkspaces: vi.fn(),
-  }));
+  }))
 
   const host = createDetachedPomodoroWindowHost({
     frontEnd: 'desktop',
@@ -325,13 +328,13 @@ it('calls executeJavaScript when updating an existing detached window', () => {
     createMarkup: () => '<div />',
     applyViewState: vi.fn(),
     onAction: vi.fn(),
-  });
+  })
 
-  host.show({ phase: 'focus', status: '专注中', title: '事项', primaryText: '25:00', secondaryText: '', progress: 0, pauseResumeLabel: '暂停', endLabel: '结束专注', isPaused: false });
-  host.update({ phase: 'focus', status: '专注中', title: '事项', primaryText: '24:59', secondaryText: '', progress: 0.01, pauseResumeLabel: '暂停', endLabel: '结束专注', isPaused: false });
+  host.show({ phase: 'focus', status: '专注中', title: '事项', primaryText: '25:00', secondaryText: '', progress: 0, pauseResumeLabel: '暂停', endLabel: '结束专注', isPaused: false })
+  host.update({ phase: 'focus', status: '专注中', title: '事项', primaryText: '24:59', secondaryText: '', progress: 0.01, pauseResumeLabel: '暂停', endLabel: '结束专注', isPaused: false })
 
-  expect(executeJavaScript).toHaveBeenCalled();
-});
+  expect(executeJavaScript).toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 6: Run the detached-window tests to verify they pass**
@@ -358,6 +361,7 @@ git commit -m "feat(pomodoro): add detached floating window host"
 ### Task 3: Refactor `src/index.ts` to support inline, desktop, and both hosts
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Test: `test/utils/floatingPomodoroViewState.test.ts`
 
@@ -385,12 +389,12 @@ it('builds focus view state for countdown mode', () => {
       skipBreak: '跳过休息',
       unknownItem: '未关联事项',
     },
-  });
+  })
 
-  expect(state.title).toBe('编写实现计划');
-  expect(state.pauseResumeLabel).toBe('暂停');
-  expect(state.endLabel).toBe('结束专注');
-});
+  expect(state.title).toBe('编写实现计划')
+  expect(state.pauseResumeLabel).toBe('暂停')
+  expect(state.endLabel).toBe('结束专注')
+})
 ```
 
 - [ ] **Step 2: Run the regression test to establish a baseline**
@@ -442,19 +446,21 @@ private detachedPomodoroWindowHost = createDetachedPomodoroWindowHost({
 When updating floating state:
 
 ```ts
-const viewState = buildFloatingPomodoroViewState(source);
+const viewState = buildFloatingPomodoroViewState(source)
 
 if (this.shouldUseInlineFloating()) {
-  applyFloatingPomodoroViewState(this.floatingTomatoBtn, viewState);
-  this.showFloatingTomatoButton();
-} else {
-  this.hideFloatingTomatoButton();
+  applyFloatingPomodoroViewState(this.floatingTomatoBtn, viewState)
+  this.showFloatingTomatoButton()
+}
+else {
+  this.hideFloatingTomatoButton()
 }
 
 if (this.shouldUseDetachedFloating()) {
-  this.detachedPomodoroWindowHost.show(viewState);
-} else {
-  this.detachedPomodoroWindowHost.hide();
+  this.detachedPomodoroWindowHost.show(viewState)
+}
+else {
+  this.detachedPomodoroWindowHost.hide()
 }
 ```
 
@@ -492,8 +498,8 @@ Use the existing store methods only. Do not create duplicated timer mutation log
 Add detached host teardown anywhere the plugin already tears down floating UI:
 
 ```ts
-this.detachedPomodoroWindowHost.hide();
-this.detachedPomodoroWindowHost.destroy();
+this.detachedPomodoroWindowHost.hide()
+this.detachedPomodoroWindowHost.destroy()
 ```
 
 This must run on:
@@ -526,6 +532,7 @@ git commit -m "feat(pomodoro): support inline and detached floating hosts"
 ### Task 4: Verify no regression in existing floating pomodoro rendering
 
 **Files:**
+
 - Test: `test/utils/floatingPomodoroDom.test.ts`
 - Test: `test/stores/pomodoroStore.test.ts`
 
@@ -535,8 +542,8 @@ Extend `test/utils/floatingPomodoroDom.test.ts` to prove focus-mode rendering st
 
 ```ts
 it('shows pause and complete actions in focus mode', () => {
-  const host = document.createElement('div');
-  host.innerHTML = createFloatingPomodoroMarkup();
+  const host = document.createElement('div')
+  host.innerHTML = createFloatingPomodoroMarkup()
 
   applyFloatingPomodoroViewState(host, {
     phase: 'focus',
@@ -548,12 +555,12 @@ it('shows pause and complete actions in focus mode', () => {
     pauseResumeLabel: '暂停',
     endLabel: '结束专注',
     isPaused: false,
-  });
+  })
 
-  expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(false);
-  expect(host.querySelector('.floating-tomato-action--complete')?.hasAttribute('hidden')).toBe(false);
-  expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(true);
-});
+  expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(false)
+  expect(host.querySelector('.floating-tomato-action--complete')?.hasAttribute('hidden')).toBe(false)
+  expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(true)
+})
 ```
 
 - [ ] **Step 2: Run the rendering regression test**
@@ -590,6 +597,7 @@ git commit -m "test(pomodoro): cover floating host regressions"
 ### Task 5: Final verification and manual desktop validation
 
 **Files:**
+
 - Modify: none
 - Test: no new files
 

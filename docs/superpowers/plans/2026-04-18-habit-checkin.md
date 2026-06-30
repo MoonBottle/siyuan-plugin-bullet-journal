@@ -29,6 +29,7 @@ Task 1 (models) ──→ Task 2 (habitParser) ──→ Task 3 (core.ts 集成)
 ### Task 1: 数据模型 — Habit / CheckInRecord / HabitFrequency / HabitStats
 
 **Files:**
+
 - Modify: `src/types/models.ts:84-94` (Project 接口新增 habits 字段)
 - Create: 无新文件（类型定义追加到 models.ts）
 - Test: `test/parser/habitParser.test.ts`（Task 2 中验证类型正确性）
@@ -39,12 +40,12 @@ Task 1 (models) ──→ Task 2 (habitParser) ──→ Task 3 (core.ts 集成)
 
 ```typescript
 // 习惯频率规则
-export type HabitFrequency = {
-  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days';
-  interval?: number;             // 每 N 天的间隔（如 2 = 每2天）
-  daysPerWeek?: number;          // 每周 N 天（如 3 = 每周3天）
-  daysOfWeek?: number[];         // 每周指定周几（0=周日, 1=周一, ...）
-};
+export interface HabitFrequency {
+  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days'
+  interval?: number // 每 N 天的间隔（如 2 = 每2天）
+  daysPerWeek?: number // 每周 N 天（如 3 = 每周3天）
+  daysOfWeek?: number[] // 每周指定周几（0=周日, 1=周一, ...）
+}
 ```
 
 **Step 2: 新增 CheckInRecord 接口**
@@ -54,16 +55,16 @@ export type HabitFrequency = {
 ```typescript
 // 打卡记录
 export interface CheckInRecord {
-  content: string;               // 打卡日志内容（默认等于习惯名，用户可自定义修改）
-  date: string;                  // YYYY-MM-DD
-  docId: string;
-  blockId: string;               // SiYuan block ID，作为唯一标识
+  content: string // 打卡日志内容（默认等于习惯名，用户可自定义修改）
+  date: string // YYYY-MM-DD
+  docId: string
+  blockId: string // SiYuan block ID，作为唯一标识
   // 计数型专用
-  currentValue?: number;         // 当前值（如 3）
-  targetValue?: number;          // 目标值（如 8）
-  unit?: string;                 // 单位
+  currentValue?: number // 当前值（如 3）
+  targetValue?: number // 目标值（如 8）
+  unit?: string // 单位
   // 所属习惯引用
-  habitId: string;               // 所属习惯的 blockId
+  habitId: string // 所属习惯的 blockId
 }
 ```
 
@@ -74,21 +75,21 @@ export interface CheckInRecord {
 ```typescript
 // 习惯
 export interface Habit {
-  name: string;                  // 习惯名（如"喝水"、"早起"）
-  docId: string;                 // 所属文档 ID
-  blockId: string;               // SiYuan block ID，作为唯一标识
-  lastBlockId?: string;          // 最后一个 record 的 block ID（用于插入位置）
-  type: 'binary' | 'count';     // 二元型 / 计数型
-  startDate: string;             // 开始日期（YYYY-MM-DD，必填）
-  durationDays?: number;         // 持续日历天数（可选，如30天），到达后习惯结束
-  endDate?: string;              // 计算字段：startDate + durationDays - 1
-  target?: number;               // 目标值（计数型，如 8）
-  unit?: string;                 // 单位（计数型，如"杯"）
-  frequency?: HabitFrequency;    // 频率规则（必填）
-  reminder?: ReminderConfig;     // 提醒配置（可选，复用已有）
-  records: CheckInRecord[];      // 打卡记录
-  links?: Link[];                // 链接
-  pomodoros?: PomodoroRecord[];  // 番茄钟记录
+  name: string // 习惯名（如"喝水"、"早起"）
+  docId: string // 所属文档 ID
+  blockId: string // SiYuan block ID，作为唯一标识
+  lastBlockId?: string // 最后一个 record 的 block ID（用于插入位置）
+  type: 'binary' | 'count' // 二元型 / 计数型
+  startDate: string // 开始日期（YYYY-MM-DD，必填）
+  durationDays?: number // 持续日历天数（可选，如30天），到达后习惯结束
+  endDate?: string // 计算字段：startDate + durationDays - 1
+  target?: number // 目标值（计数型，如 8）
+  unit?: string // 单位（计数型，如"杯"）
+  frequency?: HabitFrequency // 频率规则（必填）
+  reminder?: ReminderConfig // 提醒配置（可选，复用已有）
+  records: CheckInRecord[] // 打卡记录
+  links?: Link[] // 链接
+  pomodoros?: PomodoroRecord[] // 番茄钟记录
 }
 ```
 
@@ -97,18 +98,18 @@ export interface Habit {
 ```typescript
 // 习惯统计（纯计算，不持久化）
 export interface HabitStats {
-  habitId: string;
-  monthlyCheckins: number;       // 本月打卡次数（达标天数）
-  totalCheckins: number;         // 总打卡次数（达标天数）
-  currentStreak: number;         // 当前连续
-  longestStreak: number;         // 最长连续
-  completionRate: number;        // 总完成率 (0-1)
-  monthlyCompletionRate: number; // 本月完成率 (0-1)
-  weeklyCompletionRate: number;  // 本周完成率 (0-1)
-  totalValue?: number;           // 累计值（计数型）
-  averageValue?: number;         // 日均值（计数型）
-  isCompleted: boolean;          // 习惯是否已结束
-  isPeriodCompleted: boolean;    // 当期是否已达标
+  habitId: string
+  monthlyCheckins: number // 本月打卡次数（达标天数）
+  totalCheckins: number // 总打卡次数（达标天数）
+  currentStreak: number // 当前连续
+  longestStreak: number // 最长连续
+  completionRate: number // 总完成率 (0-1)
+  monthlyCompletionRate: number // 本月完成率 (0-1)
+  weeklyCompletionRate: number // 本周完成率 (0-1)
+  totalValue?: number // 累计值（计数型）
+  averageValue?: number // 日均值（计数型）
+  isCompleted: boolean // 习惯是否已结束
+  isPeriodCompleted: boolean // 当期是否已达标
 }
 ```
 
@@ -119,15 +120,15 @@ export interface HabitStats {
 ```typescript
 // 项目
 export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  tasks: Task[];
-  habits: Habit[];              // 新增：习惯列表
-  path: string;
-  groupId?: string;
-  links?: Link[];
-  pomodoros?: PomodoroRecord[];
+  id: string
+  name: string
+  description?: string
+  tasks: Task[]
+  habits: Habit[] // 新增：习惯列表
+  path: string
+  groupId?: string
+  links?: Link[]
+  pomodoros?: PomodoroRecord[]
 }
 ```
 
@@ -143,6 +144,7 @@ Expected: 无类型错误
 搜索 `src/` 中所有 `tasks: []` 或 `project.tasks` 的初始化位置，补充 `habits: []`。
 
 主要位置：
+
 - `src/parser/core.ts:143-152` — `parseKramdown()` 中的 project 初始化
 - 其他可能的测试文件或 mock 数据
 
@@ -161,6 +163,7 @@ git commit -m "feat(habit): add Habit/CheckInRecord/HabitStats data models"
 ### Task 2: 习惯行解析器 — habitParser.ts
 
 **Files:**
+
 - Create: `src/parser/habitParser.ts`
 - Test: `test/parser/habitParser.test.ts`
 
@@ -169,131 +172,131 @@ git commit -m "feat(habit): add Habit/CheckInRecord/HabitStats data models"
 创建 `test/parser/habitParser.test.ts`：
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { parseHabitLine, parseCheckInRecordLine } from '@/parser/habitParser';
-import type { Habit, CheckInRecord } from '@/types/models';
+import type { CheckInRecord, Habit } from '@/types/models'
+import { describe, expect, it } from 'vitest'
+import { parseCheckInRecordLine, parseHabitLine } from '@/parser/habitParser'
 
 describe('parseHabitLine', () => {
   it('二元型：早起 🎯2026-04-01 坚持30天 🔄每天', () => {
-    const result = parseHabitLine('早起 🎯2026-04-01 坚持30天 🔄每天');
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('binary');
-    expect(result!.name).toBe('早起');
-    expect(result!.startDate).toBe('2026-04-01');
-    expect(result!.durationDays).toBe(30);
-    expect(result!.endDate).toBe('2026-04-30');
-    expect(result!.frequency?.type).toBe('daily');
-  });
+    const result = parseHabitLine('早起 🎯2026-04-01 坚持30天 🔄每天')
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('binary')
+    expect(result!.name).toBe('早起')
+    expect(result!.startDate).toBe('2026-04-01')
+    expect(result!.durationDays).toBe(30)
+    expect(result!.endDate).toBe('2026-04-30')
+    expect(result!.frequency?.type).toBe('daily')
+  })
 
   it('二元型无坚持天数：冥想 🎯2026-04-01 🔄每天', () => {
-    const result = parseHabitLine('冥想 🎯2026-04-01 🔄每天');
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('binary');
-    expect(result!.durationDays).toBeUndefined();
-    expect(result!.endDate).toBeUndefined();
-  });
+    const result = parseHabitLine('冥想 🎯2026-04-01 🔄每天')
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('binary')
+    expect(result!.durationDays).toBeUndefined()
+    expect(result!.endDate).toBeUndefined()
+  })
 
   it('计数型：喝水 🎯2026-04-01 坚持21天 8杯 🔄每天', () => {
-    const result = parseHabitLine('喝水 🎯2026-04-01 坚持21天 8杯 🔄每天');
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('count');
-    expect(result!.target).toBe(8);
-    expect(result!.unit).toBe('杯');
-    expect(result!.durationDays).toBe(21);
-  });
+    const result = parseHabitLine('喝水 🎯2026-04-01 坚持21天 8杯 🔄每天')
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('count')
+    expect(result!.target).toBe(8)
+    expect(result!.unit).toBe('杯')
+    expect(result!.durationDays).toBe(21)
+  })
 
   it('计数型无坚持天数：跑步 🎯2026-04-01 5公里 🔄每2天', () => {
-    const result = parseHabitLine('跑步 🎯2026-04-01 5公里 🔄每2天');
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('count');
-    expect(result!.target).toBe(5);
-    expect(result!.unit).toBe('公里');
-    expect(result!.frequency?.type).toBe('every_n_days');
-    expect(result!.frequency?.interval).toBe(2);
-  });
+    const result = parseHabitLine('跑步 🎯2026-04-01 5公里 🔄每2天')
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('count')
+    expect(result!.target).toBe(5)
+    expect(result!.unit).toBe('公里')
+    expect(result!.frequency?.type).toBe('every_n_days')
+    expect(result!.frequency?.interval).toBe(2)
+  })
 
   it('每周指定周几：周报 🎯2026-04-01 🔄每周五', () => {
-    const result = parseHabitLine('周报 🎯2026-04-01 🔄每周五');
-    expect(result).not.toBeNull();
-    expect(result!.frequency?.type).toBe('weekly_days');
-    expect(result!.frequency?.daysOfWeek).toEqual([5]);
-  });
+    const result = parseHabitLine('周报 🎯2026-04-01 🔄每周五')
+    expect(result).not.toBeNull()
+    expect(result!.frequency?.type).toBe('weekly_days')
+    expect(result!.frequency?.daysOfWeek).toEqual([5])
+  })
 
   it('带提醒：早起 🎯2026-04-01 坚持30天 ⏰07:00 🔄每天', () => {
-    const result = parseHabitLine('早起 🎯2026-04-01 坚持30天 ⏰07:00 🔄每天');
-    expect(result).not.toBeNull();
-    expect(result!.reminder).toBeDefined();
-    expect(result!.reminder!.type).toBe('absolute');
-    expect(result!.reminder!.time).toBe('07:00');
-  });
+    const result = parseHabitLine('早起 🎯2026-04-01 坚持30天 ⏰07:00 🔄每天')
+    expect(result).not.toBeNull()
+    expect(result!.reminder).toBeDefined()
+    expect(result!.reminder!.type).toBe('absolute')
+    expect(result!.reminder!.time).toBe('07:00')
+  })
 
   it('无频率不识别为习惯：早起 🎯2026-04-01', () => {
-    const result = parseHabitLine('早起 🎯2026-04-01');
-    expect(result).toBeNull();
-  });
+    const result = parseHabitLine('早起 🎯2026-04-01')
+    expect(result).toBeNull()
+  })
 
   it('无🎯不识别为习惯：早起 📅2026-04-01 🔄每天', () => {
-    const result = parseHabitLine('早起 📅2026-04-01 🔄每天');
-    expect(result).toBeNull();
-  });
+    const result = parseHabitLine('早起 📅2026-04-01 🔄每天')
+    expect(result).toBeNull()
+  })
 
   it('每周N天：阅读 🎯2026-04-01 30分钟 🔄每周3天', () => {
-    const result = parseHabitLine('阅读 🎯2026-04-01 30分钟 🔄每周3天');
-    expect(result).not.toBeNull();
-    expect(result!.frequency?.type).toBe('n_per_week');
-    expect(result!.frequency?.daysPerWeek).toBe(3);
-  });
+    const result = parseHabitLine('阅读 🎯2026-04-01 30分钟 🔄每周3天')
+    expect(result).not.toBeNull()
+    expect(result!.frequency?.type).toBe('n_per_week')
+    expect(result!.frequency?.daysPerWeek).toBe(3)
+  })
 
   it('每周多天：锻炼 🎯2026-04-01 🔄每周一三五', () => {
-    const result = parseHabitLine('锻炼 🎯2026-04-01 🔄每周一三五');
-    expect(result).not.toBeNull();
-    expect(result!.frequency?.type).toBe('weekly_days');
-    expect(result!.frequency?.daysOfWeek).toEqual([1, 3, 5]);
-  });
-});
+    const result = parseHabitLine('锻炼 🎯2026-04-01 🔄每周一三五')
+    expect(result).not.toBeNull()
+    expect(result!.frequency?.type).toBe('weekly_days')
+    expect(result!.frequency?.daysOfWeek).toEqual([1, 3, 5])
+  })
+})
 
 describe('parseCheckInRecordLine', () => {
   it('二元型打卡：早起 📅2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.content).toBe('早起');
-    expect(result!.date).toBe('2026-04-06');
-    expect(result!.habitId).toBe('habit-block-1');
-  });
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1')
+    expect(result).not.toBeNull()
+    expect(result!.content).toBe('早起')
+    expect(result!.date).toBe('2026-04-06')
+    expect(result!.habitId).toBe('habit-block-1')
+  })
 
   it('计数型打卡：喝水 3/8杯 📅2026-04-06', () => {
-    const result = parseCheckInRecordLine('喝水 3/8杯 📅2026-04-06', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.currentValue).toBe(3);
-    expect(result!.targetValue).toBe(8);
-    expect(result!.unit).toBe('杯');
-  });
+    const result = parseCheckInRecordLine('喝水 3/8杯 📅2026-04-06', 'habit-block-1')
+    expect(result).not.toBeNull()
+    expect(result!.currentValue).toBe(3)
+    expect(result!.targetValue).toBe(8)
+    expect(result!.unit).toBe('杯')
+  })
 
   it('计数型达标：喝水 8/8杯 📅2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.currentValue).toBe(8);
-    expect(result!.targetValue).toBe(8);
-  });
+    const result = parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1')
+    expect(result).not.toBeNull()
+    expect(result!.currentValue).toBe(8)
+    expect(result!.targetValue).toBe(8)
+  })
 
   it('使用@日期：早起 @2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('早起 @2026-04-06 ✅', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.date).toBe('2026-04-06');
-  });
+    const result = parseCheckInRecordLine('早起 @2026-04-06 ✅', 'habit-block-1')
+    expect(result).not.toBeNull()
+    expect(result!.date).toBe('2026-04-06')
+  })
 
   it('自定义内容：今天喝了温水 3/8杯 📅2026-04-06', () => {
-    const result = parseCheckInRecordLine('今天喝了温水 3/8杯 📅2026-04-06', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.content).toBe('今天喝了温水');
-    expect(result!.currentValue).toBe(3);
-  });
+    const result = parseCheckInRecordLine('今天喝了温水 3/8杯 📅2026-04-06', 'habit-block-1')
+    expect(result).not.toBeNull()
+    expect(result!.content).toBe('今天喝了温水')
+    expect(result!.currentValue).toBe(3)
+  })
 
   it('无日期不识别为记录', () => {
-    const result = parseCheckInRecordLine('喝水 3/8杯', 'habit-block-1');
-    expect(result).toBeNull();
-  });
-});
+    const result = parseCheckInRecordLine('喝水 3/8杯', 'habit-block-1')
+    expect(result).toBeNull()
+  })
+})
 ```
 
 **Step 2: 运行测试确认失败**
@@ -349,6 +352,7 @@ git commit -m "feat(habit): add habit parser with frequency and check-in parsing
 ### Task 3: core.ts 集成 — 识别 🎯 行为习惯定义
 
 **Files:**
+
 - Modify: `src/parser/core.ts:135-403` (parseKramdown 函数)
 - Test: `test/parser/core.test.ts` (新增习惯解析用例)
 
@@ -359,32 +363,32 @@ git commit -m "feat(habit): add habit parser with frequency and check-in parsing
 ```typescript
 describe('parseKramdown 习惯打卡解析', () => {
   it('识别🎯行为习惯定义', () => {
-    const kramdown = `## 习惯测试\n\n早起 🎯2026-04-01 坚持30天 🔄每天\n{: id="20260401000000-abcdef"}\n\n早起 📅2026-04-06 ✅\n{: id="20260406000000-ghijkl"}`;
-    const result = parseKramdown(kramdown, 'doc-1');
-    expect(result).not.toBeNull();
-    expect(result!.habits).toHaveLength(1);
-    expect(result!.habits[0].name).toBe('早起');
-    expect(result!.habits[0].type).toBe('binary');
-    expect(result!.habits[0].records).toHaveLength(1);
-    expect(result!.habits[0].records[0].date).toBe('2026-04-06');
-  });
+    const kramdown = `## 习惯测试\n\n早起 🎯2026-04-01 坚持30天 🔄每天\n{: id="20260401000000-abcdef"}\n\n早起 📅2026-04-06 ✅\n{: id="20260406000000-ghijkl"}`
+    const result = parseKramdown(kramdown, 'doc-1')
+    expect(result).not.toBeNull()
+    expect(result!.habits).toHaveLength(1)
+    expect(result!.habits[0].name).toBe('早起')
+    expect(result!.habits[0].type).toBe('binary')
+    expect(result!.habits[0].records).toHaveLength(1)
+    expect(result!.habits[0].records[0].date).toBe('2026-04-06')
+  })
 
   it('习惯与任务严格交替', () => {
-    const kramdown = `## 交替测试\n\n任务1 #任务 @L1\n{: id="task1-block"}\n\n事项1 📅2026-04-01\n{: id="item1-block"}\n\n喝水 🎯2026-04-01 8杯 🔄每天\n{: id="habit1-block"}\n\n喝水 3/8杯 📅2026-04-06\n{: id="record1-block"}\n\n任务2 #任务 @L2\n{: id="task2-block"}`;
-    const result = parseKramdown(kramdown, 'doc-2');
-    expect(result).not.toBeNull();
-    expect(result!.tasks).toHaveLength(2);
-    expect(result!.tasks[0].items).toHaveLength(1);
-    expect(result!.habits).toHaveLength(1);
-    expect(result!.habits[0].name).toBe('喝水');
-  });
+    const kramdown = `## 交替测试\n\n任务1 #任务 @L1\n{: id="task1-block"}\n\n事项1 📅2026-04-01\n{: id="item1-block"}\n\n喝水 🎯2026-04-01 8杯 🔄每天\n{: id="habit1-block"}\n\n喝水 3/8杯 📅2026-04-06\n{: id="record1-block"}\n\n任务2 #任务 @L2\n{: id="task2-block"}`
+    const result = parseKramdown(kramdown, 'doc-2')
+    expect(result).not.toBeNull()
+    expect(result!.tasks).toHaveLength(2)
+    expect(result!.tasks[0].items).toHaveLength(1)
+    expect(result!.habits).toHaveLength(1)
+    expect(result!.habits[0].name).toBe('喝水')
+  })
 
   it('多个习惯并行', () => {
-    const kramdown = `## 多习惯\n\n早起 🎯2026-04-01 🔄每天\n{: id="h1-block"}\n\n早起 📅2026-04-06 ✅\n{: id="r1-block"}\n\n喝水 🎯2026-04-01 8杯 🔄每天\n{: id="h2-block"}\n\n喝水 5/8杯 📅2026-04-06\n{: id="r2-block"}`;
-    const result = parseKramdown(kramdown, 'doc-3');
-    expect(result!.habits).toHaveLength(2);
-  });
-});
+    const kramdown = `## 多习惯\n\n早起 🎯2026-04-01 🔄每天\n{: id="h1-block"}\n\n早起 📅2026-04-06 ✅\n{: id="r1-block"}\n\n喝水 🎯2026-04-01 8杯 🔄每天\n{: id="h2-block"}\n\n喝水 5/8杯 📅2026-04-06\n{: id="r2-block"}`
+    const result = parseKramdown(kramdown, 'doc-3')
+    expect(result!.habits).toHaveLength(2)
+  })
+})
 ```
 
 **Step 2: 运行测试确认失败**
@@ -397,55 +401,60 @@ Expected: FAIL — habits 为空（core.ts 尚未识别 🎯）
 在 `src/parser/core.ts` 中做以下修改：
 
 1. 在文件顶部添加导入：
+
 ```typescript
-import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
-import type { Habit, CheckInRecord } from '@/types/models';
+import type { CheckInRecord, Habit } from '@/types/models'
+import { isHabitLine, parseCheckInRecordLine, parseHabitLine } from './habitParser'
 ```
 
 2. 在 `parseKramdown()` 函数中，`let currentTask: Task | null = null;` 后面添加：
+
 ```typescript
-let currentHabit: Habit | null = null;
+const currentHabit: Habit | null = null
 ```
 
 3. 在 `let lastBlockType` 后面添加习惯类型：
+
 ```typescript
-let lastBlockType: 'project' | 'task' | 'item' | 'habit' | null = null;
+const lastBlockType: 'project' | 'task' | 'item' | 'habit' | null = null
 ```
 
 4. 在 project 初始化中添加 `habits: []`
 
 5. 在遍历 blocks 的循环中，在任务行检测（`#任务`）之前，添加习惯行检测：
+
 ```typescript
 // 解析习惯行（包含 🎯 标记）
-const cleanedContent = stripListAndBlockAttr(content);
+const cleanedContent = stripListAndBlockAttr(content)
 if (isHabitLine(cleanedContent)) {
-  const habit = parseHabitLine(cleanedContent);
+  const habit = parseHabitLine(cleanedContent)
   if (habit) {
-    habit.docId = docId;
-    habit.blockId = block.blockId;
-    habit.records = [];
-    currentHabit = habit;
-    currentItem = null;
-    currentTask = null;
-    lastBlockType = 'habit';
-    project.habits.push(habit);
+    habit.docId = docId
+    habit.blockId = block.blockId
+    habit.records = []
+    currentHabit = habit
+    currentItem = null
+    currentTask = null
+    lastBlockType = 'habit'
+    project.habits.push(habit)
   }
-  continue;
+  continue
 }
 ```
 
 6. 在事项行检测之前，添加打卡记录检测（习惯上下文中）：
+
 ```typescript
 // 解析打卡记录（在当前习惯下，包含 📅 或 @ 日期的行）
 if (currentHabit && (content.includes('@') || content.includes('📅')) && !hasTaskTag && !isHabitLine(stripListAndBlockAttr(content))) {
-  const record = parseCheckInRecordLine(stripListAndBlockAttr(content), currentHabit.blockId);
+  const record = parseCheckInRecordLine(stripListAndBlockAttr(content), currentHabit.blockId)
   if (record) {
-    record.docId = docId;
-    record.blockId = block.blockId;
-    currentHabit.records.push(record);
-    currentHabit.lastBlockId = block.blockId;
-    lastBlockType = 'habit';
-    continue;
+    record.docId = docId
+    record.blockId = block.blockId
+    currentHabit.records.push(record)
+    currentHabit.lastBlockId = block.blockId
+    lastBlockType = 'habit'
+    continue
   }
 }
 ```
@@ -474,6 +483,7 @@ git commit -m "feat(habit): integrate habit parsing into core parser with strict
 ### Task 4: projectStore 集成 — habits 数据挂载和 getters
 
 **Files:**
+
 - Modify: `src/stores/projectStore.ts`
 - Test: `test/stores/projectStore.test.ts`（新增习惯相关用例）
 
@@ -484,35 +494,49 @@ git commit -m "feat(habit): integrate habit parsing into core parser with strict
 ```typescript
 describe('habits getters', () => {
   it('getHabits 返回所有习惯', () => {
-    const store = useProjectStore();
+    const store = useProjectStore()
     store.$patch({
       projects: [{
-        id: 'doc-1', name: '测试', tasks: [], habits: [
+        id: 'doc-1',
+        name: '测试',
+        tasks: [],
+        habits: [
           { name: '早起', type: 'binary', startDate: '2026-04-01', records: [], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' } },
           { name: '喝水', type: 'count', startDate: '2026-04-01', target: 8, unit: '杯', records: [], blockId: 'b2', docId: 'doc-1', frequency: { type: 'daily' } }
-        ], path: '/test'
+        ],
+        path: '/test'
       }]
-    });
-    const habits = store.getHabits('');
-    expect(habits).toHaveLength(2);
-  });
+    })
+    const habits = store.getHabits('')
+    expect(habits).toHaveLength(2)
+  })
 
   it('getTodayRecords 返回今日打卡记录', () => {
-    const store = useProjectStore();
+    const store = useProjectStore()
     store.$patch({
       projects: [{
-        id: 'doc-1', name: '测试', tasks: [], habits: [{
-          name: '早起', type: 'binary', startDate: '2026-04-01', records: [
+        id: 'doc-1',
+        name: '测试',
+        tasks: [],
+        habits: [{
+          name: '早起',
+          type: 'binary',
+          startDate: '2026-04-01',
+          records: [
             { content: '早起', date: '2026-04-06', blockId: 'r1', docId: 'doc-1', habitId: 'b1' }
-          ], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' }
-        }], path: '/test'
+          ],
+          blockId: 'b1',
+          docId: 'doc-1',
+          frequency: { type: 'daily' }
+        }],
+        path: '/test'
       }],
       currentDate: '2026-04-06'
-    });
-    const records = store.getTodayRecords('');
-    expect(records).toHaveLength(1);
-  });
-});
+    })
+    const records = store.getTodayRecords('')
+    expect(records).toHaveLength(1)
+  })
+})
 ```
 
 **Step 2: 运行测试确认失败**
@@ -574,8 +598,9 @@ getRecordsByDate: (state) => (date: string, groupId: string): CheckInRecord[] =>
 ```
 
 需要在文件顶部添加导入：
+
 ```typescript
-import type { Habit, CheckInRecord } from '@/types/models';
+import type { CheckInRecord, Habit } from '@/types/models'
 ```
 
 **Step 4: 运行测试确认通过**
@@ -600,6 +625,7 @@ git commit -m "feat(habit): add habits state and getters to projectStore"
 ### Task 5: 统计计算 — habitStatsUtils.ts
 
 **Files:**
+
 - Create: `src/utils/habitStatsUtils.ts`
 - Test: `test/utils/habitStatsUtils.test.ts`
 
@@ -608,9 +634,9 @@ git commit -m "feat(habit): add habits state and getters to projectStore"
 创建 `test/utils/habitStatsUtils.test.ts`，覆盖设计文档中的测试用例 #30-#43：
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { calculateHabitStats } from '@/utils/habitStatsUtils';
-import type { Habit, CheckInRecord } from '@/types/models';
+import type { CheckInRecord, Habit } from '@/types/models'
+import { describe, expect, it } from 'vitest'
+import { calculateHabitStats } from '@/utils/habitStatsUtils'
 
 function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
   return {
@@ -621,7 +647,7 @@ function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
     records: [],
     frequency: { type: 'daily' },
     ...overrides
-  };
+  }
 }
 
 function mkRecord(date: string, overrides?: Partial<CheckInRecord>): CheckInRecord {
@@ -632,7 +658,7 @@ function mkRecord(date: string, overrides?: Partial<CheckInRecord>): CheckInReco
     blockId: `record-${date}`,
     habitId: 'habit-1',
     ...overrides
-  };
+  }
 }
 
 describe('calculateHabitStats', () => {
@@ -640,67 +666,80 @@ describe('calculateHabitStats', () => {
     const habit = mkHabit({
       name: '早起',
       records: [
-        mkRecord('2026-04-03'), mkRecord('2026-04-04'),
-        mkRecord('2026-04-05'), mkRecord('2026-04-06'), mkRecord('2026-04-07')
+        mkRecord('2026-04-03'),
+        mkRecord('2026-04-04'),
+        mkRecord('2026-04-05'),
+        mkRecord('2026-04-06'),
+        mkRecord('2026-04-07')
       ]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.currentStreak).toBe(5);
-    expect(stats.longestStreak).toBe(5);
-  });
+    })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.currentStreak).toBe(5)
+    expect(stats.longestStreak).toBe(5)
+  })
 
   it('#31: 昨天未打卡 → currentStreak=1', () => {
     const habit = mkHabit({
       name: '早起',
       records: [mkRecord('2026-04-05'), mkRecord('2026-04-07')]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.currentStreak).toBe(1);
-  });
+    })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.currentStreak).toBe(1)
+  })
 
   it('#32: 今天未打卡，昨天前天都打 → currentStreak=2（从昨天算起）', () => {
     const habit = mkHabit({
       name: '早起',
       records: [mkRecord('2026-04-05'), mkRecord('2026-04-06')]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.currentStreak).toBe(2);
-  });
+    })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.currentStreak).toBe(2)
+  })
 
   it('#33: 打卡3天→断1天→连续7天 → currentStreak=7, longestStreak=7', () => {
     const habit = mkHabit({
       name: '早起',
       records: [
-        mkRecord('2026-04-01'), mkRecord('2026-04-02'), mkRecord('2026-04-03'),
+        mkRecord('2026-04-01'),
+        mkRecord('2026-04-02'),
+        mkRecord('2026-04-03'),
         // 4月4日断
-        mkRecord('2026-04-05'), mkRecord('2026-04-06'), mkRecord('2026-04-07'),
-        mkRecord('2026-04-08'), mkRecord('2026-04-09'), mkRecord('2026-04-10'), mkRecord('2026-04-11')
+        mkRecord('2026-04-05'),
+        mkRecord('2026-04-06'),
+        mkRecord('2026-04-07'),
+        mkRecord('2026-04-08'),
+        mkRecord('2026-04-09'),
+        mkRecord('2026-04-10'),
+        mkRecord('2026-04-11')
       ]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-11');
-    expect(stats.currentStreak).toBe(7);
-    expect(stats.longestStreak).toBe(7);
-  });
+    })
+    const stats = calculateHabitStats(habit, '2026-04-11')
+    expect(stats.currentStreak).toBe(7)
+    expect(stats.longestStreak).toBe(7)
+  })
 
   it('#36: 全部无打卡记录 → currentStreak=0, longestStreak=0', () => {
-    const habit = mkHabit({ name: '早起', records: [] });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.currentStreak).toBe(0);
-    expect(stats.longestStreak).toBe(0);
-  });
+    const habit = mkHabit({ name: '早起', records: [] })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.currentStreak).toBe(0)
+    expect(stats.longestStreak).toBe(0)
+  })
 
   it('#37: 🔄每天，开始4/1，今天4/7，打卡5天 → 完成率=5/7≈71.4%', () => {
     const habit = mkHabit({
       name: '早起',
       startDate: '2026-04-01',
       records: [
-        mkRecord('2026-04-01'), mkRecord('2026-04-02'), mkRecord('2026-04-03'),
-        mkRecord('2026-04-05'), mkRecord('2026-04-07')
+        mkRecord('2026-04-01'),
+        mkRecord('2026-04-02'),
+        mkRecord('2026-04-03'),
+        mkRecord('2026-04-05'),
+        mkRecord('2026-04-07')
       ]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.completionRate).toBeCloseTo(5 / 7, 1);
-  });
+    })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.completionRate).toBeCloseTo(5 / 7, 1)
+  })
 
   it('计数型：达标天计入完成', () => {
     const habit = mkHabit({
@@ -712,11 +751,11 @@ describe('calculateHabitStats', () => {
         mkRecord('2026-04-06', { currentValue: 5, targetValue: 8, unit: '杯' }),
         mkRecord('2026-04-07', { currentValue: 8, targetValue: 8, unit: '杯' })
       ]
-    });
-    const stats = calculateHabitStats(habit, '2026-04-07');
-    expect(stats.totalCheckins).toBe(1); // 只有4/7达标
-  });
-});
+    })
+    const stats = calculateHabitStats(habit, '2026-04-07')
+    expect(stats.totalCheckins).toBe(1) // 只有4/7达标
+  })
+})
 ```
 
 **Step 2: 运行测试确认失败**
@@ -762,6 +801,7 @@ git commit -m "feat(habit): add habit statistics calculation utilities"
 ### Task 6: 打卡服务 — habitService.ts
 
 **Files:**
+
 - Create: `src/services/habitService.ts`
 - Test: `test/services/habitService.test.ts`
 
@@ -770,21 +810,21 @@ git commit -m "feat(habit): add habit statistics calculation utilities"
 创建 `test/services/habitService.test.ts`，覆盖设计文档中的测试用例 #19-#29：
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Habit } from '@/types/models'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { checkIn, checkInCount } from '@/services/habitService'
 
 vi.mock('@/api', () => ({
   updateBlock: vi.fn(),
   insertBlock: vi.fn(),
   getBlockKramdown: vi.fn(),
   getBlockByID: vi.fn(),
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => key),
-}));
-
-import { checkIn, checkInCount } from '@/services/habitService';
-import type { Habit } from '@/types/models';
+}))
 
 // ...测试用例覆盖 #19-#29
 ```
@@ -826,6 +866,7 @@ git commit -m "feat(habit): add habit check-in service with create/update/delete
 ### Task 7: 常量与斜杠命令注册
 
 **Files:**
+
 - Modify: `src/constants.ts` (新增 DOCK_TYPES.HABIT 和斜杠命令)
 - Modify: `src/utils/slashCommands.ts` (新增 /xg、/dk、/xgd 命令)
 - Modify: `src/index.ts` (注册 HabitDock、斜杠命令)
@@ -879,19 +920,19 @@ this.addDock({
   data: {},
   type: DOCK_TYPES.HABIT,
   init() {
-    this.element.style.height = '100%';
-    this.element.style.overflow = 'hidden';
-    this.element.style.display = 'flex';
-    this.element.style.flexDirection = 'column';
-    const pinia = getSharedPinia() ?? createPinia();
-    const app = createApp(HabitDock, { plugin });
-    app.use(pinia);
-    app.mount(this.element);
+    this.element.style.height = '100%'
+    this.element.style.overflow = 'hidden'
+    this.element.style.display = 'flex'
+    this.element.style.flexDirection = 'column'
+    const pinia = getSharedPinia() ?? createPinia()
+    const app = createApp(HabitDock, { plugin })
+    app.use(pinia)
+    app.mount(this.element)
   },
   destroy() {
-    this.element.innerHTML = '';
+    this.element.innerHTML = ''
   }
-});
+})
 ```
 
 **Step 5: 新增 openHabitDock 方法**
@@ -923,15 +964,17 @@ git commit -m "feat(habit): register habit dock, slash commands /xg /dk /xgd"
 ### Task 8: 桌面端 HabitDock — 第一层（周日期 + 习惯列表）
 
 **Files:**
+
 - Create: `src/tabs/HabitDock.vue` (路由组件，同 TodoDock 模式)
 - Create: `src/tabs/DesktopHabitDock.vue` (桌面端主视图)
 - Create: `src/components/habit/HabitWeekBar.vue` (周日期行)
 - Create: `src/components/habit/HabitListItem.vue` (习惯列表项)
-- Modify: `src/i18n/zh_CN.json` / `src/i18n/en_US.json` (新增 habit.* keys)
+- Modify: `src/i18n/zh_CN.json` / `src/i18n/en_US.json` (新增 habit.\* keys)
 
 **Step 1: 创建 i18n 条目**
 
 在 `src/i18n/zh_CN.json` 中新增：
+
 ```json
 "habit": {
   "title": "习惯打卡",
@@ -952,6 +995,7 @@ git commit -m "feat(habit): register habit dock, slash commands /xg /dk /xgd"
 **Step 3: 创建 DesktopHabitDock.vue**
 
 参照 `src/tabs/DesktopTodoDock.vue` 的结构：
+
 - 顶栏（标题 + 更多按钮）
 - 周日期行组件 `HabitWeekBar`
 - 习惯列表（使用 `HabitListItem`）
@@ -982,6 +1026,7 @@ git commit -m "feat(habit): add desktop HabitDock with week bar and habit list"
 ### Task 9: 桌面端 HabitDock — 第二层（统计 + 打卡日历 + 日志）
 
 **Files:**
+
 - Create: `src/components/habit/HabitStatsCards.vue` (4个统计卡片)
 - Create: `src/components/habit/HabitMonthCalendar.vue` (打卡月历)
 - Create: `src/components/habit/HabitRecordLog.vue` (打卡日志列表)
@@ -990,6 +1035,7 @@ git commit -m "feat(habit): add desktop HabitDock with week bar and habit list"
 **Step 1: 创建 HabitStatsCards.vue**
 
 2x2 网格布局，4个卡片：
+
 - 月打卡次数
 - 总打卡次数
 - 月完成率
@@ -1028,6 +1074,7 @@ git commit -m "feat(habit): add habit detail view with stats, calendar and recor
 ### Task 10: 移动端习惯打卡 UI
 
 **Files:**
+
 - Modify: `src/mobile/MobileTodoDock.vue` (底部导航新增打卡按钮)
 - Modify: `src/mobile/components/todo/MobileBottomNav.vue` (新增打卡导航项)
 - Create: `src/mobile/components/habit/MobileHabitList.vue` (移动端习惯列表)
@@ -1044,6 +1091,7 @@ git commit -m "feat(habit): add habit detail view with stats, calendar and recor
   </div>
   <span class="nav-label">{{ t('habit').title }}</span>
 </button>
+
 ```
 
 新增 emit：`'open-habit': []`
@@ -1079,6 +1127,7 @@ git commit -m "feat(habit): add mobile habit check-in UI with bottom nav and det
 ### Task 11: 习惯创建/编辑弹框 — HabitCreateDialog
 
 **Files:**
+
 - Create: `src/components/dialog/HabitCreateDialog.vue`
 - 修改: `src/utils/slashCommands.ts` (集成 /xg 命令)
 
@@ -1087,6 +1136,7 @@ git commit -m "feat(habit): add mobile habit check-in UI with bottom nav and det
 参照现有的 `ReminderSettingDialog` / `RecurringSettingDialog` 模式：
 
 表单字段：
+
 - 习惯名（文本输入）
 - 开始日期（日期选择器，默认今天）
 - 坚持天数（数字输入，可选）
@@ -1120,12 +1170,14 @@ git commit -m "feat(habit): add habit create/edit dialog for /xg slash command"
 ### Task 12: 提醒服务扩展 — habitReminder
 
 **Files:**
+
 - Create: `src/services/habitReminder.ts`
 - Modify: `src/services/reminderService.ts` (集成习惯提醒)
 
 **Step 1: 创建 habitReminder.ts**
 
 核心逻辑：
+
 - 遍历所有有 `⏰` 的 habit
 - 根据频率判断今天是否应为打卡日
 - 如果是打卡日且未打卡 → 计算提醒时间
@@ -1146,19 +1198,19 @@ git commit -m "feat(habit): add habit reminder service with frequency-based sche
 
 ## 实施顺序总结
 
-| 阶段 | Task | 依赖 | 预计时长 |
-|------|-------|------|----------|
-| P0-解析 | Task 1: 数据模型 | 无 | 30min |
-| P0-解析 | Task 2: habitParser | Task 1 | 1h |
-| P0-解析 | Task 3: core.ts 集成 | Task 2 | 1h |
-| P0-存储 | Task 4: projectStore | Task 3 | 45min |
-| P0-计算 | Task 5: habitStatsUtils | Task 1 | 1h |
-| P0-写入 | Task 6: habitService | Task 4 | 1h |
-| P0-注册 | Task 7: constants + slash | Task 6 | 45min |
-| P1-桌面 | Task 8: DesktopHabitDock L1 | Task 7 | 2h |
-| P1-桌面 | Task 9: DesktopHabitDock L2 | Task 8 | 2h |
-| P1-移动 | Task 10: Mobile UI | Task 8 | 2h |
-| P1-弹框 | Task 11: HabitCreateDialog | Task 7 | 1.5h |
-| P2-提醒 | Task 12: habitReminder | Task 4 | 1h |
+| 阶段    | Task                        | 依赖   | 预计时长 |
+| ------- | --------------------------- | ------ | -------- |
+| P0-解析 | Task 1: 数据模型            | 无     | 30min    |
+| P0-解析 | Task 2: habitParser         | Task 1 | 1h       |
+| P0-解析 | Task 3: core.ts 集成        | Task 2 | 1h       |
+| P0-存储 | Task 4: projectStore        | Task 3 | 45min    |
+| P0-计算 | Task 5: habitStatsUtils     | Task 1 | 1h       |
+| P0-写入 | Task 6: habitService        | Task 4 | 1h       |
+| P0-注册 | Task 7: constants + slash   | Task 6 | 45min    |
+| P1-桌面 | Task 8: DesktopHabitDock L1 | Task 7 | 2h       |
+| P1-桌面 | Task 9: DesktopHabitDock L2 | Task 8 | 2h       |
+| P1-移动 | Task 10: Mobile UI          | Task 8 | 2h       |
+| P1-弹框 | Task 11: HabitCreateDialog  | Task 7 | 1.5h     |
+| P2-提醒 | Task 12: habitReminder      | Task 4 | 1h       |
 
 **总计：约 14 小时**

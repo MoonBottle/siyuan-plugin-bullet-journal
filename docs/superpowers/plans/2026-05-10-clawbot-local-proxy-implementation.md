@@ -20,6 +20,7 @@
 - **最终方案 D**：思源内核 `forwardProxy` API → ✅ 成功
 
 关键变更：
+
 1. `src/services/clawBotProxyServer.ts`（node:http）已被 `src/services/clawBotForwardProxy.ts`（fetchSyncPost）替代
 2. 无需端口探测、无需管理服务生命周期
 3. transport 层返回值从 `Response` 改为 `{status, data}` 解构
@@ -30,21 +31,21 @@
 
 ## 文件结构
 
-| 文件 | 操作 | 职责 |
-|------|------|------|
-| `src/services/clawBotForwardProxy.ts` | 新建 | 封装内核 forwardProxy API，提供 forwardProxy / forwardProxyBinary / forwardProxyLongPoll / isForwardProxyAvailable |
-| `src/services/clawBotService.ts` | 修改 | 收敛全部微信/CDN fetch 到统一 transport，通过 forwardProxy 发送 |
-| `src/stores/aiStore.ts` | 修改 | 派生微信会话状态 getWeixinConversationStatus，暴露 UI 可直接消费的结果 |
-| `src/components/ai/ConversationSelect.vue` | 修改 | 桌面端会话列表项显示微信会话状态徽标 |
-| `src/tabs/AiChatDock.vue` | 修改 | 桌面端当前微信会话显示状态摘要 |
-| `src/mobile/panels/MobileAiPanel.vue` | 修改 | 移动端当前微信会话显示状态摘要 |
-| `src/components/ai/WeixinLoginDialog.vue` | 修改 | 显示代理不可用错误 |
-| `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 显示代理不可用错误 |
-| `src/index.ts` | 修改 | 探测 forwardProxy 可用性，传递给 aiStore |
-| `test/services/clawBotForwardProxy.test.ts` | 新建 | 验证 forwardProxy 封装（9 项测试） |
-| `test/services/clawBotService.proxy.test.ts` | 新建 | 验证 transport 走 forwardProxy（6 项测试） |
-| `test/stores/weixinConversationStatus.test.ts` | 新建 | 验证微信会话状态派生（7 项测试） |
-| `test/services/clawBotService.test.ts` | 修改 | 适配 forwardProxy mock |
+| 文件                                              | 操作 | 职责                                                                                                               |
+| ------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------ |
+| `src/services/clawBotForwardProxy.ts`             | 新建 | 封装内核 forwardProxy API，提供 forwardProxy / forwardProxyBinary / forwardProxyLongPoll / isForwardProxyAvailable |
+| `src/services/clawBotService.ts`                  | 修改 | 收敛全部微信/CDN fetch 到统一 transport，通过 forwardProxy 发送                                                    |
+| `src/stores/aiStore.ts`                           | 修改 | 派生微信会话状态 getWeixinConversationStatus，暴露 UI 可直接消费的结果                                             |
+| `src/components/ai/ConversationSelect.vue`        | 修改 | 桌面端会话列表项显示微信会话状态徽标                                                                               |
+| `src/tabs/AiChatDock.vue`                         | 修改 | 桌面端当前微信会话显示状态摘要                                                                                     |
+| `src/mobile/panels/MobileAiPanel.vue`             | 修改 | 移动端当前微信会话显示状态摘要                                                                                     |
+| `src/components/ai/WeixinLoginDialog.vue`         | 修改 | 显示代理不可用错误                                                                                                 |
+| `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 显示代理不可用错误                                                                                                 |
+| `src/index.ts`                                    | 修改 | 探测 forwardProxy 可用性，传递给 aiStore                                                                           |
+| `test/services/clawBotForwardProxy.test.ts`       | 新建 | 验证 forwardProxy 封装（9 项测试）                                                                                 |
+| `test/services/clawBotService.proxy.test.ts`      | 新建 | 验证 transport 走 forwardProxy（6 项测试）                                                                         |
+| `test/stores/weixinConversationStatus.test.ts`    | 新建 | 验证微信会话状态派生（7 项测试）                                                                                   |
+| `test/services/clawBotService.test.ts`            | 修改 | 适配 forwardProxy mock                                                                                             |
 
 ---
 

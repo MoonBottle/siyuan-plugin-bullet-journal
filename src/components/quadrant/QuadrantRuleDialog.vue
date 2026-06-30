@@ -2,7 +2,9 @@
   <div class="quadrant-rule-dialog">
     <div class="quadrant-rule-dialog__field">
       <label class="quadrant-rule-dialog__label">{{ t('quadrant').panelTitle }}</label>
-      <div class="quadrant-rule-dialog__title">{{ panel.title }}</div>
+      <div class="quadrant-rule-dialog__title">
+        {{ panel.title }}
+      </div>
     </div>
 
     <div class="quadrant-rule-dialog__field">
@@ -68,20 +70,20 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { t } from '@/i18n';
-import { showConfirmDialog } from '@/utils/dialog';
-import type { QuadrantPanelConfig } from '@/types/quadrant';
+import type { QuadrantPanelConfig } from '@/types/quadrant'
+import { reactive } from 'vue'
+import { t } from '@/i18n'
+import { showConfirmDialog } from '@/utils/dialog'
 
 const props = defineProps<{
-  panel: QuadrantPanelConfig;
-}>();
+  panel: QuadrantPanelConfig
+}>()
 
 const emit = defineEmits<{
-  (event: 'save', panel: QuadrantPanelConfig): void;
-  (event: 'reset-defaults'): void;
-  (event: 'close'): void;
-}>();
+  (event: 'save', panel: QuadrantPanelConfig): void
+  (event: 'resetDefaults'): void
+  (event: 'close'): void
+}>()
 
 const panel = reactive<QuadrantPanelConfig>({
   id: props.panel.id,
@@ -90,30 +92,60 @@ const panel = reactive<QuadrantPanelConfig>({
     priority: Array.isArray(props.panel.rules.priority) ? [...props.panel.rules.priority] : [],
     date: Array.isArray(props.panel.rules.date) ? [...props.panel.rules.date] : [],
   },
-});
+})
 
 const priorityOptions = [
-  { value: 'high', label: t('quadrant').priorityHigh },
-  { value: 'medium', label: t('quadrant').priorityMedium },
-  { value: 'low', label: t('quadrant').priorityLow },
-  { value: 'none', label: t('quadrant').priorityNone },
-];
+  {
+    value: 'high',
+    label: t('quadrant').priorityHigh,
+  },
+  {
+    value: 'medium',
+    label: t('quadrant').priorityMedium,
+  },
+  {
+    value: 'low',
+    label: t('quadrant').priorityLow,
+  },
+  {
+    value: 'none',
+    label: t('quadrant').priorityNone,
+  },
+]
 
 const dateOptions = [
-  { value: 'overdue', label: t('quadrant').dateOverdue },
-  { value: 'today', label: t('quadrant').dateToday },
-  { value: 'tomorrow', label: t('quadrant').dateTomorrow },
-  { value: 'thisWeek', label: t('quadrant').dateThisWeek },
-  { value: 'thisMonth', label: t('quadrant').dateThisMonth },
-  { value: 'recent7', label: t('quadrant').dateRecent7 },
-];
+  {
+    value: 'overdue',
+    label: t('quadrant').dateOverdue,
+  },
+  {
+    value: 'today',
+    label: t('quadrant').dateToday,
+  },
+  {
+    value: 'tomorrow',
+    label: t('quadrant').dateTomorrow,
+  },
+  {
+    value: 'thisWeek',
+    label: t('quadrant').dateThisWeek,
+  },
+  {
+    value: 'thisMonth',
+    label: t('quadrant').dateThisMonth,
+  },
+  {
+    value: 'recent7',
+    label: t('quadrant').dateRecent7,
+  },
+]
 
 function handleResetDefaults() {
   showConfirmDialog(
     t('quadrant').editPanel,
     t('quadrant').resetConfirm,
-    () => emit('reset-defaults'),
-  );
+    () => emit('resetDefaults'),
+  )
 }
 
 function handleSave() {
@@ -124,7 +156,7 @@ function handleSave() {
       priority: [...panel.rules.priority],
       date: [...panel.rules.date],
     },
-  });
+  })
 }
 </script>
 

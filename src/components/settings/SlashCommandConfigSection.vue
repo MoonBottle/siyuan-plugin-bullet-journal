@@ -9,20 +9,36 @@
       <div class="slash-command-section">
         <!-- 内置命令列表 -->
         <div class="builtin-commands">
-          <div class="subsection-title">{{ t('settings').slashCommands.builtinCommands }}</div>
+          <div class="subsection-title">
+            {{ t('settings').slashCommands.builtinCommands }}
+          </div>
           <table class="builtin-table">
             <thead>
               <tr>
-                <th class="command-code-header">{{ t('settings').slashCommands.commandHeader }}</th>
-                <th class="command-desc-header">{{ t('settings').slashCommands.descriptionHeader }}</th>
+                <th class="command-code-header">
+                  {{ t('settings').slashCommands.commandHeader }}
+                </th>
+                <th class="command-desc-header">
+                  {{ t('settings').slashCommands.descriptionHeader }}
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(cmd, key) in builtinCommands" :key="key" class="builtin-row">
+              <tr
+                v-for="(cmd, key) in builtinCommands"
+                :key="key"
+                class="builtin-row"
+              >
                 <td class="command-code-cell">
-                  <code v-for="(command, idx) in cmd.commands" :key="idx" class="command-code">{{ command }}</code>
+                  <code
+                    v-for="(command, idx) in cmd.commands"
+                    :key="idx"
+                    class="command-code"
+                  >{{ command }}</code>
                 </td>
-                <td class="command-desc-cell">{{ cmd.description }}</td>
+                <td class="command-desc-cell">
+                  {{ cmd.description }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -30,12 +46,24 @@
 
         <!-- 自定义命令列表 -->
         <div class="custom-commands">
-          <div class="subsection-title">{{ t('settings').slashCommands.customCommands }}</div>
-          <div v-if="modelValue.length === 0" class="empty-message">
+          <div class="subsection-title">
+            {{ t('settings').slashCommands.customCommands }}
+          </div>
+          <div
+            v-if="modelValue.length === 0"
+            class="empty-message"
+          >
             {{ t('settings').slashCommands.emptyMessage }}
           </div>
-          <div v-else class="custom-list">
-            <div v-for="cmd in modelValue" :key="cmd.id" class="custom-item">
+          <div
+            v-else
+            class="custom-list"
+          >
+            <div
+              v-for="cmd in modelValue"
+              :key="cmd.id"
+              class="custom-item"
+            >
               <div class="custom-item-info">
                 <span class="custom-item-name">{{ cmd.name }}</span>
                 <span class="custom-item-detail">
@@ -59,17 +87,32 @@
               </div>
             </div>
           </div>
-          <SySettingsActionButton icon="iconAdd" :text="t('settings').slashCommands.addButton" @click="showAddDialog" />
+          <SySettingsActionButton
+            icon="iconAdd"
+            :text="t('settings').slashCommands.addButton"
+            @click="showAddDialog"
+          />
         </div>
       </div>
 
       <!-- 添加/编辑对话框 -->
-      <div v-if="dialogVisible" class="b3-dialog">
-        <div class="b3-dialog__scrim" @click="closeDialog"></div>
+      <div
+        v-if="dialogVisible"
+        class="b3-dialog"
+      >
+        <div
+          class="b3-dialog__scrim"
+          @click="closeDialog"
+        ></div>
         <div class="b3-dialog__container">
           <div class="b3-dialog__header">
-            <div class="b3-dialog__title">{{ isEditing ? t('settings').slashCommands.dialogTitleEdit : t('settings').slashCommands.dialogTitleAdd }}</div>
-            <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
+            <div class="b3-dialog__title">
+              {{ isEditing ? t('settings').slashCommands.dialogTitleEdit : t('settings').slashCommands.dialogTitleAdd }}
+            </div>
+            <svg
+              class="b3-dialog__close"
+              @click="closeDialog"
+            ><use xlink:href="#iconCloseRound"></use></svg>
           </div>
           <div class="b3-dialog__content">
             <div class="form-item">
@@ -89,7 +132,9 @@
                 class="b3-text-field form-input-fullwidth"
                 :placeholder="t('settings').slashCommands.commandsPlaceholder"
               />
-              <div class="form-hint">{{ t('settings').slashCommands.commandsHint }}</div>
+              <div class="form-hint">
+                {{ t('settings').slashCommands.commandsHint }}
+              </div>
             </div>
             <div class="form-item">
               <label class="form-label">{{ t('settings').slashCommands.actionLabel }}</label>
@@ -101,10 +146,16 @@
             </div>
           </div>
           <div class="b3-dialog__action">
-            <button class="b3-button b3-button--cancel" @click="closeDialog">
+            <button
+              class="b3-button b3-button--cancel"
+              @click="closeDialog"
+            >
               {{ t('settings').slashCommands.cancelButton }}
             </button>
-            <button class="b3-button b3-button--text form-save-btn" @click="saveCommand">
+            <button
+              class="b3-button b3-button--text form-save-btn"
+              @click="saveCommand"
+            >
               {{ t('settings').slashCommands.saveButton }}
             </button>
           </div>
@@ -118,25 +169,45 @@
     <div class="ios-settings-content">
       <!-- Header -->
       <div class="ios-group-header">
-        <div class="header-icon">⌨️</div>
+        <div class="header-icon">
+          ⌨️
+        </div>
         <div class="header-info">
-          <div class="header-title">{{ t('settings').slashCommands.title }}</div>
-          <div class="header-desc">{{ t('settings').slashCommands.description }}</div>
+          <div class="header-title">
+            {{ t('settings').slashCommands.title }}
+          </div>
+          <div class="header-desc">
+            {{ t('settings').slashCommands.description }}
+          </div>
         </div>
       </div>
 
       <!-- Builtin Commands -->
       <div class="ios-group">
-        <div class="ios-cell-header">{{ t('settings').slashCommands.builtinCommands }}</div>
+        <div class="ios-cell-header">
+          {{ t('settings').slashCommands.builtinCommands }}
+        </div>
         <div class="ios-card">
-          <div v-for="(cmd, index) in builtinCommands.slice(0, 6)" :key="index" class="ios-cell ios-cell-cmd">
+          <div
+            v-for="(cmd, index) in builtinCommands.slice(0, 6)"
+            :key="index"
+            class="ios-cell ios-cell-cmd"
+          >
             <div class="cmd-tags">
-              <span v-for="(c, i) in cmd.commands.slice(0, 2)" :key="i" class="cmd-tag">{{ c }}</span>
+              <span
+                v-for="(c, i) in cmd.commands.slice(0, 2)"
+                :key="i"
+                class="cmd-tag"
+              >{{ c }}</span>
             </div>
-            <div class="cmd-desc">{{ cmd.description }}</div>
+            <div class="cmd-desc">
+              {{ cmd.description }}
+            </div>
           </div>
         </div>
-        <div class="cell-footer">{{ t('settings').slashCommands.builtinHint || '共 {count} 个内置命令'.replace('{count}', String(builtinCommands.length)) }}</div>
+        <div class="cell-footer">
+          {{ t('settings').slashCommands.builtinHint || '共 {count} 个内置命令'.replace('{count}', String(builtinCommands.length)) }}
+        </div>
       </div>
 
       <!-- Custom Commands -->
@@ -145,29 +216,56 @@
           {{ t('settings').slashCommands.customCommands }}
           <span class="header-count">({{ modelValue.length }})</span>
         </div>
-        <div v-if="modelValue.length === 0" class="ios-empty">
+        <div
+          v-if="modelValue.length === 0"
+          class="ios-empty"
+        >
           {{ t('settings').slashCommands.emptyMessage }}
         </div>
-        <div v-else class="ios-card">
-          <div v-for="cmd in modelValue" :key="cmd.id" class="ios-cell ios-cell-custom">
+        <div
+          v-else
+          class="ios-card"
+        >
+          <div
+            v-for="cmd in modelValue"
+            :key="cmd.id"
+            class="ios-cell ios-cell-custom"
+          >
             <div class="custom-info">
-              <div class="custom-name">{{ cmd.name }}</div>
-              <div class="custom-commands">
-                <span v-for="c in cmd.commands" :key="c" class="custom-cmd">{{ c }}</span>
+              <div class="custom-name">
+                {{ cmd.name }}
               </div>
-              <div class="custom-action">{{ getActionLabel(cmd.action) }}</div>
+              <div class="custom-commands">
+                <span
+                  v-for="c in cmd.commands"
+                  :key="c"
+                  class="custom-cmd"
+                >{{ c }}</span>
+              </div>
+              <div class="custom-action">
+                {{ getActionLabel(cmd.action) }}
+              </div>
             </div>
             <div class="custom-actions">
-              <button class="action-btn edit" @click="editCommand(cmd)">
+              <button
+                class="action-btn edit"
+                @click="editCommand(cmd)"
+              >
                 <svg><use xlink:href="#iconEdit"></use></svg>
               </button>
-              <button class="action-btn delete" @click="deleteCommand(cmd.id)">
+              <button
+                class="action-btn delete"
+                @click="deleteCommand(cmd.id)"
+              >
                 <svg><use xlink:href="#iconTrashcan"></use></svg>
               </button>
             </div>
           </div>
         </div>
-        <button class="ios-add-btn" @click="showAddDialog">
+        <button
+          class="ios-add-btn"
+          @click="showAddDialog"
+        >
           <span class="add-icon">+</span>
           {{ t('settings').slashCommands.addButton }}
         </button>
@@ -175,27 +273,65 @@
 
       <!-- iOS Dialog -->
       <Transition name="fade">
-        <div v-if="dialogVisible" class="ios-dialog-overlay" @click="closeDialog">
-          <div class="ios-dialog" @click.stop>
+        <div
+          v-if="dialogVisible"
+          class="ios-dialog-overlay"
+          @click="closeDialog"
+        >
+          <div
+            class="ios-dialog"
+            @click.stop
+          >
             <div class="dialog-header">
-              <button class="cancel-btn" @click="closeDialog">{{ t('common').cancel }}</button>
+              <button
+                class="cancel-btn"
+                @click="closeDialog"
+              >
+                {{ t('common').cancel }}
+              </button>
               <span class="dialog-title">{{ isEditing ? t('settings').slashCommands.dialogTitleEdit : t('settings').slashCommands.dialogTitleAdd }}</span>
-              <button class="save-btn" @click="saveCommand">{{ t('common').save }}</button>
+              <button
+                class="save-btn"
+                @click="saveCommand"
+              >
+                {{ t('common').save }}
+              </button>
             </div>
             <div class="dialog-content">
               <div class="form-group">
                 <label>{{ t('settings').slashCommands.nameLabel }}</label>
-                <input v-model="form.name" type="text" class="ios-input" :placeholder="t('settings').slashCommands.namePlaceholder" />
+                <input
+                  v-model="form.name"
+                  type="text"
+                  class="ios-input"
+                  :placeholder="t('settings').slashCommands.namePlaceholder"
+                />
               </div>
               <div class="form-group">
                 <label>{{ t('settings').slashCommands.commandsLabel }}</label>
-                <input v-model="commandsInput" type="text" class="ios-input" :placeholder="t('settings').slashCommands.commandsPlaceholder" />
-                <div class="input-hint">{{ t('settings').slashCommands.commandsHint }}</div>
+                <input
+                  v-model="commandsInput"
+                  type="text"
+                  class="ios-input"
+                  :placeholder="t('settings').slashCommands.commandsPlaceholder"
+                />
+                <div class="input-hint">
+                  {{ t('settings').slashCommands.commandsHint }}
+                </div>
               </div>
               <div class="form-group">
                 <label>{{ t('settings').slashCommands.actionLabel }}</label>
-                <select v-model="form.action" class="ios-select">
-                  <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                <select
+                  v-model="form.action"
+                  class="ios-select"
+                >
+                  <option
+                    v-for="opt in actionOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -207,112 +343,219 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
-import type { CustomSlashCommand } from '@/settings/types';
-import { t } from '@/i18n';
-import { SLASH_COMMAND_FILTERS } from '@/constants';
-import SySettingsSection from './SySettingsSection.vue';
-import SySettingsActionButton from './SySettingsActionButton.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
+import type { CustomSlashCommand } from '@/settings/types'
+import {
+  computed,
+  reactive,
+  ref,
+} from 'vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { SLASH_COMMAND_FILTERS } from '@/constants'
+import { t } from '@/i18n'
+import SySettingsActionButton from './SySettingsActionButton.vue'
+import SySettingsSection from './SySettingsSection.vue'
 
 const props = defineProps<{
-  modelValue: CustomSlashCommand[];
-  isMobile?: boolean;
-}>();
+  modelValue: CustomSlashCommand[]
+  isMobile?: boolean
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: CustomSlashCommand[]];
-}>();
+  'update:modelValue': [value: CustomSlashCommand[]]
+}>()
 
-// 内置命令列表
+const COMMA_SEPARATOR_RE = /[,，]/
+
 const builtinCommands = computed(() => [
-  { commands: SLASH_COMMAND_FILTERS.TODAY, description: t('slash').markAsTodayItem },
-  { commands: SLASH_COMMAND_FILTERS.TOMORROW, description: t('slash').markAsTomorrowItem },
-  { commands: SLASH_COMMAND_FILTERS.DATE, description: t('slash').markAsDateItem },
-  { commands: SLASH_COMMAND_FILTERS.DONE, description: t('slash').markAsDone },
-  { commands: SLASH_COMMAND_FILTERS.ABANDON, description: t('slash').markAsAbandoned },
-  { commands: SLASH_COMMAND_FILTERS.CALENDAR, description: t('slash').openCalendar },
-  { commands: SLASH_COMMAND_FILTERS.CALENDAR_DAY, description: t('slash').openCalendarDay },
-  { commands: SLASH_COMMAND_FILTERS.CALENDAR_WEEK, description: t('slash').openCalendarWeek },
-  { commands: SLASH_COMMAND_FILTERS.CALENDAR_MONTH, description: t('slash').openCalendarMonth },
-  { commands: SLASH_COMMAND_FILTERS.CALENDAR_LIST, description: t('slash').openCalendarList },
-  { commands: SLASH_COMMAND_FILTERS.GANTT, description: t('slash').openGantt },
-  { commands: SLASH_COMMAND_FILTERS.FOCUS, description: t('slash').startFocus },
-  { commands: SLASH_COMMAND_FILTERS.TODO, description: t('slash').openTodoDock },
-  { commands: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR, description: t('slash').setAsProjectDir },
-  { commands: SLASH_COMMAND_FILTERS.MARK_AS_TASK, description: t('slash').markAsTask },
-  { commands: SLASH_COMMAND_FILTERS.VIEW_DETAIL, description: t('slash').viewDetail },
-  { commands: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN, description: t('slash').setFocusPlan },
-]);
+  {
+    commands: SLASH_COMMAND_FILTERS.TODAY,
+    description: t('slash').markAsTodayItem,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.TOMORROW,
+    description: t('slash').markAsTomorrowItem,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.DATE,
+    description: t('slash').markAsDateItem,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.DONE,
+    description: t('slash').markAsDone,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.ABANDON,
+    description: t('slash').markAsAbandoned,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.CALENDAR,
+    description: t('slash').openCalendar,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.CALENDAR_DAY,
+    description: t('slash').openCalendarDay,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.CALENDAR_WEEK,
+    description: t('slash').openCalendarWeek,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.CALENDAR_MONTH,
+    description: t('slash').openCalendarMonth,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.CALENDAR_LIST,
+    description: t('slash').openCalendarList,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.GANTT,
+    description: t('slash').openGantt,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.FOCUS,
+    description: t('slash').startFocus,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.TODO,
+    description: t('slash').openTodoDock,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
+    description: t('slash').setAsProjectDir,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.MARK_AS_TASK,
+    description: t('slash').markAsTask,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.VIEW_DETAIL,
+    description: t('slash').viewDetail,
+  },
+  {
+    commands: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN,
+    description: t('slash').setFocusPlan,
+  },
+])
 
 // 动作选项
 const actionOptions = computed(() => [
-  { value: 'today', label: t('settings').slashCommands.actions.today },
-  { value: 'tomorrow', label: t('settings').slashCommands.actions.tomorrow },
-  { value: 'date', label: t('settings').slashCommands.actions.date },
-  { value: 'done', label: t('settings').slashCommands.actions.done },
-  { value: 'abandon', label: t('settings').slashCommands.actions.abandon },
-  { value: 'calendar', label: t('settings').slashCommands.actions.calendar },
-  { value: 'calendarDay', label: t('settings').slashCommands.actions.calendarDay },
-  { value: 'calendarWeek', label: t('settings').slashCommands.actions.calendarWeek },
-  { value: 'calendarMonth', label: t('settings').slashCommands.actions.calendarMonth },
-  { value: 'calendarList', label: t('settings').slashCommands.actions.calendarList },
-  { value: 'gantt', label: t('settings').slashCommands.actions.gantt },
-  { value: 'focus', label: t('settings').slashCommands.actions.focus },
-  { value: 'todo', label: t('settings').slashCommands.actions.todo },
-  { value: 'setProjectDir', label: t('settings').slashCommands.actions.setProjectDir },
-  { value: 'markAsTask', label: t('settings').slashCommands.actions.markAsTask },
-  { value: 'viewDetail', label: t('settings').slashCommands.actions.viewDetail },
-  { value: 'setFocusPlan', label: t('settings').slashCommands.actions.setFocusPlan },
-]);
+  {
+    value: 'today',
+    label: t('settings').slashCommands.actions.today,
+  },
+  {
+    value: 'tomorrow',
+    label: t('settings').slashCommands.actions.tomorrow,
+  },
+  {
+    value: 'date',
+    label: t('settings').slashCommands.actions.date,
+  },
+  {
+    value: 'done',
+    label: t('settings').slashCommands.actions.done,
+  },
+  {
+    value: 'abandon',
+    label: t('settings').slashCommands.actions.abandon,
+  },
+  {
+    value: 'calendar',
+    label: t('settings').slashCommands.actions.calendar,
+  },
+  {
+    value: 'calendarDay',
+    label: t('settings').slashCommands.actions.calendarDay,
+  },
+  {
+    value: 'calendarWeek',
+    label: t('settings').slashCommands.actions.calendarWeek,
+  },
+  {
+    value: 'calendarMonth',
+    label: t('settings').slashCommands.actions.calendarMonth,
+  },
+  {
+    value: 'calendarList',
+    label: t('settings').slashCommands.actions.calendarList,
+  },
+  {
+    value: 'gantt',
+    label: t('settings').slashCommands.actions.gantt,
+  },
+  {
+    value: 'focus',
+    label: t('settings').slashCommands.actions.focus,
+  },
+  {
+    value: 'todo',
+    label: t('settings').slashCommands.actions.todo,
+  },
+  {
+    value: 'setProjectDir',
+    label: t('settings').slashCommands.actions.setProjectDir,
+  },
+  {
+    value: 'markAsTask',
+    label: t('settings').slashCommands.actions.markAsTask,
+  },
+  {
+    value: 'viewDetail',
+    label: t('settings').slashCommands.actions.viewDetail,
+  },
+  {
+    value: 'setFocusPlan',
+    label: t('settings').slashCommands.actions.setFocusPlan,
+  },
+])
 
 function getActionLabel(action: string): string {
-  const option = actionOptions.value.find(opt => opt.value === action);
-  return option?.label || action;
+  const option = actionOptions.value.find((opt) => opt.value === action)
+  return option?.label || action
 }
 
 // 对话框状态
-const dialogVisible = ref(false);
-const isEditing = ref(false);
-const editingId = ref<string>('');
-const commandsInput = ref('');
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const editingId = ref<string>('')
+const commandsInput = ref('')
 
 const form = reactive({
   name: '',
   action: 'today' as CustomSlashCommand['action'],
-});
+})
 
 function showAddDialog() {
-  isEditing.value = false;
-  editingId.value = '';
-  form.name = '';
-  form.action = 'today';
-  commandsInput.value = '';
-  dialogVisible.value = true;
+  isEditing.value = false
+  editingId.value = ''
+  form.name = ''
+  form.action = 'today'
+  commandsInput.value = ''
+  dialogVisible.value = true
 }
 
 function editCommand(cmd: CustomSlashCommand) {
-  isEditing.value = true;
-  editingId.value = cmd.id;
-  form.name = cmd.name;
-  form.action = cmd.action;
-  commandsInput.value = cmd.commands.join(', ');
-  dialogVisible.value = true;
+  isEditing.value = true
+  editingId.value = cmd.id
+  form.name = cmd.name
+  form.action = cmd.action
+  commandsInput.value = cmd.commands.join(', ')
+  dialogVisible.value = true
 }
 
 function closeDialog() {
-  dialogVisible.value = false;
+  dialogVisible.value = false
 }
 
 function saveCommand() {
   const commands = commandsInput.value
-    .split(/[,，]/)
-    .map(c => c.trim())
-    .filter(c => c.startsWith('/'));
+    .split(COMMA_SEPARATOR_RE)
+    .map((c) => c.trim())
+    .filter((c) => c.startsWith('/'))
 
   if (commands.length === 0) {
-    return;
+    return
   }
 
   const newCommand: CustomSlashCommand = {
@@ -320,25 +563,25 @@ function saveCommand() {
     name: form.name || commands[0],
     commands,
     action: form.action,
-  };
-
-  const newValue = [...props.modelValue];
-  if (isEditing.value) {
-    const index = newValue.findIndex(c => c.id === editingId.value);
-    if (index !== -1) {
-      newValue[index] = newCommand;
-    }
-  } else {
-    newValue.push(newCommand);
   }
 
-  emit('update:modelValue', newValue);
-  closeDialog();
+  const newValue = [...props.modelValue]
+  if (isEditing.value) {
+    const index = newValue.findIndex((c) => c.id === editingId.value)
+    if (index !== -1) {
+      newValue[index] = newCommand
+    }
+  } else {
+    newValue.push(newCommand)
+  }
+
+  emit('update:modelValue', newValue)
+  closeDialog()
 }
 
 function deleteCommand(id: string) {
-  const newValue = props.modelValue.filter(c => c.id !== id);
-  emit('update:modelValue', newValue);
+  const newValue = props.modelValue.filter((c) => c.id !== id)
+  emit('update:modelValue', newValue)
 }
 </script>
 
@@ -476,22 +719,22 @@ function deleteCommand(id: string) {
   display: flex;
   gap: 12px;
   padding: 16px 0 20px;
-  
+
   .header-icon {
     font-size: 36px;
   }
-  
+
   .header-info {
     flex: 1;
   }
-  
+
   .header-title {
     font-size: 20px;
     font-weight: 600;
     color: #000;
     margin-bottom: 4px;
   }
-  
+
   .header-desc {
     font-size: 14px;
     color: #6c6c70;
@@ -501,7 +744,7 @@ function deleteCommand(id: string) {
 
 .ios-group {
   margin-bottom: 20px;
-  
+
   .ios-cell-header {
     font-size: 13px;
     font-weight: 500;
@@ -512,7 +755,7 @@ function deleteCommand(id: string) {
     display: flex;
     align-items: center;
     gap: 4px;
-    
+
     .header-count {
       font-weight: 400;
       color: #8e8e93;
@@ -539,11 +782,11 @@ function deleteCommand(id: string) {
   padding: 12px 16px;
   background: #fff;
   min-height: 44px;
-  
+
   & + .ios-cell {
     border-top: 0.5px solid #e5e5ea;
   }
-  
+
   &:active {
     background: #f2f2f7;
   }
@@ -553,13 +796,13 @@ function deleteCommand(id: string) {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  
+
   .cmd-tags {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
   }
-  
+
   .cmd-tag {
     padding: 2px 8px;
     background: #f2f2f7;
@@ -568,7 +811,7 @@ function deleteCommand(id: string) {
     font-size: 13px;
     color: #007aff;
   }
-  
+
   .cmd-desc {
     font-size: 13px;
     color: #6c6c70;
@@ -578,26 +821,26 @@ function deleteCommand(id: string) {
 .ios-cell-custom {
   align-items: flex-start;
   gap: 12px;
-  
+
   .custom-info {
     flex: 1;
     min-width: 0;
   }
-  
+
   .custom-name {
     font-size: 16px;
     font-weight: 500;
     color: #000;
     margin-bottom: 4px;
   }
-  
+
   .custom-commands {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     margin-bottom: 4px;
   }
-  
+
   .custom-cmd {
     padding: 2px 8px;
     background: #f2f2f7;
@@ -606,16 +849,16 @@ function deleteCommand(id: string) {
     font-size: 12px;
     color: #007aff;
   }
-  
+
   .custom-action {
     font-size: 13px;
     color: #6c6c70;
   }
-  
+
   .custom-actions {
     display: flex;
     gap: 8px;
-    
+
     .action-btn {
       width: 32px;
       height: 32px;
@@ -625,20 +868,20 @@ function deleteCommand(id: string) {
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      
+
       &.edit {
         background: #f2f2f7;
-        
+
         svg {
           width: 16px;
           height: 16px;
           fill: #007aff;
         }
       }
-      
+
       &.delete {
         background: #ff3b30;
-        
+
         svg {
           width: 16px;
           height: 16px;
@@ -672,12 +915,12 @@ function deleteCommand(id: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  
+
   .add-icon {
     font-size: 20px;
     font-weight: 300;
   }
-  
+
   &:active {
     background: #f2f2f7;
   }
@@ -713,7 +956,7 @@ function deleteCommand(id: string) {
   background: #fff;
   border-bottom: 0.5px solid #e5e5ea;
   border-radius: 20px 20px 0 0;
-  
+
   .cancel-btn,
   .save-btn {
     padding: 8px;
@@ -722,16 +965,16 @@ function deleteCommand(id: string) {
     font-size: 17px;
     cursor: pointer;
   }
-  
+
   .cancel-btn {
     color: #8e8e93;
   }
-  
+
   .save-btn {
     color: #007aff;
     font-weight: 500;
   }
-  
+
   .dialog-title {
     font-size: 17px;
     font-weight: 600;
@@ -746,7 +989,7 @@ function deleteCommand(id: string) {
 
 .form-group {
   margin-bottom: 16px;
-  
+
   label {
     display: block;
     font-size: 13px;
@@ -765,7 +1008,7 @@ function deleteCommand(id: string) {
   border-radius: 10px;
   font-size: 16px;
   background: #fff;
-  
+
   &:focus {
     outline: none;
     border-color: #007aff;
@@ -779,7 +1022,7 @@ function deleteCommand(id: string) {
   border-radius: 10px;
   font-size: 16px;
   background: #fff;
-  
+
   &:focus {
     outline: none;
     border-color: #007aff;

@@ -3,7 +3,10 @@
     <div class="overview-card">
       <span class="card-label">{{ t('pomodoroStats').todayPomodoros }}</span>
       <span class="card-value">{{ todayCount }}</span>
-      <span v-if="todayCountDiff !== null" class="card-diff positive">
+      <span
+        v-if="todayCountDiff !== null"
+        class="card-diff positive"
+      >
         ↑ {{ t('pomodoroStats').moreThanYesterday }}{{ todayCountDiff > 0 ? todayCountDiff + (t('pomodoroStats') as any).countUnit : '' }}
       </span>
     </div>
@@ -14,7 +17,10 @@
     <div class="overview-card">
       <span class="card-label">{{ t('pomodoroStats').todayFocusDuration }}</span>
       <span class="card-value">{{ formatDuration(todayMinutes) }}</span>
-      <span v-if="todayMinutesDiff !== null" class="card-diff positive">
+      <span
+        v-if="todayMinutesDiff !== null"
+        class="card-diff positive"
+      >
         ↑ {{ t('pomodoroStats').moreThanYesterday }}{{ formatDuration(Math.abs(todayMinutesDiff)) }}
       </span>
     </div>
@@ -26,60 +32,60 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
+import { computed } from 'vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
 
-const projectStore = useProjectStore();
+const projectStore = useProjectStore()
 
-const today = dayjs().format('YYYY-MM-DD');
-const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+const today = dayjs().format('YYYY-MM-DD')
+const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
 
 const todayCount = computed(() => {
-  const all = projectStore.getAllPomodoros('');
-  return all.filter(p => p.date === today).length;
-});
+  const all = projectStore.getAllPomodoros('')
+  return all.filter((p) => p.date === today).length
+})
 
 const totalCount = computed(() => {
-  return projectStore.getTotalPomodoros('');
-});
+  return projectStore.getTotalPomodoros('')
+})
 
 const todayMinutes = computed(() => {
-  const byDay = projectStore.getFocusMinutesByDateRange(today, today, '');
-  return byDay.get(today) ?? 0;
-});
+  const byDay = projectStore.getFocusMinutesByDateRange(today, today, '')
+  return byDay.get(today) ?? 0
+})
 
 const totalMinutes = computed(() => {
-  return projectStore.getTotalFocusMinutes('');
-});
+  return projectStore.getTotalFocusMinutes('')
+})
 
 const yesterdayCount = computed(() => {
-  const all = projectStore.getAllPomodoros('');
-  return all.filter(p => p.date === yesterday).length;
-});
+  const all = projectStore.getAllPomodoros('')
+  return all.filter((p) => p.date === yesterday).length
+})
 
 const yesterdayMinutes = computed(() => {
-  const byDay = projectStore.getFocusMinutesByDateRange(yesterday, yesterday, '');
-  return byDay.get(yesterday) ?? 0;
-});
+  const byDay = projectStore.getFocusMinutesByDateRange(yesterday, yesterday, '')
+  return byDay.get(yesterday) ?? 0
+})
 
 const todayCountDiff = computed(() => {
-  const diff = todayCount.value - yesterdayCount.value;
-  return diff !== 0 ? diff : null;
-});
+  const diff = todayCount.value - yesterdayCount.value
+  return diff !== 0 ? diff : null
+})
 
 const todayMinutesDiff = computed(() => {
-  const diff = todayMinutes.value - yesterdayMinutes.value;
-  return diff !== 0 ? diff : null;
-});
+  const diff = todayMinutes.value - yesterdayMinutes.value
+  return diff !== 0 ? diff : null
+})
 
 function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h${mins}m`;
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (mins === 0) return `${hours}h`
+  return `${hours}h${mins}m`
 }
 </script>
 

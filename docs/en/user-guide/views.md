@@ -12,12 +12,12 @@ Click the 📅 calendar icon in the top bar
 
 ### View Modes
 
-| Mode | Description |
-|------|-------------|
+| Mode       | Description                                 |
+| ---------- | ------------------------------------------- |
 | Month View | View task distribution for the entire month |
-| Week View | View detailed weekly schedule |
-| Day View | View today's specific items |
-| List View | Display tasks in list format |
+| Week View  | View detailed weekly schedule               |
+| Day View   | View today's specific items                 |
+| List View  | Display tasks in list format                |
 
 ### Features
 
@@ -84,12 +84,12 @@ Right-click top bar → Closed Panels → Todo Items
 
 The dock shows four types of items:
 
-| Type | Description | Display Style |
-|------|-------------|---------------|
-| **Pending** | Uncompleted items for today and future | Normal display |
-| **Completed** | Items marked as completed | Strikethrough |
-| **Abandoned** | Items marked as abandoned | Strikethrough + gray |
-| **Expired** | Items past due without completion | Red marker |
+| Type          | Description                            | Display Style        |
+| ------------- | -------------------------------------- | -------------------- |
+| **Pending**   | Uncompleted items for today and future | Normal display       |
+| **Completed** | Items marked as completed              | Strikethrough        |
+| **Abandoned** | Items marked as abandoned              | Strikethrough + gray |
+| **Expired**   | Items past due without completion      | Red marker           |
 
 ### Use Cases
 
@@ -142,14 +142,14 @@ The Workbench is a desktop-only integrated workspace that combines dashboard, ha
 
 ### Feature Overview
 
-| Feature | Description |
-|---------|-------------|
-| **Sidebar** | Left 240px, lists all entries (dashboards and views), supports create/rename/delete |
-| **Dashboard** | Customizable widget canvas supporting 5 widget types |
-| **Habit View** | Embedded habit workspace |
-| **Todo View** | Embedded todo list |
-| **Quadrant View** | Embedded important/urgent quadrant matrix |
-| **Focus Stats View** | Embedded pomodoro statistics |
+| Feature              | Description                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| **Sidebar**          | Left 240px, lists all entries (dashboards and views), supports create/rename/delete |
+| **Dashboard**        | Customizable widget canvas supporting 5 widget types                                |
+| **Habit View**       | Embedded habit workspace                                                            |
+| **Todo View**        | Embedded todo list                                                                  |
+| **Quadrant View**    | Embedded important/urgent quadrant matrix                                           |
+| **Focus Stats View** | Embedded pomodoro statistics                                                        |
 
 > Workbench configuration is automatically saved to `workbench.json` — no manual operation required.
 
@@ -185,12 +185,12 @@ Based on the "Importance-Urgency" matrix, automatically categorizes tasks into f
 
 ### Quadrant Division
 
-| Quadrant | Name | Priority |
-|----------|------|----------|
-| Q1 | Important & Urgent | `🔥` High |
-| Q2 | Important & Not Urgent | `🌱` Medium |
-| Q3 | Urgent & Not Important | `🍃` Low |
-| Q4 | Not Important & Not Urgent | No priority |
+| Quadrant | Name                       | Priority    |
+| -------- | -------------------------- | ----------- |
+| Q1       | Important & Urgent         | `🔥` High   |
+| Q2       | Important & Not Urgent     | `🌱` Medium |
+| Q3       | Urgent & Not Important     | `🍃` Low    |
+| Q4       | Not Important & Not Urgent | No priority |
 
 ### Core Features
 
@@ -203,16 +203,16 @@ See [Quadrant View](./quadrant.md) for details.
 
 ## View Comparison
 
-| View | Dimension | Use Case |
-|------|-----------|----------|
-| Calendar | Time | Daily/weekly planning, time blocking |
-| Gantt | Project Progress | Timeline, task dependencies |
-| Project List | Project Organization | Task categorization, project review |
-| Todo Dock | Quick Access | Today's items, expired reminders |
-| Habit Check-in Dock | Habit Tracking | Daily habit check-ins, streaks, completion rates |
-| Quadrant View | Priority | Task importance/urgency management |
-| Workbench Tab | Integrated Workspace | Dashboard + Habits + Todo + Quadrant + Focus Stats |
-| Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
+| View                | Dimension            | Use Case                                           |
+| ------------------- | -------------------- | -------------------------------------------------- |
+| Calendar            | Time                 | Daily/weekly planning, time blocking               |
+| Gantt               | Project Progress     | Timeline, task dependencies                        |
+| Project List        | Project Organization | Task categorization, project review                |
+| Todo Dock           | Quick Access         | Today's items, expired reminders                   |
+| Habit Check-in Dock | Habit Tracking       | Daily habit check-ins, streaks, completion rates   |
+| Quadrant View       | Priority             | Task importance/urgency management                 |
+| Workbench Tab       | Integrated Workspace | Dashboard + Habits + Todo + Quadrant + Focus Stats |
+| Pomodoro Dock       | Focus & Records      | Pomodoro timer, today/total stats, record list     |
 
 ## Bidirectional Links
 
@@ -230,10 +230,10 @@ When editing project documents, you can open the item detail modal directly in t
 
 ### How to Use
 
-| Method | Action | Description |
-|--------|--------|--------------|
-| **Context Menu** | Right-click on item block → Select menu item | Easy to discover, does not interfere with editing |
-| **Shortcut** | Hold Ctrl (Windows) or Cmd (Mac) and click item content | One-step open item detail, ideal for power users |
+| Method           | Action                                                  | Description                                       |
+| ---------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| **Context Menu** | Right-click on item block → Select menu item            | Easy to discover, does not interfere with editing |
+| **Shortcut**     | Hold Ctrl (Windows) or Cmd (Mac) and click item content | One-step open item detail, ideal for power users  |
 
 **Context menu options**:
 

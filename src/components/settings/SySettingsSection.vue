@@ -1,13 +1,23 @@
 <template>
   <div class="sy-settings-section">
-    <div v-if="$slots.header" class="sy-settings-section__header">
+    <div
+      v-if="$slots.header"
+      class="sy-settings-section__header"
+    >
       <slot name="header" />
     </div>
-    <div v-else class="sy-settings-section__header" :class="{ 'sy-settings-section__header--inline': $slots.headerRight }">
+    <div
+      v-else
+      class="sy-settings-section__header"
+      :class="{ 'sy-settings-section__header--inline': $slots.headerRight }"
+    >
       <div class="sy-settings-section__header-left">
         <div class="sy-settings-section__title-row fn__flex">
           <template v-if="svgIcon">
-            <div class="sy-settings-section__icon" v-html="svgIcon"></div>
+            <div
+              class="sy-settings-section__icon"
+              v-html="svgIcon"
+            ></div>
           </template>
           <template v-else-if="icon">
             <svg class="sy-settings-section__icon">
@@ -16,13 +26,24 @@
           </template>
           <span class="sy-settings-section__title">{{ title }}</span>
         </div>
-        <div v-if="description" class="sy-settings-section__description">{{ description }}</div>
+        <div
+          v-if="description"
+          class="sy-settings-section__description"
+        >
+          {{ description }}
+        </div>
       </div>
-      <div v-if="$slots.headerRight" class="sy-settings-section__header-right">
+      <div
+        v-if="$slots.headerRight"
+        class="sy-settings-section__header-right"
+      >
         <slot name="headerRight" />
       </div>
     </div>
-    <div v-if="!$slots.headerRight" class="sy-settings-section__content">
+    <div
+      v-if="!$slots.headerRight"
+      class="sy-settings-section__content"
+    >
       <slot />
     </div>
   </div>
@@ -30,17 +51,18 @@
 
 <script setup lang="ts">
 defineProps<{
-  title: string;
-  description?: string;
+  title: string
+  description?: string
   /** 思源图标名，如 iconFolder、iconCalendar，与 dock/tab 一致 */
-  icon?: string;
+  icon?: string
   /** 内联 SVG 图标代码，优先级高于 icon */
-  svgIcon?: string;
+  svgIcon?: string
 }>()
 </script>
 
 <style scoped>
 .sy-settings-section {
+  margin-top: 20px;
   margin-bottom: 20px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);

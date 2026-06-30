@@ -373,36 +373,36 @@
 
 ## 改动文件清单
 
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `src/services/clawBotForwardProxy.ts` | 新建 | 封装内核 forwardProxy API |
-| `src/services/clawBotService.ts` | 修改 | 收敛请求入口并接入 forwardProxy transport |
-| `src/index.ts` | 修改 | 探测 forwardProxy 可用性 |
-| `src/stores/aiStore.ts` | 修改 | 新增微信会话状态派生入口 |
-| `src/components/ai/ConversationSelect.vue` | 修改 | 列表项显示微信会话状态 |
-| `src/tabs/AiChatDock.vue` | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
-| `src/mobile/panels/MobileAiPanel.vue` | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
-| `src/components/ai/WeixinLoginDialog.vue` | 修改 | 展示代理不可用错误 |
-| `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 展示代理不可用错误 |
-| `test/services/clawBotForwardProxy.test.ts` | 新建 | 覆盖 forwardProxy 封装 |
-| `test/services/clawBotService.proxy.test.ts` | 新建 | 覆盖 transport 转发 |
-| `test/stores/weixinConversationStatus.test.ts` | 新建 | 覆盖会话状态派生 |
+| 文件                                              | 操作 | 说明                                           |
+| ------------------------------------------------- | ---- | ---------------------------------------------- |
+| `src/services/clawBotForwardProxy.ts`             | 新建 | 封装内核 forwardProxy API                      |
+| `src/services/clawBotService.ts`                  | 修改 | 收敛请求入口并接入 forwardProxy transport      |
+| `src/index.ts`                                    | 修改 | 探测 forwardProxy 可用性                       |
+| `src/stores/aiStore.ts`                           | 修改 | 新增微信会话状态派生入口                       |
+| `src/components/ai/ConversationSelect.vue`        | 修改 | 列表项显示微信会话状态                         |
+| `src/tabs/AiChatDock.vue`                         | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
+| `src/mobile/panels/MobileAiPanel.vue`             | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
+| `src/components/ai/WeixinLoginDialog.vue`         | 修改 | 展示代理不可用错误                             |
+| `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 展示代理不可用错误                             |
+| `test/services/clawBotForwardProxy.test.ts`       | 新建 | 覆盖 forwardProxy 封装                         |
+| `test/services/clawBotService.proxy.test.ts`      | 新建 | 覆盖 transport 转发                            |
+| `test/stores/weixinConversationStatus.test.ts`    | 新建 | 覆盖会话状态派生                               |
 
 ## 风险与约束
 
-1. **forwardProxy 超时**  
+1. **forwardProxy 超时**
    默认 7000ms 对长轮询不够。使用 `timeout: 60000` 参数覆盖。需确认内核不会在更上层截断。
 
-2. **响应体一次性读取**  
+2. **响应体一次性读取**
    `forwardProxy` 通过 `io.ReadAll` 读取全部响应体后返回。大文件（图片/视频）可能导致内存压力。
 
-3. **base64 编解码开销**  
+3. **base64 编解码开销**
    二进制响应需先 base64 编码再解码，约增加 33% 传输体积和编解码 CPU。
 
-4. **认证要求**  
+4. **认证要求**
    `forwardProxy` 需要 Admin 角色。本机访问（127.0.0.1）自动放行，但远程访问需确保已认证。
 
-5. **payloadEncoding 默认值**  
+5. **payloadEncoding 默认值**
    内核 `forwardProxy` 的 `payloadEncoding` 默认值为 `"json"`（走 `default:` 分支调用 `SetBody`）。**不能传 `"text"`**——`case "text":` 是空分支，不会设置请求体，导致微信 API 返回 `ret: -1`。封装层 `clawBotForwardProxy.ts` 不传 `payloadEncoding`，让内核使用默认值。
 
 ## 成功标准

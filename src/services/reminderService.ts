@@ -4,115 +4,156 @@
  * 配合 visibilitychange 校准，确保提醒不丢失
  */
 
-import { Cron } from 'croner';
-import type { Plugin } from 'siyuan';
-import type { Habit, Item } from '@/types/models';
-import { useProjectStore } from '@/stores';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { requestNotificationPermission, showSystemNotification } from '@/utils/notification';
-import { getHabitReminderEntries } from '@/services/habitReminder';
-import dayjs from '@/utils/dayjs';
+import type { Plugin } from 'siyuan'
+import type {
+  Habit,
+  Item,
+} from '@/types/models'
+import { Cron } from 'croner'
+import { watch } from 'vue'
+import { kernelAvailable } from '@/composables/useKernelTimer'
+import { calculateReminderTime } from '@/parser/reminderParser'
+import { getHabitReminderEntries } from '@/services/habitReminder'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { isMobileDevice } from '@/utils/isMobile'
+import {
+  requestNotificationPermission,
+  showSystemNotification,
+} from '@/utils/notification'
 
-type ProjectStoreType = ReturnType<typeof useProjectStore>;
-const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
-const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000;
+type ProjectStoreType = ReturnType<typeof useProjectStore>
+const MISSED_THRESHOLD_MS = 5 * 60 * 1000
+const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000
 
 /**
  * 生成调度 key：blockId-date-reminderTime
  * 包含 reminderTime 确保同一事项改了提醒时间后能正确重新调度
  */
 function makeScheduleKey(item: Item, reminderTime: number): string {
-  return `${item.blockId}-${item.date}-${reminderTime}`;
+  return `${item.blockId}-${item.date}-${reminderTime}`
 }
 
 export class ReminderService {
-  private scheduledJobs: Map<string, Cron> = new Map(); // key → Cron job
-  private habitScheduledJobs: Map<string, Cron> = new Map(); // key → Habit Cron job
-  private notifiedKeys: Set<string> = new Set(); // 已提醒的 scheduleKey
-  private projectStore: ProjectStoreType | null = null;
-  private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
-  private visibilityHandler: (() => void) | null = null;
-  private midnightRefreshJob: Cron | null = null;
+  private scheduledJobs: Map<string, Cron> = new Map() // key → Cron job
+  private habitScheduledJobs: Map<string, Cron> = new Map() // key → Habit Cron job
+  private notifiedKeys: Set<string> = new Set() // 已提醒的 scheduleKey
+  private projectStore: ProjectStoreType | null = null
+  private rebuildTimer: ReturnType<typeof setTimeout> | null = null
+  private visibilityHandler: (() => void) | null = null
+  private midnightRefreshJob: Cron | null = null
+  private kernelNotificationUnsubscribe: (() => void) | null = null
+  private kernelDateChangedUnsubscribe: (() => void) | null = null
+  private kernelAvailableUnwatch: (() => void) | null = null
 
   /**
    * 启动提醒服务
    */
-  start(plugin: Plugin, projectStore: ProjectStoreType): void {
-    this.projectStore = projectStore;
+  start(_plugin: Plugin, projectStore: ProjectStoreType): void {
+    this.projectStore = projectStore
 
-    if ((plugin as Plugin & { isMobile?: boolean }).isMobile) {
-      console.log('[ReminderService] Mobile frontend detected, skipping realtime scheduler startup');
-      return;
+    if (isMobileDevice()) {
+      console.log('[ReminderService] Mobile frontend detected, skipping realtime scheduler startup')
+      return
     }
 
-    void requestNotificationPermission();
-    this.setupVisibilityListener();
-    this.rebuildSchedulesFromNow();
-    this.scheduleMidnightRefresh();
+    void requestNotificationPermission()
+    this.setupVisibilityListener()
+    this.rebuildSchedulesFromNow()
 
-    console.log('[ReminderService] Started with croner');
+    if (kernelAvailable.value) {
+      this.setupKernelListeners()
+    } else {
+      this.scheduleMidnightRefresh()
+    }
+
+    this.kernelAvailableUnwatch = watch(kernelAvailable, (available) => {
+      if (available) {
+        console.log('[ReminderService] kernel became available, setting up listeners')
+        this.setupKernelListeners()
+        this.clearAllJobs()
+      }
+    })
+
+    console.log('[ReminderService] Started with croner')
   }
 
   /**
    * 停止提醒服务
    */
   stop(): void {
-    this.clearAllJobs();
+    this.clearAllJobs()
     if (this.rebuildTimer) {
-      clearTimeout(this.rebuildTimer);
-      this.rebuildTimer = null;
+      clearTimeout(this.rebuildTimer)
+      this.rebuildTimer = null
     }
     if (this.visibilityHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityHandler);
-      this.visibilityHandler = null;
+      document.removeEventListener('visibilitychange', this.visibilityHandler)
+      this.visibilityHandler = null
     }
-    this.projectStore = null;
-    console.log('[ReminderService] Stopped');
+    if (this.kernelNotificationUnsubscribe) {
+      this.kernelNotificationUnsubscribe()
+      this.kernelNotificationUnsubscribe = null
+    }
+    if (this.kernelDateChangedUnsubscribe) {
+      this.kernelDateChangedUnsubscribe()
+      this.kernelDateChangedUnsubscribe = null
+    }
+    if (this.kernelAvailableUnwatch) {
+      this.kernelAvailableUnwatch()
+      this.kernelAvailableUnwatch = null
+    }
+    this.projectStore = null
+    console.log('[ReminderService] Stopped')
   }
 
   /**
    * 数据刷新后调用（防抖），由 index.ts 的 scheduleRefresh 触发
    */
   scheduleRebuild(): void {
-    if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
-    this.rebuildTimer = setTimeout(() => this.rebuildSchedulesFromNow(), 300);
+    if (this.rebuildTimer) clearTimeout(this.rebuildTimer)
+    this.rebuildTimer = setTimeout(() => this.rebuildSchedulesFromNow(), 300)
   }
 
   /**
    * 监听页面可见性变化，回到前台时重建调度
    */
   private setupVisibilityListener(): void {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return
     this.visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[ReminderService] Page became visible, rebuilding schedule');
-        this.rebuildSchedulesFromNow();
+        console.log('[ReminderService] Page became visible, rebuilding schedule')
+        this.rebuildSchedulesFromNow()
       }
-    };
-    document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+    document.addEventListener('visibilitychange', this.visibilityHandler)
   }
 
   /**
    * 根据当前真实日期先校准 store，再重建调度
    */
   private rebuildSchedulesFromNow(): void {
-    this.syncCurrentDateFromNow();
-    this.rebuildSchedule();
+    this.syncCurrentDateFromNow()
+    this.rebuildSchedule()
   }
 
   /**
    * 把 currentDate 校准到当前真实日期
    */
   private syncCurrentDateFromNow(): void {
-    if (!this.projectStore) return;
+    if (!this.projectStore) return
 
-    const today = dayjs().format('YYYY-MM-DD');
-    if (this.projectStore.currentDate === today) return;
+    const today = dayjs().format('YYYY-MM-DD')
+    if (this.projectStore.currentDate === today) return
 
     if (typeof (this.projectStore as any).setCurrentDate === 'function') {
-      (this.projectStore as any).setCurrentDate(today);
+      (this.projectStore as any).setCurrentDate(today)
     } else {
-      this.projectStore.currentDate = today;
+      this.projectStore.currentDate = today
     }
   }
 
@@ -120,20 +161,24 @@ export class ReminderService {
    * 重建调度表：遍历事项，diff 新旧，增删 Cron job
    */
   private rebuildSchedule(): void {
-    if (!this.projectStore) return;
+    if (!this.projectStore) return
 
-    const now = Date.now();
-    const newEntries = new Map<string, { item: Item; reminderTime: number }>();
-    const habitNewEntries = new Map<string, { habit: Habit; reminderTime: number }>();
+    if (kernelAvailable.value) {
+      return
+    }
+
+    const now = Date.now()
+    const newEntries = new Map<string, { item: Item, reminderTime: number }>()
+    const habitNewEntries = new Map<string, { habit: Habit, reminderTime: number }>()
 
     // 遍历所有事项，计算提醒时间
     for (const project of this.projectStore.projects) {
       for (const task of project.tasks) {
         for (const item of task.items) {
           // 跳过已完成/已放弃的
-          if (item.status === 'completed' || item.status === 'abandoned') continue;
+          if (item.status === 'completed' || item.status === 'abandoned') continue
           // 跳过没有启用提醒的
-          if (!item.reminder?.enabled) continue;
+          if (!item.reminder?.enabled) continue
 
           const reminderTime = calculateReminderTime(
             item.date,
@@ -142,32 +187,35 @@ export class ReminderService {
             undefined,
             undefined,
             item.reminder,
-          );
+          )
 
-          if (reminderTime <= 0) continue;
+          if (reminderTime <= 0) continue
 
-          const key = makeScheduleKey(item, reminderTime);
+          const key = makeScheduleKey(item, reminderTime)
 
           // 提醒时间已过：仅当在宽容窗口（5 分钟）内才视为漏掉的提醒
           // 超过 5 分钟说明是事后编辑，不应触发
           if (reminderTime <= now && (now - reminderTime) <= MISSED_THRESHOLD_MS) {
             if (!this.notifiedKeys.has(key)) {
-              console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`);
-              this.triggerNotification(item);
-              this.notifiedKeys.add(key);
-              this.scheduleCleanup(key);
+              console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`)
+              this.triggerNotification(item)
+              this.notifiedKeys.add(key)
+              this.scheduleCleanup(key)
             } else {
-              console.log(`[ReminderService] Already notified for key=${key}, skipping`);
+              console.log(`[ReminderService] Already notified for key=${key}, skipping`)
             }
           } else if (reminderTime <= now) {
             // 超过宽容窗口的已过期提醒，静默跳过
             if (!this.notifiedKeys.has(key)) {
-              console.log(`[ReminderService] Stale reminder (${Math.round((now - reminderTime) / 60000)}min ago), skipping: "${item.content.substring(0, 20)}..." | key=${key}`);
-              this.notifiedKeys.add(key); // 标记为已处理，避免重复日志
+              console.log(`[ReminderService] Stale reminder (${Math.round((now - reminderTime) / 60000)}min ago), skipping: "${item.content.substring(0, 20)}..." | key=${key}`)
+              this.notifiedKeys.add(key) // 标记为已处理，避免重复日志
             }
           } else if (reminderTime < now + FUTURE_WINDOW_MS) {
             // 未来 24 小时内 → 加入调度
-            newEntries.set(key, { item, reminderTime });
+            newEntries.set(key, {
+              item,
+              reminderTime,
+            })
           }
         }
       }
@@ -175,83 +223,89 @@ export class ReminderService {
 
     const habits = typeof this.projectStore.getHabits === 'function'
       ? this.projectStore.getHabits('')
-      : [];
+      : []
 
     for (const entry of getHabitReminderEntries(habits, this.projectStore.currentDate)) {
       if (entry.reminderTime <= now && (now - entry.reminderTime) <= MISSED_THRESHOLD_MS) {
         if (!this.notifiedKeys.has(entry.key)) {
-          this.triggerHabitNotification(entry.habit);
-          this.notifiedKeys.add(entry.key);
-          this.scheduleCleanup(entry.key);
+          this.triggerHabitNotification(entry.habit)
+          this.notifiedKeys.add(entry.key)
+          this.scheduleCleanup(entry.key)
         }
       } else if (entry.reminderTime <= now) {
         if (!this.notifiedKeys.has(entry.key)) {
-          this.notifiedKeys.add(entry.key);
+          this.notifiedKeys.add(entry.key)
         }
       } else if (entry.reminderTime < now + FUTURE_WINDOW_MS) {
         habitNewEntries.set(entry.key, {
           habit: entry.habit,
           reminderTime: entry.reminderTime,
-        });
+        })
       }
     }
 
     // Diff：停掉不再需要的 job
     for (const [key, job] of this.scheduledJobs) {
       if (!newEntries.has(key)) {
-        console.log(`[ReminderService] Removing obsolete job: key=${key}`);
-        job.stop();
-        this.scheduledJobs.delete(key);
+        console.log(`[ReminderService] Removing obsolete job: key=${key}`)
+        job.stop()
+        this.scheduledJobs.delete(key)
       }
     }
 
     // 新增 job（已存在的跳过）
-    for (const [key, { item, reminderTime }] of newEntries) {
-      if (this.scheduledJobs.has(key)) continue;
+    for (const [key, {
+      item,
+      reminderTime,
+    }] of newEntries) {
+      if (this.scheduledJobs.has(key)) continue
 
-      console.log(`[ReminderService] Scheduling job: key=${key} at ${new Date(reminderTime).toLocaleString()}`);
+      console.log(`[ReminderService] Scheduling job: key=${key} at ${new Date(reminderTime).toLocaleString()}`)
 
       const job = new Cron(new Date(reminderTime), () => {
-        const notifyKey = makeScheduleKey(item, reminderTime);
+        const notifyKey = makeScheduleKey(item, reminderTime)
         if (!this.notifiedKeys.has(notifyKey)) {
-          console.log(`[ReminderService] Cron fired, triggering notification: key=${notifyKey}`);
-          this.triggerNotification(item);
-          this.notifiedKeys.add(notifyKey);
-          this.scheduleCleanup(notifyKey);
+          console.log(`[ReminderService] Cron fired, triggering notification: key=${notifyKey}`)
+          this.triggerNotification(item)
+          this.notifiedKeys.add(notifyKey)
+          this.scheduleCleanup(notifyKey)
         } else {
-          console.log(`[ReminderService] Cron fired but already notified: key=${notifyKey}`);
+          console.log(`[ReminderService] Cron fired but already notified: key=${notifyKey}`)
         }
-        this.scheduledJobs.delete(key);
-      });
+        this.scheduledJobs.delete(key)
+      })
 
-      this.scheduledJobs.set(key, job);
+      this.scheduledJobs.set(key, job)
     }
 
     for (const [key, job] of this.habitScheduledJobs) {
       if (!habitNewEntries.has(key)) {
-        job.stop();
-        this.habitScheduledJobs.delete(key);
+        job.stop()
+        this.habitScheduledJobs.delete(key)
       }
     }
 
-    for (const [key, { habit, reminderTime }] of habitNewEntries) {
-      if (this.habitScheduledJobs.has(key)) continue;
+    for (const [key, {
+      habit,
+      reminderTime,
+    }] of habitNewEntries) {
+      if (this.habitScheduledJobs.has(key)) continue
 
       const job = new Cron(new Date(reminderTime), () => {
         if (!this.notifiedKeys.has(key)) {
-          this.triggerHabitNotification(habit);
-          this.notifiedKeys.add(key);
-          this.scheduleCleanup(key);
+          this.triggerHabitNotification(habit)
+          this.notifiedKeys.add(key)
+          this.scheduleCleanup(key)
         }
-        this.habitScheduledJobs.delete(key);
-      });
+        this.habitScheduledJobs.delete(key)
+      })
 
-      this.habitScheduledJobs.set(key, job);
+      this.habitScheduledJobs.set(key, job)
     }
 
     console.log(
-      `[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active item jobs, ${this.habitScheduledJobs.size} active habit jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`
-    );
+      `[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active item jobs, ${this.habitScheduledJobs.size} active habit jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`,
+    )
   }
 
   /**
@@ -259,16 +313,16 @@ export class ReminderService {
    */
   private clearAllJobs(): void {
     for (const [, job] of this.scheduledJobs) {
-      job.stop();
+      job.stop()
     }
-    this.scheduledJobs.clear();
+    this.scheduledJobs.clear()
     for (const [, job] of this.habitScheduledJobs) {
-      job.stop();
+      job.stop()
     }
-    this.habitScheduledJobs.clear();
+    this.habitScheduledJobs.clear()
     if (this.midnightRefreshJob) {
-      this.midnightRefreshJob.stop();
-      this.midnightRefreshJob = null;
+      this.midnightRefreshJob.stop()
+      this.midnightRefreshJob = null
     }
   }
 
@@ -277,86 +331,142 @@ export class ReminderService {
    */
   private scheduleMidnightRefresh(): void {
     if (this.midnightRefreshJob) {
-      this.midnightRefreshJob.stop();
-      this.midnightRefreshJob = null;
+      this.midnightRefreshJob.stop()
+      this.midnightRefreshJob = null
     }
 
-    const nextMidnight = new Date();
-    nextMidnight.setHours(24, 0, 0, 0);
+    const nextMidnight = new Date()
+    nextMidnight.setHours(24, 0, 0, 0)
     this.midnightRefreshJob = new Cron(nextMidnight, () => {
-      this.handleMidnightRefresh();
-    });
+      this.handleMidnightRefresh()
+    })
   }
 
   /**
    * 零点推进日期并重建调度
    */
   private handleMidnightRefresh(): void {
-    if (!this.projectStore) return;
+    if (!this.projectStore) return
 
-    this.rebuildSchedulesFromNow();
-    this.scheduleMidnightRefresh();
+    this.rebuildSchedulesFromNow()
+    this.scheduleMidnightRefresh()
   }
 
   /**
    * 触发通知
    */
   private triggerNotification(item: Item): void {
-    const title = `⏰ ${item.project?.name || '提醒'}`;
+    const title = `⏰ ${item.project?.name || '提醒'}`
     const body = item.task?.name
       ? `${item.task.name}: ${item.content}`
-      : item.content;
+      : item.content
 
     void showSystemNotification(title, body, {
       tag: `reminder-${item.blockId}`,
       icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
       onClick: () => {
-        this.openBlock(item.blockId);
+        this.openBlock(item.blockId)
       },
     }).catch((error) => {
-      console.error('[ReminderService] Failed to show item notification:', error);
-    });
+      console.error('[ReminderService] Failed to show item notification:', error)
+    })
 
-    console.log(`[ReminderService] Notification triggered: ${item.content}`);
+    console.log(`[ReminderService] Notification triggered: ${item.content}`)
   }
 
   /**
    * 触发习惯提醒通知
    */
   private triggerHabitNotification(habit: Habit): void {
-    const title = `🎯 ${habit.name}`;
+    const title = `🎯 ${habit.name}`
     const body = habit.type === 'count'
       ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
-      : habit.name;
+      : habit.name
 
     void showSystemNotification(title, body, {
       tag: `habit-reminder-${habit.blockId}`,
       icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
       onClick: () => {
-        this.openBlock(habit.blockId);
+        this.openBlock(habit.blockId)
       },
     }).catch((error) => {
-      console.error('[ReminderService] Failed to show habit notification:', error);
-    });
+      console.error('[ReminderService] Failed to show habit notification:', error)
+    })
 
-    console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
+    console.log(`[ReminderService] Habit notification triggered: ${habit.name}`)
   }
 
   /**
    * 打开对应块
    */
   private openBlock(blockId: string | undefined): void {
-    if (!blockId) return;
-    window.open(`siyuan://blocks/${blockId}`, '_blank');
+    if (!blockId) return
+    window.open(`siyuan://blocks/${blockId}`, '_blank')
   }
 
   /**
    * 定时清理 notifiedKey（避免内存泄漏）
    */
   private scheduleCleanup(key: string): void {
-    setTimeout(() => this.notifiedKeys.delete(key), 24 * 60 * 60 * 1000);
+    setTimeout(() => this.notifiedKeys.delete(key), 24 * 60 * 60 * 1000)
+  }
+
+  private setupKernelListeners(): void {
+    this.kernelNotificationUnsubscribe = eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
+      if (params.type === 'reminder') {
+        this.triggerNotificationByMetadata(params.metadata)
+      }
+      if (params.type === 'habit') {
+        this.triggerHabitNotificationByMetadata(params.metadata)
+      }
+    })
+
+    this.kernelDateChangedUnsubscribe = eventBus.on(Events.KERNEL_DATE_CHANGED, (params: any) => {
+      if (params.date && this.projectStore) {
+        if (typeof (this.projectStore as any).setCurrentDate === 'function') {
+          (this.projectStore as any).setCurrentDate(params.date)
+        } else {
+          this.projectStore.currentDate = params.date
+        }
+        this.rebuildSchedule()
+      }
+    })
+  }
+
+  private triggerNotificationByMetadata(metadata: any): void {
+    const title = `⏰ ${metadata.projectName || '提醒'}`
+    const body = metadata.taskName
+      ? `${metadata.taskName}: ${metadata.content}`
+      : metadata.content
+
+    void showSystemNotification(title, body, {
+      tag: `reminder-${metadata.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(metadata.blockId)
+      },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show kernel notification:', error)
+    })
+  }
+
+  private triggerHabitNotificationByMetadata(metadata: any): void {
+    const title = `🎯 ${metadata.content}`
+    const body = metadata.unit
+      ? `${metadata.content} ${metadata.target || 0}${metadata.unit}`
+      : metadata.content
+
+    void showSystemNotification(title, body, {
+      tag: `habit-reminder-${metadata.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(metadata.blockId)
+      },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show kernel habit notification:', error)
+    })
   }
 }
 
 // 导出单例
-export const reminderService = new ReminderService();
+export const reminderService = new ReminderService()

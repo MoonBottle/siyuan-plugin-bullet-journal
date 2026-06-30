@@ -2,19 +2,34 @@
   <div class="habit-month-calendar">
     <div class="habit-month-calendar__grid">
       <div class="habit-month-calendar__header">
-        <button class="habit-month-calendar__nav habit-month-calendar__nav--prev block__icon" @click="prevMonth">‹</button>
+        <button
+          class="habit-month-calendar__nav habit-month-calendar__nav--prev block__icon"
+          @click="prevMonth"
+        >
+          ‹
+        </button>
         <span class="habit-month-calendar__title">{{ title }}</span>
-        <button class="habit-month-calendar__nav habit-month-calendar__nav--next block__icon" @click="nextMonth">›</button>
+        <button
+          class="habit-month-calendar__nav habit-month-calendar__nav--next block__icon"
+          @click="nextMonth"
+        >
+          ›
+        </button>
       </div>
       <div class="habit-month-calendar__weekdays">
-        <span v-for="d in weekDayLabels" :key="d" class="habit-month-calendar__weekday">{{ d }}</span>
+        <span
+          v-for="d in weekDayLabels"
+          :key="d"
+          class="habit-month-calendar__weekday"
+        >{{ d }}</span>
       </div>
       <div class="habit-month-calendar__days">
         <div
           v-for="(cell, i) in calendarCells"
           :key="i"
           :data-testid="cell.date ? `habit-month-cell-${cell.date}` : undefined"
-          :class="['habit-month-calendar__cell', {
+          class="habit-month-calendar__cell"
+          :class="[{
             'habit-month-calendar__cell--empty': !cell.date,
             'habit-month-calendar__cell--completed': cell.status === 'completed',
             'habit-month-calendar__cell--missed': cell.status === 'missed',
@@ -23,7 +38,8 @@
         >
           <template v-if="cell.date">
             <span
-              :class="['habit-month-calendar__day-num', {
+              class="habit-month-calendar__day-num"
+              :class="[{
                 'habit-month-calendar__day-num--today': cell.date === currentDate,
               }]"
             >
@@ -61,7 +77,12 @@
                 :data-progress="String(cell.progress)"
                 viewBox="0 0 24 24"
               >
-                <circle class="habit-month-calendar__progress-track" cx="12" cy="12" r="8" />
+                <circle
+                  class="habit-month-calendar__progress-track"
+                  cx="12"
+                  cy="12"
+                  r="8"
+                />
                 <circle
                   class="habit-month-calendar__progress-value"
                   cx="12"
@@ -70,7 +91,10 @@
                   :stroke-dasharray="`${cell.progress * progressCircumference} ${progressCircumference}`"
                 />
               </svg>
-              <span v-else class="habit-month-calendar__empty-dot"></span>
+              <span
+                v-else
+                class="habit-month-calendar__empty-dot"
+              ></span>
             </div>
           </template>
         </div>
@@ -79,7 +103,9 @@
     <div
       v-if="contextMenu.visible"
       class="habit-month-calendar__menu"
-      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+      :style="{
+        left: `${contextMenu.x}px`, top: `${contextMenu.y}px`,
+      }"
     >
       <button
         v-if="contextMenu.action === 'mark-missed'"
@@ -102,200 +128,230 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
-import type { Habit, HabitStats } from '@/types/models';
-import { getHabitDayState } from '@/domain/habit/habitCompletion';
-import { isDateEligibleForHabit, isHabitActiveOnDate } from '@/domain/habit/habitPeriod';
-import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import type {
+  Habit,
+  HabitStats,
+} from '@/types/models'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { getHabitDayState } from '@/domain/habit/habitCompletion'
+import {
+  isDateEligibleForHabit,
+  isHabitActiveOnDate,
+} from '@/domain/habit/habitPeriod'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = defineProps<{
-  habit: Habit;
-  stats?: HabitStats;
-  currentDate: string;
-  viewMonth?: string;
-}>();
+  habit: Habit
+  stats?: HabitStats
+  currentDate: string
+  viewMonth?: string
+}>()
 
 const emit = defineEmits<{
-  'update:viewMonth': [value: string];
-  'month-cell-primary': [value: string];
-  'month-cell-mark-missed': [value: string];
-  'month-cell-reset': [value: string];
-}>();
+  'update:viewMonth': [value: string]
+  'monthCellPrimary': [value: string]
+  'monthCellMarkMissed': [value: string]
+  'monthCellReset': [value: string]
+}>()
 
-const viewMonth = ref(props.viewMonth || props.currentDate.substring(0, 7));
+const viewMonth = ref(props.viewMonth || props.currentDate.substring(0, 7))
 
 watch(() => props.viewMonth, (value) => {
   if (value && value !== viewMonth.value) {
-    viewMonth.value = value;
+    viewMonth.value = value
   }
-});
+})
 
-const weekDayLabels = computed(() => t('calendar').weekDays);
+const weekDayLabels = computed(() => t('calendar').weekDays)
 
 const title = computed(() => {
-  const d = dayjs(viewMonth.value + '-01');
-  return d.format('YYYY年M月');
-});
+  const d = dayjs(`${viewMonth.value}-01`)
+  return d.format('YYYY年M月')
+})
 
 function prevMonth() {
-  const d = dayjs(viewMonth.value + '-01').subtract(1, 'month');
-  viewMonth.value = d.format('YYYY-MM');
-  emit('update:viewMonth', viewMonth.value);
+  const d = dayjs(`${viewMonth.value}-01`).subtract(1, 'month')
+  viewMonth.value = d.format('YYYY-MM')
+  emit('update:viewMonth', viewMonth.value)
 }
 
 function nextMonth() {
-  const d = dayjs(viewMonth.value + '-01').add(1, 'month');
-  viewMonth.value = d.format('YYYY-MM');
-  emit('update:viewMonth', viewMonth.value);
+  const d = dayjs(`${viewMonth.value}-01`).add(1, 'month')
+  viewMonth.value = d.format('YYYY-MM')
+  emit('update:viewMonth', viewMonth.value)
 }
 
-type CellStatus = 'completed' | 'missed' | 'partial' | 'none' | null;
-type CalendarCell = {
-  date: string;
-  dayNum: number;
-  status: CellStatus;
-  progress: number;
-  interactive: boolean;
-};
+type CellStatus = 'completed' | 'missed' | 'partial' | 'none' | null
+interface CalendarCell {
+  date: string
+  dayNum: number
+  status: CellStatus
+  progress: number
+  interactive: boolean
+}
 
 const contextMenu = ref<{
-  visible: boolean;
-  x: number;
-  y: number;
-  date: string;
-  action: 'mark-missed' | 'reset-record';
+  visible: boolean
+  x: number
+  y: number
+  date: string
+  action: 'mark-missed' | 'reset-record'
 }>({
   visible: false,
   x: 0,
   y: 0,
   date: '',
   action: 'mark-missed',
-});
+})
 
-const progressCircumference = 2 * Math.PI * 8;
+const progressCircumference = 2 * Math.PI * 8
 
 const calendarCells = computed(() => {
-  const firstDay = dayjs(viewMonth.value + '-01');
+  const firstDay = dayjs(`${viewMonth.value}-01`)
   // 周一开始: 1=Mon..7=Sun
-  let startDow = firstDay.day(); // 0=Sun
-  if (startDow === 0) startDow = 7;
-  const offset = startDow - 1; // 偏移量（周一开始）
+  let startDow: number = firstDay.day() // 0=Sun
+  if (startDow === 0) startDow = 7
+  const offset = startDow - 1 // 偏移量（周一开始）
 
-  const daysInMonth = firstDay.daysInMonth();
-  const cells: CalendarCell[] = [];
+  const daysInMonth = firstDay.daysInMonth()
+  const cells: CalendarCell[] = []
 
   // 前面的空白
   for (let i = 0; i < offset; i++) {
-    cells.push({ date: '', dayNum: 0, status: null, progress: 0, interactive: false });
+    cells.push({
+      date: '',
+      dayNum: 0,
+      status: null,
+      progress: 0,
+      interactive: false,
+    })
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const date = viewMonth.value + '-' + String(d).padStart(2, '0');
-    const records = props.habit.records.filter(r => r.date === date);
-    const dayState = getHabitDayState(props.habit, date);
-    let status: CellStatus = 'none';
-    let progress = 0;
-    const interactive = isHabitActiveOnDate(props.habit, date) && isDateEligibleForHabit(props.habit, date);
+    const date = `${viewMonth.value}-${String(d).padStart(2, '0')}`
+    const records = props.habit.records.filter((r) => r.date === date)
+    const dayState = getHabitDayState(props.habit, date)
+    let status: CellStatus = 'none'
+    let progress = 0
+    const interactive = isHabitActiveOnDate(props.habit, date) && isDateEligibleForHabit(props.habit, date)
 
     if (records.length > 0) {
       if (dayState.isMissed) {
-        status = 'missed';
+        status = 'missed'
       } else if (props.habit.type === 'binary') {
-        status = 'completed';
+        status = 'completed'
       } else {
         if (dayState.isCompleted) {
-          status = 'completed';
-          progress = 1;
+          status = 'completed'
+          progress = 1
         } else {
-          status = 'partial';
-          const bestCurrentValue = records.reduce((maxValue, record) => Math.max(maxValue, record.currentValue ?? 0), 0);
-          const targetValue = props.habit.target || records[0]?.targetValue || 0;
-          progress = targetValue > 0 ? Math.min(bestCurrentValue / targetValue, 1) : 0;
+          status = 'partial'
+          const bestCurrentValue = records.reduce((maxValue, record) => Math.max(maxValue, record.currentValue ?? 0), 0)
+          const targetValue = props.habit.target || records[0]?.targetValue || 0
+          progress = targetValue > 0 ? Math.min(bestCurrentValue / targetValue, 1) : 0
         }
       }
     }
 
-    cells.push({ date, dayNum: d, status, progress, interactive });
+    cells.push({
+      date,
+      dayNum: d,
+      status,
+      progress,
+      interactive,
+    })
   }
 
-  return cells;
-});
+  return cells
+})
 
 function closeContextMenu() {
-  contextMenu.value.visible = false;
+  contextMenu.value.visible = false
 }
 
 function handleDocumentClick() {
-  closeContextMenu();
+  closeContextMenu()
 }
 
 function handleCellClick(cell: CalendarCell) {
-  closeContextMenu();
+  closeContextMenu()
   if (!cell.date || !cell.interactive) {
-    return;
+    return
   }
 
   if (cell.status === 'missed') {
-    emit('month-cell-reset', cell.date);
-    return;
+    emit('monthCellReset', cell.date)
+    return
   }
 
-  emit('month-cell-primary', cell.date);
+  emit('monthCellPrimary', cell.date)
 }
 
 function handleCellContextMenu(event: MouseEvent, cell: CalendarCell) {
   if (!cell.date || !cell.interactive) {
-    closeContextMenu();
-    return;
+    closeContextMenu()
+    return
   }
 
-  event.preventDefault();
+  event.preventDefault()
   contextMenu.value = {
     visible: true,
     x: event.clientX,
     y: event.clientY,
     date: cell.date,
     action: cell.status === 'none' ? 'mark-missed' : 'reset-record',
-  };
+  }
 }
 
 function handleMenuAction() {
-  const { action, date } = contextMenu.value;
-  closeContextMenu();
+  const {
+    action,
+    date,
+  } = contextMenu.value
+  closeContextMenu()
   if (!date) {
-    return;
+    return
   }
 
   if (action === 'mark-missed') {
-    emit('month-cell-mark-missed', date);
-    return;
+    emit('monthCellMarkMissed', date)
+    return
   }
 
-  emit('month-cell-reset', date);
+  emit('monthCellReset', date)
 }
 
 function handleMarkerMouseEnter(event: MouseEvent, cell: CalendarCell) {
   if (!cell.interactive) {
-    return;
+    return
   }
 
-  showIconTooltip(event.currentTarget as HTMLElement, t('habit').clickableDateHint);
+  showTooltip(event.currentTarget as HTMLElement, t('habit').clickableDateHint)
 }
 
 function handleMarkerMouseLeave() {
-  hideIconTooltip();
+  hideTooltip()
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick);
-});
+  document.addEventListener('click', handleDocumentClick)
+})
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick);
-  hideIconTooltip();
-});
+  document.removeEventListener('click', handleDocumentClick)
+  hideTooltip()
+})
 </script>
 
 <style scoped>

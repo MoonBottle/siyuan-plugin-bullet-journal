@@ -45,6 +45,7 @@ The chosen behavior is:
 ```md
 Vocabulary 🎯2026-05-14 🔄ebbinghaus
 Vocabulary 🎯2026-05-14 🔄ebbinghaus[1,2,4,7,15]
+
 ```
 
 ## Data Model
@@ -52,13 +53,13 @@ Vocabulary 🎯2026-05-14 🔄ebbinghaus[1,2,4,7,15]
 Extend `HabitFrequency` with a dedicated variant:
 
 ```ts
-type HabitFrequency =
-  | { type: 'daily' }
-  | { type: 'every_n_days'; interval: number }
-  | { type: 'weekly' }
-  | { type: 'n_per_week'; daysPerWeek: number }
-  | { type: 'weekly_days'; daysOfWeek: number[] }
-  | { type: 'ebbinghaus'; intervals?: number[] }
+type HabitFrequency
+  = | { type: 'daily' }
+    | { type: 'every_n_days', interval: number }
+    | { type: 'weekly' }
+    | { type: 'n_per_week', daysPerWeek: number }
+    | { type: 'weekly_days', daysOfWeek: number[] }
+    | { type: 'ebbinghaus', intervals?: number[] }
 ```
 
 Rules for `intervals`:

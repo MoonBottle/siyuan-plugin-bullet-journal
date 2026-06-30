@@ -1,27 +1,38 @@
 // @vitest-environment happy-dom
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, h, nextTick } from 'vue';
-import type { Item } from '@/types/models';
+import type { Item } from '@/types/models'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  h,
+  nextTick,
+} from 'vue'
 
 vi.mock('siyuan', async () => {
-  return await import('../../__mocks__/siyuan');
-});
+  return await import('../../__mocks__/siyuan')
+})
 
 const timerDialogProjectStore = {
   getItemByBlockId: vi.fn(),
   getItemActualFocusMinutes: vi.fn(),
   getExpiredItems: vi.fn(() => []),
   getFutureItems: vi.fn(() => []),
-};
+}
 
 const activeTimerProjectStore = {
   getItemByBlockId: vi.fn(),
-};
+}
 
 const pomodoroStoreForDialog = {
   startPomodoro: vi.fn(() => Promise.resolve(true)),
-};
+}
 
 const pomodoroStoreForActive = {
   activePomodoro: {
@@ -39,23 +50,23 @@ const pomodoroStoreForActive = {
   pausePomodoro: vi.fn(() => Promise.resolve(true)),
   resumePomodoro: vi.fn(() => Promise.resolve(true)),
   completePomodoro: vi.fn(() => Promise.resolve(true)),
-};
+}
 
 const settingsStore = {
   groups: [],
-};
+}
 
-let mountMode: 'dialog' | 'active' = 'dialog';
+let mountMode: 'dialog' | 'active' = 'dialog'
 
 vi.mock('@/stores', () => ({
   useProjectStore: vi.fn(() => mountMode === 'active' ? activeTimerProjectStore : timerDialogProjectStore),
   usePomodoroStore: vi.fn(() => mountMode === 'active' ? pomodoroStoreForActive : pomodoroStoreForDialog),
   useSettingsStore: vi.fn(() => settingsStore),
-}));
+}))
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => 'dialog'),
-}));
+}))
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({
@@ -69,14 +80,14 @@ vi.mock('@/main', () => ({
     openCustomTab: vi.fn(),
     requestRefresh: vi.fn(() => Promise.resolve()),
   })),
-}));
+}))
 
 vi.mock('@/utils/dayjs', () => ({
   default: vi.fn(() => ({
     format: () => '2026-05-14',
     diff: () => 0,
   })),
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
@@ -96,7 +107,7 @@ vi.mock('@/i18n', () => ({
         cancel: '取消',
         yesterday: '昨天',
         dayBeforeYesterday: '前天',
-      };
+      }
     }
     if (key === 'pomodoroActive') {
       return {
@@ -116,13 +127,13 @@ vi.mock('@/i18n', () => ({
         endFocus: '结束专注',
         confirmEndTitle: '结束专注',
         confirmEndMessage: '确定结束吗',
-      };
+      }
     }
     if (key === 'focusPlan') {
       return {
         currentPlan: '当前预计',
         actualShort: '累计',
-      };
+      }
     }
     if (key === 'settings') {
       return {
@@ -130,7 +141,7 @@ vi.mock('@/i18n', () => ({
           allGroups: '全部分组',
           unnamed: '未命名',
         },
-      };
+      }
     }
     if (key === 'todo') {
       return {
@@ -141,22 +152,22 @@ vi.mock('@/i18n', () => ({
         abandon: '放弃',
         detail: '详情',
         calendar: '日历',
-      };
+      }
     }
     if (key === 'statusTag') {
       return {
         completed: '#done',
         abandoned: '#abandoned',
-      };
+      }
     }
     if (key === 'common') {
       return {
         blockIdError: '块错误',
-      };
+      }
     }
-    return {};
+    return {}
   }),
-}));
+}))
 
 vi.mock('@/components/pomodoro/SelectedItemCard.vue', () => ({
   default: {
@@ -164,7 +175,7 @@ vi.mock('@/components/pomodoro/SelectedItemCard.vue', () => ({
     props: ['item'],
     template: '<div data-testid="selected-item-card">{{ item.content }}</div>',
   },
-}));
+}))
 
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   default: {
@@ -172,85 +183,87 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
     props: ['modelValue', 'options'],
     template: '<div data-testid="sy-select-stub"></div>',
   },
-}));
+}))
 
 vi.mock('@/components/common/Card.vue', () => ({
   default: {
     name: 'CardStub',
     template: '<div><slot name="header" /><slot /><slot name="footer" /></div>',
   },
-}));
+}))
 
 vi.mock('@/components/todo/TodoTypedLinks.vue', () => ({
   default: {
     name: 'TodoTypedLinksStub',
     template: '<div data-testid="todo-links-stub"></div>',
   },
-}));
+}))
 
-vi.mock('@/components/icons/TomatoIcon.vue', () => ({ default: { template: '<i></i>' } }));
-vi.mock('@/components/icons/PlayIcon.vue', () => ({ default: { template: '<i></i>' } }));
-vi.mock('@/components/icons/StopIcon.vue', () => ({ default: { template: '<i></i>' } }));
+vi.mock('@/components/dialog/ItemDetailContent.vue', () => ({
+  default: {
+    name: 'ItemDetailContentStub',
+    props: ['item', 'embedded', 'showActionRow'],
+    template: '<div data-testid="item-detail-content-stub">{{ item.content }}</div>',
+  },
+}))
+
+vi.mock('@/components/todo/ItemActionBar.vue', () => ({
+  default: {
+    name: 'ItemActionBarStub',
+    props: ['item', 'showSeparator', 'showActions'],
+    emits: ['openDetail'],
+    template: '<div data-testid="item-action-bar-stub"><button aria-label="完成" @click="$emit(\'complete\')" /><button aria-label="放弃" @click="$emit(\'abandon\')" /></div>',
+  },
+}))
+
+vi.mock('@/components/icons/TomatoIcon.vue', () => ({ default: { template: '<i></i>' } }))
+vi.mock('@/components/icons/PlayIcon.vue', () => ({ default: { template: '<i></i>' } }))
+vi.mock('@/components/icons/StopIcon.vue', () => ({ default: { template: '<i></i>' } }))
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(() => Promise.resolve(true)),
-}));
-
-const mockWriteBlock = vi.fn(() => Promise.resolve(true));
-
-vi.mock('@/utils/blockWriter', () => ({
-  writeBlock: mockWriteBlock,
-}));
+}))
 
 vi.mock('@/utils/dialog', () => ({
   showConfirmDialog: vi.fn(),
   showItemDetailModal: vi.fn(),
-}));
-
-vi.mock('@/utils/linkNavigation', () => ({
-  resolveAttachmentTargetBlockId: vi.fn(),
-}));
+}))
 
 vi.mock('@/utils/progressDirection', () => ({
   getProgressDirection: vi.fn(() => 'shrink'),
-}));
-
-vi.mock('@/constants', () => ({
-  DOCK_TYPES: { POMODORO: 'pomodoro' },
-  TAB_TYPES: { CALENDAR: 'calendar' },
-}));
+}))
 
 function mountComponent(component: any, props: Record<string, unknown>) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
   const app = createApp({
     render() {
-      return h(component, props);
+      return h(component, props)
     },
-  });
-  app.mount(container);
+  })
+  app.mount(container)
 
   return {
     container,
     unmount: () => {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
-describe('Pomodoro focus plan UI', () => {
+describe('pomodoro focus plan UI', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mountMode = 'dialog';
-  });
+    vi.clearAllMocks()
+    mountMode = 'dialog'
+  })
 
   afterEach(() => {
-    document.body.innerHTML = '';
-  });
+    document.body.innerHTML = ''
+  })
 
-  it('PomodoroTimerDialog 在开始前展示事项预计与已累计专注', async () => {
+  it('pomodoroTimerDialog 在开始前展示事项预计与已累计专注', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -265,30 +278,30 @@ describe('Pomodoro focus plan UI', () => {
         normalizedMinutes: 70,
         sourceText: '⏳1h10m',
       },
-    };
-    timerDialogProjectStore.getItemByBlockId.mockReturnValue(item);
-    timerDialogProjectStore.getItemActualFocusMinutes.mockReturnValue(50);
-    mountMode = 'dialog';
+    }
+    timerDialogProjectStore.getItemByBlockId.mockReturnValue(item)
+    timerDialogProjectStore.getItemActualFocusMinutes.mockReturnValue(50)
+    mountMode = 'dialog'
 
-    const { default: PomodoroTimerDialog } = await import('@/components/pomodoro/PomodoroTimerDialog.vue');
+    const { default: PomodoroTimerDialog } = await import('@/components/pomodoro/PomodoroTimerDialog.vue')
     const mounted = mountComponent(PomodoroTimerDialog, {
       closeDialog: vi.fn(),
       preselectedBlockId: 'block-1',
       hideItemList: true,
-    });
+    })
 
-    await nextTick();
-    await nextTick();
+    await nextTick()
+    await nextTick()
 
-    expect(mounted.container.textContent).toContain('当前预计');
-    expect(mounted.container.textContent).toContain('1h10m');
-    expect(mounted.container.textContent).toContain('累计');
-    expect(mounted.container.textContent).toContain('50m');
+    expect(mounted.container.textContent).toContain('当前预计')
+    expect(mounted.container.textContent).toContain('1h10m')
+    expect(mounted.container.textContent).toContain('累计')
+    expect(mounted.container.textContent).toContain('50m')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
-  it('PomodoroActiveTimer 展示进行中的实际与预计进度', async () => {
+  it('pomodoroActiveTimer 展示进行中的实际与预计进度', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -312,23 +325,23 @@ describe('Pomodoro focus plan UI', () => {
           actualDurationMinutes: 50,
         } as any,
       ],
-    };
-    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item);
-    mountMode = 'active';
+    }
+    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item)
+    mountMode = 'active'
 
-    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue');
-    const mounted = mountComponent(PomodoroActiveTimer, {});
+    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue')
+    const mounted = mountComponent(PomodoroActiveTimer, {})
 
-    await nextTick();
+    await nextTick()
 
-    expect(mounted.container.textContent).toContain('当前预计');
-    expect(mounted.container.textContent).toContain('1h10m');
-    expect(mounted.container.textContent).toContain('累计 1h / 1h10m');
+    expect(mounted.container.textContent).toContain('当前预计')
+    expect(mounted.container.textContent).toContain('1h10m')
+    expect(mounted.container.textContent).toContain('累计 1h / 1h10m')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
-  it('PomodoroActiveTimer 的完成按钮走 writeBlock', async () => {
+  it('pomodoroActiveTimer 渲染 ItemActionBar 并传递 showActions', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -337,27 +350,22 @@ describe('Pomodoro focus plan UI', () => {
       docId: 'doc-1',
       blockId: 'block-1',
       status: 'pending',
-    };
-    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item);
-    mountMode = 'active';
+    }
+    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item)
+    mountMode = 'active'
 
-    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue');
-    const mounted = mountComponent(PomodoroActiveTimer, {});
+    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue')
+    const mounted = mountComponent(PomodoroActiveTimer, {})
 
-    await nextTick();
+    await nextTick()
 
-    mounted.container.querySelector('[aria-label="完成"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+    const actionBar = mounted.container.querySelector('[data-testid="item-action-bar-stub"]')
+    expect(actionBar).toBeTruthy()
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      { type: 'setStatus', status: 'completed' },
-    );
+    mounted.unmount()
+  })
 
-    mounted.unmount();
-  });
-
-  it('PomodoroActiveTimer 的放弃按钮走 writeBlock', async () => {
+  it('pomodoroActiveTimer 渲染 ItemDetailContent 并传递 item', async () => {
     const item: Item = {
       id: 'item-1',
       content: '整理日报',
@@ -366,23 +374,19 @@ describe('Pomodoro focus plan UI', () => {
       docId: 'doc-1',
       blockId: 'block-1',
       status: 'pending',
-    };
-    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item);
-    mountMode = 'active';
+    }
+    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item)
+    mountMode = 'active'
 
-    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue');
-    const mounted = mountComponent(PomodoroActiveTimer, {});
+    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue')
+    const mounted = mountComponent(PomodoroActiveTimer, {})
 
-    await nextTick();
+    await nextTick()
 
-    mounted.container.querySelector('[aria-label="放弃"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+    const detailContent = mounted.container.querySelector('[data-testid="item-detail-content-stub"]')
+    expect(detailContent).toBeTruthy()
+    expect(detailContent?.textContent).toContain('整理日报')
 
-    expect(mockWriteBlock).toHaveBeenCalledWith(
-      { blockId: 'block-1' },
-      { type: 'setStatus', status: 'abandoned' },
-    );
-
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

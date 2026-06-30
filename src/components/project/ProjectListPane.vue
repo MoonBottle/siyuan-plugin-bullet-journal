@@ -11,7 +11,10 @@
     </div>
 
     <div class="project-list-pane__content">
-      <div v-if="projects.length === 0" class="project-list-pane__empty">
+      <div
+        v-if="projects.length === 0"
+        class="project-list-pane__empty"
+      >
         {{ t('project').noProjectMatches }}
       </div>
 
@@ -19,8 +22,9 @@
         v-for="project in projects"
         :key="project.id"
         type="button"
-        :class="['project-list-row', { 'project-list-row--active': project.id === selectedProjectId }]"
-        @click="$emit('select-project', project.id)"
+        class="project-list-row"
+        :class="[{ 'project-list-row--active': project.id === selectedProjectId }]"
+        @click="$emit('selectProject', project.id)"
       >
         <span class="project-list-row__title">{{ project.name }}</span>
         <span class="project-list-row__desc">{{ project.description || project.path }}</span>
@@ -33,21 +37,21 @@
 </template>
 
 <script setup lang="ts">
-import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
-import { t } from '@/i18n';
-import { getProjectItemCount } from '@/utils/projectTaskTree';
-import type { Project } from '@/types/models';
+import type { Project } from '@/types/models'
+import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue'
+import { t } from '@/i18n'
+import { getProjectItemCount } from '@/utils/projectTaskTree'
 
 defineProps<{
-  projects: Project[];
-  selectedProjectId: string;
-  searchQuery: string;
-}>();
+  projects: Project[]
+  selectedProjectId: string
+  searchQuery: string
+}>()
 
 defineEmits<{
-  (event: 'update:searchQuery', value: string): void;
-  (event: 'select-project', projectId: string): void;
-}>();
+  (event: 'update:searchQuery', value: string): void
+  (event: 'selectProject', projectId: string): void
+}>()
 </script>
 
 <style lang="scss" scoped>
@@ -55,7 +59,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 12px;
+  padding: 8px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;

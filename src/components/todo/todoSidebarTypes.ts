@@ -1,15 +1,15 @@
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
 
-export type TodoSidebarDragPayload = {
-  blockId: string;
-  itemId: string;
-  priority?: PriorityLevel;
-};
+export interface TodoSidebarDragPayload {
+  blockId: string
+  itemId: string
+  priority?: PriorityLevel
+}
 
-export type TodoSidebarHoverPayload = {
-  blockId: string;
-  itemId: string;
-  anchorEl: HTMLElement;
-};
+export interface TodoSidebarHoverPayload {
+  blockId: string
+  itemId: string
+  anchorEl: HTMLElement
+}
 
-export type TodoSidebarPreviewTriggerMode = 'hover' | 'click';
+export type TodoSidebarPreviewTriggerMode = 'hover' | 'click'

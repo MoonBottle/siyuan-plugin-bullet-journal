@@ -34,18 +34,18 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 
 ## Quick Links
 
-| Need | Recommended Document |
-|------|----------------------|
-| Just installed, don't know how to use | [Quick Start](./quick-start.md) |
-| Want to learn task format | [Data Format](./data-format.md) |
-| Want to understand each view | [Views](./views.md) |
-| Want to view item details directly in notes | [Views - View Item Details in Document](./views.md#view-item-details-in-document) |
-| Want to configure scan directories and groups | [Configuration](./configuration.md) |
-| Want to track daily habits | [Habit Check-in](./habit-checkin.md) |
-| Want to manage tasks by priority | [Quadrant View](./quadrant.md) |
-| Want an integrated workspace for all views | [Workbench](./workbench.md) |
-| Want to use Pomodoro focus | [Pomodoro](./pomodoro.md) |
-| Want AI to query tasks and pomodoro data | [MCP AI Assistant](./mcp.md) |
-| Want to see a complete project example | [Complete Example](./examples.md) |
-| Want to know what's new | [Changelog](./changelog.md) |
-| Want to contribute to the project | [Contributing](./contributing.md) |
+| Need                                          | Recommended Document                                                              |
+| --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Just installed, don't know how to use         | [Quick Start](./quick-start.md)                                                   |
+| Want to learn task format                     | [Data Format](./data-format.md)                                                   |
+| Want to understand each view                  | [Views](./views.md)                                                               |
+| Want to view item details directly in notes   | [Views - View Item Details in Document](./views.md#view-item-details-in-document) |
+| Want to configure scan directories and groups | [Configuration](./configuration.md)                                               |
+| Want to track daily habits                    | [Habit Check-in](./habit-checkin.md)                                              |
+| Want to manage tasks by priority              | [Quadrant View](./quadrant.md)                                                    |
+| Want an integrated workspace for all views    | [Workbench](./workbench.md)                                                       |
+| Want to use Pomodoro focus                    | [Pomodoro](./pomodoro.md)                                                         |
+| Want AI to query tasks and pomodoro data      | [MCP AI Assistant](./mcp.md)                                                      |
+| Want to see a complete project example        | [Complete Example](./examples.md)                                                 |
+| Want to know what's new                       | [Changelog](./changelog.md)                                                       |
+| Want to contribute to the project             | [Contributing](./contributing.md)                                                 |

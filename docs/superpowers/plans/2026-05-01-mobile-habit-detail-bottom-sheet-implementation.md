@@ -28,6 +28,7 @@
 ## Task 1: 锁定移动端列表交互与周条 spacing
 
 **Files:**
+
 - Modify: `test/components/habit/HabitListItem.test.ts`
 - Modify: `test/mobile/MobileHabitPanel.test.ts`
 - Modify: `src/components/habit/HabitListItem.vue`
@@ -45,7 +46,7 @@ it('移动端不显示日历按钮，主体点击发出 open-detail', async () =
     openCalendar: vi.fn(),
     checkIn: vi.fn(),
     increment: vi.fn(),
-  };
+  }
 
   const mounted = mountHabitListItem({
     props: {
@@ -55,22 +56,22 @@ it('移动端不显示日历按钮，主体点击发出 open-detail', async () =
       isMobile: true,
     },
     emits,
-  });
+  })
 
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')).toBeNull();
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')).toBeNull()
 
   mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-  expect(emits.openDetail).toHaveBeenCalledWith(habit);
-  expect(emits.openDoc).not.toHaveBeenCalled();
-});
+  expect(emits.openDetail).toHaveBeenCalledWith(habit)
+  expect(emits.openDoc).not.toHaveBeenCalled()
+})
 
 it('移动端点击 +1 时只触发 increment，不触发 open-detail', async () => {
   const emits = {
     openDetail: vi.fn(),
     increment: vi.fn(),
-  };
+  }
 
   const mounted = mountHabitListItem({
     props: {
@@ -80,14 +81,14 @@ it('移动端点击 +1 时只触发 increment，不触发 open-detail', async ()
       isMobile: true,
     },
     emits,
-  });
+  })
 
   mounted.container.querySelector('[data-testid="habit-list-item-increment"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-  expect(emits.increment).toHaveBeenCalledWith(countHabit);
-  expect(emits.openDetail).not.toHaveBeenCalled();
-});
+  expect(emits.increment).toHaveBeenCalledWith(countHabit)
+  expect(emits.openDetail).not.toHaveBeenCalled()
+})
 ```
 
 - [ ] **Step 2: 写 `MobileHabitPanel` 的失败测试，锁定详情打开和周条容器**
@@ -115,32 +116,32 @@ vi.mock('@/mobile/components/habit/MobileHabitDetailSheet.vue', () => ({
             h('span', props.habit?.name ?? ''),
             h('button', {
               'data-testid': 'mobile-habit-detail-close',
-              onClick: () => emit('close'),
+              'onClick': () => emit('close'),
             }),
           ])
-        : null;
+        : null
     },
   }),
-}));
+}))
 ```
 
 并新增用例：
 
 ```ts
 it('点击列表项会打开详情 sheet，周条容器使用独立 gutter', async () => {
-  const mounted = mountPanel();
-  await nextTick();
+  const mounted = mountPanel()
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]')).not.toBeNull();
+  expect(mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]')).not.toBeNull()
 
   mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  const detailSheet = mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet"]');
-  expect(detailSheet).not.toBeNull();
-  expect(detailSheet?.textContent).toContain('Read');
-});
+  const detailSheet = mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet"]')
+  expect(detailSheet).not.toBeNull()
+  expect(detailSheet?.textContent).toContain('Read')
+})
 ```
 
 - [ ] **Step 3: 跑测试，确认失败**
@@ -152,6 +153,7 @@ npx vitest run test/components/habit/HabitListItem.test.ts test/mobile/MobileHab
 ```
 
 Expected: FAIL，原因应为：
+
 - `HabitListItem.vue` 还没有 `isMobile` / `open-detail`
 - `MobileHabitPanel.vue` 还没有 week bar wrapper / detail sheet 结构
 
@@ -161,28 +163,28 @@ Expected: FAIL，原因应为：
 
 ```ts
 const props = defineProps<{
-  habit: Habit;
-  dayState: HabitDayState;
-  periodState: HabitPeriodState;
-  stats?: HabitStats;
-  isMobile?: boolean;
-}>();
+  habit: Habit
+  dayState: HabitDayState
+  periodState: HabitPeriodState
+  stats?: HabitStats
+  isMobile?: boolean
+}>()
 
 const emit = defineEmits<{
-  'check-in': [habit: Habit];
-  'increment': [habit: Habit];
-  'open-doc': [habit: Habit];
-  'open-calendar': [habit: Habit];
-  'open-detail': [habit: Habit];
-}>();
+  'check-in': [habit: Habit]
+  'increment': [habit: Habit]
+  'open-doc': [habit: Habit]
+  'open-calendar': [habit: Habit]
+  'open-detail': [habit: Habit]
+}>()
 
 function handleMainClick() {
   if (props.isMobile) {
-    emit('open-detail', props.habit);
-    return;
+    emit('open-detail', props.habit)
+    return
   }
 
-  emit('open-doc', props.habit);
+  emit('open-doc', props.habit)
 }
 ```
 
@@ -252,6 +254,7 @@ function handleMainClick() {
   padding: 12px 16px 16px;
   -webkit-overflow-scrolling: touch;
 }
+
 ```
 
 - [ ] **Step 5: 跑测试，确认通过**
@@ -274,6 +277,7 @@ git commit -m "feat(habit): align mobile list interactions"
 ## Task 2: 拆出独立的移动端详情 bottom sheet
 
 **Files:**
+
 - Create: `src/mobile/components/habit/MobileHabitDetailSheet.vue`
 - Create: `test/mobile/MobileHabitDetailSheet.test.ts`
 - Modify: `src/mobile/panels/MobileHabitPanel.vue`
@@ -285,20 +289,20 @@ git commit -m "feat(habit): align mobile list interactions"
 ```ts
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, nextTick } from 'vue';
-import MobileHabitDetailSheet from '@/mobile/components/habit/MobileHabitDetailSheet.vue';
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import MobileHabitDetailSheet from '@/mobile/components/habit/MobileHabitDetailSheet.vue'
 
 function mountSheet(props: Record<string, unknown>) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp(MobileHabitDetailSheet, props);
-  app.mount(container);
-  return { container, unmount: () => { app.unmount(); container.remove(); } };
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const app = createApp(MobileHabitDetailSheet, props)
+  app.mount(container)
+  return { container, unmount: () => { app.unmount(); container.remove() } }
 }
 
 it('打开时渲染标题并支持关闭事件', async () => {
-  const onClose = vi.fn();
+  const onClose = vi.fn()
   const mounted = mountSheet({
     open: true,
     habit: { blockId: 'habit-1', name: 'Read', type: 'binary', records: [] },
@@ -306,15 +310,15 @@ it('打开时渲染标题并支持关闭事件', async () => {
     viewMonth: '2026-05',
     stats: { currentStreak: 1 },
     onClose,
-  });
+  })
 
-  await nextTick();
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet-title"]')?.textContent).toContain('Read');
+  expect(mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet-title"]')?.textContent).toContain('Read')
   mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet-close"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  expect(onClose).toHaveBeenCalledTimes(1);
-});
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  expect(onClose).toHaveBeenCalledTimes(1)
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -332,17 +336,36 @@ Expected: FAIL，因为 `MobileHabitDetailSheet.vue` 尚不存在。
 创建 `src/mobile/components/habit/MobileHabitDetailSheet.vue`：
 
 ```vue
+<script setup lang="ts">
+import type { Habit, HabitStats } from '@/types/models'
+
+defineProps<{
+  open: boolean
+  habit: Habit | null
+  selectedDate: string
+  viewMonth: string
+  stats: HabitStats | null
+}>()
+
+const emit = defineEmits<{
+  'close': []
+  'check-in': []
+  'count-change': [value: number]
+  'update:view-month': [value: string]
+}>()
+</script>
+
 <template>
   <div v-if="open" class="mobile-habit-detail-sheet" data-testid="mobile-habit-detail-sheet">
-    <div class="mobile-habit-detail-sheet__scrim" @click="emit('close')"></div>
+    <div class="mobile-habit-detail-sheet__scrim" @click="emit('close')" />
     <section class="mobile-habit-detail-sheet__panel">
-      <div class="mobile-habit-detail-sheet__handle"></div>
+      <div class="mobile-habit-detail-sheet__handle" />
       <header class="mobile-habit-detail-sheet__header">
         <span class="mobile-habit-detail-sheet__title" data-testid="mobile-habit-detail-sheet-title">
           {{ habit?.name }}
         </span>
         <button data-testid="mobile-habit-detail-sheet-close" @click="emit('close')">
-          <svg><use xlink:href="#iconCloseRound"></use></svg>
+          <svg><use xlink:href="#iconCloseRound" /></svg>
         </button>
       </header>
       <div class="mobile-habit-detail-sheet__body">
@@ -351,25 +374,6 @@ Expected: FAIL，因为 `MobileHabitDetailSheet.vue` 尚不存在。
     </section>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { Habit, HabitStats } from '@/types/models';
-
-defineProps<{
-  open: boolean;
-  habit: Habit | null;
-  selectedDate: string;
-  viewMonth: string;
-  stats: HabitStats | null;
-}>();
-
-const emit = defineEmits<{
-  close: [];
-  'check-in': [];
-  'count-change': [value: number];
-  'update:view-month': [value: string];
-}>();
-</script>
 ```
 
 - [ ] **Step 4: 将 `MobileHabitPanel.vue` 接到独立 sheet**
@@ -422,6 +426,7 @@ git commit -m "feat(habit): add mobile detail bottom sheet"
 ## Task 3: 接回移动端详情内容、外部导航与刷新同步
 
 **Files:**
+
 - Modify: `src/mobile/panels/MobileHabitPanel.vue`
 - Modify: `test/mobile/MobileHabitPanel.test.ts`
 
@@ -434,15 +439,15 @@ it('pending target 会直接打开对应习惯详情', async () => {
   consumePendingHabitDockTarget.mockReturnValueOnce({
     habitId: 'habit-2',
     date: '2026-05-02',
-  });
+  })
 
-  const mounted = mountPanel();
-  await nextTick();
+  const mounted = mountPanel()
+  await nextTick()
 
-  const detailSheet = mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet"]');
-  expect(detailSheet).not.toBeNull();
-  expect(detailSheet?.textContent).toContain('Water');
-});
+  const detailSheet = mounted.container.querySelector('[data-testid="mobile-habit-detail-sheet"]')
+  expect(detailSheet).not.toBeNull()
+  expect(detailSheet?.textContent).toContain('Water')
+})
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
@@ -461,34 +466,36 @@ Expected: FAIL，若 sheet state / pending target 接线不完整则无法直接
 
 ```ts
 function openHabitDetail(habit: Habit) {
-  state.selectedViewMonth = currentDate.value.substring(0, 7);
-  state.selectedHabit = habit;
-  state.showHabitDetail = true;
+  state.selectedViewMonth = currentDate.value.substring(0, 7)
+  state.selectedHabit = habit
+  state.showHabitDetail = true
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  const habit = habits.value.find(item => item.blockId === target.habitId);
+  const habit = habits.value.find(item => item.blockId === target.habitId)
   if (!habit) {
-    return false;
+    return false
   }
 
-  const targetDate = target.date || currentDate.value;
-  state.selectedDate = targetDate;
-  state.selectedViewMonth = targetDate.substring(0, 7);
-  state.selectedHabit = habit;
-  state.showHabitDetail = true;
-  return true;
+  const targetDate = target.date || currentDate.value
+  state.selectedDate = targetDate
+  state.selectedViewMonth = targetDate.substring(0, 7)
+  state.selectedHabit = habit
+  state.showHabitDetail = true
+  return true
 }
 
 function syncSelectedHabit() {
-  if (!state.selectedHabit) return;
-  state.selectedHabit = habits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
+  if (!state.selectedHabit)
+    return
+  state.selectedHabit = habits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null
 }
 
 async function refreshHabits() {
-  if (!plugin) return;
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  syncSelectedHabit();
+  if (!plugin)
+    return
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories)
+  syncSelectedHabit()
 }
 ```
 
@@ -520,6 +527,7 @@ git commit -m "fix(habit): keep mobile detail sheet in sync"
 ## Task 4: 全量定向回归并整理实现文档
 
 **Files:**
+
 - Modify: `docs/superpowers/plans/2026-05-01-mobile-habit-detail-bottom-sheet-implementation.md`
 
 - [ ] **Step 1: 跑本轮定向测试**
@@ -551,6 +559,7 @@ Expected: PASS，确保这轮 habit 改造未破坏已完成的移动端四 tab 
 
 - 若 `HabitListItem.vue` 跨端分支过重，可在实现中拆出 `MobileHabitListItem.vue`，但必须同步更新本计划与测试文件路径。
 - 若 bottom sheet 需要额外遮住底栏，这是允许的；不要为“底栏持续可见”再引入额外状态复杂度。
+
 ```
 
 - [ ] **Step 4: 提交**

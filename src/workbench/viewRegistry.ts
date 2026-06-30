@@ -1,42 +1,47 @@
 import type {
+  WorkbenchCalendarViewConfig,
   WorkbenchEntry,
   WorkbenchFocusWorkbenchViewConfig,
+  WorkbenchGanttViewConfig,
   WorkbenchHabitWeekWidgetConfig,
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchProjectViewConfig,
   WorkbenchQuadrantViewConfig,
-  WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchViewType,
-} from '@/types/workbench';
-import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
-import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
-import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
-import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog';
-import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog';
-import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog';
-import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
+} from '@/types/workbench'
+import { openCalendarViewConfigDialog } from '@/workbench/calendarViewConfigDialog'
+import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog'
+import { openGanttViewConfigDialog } from '@/workbench/ganttViewConfigDialog'
+import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog'
+import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog'
+import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog'
+import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog'
+import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog'
 
-type WorkbenchViewConfigContext = {
-  entry: WorkbenchEntry;
-  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
-};
+interface WorkbenchViewConfigContext {
+  entry: WorkbenchEntry
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>
+}
 
-export type WorkbenchViewDefinition = {
-  type: WorkbenchViewType;
-  createDefaultConfig: () => Record<string, unknown>;
-  openConfigDialog?: (context: WorkbenchViewConfigContext) => void;
-};
+export interface WorkbenchViewDefinition {
+  type: WorkbenchViewType
+  createDefaultConfig: () => Record<string, unknown>
+  openConfigDialog?: (context: WorkbenchViewConfigContext) => void
+}
 
 function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition> {
   return {
     todo: {
       type: 'todo',
-      createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
+      createDefaultConfig: () => ({
         preset: {},
-      }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchTodoListWidgetConfig;
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchTodoListWidgetConfig
         openTodoWidgetConfigDialog({
           initialConfig: {
             preset: config?.preset ?? {},
@@ -44,18 +49,21 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               preset: nextConfig.preset ?? {},
-            });
+            } as Record<string, unknown>)
           },
-        });
+        })
       },
     },
     habit: {
       type: 'habit',
-      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
+      createDefaultConfig: () => ({
         habitScope: 'active',
-      }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchHabitWeekWidgetConfig;
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchHabitWeekWidgetConfig
         openHabitWidgetConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
@@ -65,33 +73,39 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               habitScope: nextConfig.habitScope ?? 'active',
-            });
+            })
           },
-        });
+        })
       },
     },
     quadrant: {
       type: 'quadrant',
-      createDefaultConfig: (): WorkbenchQuadrantViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchQuadrantViewConfig;
+      createDefaultConfig: () => ({}) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchQuadrantViewConfig
         openQuadrantViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId });
+            await onUpdateConfig({ groupId: nextConfig.groupId } as Record<string, unknown>)
           },
-        });
+        })
       },
     },
     pomodoroStats: {
       type: 'pomodoroStats',
-      createDefaultConfig: (): WorkbenchPomodoroStatsWidgetConfig => ({
+      createDefaultConfig: () => ({
         section: 'overview',
-      }),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig;
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchPomodoroStatsWidgetConfig
         openPomodoroWidgetConfigDialog({
           initialConfig: {
             section: config?.section ?? 'overview',
@@ -99,60 +113,131 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               section: nextConfig.section ?? 'overview',
-            });
+            })
           },
-        });
+        })
       },
     },
     focusWorkbench: {
       type: 'focusWorkbench',
-      createDefaultConfig: (): WorkbenchFocusWorkbenchViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchFocusWorkbenchViewConfig;
+      createDefaultConfig: () => ({}) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchFocusWorkbenchViewConfig
         openFocusWorkbenchViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId });
+            await onUpdateConfig({ groupId: nextConfig.groupId } as Record<string, unknown>)
           },
-        });
+        })
       },
     },
     project: {
       type: 'project',
-      createDefaultConfig: (): WorkbenchProjectViewConfig => ({}),
-      openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchProjectViewConfig;
+      createDefaultConfig: () => ({ itemStatusFilter: undefined }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchProjectViewConfig
         openProjectViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
             columnRatios: config?.columnRatios,
+            itemStatusFilter: config?.itemStatusFilter,
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               groupId: nextConfig.groupId,
               columnRatios: nextConfig.columnRatios,
-            });
+              itemStatusFilter: nextConfig.itemStatusFilter,
+            })
           },
-        });
+        })
       },
     },
     calendar: {
       type: 'calendar',
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: () => ({
+        defaultView: 'timeGridDay',
+        showItems: true,
+        groupId: '',
+        itemStatusFilter: undefined,
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchCalendarViewConfig
+        openCalendarViewConfigDialog({
+          initialConfig: {
+            defaultView: config?.defaultView,
+            showItems: config?.showItems,
+            groupId: config?.groupId,
+            itemStatusFilter: config?.itemStatusFilter,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              defaultView: nextConfig.defaultView,
+              showItems: nextConfig.showItems,
+              groupId: nextConfig.groupId,
+              itemStatusFilter: nextConfig.itemStatusFilter,
+            })
+          },
+        })
+      },
     },
     gantt: {
       type: 'gantt',
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: () => ({
+        viewMode: 'day',
+        showItems: false,
+        datePreset: 'all',
+        startDate: '',
+        endDate: '',
+        groupId: '',
+        itemStatusFilter: undefined,
+      }) as Record<string, unknown>,
+      openConfigDialog: ({
+        entry,
+        onUpdateConfig,
+      }) => {
+        const config = entry.config as WorkbenchGanttViewConfig
+        openGanttViewConfigDialog({
+          initialConfig: {
+            viewMode: config?.viewMode,
+            showItems: config?.showItems,
+            datePreset: config?.datePreset,
+            startDate: config?.startDate,
+            endDate: config?.endDate,
+            groupId: config?.groupId,
+            itemStatusFilter: config?.itemStatusFilter,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              viewMode: nextConfig.viewMode,
+              showItems: nextConfig.showItems,
+              datePreset: nextConfig.datePreset,
+              startDate: nextConfig.startDate,
+              endDate: nextConfig.endDate,
+              groupId: nextConfig.groupId,
+              itemStatusFilter: nextConfig.itemStatusFilter,
+            })
+          },
+        })
+      },
     },
     aiChat: {
       type: 'aiChat',
       createDefaultConfig: () => ({}),
     },
-  };
+  }
 }
 
 export function getViewDefinition(viewType: WorkbenchViewType): WorkbenchViewDefinition {
-  return createViewRegistry()[viewType];
+  return createViewRegistry()[viewType]
 }

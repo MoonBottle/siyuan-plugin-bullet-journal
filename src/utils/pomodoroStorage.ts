@@ -3,12 +3,12 @@
  * 使用思源 putFile/getFile/removeFile 接口管理进行中的番茄钟
  */
 
-import type { ActivePomodoroData, PendingPomodoroCompletion } from '@/types/models';
+import type {
+  ActivePomodoroData,
+  PendingPomodoroCompletion,
+} from '@/types/models'
 
-const PENDING_COMPLETION_KEY = 'pending-pomodoro-completion.json';
-
-// 文件路径
-const ACTIVE_POMODORO_PATH = '/data/storage/pensieve/bullet-journal/active-pomodoro.json';
+const PENDING_COMPLETION_KEY = 'pending-pomodoro-completion.json'
 
 /**
  * 保存进行中的番茄钟到文件
@@ -18,22 +18,22 @@ const ACTIVE_POMODORO_PATH = '/data/storage/pensieve/bullet-journal/active-pomod
  */
 export async function saveActivePomodoro(
   plugin: any,
-  data: ActivePomodoroData
+  data: ActivePomodoroData,
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      console.error('[PomodoroStorage] 插件实例不存在');
-      return false;
+      console.error('[PomodoroStorage] 插件实例不存在')
+      return false
     }
 
-    const content = JSON.stringify(data, null, 2);
-    await plugin.saveData('active-pomodoro.json', content);
+    const content = JSON.stringify(data, null, 2)
+    await plugin.saveData('active-pomodoro.json', content)
 
-    console.log('[PomodoroStorage] 已保存进行中的番茄钟:', data.itemContent);
-    return true;
+    console.log('[PomodoroStorage] 已保存进行中的番茄钟:', data.itemContent)
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 保存番茄钟失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 保存番茄钟失败:', error)
+    return false
   }
 }
 
@@ -43,32 +43,32 @@ export async function saveActivePomodoro(
  * @returns 番茄钟数据或 null
  */
 export async function loadActivePomodoro(
-  plugin: any
+  plugin: any,
 ): Promise<ActivePomodoroData | null> {
   try {
     if (!plugin) {
-      console.error('[PomodoroStorage] 插件实例不存在');
-      return null;
+      console.error('[PomodoroStorage] 插件实例不存在')
+      return null
     }
 
-    const content = await plugin.loadData('active-pomodoro.json');
+    const content = await plugin.loadData('active-pomodoro.json')
     if (!content) {
-      return null;
+      return null
     }
 
     // 如果返回的已经是对象，直接返回
     if (typeof content === 'object' && content !== null) {
-      console.log('[PomodoroStorage] 已读取进行中的番茄钟:', content.itemContent);
-      return content as ActivePomodoroData;
+      console.log('[PomodoroStorage] 已读取进行中的番茄钟:', content.itemContent)
+      return content as ActivePomodoroData
     }
 
     // 如果是字符串，解析 JSON
-    const data = JSON.parse(content) as ActivePomodoroData;
-    console.log('[PomodoroStorage] 已读取进行中的番茄钟:', data.itemContent);
-    return data;
+    const data = JSON.parse(content) as ActivePomodoroData
+    console.log('[PomodoroStorage] 已读取进行中的番茄钟:', data.itemContent)
+    return data
   } catch (error) {
-    console.error('[PomodoroStorage] 读取番茄钟失败:', error);
-    return null;
+    console.error('[PomodoroStorage] 读取番茄钟失败:', error)
+    return null
   }
 }
 
@@ -78,20 +78,20 @@ export async function loadActivePomodoro(
  * @returns 是否成功
  */
 export async function removeActivePomodoro(
-  plugin: any
+  plugin: any,
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      console.error('[PomodoroStorage] 插件实例不存在');
-      return false;
+      console.error('[PomodoroStorage] 插件实例不存在')
+      return false
     }
 
-    await plugin.removeData('active-pomodoro.json');
-    console.log('[PomodoroStorage] 已删除进行中的番茄钟文件');
-    return true;
+    await plugin.removeData('active-pomodoro.json')
+    console.log('[PomodoroStorage] 已删除进行中的番茄钟文件')
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 删除番茄钟文件失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 删除番茄钟文件失败:', error)
+    return false
   }
 }
 
@@ -101,17 +101,17 @@ export async function removeActivePomodoro(
  * @returns 是否有进行中的番茄钟
  */
 export async function hasActivePomodoro(
-  plugin: any
+  plugin: any,
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      return false;
+      return false
     }
 
-    const content = await plugin.loadData('active-pomodoro.json');
-    return !!content;
+    const content = await plugin.loadData('active-pomodoro.json')
+    return !!content
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -120,20 +120,20 @@ export async function hasActivePomodoro(
  */
 export async function savePendingCompletion(
   plugin: any,
-  data: PendingPomodoroCompletion
+  data: PendingPomodoroCompletion,
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      console.error('[PomodoroStorage] 插件实例不存在');
-      return false;
+      console.error('[PomodoroStorage] 插件实例不存在')
+      return false
     }
-    const content = JSON.stringify(data, null, 2);
-    await plugin.saveData(PENDING_COMPLETION_KEY, content);
-    console.log('[PomodoroStorage] 已保存待完成记录:', data.itemContent);
-    return true;
+    const content = JSON.stringify(data, null, 2)
+    await plugin.saveData(PENDING_COMPLETION_KEY, content)
+    console.log('[PomodoroStorage] 已保存待完成记录:', data.itemContent)
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 保存待完成记录失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 保存待完成记录失败:', error)
+    return false
   }
 }
 
@@ -141,19 +141,19 @@ export async function savePendingCompletion(
  * 读取待完成番茄钟记录
  */
 export async function loadPendingCompletion(
-  plugin: any
+  plugin: any,
 ): Promise<PendingPomodoroCompletion | null> {
   try {
-    if (!plugin) return null;
-    const content = await plugin.loadData(PENDING_COMPLETION_KEY);
-    if (!content) return null;
+    if (!plugin) return null
+    const content = await plugin.loadData(PENDING_COMPLETION_KEY)
+    if (!content) return null
     if (typeof content === 'object' && content !== null) {
-      return content as PendingPomodoroCompletion;
+      return content as PendingPomodoroCompletion
     }
-    return JSON.parse(content) as PendingPomodoroCompletion;
+    return JSON.parse(content) as PendingPomodoroCompletion
   } catch (error) {
-    console.error('[PomodoroStorage] 读取待完成记录失败:', error);
-    return null;
+    console.error('[PomodoroStorage] 读取待完成记录失败:', error)
+    return null
   }
 }
 
@@ -162,13 +162,13 @@ export async function loadPendingCompletion(
  */
 export async function removePendingCompletion(plugin: any): Promise<boolean> {
   try {
-    if (!plugin) return false;
-    await plugin.removeData(PENDING_COMPLETION_KEY);
-    console.log('[PomodoroStorage] 已删除待完成记录');
-    return true;
+    if (!plugin) return false
+    await plugin.removeData(PENDING_COMPLETION_KEY)
+    console.log('[PomodoroStorage] 已删除待完成记录')
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 删除待完成记录失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 删除待完成记录失败:', error)
+    return false
   }
 }
 
@@ -177,41 +177,41 @@ export async function removePendingCompletion(plugin: any): Promise<boolean> {
  */
 export async function hasPendingCompletion(plugin: any): Promise<boolean> {
   try {
-    if (!plugin) return false;
-    const content = await plugin.loadData(PENDING_COMPLETION_KEY);
-    return !!content;
+    if (!plugin) return false
+    const content = await plugin.loadData(PENDING_COMPLETION_KEY)
+    return !!content
   } catch {
-    return false;
+    return false
   }
 }
 
 /** 进行中的休息数据（文件持久化，不写入块/属性） */
 export interface ActiveBreakData {
-  startTime: number;
-  durationMinutes: number;
+  startTime: number
+  durationMinutes: number
 }
 
-const ACTIVE_BREAK_KEY = 'active-break.json';
+const ACTIVE_BREAK_KEY = 'active-break.json'
 
 /**
  * 保存进行中的休息到文件
  */
 export async function saveActiveBreak(
   plugin: any,
-  data: ActiveBreakData
+  data: ActiveBreakData,
 ): Promise<boolean> {
   try {
     if (!plugin) {
-      console.error('[PomodoroStorage] 插件实例不存在');
-      return false;
+      console.error('[PomodoroStorage] 插件实例不存在')
+      return false
     }
-    const content = JSON.stringify(data, null, 2);
-    await plugin.saveData(ACTIVE_BREAK_KEY, content);
-    console.log('[PomodoroStorage] 已保存进行中的休息:', data.durationMinutes, '分钟');
-    return true;
+    const content = JSON.stringify(data, null, 2)
+    await plugin.saveData(ACTIVE_BREAK_KEY, content)
+    console.log('[PomodoroStorage] 已保存进行中的休息:', data.durationMinutes, '分钟')
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 保存休息失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 保存休息失败:', error)
+    return false
   }
 }
 
@@ -219,19 +219,19 @@ export async function saveActiveBreak(
  * 读取进行中的休息
  */
 export async function loadActiveBreak(
-  plugin: any
+  plugin: any,
 ): Promise<ActiveBreakData | null> {
   try {
-    if (!plugin) return null;
-    const content = await plugin.loadData(ACTIVE_BREAK_KEY);
-    if (!content) return null;
+    if (!plugin) return null
+    const content = await plugin.loadData(ACTIVE_BREAK_KEY)
+    if (!content) return null
     if (typeof content === 'object' && content !== null) {
-      return content as ActiveBreakData;
+      return content as ActiveBreakData
     }
-    return JSON.parse(content) as ActiveBreakData;
+    return JSON.parse(content) as ActiveBreakData
   } catch (error) {
-    console.error('[PomodoroStorage] 读取休息失败:', error);
-    return null;
+    console.error('[PomodoroStorage] 读取休息失败:', error)
+    return null
   }
 }
 
@@ -240,12 +240,12 @@ export async function loadActiveBreak(
  */
 export async function removeActiveBreak(plugin: any): Promise<boolean> {
   try {
-    if (!plugin) return false;
-    await plugin.removeData(ACTIVE_BREAK_KEY);
-    console.log('[PomodoroStorage] 已删除进行中的休息文件');
-    return true;
+    if (!plugin) return false
+    await plugin.removeData(ACTIVE_BREAK_KEY)
+    console.log('[PomodoroStorage] 已删除进行中的休息文件')
+    return true
   } catch (error) {
-    console.error('[PomodoroStorage] 删除休息文件失败:', error);
-    return false;
+    console.error('[PomodoroStorage] 删除休息文件失败:', error)
+    return false
   }
 }

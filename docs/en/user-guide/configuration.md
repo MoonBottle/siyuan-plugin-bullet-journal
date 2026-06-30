@@ -7,6 +7,7 @@ This document introduces the various configuration options for the Task Assistan
 Open settings: SiYuan Settings → Plugins → Task Assistant → Settings
 
 The settings interface is divided into two columns:
+
 - **Left menu**: Quick navigation to configuration sections
 - **Right content**: Specific configuration options
 
@@ -24,10 +25,10 @@ Directory configuration determines which documents the plugin scans to extract t
 
 The plugin supports two scanning modes, switchable at the top of "Directory Configuration":
 
-| Mode | Icon | Description | Use Case |
-|------|------|-------------|----------|
-| **Scan Entire Workspace** | 🌐 | Scan all documents containing task markers. Directory config is only used for grouping. | Daily use, recommended |
-| **Scan Configured Directories Only** | 📁 | Only scan documents in directories configured below. | Large workspaces, performance optimization |
+| Mode                                 | Icon | Description                                                                             | Use Case                                   |
+| ------------------------------------ | ---- | --------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Scan Entire Workspace**            | 🌐   | Scan all documents containing task markers. Directory config is only used for grouping. | Daily use, recommended                     |
+| **Scan Configured Directories Only** | 📁   | Only scan documents in directories configured below.                                    | Large workspaces, performance optimization |
 
 #### Relationship Between Scan Scope and Directory Configuration
 
@@ -43,6 +44,7 @@ The plugin supports two scanning modes, switchable at the top of "Directory Conf
 #### Notes for Upgrading Users
 
 After upgrading from older versions to v0.12.2:
+
 - Default switches to "Full Scan Mode", previously disappeared tasks will reappear
 - To restore original behavior, manually switch to "Scan Configured Directories Only" mode
 
@@ -58,10 +60,10 @@ After upgrading from older versions to v0.12.2:
 
 ### Directory Configuration Items
 
-| Item | Description |
-|------|-------------|
-| Path | Relative path to the document directory |
-| Group | Default group for projects in this directory |
+| Item    | Description                                            |
+| ------- | ------------------------------------------------------ |
+| Path    | Relative path to the document directory                |
+| Group   | Default group for projects in this directory           |
 | Enabled | Whether to enable scanning/grouping for this directory |
 
 ### Path Format
@@ -72,11 +74,11 @@ After upgrading from older versions to v0.12.2:
 
 ### Examples
 
-| Path | Description |
-|------|-------------|
+| Path                 | Description                           |
+| -------------------- | ------------------------------------- |
 | `Work/2026/Projects` | Scan documents in specified directory |
-| `Work` | Scan Work and all its subdirectories |
-| `Journal` | Scan Journal directory |
+| `Work`               | Scan Work and all its subdirectories  |
+| `Journal`            | Scan Journal directory                |
 
 ---
 
@@ -109,20 +111,20 @@ Settings related to Pomodoro focus timer.
 
 ### Interface Settings
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Floating Pomodoro Button | Show floating button in bottom-right corner during focus | Off |
-| Status Bar Timer | Show countdown panel in status bar (with pause/resume controls) during focus | Off |
-| Status Bar Progress | Show progress bar at bottom of page during focus | Off |
+| Setting                  | Description                                                                  | Default |
+| ------------------------ | ---------------------------------------------------------------------------- | ------- |
+| Floating Pomodoro Button | Show floating button in bottom-right corner during focus                     | Off     |
+| Status Bar Timer         | Show countdown panel in status bar (with pause/resume controls) during focus | Off     |
+| Status Bar Progress      | Show progress bar at bottom of page during focus                             | Off     |
 
 ### Record Storage Mode
 
 Storage location for Pomodoro records:
 
-| Mode | Description |
-|------|-------------|
+| Mode                           | Description                                    |
+| ------------------------------ | ---------------------------------------------- |
 | Under item block (child block) | Create child block under item to store records |
-| Item block custom attribute | Store in block's custom attributes |
+| Item block custom attribute    | Store in block's custom attributes             |
 
 ### Auto Complete Focus
 
@@ -136,12 +138,12 @@ Alert user when focus duration is below this value (minutes), range 1-60 minutes
 
 Automatically extend focus time when countdown ends:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Auto Extend | When countdown ends and dialog is not operated, automatically extend countdown to continue focus | Off |
-| Wait Time (seconds) | How many seconds to wait after dialog pops up before triggering auto extend | 30 seconds |
-| Extend Minutes | Countdown minutes added each time auto extend is triggered | 5 minutes |
-| Maximum Extend Count | Dialog will remain open after reaching maximum count | 3 times |
+| Setting              | Description                                                                                      | Default    |
+| -------------------- | ------------------------------------------------------------------------------------------------ | ---------- |
+| Auto Extend          | When countdown ends and dialog is not operated, automatically extend countdown to continue focus | Off        |
+| Wait Time (seconds)  | How many seconds to wait after dialog pops up before triggering auto extend                      | 30 seconds |
+| Extend Minutes       | Countdown minutes added each time auto extend is triggered                                       | 5 minutes  |
+| Maximum Extend Count | Dialog will remain open after reaching maximum count                                             | 3 times    |
 
 ---
 
@@ -160,10 +162,10 @@ Default view when opening calendar:
 
 ### Pomodoro Display
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Show Pomodoro Time Blocks | Show Pomodoro focus periods on calendar day view timeline | On |
-| Show Total Focus Time | Show total focus duration on the right side of item bars | On |
+| Setting                   | Description                                               | Default |
+| ------------------------- | --------------------------------------------------------- | ------- |
+| Show Pomodoro Time Blocks | Show Pomodoro focus periods on calendar day view timeline | On      |
+| Show Total Focus Time     | Show total focus duration on the right side of item bars  | On      |
 
 ---
 
@@ -197,24 +199,24 @@ Custom slash command shortcuts.
 
 The plugin provides the following built-in slash commands:
 
-| Command | Function |
-|---------|----------|
-| `/today` | Mark as today's item |
-| `/tomorrow` | Mark as tomorrow's item |
-| `/date` | Select date |
-| `/done` | Mark as completed |
-| `/abandon` | Mark as abandoned |
-| `/calendar` | Open calendar |
-| `/calendarday` | Open calendar day view |
-| `/calendarweek` | Open calendar week view |
+| Command          | Function                 |
+| ---------------- | ------------------------ |
+| `/today`         | Mark as today's item     |
+| `/tomorrow`      | Mark as tomorrow's item  |
+| `/date`          | Select date              |
+| `/done`          | Mark as completed        |
+| `/abandon`       | Mark as abandoned        |
+| `/calendar`      | Open calendar            |
+| `/calendarday`   | Open calendar day view   |
+| `/calendarweek`  | Open calendar week view  |
 | `/calendarmonth` | Open calendar month view |
-| `/calendarlist` | Open calendar list view |
-| `/gantt` | Open Gantt chart |
-| `/focus` | Start focus |
-| `/todo` | Open todo dock |
-| `/projectdir` | Set as project directory |
-| `/task` | Mark as task |
-| `/detail` | View detail |
+| `/calendarlist`  | Open calendar list view  |
+| `/gantt`         | Open Gantt chart         |
+| `/focus`         | Start focus              |
+| `/todo`          | Open todo dock           |
+| `/projectdir`    | Set as project directory |
+| `/task`          | Mark as task             |
+| `/detail`        | View detail              |
 
 ### Custom Commands
 
@@ -277,6 +279,7 @@ For detailed steps and tool descriptions, see [MCP AI Assistant](./mcp.md).
 ### Q: Why can't I see task data?
 
 Please check:
+
 1. Is scan scope setting correct (Full Scan mode should show all tasks)
 2. Does directory path match actual folder structure (Configured Directories Only mode)
 3. Do project documents contain `📋` / `#task` / `#任务` marker
@@ -297,6 +300,7 @@ You can see all scanned projects and tasks in the Project List view.
 ### Q: What's the purpose of groups?
 
 Groups are used to organize and filter projects:
+
 - Filter by group in Project List
 - View by group in Gantt chart
 - Manage project categorization with scan scope

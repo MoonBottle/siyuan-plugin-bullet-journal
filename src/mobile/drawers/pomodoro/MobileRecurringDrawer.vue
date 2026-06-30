@@ -1,21 +1,38 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div v-if="modelValue" class="mobile-recurring-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+          <div
+            v-if="modelValue"
+            class="mobile-recurring-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Handle Bar -->
-            <div class="drawer-handle" @click="close">
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
 
             <!-- Header -->
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('recurring.settingTitle') || '设置重复' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('recurring.settingTitle') || '设置重复' }}
+              </h3>
             </div>
 
             <!-- Content -->
-            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <RecurringSettingDialog
                 ref="recurringDialogRef"
                 :block-id="blockId || ''"
@@ -29,10 +46,16 @@
 
             <!-- Footer -->
             <div class="drawer-footer">
-              <button class="footer-btn cancel" @click="close">
+              <button
+                class="footer-btn cancel"
+                @click="close"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
-              <button class="footer-btn save" @click="handleSaveClick">
+              <button
+                class="footer-btn save"
+                @click="handleSaveClick"
+              >
                 {{ t('recurring.save') || '保存' }}
               </button>
             </div>
@@ -44,55 +67,59 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
-import { t } from '@/i18n';
-import { updateItemWithRecurring } from '@/utils/itemSettingUtils';
-import type { RepeatRule, EndCondition, Item } from '@/types/models';
+import type {
+  EndCondition,
+  Item,
+  RepeatRule,
+} from '@/types/models'
+import {
+  ref,
+} from 'vue'
+import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue'
+import { t } from '@/i18n'
+import { updateItemWithRecurring } from '@/utils/itemSettingUtils'
 
-const recurringDialogRef = ref<InstanceType<typeof RecurringSettingDialog> | null>(null);
-
-interface Props {
-  modelValue: boolean;
-  blockId?: string;
-  initialRepeatRule?: RepeatRule;
-  initialEndCondition?: EndCondition;
-  item?: Item;
-}
-
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined];
-  'cancel': [];
-}>();
+  'update:modelValue': [value: boolean]
+  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined]
+  'cancel': []
+}>()
 
-const hasItem = computed(() => !!props.item);
+const recurringDialogRef = ref<InstanceType<typeof RecurringSettingDialog> | null>(null)
+
+interface Props {
+  modelValue: boolean
+  blockId?: string
+  initialRepeatRule?: RepeatRule
+  initialEndCondition?: EndCondition
+  item?: Item
+}
 
 async function handleSave(repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) {
   if (props.item) {
     try {
-      await updateItemWithRecurring(props.item, repeatRule, endCondition);
-      emit('save', repeatRule, endCondition);
-      close();
+      await updateItemWithRecurring(props.item, repeatRule, endCondition)
+      emit('save', repeatRule, endCondition)
+      close()
     } catch (error) {
-      console.error('[MobileRecurringDrawer] Failed to save recurring:', error);
+      console.error('[MobileRecurringDrawer] Failed to save recurring:', error)
     }
   } else {
-    emit('save', repeatRule, endCondition);
-    close();
+    emit('save', repeatRule, endCondition)
+    close()
   }
 }
 
 function handleSaveClick() {
   // 调用 Dialog 内部的 getConfig 方法
-  recurringDialogRef.value?.getConfig();
+  recurringDialogRef.value?.getConfig()
 }
 
 function close() {
-  emit('update:modelValue', false);
-  emit('cancel');
+  emit('update:modelValue', false)
+  emit('cancel')
 }
 </script>
 
@@ -176,25 +203,25 @@ function close() {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &.cancel {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
-    
+
     &:hover {
       background: var(--b3-theme-surface-lighter);
     }
   }
-  
+
   &.save {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
-    
+
     &:hover {
       opacity: 0.9;
     }
   }
-  
+
   &:active {
     transform: scale(0.98);
   }

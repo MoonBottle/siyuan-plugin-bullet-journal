@@ -6,7 +6,10 @@
     @contextmenu.prevent="handleContextMenu"
   >
     <!-- Header Slot -->
-    <div v-if="showHeader" class="ta-card__header">
+    <div
+      v-if="showHeader"
+      class="ta-card__header"
+    >
       <slot name="header"></slot>
     </div>
 
@@ -16,23 +19,26 @@
     </div>
 
     <!-- Footer Slot -->
-    <div v-if="showFooter" class="ta-card__footer">
+    <div
+      v-if="showFooter"
+      class="ta-card__footer"
+    >
       <slot name="footer"></slot>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 
-export type CardStatus = 'expired' | 'today' | 'tomorrow' | 'future' | 'completed' | 'abandoned' | 'pending';
+export type CardStatus = 'expired' | 'today' | 'tomorrow' | 'future' | 'completed' | 'abandoned' | 'pending'
 
 interface Props {
-  status?: CardStatus;
-  showHeader?: boolean;
-  showFooter?: boolean;
-  clickable?: boolean;
-  hoverEffect?: boolean;
+  status?: CardStatus
+  showHeader?: boolean
+  showFooter?: boolean
+  clickable?: boolean
+  hoverEffect?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,37 +46,37 @@ const props = withDefaults(defineProps<Props>(), {
   showHeader: false,
   showFooter: false,
   clickable: false,
-  hoverEffect: true
-});
+  hoverEffect: true,
+})
 
 const emit = defineEmits<{
-  click: [event: MouseEvent];
-  contextmenu: [event: MouseEvent];
-}>();
+  click: [event: MouseEvent]
+  contextmenu: [event: MouseEvent]
+}>()
 
 const cardClasses = computed(() => {
-  const classes: string[] = [];
+  const classes: string[] = []
   if (props.status) {
-    classes.push(`status-${props.status}`);
+    classes.push(`status-${props.status}`)
   }
   if (props.clickable) {
-    classes.push('is-clickable');
+    classes.push('is-clickable')
   }
   if (props.hoverEffect) {
-    classes.push('has-hover-effect');
+    classes.push('has-hover-effect')
   }
-  return classes;
-});
+  return classes
+})
 
 const handleClick = (event: MouseEvent) => {
   if (props.clickable) {
-    emit('click', event);
+    emit('click', event)
   }
-};
+}
 
 const handleContextMenu = (event: MouseEvent) => {
-  emit('contextmenu', event);
-};
+  emit('contextmenu', event)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -90,43 +96,22 @@ const handleContextMenu = (event: MouseEvent) => {
 
   &.has-hover-effect {
     &:hover {
-      background: var(--b3-theme-surface);
+      // background: var(--b3-theme-surface);
       border-color: var(--b3-theme-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 
-  // 状态样式
-  &.status-completed {
-    border-left: 3px solid var(--b3-theme-success);
-
-    :deep(.ta-card__content) {
-      opacity: 0.6;
-    }
-  }
-
   &.status-abandoned {
-    border-left: 3px solid var(--b3-theme-on-surface);
-
     :deep(.ta-card__content) {
-      opacity: 0.6;
       color: var(--b3-theme-on-surface);
     }
   }
 
   &.status-expired {
-    border-left: 3px solid #f44336;
-
     :deep(.card-time) {
       color: #f44336;
     }
-  }
-
-  &.status-today,
-  &.status-tomorrow,
-  &.status-future,
-  &.status-pending {
-    border-left: 3px solid var(--b3-theme-primary);
   }
 }
 
@@ -139,12 +124,17 @@ const handleContextMenu = (event: MouseEvent) => {
   margin: -8px -12px 0 -12px;
   padding: 6px 12px;
   font-size: 12px;
-  background: var(--b3-theme-surface-lighter);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--b3-theme-primary) 4%, transparent),
+    color-mix(in srgb, var(--b3-theme-surface-lighter) 20%, transparent)
+  );
   border-bottom: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }
 
 .ta-card__content {
+  margin-top: 8px;
   width: 100%;
 }
 

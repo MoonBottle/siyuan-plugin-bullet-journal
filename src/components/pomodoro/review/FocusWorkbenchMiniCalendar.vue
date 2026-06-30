@@ -23,8 +23,7 @@
         v-for="day in weekDayLabels"
         :key="day"
         class="focus-workbench-mini-calendar__weekday"
-        >{{ day }}</span
-      >
+      >{{ day }}</span>
     </div>
 
     <div class="focus-workbench-mini-calendar__days">
@@ -101,114 +100,118 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import dayjs from "@/utils/dayjs";
-import { t } from "@/i18n";
-import type { FocusPlanDailySummary } from "@/utils/focusPlanReview";
+import type { FocusPlanDailySummary } from "@/utils/focusPlanReview"
+import {
+  computed,
+  ref,
+  watch,
+} from "vue"
+import { t } from "@/i18n"
+import dayjs from "@/utils/dayjs"
 
-type CalendarCell = {
-  date: string;
-  dayNum: number;
-  summary: FocusPlanDailySummary;
-};
+interface CalendarCell {
+  date: string
+  dayNum: number
+  summary: FocusPlanDailySummary
+}
 
 const props = defineProps<{
-  modelValue: string;
-  getSummaryByDate: (date: string) => FocusPlanDailySummary;
-}>();
+  modelValue: string
+  getSummaryByDate: (date: string) => FocusPlanDailySummary
+}>()
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
-}>();
+  "update:modelValue": [value: string]
+}>()
 
-const today = dayjs().format("YYYY-MM-DD");
-const viewMonth = ref(props.modelValue.slice(0, 7));
+const today = dayjs().format("YYYY-MM-DD")
+const viewMonth = ref(props.modelValue.slice(0, 7))
 
 watch(
   () => props.modelValue,
   (value) => {
-    const nextMonth = value.slice(0, 7);
+    const nextMonth = value.slice(0, 7)
     if (nextMonth !== viewMonth.value) {
-      viewMonth.value = nextMonth;
+      viewMonth.value = nextMonth
     }
   },
-);
+)
 
-const weekDayLabels = computed(() => t("calendar").weekDays);
+const weekDayLabels = computed(() => t("calendar").weekDays)
 const title = computed(() =>
   dayjs(`${viewMonth.value}-01`).format("YYYY年M月"),
-);
+)
 
 const calendarCells = computed(() => {
-  const firstDay = dayjs(`${viewMonth.value}-01`);
-  let startDow = firstDay.day();
-  if (startDow === 0) startDow = 7;
-  const offset = startDow - 1;
-  const daysInMonth = firstDay.daysInMonth();
-  const cells: CalendarCell[] = [];
+  const firstDay = dayjs(`${viewMonth.value}-01`)
+  let startDow = firstDay.day()
+  if (startDow === 0) startDow = 7
+  const offset = startDow - 1
+  const daysInMonth = firstDay.daysInMonth()
+  const cells: CalendarCell[] = []
 
   for (let i = 0; i < offset; i += 1) {
     cells.push({
       date: "",
       dayNum: 0,
       summary: emptySummary(),
-    });
+    })
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = `${viewMonth.value}-${String(day).padStart(2, "0")}`;
+    const date = `${viewMonth.value}-${String(day).padStart(2, "0")}`
     cells.push({
       date,
       dayNum: day,
       summary: props.getSummaryByDate(date) ?? emptySummary(),
-    });
+    })
   }
 
-  return cells;
-});
+  return cells
+})
 
 function prevMonth() {
   viewMonth.value = dayjs(`${viewMonth.value}-01`)
     .subtract(1, "month")
-    .format("YYYY-MM");
+    .format("YYYY-MM")
 }
 
 function nextMonth() {
   viewMonth.value = dayjs(`${viewMonth.value}-01`)
     .add(1, "month")
-    .format("YYYY-MM");
+    .format("YYYY-MM")
 }
 
 function hasPlanned(summary: FocusPlanDailySummary): boolean {
-  return summary.estimatedMinutes > 0;
+  return summary.estimatedMinutes > 0
 }
 
 function hasFocused(summary: FocusPlanDailySummary): boolean {
-  return summary.actualMinutes > 0;
+  return summary.actualMinutes > 0
 }
 
 function hasPlannedOnly(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && !hasFocused(summary);
+  return hasPlanned(summary) && !hasFocused(summary)
 }
 
 function hasFocusedOnly(summary: FocusPlanDailySummary): boolean {
-  return !hasPlanned(summary) && hasFocused(summary);
+  return !hasPlanned(summary) && hasFocused(summary)
 }
 
 function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && hasFocused(summary);
+  return hasPlanned(summary) && hasFocused(summary)
 }
 
 function hasMarker(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) || hasFocused(summary);
+  return hasPlanned(summary) || hasFocused(summary)
 }
 
 function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
   if (hasPlannedAndFocused(summary))
-    return t("focusWorkbench").calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t("focusWorkbench").calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t("focusWorkbench").calendarLegendPlanned;
-  return "";
+    return t("focusWorkbench").calendarLegendHybrid
+  if (hasFocusedOnly(summary)) return t("focusWorkbench").calendarLegendFocused
+  if (hasPlannedOnly(summary)) return t("focusWorkbench").calendarLegendPlanned
+  return ""
 }
 
 function emptySummary(): FocusPlanDailySummary {
@@ -223,7 +226,7 @@ function emptySummary(): FocusPlanDailySummary {
     notStarted: 0,
     inProgress: 0,
     unplanned: 0,
-  };
+  }
 }
 </script>
 
@@ -313,14 +316,11 @@ function emptySummary(): FocusPlanDailySummary {
   border-color: var(--b3-theme-primary);
 }
 
-.focus-workbench-mini-calendar__cell--focused:not(
-  .focus-workbench-mini-calendar__cell--selected
-) {
+.focus-workbench-mini-calendar__cell--focused:not(.focus-workbench-mini-calendar__cell--selected) {
   background: var(--b3-theme-surface);
 }
 
-.focus-workbench-mini-calendar__cell--planned
-  .focus-workbench-mini-calendar__day-num {
+.focus-workbench-mini-calendar__cell--planned .focus-workbench-mini-calendar__day-num {
   font-weight: 600;
 }
 

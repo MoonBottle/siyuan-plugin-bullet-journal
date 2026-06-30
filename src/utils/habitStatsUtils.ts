@@ -2,4 +2,4 @@ export {
   calculateAllHabitStats,
   calculateHabitStats,
   isRecordCompleted,
-} from '@/domain/habit/habitStats';
+} from '@/domain/habit/habitStats'

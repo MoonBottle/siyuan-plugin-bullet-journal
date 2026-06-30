@@ -1,7 +1,12 @@
 <template>
-  <section class="mobile-more-panel" data-testid="more-panel">
+  <section
+    class="mobile-more-panel"
+    data-testid="more-panel"
+  >
     <header class="mobile-more-panel__header">
-      <h2 class="mobile-more-panel__title">{{ t('settings').title }}</h2>
+      <h2 class="mobile-more-panel__title">
+        {{ t('settings').title }}
+      </h2>
     </header>
 
     <div class="mobile-more-panel__section">
@@ -69,7 +74,10 @@
           <span class="mobile-more-panel__item-title">
             {{ t('mobile.settings.version') || '版本' }}
           </span>
-          <span class="mobile-more-panel__item-value" data-testid="more-version">
+          <span
+            class="mobile-more-panel__item-value"
+            data-testid="more-version"
+          >
             v{{ version }}
           </span>
         </div>
@@ -84,40 +92,44 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
-import PluginInfo from '@/../plugin.json';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import MobileReminderDebugSheet from '@/mobile/components/debug/MobileReminderDebugSheet.vue';
-import type { MobileNotificationDebugSnapshot } from '@/services/mobileNotificationScheduler';
-import { useProjectStore } from '@/stores';
-import { showMessage } from '@/utils/dialog';
+import type { MobileNotificationDebugSnapshot } from '@/services/mobileNotificationScheduler'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+} from 'vue'
+import PluginInfo from '@/../plugin.json'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import MobileReminderDebugSheet from '@/mobile/components/debug/MobileReminderDebugSheet.vue'
+import { useProjectStore } from '@/stores'
+import { showMessage } from '@/utils/dialog'
 
-const projectStore = useProjectStore();
+const projectStore = useProjectStore()
 type MobileReminderDebugPluginLike = {
   manifest?: {
-    version?: string;
-  };
-  isMobileReminderDebugMode?: () => boolean;
-  toggleMobileReminderDebugMode?: () => boolean;
-  getMobileReminderDebugSnapshot?: () => MobileNotificationDebugSnapshot;
-} | null;
+    version?: string
+  }
+  isMobileReminderDebugMode?: () => boolean
+  toggleMobileReminderDebugMode?: () => boolean
+  getMobileReminderDebugSnapshot?: () => MobileNotificationDebugSnapshot
+} | null
 
-const plugin = usePlugin() as MobileReminderDebugPluginLike;
-const fallbackVersion = PluginInfo.version || '0.12.8';
-const showReminderDebugSheet = ref(false);
-const reminderDebugSnapshot = ref<MobileNotificationDebugSnapshot | null>(null);
-const reminderDebugModeEnabled = ref(plugin?.isMobileReminderDebugMode?.() ?? false);
-const versionTapCount = ref(0);
-let versionTapResetTimer: ReturnType<typeof setTimeout> | null = null;
+const plugin = usePlugin() as MobileReminderDebugPluginLike
+const fallbackVersion = PluginInfo.version || '0.12.8'
+const showReminderDebugSheet = ref(false)
+const reminderDebugSnapshot = ref<MobileNotificationDebugSnapshot | null>(null)
+const reminderDebugModeEnabled = ref(plugin?.isMobileReminderDebugMode?.() ?? false)
+const versionTapCount = ref(0)
+let versionTapResetTimer: ReturnType<typeof setTimeout> | null = null
 
-const version = computed(() => plugin?.manifest?.version || fallbackVersion);
+const version = computed(() => plugin?.manifest?.version || fallbackVersion)
 
 function resetVersionTapProgress() {
-  versionTapCount.value = 0;
+  versionTapCount.value = 0
   if (versionTapResetTimer) {
-    clearTimeout(versionTapResetTimer);
-    versionTapResetTimer = null;
+    clearTimeout(versionTapResetTimer)
+    versionTapResetTimer = null
   }
 }
 
@@ -127,46 +139,46 @@ function openReminderDebugSheet() {
     currentDate: '',
     computedEntries: [],
     registryEntries: [],
-  };
-  showReminderDebugSheet.value = true;
+  }
+  showReminderDebugSheet.value = true
 }
 
 function enableReminderDebugMode() {
-  reminderDebugModeEnabled.value = plugin?.toggleMobileReminderDebugMode?.() ?? false;
+  reminderDebugModeEnabled.value = plugin?.toggleMobileReminderDebugMode?.() ?? false
 
   if (!reminderDebugModeEnabled.value) {
-    return;
+    return
   }
 
-  showMessage(t('mobile.debug.reminder.enabled') || '已开启移动端提醒调试模式（仅当前会话有效）');
-  openReminderDebugSheet();
+  showMessage(t('mobile.debug.reminder.enabled') || '已开启移动端提醒调试模式（仅当前会话有效）')
+  openReminderDebugSheet()
 }
 
 function handleVersionTap() {
   if (reminderDebugModeEnabled.value) {
-    openReminderDebugSheet();
-    return;
+    openReminderDebugSheet()
+    return
   }
 
-  versionTapCount.value += 1;
+  versionTapCount.value += 1
   if (versionTapCount.value >= 5) {
-    resetVersionTapProgress();
-    enableReminderDebugMode();
-    return;
+    resetVersionTapProgress()
+    enableReminderDebugMode()
+    return
   }
 
   if (versionTapResetTimer) {
-    clearTimeout(versionTapResetTimer);
+    clearTimeout(versionTapResetTimer)
   }
   versionTapResetTimer = setTimeout(() => {
-    versionTapCount.value = 0;
-    versionTapResetTimer = null;
-  }, 1500);
+    versionTapCount.value = 0
+    versionTapResetTimer = null
+  }, 1500)
 }
 
 onBeforeUnmount(() => {
-  resetVersionTapProgress();
-});
+  resetVersionTapProgress()
+})
 </script>
 
 <style lang="scss" scoped>

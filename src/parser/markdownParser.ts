@@ -3,86 +3,100 @@
  * 通过思源 API 获取文档 Kramdown 内容并解析（包含 blockId）
  * 解析逻辑复用 src/parser/core.ts
  */
-import type { Project, Item, ProjectDirectory, PomodoroRecord, ScanMode } from '@/types/models';
-import { parseKramdown } from './core';
-import { sql, getDocKramdown } from '@/api';
-import { LineParser } from './lineParser';
-import { defaultPomodoroSettings } from '@/settings';
+import type {
+  Item,
+  PomodoroRecord,
+  Project,
+  ProjectDirectory,
+  ScanMode,
+} from '@/types/models'
+import {
+  getDocKramdown,
+  sql,
+} from '@/api'
+import { defaultPomodoroSettings } from '@/settings'
+import { isExcludedByDisabledDirectories } from '@/utils/directoryUtils'
+import { parseKramdown } from './core'
+import { LineParser } from './lineParser'
 
-const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
-const HPATH_DEBUG_PREFIX = '[Task Assistant][HPathDebug]';
+const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]'
+const HPATH_DEBUG_PREFIX = '[Task Assistant][HPathDebug]'
 
 export class MarkdownParser {
-  private directories: ProjectDirectory[];
-  private scanMode: ScanMode;
+  private directories: ProjectDirectory[]
+  private allDirectories: ProjectDirectory[]
+  private scanMode: ScanMode
 
   constructor(directories: ProjectDirectory[], scanMode: ScanMode = 'full') {
-    this.directories = directories?.filter(d => d.enabled) || [];
-    this.scanMode = scanMode;
+    this.allDirectories = directories || []
+    this.directories = directories?.filter((d) => d.enabled) || []
+    this.scanMode = scanMode
   }
 
   /**
    * 解析所有配置目录中的项目文档；目录为空时扫描所有文档
    */
   public async parseAllProjects(): Promise<Project[]> {
-    console.log('[Task Assistant][Parser] 开始解析项目，scanMode:', this.scanMode, '目录数量:', this.directories.length);
-    const projects: Project[] = [];
-    const processedDocIds = new Set<string>();
+    console.log('[Task Assistant][Parser] 开始解析项目，scanMode:', this.scanMode, '目录数量:', this.directories.length)
+    const projects: Project[] = []
+    const processedDocIds = new Set<string>()
 
     if (this.scanMode === 'full') {
       // 目录配置为空：扫描所有文档
-      const docs = await this.getAllDocs();
+      const docs = await this.getAllDocs()
       for (const doc of docs) {
-        if (processedDocIds.has(doc.id)) continue;
-        processedDocIds.add(doc.id);
+        if (processedDocIds.has(doc.id)) continue
+        processedDocIds.add(doc.id)
+        // 排除未启用目录下的文档
+        if (isExcludedByDisabledDirectories(doc.path, this.allDirectories)) continue
         try {
           const project = await this.parseProjectDocument(
             doc.id,
             doc.notebookId,
             undefined,
-            doc.path
-          );
+            doc.path,
+          )
           if (project) {
-            projects.push(project);
+            projects.push(project)
           }
         } catch (error) {
-          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error);
+          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error)
         }
       }
     } else {
       for (const directory of this.directories) {
-        const docs = await this.getProjectDocs(directory.path);
+        const docs = await this.getProjectDocs(directory.path)
         for (const doc of docs) {
-          if (processedDocIds.has(doc.id)) continue;
-          processedDocIds.add(doc.id);
+          if (processedDocIds.has(doc.id)) continue
+          processedDocIds.add(doc.id)
           try {
             const project = await this.parseProjectDocument(
               doc.id,
               doc.notebookId,
               directory.groupId,
-              doc.path
-            );
+              doc.path,
+            )
             if (project) {
-              projects.push(project);
+              projects.push(project)
             }
           } catch (error) {
-            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
+            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error)
           }
         }
       }
     }
 
-    console.log('[Task Assistant][Parser] 解析完成，项目总数:', projects.length);
+    console.log('[Task Assistant][Parser] 解析完成，项目总数:', projects.length)
 
-    return projects;
+    return projects
   }
 
   /**
    * 获取含 #任务、#task、📋 或 🎯 标记的文档（目录配置为空时使用）
    * 先查 content 含任务标记的 block，按 root_id 聚合成文档列表
    */
-  private async getAllDocs(): Promise<{ id: string; path: string; notebookId: string }[]> {
-    console.log('[Task Assistant][Parser] 目录为空，扫描含 #任务/#task/📋/🎯 的文档');
+  private async getAllDocs(): Promise<{ id: string, path: string, notebookId: string }[]> {
+    console.log('[Task Assistant][Parser] 目录为空，扫描含 #任务/#task/📋/🎯 的文档')
     try {
       const sqlQuery = `
         SELECT id, hpath as path, box as notebookId
@@ -97,10 +111,10 @@ export class MarkdownParser {
         )
         ORDER BY updated DESC
         LIMIT 1000
-      `;
-      const result = await sql(sqlQuery);
-      console.log('[Task Assistant][Parser] 查询到的文档数量:', result.length);
-      const emptyHPathRows = result.filter((row: any) => !row.path);
+      `
+      const result = await sql(sqlQuery)
+      console.log('[Task Assistant][Parser] 查询到的文档数量:', result.length)
+      const emptyHPathRows = result.filter((row: any) => !row.path)
       console.log(`${HPATH_DEBUG_PREFIX} getAllDocs-summary:`, {
         totalDocs: result.length,
         emptyHPathCount: emptyHPathRows.length,
@@ -109,22 +123,22 @@ export class MarkdownParser {
           path: row.path,
           notebookId: row.notebookId,
         })),
-      });
+      })
       if (emptyHPathRows.length > 0) {
         console.warn(`${HPATH_DEBUG_PREFIX} getAllDocs-empty-hpath:`, emptyHPathRows.map((row: any) => ({
           id: row.id,
           path: row.path,
           notebookId: row.notebookId,
-        })));
+        })))
       }
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
-        notebookId: row.notebookId
-      }));
+        notebookId: row.notebookId,
+      }))
     } catch (error) {
-      console.error('[Task Assistant] Failed to get all docs:', error);
-      return [];
+      console.error('[Task Assistant] Failed to get all docs:', error)
+      return []
     }
   }
 
@@ -133,9 +147,9 @@ export class MarkdownParser {
    * 扫描所有笔记本，查找路径匹配的文档
    */
   private async getProjectDocs(
-    directoryPath: string
-  ): Promise<{ id: string; path: string; notebookId: string }[]> {
-    console.log('[Task Assistant][Parser] SQL 查询路径:', directoryPath);
+    directoryPath: string,
+  ): Promise<{ id: string, path: string, notebookId: string }[]> {
+    console.log('[Task Assistant][Parser] SQL 查询路径:', directoryPath)
     try {
       const sqlQuery = `
         SELECT id, hpath as path, box as notebookId
@@ -143,11 +157,11 @@ export class MarkdownParser {
         WHERE type = 'd'
         AND hpath LIKE '%${directoryPath}%'
         ORDER BY updated DESC
-      `;
+      `
 
-      const result = await sql(sqlQuery);
-      console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length);
-      const emptyHPathRows = result.filter((row: any) => !row.path);
+      const result = await sql(sqlQuery)
+      console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length)
+      const emptyHPathRows = result.filter((row: any) => !row.path)
       console.log(`${HPATH_DEBUG_PREFIX} getProjectDocs-summary:`, {
         directoryPath,
         totalDocs: result.length,
@@ -157,7 +171,7 @@ export class MarkdownParser {
           path: row.path,
           notebookId: row.notebookId,
         })),
-      });
+      })
       if (emptyHPathRows.length > 0) {
         console.warn(`${HPATH_DEBUG_PREFIX} getProjectDocs-empty-hpath:`, {
           directoryPath,
@@ -166,16 +180,16 @@ export class MarkdownParser {
             path: row.path,
             notebookId: row.notebookId,
           })),
-        });
+        })
       }
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
-        notebookId: row.notebookId
-      }));
+        notebookId: row.notebookId,
+      }))
     } catch (error) {
-      console.error('[Task Assistant] Failed to get project docs:', error);
-      return [];
+      console.error('[Task Assistant] Failed to get project docs:', error)
+      return []
     }
   }
 
@@ -186,19 +200,19 @@ export class MarkdownParser {
     docId: string,
     notebookId: string,
     groupId?: string,
-    docPath?: string
+    docPath?: string,
   ): Promise<Project | null> {
     console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseProjectDocument-input:`, {
       docId,
       notebookId,
       groupId,
       docPath,
-    });
-    const kramdown = await this.getKramdownContent(docId);
+    })
+    const kramdown = await this.getKramdownContent(docId)
 
-    if (!kramdown) return null;
+    if (!kramdown) return null
 
-    const project = parseKramdown(kramdown, docId, groupId, docPath || notebookId);
+    const project = parseKramdown(kramdown, docId, groupId, docPath || notebookId)
     console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseProjectDocument-output:`, {
       docId,
       projectName: project?.name,
@@ -206,8 +220,8 @@ export class MarkdownParser {
       groupId: project?.groupId,
       tasksCount: project?.tasks.length,
       habitsCount: project?.habits.length,
-    });
-    return project;
+    })
+    return project
   }
 
   /**
@@ -219,14 +233,14 @@ export class MarkdownParser {
     notebookId: string,
     groupId: string | undefined,
     docPath: string,
-    plugin: any
+    plugin: any,
   ): Promise<Project | null> {
     // 1. 解析文档
-    const project = await this.parseProjectDocument(docId, notebookId, groupId, docPath);
-    if (!project) return null;
+    const project = await this.parseProjectDocument(docId, notebookId, groupId, docPath)
+    if (!project) return null
 
     // 2. 合并番茄钟属性
-    await this.mergePomodoroAttrsForSingleProject(project, plugin);
+    await this.mergePomodoroAttrsForSingleProject(project, plugin)
 
     console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseAndProcessSingleDocument-output:`, {
       docId,
@@ -235,9 +249,9 @@ export class MarkdownParser {
       groupId: project.groupId,
       tasksCount: project.tasks.length,
       habitsCount: project.habits.length,
-    });
+    })
 
-    return project;
+    return project
   }
 
   /**
@@ -245,11 +259,11 @@ export class MarkdownParser {
    */
   private async getKramdownContent(docId: string): Promise<string | null> {
     try {
-      const result = await getDocKramdown(docId);
-      return result?.kramdown || null;
+      const result = await getDocKramdown(docId)
+      return result?.kramdown || null
     } catch (error) {
-      console.error('[Task Assistant] Failed to get kramdown content:', error);
-      return null;
+      console.error('[Task Assistant] Failed to get kramdown content:', error)
+      return null
     }
   }
 
@@ -259,58 +273,60 @@ export class MarkdownParser {
    */
   public async parseAllProjectsWithCallback(
     _plugin: any,
-    onProjectReady: (project: Project) => void
+    onProjectReady: (project: Project) => void,
   ): Promise<void> {
-    console.log('[Task Assistant][Parser] 开始流式解析项目，目录数量:', this.directories.length);
-    const processedDocIds = new Set<string>();
+    console.log('[Task Assistant][Parser] 开始流式解析项目，目录数量:', this.directories.length)
+    const processedDocIds = new Set<string>()
 
     if (this.scanMode === 'full') {
       // 全扫描模式
-      const docs = await this.getAllDocs();
+      const docs = await this.getAllDocs()
       for (const doc of docs) {
-        if (processedDocIds.has(doc.id)) continue;
-        processedDocIds.add(doc.id);
+        if (processedDocIds.has(doc.id)) continue
+        processedDocIds.add(doc.id)
+        // 排除未启用目录下的文档
+        if (isExcludedByDisabledDirectories(doc.path, this.allDirectories)) continue
         try {
           const project = await this.parseAndProcessSingleDocument(
             doc.id,
             doc.notebookId,
             undefined,
             doc.path,
-            _plugin
-          );
+            _plugin,
+          )
           if (project) {
-            onProjectReady(project);
+            onProjectReady(project)
           }
         } catch (error) {
-          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error);
+          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error)
         }
       }
     } else {
       // 目录扫描模式
       for (const directory of this.directories) {
-        const docs = await this.getProjectDocs(directory.path);
+        const docs = await this.getProjectDocs(directory.path)
         for (const doc of docs) {
-          if (processedDocIds.has(doc.id)) continue;
-          processedDocIds.add(doc.id);
+          if (processedDocIds.has(doc.id)) continue
+          processedDocIds.add(doc.id)
           try {
             const project = await this.parseAndProcessSingleDocument(
               doc.id,
               doc.notebookId,
               directory.groupId,
               doc.path,
-              _plugin
-            );
+              _plugin,
+            )
             if (project) {
-              onProjectReady(project);
+              onProjectReady(project)
             }
           } catch (error) {
-            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
+            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error)
           }
         }
       }
     }
 
-    console.log('[Task Assistant][Parser] 流式解析完成，项目总数:', processedDocIds.size);
+    console.log('[Task Assistant][Parser] 流式解析完成，项目总数:', processedDocIds.size)
   }
 
   /**
@@ -318,7 +334,7 @@ export class MarkdownParser {
    * 替代多次 getBlockAttrs 调用，大幅提升性能
    */
   private async fetchPomodoroAttrsByProject(
-    docId: string
+    docId: string,
   ): Promise<Map<string, Record<string, string>>> {
     try {
       const sqlQuery = `
@@ -326,23 +342,23 @@ export class MarkdownParser {
         FROM attributes
         WHERE root_id = '${docId}'
           AND name LIKE 'custom-pomodoro-%'
-      `;
+      `
 
-      const results = await sql(sqlQuery) as Array<{ blockId: string; name: string; value: string }>;
+      const results = await sql(sqlQuery) as Array<{ blockId: string, name: string, value: string }>
 
       // 按 blockId 分组
-      const attrsMap = new Map<string, Record<string, string>>();
+      const attrsMap = new Map<string, Record<string, string>>()
       for (const row of results) {
         if (!attrsMap.has(row.blockId)) {
-          attrsMap.set(row.blockId, {});
+          attrsMap.set(row.blockId, {})
         }
-        attrsMap.get(row.blockId)![row.name] = row.value;
+        attrsMap.get(row.blockId)![row.name] = row.value
       }
 
-      return attrsMap;
+      return attrsMap
     } catch (error) {
-      console.error(`[Task Assistant] Failed to fetch pomodoro attrs for doc ${docId}:`, error);
-      return new Map();
+      console.error(`[Task Assistant] Failed to fetch pomodoro attrs for doc ${docId}:`, error)
+      return new Map()
     }
   }
 
@@ -352,55 +368,56 @@ export class MarkdownParser {
    */
   private async mergePomodoroAttrsForSingleProject(
     project: Project,
-    plugin: any
+    plugin: any,
   ): Promise<void> {
-    const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
-    const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
+    const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings
+    const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro'
 
     // 一次性批量查询所有番茄钟属性
-    const attrsMap = await this.fetchPomodoroAttrsByProject(project.id);
+    const attrsMap = await this.fetchPomodoroAttrsByProject(project.id)
 
     for (const task of project.tasks) {
       // Task 级别番茄钟
       if (task.blockId && attrsMap.has(task.blockId)) {
-        const attrs = attrsMap.get(task.blockId)!;
-        const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
+        const attrs = attrsMap.get(task.blockId)!
+        const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix)
         if (attrRecords.length > 0) {
           for (const r of attrRecords) {
-            r.taskId = task.id;
-            r.projectId = project.id;
+            r.taskId = task.id
+            r.projectId = project.id
           }
-          task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
+          task.pomodoros = [...(task.pomodoros || []), ...attrRecords]
         }
       }
 
       // Item 级别番茄钟
       // Map blockId -> 第一个 item 的 pomodoros 数组（用于多日期事项共享）
-      const blockIdToPomodoros = new Map<string, PomodoroRecord[]>();
+      const blockIdToPomodoros = new Map<string, PomodoroRecord[]>()
       for (const item of task.items) {
-        if (!item.blockId) continue;
+        if (!item.blockId) continue
 
         // 如果已经处理过这个 blockId，共享同一个 pomodoros 数组
         if (blockIdToPomodoros.has(item.blockId)) {
-          item.pomodoros = blockIdToPomodoros.get(item.blockId)!;
-          continue;
+          item.pomodoros = blockIdToPomodoros.get(item.blockId)!
+          continue
         }
 
         // 第一次遇到这个 blockId，创建新的 pomodoros 数组
         if (attrsMap.has(item.blockId)) {
-          const attrs = attrsMap.get(item.blockId)!;
-          const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
+          const attrs = attrsMap.get(item.blockId)!
+          const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix)
           if (attrRecords.length > 0) {
             for (const r of attrRecords) {
-              r.itemId = item.id;
-              r.taskId = task.id;
-              r.projectId = project.id;
+              r.itemId = item.id
+              r.itemBlockId = item.blockId
+              r.taskId = task.id
+              r.projectId = project.id
             }
-            item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
+            item.pomodoros = [...(item.pomodoros || []), ...attrRecords]
           }
         }
         // 记录这个 blockId 对应的 pomodoros 数组（可能是空数组或 undefined）
-        blockIdToPomodoros.set(item.blockId, item.pomodoros || []);
+        blockIdToPomodoros.set(item.blockId, item.pomodoros || [])
       }
     }
   }
@@ -409,22 +426,22 @@ export class MarkdownParser {
    * 获取所有工作事项
    */
   public async getAllItems(): Promise<Item[]> {
-    const projects = await this.parseAllProjects();
-    return this.getAllItemsFromProjects(projects);
+    const projects = await this.parseAllProjects()
+    return this.getAllItemsFromProjects(projects)
   }
 
   /**
    * 从已有项目中获取所有工作事项
    */
   public getAllItemsFromProjects(projects: Project[]): Item[] {
-    const items: Item[] = [];
+    const items: Item[] = []
 
     for (const project of projects) {
       for (const task of project.tasks) {
         for (const item of task.items) {
-          item.task = task;
-          item.project = project;
-          items.push(item);
+          item.task = task
+          item.project = project
+          items.push(item)
         }
 
         if (task.date && task.items.length === 0) {
@@ -434,19 +451,19 @@ export class MarkdownParser {
             date: task.date,
             startDateTime: task.startDateTime,
             endDateTime: task.endDateTime,
-            task: task,
-            project: project,
+            task,
+            project,
             lineNumber: task.lineNumber,
             docId: project.id,
             blockId: task.blockId,
-            status: 'pending'
-          });
+            status: 'pending',
+          })
         }
       }
     }
 
-    console.log('[Task Assistant][Parser] 获取到事项总数:', items.length);
+    console.log('[Task Assistant][Parser] 获取到事项总数:', items.length)
 
-    return items;
+    return items
   }
 }

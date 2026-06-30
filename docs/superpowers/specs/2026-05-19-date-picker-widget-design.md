@@ -9,47 +9,47 @@
 
 ### 与现有 miniCalendar 的区别
 
-| 维度 | miniCalendar | datePicker (新增) |
-|------|-------------|-------------------|
-| 日历引擎 | FullCalendar (timeGridDay) | 自绘月/周网格 |
-| 核心用途 | 展示日历事件/时间块 | 日期选择 + 跨 widget 联动 |
-| 交互模式 | 查看/拖拽事件 | 单击选日 / Shift+范围选择 |
-| 独有能力 | 无 | 组件联动 |
+| 维度     | miniCalendar               | datePicker (新增)         |
+| -------- | -------------------------- | ------------------------- |
+| 日历引擎 | FullCalendar (timeGridDay) | 自绘月/周网格             |
+| 核心用途 | 展示日历事件/时间块        | 日期选择 + 跨 widget 联动 |
+| 交互模式 | 查看/拖拽事件              | 单击选日 / Shift+范围选择 |
+| 独有能力 | 无                         | 组件联动                  |
 
 ## 2. 数据模型
 
 ### 2.1 类型定义（src/types/workbench.ts 新增）
 
 ```typescript
-export type WorkbenchWidgetType =
-  | 'todoList'
-  | 'quadrantSummary'
-  | 'habitWeek'
-  | 'miniCalendar'
-  | 'pomodoroStats'
-  | 'datePicker';
+export type WorkbenchWidgetType
+  = | 'todoList'
+    | 'quadrantSummary'
+    | 'habitWeek'
+    | 'miniCalendar'
+    | 'pomodoroStats'
+    | 'datePicker'
 
 /** 可联动的目标组件类型（可扩展） */
-export type LinkableWidgetType = 'todoList';
+export type LinkableWidgetType = 'todoList'
 
 /** 字段映射 */
 export interface WidgetLinkageFieldMap {
-  sourceField: 'dateRange';
-  targetProperty: 'dateRange';
+  sourceField: 'dateRange'
+  targetProperty: 'dateRange'
 }
 
 /** 单条联动规则 */
 export interface WidgetLinkageRule {
-  id: string;
-  targetWidgetId: string;
-  targetType: LinkableWidgetType;
-  fieldMapping: WidgetLinkageFieldMap;
+  id: string
+  targetWidgetId: string
+  targetType: LinkableWidgetType
+  fieldMapping: WidgetLinkageFieldMap
 }
 
 /** DatePickerWidget 配置 */
 export interface WorkbenchDatePickerWidgetConfig {
-  view?: 'month' | 'week';
-  linkages: WidgetLinkageRule[];
+  view?: 'month' | 'week'
+  linkages: WidgetLinkageRule[]
 }
 ```
 
@@ -65,6 +65,7 @@ WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
 ### 3.1 联动通信方案：eventBus 松耦合
 
 **选择理由：**
+
 - 复用现有 eventBus 基础设施，改动最小
 - 松耦合：源端只发事件，不知道目标端内部实现
 - 天然支持扩展新 widget 类型
@@ -118,16 +119,17 @@ WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
 
 ### 4.3 核心行为
 
-| 行为 | 说明 |
-|------|------|
-| **单击日期** | 选中单日 → emit 事件 (start=end=该日期) |
-| **Shift+单击** | 选中日期范围 |
-| **月/周切换** | 配置项 `view` 控制默认视图，也可手动切换 |
-| **日期标记** | 复用 `getSummaryByDate` 显示计划/专注标记点（与 FocusWorkbenchMiniCalendar 一致） |
+| 行为           | 说明                                                                              |
+| -------------- | --------------------------------------------------------------------------------- |
+| **单击日期**   | 选中单日 → emit 事件 (start=end=该日期)                                           |
+| **Shift+单击** | 选中日期范围                                                                      |
+| **月/周切换**  | 配置项 `view` 控制默认视图，也可手动切换                                          |
+| **日期标记**   | 复用 `getSummaryByDate` 显示计划/专注标记点（与 FocusWorkbenchMiniCalendar 一致） |
 
 ### 4.4 月历视图
 
 直接复用 `FocusWorkbenchMiniCalendar` 的渲染逻辑：
+
 - 7 列网格（周一~周日）
 - 日期标记点（计划/专注/混合）
 - 今日高亮、选中高亮
@@ -136,6 +138,7 @@ WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
 ### 4.5 周视图
 
 7 列 × 当周的简化网格：
+
 - 显示星期标题 + 日期号
 - 同样支持日期标记点和范围选择
 - 更紧凑的布局
@@ -144,8 +147,8 @@ WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
 
 ```typescript
 defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
+  widget?: WorkbenchWidgetInstance
+}>()
 ```
 
 ## 5. 配置弹框设计
@@ -195,10 +198,12 @@ defineProps<{
 ```
 
 **左侧 — 目标组件选择：**
+
 - 单选列表，枚举当前 dashboard 中的 `todoList` 类型 widget
 - 显示格式：widget.title 或类型默认名
 
 **右侧 — 字段关联：**
+
 - 首期固定映射（只读展示），预留未来多字段下拉扩展
 
 ### 5.3 打开函数
@@ -207,10 +212,10 @@ defineProps<{
 
 ```typescript
 export function openDatePickerWidgetConfigDialog(options: {
-  initialConfig: WorkbenchDatePickerWidgetConfig;
-  dashboardWidgets: WorkbenchWidgetInstance[];
-  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void;
-}): Dialog;
+  initialConfig: WorkbenchDatePickerWidgetConfig
+  dashboardWidgets: WorkbenchWidgetInstance[]
+  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void
+}): Dialog
 ```
 
 ## 6. TodoListWidget 联动接收端改造
@@ -221,41 +226,41 @@ export function openDatePickerWidgetConfigDialog(options: {
 
 ### 6.2 改动内容
 
-| 改动 | 说明 |
-|------|------|
-| import eventBus | 导入 eventBus 和 Events |
-| onMounted 注册监听 | `eventBus.on(Events.WIDGET_DATE_RANGE_CHANGED, handleDateRangeChanged)` |
-| onUnmounted 清理 | 取消事件监听 |
-| handler 逻辑 | 检查 `payload.targetWidgetId === props.widget?.id`，匹配则写入 todoState |
+| 改动               | 说明                                                                     |
+| ------------------ | ------------------------------------------------------------------------ |
+| import eventBus    | 导入 eventBus 和 Events                                                  |
+| onMounted 注册监听 | `eventBus.on(Events.WIDGET_DATE_RANGE_CHANGED, handleDateRangeChanged)`  |
+| onUnmounted 清理   | 取消事件监听                                                             |
+| handler 逻辑       | 检查 `payload.targetWidgetId === props.widget?.id`，匹配则写入 todoState |
 
 ### 6.3 边界情况
 
-| 场景 | 处理 |
-|------|------|
-| 目标 widget 被删除 | 静默忽略失效的 targetWidgetId |
-| 多个 DatePicker 联动同一 TodoList | 后发出的事件覆盖前者 |
-| 用户手动改了 TodoList 过滤条件 | 联动仍可覆盖（首期不拦截） |
+| 场景                              | 处理                          |
+| --------------------------------- | ----------------------------- |
+| 目标 widget 被删除                | 静默忽略失效的 targetWidgetId |
+| 多个 DatePicker 联动同一 TodoList | 后发出的事件覆盖前者          |
+| 用户手动改了 TodoList 过滤条件    | 联动仍可覆盖（首期不拦截）    |
 
 ## 7. 文件变更清单
 
 ### 新增文件（4 个）
 
-| 文件 | 用途 |
-|------|------|
-| `src/components/workbench/widgets/DatePickerWidget.vue` | 日历 widget 主组件 |
-| `src/components/workbench/dialogs/DatePickerWidgetConfigDialog.vue` | 主配置弹框 |
-| `src/components/workbench/dialogs/DatePickerLinkageEditorDialog.vue` | 二级联动编辑弹框 |
-| `src/workbench/datePickerWidgetConfigDialog.ts` | 弹框打开函数 |
+| 文件                                                                 | 用途               |
+| -------------------------------------------------------------------- | ------------------ |
+| `src/components/workbench/widgets/DatePickerWidget.vue`              | 日历 widget 主组件 |
+| `src/components/workbench/dialogs/DatePickerWidgetConfigDialog.vue`  | 主配置弹框         |
+| `src/components/workbench/dialogs/DatePickerLinkageEditorDialog.vue` | 二级联动编辑弹框   |
+| `src/workbench/datePickerWidgetConfigDialog.ts`                      | 弹框打开函数       |
 
 ### 修改文件（5 个）
 
-| 文件 | 改动 |
-|------|------|
-| `src/types/workbench.ts` | 新增 `datePicker` 类型、config 类型、linkage 相关类型 |
-| `src/utils/eventBus.ts` | Events 新增 `WIDGET_DATE_RANGE_CHANGED` |
-| `src/workbench/widgetRegistry.ts` | 注册 `datePicker` definition |
+| 文件                                                     | 改动                                                                  |
+| -------------------------------------------------------- | --------------------------------------------------------------------- |
+| `src/types/workbench.ts`                                 | 新增 `datePicker` 类型、config 类型、linkage 相关类型                 |
+| `src/utils/eventBus.ts`                                  | Events 新增 `WIDGET_DATE_RANGE_CHANGED`                               |
+| `src/workbench/widgetRegistry.ts`                        | 注册 `datePicker` definition                                          |
 | `src/components/workbench/dashboard/DashboardCanvas.vue` | widgetComponents map 新增 datePicker；configure 时传 dashboardWidgets |
-| `src/components/workbench/widgets/TodoListWidget.vue` | 新增 eventBus 联动监听 |
+| `src/components/workbench/widgets/TodoListWidget.vue`    | 新增 eventBus 联动监听                                                |
 
 ### i18n 新增
 

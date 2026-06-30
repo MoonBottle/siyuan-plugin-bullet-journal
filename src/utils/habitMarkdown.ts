@@ -1,20 +1,22 @@
-import type { Habit } from '@/types/models';
-import type { HabitCheckInTimePrecision } from '@/settings/types';
-import { formatHabitCompletedAtForMarkdown } from '@/utils/habitDateTime';
+import type { HabitCheckInTimePrecision } from '@/settings/types'
+import type { Habit } from '@/types/models'
+import { formatHabitCompletedAtForMarkdown } from '@/utils/habitDateTime'
+
+const DATE_PREFIX_RE = /@|📅/
 
 export interface HabitRecordMarkdownInput {
-  content: string;
-  habitType: Habit['type'];
-  date: string;
-  value?: number;
-  target?: number;
-  unit?: string;
-  precision?: HabitCheckInTimePrecision;
-  recordStatus?: 'completed' | 'missed';
+  content: string
+  habitType: Habit['type']
+  date: string
+  value?: number
+  target?: number
+  unit?: string
+  precision?: HabitCheckInTimePrecision
+  recordStatus?: 'completed' | 'missed'
 }
 
 function isToday(date: string): boolean {
-  return date === formatHabitCompletedAtForMarkdown('day');
+  return date === formatHabitCompletedAtForMarkdown('day')
 }
 
 export function buildCompletedAtMarkdown(
@@ -22,28 +24,28 @@ export function buildCompletedAtMarkdown(
   precision: HabitCheckInTimePrecision = 'day',
 ): string {
   if (precision === 'day' || !isToday(date)) {
-    return date;
+    return date
   }
 
-  const currentTimestamp = formatHabitCompletedAtForMarkdown(precision);
-  return currentTimestamp.replace(/^\d{4}-\d{2}-\d{2}/, date);
+  const currentTimestamp = formatHabitCompletedAtForMarkdown(precision)
+  return currentTimestamp.replace(DATE_PREFIX_RE, date)
 }
 
 export function buildHabitRecordMarkdown(input: HabitRecordMarkdownInput): string {
-  const completedAt = buildCompletedAtMarkdown(input.date, input.precision ?? 'day');
+  const completedAt = buildCompletedAtMarkdown(input.date, input.precision ?? 'day')
 
   if (input.recordStatus === 'missed') {
-    return `${input.content} 📅${completedAt} ❌`;
+    return `${input.content} 📅${completedAt} ❌`
   }
 
   if (input.habitType === 'count') {
-    const target = input.target ?? 0;
-    const unit = input.unit ?? '';
-    const value = input.value ?? 0;
-    return `${input.content} ${value}/${target}${unit} 📅${completedAt}`;
+    const target = input.target ?? 0
+    const unit = input.unit ?? ''
+    const value = input.value ?? 0
+    return `${input.content} ${value}/${target}${unit} 📅${completedAt}`
   }
 
-  return `${input.content} 📅${completedAt}`;
+  return `${input.content} 📅${completedAt}`
 }
 
 export function buildCheckInMarkdown(
@@ -61,7 +63,7 @@ export function buildCheckInMarkdown(
     unit: habit.unit,
     precision,
     recordStatus: 'completed',
-  });
+  })
 }
 
 export function buildMissedCheckInMarkdown(
@@ -77,5 +79,5 @@ export function buildMissedCheckInMarkdown(
     unit: habit.unit,
     precision,
     recordStatus: 'missed',
-  });
+  })
 }

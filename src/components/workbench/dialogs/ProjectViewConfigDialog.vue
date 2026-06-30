@@ -12,6 +12,17 @@
           :placeholder="t('settings').projectGroups.allGroups"
         />
       </div>
+      <div class="project-config-dialog__field">
+        <label class="project-config-dialog__label">
+          {{ t('common').statusFilter }}
+        </label>
+        <SySelect
+          v-model="selectedStatuses"
+          multiple
+          :options="statusOptions"
+          :placeholder="t('common').statusFilter"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -36,41 +47,70 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import { useSettingsStore } from '@/stores';
-import type { WorkbenchProjectViewConfig } from '@/types/workbench';
+import type { ItemStatus } from '@/types/models'
+import type { WorkbenchProjectViewConfig } from '@/types/workbench'
+import {
+  computed,
+  onMounted,
+  ref,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
 
 const props = defineProps<{
-  initialConfig: WorkbenchProjectViewConfig;
-  onConfirm: (config: WorkbenchProjectViewConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchProjectViewConfig
+  onConfirm: (config: WorkbenchProjectViewConfig) => void
+  onCancel: () => void
+}>()
 
-const settingsStore = useSettingsStore();
-const selectedGroup = ref(props.initialConfig.groupId ?? '');
+const settingsStore = useSettingsStore()
+const selectedGroup = ref(props.initialConfig.groupId ?? '')
+
+const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
+const selectedStatuses = ref<(string | number)[]>(
+  props.initialConfig.itemStatusFilter ? [...props.initialConfig.itemStatusFilter] : [...ALL_STATUSES],
+)
+
+const statusOptions = [
+  {
+    value: 'pending' as string,
+    label: t('common').statusPending,
+  },
+  {
+    value: 'completed' as string,
+    label: t('common').statusCompleted,
+  },
+  {
+    value: 'abandoned' as string,
+    label: t('common').statusAbandoned,
+  },
+]
 
 onMounted(() => {
   if (!settingsStore.loaded) {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-});
+})
 
 const groupOptions = computed(() => [
-  { value: '', label: t('settings').projectGroups.allGroups },
-  ...settingsStore.groups.map(group => ({
+  {
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  },
+  ...settingsStore.groups.map((group) => ({
     value: group.id,
     label: group.name || t('settings').projectGroups.unnamed,
   })),
-]);
+])
 
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
     columnRatios: props.initialConfig.columnRatios,
-  });
+    itemStatusFilter: selectedStatuses.value.length < ALL_STATUSES.length ? [...selectedStatuses.value] as ItemStatus[] : undefined,
+  })
 }
 </script>
 

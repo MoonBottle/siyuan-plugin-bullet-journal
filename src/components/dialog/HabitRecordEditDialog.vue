@@ -18,47 +18,57 @@
     </div>
 
     <div class="form-actions">
-      <button class="btn btn-cancel" @click="emit('cancel')">{{ t('common').cancel }}</button>
-      <button class="btn btn-save" @click="handleSave">{{ t('common').confirm }}</button>
+      <button
+        class="btn btn-cancel"
+        @click="emit('cancel')"
+      >
+        {{ t('common').cancel }}
+      </button>
+      <button
+        class="btn btn-save"
+        @click="handleSave"
+      >
+        {{ t('common').confirm }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { t } from '@/i18n';
-import { parseCheckInRecordLine } from '@/parser/habitParser';
+import { ref } from 'vue'
+import { t } from '@/i18n'
+import { parseCheckInRecordLine } from '@/parser/habitParser'
 
 const props = defineProps<{
-  initialMarkdown: string;
-}>();
+  initialMarkdown: string
+}>()
 
 const emit = defineEmits<{
-  'save': [markdown: string];
-  'cancel': [];
-}>();
+  save: [markdown: string]
+  cancel: []
+}>()
 
-const markdown = ref(props.initialMarkdown);
-const errorMessage = ref('');
+const markdown = ref(props.initialMarkdown)
+const errorMessage = ref('')
 
 function isHabitRecordMarkdown(value: string): boolean {
-  return !!parseCheckInRecordLine(value, 'habit-record-edit');
+  return !!parseCheckInRecordLine(value, 'habit-record-edit')
 }
 
 function handleSave() {
-  const value = markdown.value.trim();
+  const value = markdown.value.trim()
   if (!value) {
-    errorMessage.value = t('habit').recordEmptyError;
-    return;
+    errorMessage.value = t('habit').recordEmptyError
+    return
   }
 
   if (!isHabitRecordMarkdown(value)) {
-    errorMessage.value = t('habit').recordFormatError;
-    return;
+    errorMessage.value = t('habit').recordFormatError
+    return
   }
 
-  errorMessage.value = '';
-  emit('save', value);
+  errorMessage.value = ''
+  emit('save', value)
 }
 </script>
 

@@ -1,57 +1,63 @@
+import { expandDocTree } from 'siyuan'
 /**
  * 示例文档创建工具函数
  */
-import { createDocWithMd, pushMsg } from '@/api';
-import { openDocument } from '@/utils/fileUtils';
-import { t, getCurrentLocale } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { expandDocTree } from 'siyuan';
-import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
+import {
+  createDocWithMd,
+  pushMsg,
+} from '@/api'
+import {
+  getCurrentLocale,
+  t,
+} from '@/i18n'
+import dayjs from '@/utils/dayjs'
+import { openDocument } from '@/utils/fileUtils'
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils'
 
 /**
  * 获取今天的日期字符串
  */
 function getToday(): string {
-  return dayjs().format('YYYY-MM-DD');
+  return dayjs().format('YYYY-MM-DD')
 }
 
 /**
  * 获取明天的日期字符串
  */
 function getTomorrow(): string {
-  return dayjs().add(1, 'day').format('YYYY-MM-DD');
+  return dayjs().add(1, 'day').format('YYYY-MM-DD')
 }
 
 /**
  * 获取昨天的日期字符串
  */
 function getYesterday(): string {
-  return dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  return dayjs().subtract(1, 'day').format('YYYY-MM-DD')
 }
 
 /**
  * 获取示例文档名称
  */
 function getExampleDocName(): string {
-  const lang = getCurrentLocale();
-  console.log('[Task Assistant] getExampleDocName - current locale:', lang);
-  return lang.startsWith('en') ? 'Task Assistant Example' : '任务助手示例文档';
+  const lang = getCurrentLocale()
+  console.log('[Task Assistant] getExampleDocName - current locale:', lang)
+  return lang.startsWith('en') ? 'Task Assistant Example' : '任务助手示例文档'
 }
 
 /**
  * 生成示例文档的 Markdown 内容
  */
 export function generateExampleContent(): string {
-  const today = getToday();
-  const tomorrow = getTomorrow();
-  const yesterday = getYesterday();
-  const lang = getCurrentLocale();
-  const isEn = lang.startsWith('en');
-  console.log('[Task Assistant] generateExampleContent - current locale:', lang, 'isEn:', isEn);
+  const today = getToday()
+  const tomorrow = getTomorrow()
+  const yesterday = getYesterday()
+  const lang = getCurrentLocale()
+  const isEn = lang.startsWith('en')
+  console.log('[Task Assistant] generateExampleContent - current locale:', lang, 'isEn:', isEn)
 
-  const taskTag = t('taskTag') || '#任务';
-  const completedTag = t('statusTag').completed || '#已完成';
-  const dateMarker = t('dateMarker') || '📅';
+  const taskTag = t('taskTag') || '#任务'
+  const completedTag = t('statusTag').completed || '#已完成'
+  const dateMarker = t('dateMarker') || '📅'
 
   if (isEn) {
     return `## Task Assistant Example
@@ -156,7 +162,7 @@ Review API changes ${dateMarker}${today}
 - /reminder: Set reminder
 - /recurring: Set recurring
 - /focus: Start pomodoro
-`;
+`
   }
 
   return `## 任务助手示例
@@ -261,7 +267,7 @@ Review API changes ${dateMarker}${today}
 - /tx：设置提醒
 - /cf：设置重复
 - /zz：开始番茄钟
-`;
+`
 }
 
 /**
@@ -272,48 +278,51 @@ Review API changes ${dateMarker}${today}
  */
 export async function createExampleDocument(
   notebookId?: string,
-  path?: string
+  path?: string,
 ): Promise<string | null> {
   try {
     // 如果没有提供 notebookId，获取或创建任务助手笔记本
-    let targetNotebookId = notebookId;
+    let targetNotebookId = notebookId
     if (!targetNotebookId) {
-      const notebook = await getOrCreateTaskAssistantNotebook();
+      const notebook = await getOrCreateTaskAssistantNotebook()
       if (!notebook) {
-        console.error('[Task Assistant] Failed to get or create task assistant notebook');
-        await pushMsg(t('todo').exampleDocFailed + ': ' + t('common.notebookCreateFailed'), 3000);
-        return null;
+        console.error('[Task Assistant] Failed to get or create task assistant notebook')
+        await pushMsg(`${t('todo').exampleDocFailed}: ${t('common.notebookCreateFailed')}`, 3000)
+        return null
       }
-      targetNotebookId = notebook.id;
-      console.log('[Task Assistant] Using notebook:', notebook.name, 'id:', targetNotebookId);
+      targetNotebookId = notebook.id
+      console.log('[Task Assistant] Using notebook:', notebook.name, 'id:', targetNotebookId)
     }
 
     // 生成文档路径
-    const fullPath = path || getExampleDocName();
+    const fullPath = path || getExampleDocName()
 
     // 生成内容
-    const content = generateExampleContent();
+    const content = generateExampleContent()
 
     // 创建文档
-    console.log('[Task Assistant] Creating document with notebookId:', targetNotebookId, 'path:', fullPath);
-    const docId = await createDocWithMd(targetNotebookId, fullPath, content);
-    console.log('[Task Assistant] createDocWithMd returned:', docId);
+    console.log('[Task Assistant] Creating document with notebookId:', targetNotebookId, 'path:', fullPath)
+    const docId = await createDocWithMd(targetNotebookId, fullPath, content)
+    console.log('[Task Assistant] createDocWithMd returned:', docId)
 
     if (docId) {
-      await pushMsg(t('todo').exampleDocCreated, 3000);
+      await pushMsg(t('todo').exampleDocCreated, 3000)
       // 自动打开文档
-      await openDocument(docId);
+      await openDocument(docId)
       // 在文档树中定位并展开该文档
-      expandDocTree({ id: docId, isSetCurrent: true });
+      expandDocTree({
+        id: docId,
+        isSetCurrent: true,
+      })
     } else {
-      console.error('[Task Assistant] createDocWithMd returned null or undefined');
-      await pushMsg(t('todo').exampleDocFailed + ': 创建文档失败', 3000);
+      console.error('[Task Assistant] createDocWithMd returned null or undefined')
+      await pushMsg(`${t('todo').exampleDocFailed}: 创建文档失败`, 3000)
     }
 
-    return docId;
+    return docId
   } catch (error) {
-    console.error('[Task Assistant] Failed to create example document:', error);
-    await pushMsg(t('todo').exampleDocFailed, 3000);
-    return null;
+    console.error('[Task Assistant] Failed to create example document:', error)
+    await pushMsg(t('todo').exampleDocFailed, 3000)
+    return null
   }
 }

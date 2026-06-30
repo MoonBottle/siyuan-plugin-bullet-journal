@@ -1,12 +1,24 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick, onMounted } from 'vue';
-import MobileMainShell from '@/mobile/MobileMainShell.vue';
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  onMounted,
+} from 'vue'
+import MobileMainShell from '@/mobile/MobileMainShell.vue'
 
 const { todoPanelMountCount } = vi.hoisted(() => ({
   todoPanelMountCount: { value: 0 },
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileTodoPanel.vue', () => ({
   default: defineComponent({
@@ -14,22 +26,22 @@ vi.mock('@/mobile/panels/MobileTodoPanel.vue', () => ({
     emits: ['open-pomodoro'],
     setup(_, { emit }) {
       onMounted(() => {
-        todoPanelMountCount.value += 1;
-      });
+        todoPanelMountCount.value += 1
+      })
 
       return () => h('div', { 'data-testid': 'todo-panel' }, [
         h(
           'button',
           {
             'data-testid': 'todo-open-pomodoro',
-            onClick: () => emit('open-pomodoro', { blockId: 'item-1' }),
+            "onClick": () => emit('open-pomodoro', { blockId: 'item-1' }),
           },
           'Open pomodoro',
         ),
-      ]);
+      ])
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobilePomodoroPanel.vue', () => ({
   default: defineComponent({
@@ -48,109 +60,109 @@ vi.mock('@/mobile/panels/MobilePomodoroPanel.vue', () => ({
           'data-block-id': props.initialContext?.blockId ?? '',
         },
         props.initialContext?.blockId ?? 'no-context',
-      );
+      )
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileHabitPanel.vue', () => ({
   default: defineComponent({
     name: 'MobileHabitPanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'habit-panel' }, 'habit');
+      return () => h('div', { 'data-testid': 'habit-panel' }, 'habit')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileAiPanel.vue', () => ({
   default: defineComponent({
     name: 'MobileAiPanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai');
+      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai')
     },
   }),
-}));
+}))
 
 vi.mock('@/mobile/panels/MobileMorePanel.vue', () => ({
   default: defineComponent({
     name: 'MobileMorePanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'more-panel' }, 'settings');
+      return () => h('div', { 'data-testid': 'more-panel' }, 'settings')
     },
   }),
-}));
+}))
 
 function mountShell() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const app = createApp(MobileMainShell);
-  app.mount(container);
+  const app = createApp(MobileMainShell)
+  app.mount(container)
 
   return {
     container,
     unmount() {
-      app.unmount();
-      container.remove();
+      app.unmount()
+      container.remove()
     },
-  };
+  }
 }
 
 afterEach(() => {
-  document.body.innerHTML = '';
-  todoPanelMountCount.value = 0;
-});
+  document.body.innerHTML = ''
+  todoPanelMountCount.value = 0
+})
 
-describe('MobileMainShell', () => {
+describe('mobileMainShell', () => {
   it('defaults to todo, shows fab only on todo, and forwards pomodoro requests to the pomodoro tab', async () => {
-    const mounted = mountShell();
-    await nextTick();
+    const mounted = mountShell()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="todo-panel"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="pomodoro-panel"]')).toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+    expect(mounted.container.querySelector('[data-testid="todo-panel"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="pomodoro-panel"]')).toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).toContain('mobile-bottom-tab-bar__button--active')
     expect(todoPanelMountCount.value).toBe(1);
 
-    (mounted.container.querySelector('[data-testid="mobile-tab-habit"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid="mobile-tab-habit"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="habit-panel"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+    expect(mounted.container.querySelector('[data-testid="habit-panel"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.className).toContain('mobile-bottom-tab-bar__button--active')
     expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).not.toContain('mobile-bottom-tab-bar__button--active');
 
-    (mounted.container.querySelector('[data-testid="mobile-tab-todo"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid="mobile-tab-todo"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
     expect(todoPanelMountCount.value).toBe(1);
 
-    (mounted.container.querySelector('[data-testid="todo-open-pomodoro"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid="todo-open-pomodoro"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    const pomodoroPanel = mounted.container.querySelector('[data-testid="pomodoro-panel"]');
-    expect(pomodoroPanel).not.toBeNull();
-    expect(pomodoroPanel?.getAttribute('data-block-id')).toBe('item-1');
-    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+    const pomodoroPanel = mounted.container.querySelector('[data-testid="pomodoro-panel"]')
+    expect(pomodoroPanel).not.toBeNull()
+    expect(pomodoroPanel?.getAttribute('data-block-id')).toBe('item-1')
+    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active')
 
-    mounted.unmount();
-  });
+    mounted.unmount()
+  })
 
   it('renders ai as a first-level tab without showing the todo fab', async () => {
-    const mounted = mountShell();
-    await nextTick();
+    const mounted = mountShell()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.textContent).toContain('习惯');
-    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro-icon"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.textContent).toContain('习惯')
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro-icon"]')).not.toBeNull()
     expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro-label"]')?.textContent).toBe('番茄钟');
 
-    (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click();
-    await nextTick();
+    (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click()
+    await nextTick()
 
-    expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull()
+    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull()
 
-    mounted.unmount();
-  });
-});
+    mounted.unmount()
+  })
+})

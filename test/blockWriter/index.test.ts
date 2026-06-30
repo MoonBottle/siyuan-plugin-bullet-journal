@@ -1,71 +1,168 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+
+import {
+  getBlockByID,
+  getBlockKramdown,
+  insertBlock,
+  updateBlock,
+} from '@/api'
+import {
+  insertBlockAfter,
+  insertBlockAfterWithResult,
+  writeBlock,
+} from '@/utils/blockWriter'
+import {
+  blockElementToMarkdownContent,
+  renderMarkdownIntoBlockEditable,
+} from '@/utils/protyleWriterDom'
 
 vi.mock('@/api', () => ({
-  getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
-  getBlockKramdown: vi.fn().mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' }),
+  getBlockByID: vi.fn().mockResolvedValue({
+    id: 'abc',
+    type: 'NodeParagraph',
+  }),
+  getBlockKramdown: vi.fn().mockResolvedValue({
+    id: 'abc',
+    kramdown: '- [ ] 任务\n{: id="abc"}',
+  }),
   insertBlock: vi.fn().mockResolvedValue([]),
   updateBlock: vi.fn().mockResolvedValue([]),
-}));
+}))
 
 vi.mock('@/utils/protyleWriterDom', () => ({
   blockElementToMarkdownContent: vi.fn(),
   renderMarkdownIntoBlockEditable: vi.fn(),
-}));
-
-import { getBlockKramdown, insertBlock, updateBlock } from '@/api';
-import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
+}))
 
 describe('writeBlock', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    document.body.innerHTML = '';
-  });
+    vi.clearAllMocks()
+    vi.mocked(getBlockByID).mockReset()
+    vi.mocked(getBlockKramdown).mockReset()
+    vi.mocked(insertBlock).mockReset()
+    vi.mocked(updateBlock).mockReset()
+    vi.mocked(getBlockByID).mockResolvedValue({
+      id: 'abc',
+      type: 'NodeParagraph',
+    } as any)
+    vi.mocked(getBlockKramdown).mockResolvedValue({
+      id: 'abc',
+      kramdown: '- [ ] 任务\n{: id="abc"}',
+    } as any)
+    vi.mocked(insertBlock).mockResolvedValue([])
+    vi.mocked(updateBlock).mockResolvedValue([])
+    vi.mocked(blockElementToMarkdownContent).mockReset()
+    vi.mocked(renderMarkdownIntoBlockEditable).mockReset()
+    document.body.innerHTML = ''
+  })
 
   it('writes single patch via API', async () => {
     const result = await writeBlock(
       { blockId: 'block123' },
-      { type: 'setStatus', status: 'completed' },
-    );
+      {
+        type: 'setStatus',
+        status: 'completed',
+      },
+    )
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '- [x] 任务\n{: id="abc"}',
       'block123',
-    );
-  });
+    )
+  })
 
   it('prefers listItemBlockId for status patches when provided', async () => {
     const result = await writeBlock(
-      { blockId: 'paragraph-1', listItemBlockId: 'task-1' },
-      { type: 'setStatus', status: 'completed' },
-    );
+      {
+        blockId: 'paragraph-1',
+        listItemBlockId: 'task-1',
+      },
+      {
+        type: 'setStatus',
+        status: 'completed',
+      },
+    )
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '- [x] 任务\n{: id="abc"}',
       'task-1',
-    );
-  });
+    )
+  })
 
   it('writes batch patches via API', async () => {
     const result = await writeBlock(
       { blockId: 'block123' },
       [
-        { type: 'setPriority', priority: 'high' },
-        { type: 'setStatus', status: 'completed' },
+        {
+          type: 'setPriority',
+          priority: 'high',
+        },
+        {
+          type: 'setStatus',
+          status: 'completed',
+        },
       ],
-    );
+    )
 
-    expect(result).toBe(true);
-    const call = vi.mocked(updateBlock).mock.calls.at(-1)!;
-    expect(call[1]).toContain('🔥');
-    expect(call[1]).not.toContain('#已完成');
-    expect(call[1]).not.toContain('✅');
-  });
+    expect(result).toBe(true)
+    const call = vi.mocked(updateBlock).mock.calls.at(-1)!
+    expect(call[1]).toContain('🔥')
+    expect(call[1]).not.toContain('#已完成')
+    expect(call[1]).not.toContain('✅')
+  })
+
+  it('routes writeBlock through the unified pipeline for generic updates', async () => {
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'setPriority',
+        priority: 'high',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalled()
+  })
+
+  it('normalizes mixed update patch order before applying the batch', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '任务\n{: id="abc"}',
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      [
+        {
+          type: 'setPriority',
+          priority: 'medium',
+        },
+        {
+          type: 'addDate',
+          date: '2026-05-16',
+          allDay: true,
+        },
+      ],
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '任务 📅2026-05-16 🌱\n{: id="abc"}',
+      'block123',
+    )
+  })
 
   it('writes addDate patches through blockWriter', async () => {
     const result = await writeBlock(
@@ -76,23 +173,23 @@ describe('writeBlock', () => {
         allDay: true,
         siblingItems: [{ date: '2026-05-15' }],
       },
-    );
+    )
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '[ ] 任务 📅2026-05-15~05-16\n{: id="abc"}',
       'block123',
-    );
-  });
+    )
+  })
 
   it('preserves completed task-list status when addDate patch omits status', async () => {
-    vi.mocked(updateBlock).mockClear();
-    const { getBlockKramdown } = await import('@/api');
+    vi.mocked(updateBlock).mockClear()
+    const { getBlockKramdown } = await import('@/api')
     vi.mocked(getBlockKramdown).mockResolvedValueOnce({
       id: 'abc',
       kramdown: '[x] 已完成任务 📅2026-05-15\n{: id="abc"}',
-    } as any);
+    } as any)
 
     const result = await writeBlock(
       { blockId: 'block123' },
@@ -102,36 +199,380 @@ describe('writeBlock', () => {
         originalDate: '2026-05-15',
         allDay: true,
       },
-    );
+    )
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '[x] 已完成任务 📅2026-05-16\n{: id="abc"}',
       'block123',
-    );
-  });
+    )
+  })
+
+  it('keeps minute precision when rewriting dated items', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '周会 📅2026-03-17 14:00~16:00\n{: id="abc"}',
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2026-03-18',
+        startTime: '15:30:00',
+        endTime: '17:30:00',
+        allDay: false,
+        originalDate: '2026-03-17',
+        timePrecision: 'minute',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '周会 📅2026-03-18 15:30~17:30\n{: id="abc"}',
+      'block123',
+    )
+  })
+
+  it('adds abandoned status label for non-task items during date rewrites', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '整理资料 📅2024-01-01, 2024-01-03\n{: id="abc"}',
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2024-01-02',
+        allDay: true,
+        originalDate: '2024-01-01',
+        siblingItems: [{ date: '2024-01-03' }],
+        status: 'abandoned',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-02~01-03 ❌\n{: id="abc"}',
+      'block123',
+    )
+  })
+
+  it('preserves pomodoro lines when addDate rewrites a task list item', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 工作事项 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2026-03-09',
+        startTime: '10:00:00',
+        endTime: '11:00:00',
+        allDay: false,
+        originalDate: '2026-03-08',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 工作事项 📅2026-03-09 10:00:00~11:00:00
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block123',
+    )
+  })
+
+  it('rewrites parent task-list block when addDate is requested from a content child', async () => {
+    vi.mocked(getBlockByID)
+      .mockResolvedValueOnce({
+        id: 'content-block-1',
+        parent_id: 'parent-block-1',
+        type: 'NodeParagraph',
+      } as any)
+      .mockResolvedValueOnce({
+        id: 'parent-block-1',
+        type: 'NodeListItem',
+        subtype: 't',
+      } as any)
+      .mockResolvedValueOnce({
+        id: 'parent-block-1',
+        type: 'NodeListItem',
+        subtype: 't',
+      } as any)
+    vi.mocked(getBlockKramdown).mockImplementationOnce(async (id: string) => {
+      if (id === 'parent-block-1') {
+        return {
+          id: 'parent-block-1',
+          kramdown: `- {: id="parent-block-1"}[x] ddd 📅2026-03-12
+  {: id="content-block-1"}`,
+        } as any
+      }
+      return {
+        id,
+        kramdown: 'ddd 📅2026-03-12\n{: id="content-block-1"}',
+      } as any
+    })
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1' },
+      {
+        type: 'addDate',
+        date: '2026-03-15',
+        allDay: true,
+        originalDate: '2026-03-12',
+        status: 'completed',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] ddd 📅2026-03-15
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    )
+  })
+
+  it('updates only the current block when parent context is a document block', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({
+      id: 'content-block-1',
+      parent_id: 'doc-block-1',
+      type: 'NodeParagraph',
+    } as any)
+    vi.mocked(getBlockKramdown).mockImplementationOnce(async (id: string) => {
+      if (id === 'doc-block-1') {
+        return {
+          id: 'doc-block-1',
+          kramdown: `- {: id="list-parent-1"}测试独立事项 📌 📅2026-05-09 🔁每天
+  {: id="list-content-1"}
+{: id="list-sep-1"}
+
+测试独立事项 📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+        } as any
+      }
+      return {
+        id,
+        kramdown: `测试独立事项 📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+      } as any
+    })
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1' },
+      {
+        type: 'addDate',
+        date: '2026-05-10',
+        allDay: true,
+        siblingItems: [{ date: '2026-05-09' }],
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试独立事项 📌 📅2026-05-09~05-10 🔁每天
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+      'content-block-1',
+    )
+  })
+
+  it('replaces item content while preserving markers before applying completed status', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 旧任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      [
+        {
+          type: 'setContent',
+          newItemContent: '新任务名称',
+        },
+        {
+          type: 'setStatus',
+          status: 'completed',
+        },
+      ],
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+      'block123',
+    )
+  })
+
+  it('rewrites parent task-list content when setContent is triggered from a content child', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      type: 'NodeListItem',
+      subtype: 't',
+    } as any)
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      kramdown: `- {: id="parent-block-1"}[ ] 旧任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+    } as any)
+
+    const result = await writeBlock(
+      {
+        blockId: 'content-block-1',
+        listItemBlockId: 'parent-block-1',
+      },
+      [
+        {
+          type: 'setContent',
+          newItemContent: '新任务名称',
+        },
+        {
+          type: 'setStatus',
+          status: 'completed',
+        },
+      ],
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"} [x] 新任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    )
+  })
+
+  it('adds and clears priority markers while preserving reminder and recurring markers', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周
+  {: id="yyy"}`,
+    } as any)
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'setPriority',
+        priority: 'high',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周 🔥
+  {: id="yyy"}`,
+      'block123',
+    )
+
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '整理资料 🔥 📅2024-01-01\n{: id="abc"}',
+    } as any)
+
+    const clearResult = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'setPriority',
+        priority: undefined,
+      },
+    )
+
+    expect(clearResult).toBe(true)
+    expect(updateBlock).toHaveBeenLastCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-01\n{: id="abc"}',
+      'block123',
+    )
+  })
+
+  it('updates parent task-list block when setting priority from a content child', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      type: 'NodeListItem',
+      subtype: 't',
+    } as any)
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      kramdown: `- {: id="parent-block-1"}[ ] 任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+    } as any)
+
+    const result = await writeBlock(
+      {
+        blockId: 'content-block-1',
+        listItemBlockId: 'parent-block-1',
+      },
+      {
+        type: 'setPriority',
+        priority: 'high',
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[ ] 任务名称 @2026-03-08 🔥
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    )
+  })
 
   it('does not fall back to API after a successful Protyle write', async () => {
-    const div = document.createElement('div');
-    div.setAttribute('data-node-id', 'block123');
-    div.textContent = '任务 /done';
+    const div = document.createElement('div')
+    div.setAttribute('data-node-id', 'block123')
+    div.innerHTML = '<div contenteditable="true">任务 /done</div>'
 
-    document.body.appendChild(div);
+    document.body.appendChild(div)
 
-    const range = document.createRange();
-    range.setStart(div.firstChild!, div.textContent.length);
-    range.collapse(true);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const range = document.createRange()
+    const textNode = div.querySelector('[contenteditable="true"]')!.firstChild as Text
+    range.setStart(textNode, textNode.textContent!.length)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null
+      if (!editable) {
+        return null
+      }
+      const clone = editable.cloneNode(true) as HTMLElement
+      clone.querySelectorAll('[data-type="tag"]').forEach((tagNode) => {
+        const text = tagNode.textContent?.replace(/\u200B/gu, '').trim() ?? ''
+        tagNode.replaceWith(document.createTextNode(`#${text}#`))
+      })
+      return clone.textContent?.replace(/\u200B/gu, '') ?? null
+    })
+    vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null
+      if (!editable) {
+        return false
+      }
+      editable.textContent = markdown
+      return true
+    })
 
     const protyle = {
-      lute: {
-        SpinBlockDOM: vi.fn((html: string) => html),
-      },
       transaction: vi.fn(),
-    };
+    }
 
     const result = await writeBlock(
       {
@@ -139,59 +580,65 @@ describe('writeBlock', () => {
         protyle,
         nodeElement: div,
       },
-      { type: 'removeSlashCommand', suffix: '#done' },
-    );
+      [
+        { type: 'removeSlashCommand' },
+        {
+          type: 'setTaskTag',
+          tag: '📋',
+        },
+      ],
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(result).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+    expect(updateBlock).not.toHaveBeenCalled()
 
-    document.body.removeChild(div);
-  });
+    document.body.removeChild(div)
+  })
 
   it('uses a single protyle transaction for same-block multiline removeSlashCommand + addDate', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValueOnce({
       id: 'block123',
       kramdown: '第一行\n第二行 /jt\n{: id="block123"}',
-    } as any);
+    } as any)
     vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
-      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null;
-      return editable?.textContent ?? null;
-    });
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null
+      return editable?.textContent ?? null
+    })
     vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
-      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null
       if (!editable) {
-        return false;
+        return false
       }
-      editable.textContent = markdown;
-      return true;
-    });
+      editable.textContent = markdown
+      return true
+    })
 
-    const div = document.createElement('div');
-    div.setAttribute('data-node-id', 'block123');
-    div.setAttribute('data-type', 'NodeParagraph');
-    div.className = 'p';
+    const div = document.createElement('div')
+    div.setAttribute('data-node-id', 'block123')
+    div.setAttribute('data-type', 'NodeParagraph')
+    div.className = 'p'
     div.innerHTML = `
       <div contenteditable="true" spellcheck="false">第一行
 第二行 /jt</div>
-      <div class="protyle-attr" contenteditable="false">\u200b</div>
-    `;
-    document.body.appendChild(div);
+      <div class="protyle-attr" contenteditable="false">\u200B</div>
+    `
+    document.body.appendChild(div)
 
-    const editableTextNode = div.querySelector('[contenteditable="true"]')?.firstChild;
-    expect(editableTextNode).toBeTruthy();
+    const editableTextNode = div.querySelector('[contenteditable="true"]')?.firstChild
+    expect(editableTextNode).toBeTruthy()
 
-    const range = document.createRange();
-    const textContent = editableTextNode!.textContent ?? '';
-    range.setStart(editableTextNode!, textContent.length);
-    range.collapse(true);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const range = document.createRange()
+    const textContent = editableTextNode!.textContent ?? ''
+    range.setStart(editableTextNode!, textContent.length)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const result = await writeBlock(
       {
@@ -201,58 +648,63 @@ describe('writeBlock', () => {
       },
       [
         { type: 'removeSlashCommand' },
-        { type: 'addDate', date: '2026-05-16', allDay: true },
+        {
+          type: 'addDate',
+          date: '2026-05-16',
+          allDay: true,
+        },
       ],
-    );
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-    expect(updateBlock).not.toHaveBeenCalled();
-    expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe('第一行 📅2026-05-16\n第二行');
-  });
+    expect(result).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+    expect(updateBlock).not.toHaveBeenCalled()
+    expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe('第一行 📅2026-05-16\n第二行')
+  })
 
   it('strips slash command from secondary lines before the combined date transaction is committed', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValueOnce({
       id: 'block123',
       kramdown: '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17\n测试换行/jt\n{: id="block123"}',
-    } as any);
-    vi.mocked(blockElementToMarkdownContent).mockReturnValue(
-      '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17\n测试换行/jt',
-    );
+    } as any)
+    vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null
+      return editable?.textContent ?? null
+    })
     vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
-      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null
       if (!editable) {
-        return false;
+        return false
       }
-      editable.textContent = markdown;
-      return true;
-    });
+      editable.textContent = markdown
+      return true
+    })
 
-    const div = document.createElement('div');
-    div.setAttribute('data-node-id', 'block123');
-    div.setAttribute('data-type', 'NodeParagraph');
-    div.className = 'p';
+    const div = document.createElement('div')
+    div.setAttribute('data-node-id', 'block123')
+    div.setAttribute('data-type', 'NodeParagraph')
+    div.className = 'p'
     div.innerHTML = `
-      <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b ⏳3m 📌 📅2026-05-14, 2026-05-17
+      <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200B测试</span>\u200B ⏳3m 📌 📅2026-05-14, 2026-05-17
 测试换行/jt</div>
-      <div class="protyle-attr" contenteditable="false">\u200b</div>
-    `;
-    document.body.appendChild(div);
+      <div class="protyle-attr" contenteditable="false">\u200B</div>
+    `
+    document.body.appendChild(div)
 
-    const trailingTextNode = div.querySelector('[data-type="tag"]')?.nextSibling;
-    expect(trailingTextNode?.nodeType).toBe(Node.TEXT_NODE);
+    const trailingTextNode = div.querySelector('[data-type="tag"]')?.nextSibling
+    expect(trailingTextNode?.nodeType).toBe(Node.TEXT_NODE)
 
-    const range = document.createRange();
-    const textContent = trailingTextNode!.textContent ?? '';
-    range.setStart(trailingTextNode!, textContent.length);
-    range.collapse(true);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const range = document.createRange()
+    const textContent = trailingTextNode!.textContent ?? ''
+    range.setStart(trailingTextNode!, textContent.length)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const result = await writeBlock(
       {
@@ -262,57 +714,63 @@ describe('writeBlock', () => {
       },
       [
         { type: 'removeSlashCommand' },
-        { type: 'addDate', date: '2026-05-19', allDay: true, siblingItems: [{ date: '2026-05-14' }, { date: '2026-05-17' }] },
+        {
+          type: 'addDate',
+          date: '2026-05-19',
+          allDay: true,
+          siblingItems: [{ date: '2026-05-14' }, { date: '2026-05-17' }],
+        },
       ],
-    );
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-    expect(updateBlock).not.toHaveBeenCalled();
-    expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe(
-      '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17, 2026-05-19\n测试换行',
-    );
-  });
+    expect(result).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+    expect(updateBlock).not.toHaveBeenCalled()
+    const finalText = (div.querySelector('[contenteditable="true"]') as HTMLElement).textContent ?? ''
+    expect(finalText).toContain('📅2026-05-14, 2026-05-17, 2026-05-19')
+    expect(finalText).toContain('测试换行')
+    expect(finalText).not.toContain('/jt')
+  })
 
   it('writes paragraph abandoned status through a single protyle transaction when removeSlashCommand is batched', async () => {
     vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
-      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null;
-      return editable?.textContent ?? null;
-    });
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null
+      return editable?.textContent ?? null
+    })
     vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
-      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null
       if (!editable) {
-        return false;
+        return false
       }
-      editable.textContent = markdown;
-      return true;
-    });
+      editable.textContent = markdown
+      return true
+    })
 
-    const div = document.createElement('div');
-    div.setAttribute('data-node-id', 'block123');
-    div.setAttribute('data-type', 'NodeParagraph');
-    div.className = 'p';
+    const div = document.createElement('div')
+    div.setAttribute('data-node-id', 'block123')
+    div.setAttribute('data-type', 'NodeParagraph')
+    div.className = 'p'
     div.innerHTML = `
       <div contenteditable="true" spellcheck="false">测试事项235
 测试换行 /fq</div>
-      <div class="protyle-attr" contenteditable="false">\u200b</div>
-    `;
-    document.body.appendChild(div);
+      <div class="protyle-attr" contenteditable="false">\u200B</div>
+    `
+    document.body.appendChild(div)
 
-    const editableTextNode = div.querySelector('[contenteditable="true"]')?.firstChild;
-    expect(editableTextNode).toBeTruthy();
+    const editableTextNode = div.querySelector('[contenteditable="true"]')?.firstChild
+    expect(editableTextNode).toBeTruthy()
 
-    const range = document.createRange();
-    const textContent = editableTextNode!.textContent ?? '';
-    range.setStart(editableTextNode!, textContent.length);
-    range.collapse(true);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const range = document.createRange()
+    const textContent = editableTextNode!.textContent ?? ''
+    range.setStart(editableTextNode!, textContent.length)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const result = await writeBlock(
       {
@@ -322,79 +780,82 @@ describe('writeBlock', () => {
       },
       [
         { type: 'removeSlashCommand' },
-        { type: 'setStatus', status: 'abandoned' },
+        {
+          type: 'setStatus',
+          status: 'abandoned',
+        },
       ],
-    );
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(result).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+    expect(updateBlock).not.toHaveBeenCalled()
     expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe(
       '测试事项235 ❌\n测试换行',
-    );
+    )
 
-    document.body.removeChild(div);
-  });
+    document.body.removeChild(div)
+  })
 
   it('writes task-list abandoned status through a single protyle transaction when removeSlashCommand is batched', async () => {
     vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
-      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null;
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null
       if (!editable) {
-        return null;
+        return null
       }
-      const text = editable.textContent ?? '';
-      const lines = text.split('\n');
-      const [firstLine = '', ...restLines] = lines;
-      return [`- [ ] ${firstLine}`, ...restLines].join('\n');
-    });
+      const text = editable.textContent ?? ''
+      const lines = text.split('\n')
+      const [firstLine = '', ...restLines] = lines
+      return [`- [ ] ${firstLine}`, ...restLines].join('\n')
+    })
     vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
-      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null
       if (!editable) {
-        return false;
+        return false
       }
-      const lines = markdown.split('\n');
-      const [firstLine = '', ...restLines] = lines;
-      editable.textContent = [firstLine.replace(/^- \[ \]\s*/, ''), ...restLines].join('\n');
-      return true;
-    });
+      const lines = markdown.split('\n')
+      const [firstLine = '', ...restLines] = lines
+      editable.textContent = [firstLine.replace(/^- \[ \]\s*/, ''), ...restLines].join('\n')
+      return true
+    })
 
-    const li = document.createElement('div');
-    li.classList.add('li');
-    li.setAttribute('data-type', 'NodeListItem');
-    li.setAttribute('data-subtype', 't');
-    li.setAttribute('data-node-id', 'task-1');
+    const li = document.createElement('div')
+    li.classList.add('li')
+    li.setAttribute('data-type', 'NodeListItem')
+    li.setAttribute('data-subtype', 't')
+    li.setAttribute('data-node-id', 'task-1')
 
-    const taskAction = document.createElement('span');
-    taskAction.classList.add('protyle-action--task');
-    const svg = document.createElement('svg');
-    const useEl = document.createElement('use');
-    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck');
-    svg.appendChild(useEl);
-    taskAction.appendChild(svg);
-    li.appendChild(taskAction);
+    const taskAction = document.createElement('span')
+    taskAction.classList.add('protyle-action--task')
+    const svg = document.createElement('svg')
+    const useEl = document.createElement('use')
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck')
+    svg.appendChild(useEl)
+    taskAction.appendChild(svg)
+    li.appendChild(taskAction)
 
-    const contentDiv = document.createElement('div');
-    contentDiv.classList.add('p');
-    contentDiv.setAttribute('data-node-id', 'block123');
-    contentDiv.setAttribute('data-type', 'NodeParagraph');
-    contentDiv.innerHTML = '<div contenteditable="true" spellcheck="false">测试任务列表事项235\n测试换行 /fq</div><div class="protyle-attr" contenteditable="false">\u200b</div>';
-    li.appendChild(contentDiv);
-    document.body.appendChild(li);
+    const contentDiv = document.createElement('div')
+    contentDiv.classList.add('p')
+    contentDiv.setAttribute('data-node-id', 'block123')
+    contentDiv.setAttribute('data-type', 'NodeParagraph')
+    contentDiv.innerHTML = '<div contenteditable="true" spellcheck="false">测试任务列表事项235\n测试换行 /fq</div><div class="protyle-attr" contenteditable="false">\u200B</div>'
+    li.appendChild(contentDiv)
+    document.body.appendChild(li)
 
-    const editableTextNode = contentDiv.querySelector('[contenteditable="true"]')?.firstChild;
-    expect(editableTextNode).toBeTruthy();
+    const editableTextNode = contentDiv.querySelector('[contenteditable="true"]')?.firstChild
+    expect(editableTextNode).toBeTruthy()
 
-    const range = document.createRange();
-    const textContent = editableTextNode!.textContent ?? '';
-    range.setStart(editableTextNode!, textContent.length);
-    range.collapse(true);
-    const selection = window.getSelection()!;
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const range = document.createRange()
+    const textContent = editableTextNode!.textContent ?? ''
+    range.setStart(editableTextNode!, textContent.length)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
 
     const protyle = {
       transaction: vi.fn(),
-    };
+    }
 
     const result = await writeBlock(
       {
@@ -405,50 +866,68 @@ describe('writeBlock', () => {
       },
       [
         { type: 'removeSlashCommand' },
-        { type: 'setStatus', status: 'abandoned' },
+        {
+          type: 'setStatus',
+          status: 'abandoned',
+        },
       ],
-    );
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).toHaveBeenCalledOnce();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(result).toBe(true)
+    expect(protyle.transaction).toHaveBeenCalledOnce()
+    expect(updateBlock).not.toHaveBeenCalled()
     expect((contentDiv.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe(
       '测试任务列表事项235 ❌\n测试换行',
-    );
+    )
 
-    document.body.removeChild(li);
-  });
+    document.body.removeChild(li)
+  })
 
   it('falls back to API for abandoned task-list status to preserve emoji marker', async () => {
-    vi.mocked(updateBlock).mockResolvedValue([]);
-    const li = document.createElement('div');
-    li.classList.add('li');
-    li.setAttribute('data-type', 'NodeListItem');
-    li.setAttribute('data-subtype', 't');
-    li.setAttribute('data-node-id', 'task-1');
+    vi.mocked(updateBlock).mockResolvedValue([])
+    vi.mocked(getBlockByID)
+      .mockResolvedValueOnce({
+        id: 'block123',
+        parent_id: 'task-1',
+        type: 'NodeParagraph',
+      } as any)
+      .mockResolvedValueOnce({
+        id: 'task-1',
+        type: 'NodeListItem',
+        subtype: 't',
+      } as any)
+      .mockResolvedValueOnce({
+        id: 'task-1',
+        type: 'NodeListItem',
+        subtype: 't',
+      } as any)
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '- [ ] 任务\n{: id="abc"}',
+    } as any)
+    const li = document.createElement('div')
+    li.classList.add('li')
+    li.setAttribute('data-type', 'NodeListItem')
+    li.setAttribute('data-subtype', 't')
+    li.setAttribute('data-node-id', 'task-1')
 
-    const taskAction = document.createElement('span');
-    taskAction.classList.add('protyle-action--task');
-    const svg = document.createElement('svg');
-    const useEl = document.createElement('use');
-    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck');
-    svg.appendChild(useEl);
-    taskAction.appendChild(svg);
-    li.appendChild(taskAction);
+    const taskAction = document.createElement('span')
+    taskAction.classList.add('protyle-action--task')
+    const svg = document.createElement('svg')
+    const useEl = document.createElement('use')
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck')
+    svg.appendChild(useEl)
+    taskAction.appendChild(svg)
+    li.appendChild(taskAction)
 
-    const contentDiv = document.createElement('div');
-    contentDiv.classList.add('p');
-    contentDiv.setAttribute('data-node-id', 'block123');
-    contentDiv.textContent = '任务内容';
-    li.appendChild(contentDiv);
-    document.body.appendChild(li);
+    const contentDiv = document.createElement('div')
+    contentDiv.classList.add('p')
+    contentDiv.setAttribute('data-node-id', 'block123')
+    contentDiv.textContent = '任务内容'
+    li.appendChild(contentDiv)
+    document.body.appendChild(li)
 
-    const protyle = {
-      lute: {
-        SpinBlockDOM: vi.fn((html: string) => html),
-      },
-      transaction: vi.fn(),
-    };
+    const protyle = { transaction: vi.fn() }
 
     const result = await writeBlock(
       {
@@ -456,19 +935,22 @@ describe('writeBlock', () => {
         protyle,
         nodeElement: contentDiv,
       },
-      { type: 'setStatus', status: 'abandoned' },
-    );
+      {
+        type: 'setStatus',
+        status: 'abandoned',
+      },
+    )
 
-    expect(result).toBe(true);
-    expect(protyle.transaction).not.toHaveBeenCalled();
+    expect(result).toBe(true)
+    expect(protyle.transaction).not.toHaveBeenCalled()
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '- [ ] 任务 ❌\n{: id="abc"}',
-      'block123',
-    );
+      'task-1',
+    )
 
-    document.body.removeChild(li);
-  });
+    document.body.removeChild(li)
+  })
 
   it('inserts habit definitions through blockWriter', async () => {
     const result = await insertBlockAfter('block123', {
@@ -481,15 +963,36 @@ describe('writeBlock', () => {
         unit: '杯',
         frequency: { type: 'daily' },
       },
-    });
+    })
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
     expect(insertBlock).toHaveBeenCalledWith(
       'markdown',
       '喝水 🎯2026-04-01 8杯 🔄每天',
       undefined,
       'block123',
       undefined,
-    );
-  });
-});
+    )
+  })
+
+  it('routes insertBlockAfterWithResult through the same pipeline and returns operations', async () => {
+    vi.mocked(insertBlock).mockResolvedValueOnce([{
+      doOperations: [],
+      undoOperations: [],
+    }] as any)
+
+    const result = await insertBlockAfterWithResult('block123', {
+      type: 'setHabitDefinition',
+      habit: {
+        name: '喝水',
+        startDate: '2026-05-21',
+        type: 'count',
+        target: 8,
+        unit: '杯',
+        frequency: { type: 'daily' },
+      },
+    })
+
+    expect(Array.isArray(result)).toBe(true)
+  })
+})

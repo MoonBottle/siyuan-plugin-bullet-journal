@@ -12,11 +12,11 @@
 
 进度条方向由计时类型自动决定，不再提供手动设置：
 
-| 计时类型 | 方向 | 视觉效果 |
-|---------|------|---------|
+| 计时类型           | 方向     | 视觉效果 |
+| ------------------ | -------- | -------- |
 | 正计时 (stopwatch) | `extend` | 从空到满 |
 | 倒计时 (countdown) | `shrink` | 从满到空 |
-| 休息 (break) | `shrink` | 从满到空 |
+| 休息 (break)       | `shrink` | 从满到空 |
 
 ### 1. 工具函数
 
@@ -35,20 +35,24 @@ function getProgressDirection(timerMode?: 'countdown' | 'stopwatch'): ProgressBa
 ### 2. 圆形进度环改动
 
 **PomodoroActiveTimer.vue**（专注圆环）：
+
 - 从 pomodoroStore 读取 `timerMode`，通过工具函数获取方向
 - `direction === 'shrink'` 时：`strokeDashoffset = circumference * progress`（从满到空）
 - `direction === 'extend'` 时：`strokeDashoffset = circumference * (1 - progress)`（从空到满，与当前逻辑一致）
 
 **PomodoroBreakTimer.vue**（休息圆环）：
+
 - 休息本质是倒计时，固定 `shrink`
 - `strokeDashoffset = circumference * progress`
 
 **PomodoroBreakOverlay.vue**（全屏休息覆盖层圆环）：
+
 - 同上，固定 `shrink`
 
 ### 3. 线性时间轴条改动
 
 **PomodoroActiveTimer.vue**（timeline bar）：
+
 - 与圆环共用同一个 `direction` 判断
 - `direction === 'shrink'` 时：`width = (1 - progress) * 100%`
 - `direction === 'extend'` 时：`width = progress * 100%`
@@ -56,6 +60,7 @@ function getProgressDirection(timerMode?: 'countdown' | 'stopwatch'): ProgressBa
 ### 4. 底栏进度条改动
 
 **src/index.ts**：
+
 - 专注期间：从 pomodoroStore 读取 `timerMode`，调用工具函数获取方向
 - 休息期间：固定 `shrink`
 - 移除对 `pomodoro.statusBarDirection` 设置的读取
@@ -70,13 +75,13 @@ function getProgressDirection(timerMode?: 'countdown' | 'stopwatch'): ProgressBa
 
 ## 影响范围
 
-| 文件 | 改动 |
-|------|------|
-| `src/utils/progressDirection.ts` | 新增工具函数 |
-| `src/components/pomodoro/PomodoroActiveTimer.vue` | 圆环 + 时间轴条加入方向逻辑 |
-| `src/components/pomodoro/PomodoroBreakTimer.vue` | 圆环改为 shrink |
-| `src/components/pomodoro/PomodoroBreakOverlay.vue` | 圆环改为 shrink |
-| `src/index.ts` | 底栏进度条改为动态方向 |
-| `src/settings/types.ts` | 删除 statusBarDirection |
-| `src/components/settings/PomodoroConfigSection.vue` | 删除方向设置 UI |
-| `src/i18n/*.json` | 删除相关翻译 key |
+| 文件                                                | 改动                        |
+| --------------------------------------------------- | --------------------------- |
+| `src/utils/progressDirection.ts`                    | 新增工具函数                |
+| `src/components/pomodoro/PomodoroActiveTimer.vue`   | 圆环 + 时间轴条加入方向逻辑 |
+| `src/components/pomodoro/PomodoroBreakTimer.vue`    | 圆环改为 shrink             |
+| `src/components/pomodoro/PomodoroBreakOverlay.vue`  | 圆环改为 shrink             |
+| `src/index.ts`                                      | 底栏进度条改为动态方向      |
+| `src/settings/types.ts`                             | 删除 statusBarDirection     |
+| `src/components/settings/PomodoroConfigSection.vue` | 删除方向设置 UI             |
+| `src/i18n/*.json`                                   | 删除相关翻译 key            |

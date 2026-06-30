@@ -1,69 +1,69 @@
 [English](https://github.com/siyuan-note/siyuan/blob/master/API.md)
 
-* [规范](#规范)
-    * [参数和返回值](#参数和返回值)
-    * [鉴权](#鉴权)
-* [笔记本](#笔记本)
-    * [列出笔记本](#列出笔记本)
-    * [打开笔记本](#打开笔记本)
-    * [关闭笔记本](#关闭笔记本)
-    * [重命名笔记本](#重命名笔记本)
-    * [创建笔记本](#创建笔记本)
-    * [删除笔记本](#删除笔记本)
-    * [获取笔记本配置](#获取笔记本配置)
-    * [保存笔记本配置](#保存笔记本配置)
-* [文档](#文档)
-    * [通过 Markdown 创建文档](#通过-markdown-创建文档)
-    * [重命名文档](#重命名文档)
-    * [删除文档](#删除文档)
-    * [移动文档](#移动文档)
-    * [根据路径获取人类可读路径](#根据路径获取人类可读路径)
-    * [根据 ID 获取人类可读路径](#根据-ID-获取人类可读路径)
-    * [根据 ID 获取存储路径](#根据-ID-获取存储路径)
-    * [根据人类可读路径获取 IDs](#根据人类可读路径获取-IDs)
-* [资源文件](#资源文件)
-    * [上传资源文件](#上传资源文件)
-* [块](#块)
-    * [插入块](#插入块)
-    * [插入前置子块](#插入前置子块)
-    * [插入后置子块](#插入后置子块)
-    * [更新块](#更新块)
-    * [删除块](#删除块)
-    * [移动块](#移动块)
-    * [折叠块](#折叠块)
-    * [展开块](#展开块)
-    * [获取块 kramdown 源码](#获取块-kramdown-源码)
-    * [获取子块](#获取子块)
-    * [转移块引用](#转移块引用)
-* [属性](#属性)
-    * [设置块属性](#设置块属性)
-    * [获取块属性](#获取块属性)
-* [SQL](#SQL)
-    * [执行 SQL 查询](#执行-SQL-查询)
-    * [提交事务](#提交事务)
-* [模板](#模板)
-    * [渲染模板](#渲染模板)
-    * [渲染 Sprig](#渲染-Sprig)
-* [文件](#文件)
-    * [获取文件](#获取文件)
-    * [写入文件](#写入文件)
-    * [删除文件](#删除文件)
-    * [重命名文件](#重命名文件)
-    * [列出文件](#列出文件)
-* [导出](#导出)
-    * [导出 Markdown 文本](#导出-markdown-文本)
-    * [导出文件与目录](#导出文件与目录)
-* [转换](#转换)
-    * [Pandoc](#Pandoc)
-* [通知](#通知)
-    * [推送消息](#推送消息)
-    * [推送报错消息](#推送报错消息)
-* [网络](#网络)
-    * [正向代理](#正向代理)
-* [系统](#系统)
-    * [获取启动进度](#获取启动进度)
-    * [获取系统版本](#获取系统版本)
-    * [获取系统当前时间](#获取系统当前时间)
+- [规范](#规范)
+  - [参数和返回值](#参数和返回值)
+  - [鉴权](#鉴权)
+- [笔记本](#笔记本)
+  - [列出笔记本](#列出笔记本)
+  - [打开笔记本](#打开笔记本)
+  - [关闭笔记本](#关闭笔记本)
+  - [重命名笔记本](#重命名笔记本)
+  - [创建笔记本](#创建笔记本)
+  - [删除笔记本](#删除笔记本)
+  - [获取笔记本配置](#获取笔记本配置)
+  - [保存笔记本配置](#保存笔记本配置)
+- [文档](#文档)
+  - [通过 Markdown 创建文档](#通过-markdown-创建文档)
+  - [重命名文档](#重命名文档)
+  - [删除文档](#删除文档)
+  - [移动文档](#移动文档)
+  - [根据路径获取人类可读路径](#根据路径获取人类可读路径)
+  - [根据 ID 获取人类可读路径](#根据-ID-获取人类可读路径)
+  - [根据 ID 获取存储路径](#根据-ID-获取存储路径)
+  - [根据人类可读路径获取 IDs](#根据人类可读路径获取-IDs)
+- [资源文件](#资源文件)
+  - [上传资源文件](#上传资源文件)
+- [块](#块)
+  - [插入块](#插入块)
+  - [插入前置子块](#插入前置子块)
+  - [插入后置子块](#插入后置子块)
+  - [更新块](#更新块)
+  - [删除块](#删除块)
+  - [移动块](#移动块)
+  - [折叠块](#折叠块)
+  - [展开块](#展开块)
+  - [获取块 kramdown 源码](#获取块-kramdown-源码)
+  - [获取子块](#获取子块)
+  - [转移块引用](#转移块引用)
+- [属性](#属性)
+  - [设置块属性](#设置块属性)
+  - [获取块属性](#获取块属性)
+- [SQL](#SQL)
+  - [执行 SQL 查询](#执行-SQL-查询)
+  - [提交事务](#提交事务)
+- [模板](#模板)
+  - [渲染模板](#渲染模板)
+  - [渲染 Sprig](#渲染-Sprig)
+- [文件](#文件)
+  - [获取文件](#获取文件)
+  - [写入文件](#写入文件)
+  - [删除文件](#删除文件)
+  - [重命名文件](#重命名文件)
+  - [列出文件](#列出文件)
+- [导出](#导出)
+  - [导出 Markdown 文本](#导出-markdown-文本)
+  - [导出文件与目录](#导出文件与目录)
+- [转换](#转换)
+  - [Pandoc](#Pandoc)
+- [通知](#通知)
+  - [推送消息](#推送消息)
+  - [推送报错消息](#推送报错消息)
+- [网络](#网络)
+  - [正向代理](#正向代理)
+- [系统](#系统)
+  - [获取启动进度](#获取启动进度)
+  - [获取系统版本](#获取系统版本)
+  - [获取系统当前时间](#获取系统当前时间)
 
 ---
 
@@ -71,10 +71,10 @@
 
 ### 参数和返回值
 
-* 端点：`http://127.0.0.1:6806`
-* 均是 POST 方法
-* 需要带参的接口，参数为 JSON 字符串，放置到 body 里，标头 Content-Type 为 `application/json`
-* 返回值
+- 端点：`http://127.0.0.1:6806`
+- 均是 POST 方法
+- 需要带参的接口，参数为 JSON 字符串，放置到 body 里，标头 Content-Type 为 `application/json`
+- 返回值
 
   ```json
   {
@@ -84,9 +84,9 @@
   }
   ```
 
-    * `code`：非 0 为异常情况
-    * `msg`：正常情况下是空字符串，异常情况下会返回错误文案
-    * `data`：可能为 `{}`、`[]` 或者 `NULL`，根据不同接口而不同
+  - `code`：非 0 为异常情况
+  - `msg`：正常情况下是空字符串，异常情况下会返回错误文案
+  - `data`：可能为 `{}`、`[]` 或者 `NULL`，根据不同接口而不同
 
 ### 鉴权
 
@@ -96,9 +96,9 @@
 
 ### 列出笔记本
 
-* `/api/notebook/lsNotebooks`
-* 不带参
-* 返回值
+- `/api/notebook/lsNotebooks`
+- 不带参
+- 返回值
 
   ```json
   {
@@ -107,7 +107,7 @@
     "data": {
       "notebooks": [
         {
-          "id": "20210817205410-2kvfpfn", 
+          "id": "20210817205410-2kvfpfn",
           "name": "测试笔记本",
           "icon": "1f41b",
           "sort": 0,
@@ -127,8 +127,8 @@
 
 ### 打开笔记本
 
-* `/api/notebook/openNotebook`
-* 参数
+- `/api/notebook/openNotebook`
+- 参数
 
   ```json
   {
@@ -136,8 +136,9 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -149,8 +150,8 @@
 
 ### 关闭笔记本
 
-* `/api/notebook/closeNotebook`
-* 参数
+- `/api/notebook/closeNotebook`
+- 参数
 
   ```json
   {
@@ -158,8 +159,9 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -171,8 +173,8 @@
 
 ### 重命名笔记本
 
-* `/api/notebook/renameNotebook`
-* 参数
+- `/api/notebook/renameNotebook`
+- 参数
 
   ```json
   {
@@ -181,8 +183,9 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -194,15 +197,16 @@
 
 ### 创建笔记本
 
-* `/api/notebook/createNotebook`
-* 参数
+- `/api/notebook/createNotebook`
+- 参数
 
   ```json
   {
     "name": "笔记本的名称"
   }
   ```
-* 返回值
+
+- 返回值
 
   ```json
   {
@@ -222,8 +226,8 @@
 
 ### 删除笔记本
 
-* `/api/notebook/removeNotebook`
-* 参数
+- `/api/notebook/removeNotebook`
+- 参数
 
   ```json
   {
@@ -231,8 +235,9 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -244,8 +249,8 @@
 
 ### 获取笔记本配置
 
-* `/api/notebook/getNotebookConf`
-* 参数
+- `/api/notebook/getNotebookConf`
+- 参数
 
   ```json
   {
@@ -253,8 +258,9 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -277,25 +283,26 @@
 
 ### 保存笔记本配置
 
-* `/api/notebook/setNotebookConf`
-* 参数
+- `/api/notebook/setNotebookConf`
+- 参数
 
   ```json
   {
     "notebook": "20210817205410-2kvfpfn",
     "conf": {
-        "name": "测试笔记本",
-        "closed": false,
-        "refCreateSavePath": "",
-        "createDocNameTemplate": "",
-        "dailyNoteSavePath": "/daily note/{{now | date \"2006/01\"}}/{{now | date \"2006-01-02\"}}",
-        "dailyNoteTemplatePath": ""
-      }
+      "name": "测试笔记本",
+      "closed": false,
+      "refCreateSavePath": "",
+      "createDocNameTemplate": "",
+      "dailyNoteSavePath": "/daily note/{{now | date \"2006/01\"}}/{{now | date \"2006-01-02\"}}",
+      "dailyNoteTemplatePath": ""
+    }
   }
   ```
 
-    * `notebook`：笔记本 ID
-* 返回值
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -316,8 +323,8 @@
 
 ### 通过 Markdown 创建文档
 
-* `/api/filetree/createDocWithMd`
-* 参数
+- `/api/filetree/createDocWithMd`
+- 参数
 
   ```json
   {
@@ -327,10 +334,11 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-    * `path`：文档路径，需要以 / 开头，中间使用 / 分隔层级（这里的 path 对应数据库 hpath 字段）
-    * `markdown`：GFM Markdown 内容
-* 返回值
+  - `notebook`：笔记本 ID
+  - `path`：文档路径，需要以 / 开头，中间使用 / 分隔层级（这里的 path 对应数据库 hpath 字段）
+  - `markdown`：GFM Markdown 内容
+
+- 返回值
 
   ```json
   {
@@ -340,13 +348,13 @@
   }
   ```
 
-    * `data`：创建好的文档 ID
-    * 如果使用同一个 `path` 重复调用该接口，不会覆盖已有文档
+  - `data`：创建好的文档 ID
+  - 如果使用同一个 `path` 重复调用该接口，不会覆盖已有文档
 
 ### 重命名文档
 
-* `/api/filetree/renameDoc`
-* 参数
+- `/api/filetree/renameDoc`
+- 参数
 
   ```json
   {
@@ -356,10 +364,11 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-    * `path`：文档路径
-    * `title`：新标题
-* 返回值
+  - `notebook`：笔记本 ID
+  - `path`：文档路径
+  - `title`：新标题
+
+- 返回值
 
   ```json
   {
@@ -371,8 +380,8 @@
 
 通过 `id` 重命名文档：
 
-* `/api/filetree/renameDocByID`
-* 参数
+- `/api/filetree/renameDocByID`
+- 参数
 
   ```json
   {
@@ -381,9 +390,10 @@
   }
   ```
 
-    * `id`：文档 ID
-    * `title`：新标题
-* 返回值
+  - `id`：文档 ID
+  - `title`：新标题
+
+- 返回值
 
   ```json
   {
@@ -395,8 +405,8 @@
 
 ### 删除文档
 
-* `/api/filetree/removeDoc`
-* 参数
+- `/api/filetree/removeDoc`
+- 参数
 
   ```json
   {
@@ -405,9 +415,10 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-    * `path`：文档路径
-* 返回值
+  - `notebook`：笔记本 ID
+  - `path`：文档路径
+
+- 返回值
 
   ```json
   {
@@ -419,8 +430,8 @@
 
 通过 `id` 删除文档：
 
-* `/api/filetree/removeDocByID`
-* 参数
+- `/api/filetree/removeDocByID`
+- 参数
 
   ```json
   {
@@ -428,8 +439,9 @@
   }
   ```
 
-    * `id`：文档 ID
-* 返回值
+  - `id`：文档 ID
+
+- 返回值
 
   ```json
   {
@@ -441,8 +453,8 @@
 
 ### 移动文档
 
-* `/api/filetree/moveDocs`
-* 参数
+- `/api/filetree/moveDocs`
+- 参数
 
   ```json
   {
@@ -452,10 +464,11 @@
   }
   ```
 
-    * `fromPaths`：源路径
-    * `toNotebook`：目标笔记本 ID
-    * `toPath`：目标路径
-* 返回值
+  - `fromPaths`：源路径
+  - `toNotebook`：目标笔记本 ID
+  - `toPath`：目标路径
+
+- 返回值
 
   ```json
   {
@@ -467,8 +480,8 @@
 
 通过 `id` 移动文档：
 
-* `/api/filetree/moveDocsByID`
-* 参数
+- `/api/filetree/moveDocsByID`
+- 参数
 
   ```json
   {
@@ -477,9 +490,10 @@
   }
   ```
 
-    * `fromIDs`：源文档 ID
-    * `toID`：目标父文档 ID 或笔记本 ID
-* 返回值
+  - `fromIDs`：源文档 ID
+  - `toID`：目标父文档 ID 或笔记本 ID
+
+- 返回值
 
   ```json
   {
@@ -491,8 +505,8 @@
 
 ### 根据路径获取人类可读路径
 
-* `/api/filetree/getHPathByPath`
-* 参数
+- `/api/filetree/getHPathByPath`
+- 参数
 
   ```json
   {
@@ -501,9 +515,10 @@
   }
   ```
 
-    * `notebook`：笔记本 ID
-    * `path`：路径
-* 返回值
+  - `notebook`：笔记本 ID
+  - `path`：路径
+
+- 返回值
 
   ```json
   {
@@ -515,8 +530,8 @@
 
 ### 根据 ID 获取人类可读路径
 
-* `/api/filetree/getHPathByID`
-* 参数
+- `/api/filetree/getHPathByID`
+- 参数
 
   ```json
   {
@@ -524,8 +539,9 @@
   }
   ```
 
-    * `id`：块 ID
-* 返回值
+  - `id`：块 ID
+
+- 返回值
 
   ```json
   {
@@ -537,8 +553,8 @@
 
 ### 根据 ID 获取存储路径
 
-* `/api/filetree/getPathByID`
-* 参数
+- `/api/filetree/getPathByID`
+- 参数
 
   ```json
   {
@@ -546,24 +562,25 @@
   }
   ```
 
-    * `id`：块 ID
-* 返回值
+  - `id`：块 ID
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": {
-    "notebook": "20210808180117-czj9bvb",
-    "path": "/20200812220555-lj3enxa/20210808180320-fqgskfj.sy"
+      "notebook": "20210808180117-czj9bvb",
+      "path": "/20200812220555-lj3enxa/20210808180320-fqgskfj.sy"
     }
   }
   ```
 
 ### 根据人类可读路径获取 IDs
 
-* `/api/filetree/getIDsByHPath`
-* 参数
+- `/api/filetree/getIDsByHPath`
+- 参数
 
   ```json
   {
@@ -572,16 +589,17 @@
   }
   ```
 
-    * `path`：人类可读路径
-    * `notebook`：笔记本 ID
-* 返回值
+  - `path`：人类可读路径
+  - `notebook`：笔记本 ID
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": [
-        "20200813004931-q4cu8na"
+      "20200813004931-q4cu8na"
     ]
   }
   ```
@@ -590,16 +608,17 @@
 
 ### 上传资源文件
 
-* `/api/asset/upload`
-* 参数为 HTTP Multipart 表单
+- `/api/asset/upload`
+- 参数为 HTTP Multipart 表单
+  - `assetsDirPath`：资源文件存放的文件夹路径，以 data 文件夹作为根路径，比如：
+    - `"/assets/"`：工作空间/data/assets/ 文件夹
+    - `"/assets/sub/"`：工作空间/data/assets/sub/ 文件夹
 
-    * `assetsDirPath`：资源文件存放的文件夹路径，以 data 文件夹作为根路径，比如：
-        * `"/assets/"`：工作空间/data/assets/ 文件夹
-        * `"/assets/sub/"`：工作空间/data/assets/sub/ 文件夹
+    常规情况下建议用第一种，统一存放到工作空间资源文件夹下，放在子目录有一些副作用，请参考用户指南资源文件章节。
 
-      常规情况下建议用第一种，统一存放到工作空间资源文件夹下，放在子目录有一些副作用，请参考用户指南资源文件章节。
-    * `file[]`：上传的文件列表
-* 返回值
+  - `file[]`：上传的文件列表
+
+- 返回值
 
   ```json
   {
@@ -614,15 +633,15 @@
   }
   ```
 
-    * `errFiles`：处理时遇到错误的文件名
-    * `succMap`：处理成功的文件，key 为上传时的文件名，value 为 assets/foo-id.png，用于将已有 Markdown 内容中的资源文件链接地址替换为上传后的地址
+  - `errFiles`：处理时遇到错误的文件名
+  - `succMap`：处理成功的文件，key 为上传时的文件名，value 为 assets/foo-id.png，用于将已有 Markdown 内容中的资源文件链接地址替换为上传后的地址
 
 ## 块
 
 ### 插入块
 
-* `/api/block/insertBlock`
-* 参数
+- `/api/block/insertBlock`
+- 参数
 
   ```json
   {
@@ -634,14 +653,15 @@
   }
   ```
 
-    * `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
-    * `data`：待插入的数据
-    * `nextID`：后一个块的 ID，用于锚定插入位置
-    * `previousID`：前一个块的 ID，用于锚定插入位置
-    * `parentID`：父块 ID，用于锚定插入位置
+  - `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
+  - `data`：待插入的数据
+  - `nextID`：后一个块的 ID，用于锚定插入位置
+  - `previousID`：前一个块的 ID，用于锚定插入位置
+  - `parentID`：父块 ID，用于锚定插入位置
 
   `nextID`、`previousID`、`parentID` 三个参数必须至少存在一个有值，优先级为 `nextID` > `previousID` > `parentID`
-* 返回值
+
+- 返回值
 
   ```json
   {
@@ -665,13 +685,13 @@
   }
   ```
 
-    * `action.data`：新插入块生成的 DOM
-    * `action.id`：新插入块的 ID
+  - `action.data`：新插入块生成的 DOM
+  - `action.id`：新插入块的 ID
 
 ### 插入前置子块
 
-* `/api/block/prependBlock`
-* 参数
+- `/api/block/prependBlock`
+- 参数
 
   ```json
   {
@@ -681,10 +701,11 @@
   }
   ```
 
-    * `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
-    * `data`：待插入的数据
-    * `parentID`：父块的 ID，用于锚定插入位置
-* 返回值
+  - `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
+  - `data`：待插入的数据
+  - `parentID`：父块的 ID，用于锚定插入位置
+
+- 返回值
 
   ```json
   {
@@ -708,13 +729,13 @@
   }
   ```
 
-    * `action.data`：新插入块生成的 DOM
-    * `action.id`：新插入块的 ID
+  - `action.data`：新插入块生成的 DOM
+  - `action.id`：新插入块的 ID
 
 ### 插入后置子块
 
-* `/api/block/appendBlock`
-* 参数
+- `/api/block/appendBlock`
+- 参数
 
   ```json
   {
@@ -724,10 +745,11 @@
   }
   ```
 
-    * `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
-    * `data`：待插入的数据
-    * `parentID`：父块的 ID，用于锚定插入位置
-* 返回值
+  - `dataType`：待插入数据类型，值可选择 `markdown` 或者 `dom`
+  - `data`：待插入的数据
+  - `parentID`：父块的 ID，用于锚定插入位置
+
+- 返回值
 
   ```json
   {
@@ -751,13 +773,13 @@
   }
   ```
 
-    * `action.data`：新插入块生成的 DOM
-    * `action.id`：新插入块的 ID
+  - `action.data`：新插入块生成的 DOM
+  - `action.id`：新插入块的 ID
 
 ### 更新块
 
-* `/api/block/updateBlock`
-* 参数
+- `/api/block/updateBlock`
+- 参数
 
   ```json
   {
@@ -767,10 +789,11 @@
   }
   ```
 
-    * `dataType`：待更新数据类型，值可选择 `markdown` 或者 `dom`
-    * `data`：待更新的数据
-    * `id`：待更新块的 ID
-* 返回值
+  - `dataType`：待更新数据类型，值可选择 `markdown` 或者 `dom`
+  - `data`：待更新的数据
+  - `id`：待更新块的 ID
+
+- 返回值
 
   ```json
   {
@@ -786,20 +809,20 @@
             "parentID": "",
             "previousID": "",
             "retData": null
-            }
-          ],
+          }
+        ],
         "undoOperations": null
       }
     ]
   }
   ```
 
-    * `action.data`：更新块生成的 DOM
+  - `action.data`：更新块生成的 DOM
 
 ### 删除块
 
-* `/api/block/deleteBlock`
-* 参数
+- `/api/block/deleteBlock`
+- 参数
 
   ```json
   {
@@ -807,8 +830,9 @@
   }
   ```
 
-    * `id`：待删除块的 ID
-* 返回值
+  - `id`：待删除块的 ID
+
+- 返回值
 
   ```json
   {
@@ -826,7 +850,7 @@
             "retData": null
           }
         ],
-       "undoOperations": null
+        "undoOperations": null
       }
     ]
   }
@@ -834,8 +858,8 @@
 
 ### 移动块
 
-* `/api/block/moveBlock`
-* 参数
+- `/api/block/moveBlock`
+- 参数
 
   ```json
   {
@@ -845,41 +869,42 @@
   }
   ```
 
-    * `id`：待移动块 ID
-    * `previousID`：前一个块的 ID，用于锚定插入位置
-    * `parentID`：父块的 ID，用于锚定插入位置，`previousID` 和 `parentID` 不能同时为空，同时存在的话优先使用 `previousID`
-* 返回值
+  - `id`：待移动块 ID
+  - `previousID`：前一个块的 ID，用于锚定插入位置
+  - `parentID`：父块的 ID，用于锚定插入位置，`previousID` 和 `parentID` 不能同时为空，同时存在的话优先使用 `previousID`
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": [
-        {
-            "doOperations": [
-                {
-                    "action": "move",
-                    "data": null,
-                    "id": "20230406180530-3o1rqkc",
-                    "parentID": "20230404183855-woe52ko",
-                    "previousID": "20230406152734-if5kyx6",
-                    "nextID": "",
-                    "retData": null,
-                    "srcIDs": null,
-                    "name": "",
-                    "type": ""
-                }
-            ],
-            "undoOperations": null
-        }
+      {
+        "doOperations": [
+          {
+            "action": "move",
+            "data": null,
+            "id": "20230406180530-3o1rqkc",
+            "parentID": "20230404183855-woe52ko",
+            "previousID": "20230406152734-if5kyx6",
+            "nextID": "",
+            "retData": null,
+            "srcIDs": null,
+            "name": "",
+            "type": ""
+          }
+        ],
+        "undoOperations": null
+      }
     ]
   }
   ```
 
 ### 折叠块
 
-* `/api/block/foldBlock`
-* 参数
+- `/api/block/foldBlock`
+- 参数
 
   ```json
   {
@@ -887,8 +912,9 @@
   }
   ```
 
-    * `id`：待折叠块的 ID
-* 返回值
+  - `id`：待折叠块的 ID
+
+- 返回值
 
   ```json
   {
@@ -900,8 +926,8 @@
 
 ### 展开块
 
-* `/api/block/unfoldBlock`
-* 参数
+- `/api/block/unfoldBlock`
+- 参数
 
   ```json
   {
@@ -909,8 +935,9 @@
   }
   ```
 
-    * `id`：待展开块的 ID
-* 返回值
+  - `id`：待展开块的 ID
+
+- 返回值
 
   ```json
   {
@@ -922,8 +949,8 @@
 
 ### 获取块 kramdown 源码
 
-* `/api/block/getBlockKramdown`
-* 参数
+- `/api/block/getBlockKramdown`
+- 参数
 
   ```json
   {
@@ -931,8 +958,9 @@
   }
   ```
 
-    * `id`：待获取块的 ID
-* 返回值
+  - `id`：待获取块的 ID
+
+- 返回值
 
   ```json
   {
@@ -947,8 +975,8 @@
 
 ### 获取子块
 
-* `/api/block/getChildBlocks`
-* 参数
+- `/api/block/getChildBlocks`
+- 参数
 
   ```json
   {
@@ -956,9 +984,10 @@
   }
   ```
 
-    * `id`：父块 ID
-    * 标题下方块也算作子块
-* 返回值
+  - `id`：父块 ID
+  - 标题下方块也算作子块
+
+- 返回值
 
   ```json
   {
@@ -985,8 +1014,8 @@
 
 ### 转移块引用
 
-* `/api/block/transferBlockRef`
-* 参数
+- `/api/block/transferBlockRef`
+- 参数
 
   ```json
   {
@@ -996,10 +1025,11 @@
   }
   ```
 
-    * `fromID`：定义块 ID
-    * `toID`：目标块 ID
-    * `refIDs`：指向定义块 ID 的引用所在块 ID，可选，如果不指定，所有指向定义块 ID 的块引用 ID 都会被转移
-* 返回值
+  - `fromID`：定义块 ID
+  - `toID`：目标块 ID
+  - `refIDs`：指向定义块 ID 的引用所在块 ID，可选，如果不指定，所有指向定义块 ID 的块引用 ID 都会被转移
+
+- 返回值
 
   ```json
   {
@@ -1013,8 +1043,8 @@
 
 ### 设置块属性
 
-* `/api/attr/setBlockAttrs`
-* 参数
+- `/api/attr/setBlockAttrs`
+- 参数
 
   ```json
   {
@@ -1025,9 +1055,10 @@
   }
   ```
 
-    * `id`：块 ID
-    * `attrs`：块属性，自定义属性必须以 `custom-` 作为前缀
-* 返回值
+  - `id`：块 ID
+  - `attrs`：块属性，自定义属性必须以 `custom-` 作为前缀
+
+- 返回值
 
   ```json
   {
@@ -1039,8 +1070,8 @@
 
 ### 获取块属性
 
-* `/api/attr/getBlockAttrs`
-* 参数
+- `/api/attr/getBlockAttrs`
+- 参数
 
   ```json
   {
@@ -1048,8 +1079,9 @@
   }
   ```
 
-    * `id`：块 ID
-* 返回值
+  - `id`：块 ID
+
+- 返回值
 
   ```json
   {
@@ -1069,8 +1101,8 @@
 
 ### 执行 SQL 查询
 
-* `/api/query/sql`
-* 参数
+- `/api/query/sql`
+- 参数
 
   ```json
   {
@@ -1078,8 +1110,9 @@
   }
   ```
 
-    * `stmt`：SQL 脚本
-* 返回值
+  - `stmt`：SQL 脚本
+
+- 返回值
 
   ```json
   {
@@ -1093,9 +1126,9 @@
 
 ### 提交事务
 
-* `/api/sqlite/flushTransaction`
-* 不带参
-* 返回值
+- `/api/sqlite/flushTransaction`
+- 不带参
+- 返回值
 
   ```json
   {
@@ -1109,8 +1142,8 @@
 
 ### 渲染模板
 
-* `/api/template/render`
-* 参数
+- `/api/template/render`
+- 参数
 
   ```json
   {
@@ -1118,9 +1151,11 @@
     "path": "F:\\SiYuan\\data\\templates\\foo.md"
   }
   ```
-    * `id`：调用渲染所在的文档 ID
-    * `path`：模板文件绝对路径
-* 返回值
+
+  - `id`：调用渲染所在的文档 ID
+  - `path`：模板文件绝对路径
+
+- 返回值
 
   ```json
   {
@@ -1135,16 +1170,18 @@
 
 ### 渲染 Sprig
 
-* `/api/template/renderSprig`
-* 参数
+- `/api/template/renderSprig`
+- 参数
 
   ```json
   {
     "template": "/daily note/{{now | date \"2006/01\"}}/{{now | date \"2006-01-02\"}}"
   }
   ```
-    * `template`：模板内容
-* 返回值
+
+  - `template`：模板内容
+
+- 返回值
 
   ```json
   {
@@ -1158,47 +1195,48 @@
 
 ### 获取文件
 
-* `/api/file/getFile`
-* 参数
+- `/api/file/getFile`
+- 参数
 
   ```json
   {
     "path": "/data/20210808180117-6v0mkxr/20200923234011-ieuun1p.sy"
   }
   ```
-    * `path`：工作空间路径下的文件路径
-* 返回值
 
-    * 响应状态码 `200`: 文件内容
-    * 响应状态码 `202`: 异常信息
+  - `path`：工作空间路径下的文件路径
 
-      ```json
-      {
-        "code": 404,
-        "msg": "",
-        "data": null
-      }
-      ```
+- 返回值
+  - 响应状态码 `200`: 文件内容
+  - 响应状态码 `202`: 异常信息
 
-        * `code`: 非零的异常值
+    ```json
+    {
+      "code": 404,
+      "msg": "",
+      "data": null
+    }
+    ```
 
-            * `-1`: 参数解析错误
-            * `403`: 无访问权限 (文件不在工作空间下)
-            * `404`: 未找到 (文件不存在)
-            * `405`: 方法不被允许 (这是一个目录)
-            * `500`: 服务器错误 (文件查询失败 / 文件读取失败)
-        * `msg`: 一段描述错误的文本
+    - `code`: 非零的异常值
+      - `-1`: 参数解析错误
+      - `403`: 无访问权限 (文件不在工作空间下)
+      - `404`: 未找到 (文件不存在)
+      - `405`: 方法不被允许 (这是一个目录)
+      - `500`: 服务器错误 (文件查询失败 / 文件读取失败)
+
+    - `msg`: 一段描述错误的文本
 
 ### 写入文件
 
-* `/api/file/putFile`
-* 参数为 HTTP Multipart 表单
+- `/api/file/putFile`
+- 参数为 HTTP Multipart 表单
+  - `path`：工作空间路径下的文件路径
+  - `isDir`：是否为创建文件夹，为 `true` 时仅创建文件夹，忽略 `file`
+  - `modTime`：最近访问和修改时间，Unix time
+  - `file`：上传的文件
 
-    * `path`：工作空间路径下的文件路径
-    * `isDir`：是否为创建文件夹，为 `true` 时仅创建文件夹，忽略 `file`
-    * `modTime`：最近访问和修改时间，Unix time
-    * `file`：上传的文件
-* 返回值
+- 返回值
 
   ```json
   {
@@ -1210,16 +1248,18 @@
 
 ### 删除文件
 
-* `/api/file/removeFile`
-* 参数
+- `/api/file/removeFile`
+- 参数
 
   ```json
   {
     "path": "/data/20210808180117-6v0mkxr/20200923234011-ieuun1p.sy"
   }
   ```
-    * `path`：工作空间路径下的文件路径
-* 返回值
+
+  - `path`：工作空间路径下的文件路径
+
+- 返回值
 
   ```json
   {
@@ -1231,8 +1271,8 @@
 
 ### 重命名文件
 
-* `/api/file/renameFile`
-* 参数
+- `/api/file/renameFile`
+- 参数
 
   ```json
   {
@@ -1240,9 +1280,11 @@
     "newPath": "/data/assets/test-20230523085812-k3o9t32.png"
   }
   ```
-    * `path`：工作空间路径下的文件路径
-    * `newPath`：新的文件路径
-* 返回值
+
+  - `path`：工作空间路径下的文件路径
+  - `newPath`：新的文件路径
+
+- 返回值
 
   ```json
   {
@@ -1254,16 +1296,18 @@
 
 ### 列出文件
 
-* `/api/file/readDir`
-* 参数
+- `/api/file/readDir`
+- 参数
 
   ```json
   {
     "path": "/data/20210808180117-6v0mkxr/20200923234011-ieuun1p"
   }
   ```
-    * `path`：工作空间路径下的文件夹路径
-* 返回值
+
+  - `path`：工作空间路径下的文件夹路径
+
+- 返回值
 
   ```json
   {
@@ -1290,8 +1334,8 @@
 
 ### 导出 Markdown 文本
 
-* `/api/export/exportMdContent`
-* 参数
+- `/api/export/exportMdContent`
+- 参数
 
   ```json
   {
@@ -1299,8 +1343,9 @@
   }
   ```
 
-    * `id`：要导出的文档块 ID
-* 返回值
+  - `id`：要导出的文档块 ID
+
+- 返回值
 
   ```json
   {
@@ -1313,13 +1358,13 @@
   }
   ```
 
-    * `hPath`：人类可读的路径
-    * `content`：Markdown 内容
+  - `hPath`：人类可读的路径
+  - `content`：Markdown 内容
 
 ### 导出文件与目录
 
-* `/api/export/exportResources`
-* 参数
+- `/api/export/exportResources`
+- 参数
 
   ```json
   {
@@ -1333,9 +1378,10 @@
   }
   ```
 
-    * `paths`：要导出的文件或文件夹路径列表，相同名称的文件/文件夹会被覆盖
-    * `name`：（可选）导出的文件名，未设置时默认为 `export-YYYY-MM-DD_hh-mm-ss.zip`
-* 返回值
+  - `paths`：要导出的文件或文件夹路径列表，相同名称的文件/文件夹会被覆盖
+  - `name`：（可选）导出的文件名，未设置时默认为 `export-YYYY-MM-DD_hh-mm-ss.zip`
+
+- 返回值
 
   ```json
   {
@@ -1347,59 +1393,63 @@
   }
   ```
 
-    * `path`：创建的 `*.zip` 文件路径
-        * `zip-file-name.zip` 中的目录结构如下所示：
-            * `zip-file-name`
-                * `boot`
-                * `langs`
-                * `conf.json`
-                * `index.html`
+  - `path`：创建的 `*.zip` 文件路径
+    - `zip-file-name.zip` 中的目录结构如下所示：
+      - `zip-file-name`
+        - `boot`
+        - `langs`
+        - `conf.json`
+        - `index.html`
 
 ## 转换
 
 ### Pandoc
 
-* `/api/convert/pandoc`
-* 工作目录
-    * 执行调用 pandoc 命令时工作目录会被设置在 `工作空间/temp/convert/pandoc/${test}` 下
-    * 可先通过 API [`写入文件`](#写入文件) 将待转换文件写入该目录
-    * 然后再调用该 API 进行转换，转换后的文件也会被写入该目录
-    * 最后调用 API [`获取文件`](#获取文件) 获取转换后的文件内容
-        * 或者调用 API [`通过 Markdown 创建文档`](#通过-markdown-创建文档)
-        * 或者调用内部 API `importStdMd` 将转换后的文件夹直接导入
-* 参数
+- `/api/convert/pandoc`
+- 工作目录
+  - 执行调用 pandoc 命令时工作目录会被设置在 `工作空间/temp/convert/pandoc/${test}` 下
+  - 可先通过 API [`写入文件`](#写入文件) 将待转换文件写入该目录
+  - 然后再调用该 API 进行转换，转换后的文件也会被写入该目录
+  - 最后调用 API [`获取文件`](#获取文件) 获取转换后的文件内容
+    - 或者调用 API [`通过 Markdown 创建文档`](#通过-markdown-创建文档)
+    - 或者调用内部 API `importStdMd` 将转换后的文件夹直接导入
+- 参数
 
   ```json
   {
     "dir": "test",
     "args": [
-      "--to", "markdown_strict-raw_html",
+      "--to",
+      "markdown_strict-raw_html",
       "foo.epub",
-      "-o", "foo.md"
-   ]
+      "-o",
+      "foo.md"
+    ]
   }
   ```
 
-    * `args`：Pandoc 命令行参数
-* 返回值
+  - `args`：Pandoc 命令行参数
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": {
-       "path": "/temp/convert/pandoc/test"
+      "path": "/temp/convert/pandoc/test"
     }
   }
   ```
-    * `path`：工作空间下的路径
+
+  - `path`：工作空间下的路径
 
 ## 通知
 
 ### 推送消息
 
-* `/api/notification/pushMsg`
-* 参数
+- `/api/notification/pushMsg`
+- 参数
 
   ```json
   {
@@ -1407,24 +1457,27 @@
     "timeout": 7000
   }
   ```
-    * `timeout`：消息持续显示时间，单位为毫秒。可以不传入该字段，默认为 7000 毫秒
-* 返回值
+
+  - `timeout`：消息持续显示时间，单位为毫秒。可以不传入该字段，默认为 7000 毫秒
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": {
-        "id": "62jtmqi"
+      "id": "62jtmqi"
     }
   }
   ```
-    * `id`：消息 ID
+
+  - `id`：消息 ID
 
 ### 推送报错消息
 
-* `/api/notification/pushErrMsg`
-* 参数
+- `/api/notification/pushErrMsg`
+- 参数
 
   ```json
   {
@@ -1432,26 +1485,29 @@
     "timeout": 7000
   }
   ```
-    * `timeout`：消息持续显示时间，单位为毫秒。可以不传入该字段，默认为 7000 毫秒
-* 返回值
+
+  - `timeout`：消息持续显示时间，单位为毫秒。可以不传入该字段，默认为 7000 毫秒
+
+- 返回值
 
   ```json
   {
     "code": 0,
     "msg": "",
     "data": {
-        "id": "qc9znut"
+      "id": "qc9znut"
     }
   }
   ```
-    * `id`：消息 ID
+
+  - `id`：消息 ID
 
 ## 网络
 
 ### 正向代理
 
-* `/api/network/forwardProxy`
-* 参数
+- `/api/network/forwardProxy`
+- 参数
 
   ```json
   {
@@ -1460,9 +1516,9 @@
     "timeout": 7000,
     "contentType": "text/html",
     "headers": [
-        {
-            "Cookie": ""
-        }
+      {
+        "Cookie": ""
+      }
     ],
     "payload": {},
     "payloadEncoding": "text",
@@ -1470,29 +1526,29 @@
   }
   ```
 
-    * `url`：转发的 URL
-    * `method`：HTTP 方法，默认为 `GET`
-    * `timeout`：超时时间，单位为毫秒，默认为 `7000` 毫秒
-    * `contentType`：HTTP Content-Type，默认为 `application/json`
-    * `headers`：HTTP 请求标头
-    * `payload`：HTTP 请求体，对象或者是字符串
-    * `payloadEncoding`：`pyaload` 所使用的编码方案，默认为 `text`，可选值如下所示
+  - `url`：转发的 URL
+  - `method`：HTTP 方法，默认为 `GET`
+  - `timeout`：超时时间，单位为毫秒，默认为 `7000` 毫秒
+  - `contentType`：HTTP Content-Type，默认为 `application/json`
+  - `headers`：HTTP 请求标头
+  - `payload`：HTTP 请求体，对象或者是字符串
+  - `payloadEncoding`：`pyaload` 所使用的编码方案，默认为 `text`，可选值如下所示
+    - `text`
+    - `base64` | `base64-std`
+    - `base64-url`
+    - `base32` | `base32-std`
+    - `base32-hex`
+    - `hex`
 
-        * `text`
-        * `base64` | `base64-std`
-        * `base64-url`
-        * `base32` | `base32-std`
-        * `base32-hex`
-        * `hex`
-    * `responseEncoding`：响应数据中 `body` 字段所使用的编码方案，默认为 `text`，可选值如下所示
+  - `responseEncoding`：响应数据中 `body` 字段所使用的编码方案，默认为 `text`，可选值如下所示
+    - `text`
+    - `base64` | `base64-std`
+    - `base64-url`
+    - `base32` | `base32-std`
+    - `base32-hex`
+    - `hex`
 
-        * `text`
-        * `base64` | `base64-std`
-        * `base64-url`
-        * `base32` | `base32-std`
-        * `base32-hex`
-        * `hex`
-* 返回值
+- 返回值
 
   ```json
   {
@@ -1511,22 +1567,21 @@
   }
   ```
 
-    * `bodyEncoding`：`body` 所使用的编码方案，与请求中 `responseEncoding` 字段一致，默认为 `text`，可能的值如下所示
-
-        * `text`
-        * `base64` | `base64-std`
-        * `base64-url`
-        * `base32` | `base32-std`
-        * `base32-hex`
-        * `hex`
+  - `bodyEncoding`：`body` 所使用的编码方案，与请求中 `responseEncoding` 字段一致，默认为 `text`，可能的值如下所示
+    - `text`
+    - `base64` | `base64-std`
+    - `base64-url`
+    - `base32` | `base32-std`
+    - `base32-hex`
+    - `hex`
 
 ## 系统
 
 ### 获取启动进度
 
-* `/api/system/bootProgress`
-* 不带参
-* 返回值
+- `/api/system/bootProgress`
+- 不带参
+- 返回值
 
   ```json
   {
@@ -1541,9 +1596,9 @@
 
 ### 获取系统版本
 
-* `/api/system/version`
-* 不带参
-* 返回值
+- `/api/system/version`
+- 不带参
+- 返回值
 
   ```json
   {
@@ -1555,9 +1610,9 @@
 
 ### 获取系统当前时间
 
-* `/api/system/currentTime`
-* 不带参
-* 返回值
+- `/api/system/currentTime`
+- 不带参
+- 返回值
 
   ```json
   {
@@ -1567,4 +1622,4 @@
   }
   ```
 
-    * `data`: 精度为毫秒
+  - `data`: 精度为毫秒

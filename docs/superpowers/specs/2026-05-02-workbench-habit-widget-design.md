@@ -198,9 +198,9 @@
 `habitWeek` widget 新增配置：
 
 ```ts
-type WorkbenchHabitWeekWidgetConfig = {
-  groupId?: string;
-};
+interface WorkbenchHabitWeekWidgetConfig {
+  groupId?: string
+}
 ```
 
 首版只支持 `groupId`。

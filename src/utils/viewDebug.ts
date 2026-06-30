@@ -4,5 +4,5 @@ export function buildViewDebugContext(viewName: string, plugin?: any) {
     pluginInstanceId: plugin?.debugInstanceId ?? 'plugin-null',
     pluginAvailable: Boolean(plugin),
     location: location.href,
-  };
+  }
 }

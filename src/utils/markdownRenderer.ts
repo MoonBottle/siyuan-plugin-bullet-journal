@@ -3,6 +3,8 @@
  * 使用思源笔记内置的 Lute 渲染引擎替代 marked.js
  */
 
+const EXCESSIVE_NEWLINES_RE = /\n{3,}/g
+
 /**
  * 将 Markdown 内容渲染为 HTML
  * 优先使用思源的 Lute 引擎，不可用时降级为纯文本显示
@@ -13,15 +15,15 @@ export function renderMarkdown(content: string): string {
   // 尝试使用思源的 Lute 渲染引擎
   if (typeof window !== 'undefined' && window.Lute) {
     try {
-      const lute = window.Lute.New();
-      return lute.MarkdownStr('', content);
+      const lute = window.Lute.New()
+      return lute.MarkdownStr('', content)
     } catch (error) {
-      console.error('Lute rendering error:', error);
+      console.error('Lute rendering error:', error)
     }
   }
 
   // 降级处理：将内容作为纯文本显示
-  return escapeHtml(content);
+  return escapeHtml(content)
 }
 
 /**
@@ -34,17 +36,17 @@ export function renderMarkdown(content: string): string {
 export function formatMarkdown(content: string): string {
   if (typeof window !== 'undefined' && window.Lute) {
     try {
-      const lute = window.Lute.New();
+      const lute = window.Lute.New()
       // Lute 的 FormatMd 方法可以规范化 Markdown 格式
       if (typeof lute.FormatMd === 'function') {
-        return lute.FormatMd(content);
+        return lute.FormatMd(content)
       }
     } catch (error) {
-      console.error('Lute format error:', error);
+      console.error('Lute format error:', error)
     }
   }
   // 降级：返回原内容
-  return content;
+  return content
 }
 
 /**
@@ -55,20 +57,20 @@ export function formatMarkdown(content: string): string {
  */
 export function smartFormatMarkdown(content: string): string {
   // 首先使用 Lute 格式化（如果可用）
-  let formatted = formatMarkdown(content);
+  let formatted = formatMarkdown(content)
 
   // 额外的手动处理：压缩多余空行
-  formatted = normalizeExcessiveNewlines(formatted);
+  formatted = normalizeExcessiveNewlines(formatted)
 
-  return formatted;
+  return formatted
 }
 
 /**
  * 将连续多个换行压缩为最多两个（保留段落分隔，避免插入笔记时产生过多空行）
  */
 function normalizeExcessiveNewlines(text: string): string {
-  if (text == null || typeof text !== 'string') return '';
-  return text.replace(/\n{3,}/g, '\n\n');
+  if (text == null || typeof text !== 'string') return ''
+  return text.replace(EXCESSIVE_NEWLINES_RE, '\n\n')
 }
 
 /**
@@ -78,9 +80,9 @@ function normalizeExcessiveNewlines(text: string): string {
  * @returns 转义后的文本
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
 }
 
 /**
@@ -88,5 +90,5 @@ function escapeHtml(text: string): string {
  * @returns 如果 Lute 可用返回 true，否则返回 false
  */
 export function isLuteAvailable(): boolean {
-  return typeof window !== 'undefined' && !!window.Lute;
+  return typeof window !== 'undefined' && !!window.Lute
 }

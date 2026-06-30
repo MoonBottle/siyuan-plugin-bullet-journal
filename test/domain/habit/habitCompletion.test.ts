@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import type {
+  CheckInRecord,
+  Habit,
+} from '@/types/models'
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
 import {
   getHabitDayState,
   getHabitPeriodState,
-} from '@/domain/habit/habitCompletion';
-import type { CheckInRecord, Habit } from '@/types/models';
+} from '@/domain/habit/habitCompletion'
 
 function mkRecord(date: string, overrides: Partial<CheckInRecord> = {}): CheckInRecord {
   return {
@@ -13,7 +20,7 @@ function mkRecord(date: string, overrides: Partial<CheckInRecord> = {}): CheckIn
     blockId: `record-${date}`,
     habitId: 'habit-1',
     ...overrides,
-  };
+  }
 }
 
 function mkHabit(overrides: Partial<Habit> = {}): Habit {
@@ -26,52 +33,71 @@ function mkHabit(overrides: Partial<Habit> = {}): Habit {
     target: 8,
     unit: '杯',
     records: [],
-    frequency: { type: 'n_per_week', daysPerWeek: 3 },
+    frequency: {
+      type: 'n_per_week',
+      daysPerWeek: 3,
+    },
     ...overrides,
-  };
+  }
 }
 
 describe('getHabitDayState', () => {
   it('计数型单日取最大 currentValue', () => {
     const habit = mkHabit({
       records: [
-        mkRecord('2026-04-09', { currentValue: 3, targetValue: 8 }),
-        mkRecord('2026-04-09', { currentValue: 7, targetValue: 8 }),
+        mkRecord('2026-04-09', {
+          currentValue: 3,
+          targetValue: 8,
+        }),
+        mkRecord('2026-04-09', {
+          currentValue: 7,
+          targetValue: 8,
+        }),
       ],
-    });
-    const state = getHabitDayState(habit, '2026-04-09');
+    })
+    const state = getHabitDayState(habit, '2026-04-09')
 
-    expect(state.hasRecord).toBe(true);
-    expect(state.currentValue).toBe(7);
-    expect(state.isCompleted).toBe(false);
-  });
+    expect(state.hasRecord).toBe(true)
+    expect(state.currentValue).toBe(7)
+    expect(state.isCompleted).toBe(false)
+  })
 
   it('存在未打卡记录时，该日应标记为 missed', () => {
     const habit = mkHabit({
       type: 'binary',
-      records: [mkRecord('2026-04-09', { status: 'missed', content: '早起' })],
-    });
-    const state = getHabitDayState(habit, '2026-04-09');
+      records: [mkRecord('2026-04-09', {
+        status: 'missed',
+        content: '早起',
+      })],
+    })
+    const state = getHabitDayState(habit, '2026-04-09')
 
-    expect(state.hasRecord).toBe(true);
-    expect(state.isMissed).toBe(true);
-    expect(state.isCompleted).toBe(false);
-  });
+    expect(state.hasRecord).toBe(true)
+    expect(state.isMissed).toBe(true)
+    expect(state.isCompleted).toBe(false)
+  })
 
   it('未打卡应覆盖计数型未达标进度', () => {
     const habit = mkHabit({
       records: [
-        mkRecord('2026-04-09', { currentValue: 3, targetValue: 8, unit: '杯' }),
-        mkRecord('2026-04-09', { status: 'missed', content: '喝水' }),
+        mkRecord('2026-04-09', {
+          currentValue: 3,
+          targetValue: 8,
+          unit: '杯',
+        }),
+        mkRecord('2026-04-09', {
+          status: 'missed',
+          content: '喝水',
+        }),
       ],
-    });
-    const state = getHabitDayState(habit, '2026-04-09');
+    })
+    const state = getHabitDayState(habit, '2026-04-09')
 
-    expect(state.hasRecord).toBe(true);
-    expect(state.isMissed).toBe(true);
-    expect(state.isCompleted).toBe(false);
-    expect(state.currentValue).toBeUndefined();
-  });
+    expect(state.hasRecord).toBe(true)
+    expect(state.isMissed).toBe(true)
+    expect(state.isCompleted).toBe(false)
+    expect(state.currentValue).toBeUndefined()
+  })
 
   it('ebbinghaus 在下一次到期日前标记为无需打卡', () => {
     const state = getHabitDayState(mkHabit({
@@ -80,7 +106,10 @@ describe('getHabitDayState', () => {
       startDate: '2026-05-14',
       target: undefined,
       unit: undefined,
-      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      frequency: {
+        type: 'ebbinghaus',
+        intervals: [1, 2, 4, 7, 15],
+      },
       records: [
         {
           content: '英语单词',
@@ -90,47 +119,56 @@ describe('getHabitDayState', () => {
           habitId: 'habit-1',
         },
       ],
-    }), '2026-05-14');
+    }), '2026-05-14')
 
-    expect(state.isDue).toBe(false);
-    expect(state.isOverdue).toBe(false);
-    expect(state.nextDueDate).toBe('2026-05-15');
-    expect(state.currentStageIndex).toBe(0);
-    expect(state.currentIntervalDays).toBe(1);
-  });
-});
+    expect(state.isDue).toBe(false)
+    expect(state.isOverdue).toBe(false)
+    expect(state.nextDueDate).toBe('2026-05-15')
+    expect(state.currentStageIndex).toBe(0)
+    expect(state.currentIntervalDays).toBe(1)
+  })
+})
 
 describe('getHabitPeriodState', () => {
   it('n_per_week 应统计当周 completedCount / requiredCount', () => {
     const habit = mkHabit({
       records: [
-        mkRecord('2026-04-07', { currentValue: 8, targetValue: 8 }),
-        mkRecord('2026-04-08', { currentValue: 8, targetValue: 8 }),
+        mkRecord('2026-04-07', {
+          currentValue: 8,
+          targetValue: 8,
+        }),
+        mkRecord('2026-04-08', {
+          currentValue: 8,
+          targetValue: 8,
+        }),
       ],
-    });
-    const state = getHabitPeriodState(habit, '2026-04-09');
+    })
+    const state = getHabitPeriodState(habit, '2026-04-09')
 
-    expect(state.requiredCount).toBe(3);
-    expect(state.completedCount).toBe(2);
-    expect(state.remainingCount).toBe(1);
-    expect(state.isCompleted).toBe(false);
-    expect(state.eligibleToday).toBe(true);
-  });
+    expect(state.requiredCount).toBe(3)
+    expect(state.completedCount).toBe(2)
+    expect(state.remainingCount).toBe(1)
+    expect(state.isCompleted).toBe(false)
+    expect(state.eligibleToday).toBe(true)
+  })
 
   it('weekly_days 不应把非要求日记录计入 completedCount', () => {
     const habit = mkHabit({
       type: 'binary',
-      frequency: { type: 'weekly_days', daysOfWeek: [1, 3, 5] },
+      frequency: {
+        type: 'weekly_days',
+        daysOfWeek: [1, 3, 5],
+      },
       records: [
         mkRecord('2026-04-09'),
       ],
-    });
-    const state = getHabitPeriodState(habit, '2026-04-09');
+    })
+    const state = getHabitPeriodState(habit, '2026-04-09')
 
-    expect(state.completedCount).toBe(0);
-    expect(state.remainingCount).toBe(3);
-    expect(state.eligibleToday).toBe(false);
-  });
+    expect(state.completedCount).toBe(0)
+    expect(state.remainingCount).toBe(3)
+    expect(state.eligibleToday).toBe(false)
+  })
 
   it('ebbinghaus 逾期时应暴露下一次打卡日期与逾期天数', () => {
     const state = getHabitPeriodState(mkHabit({
@@ -139,7 +177,10 @@ describe('getHabitPeriodState', () => {
       startDate: '2026-05-14',
       target: undefined,
       unit: undefined,
-      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      frequency: {
+        type: 'ebbinghaus',
+        intervals: [1, 2, 4, 7, 15],
+      },
       records: [
         {
           content: '英语单词',
@@ -149,15 +190,15 @@ describe('getHabitPeriodState', () => {
           habitId: 'habit-1',
         },
       ],
-    }), '2026-05-18');
+    }), '2026-05-18')
 
-    expect(state.eligibleToday).toBe(true);
-    expect(state.requiredCount).toBe(1);
-    expect(state.nextDueDate).toBe('2026-05-15');
-    expect(state.currentStageIndex).toBe(0);
-    expect(state.currentIntervalDays).toBe(1);
-    expect(state.overdueDays).toBe(3);
-  });
+    expect(state.eligibleToday).toBe(true)
+    expect(state.requiredCount).toBe(1)
+    expect(state.nextDueDate).toBe('2026-05-15')
+    expect(state.currentStageIndex).toBe(0)
+    expect(state.currentIntervalDays).toBe(1)
+    expect(state.overdueDays).toBe(3)
+  })
 
   it('ebbinghaus 到期当天完成后当前周期仍应视为已完成', () => {
     const state = getHabitPeriodState(mkHabit({
@@ -166,7 +207,10 @@ describe('getHabitPeriodState', () => {
       startDate: '2026-05-14',
       target: undefined,
       unit: undefined,
-      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      frequency: {
+        type: 'ebbinghaus',
+        intervals: [1, 2, 4, 7, 15],
+      },
       records: [
         {
           content: '英语单词',
@@ -183,12 +227,12 @@ describe('getHabitPeriodState', () => {
           habitId: 'habit-1',
         },
       ],
-    }), '2026-05-15');
+    }), '2026-05-15')
 
-    expect(state.requiredCount).toBe(1);
-    expect(state.completedCount).toBe(1);
-    expect(state.remainingCount).toBe(0);
-    expect(state.isCompleted).toBe(true);
-    expect(state.eligibleToday).toBe(true);
-  });
-});
+    expect(state.requiredCount).toBe(1)
+    expect(state.completedCount).toBe(1)
+    expect(state.remainingCount).toBe(0)
+    expect(state.isCompleted).toBe(true)
+    expect(state.eligibleToday).toBe(true)
+  })
+})

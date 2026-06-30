@@ -4,7 +4,8 @@
 
 **Goal:** 为移动端实现完整的提醒和重复设置功能，统一 MobileItemDetail 和 QuickCreateDrawer 的布局顺序
 
-**Architecture:** 
+**Architecture:**
+
 - 提取公共保存逻辑到 `itemSettingUtils.ts`，供桌面端和移动端共用
 - 桌面端设置组件通过 `layout` prop 适配移动端抽屉模式
 - 新建 `MobileReminderDrawer` 和 `MobileRecurringDrawer` 作为移动端容器
@@ -17,22 +18,24 @@
 ## 文件结构
 
 ### 新增文件
-| 文件 | 职责 |
-|------|------|
-| `src/utils/itemSettingUtils.ts` | 公共保存函数（提醒/重复的更新和 markdown 构建） |
-| `src/tabs/mobile/drawers/MobileReminderDrawer.vue` | 移动端提醒设置抽屉容器 |
-| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 移动端重复设置抽屉容器 |
+
+| 文件                                                | 职责                                            |
+| --------------------------------------------------- | ----------------------------------------------- |
+| `src/utils/itemSettingUtils.ts`                     | 公共保存函数（提醒/重复的更新和 markdown 构建） |
+| `src/tabs/mobile/drawers/MobileReminderDrawer.vue`  | 移动端提醒设置抽屉容器                          |
+| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 移动端重复设置抽屉容器                          |
 
 ### 修改文件
-| 文件 | 修改内容 |
-|------|----------|
-| `src/utils/quickCreate.ts` | 扩展 `createItem` 参数支持 reminder/recurring |
-| `src/utils/dialog.ts` | 使用 `itemSettingUtils` 中的公共函数 |
-| `src/components/dialog/ReminderSettingDialog.vue` | 添加 `layout` prop 适配抽屉模式 |
-| `src/components/dialog/RecurringSettingDialog.vue` | 添加 `layout` prop 适配抽屉模式 |
-| `src/tabs/mobile/drawers/MobileItemDetail.vue` | 调整布局顺序（日期/时间/优先级） |
-| `src/tabs/mobile/drawers/QuickCreateDrawer.vue` | 调整布局 + 添加入口 |
-| `src/tabs/mobile/MobileTodoDock.vue` | 集成抽屉组件 |
+
+| 文件                                               | 修改内容                                      |
+| -------------------------------------------------- | --------------------------------------------- |
+| `src/utils/quickCreate.ts`                         | 扩展 `createItem` 参数支持 reminder/recurring |
+| `src/utils/dialog.ts`                              | 使用 `itemSettingUtils` 中的公共函数          |
+| `src/components/dialog/ReminderSettingDialog.vue`  | 添加 `layout` prop 适配抽屉模式               |
+| `src/components/dialog/RecurringSettingDialog.vue` | 添加 `layout` prop 适配抽屉模式               |
+| `src/tabs/mobile/drawers/MobileItemDetail.vue`     | 调整布局顺序（日期/时间/优先级）              |
+| `src/tabs/mobile/drawers/QuickCreateDrawer.vue`    | 调整布局 + 添加入口                           |
+| `src/tabs/mobile/MobileTodoDock.vue`               | 集成抽屉组件                                  |
 
 ---
 
@@ -41,9 +44,11 @@
 ### Task 1: 创建公共保存函数
 
 **Files:**
+
 - Create: `src/utils/itemSettingUtils.ts`
 
 **Context:**
+
 - 当前 `dialog.ts` 中 `updateItemWithReminder` 和 `updateItemWithRecurring` 需要被移动端复用
 - 需要新增 `buildItemContent` 函数供 QuickCreate 使用
 - 依赖: `src/api.ts`, `src/parser/reminderParser.ts`, `src/parser/recurringParser.ts`
@@ -56,45 +61,45 @@
  * 供桌面端和移动端共用
  */
 
-import * as siyuanAPI from '@/api';
-import type { Item, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
-import { 
-  generateReminderMarker, 
-  stripReminderMarker 
-} from '@/parser/reminderParser';
-import { 
-  generateRepeatRuleMarker, 
+import type { EndCondition, Item, PriorityLevel, ReminderConfig, RepeatRule } from '@/types/models'
+import * as siyuanAPI from '@/api'
+import {
   generateEndConditionMarker,
-  stripRecurringMarkers 
-} from '@/parser/recurringParser';
+  generateRepeatRuleMarker,
+  stripRecurringMarkers
+} from '@/parser/recurringParser'
+import {
+  generateReminderMarker,
+  stripReminderMarker
+} from '@/parser/reminderParser'
 
 /**
  * 更新事项的提醒设置
  */
 export async function updateItemWithReminder(
-  item: Item, 
+  item: Item,
   config: ReminderConfig
 ): Promise<void> {
   if (!item.blockId) {
-    throw new Error('Item blockId is required');
+    throw new Error('Item blockId is required')
   }
-  
-  const block = await siyuanAPI.getBlockByID(item.blockId);
+
+  const block = await siyuanAPI.getBlockByID(item.blockId)
   if (!block) {
-    throw new Error(`Block not found: ${item.blockId}`);
+    throw new Error(`Block not found: ${item.blockId}`)
   }
-  
-  let content = block.content || block.markdown || '';
-  content = stripReminderMarker(content);
-  
+
+  let content = block.content || block.markdown || ''
+  content = stripReminderMarker(content)
+
   if (config.enabled) {
-    const marker = generateReminderMarker(config);
+    const marker = generateReminderMarker(config)
     if (marker) {
-      content += ` ${marker}`;
+      content += ` ${marker}`
     }
   }
-  
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId)
 }
 
 /**
@@ -106,29 +111,29 @@ export async function updateItemWithRecurring(
   endCondition: EndCondition | undefined
 ): Promise<void> {
   if (!item.blockId) {
-    throw new Error('Item blockId is required');
+    throw new Error('Item blockId is required')
   }
-  
-  const block = await siyuanAPI.getBlockByID(item.blockId);
+
+  const block = await siyuanAPI.getBlockByID(item.blockId)
   if (!block) {
-    throw new Error(`Block not found: ${item.blockId}`);
+    throw new Error(`Block not found: ${item.blockId}`)
   }
-  
-  let content = block.content || block.markdown || '';
-  content = stripRecurringMarkers(content);
-  
+
+  let content = block.content || block.markdown || ''
+  content = stripRecurringMarkers(content)
+
   if (repeatRule) {
-    content += ` ${generateRepeatRuleMarker(repeatRule)}`;
-    
+    content += ` ${generateRepeatRuleMarker(repeatRule)}`
+
     if (endCondition) {
-      const endMarker = generateEndConditionMarker(endCondition);
+      const endMarker = generateEndConditionMarker(endCondition)
       if (endMarker) {
-        content += ` ${endMarker}`;
+        content += ` ${endMarker}`
       }
     }
   }
-  
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId)
 }
 
 /**
@@ -136,12 +141,12 @@ export async function updateItemWithRecurring(
  * 供 QuickCreate 使用
  */
 export interface BuildItemContentOptions {
-  startTime?: string;
-  endTime?: string;
-  priority?: PriorityLevel;
-  reminder?: ReminderConfig;
-  repeatRule?: RepeatRule;
-  endCondition?: EndCondition;
+  startTime?: string
+  endTime?: string
+  priority?: PriorityLevel
+  reminder?: ReminderConfig
+  repeatRule?: RepeatRule
+  endCondition?: EndCondition
 }
 
 export function buildItemContent(
@@ -149,44 +154,45 @@ export function buildItemContent(
   date: string,
   options: BuildItemContentOptions = {}
 ): string {
-  let content = baseContent.trim();
-  
+  let content = baseContent.trim()
+
   // 日期部分
-  let datePart = `📅${date}`;
+  let datePart = `📅${date}`
   if (options.startTime && options.endTime) {
-    datePart = `📅${date} ${options.startTime}~${options.endTime}`;
-  } else if (options.startTime) {
-    datePart = `📅${date} ${options.startTime}`;
+    datePart = `📅${date} ${options.startTime}~${options.endTime}`
   }
-  content += ` ${datePart}`;
-  
+  else if (options.startTime) {
+    datePart = `📅${date} ${options.startTime}`
+  }
+  content += ` ${datePart}`
+
   // 优先级
   if (options.priority) {
     const priorityMap: Record<PriorityLevel, string> = {
       high: '🔥',
       medium: '🌱',
       low: '🍃'
-    };
-    content += ` ${priorityMap[options.priority]}`;
+    }
+    content += ` ${priorityMap[options.priority]}`
   }
-  
+
   // 提醒
   if (options.reminder?.enabled) {
-    content += ` ${generateReminderMarker(options.reminder)}`;
+    content += ` ${generateReminderMarker(options.reminder)}`
   }
-  
+
   // 重复
   if (options.repeatRule) {
-    content += ` ${generateRepeatRuleMarker(options.repeatRule)}`;
+    content += ` ${generateRepeatRuleMarker(options.repeatRule)}`
     if (options.endCondition) {
-      const endMarker = generateEndConditionMarker(options.endCondition);
+      const endMarker = generateEndConditionMarker(options.endCondition)
       if (endMarker) {
-        content += ` ${endMarker}`;
+        content += ` ${endMarker}`
       }
     }
   }
-  
-  return content;
+
+  return content
 }
 ```
 
@@ -202,9 +208,11 @@ git commit -m "feat(utils): add itemSettingUtils for reminder/recurring operatio
 ### Task 2: 修改 quickCreate.ts 支持 reminder/recurring
 
 **Files:**
+
 - Modify: `src/utils/quickCreate.ts`
 
 **Context:**
+
 - 当前 `createItem` 只支持 `priority` 和 `tags`
 - 需要扩展 `CreateItemOptions` 接口和 `createItem` 函数
 
@@ -214,11 +222,11 @@ git commit -m "feat(utils): add itemSettingUtils for reminder/recurring operatio
 
 ```typescript
 export interface CreateItemOptions {
-  priority?: 'high' | 'medium' | 'low';
-  tags?: string[];
-  reminder?: ReminderConfig;        // 新增
-  repeatRule?: RepeatRule;          // 新增
-  endCondition?: EndCondition;      // 新增
+  priority?: 'high' | 'medium' | 'low'
+  tags?: string[]
+  reminder?: ReminderConfig // 新增
+  repeatRule?: RepeatRule // 新增
+  endCondition?: EndCondition // 新增
 }
 ```
 
@@ -228,7 +236,10 @@ export interface CreateItemOptions {
 
 ```typescript
 // 原代码（约 247-271 行）
-let itemContent = `${content} ${datePart}`;
+// 替换为使用 buildItemContent
+import { buildItemContent } from './itemSettingUtils'
+
+let itemContent = `${content} ${datePart}`
 
 // 添加优先级标记（使用 Emoji）
 if (options?.priority) {
@@ -236,17 +247,14 @@ if (options?.priority) {
     high: '🔥',
     medium: '🌱',
     low: '🍃',
-  };
-  itemContent += ` ${priorityMap[options.priority]}`;
+  }
+  itemContent += ` ${priorityMap[options.priority]}`
 }
 
 // 添加标签
 if (options?.tags?.length) {
-  itemContent += ` ${options.tags.map(t => `#${t}`).join(' ')}`;
+  itemContent += ` ${options.tags.map(t => `#${t}`).join(' ')}`
 }
-
-// 替换为使用 buildItemContent
-import { buildItemContent } from './itemSettingUtils';
 
 const itemContent = buildItemContent(content, date, {
   startTime,
@@ -255,13 +263,14 @@ const itemContent = buildItemContent(content, date, {
   reminder: options?.reminder,
   repeatRule: options?.repeatRule,
   endCondition: options?.endCondition,
-});
+})
 ```
 
 **注意:** 需要在文件顶部添加导入：
+
 ```typescript
-import { buildItemContent } from './itemSettingUtils';
-import type { ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
+import type { EndCondition, ReminderConfig, RepeatRule } from '@/types/models'
+import { buildItemContent } from './itemSettingUtils'
 ```
 
 - [ ] **Step 3: Commit**
@@ -276,9 +285,11 @@ git commit -m "feat(quickCreate): extend createItem to support reminder/recurrin
 ### Task 3: 修改 dialog.ts 使用公共函数
 
 **Files:**
+
 - Modify: `src/utils/dialog.ts`
 
 **Context:**
+
 - 当前 `dialog.ts` 内部定义了 `updateItemWithReminder` 和 `updateItemWithRecurring`
 - 需要改为从 `itemSettingUtils` 导入
 
@@ -287,15 +298,16 @@ git commit -m "feat(quickCreate): extend createItem to support reminder/recurrin
 在文件顶部找到导入区域（约第 1-30 行），添加：
 
 ```typescript
-import { 
-  updateItemWithReminder, 
-  updateItemWithRecurring 
-} from './itemSettingUtils';
+import {
+  updateItemWithRecurring,
+  updateItemWithReminder
+} from './itemSettingUtils'
 ```
 
 - [ ] **Step 2: 删除原有函数定义**
 
 删除约 1122-1232 行的两个函数定义：
+
 - `updateItemWithReminder`
 - `updateItemWithRecurring`
 
@@ -313,9 +325,11 @@ git commit -m "refactor(dialog): use itemSettingUtils for reminder/recurring upd
 ### Task 4: 修改 ReminderSettingDialog 支持 drawer 模式
 
 **Files:**
+
 - Modify: `src/components/dialog/ReminderSettingDialog.vue`
 
 **Context:**
+
 - 当前组件假设在桌面弹框中使用
 - 需要添加 `layout` prop 来适配移动端抽屉布局
 
@@ -325,24 +339,24 @@ git commit -m "refactor(dialog): use itemSettingUtils for reminder/recurring upd
 
 ```typescript
 interface Props {
-  blockId: string;
-  initialConfig?: ReminderConfig;
-  layout?: 'dialog' | 'drawer';  // 新增
+  blockId: string
+  initialConfig?: ReminderConfig
+  layout?: 'dialog' | 'drawer' // 新增
 }
 
 const props = withDefaults(defineProps<Props>(), {
   layout: 'dialog'
-});
+})
 ```
 
 - [ ] **Step 2: 调整样式类绑定**
 
 在 `<template>` 根元素（约第 2 行），添加动态类：
 
-```vue
+````vue
 <template>
-  <div class="reminder-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }">
-```
+  <div class="reminder-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }" />
+</template>```
 
 - [ ] **Step 3: 添加 drawer 模式样式**
 
@@ -354,27 +368,28 @@ const props = withDefaults(defineProps<Props>(), {
   padding: 0;
   min-width: auto;
   max-width: 100%;
-  
+
   .quick-buttons {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .mode-btn {
     min-height: 48px;
     padding: 12px 8px;
     font-size: 14px;
   }
-  
+
   .time-presets {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .action-section {
     margin-top: 20px;
   }
 }
-```
+
+````
 
 - [ ] **Step 4: Commit**
 
@@ -388,9 +403,11 @@ git commit -m "feat(ReminderSettingDialog): add drawer mode support"
 ### Task 5: 修改 RecurringSettingDialog 支持 drawer 模式
 
 **Files:**
+
 - Modify: `src/components/dialog/RecurringSettingDialog.vue`
 
 **Context:**
+
 - 与 ReminderSettingDialog 相同的修改模式
 
 - [ ] **Step 1: 添加 layout prop**
@@ -399,28 +416,29 @@ git commit -m "feat(ReminderSettingDialog): add drawer mode support"
 
 ```typescript
 interface Props {
-  blockId: string;
-  initialRepeatRule?: RepeatRule;
-  initialEndCondition?: EndCondition;
-  layout?: 'dialog' | 'drawer';  // 新增
+  blockId: string
+  initialRepeatRule?: RepeatRule
+  initialEndCondition?: EndCondition
+  layout?: 'dialog' | 'drawer' // 新增
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  layout: 'drawer'  // 注意：为了测试方便可以先默认 drawer，后面改回 dialog
-});
+  layout: 'drawer' // 注意：为了测试方便可以先默认 drawer，后面改回 dialog
+})
 ```
 
 **更正:** 默认应该是 'dialog' 保持向后兼容：
+
 ```typescript
 layout: 'dialog'
 ```
 
 - [ ] **Step 2: 调整样式类绑定**
 
-```vue
+````vue
 <template>
-  <div class="recurring-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }">
-```
+  <div class="recurring-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }" />
+</template>```
 
 - [ ] **Step 3: 添加 drawer 模式样式**
 
@@ -430,33 +448,34 @@ layout: 'dialog'
   padding: 0;
   min-width: auto;
   max-width: 100%;
-  
+
   .quick-buttons {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .mode-btn {
     min-height: 48px;
     padding: 12px 8px;
     font-size: 14px;
   }
-  
+
   .weekday-buttons {
     grid-template-columns: repeat(7, 1fr);
     gap: 6px;
   }
-  
+
   .weekday-btn {
     padding: 10px 4px;
     font-size: 12px;
   }
-  
+
   .action-section {
     margin-top: 20px;
   }
 }
-```
+
+````
 
 - [ ] **Step 4: Commit**
 
@@ -470,15 +489,66 @@ git commit -m "feat(RecurringSettingDialog): add drawer mode support"
 ### Task 6: 创建 MobileReminderDrawer
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/MobileReminderDrawer.vue`
 
 **Context:**
+
 - 作为移动端容器，包装 ReminderSettingDialog
 - 提供底部滑出抽屉的交互
 
 - [ ] **Step 1: 创建组件文件**
 
 ```vue
+<script setup lang="ts">
+import type { Item, ReminderConfig } from '@/types/models'
+import { computed } from 'vue'
+import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue'
+import { t } from '@/i18n'
+import { updateItemWithReminder } from '@/utils/itemSettingUtils'
+
+interface Props {
+  modelValue: boolean
+  blockId?: string
+  initialConfig?: ReminderConfig
+  item?: Item // 用于保存时更新
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'save': [config: ReminderConfig]
+  'cancel': []
+}>()
+
+const hasItem = computed(() => !!props.item)
+
+async function handleSave(config: ReminderConfig) {
+  // 如果有 item，直接保存
+  if (props.item) {
+    try {
+      await updateItemWithReminder(props.item, config)
+      emit('save', config)
+      close()
+    }
+    catch (error) {
+      console.error('[MobileReminderDrawer] Failed to save reminder:', error)
+    }
+  }
+  else {
+    // 否则只发射事件（QuickCreate 模式）
+    emit('save', config)
+    close()
+  }
+}
+
+function close() {
+  emit('update:modelValue', false)
+  emit('cancel')
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -487,14 +557,16 @@ git commit -m "feat(RecurringSettingDialog): add drawer mode support"
           <div v-if="modelValue" class="mobile-reminder-drawer" @click.stop>
             <!-- Handle Bar -->
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
-            
+
             <!-- Header -->
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('reminder.settingTitle') || '设置提醒' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('reminder.settingTitle') || '设置提醒' }}
+              </h3>
             </div>
-            
+
             <!-- Content -->
             <div class="drawer-content">
               <ReminderSettingDialog
@@ -511,53 +583,6 @@ git commit -m "feat(RecurringSettingDialog): add drawer mode support"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
-import { t } from '@/i18n';
-import { updateItemWithReminder } from '@/utils/itemSettingUtils';
-import type { ReminderConfig, Item } from '@/types/models';
-
-interface Props {
-  modelValue: boolean;
-  blockId?: string;
-  initialConfig?: ReminderConfig;
-  item?: Item;  // 用于保存时更新
-}
-
-const props = defineProps<Props>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'save': [config: ReminderConfig];
-  'cancel': [];
-}>();
-
-const hasItem = computed(() => !!props.item);
-
-async function handleSave(config: ReminderConfig) {
-  // 如果有 item，直接保存
-  if (props.item) {
-    try {
-      await updateItemWithReminder(props.item, config);
-      emit('save', config);
-      close();
-    } catch (error) {
-      console.error('[MobileReminderDrawer] Failed to save reminder:', error);
-    }
-  } else {
-    // 否则只发射事件（QuickCreate 模式）
-    emit('save', config);
-    close();
-  }
-}
-
-function close() {
-  emit('update:modelValue', false);
-  emit('cancel');
-}
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -654,14 +679,66 @@ git commit -m "feat(mobile): add MobileReminderDrawer component"
 ### Task 7: 创建 MobileRecurringDrawer
 
 **Files:**
+
 - Create: `src/tabs/mobile/drawers/MobileRecurringDrawer.vue`
 
 **Context:**
+
 - 与 MobileReminderDrawer 结构相同，包装 RecurringSettingDialog
 
 - [ ] **Step 1: 创建组件文件**
 
 ```vue
+<script setup lang="ts">
+import type { EndCondition, Item, RepeatRule } from '@/types/models'
+import { computed } from 'vue'
+import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue'
+import { t } from '@/i18n'
+import { updateItemWithRecurring } from '@/utils/itemSettingUtils'
+
+interface Props {
+  modelValue: boolean
+  blockId?: string
+  initialRepeatRule?: RepeatRule
+  initialEndCondition?: EndCondition
+  item?: Item
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined]
+  'cancel': []
+}>()
+
+const hasItem = computed(() => !!props.item)
+
+async function handleSave(repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) {
+  // 如果有 item，直接保存
+  if (props.item) {
+    try {
+      await updateItemWithRecurring(props.item, repeatRule, endCondition)
+      emit('save', repeatRule, endCondition)
+      close()
+    }
+    catch (error) {
+      console.error('[MobileRecurringDrawer] Failed to save recurring:', error)
+    }
+  }
+  else {
+    // 否则只发射事件（QuickCreate 模式）
+    emit('save', repeatRule, endCondition)
+    close()
+  }
+}
+
+function close() {
+  emit('update:modelValue', false)
+  emit('cancel')
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -670,14 +747,16 @@ git commit -m "feat(mobile): add MobileReminderDrawer component"
           <div v-if="modelValue" class="mobile-recurring-drawer" @click.stop>
             <!-- Handle Bar -->
             <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
+              <div class="handle-bar" />
             </div>
-            
+
             <!-- Header -->
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('recurring.settingTitle') || '设置重复' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('recurring.settingTitle') || '设置重复' }}
+              </h3>
             </div>
-            
+
             <!-- Content -->
             <div class="drawer-content">
               <RecurringSettingDialog
@@ -695,54 +774,6 @@ git commit -m "feat(mobile): add MobileReminderDrawer component"
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
-import { t } from '@/i18n';
-import { updateItemWithRecurring } from '@/utils/itemSettingUtils';
-import type { RepeatRule, EndCondition, Item } from '@/types/models';
-
-interface Props {
-  modelValue: boolean;
-  blockId?: string;
-  initialRepeatRule?: RepeatRule;
-  initialEndCondition?: EndCondition;
-  item?: Item;
-}
-
-const props = defineProps<Props>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'save': [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined];
-  'cancel': [];
-}>();
-
-const hasItem = computed(() => !!props.item);
-
-async function handleSave(repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) {
-  // 如果有 item，直接保存
-  if (props.item) {
-    try {
-      await updateItemWithRecurring(props.item, repeatRule, endCondition);
-      emit('save', repeatRule, endCondition);
-      close();
-    } catch (error) {
-      console.error('[MobileRecurringDrawer] Failed to save recurring:', error);
-    }
-  } else {
-    // 否则只发射事件（QuickCreate 模式）
-    emit('save', repeatRule, endCondition);
-    close();
-  }
-}
-
-function close() {
-  emit('update:modelValue', false);
-  emit('cancel');
-}
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {
@@ -841,9 +872,11 @@ git commit -m "feat(mobile): add MobileRecurringDrawer component"
 ### Task 8: 调整 MobileItemDetail 布局顺序
 
 **Files:**
+
 - Modify: `src/tabs/mobile/drawers/MobileItemDetail.vue`
 
 **Context:**
+
 - 当前顺序：内容 → 项目/任务 → 优先级 → 时间 → 提醒/重复
 - 调整后：内容 → 项目/任务 → 日期 → 时间 → 优先级 → 提醒/重复
 
@@ -859,6 +892,7 @@ git commit -m "feat(mobile): add MobileRecurringDrawer component"
       <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
       <span class="info-label">{{ t('mobile.detail.date') || '日期' }}</span>
     </div>
+
     <div class="info-right">
       <span class="info-value">{{ formatDateDisplay }}</span>
       <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
@@ -873,19 +907,23 @@ git commit -m "feat(mobile): add MobileRecurringDrawer component"
       <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
       <span class="info-label">{{ t('mobile.detail.time') || '时间' }}</span>
     </div>
+
     <div class="info-right">
       <span class="info-value">{{ formatTimeOnlyDisplay }}</span>
       <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
     </div>
   </div>
-  
+
   <!-- 时长（只读） -->
   <div v-if="duration" class="info-item readonly">
     <div class="info-left">
       <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
       <span class="info-label">{{ t('mobile.detail.duration') || '时长' }}</span>
     </div>
-    <span class="info-value">{{ duration }}</span>
+
+    <span class="info-value">
+{{ duration }}
+</span>
   </div>
 </div>
 ```
@@ -901,29 +939,31 @@ git commit -m "feat(mobile): add MobileRecurringDrawer component"
 ```typescript
 // 仅显示日期
 const formatDateDisplay = computed(() => {
-  if (!props.item) return '';
-  const todoTranslations = t('todo') as Record<string, string>;
+  if (!props.item)
+    return ''
+  const todoTranslations = t('todo') as Record<string, string>
   return formatDateLabel(
     props.item.date,
     todoTranslations.today || '今天',
     todoTranslations.tomorrow || '明天'
-  );
-});
+  )
+})
 
 // 仅显示时间
 const formatTimeOnlyDisplay = computed(() => {
-  if (!props.item) return t('mobile.detail.noTime') || '未设置';
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-  return timeRange || (t('mobile.detail.allDay') || '全天');
-});
+  if (!props.item)
+    return t('mobile.detail.noTime') || '未设置'
+  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime)
+  return timeRange || (t('mobile.detail.allDay') || '全天')
+})
 ```
 
 - [ ] **Step 4: 添加 handleEditDate 方法**
 
 ```typescript
-const handleEditDate = () => {
-  showDatePicker.value = true;
-};
+function handleEditDate() {
+  showDatePicker.value = true
+}
 ```
 
 - [ ] **Step 5: Commit**
@@ -938,15 +978,18 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
 ### Task 9: 调整 QuickCreateDrawer 布局并添加入口
 
 **Files:**
+
 - Modify: `src/tabs/mobile/drawers/QuickCreateDrawer.vue`
 
 **Context:**
+
 - 调整顺序：事项内容移到顶部
 - 新增提醒和重复设置入口
 
 - [ ] **Step 1: 调整表单顺序**
 
 重新排列表单区域（约第 15-96 行），新顺序：
+
 1. 事项内容
 2. 所属项目
 3. 所属任务
@@ -967,7 +1010,7 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
       :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
     />
   </div>
-  
+
   <!-- Project Selection -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.project') || '所属项目' }}</label>
@@ -976,13 +1019,13 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
       <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
     </button>
   </div>
-  
+
   <!-- Task Selection/Input -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.belongingTask') || '所属任务' }}</label>
-    <button 
-      class="selector-btn" 
-      :class="{ empty: !taskInput }" 
+    <button
+      class="selector-btn"
+      :class="{ empty: !taskInput }"
       @click="openTaskSelector"
       :disabled="!selectedProjectId"
     >
@@ -994,7 +1037,7 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
       <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
     </div>
   </div>
-  
+
   <!-- Date Selection -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.date') || '日期' }}</label>
@@ -1003,10 +1046,13 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
         <span class="date-weekday">{{ formatWeekday(itemForm.date) }}</span>
         <span class="date-value">{{ formatDate(itemForm.date) }}</span>
       </div>
-      <svg class="selector-icon"><use xlink:href="#iconCalendar"></use></svg>
+
+      <svg class="selector-icon">
+<use xlink:href="#iconCalendar"></use>
+</svg>
     </button>
   </div>
-  
+
   <!-- Time Selection -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.timeRange') || '时间范围' }}</label>
@@ -1020,7 +1066,7 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
       </button>
     </div>
   </div>
-  
+
   <!-- Priority -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.priority') || '优先级' }}</label>
@@ -1037,12 +1083,12 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
       </button>
     </div>
   </div>
-  
+
   <!-- Reminder & Recurring Actions -->
   <div class="form-section">
     <label class="section-label">{{ t('mobile.quickCreate.advanced') || '高级选项' }}</label>
     <div class="actions-card">
-      <button 
+      <button
         class="action-item"
         :class="{ active: reminderConfig?.enabled }"
         @click="handleSetReminder"
@@ -1050,11 +1096,17 @@ git commit -m "refactor(MobileItemDetail): reorder layout - date/time before pri
         <div class="action-icon-wrapper">
           <svg><use xlink:href="#iconClock"></use></svg>
         </div>
-        <span class="action-text">{{ reminderText }}</span>
-        <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
+
+        <span class="action-text">
+{{ reminderText }}
+</span>
+
+        <svg class="action-arrow">
+<use xlink:href="#iconRight"></use>
+</svg>
       </button>
-      
-      <button 
+
+      <button
         class="action-item"
         :class="{ active: !!repeatRule }"
         @click="handleSetRecurring"
@@ -1082,63 +1134,63 @@ const itemForm = ref({
   startTime: '',
   endTime: '',
   priority: undefined as PriorityLevel | undefined,
-});
+})
 
 // 新增：提醒和重复配置（不显示在表单中，通过抽屉设置）
-const reminderConfig = ref<ReminderConfig | undefined>(undefined);
-const repeatRule = ref<RepeatRule | undefined>(undefined);
-const endCondition = ref<EndCondition | undefined>(undefined);
+const reminderConfig = ref<ReminderConfig | undefined>(undefined)
+const repeatRule = ref<RepeatRule | undefined>(undefined)
+const endCondition = ref<EndCondition | undefined>(undefined)
 ```
 
 - [ ] **Step 3: 添加计算属性和方法**
 
 ```typescript
-import type { ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import type { EndCondition, ReminderConfig, RepeatRule } from '@/types/models'
+import { generateEndConditionMarker, generateRepeatRuleMarker } from '@/parser/recurringParser'
+import { formatReminderDisplay } from '@/utils/displayUtils'
 
 // 抽屉显示状态
-const showReminderDrawer = ref(false);
-const showRecurringDrawer = ref(false);
+const showReminderDrawer = ref(false)
+const showRecurringDrawer = ref(false)
 
 // 提醒显示文本
 const reminderText = computed(() => {
   if (!reminderConfig.value?.enabled) {
-    return t('mobile.detail.setReminder') || '设置提醒';
+    return t('mobile.detail.setReminder') || '设置提醒'
   }
-  return formatReminderDisplay(reminderConfig.value, t);
-});
+  return formatReminderDisplay(reminderConfig.value, t)
+})
 
 // 重复显示文本
 const recurringText = computed(() => {
   if (!repeatRule.value) {
-    return t('mobile.detail.setRecurring') || '设置重复';
+    return t('mobile.detail.setRecurring') || '设置重复'
   }
-  const rule = generateRepeatRuleMarker(repeatRule.value);
-  const end = generateEndConditionMarker(endCondition.value);
-  return end ? `${rule} ${end}` : rule;
-});
+  const rule = generateRepeatRuleMarker(repeatRule.value)
+  const end = generateEndConditionMarker(endCondition.value)
+  return end ? `${rule} ${end}` : rule
+})
 
 // 处理设置提醒
-const handleSetReminder = () => {
-  showReminderDrawer.value = true;
-};
+function handleSetReminder() {
+  showReminderDrawer.value = true
+}
 
 // 处理设置重复
-const handleSetRecurring = () => {
-  showRecurringDrawer.value = true;
-};
+function handleSetRecurring() {
+  showRecurringDrawer.value = true
+}
 
 // 处理保存提醒
-const handleReminderSave = (config: ReminderConfig) => {
-  reminderConfig.value = config;
-};
+function handleReminderSave(config: ReminderConfig) {
+  reminderConfig.value = config
+}
 
 // 处理保存重复
-const handleRecurringSave = (rule: RepeatRule | undefined, end: EndCondition | undefined) => {
-  repeatRule.value = rule;
-  endCondition.value = end;
-};
+function handleRecurringSave(rule: RepeatRule | undefined, end: EndCondition | undefined) {
+  repeatRule.value = rule
+  endCondition.value = end
+}
 ```
 
 - [ ] **Step 4: 修改 handleSubmit 使用新配置**
@@ -1159,7 +1211,7 @@ const result = await createItem(
     repeatRule: repeatRule.value,
     endCondition: endCondition.value,
   }
-);
+)
 ```
 
 - [ ] **Step 5: 添加抽屉组件到模板**
@@ -1186,8 +1238,8 @@ const result = await createItem(
 - [ ] **Step 6: 添加组件导入**
 
 ```typescript
-import MobileReminderDrawer from './MobileReminderDrawer.vue';
-import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
+import MobileRecurringDrawer from './MobileRecurringDrawer.vue'
+import MobileReminderDrawer from './MobileReminderDrawer.vue'
 ```
 
 - [ ] **Step 7: 添加样式**
@@ -1212,20 +1264,20 @@ import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
   background: transparent;
   cursor: pointer;
   transition: opacity 0.2s;
-  
+
   &:hover {
     opacity: 0.8;
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
-  
+
   &.active {
     .action-icon-wrapper {
       background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.15);
     }
-    
+
     .action-text {
       color: var(--b3-theme-primary);
     }
@@ -1241,7 +1293,7 @@ import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
   background: var(--b3-theme-surface-lighter);
   border-radius: 10px;
   flex-shrink: 0;
-  
+
   svg {
     width: 18px;
     height: 18px;
@@ -1263,6 +1315,7 @@ import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
   opacity: 0.4;
   flex-shrink: 0;
 }
+
 ```
 
 - [ ] **Step 8: Commit**
@@ -1277,44 +1330,46 @@ git commit -m "feat(QuickCreateDrawer): reorder layout and add reminder/recurrin
 ### Task 10: 集成抽屉到 MobileTodoDock
 
 **Files:**
+
 - Modify: `src/tabs/mobile/MobileTodoDock.vue`
 
 **Context:**
+
 - 需要集成 MobileReminderDrawer 和 MobileRecurringDrawer
 - 处理 MobileItemDetail 的 set-reminder/set-recurring 事件
 
 - [ ] **Step 1: 添加抽屉组件导入**
 
 ```typescript
-import MobileReminderDrawer from './drawers/MobileReminderDrawer.vue';
-import MobileRecurringDrawer from './drawers/MobileRecurringDrawer.vue';
+import MobileRecurringDrawer from './drawers/MobileRecurringDrawer.vue'
+import MobileReminderDrawer from './drawers/MobileReminderDrawer.vue'
 ```
 
 - [ ] **Step 2: 添加状态和方法**
 
 ```typescript
 // 抽屉显示状态
-const showReminderDrawer = ref(false);
-const showRecurringDrawer = ref(false);
-const selectedItemForSetting = ref<Item | null>(null);
+const showReminderDrawer = ref(false)
+const showRecurringDrawer = ref(false)
+const selectedItemForSetting = ref<Item | null>(null)
 
 // 处理设置提醒
-const handleSetReminder = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showReminderDrawer.value = true;
-};
+function handleSetReminder(item: Item) {
+  selectedItemForSetting.value = item
+  showReminderDrawer.value = true
+}
 
 // 处理设置重复
-const handleSetRecurring = (item: Item) => {
-  selectedItemForSetting.value = item;
-  showRecurringDrawer.value = true;
-};
+function handleSetRecurring(item: Item) {
+  selectedItemForSetting.value = item
+  showRecurringDrawer.value = true
+}
 
 // 抽屉关闭后刷新
-const handleSettingDrawerClose = () => {
-  selectedItemForSetting.value = null;
-  handleRefresh();
-};
+function handleSettingDrawerClose() {
+  selectedItemForSetting.value = null
+  handleRefresh()
+}
 ```
 
 - [ ] **Step 3: 添加抽屉组件到模板**
@@ -1401,18 +1456,18 @@ git commit -m "test: fix any test failures"
 
 ### 文件变更清单
 
-| 文件 | 操作 | 任务 |
-|------|------|------|
-| `src/utils/itemSettingUtils.ts` | 创建 | Task 1 |
-| `src/utils/quickCreate.ts` | 修改 | Task 2 |
-| `src/utils/dialog.ts` | 修改 | Task 3 |
-| `src/components/dialog/ReminderSettingDialog.vue` | 修改 | Task 4 |
-| `src/components/dialog/RecurringSettingDialog.vue` | 修改 | Task 5 |
-| `src/tabs/mobile/drawers/MobileReminderDrawer.vue` | 创建 | Task 6 |
-| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 创建 | Task 7 |
-| `src/tabs/mobile/drawers/MobileItemDetail.vue` | 修改 | Task 8 |
-| `src/tabs/mobile/drawers/QuickCreateDrawer.vue` | 修改 | Task 9 |
-| `src/tabs/mobile/MobileTodoDock.vue` | 修改 | Task 10 |
+| 文件                                                | 操作 | 任务    |
+| --------------------------------------------------- | ---- | ------- |
+| `src/utils/itemSettingUtils.ts`                     | 创建 | Task 1  |
+| `src/utils/quickCreate.ts`                          | 修改 | Task 2  |
+| `src/utils/dialog.ts`                               | 修改 | Task 3  |
+| `src/components/dialog/ReminderSettingDialog.vue`   | 修改 | Task 4  |
+| `src/components/dialog/RecurringSettingDialog.vue`  | 修改 | Task 5  |
+| `src/tabs/mobile/drawers/MobileReminderDrawer.vue`  | 创建 | Task 6  |
+| `src/tabs/mobile/drawers/MobileRecurringDrawer.vue` | 创建 | Task 7  |
+| `src/tabs/mobile/drawers/MobileItemDetail.vue`      | 修改 | Task 8  |
+| `src/tabs/mobile/drawers/QuickCreateDrawer.vue`     | 修改 | Task 9  |
+| `src/tabs/mobile/MobileTodoDock.vue`                | 修改 | Task 10 |
 
 ### 验收标准
 

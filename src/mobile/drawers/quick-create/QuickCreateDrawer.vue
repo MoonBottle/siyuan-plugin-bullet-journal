@@ -1,18 +1,35 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
+      <div
+        v-if="modelValue"
+        class="drawer-overlay b3-dialog"
+        @click="close"
+      >
         <Transition name="slide-up">
-          <div v-if="modelValue" class="quick-create-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-            <div class="drawer-handle" @click="close">
+          <div
+            v-if="modelValue"
+            class="quick-create-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
+            <div
+              class="drawer-handle"
+              @click="close"
+            >
               <div class="handle-bar"></div>
             </div>
-            
+
             <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('mobile.quickCreate.title') || '快速创建' }}</h3>
+              <h3 class="drawer-title">
+                {{ t('mobile.quickCreate.title') || '快速创建' }}
+              </h3>
             </div>
-            
-            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+
+            <div
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Item Content - 移到第一位 -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.itemContent') || '事项内容' }}</label>
@@ -27,7 +44,11 @@
               <!-- Project Selection -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.project') || '所属项目' }}</label>
-                <button class="selector-btn" :class="{ empty: !selectedProjectId }" @click="openProjectSelector">
+                <button
+                  class="selector-btn"
+                  :class="{ empty: !selectedProjectId }"
+                  @click="openProjectSelector"
+                >
                   <span class="selector-text">{{ selectedProjectName || (t('mobile.quickCreate.selectProject') || '选择项目') }}</span>
                   <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
                 </button>
@@ -39,30 +60,36 @@
                 <button
                   class="selector-btn"
                   :class="{ empty: !taskInput }"
-                  @click="openTaskSelector"
                   :disabled="!selectedProjectId"
+                  @click="openTaskSelector"
                 >
                   <span class="selector-text">{{ taskInput || (t('mobile.quickCreate.selectOrInputTask') || '选择或输入新任务名称') }}</span>
                   <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
                 </button>
-                <div v-if="taskInput && !isExistingTask" class="new-task-hint">
+                <div
+                  v-if="taskInput && !isExistingTask"
+                  class="new-task-hint"
+                >
                   <svg><use xlink:href="#iconInfo"></use></svg>
                   <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
                 </div>
               </div>
-              
+
               <!-- Date Selection -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.date') || '日期' }}</label>
-                <button class="selector-btn" @click="openDatePicker">
+                <button
+                  class="selector-btn"
+                  @click="openDatePicker"
+                >
                   <div class="date-display">
                     <span class="date-weekday">{{ formatWeekday(itemForm.date) }}</span>
                     <span class="date-value">{{ formatDate(itemForm.date) }}</span>
                   </div>
-                  <svg class="selector-icon"><use xlink:href="#iconCalendar"></use></svg>
+                  <svg class="selector-icon"><use xlink:href="#iconTaCalendarDays"></use></svg>
                 </button>
               </div>
-              
+
               <!-- Time Selection - 使用新的 TimeRangeSelector -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.timeRange') || '时间范围' }}</label>
@@ -72,7 +99,7 @@
                   v-model:end-time="itemForm.endTime"
                 />
               </div>
-              
+
               <!-- Priority -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.priority') || '优先级' }}</label>
@@ -100,7 +127,7 @@
                     @click="handleSetReminder"
                   >
                     <div class="action-icon-wrapper">
-                      <svg><use xlink:href="#iconClock"></use></svg>
+                      <svg><use xlink:href="#iconTaAlarmClock"></use></svg>
                     </div>
                     <span class="action-text">{{ reminderText }}</span>
                     <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -112,7 +139,7 @@
                     @click="handleSetRecurring"
                   >
                     <div class="action-icon-wrapper">
-                      <svg><use xlink:href="#iconRefresh"></use></svg>
+                      <svg><use xlink:href="#iconTaRepeat"></use></svg>
                     </div>
                     <span class="action-text">{{ recurringText }}</span>
                     <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
@@ -120,9 +147,12 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="drawer-footer">
-              <button class="cancel-btn" @click="close">
+              <button
+                class="cancel-btn"
+                @click="close"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
               <button
@@ -137,19 +167,36 @@
         </Transition>
       </div>
     </Transition>
-    
+
     <!-- Project Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showProjectSheet" class="sheet-overlay b3-dialog" @click="closeProjectSheet">
+      <div
+        v-if="showProjectSheet"
+        class="sheet-overlay b3-dialog"
+        @click="closeProjectSheet"
+      >
         <Transition name="slide-up">
-          <div v-if="showProjectSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-            <div class="sheet-handle" @click="closeProjectSheet">
+          <div
+            v-if="showProjectSheet"
+            class="selector-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
+            <div
+              class="sheet-handle"
+              @click="closeProjectSheet"
+            >
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ t('mobile.quickCreate.selectProject') || '选择项目' }}</h4>
+              <h4 class="sheet-title">
+                {{ t('mobile.quickCreate.selectProject') || '选择项目' }}
+              </h4>
             </div>
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <button
                 v-for="project in projects"
                 :key="project.id"
@@ -158,14 +205,20 @@
                 @click="selectProject(project.id)"
               >
                 <div class="option-icon">
-                  <svg><use xlink:href="#iconFolder"></use></svg>
+                  <svg><use xlink:href="#iconTaProject"></use></svg>
                 </div>
                 <span class="option-text">{{ project.name }}</span>
-                <svg v-if="selectedProjectId === project.id" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
+                <svg
+                  v-if="selectedProjectId === project.id"
+                  class="check-icon"
+                ><use xlink:href="#iconCheck"></use></svg>
               </button>
             </div>
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="closeProjectSheet">
+              <button
+                class="sheet-cancel-btn"
+                @click="closeProjectSheet"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
             </div>
@@ -173,19 +226,33 @@
         </Transition>
       </div>
     </Transition>
-    
+
     <!-- Task Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showTaskSheet" class="sheet-overlay b3-dialog" @click="closeTaskSheet">
+      <div
+        v-if="showTaskSheet"
+        class="sheet-overlay b3-dialog"
+        @click="closeTaskSheet"
+      >
         <Transition name="slide-up">
-          <div v-if="showTaskSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-            <div class="sheet-handle" @click="closeTaskSheet">
+          <div
+            v-if="showTaskSheet"
+            class="selector-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
+            <div
+              class="sheet-handle"
+              @click="closeTaskSheet"
+            >
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ t('mobile.quickCreate.selectTask') || '选择任务' }}</h4>
+              <h4 class="sheet-title">
+                {{ t('mobile.quickCreate.selectTask') || '选择任务' }}
+              </h4>
             </div>
-            
+
             <!-- Task Search -->
             <div class="sheet-search">
               <input
@@ -195,15 +262,24 @@
                 :placeholder="t('mobile.quickCreate.searchTask') || '搜索或输入新任务名称'"
               />
             </div>
-            
+
             <!-- New Task Hint -->
-            <div v-if="taskSearchQuery && filteredTasksInSheet.length === 0" class="sheet-new-task-hint">
+            <div
+              v-if="taskSearchQuery && filteredTasksInSheet.length === 0"
+              class="sheet-new-task-hint"
+            >
               <svg><use xlink:href="#iconInfo"></use></svg>
               <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
             </div>
-            
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
-              <div v-if="availableTasks.length === 0" class="sheet-empty">
+
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
+              <div
+                v-if="availableTasks.length === 0"
+                class="sheet-empty"
+              >
                 <svg class="empty-icon"><use xlink:href="#iconList"></use></svg>
                 <span>{{ t('mobile.quickCreate.noTasks') || '该项目暂无任务' }}</span>
               </div>
@@ -219,16 +295,28 @@
                 </div>
                 <div class="option-info">
                   <span class="option-text">{{ task.name }}</span>
-                  <span v-if="task.level" class="option-meta">{{ task.level }}</span>
+                  <span
+                    v-if="task.level"
+                    class="option-meta"
+                  >{{ task.level }}</span>
                 </div>
-                <svg v-if="selectedTaskId === task.id" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
+                <svg
+                  v-if="selectedTaskId === task.id"
+                  class="check-icon"
+                ><use xlink:href="#iconCheck"></use></svg>
               </button>
             </div>
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="closeTaskSheet">
+              <button
+                class="sheet-cancel-btn"
+                @click="closeTaskSheet"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
-              <button class="sheet-confirm-btn" @click="confirmTaskSelection">
+              <button
+                class="sheet-confirm-btn"
+                @click="confirmTaskSelection"
+              >
                 {{ t('common.confirm') || '确认' }}
               </button>
             </div>
@@ -236,49 +324,85 @@
         </Transition>
       </div>
     </Transition>
-    
+
     <!-- Date Picker Sheet -->
     <Transition name="fade">
-      <div v-if="showDatePicker" class="sheet-overlay b3-dialog" @click="closeDatePicker">
+      <div
+        v-if="showDatePicker"
+        class="sheet-overlay b3-dialog"
+        @click="closeDatePicker"
+      >
         <Transition name="slide-up">
-          <div v-if="showDatePicker" class="date-picker-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-            <div class="sheet-handle" @click="closeDatePicker">
+          <div
+            v-if="showDatePicker"
+            class="date-picker-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
+            <div
+              class="sheet-handle"
+              @click="closeDatePicker"
+            >
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
-              <h4 class="sheet-title">{{ t('mobile.quickCreate.selectDate') || '选择日期' }}</h4>
+              <h4 class="sheet-title">
+                {{ t('mobile.quickCreate.selectDate') || '选择日期' }}
+              </h4>
             </div>
-            
-            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+
+            <div
+              class="sheet-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Quick Date Buttons -->
               <div class="quick-dates">
-                <button class="quick-date-btn" @click="selectQuickDate(0)">
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(0)"
+                >
                   <span class="quick-date-label">{{ t('todo.today') || '今天' }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(0) }}</span>
                 </button>
-                <button class="quick-date-btn" @click="selectQuickDate(1)">
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(1)"
+                >
                   <span class="quick-date-label">{{ t('todo.tomorrow') || '明天' }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(1) }}</span>
                 </button>
-                <button class="quick-date-btn" @click="selectQuickDate(7)">
+                <button
+                  class="quick-date-btn"
+                  @click="selectQuickDate(7)"
+                >
                   <span class="quick-date-label">{{ t('mobile.nextWeek') || '一周后' }}</span>
                   <span class="quick-date-value">{{ formatQuickDate(7) }}</span>
                 </button>
               </div>
-              
+
               <!-- Calendar -->
               <div class="calendar">
                 <div class="calendar-header">
-                  <button class="nav-btn" @click="prevMonth">
+                  <button
+                    class="nav-btn"
+                    @click="prevMonth"
+                  >
                     <svg><use xlink:href="#iconLeft"></use></svg>
                   </button>
                   <span class="month-year">{{ calendarYear }}年{{ calendarMonth + 1 }}月</span>
-                  <button class="nav-btn" @click="nextMonth">
+                  <button
+                    class="nav-btn"
+                    @click="nextMonth"
+                  >
                     <svg><use xlink:href="#iconRight"></use></svg>
                   </button>
                 </div>
                 <div class="calendar-weekdays">
-                  <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
+                  <span
+                    v-for="day in weekdays"
+                    :key="day"
+                    class="weekday"
+                  >{{ day }}</span>
                 </div>
                 <div class="calendar-days">
                   <button
@@ -288,7 +412,7 @@
                     :class="{
                       'other-month': !day.isCurrentMonth,
                       'selected': day.date === tempSelectedDate,
-                      'today': day.isToday
+                      'today': day.isToday,
                     }"
                     @click="selectDate(day.date)"
                   >
@@ -297,12 +421,18 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="closeDatePicker">
+              <button
+                class="sheet-cancel-btn"
+                @click="closeDatePicker"
+              >
                 {{ t('common.cancel') || '取消' }}
               </button>
-              <button class="sheet-confirm-btn" @click="confirmDate">
+              <button
+                class="sheet-confirm-btn"
+                @click="confirmDate"
+              >
                 {{ t('common.confirm') || '确认' }}
               </button>
             </div>
@@ -310,7 +440,7 @@
         </Transition>
       </div>
     </Transition>
-    
+
 
 
     <!-- Reminder Drawer -->
@@ -331,48 +461,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import { createTask, createItem } from '@/utils/quickCreate';
-import type { PriorityLevel, Task, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
-import dayjs from '@/utils/dayjs';
-import { formatReminderDisplay } from '@/utils/displayUtils';
-import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
-import MobileReminderDrawer from '../pomodoro/MobileReminderDrawer.vue';
-import MobileRecurringDrawer from '../pomodoro/MobileRecurringDrawer.vue';
-import { TimeRangeSelector } from '@/mobile/components/time-picker';
+import type {
+  EndCondition,
+  PriorityLevel,
+  ReminderConfig,
+  RepeatRule,
+  Task,
+} from '@/types/models'
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import { TimeRangeSelector } from '@/mobile/components/time-picker'
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+} from '@/parser/recurringParser'
+import { useProjectStore } from '@/stores'
+import dayjs from '@/utils/dayjs'
+import { formatReminderDisplay } from '@/utils/displayUtils'
+import {
+  createItem,
+  createTask,
+} from '@/utils/quickCreate'
+import MobileRecurringDrawer from '../pomodoro/MobileRecurringDrawer.vue'
+import MobileReminderDrawer from '../pomodoro/MobileReminderDrawer.vue'
 
 const props = defineProps<{
-  modelValue: boolean;
-  preselectedProjectId?: string;
-  preselectedTaskId?: string;
-}>();
+  modelValue: boolean
+  preselectedProjectId?: string
+  preselectedTaskId?: string
+}>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'created': [];
-}>();
+  'update:modelValue': [value: boolean]
+  'created': []
+}>()
 
-const projectStore = useProjectStore();
+const close = () => {
+  emit('update:modelValue', false)
+}
+
+const projectStore = useProjectStore()
 
 // Form state
-const selectedProjectId = ref('');
-const selectedTaskId = ref('');
-const taskInput = ref('');
-const tempTaskInput = ref(''); // For task sheet
+const selectedProjectId = ref('')
+const selectedTaskId = ref('')
+const taskInput = ref('')
+const tempTaskInput = ref('') // For task sheet
 
 // Sheet visibility
-const showProjectSheet = ref(false);
-const showTaskSheet = ref(false);
-const showDatePicker = ref(false);
+const showProjectSheet = ref(false)
+const showTaskSheet = ref(false)
+const showDatePicker = ref(false)
 
 // Task sheet search
-const taskSearchQuery = ref('');
+const taskSearchQuery = ref('')
 
 // Date picker state
-const calendarDate = ref(dayjs());
-const tempSelectedDate = ref('');
+const calendarDate = ref(dayjs())
+const tempSelectedDate = ref('')
 
 
 
@@ -384,298 +534,305 @@ const itemForm = ref({
   startTime: '',
   endTime: '',
   priority: undefined as PriorityLevel | undefined,
-});
+})
 
 // 新增：提醒和重复配置
-const reminderConfig = ref<ReminderConfig | undefined>(undefined);
-const repeatRule = ref<RepeatRule | undefined>(undefined);
-const endCondition = ref<EndCondition | undefined>(undefined);
+const reminderConfig = ref<ReminderConfig | undefined>(undefined)
+const repeatRule = ref<RepeatRule | undefined>(undefined)
+const endCondition = ref<EndCondition | undefined>(undefined)
 
 // 抽屉显示状态
-const showReminderDrawer = ref(false);
-const showRecurringDrawer = ref(false);
+const showReminderDrawer = ref(false)
+const showRecurringDrawer = ref(false)
 
 // 提醒显示文本
 const reminderText = computed(() => {
   if (!reminderConfig.value?.enabled) {
-    return t('mobile.detail.setReminder') || '设置提醒';
+    return t('mobile.detail.setReminder') || '设置提醒'
   }
-  return formatReminderDisplay(reminderConfig.value, t);
-});
+  return formatReminderDisplay(reminderConfig.value, t)
+})
 
 // 重复显示文本
 const recurringText = computed(() => {
   if (!repeatRule.value) {
-    return t('mobile.detail.setRecurring') || '设置重复';
+    return t('mobile.detail.setRecurring') || '设置重复'
   }
-  const rule = generateRepeatRuleMarker(repeatRule.value, { includeEmoji: false });
-  const end = generateEndConditionMarker(endCondition.value);
-  return end ? `${rule} ${end}` : rule;
-});
+  const rule = generateRepeatRuleMarker(repeatRule.value, { includeEmoji: false })
+  const end = generateEndConditionMarker(endCondition.value)
+  return end ? `${rule} ${end}` : rule
+})
 
 // 处理设置提醒
 const handleSetReminder = () => {
-  showReminderDrawer.value = true;
-};
+  showReminderDrawer.value = true
+}
 
 // 处理设置重复
 const handleSetRecurring = () => {
-  showRecurringDrawer.value = true;
-};
+  showRecurringDrawer.value = true
+}
 
 // 处理保存提醒
 const handleReminderSave = (config: ReminderConfig) => {
-  reminderConfig.value = config;
-};
+  reminderConfig.value = config
+}
 
 // 处理保存重复
 const handleRecurringSave = (rule: RepeatRule | undefined, end: EndCondition | undefined) => {
-  repeatRule.value = rule;
-  endCondition.value = end;
-};
+  repeatRule.value = rule
+  endCondition.value = end
+}
 
 // Options
 const priorityOptions = [
-  { value: 'high' as PriorityLevel, label: t('todo.priority.high') || '高', emoji: '🔥' },
-  { value: 'medium' as PriorityLevel, label: t('todo.priority.medium') || '中', emoji: '🌱' },
-  { value: 'low' as PriorityLevel, label: t('todo.priority.low') || '低', emoji: '🍃' },
-];
+  {
+    value: 'high' as PriorityLevel,
+    label: t('todo.priority.high') || '高',
+    emoji: '🔥',
+  },
+  {
+    value: 'medium' as PriorityLevel,
+    label: t('todo.priority.medium') || '中',
+    emoji: '🌱',
+  },
+  {
+    value: 'low' as PriorityLevel,
+    label: t('todo.priority.low') || '低',
+    emoji: '🍃',
+  },
+]
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
 // Computed
-const projects = computed(() => projectStore.projects);
+const projects = computed(() => projectStore.projects)
 
 const selectedProjectName = computed(() => {
-  const project = projects.value.find(p => p.id === selectedProjectId.value);
-  return project?.name;
-});
+  const project = projects.value.find((p) => p.id === selectedProjectId.value)
+  return project?.name
+})
 
 const availableTasks = computed(() => {
-  if (!selectedProjectId.value) return [];
-  const project = projects.value.find(p => p.id === selectedProjectId.value);
-  return project?.tasks || [];
-});
+  if (!selectedProjectId.value) return []
+  const project = projects.value.find((p) => p.id === selectedProjectId.value)
+  return project?.tasks || []
+})
 
 const filteredTasksInSheet = computed(() => {
-  if (!taskSearchQuery.value) return availableTasks.value;
-  return availableTasks.value.filter(t => 
-    t.name.toLowerCase().includes(taskSearchQuery.value.toLowerCase())
-  );
-});
+  if (!taskSearchQuery.value) return availableTasks.value
+  return availableTasks.value.filter((t) =>
+    t.name.toLowerCase().includes(taskSearchQuery.value.toLowerCase()),
+  )
+})
 
 const isExistingTask = computed(() => {
-  return availableTasks.value.some(t => t.name === taskInput.value);
-});
+  return availableTasks.value.some((t) => t.name === taskInput.value)
+})
 
-const selectedTask = computed(() => {
-  return availableTasks.value.find(t => t.id === selectedTaskId.value);
-});
-
-const calendarYear = computed(() => calendarDate.value.year());
-const calendarMonth = computed(() => calendarDate.value.month());
+const calendarYear = computed(() => calendarDate.value.year())
+const calendarMonth = computed(() => calendarDate.value.month())
 
 const calendarDays = computed(() => {
-  const startOfMonth = calendarDate.value.startOf('month');
-  const endOfMonth = calendarDate.value.endOf('month');
-  const startDate = startOfMonth.startOf('week');
-  const endDate = endOfMonth.endOf('week');
-  
-  const days = [];
-  let current = startDate.clone();
-  
+  const startOfMonth = calendarDate.value.startOf('month')
+  const endOfMonth = calendarDate.value.endOf('month')
+  const startDate = startOfMonth.startOf('week')
+  const endDate = endOfMonth.endOf('week')
+
+  const days = []
+  let current = startDate.clone()
+
   while (current.isBefore(endDate) || current.isSame(endDate, 'day')) {
     days.push({
       date: current.format('YYYY-MM-DD'),
       day: current.date(),
       isCurrentMonth: current.month() === calendarMonth.value,
       isToday: current.isSame(dayjs(), 'day'),
-    });
-    current = current.add(1, 'day');
+    })
+    current = current.add(1, 'day')
   }
-  
-  return days;
-});
+
+  return days
+})
 
 const canSubmit = computed(() => {
-  if (!selectedProjectId.value) return false;
-  if (!taskInput.value.trim()) return false;
-  if (!itemForm.value.content.trim().length) return false;
+  if (!selectedProjectId.value) return false
+  if (!taskInput.value.trim()) return false
+  if (!itemForm.value.content.trim().length) return false
   // 自定义时间模式下需要填写完整的时间
   if (!itemForm.value.isAllDay) {
-    if (!itemForm.value.startTime || !itemForm.value.endTime) return false;
+    if (!itemForm.value.startTime || !itemForm.value.endTime) return false
   }
-  return true;
-});
+  return true
+})
+
+// Initialize form with preselected values
+const initForm = () => {
+  selectedProjectId.value = props.preselectedProjectId || ''
+  selectedTaskId.value = props.preselectedTaskId || ''
+
+  if (selectedTaskId.value) {
+    const task = availableTasks.value.find((t) => t.id === selectedTaskId.value)
+    if (task) {
+      taskInput.value = task.name
+    }
+  } else {
+    taskInput.value = ''
+  }
+
+  itemForm.value = {
+    content: '',
+    date: dayjs().format('YYYY-MM-DD'),
+    isAllDay: true,
+    startTime: '',
+    endTime: '',
+    priority: undefined,
+  }
+}
 
 // Watch for drawer open to reset/init form
 watch(() => props.modelValue, (val) => {
   if (val) {
-    initForm();
+    initForm()
   }
-});
-
-// Initialize form with preselected values
-const initForm = () => {
-  selectedProjectId.value = props.preselectedProjectId || '';
-  selectedTaskId.value = props.preselectedTaskId || '';
-  
-  // Set task input if task is preselected
-  if (selectedTaskId.value) {
-    const task = availableTasks.value.find(t => t.id === selectedTaskId.value);
-    if (task) {
-      taskInput.value = task.name;
-    }
-  } else {
-    taskInput.value = '';
-  }
-  
-  itemForm.value = {
-    content: '',
-    date: dayjs().format('YYYY-MM-DD'),
-    isAllDay: true, // 重置为全天
-    startTime: '',
-    endTime: '',
-    priority: undefined,
-  };
-};
+})
 
 // Format helpers
 const formatWeekday = (dateStr: string) => {
-  const date = dayjs(dateStr);
-  const today = dayjs();
-  const tomorrow = today.add(1, 'day');
-  
-  if (date.isSame(today, 'day')) return t('todo.today') || '今天';
-  if (date.isSame(tomorrow, 'day')) return t('todo.tomorrow') || '明天';
-  
-  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  return weekdays[date.day()];
-};
+  const date = dayjs(dateStr)
+  const today = dayjs()
+  const tomorrow = today.add(1, 'day')
+
+  if (date.isSame(today, 'day')) return t('todo.today') || '今天'
+  if (date.isSame(tomorrow, 'day')) return t('todo.tomorrow') || '明天'
+
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return weekdays[date.day()]
+}
 
 const formatDate = (dateStr: string) => {
-  return dayjs(dateStr).format('MM月DD日');
-};
+  return dayjs(dateStr).format('MM月DD日')
+}
 
 const formatQuickDate = (days: number) => {
-  return dayjs().add(days, 'day').format('MM-DD');
-};
+  return dayjs().add(days, 'day').format('MM-DD')
+}
 
 // Project selection
 const openProjectSelector = () => {
-  showProjectSheet.value = true;
-};
+  showProjectSheet.value = true
+}
 
 const closeProjectSheet = () => {
-  showProjectSheet.value = false;
-};
+  showProjectSheet.value = false
+}
 
 const selectProject = (id: string) => {
-  selectedProjectId.value = id;
-  selectedTaskId.value = '';
-  taskInput.value = '';
-  closeProjectSheet();
-};
+  selectedProjectId.value = id
+  selectedTaskId.value = ''
+  taskInput.value = ''
+  closeProjectSheet()
+}
 
 // Task selection
 const openTaskSelector = () => {
   if (!selectedProjectId.value) {
-    showProjectSheet.value = true;
-    return;
+    showProjectSheet.value = true
+    return
   }
-  taskSearchQuery.value = '';
-  tempTaskInput.value = taskInput.value;
-  showTaskSheet.value = true;
-};
+  taskSearchQuery.value = ''
+  tempTaskInput.value = taskInput.value
+  showTaskSheet.value = true
+}
 
 const closeTaskSheet = () => {
-  showTaskSheet.value = false;
-};
+  showTaskSheet.value = false
+}
 
 const selectTaskFromSheet = (task: Task) => {
-  selectedTaskId.value = task.id;
-  tempTaskInput.value = task.name;
-};
+  selectedTaskId.value = task.id
+  tempTaskInput.value = task.name
+}
 
 const confirmTaskSelection = () => {
-  taskInput.value = tempTaskInput.value || taskSearchQuery.value;
-  closeTaskSheet();
-};
+  taskInput.value = tempTaskInput.value || taskSearchQuery.value
+  closeTaskSheet()
+}
 
 // Date picker
 const openDatePicker = () => {
-  calendarDate.value = dayjs(itemForm.value.date);
-  tempSelectedDate.value = itemForm.value.date;
-  showDatePicker.value = true;
-};
+  calendarDate.value = dayjs(itemForm.value.date)
+  tempSelectedDate.value = itemForm.value.date
+  showDatePicker.value = true
+}
 
 const closeDatePicker = () => {
-  showDatePicker.value = false;
-};
+  showDatePicker.value = false
+}
 
 const prevMonth = () => {
-  calendarDate.value = calendarDate.value.subtract(1, 'month');
-};
+  calendarDate.value = calendarDate.value.subtract(1, 'month')
+}
 
 const nextMonth = () => {
-  calendarDate.value = calendarDate.value.add(1, 'month');
-};
+  calendarDate.value = calendarDate.value.add(1, 'month')
+}
 
 const selectDate = (date: string) => {
-  tempSelectedDate.value = date;
-};
-
-const selectQuickDate = (days: number) => {
-  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD');
-  confirmDate();
-};
+  tempSelectedDate.value = date
+}
 
 const confirmDate = () => {
-  itemForm.value.date = tempSelectedDate.value;
-  closeDatePicker();
-};
+  itemForm.value.date = tempSelectedDate.value
+  closeDatePicker()
+}
+
+const selectQuickDate = (days: number) => {
+  tempSelectedDate.value = dayjs().add(days, 'day').format('YYYY-MM-DD')
+  confirmDate()
+}
 
 // Time picker - 已迁移到 TimeRangeSelector 组件
 
 // Submit
 const handleSubmit = async () => {
-  if (!canSubmit.value) return;
-  
+  if (!canSubmit.value) return
+
   try {
     // Get project
-    const project = projects.value.find(p => p.id === selectedProjectId.value);
+    const project = projects.value.find((p) => p.id === selectedProjectId.value)
     if (!project?.id) {
-      console.error('Project not found');
-      return;
+      console.error('Project not found')
+      return
     }
-    
+
     // Ensure task exists
-    let taskBlockId = selectedTaskId.value;
-    
+    let taskBlockId = selectedTaskId.value
+
     if (!taskBlockId || !isExistingTask.value) {
       // Create new task (use project.id as docId)
       const result = await createTask(
         project.id,
         taskInput.value.trim(),
-        'L1'
-      );
-      
+        'L1',
+      )
+
       if (!result.success || !result.blockId) {
-        console.error('Failed to create task:', result.message);
-        return;
+        console.error('Failed to create task:', result.message)
+        return
       }
-      taskBlockId = result.blockId;
+      taskBlockId = result.blockId
     } else {
       // Get blockId from existing task
-      const task = availableTasks.value.find(t => t.id === taskBlockId);
-      taskBlockId = task?.blockId;
+      const task = availableTasks.value.find((t) => t.id === taskBlockId)
+      taskBlockId = task?.blockId
     }
-    
+
     if (!taskBlockId) {
-      console.error('Task blockId not found');
-      return;
+      console.error('Task blockId not found')
+      return
     }
-    
+
     // Create item
     const result = await createItem(
       taskBlockId,
@@ -688,23 +845,19 @@ const handleSubmit = async () => {
         reminder: reminderConfig.value,
         repeatRule: repeatRule.value,
         endCondition: endCondition.value,
-      }
-    );
-    
+      },
+    )
+
     if (result.success) {
-      emit('created');
-      close();
+      emit('created')
+      close()
     } else {
-      console.error('Failed to create item:', result.message);
+      console.error('Failed to create item:', result.message)
     }
   } catch (error) {
-    console.error('Error creating:', error);
+    console.error('Error creating:', error)
   }
-};
-
-const close = () => {
-  emit('update:modelValue', false);
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -814,20 +967,20 @@ const close = () => {
   background: var(--b3-theme-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover:not(:disabled) {
     border-color: var(--b3-theme-primary);
   }
-  
+
   &:active:not(:disabled) {
     transform: scale(0.99);
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   &.empty .selector-text {
     color: var(--b3-theme-on-surface);
     opacity: 0.5;
@@ -853,7 +1006,9 @@ const close = () => {
 .selector-icon {
   width: 20px;
   height: 20px;
-  fill: var(--b3-theme-primary);
+  fill: currentColor;
+  stroke: currentColor;
+  color: var(--b3-theme-on-surface);
 }
 
 // Task Input with suggestions
@@ -871,13 +1026,13 @@ const close = () => {
   color: var(--b3-theme-on-background);
   transition: all 0.2s ease;
   box-sizing: border-box;
-  
+
   &:focus {
     outline: none;
     border-color: var(--b3-theme-primary);
     box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   }
-  
+
   &::placeholder {
     color: var(--b3-theme-on-surface);
     opacity: 0.5;
@@ -894,7 +1049,7 @@ const close = () => {
   border-radius: 10px;
   color: var(--b3-theme-primary);
   font-size: 13px;
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -918,15 +1073,15 @@ const close = () => {
   padding: 12px 16px;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
   }
-  
+
   &.selected {
     background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.08);
   }
@@ -957,13 +1112,13 @@ const close = () => {
   color: var(--b3-theme-on-background);
   transition: all 0.2s ease;
   box-sizing: border-box;
-  
+
   &:focus {
     outline: none;
     border-color: var(--b3-theme-primary);
     box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   }
-  
+
   &::placeholder {
     color: var(--b3-theme-on-surface);
     opacity: 0.5;
@@ -1014,39 +1169,39 @@ const close = () => {
   background: var(--b3-theme-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: var(--b3-theme-primary);
   }
-  
+
   &:active {
     transform: scale(0.98);
   }
-  
+
   &.active {
     border-color: currentColor;
     background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.05);
   }
-  
+
   &.priority-high {
     color: #dc2626;
-    
+
     .priority-dot {
       background: #dc2626;
     }
   }
-  
+
   &.priority-medium {
     color: #ea580c;
-    
+
     .priority-dot {
       background: #ea580c;
     }
   }
-  
+
   &.priority-low {
     color: #4b5563;
-    
+
     .priority-dot {
       background: #4b5563;
     }
@@ -1113,14 +1268,15 @@ const close = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--b3-theme-surface-lighter);
+  // background: var(--b3-theme-surface-lighter);
+  color: var(--b3-theme-on-surface);
   border-radius: 10px;
   flex-shrink: 0;
 
   svg {
     width: 18px;
     height: 18px;
-    fill: var(--b3-theme-primary);
+    // fill: var(--b3-theme-on-surface);
   }
 }
 
@@ -1158,7 +1314,7 @@ const close = () => {
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -1175,11 +1331,11 @@ const close = () => {
   transition: all 0.2s ease;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
-  
+
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -1189,11 +1345,11 @@ const close = () => {
 .sheet-confirm-btn {
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
-  
+
   &:hover:not(:disabled) {
     opacity: 0.9;
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -1214,12 +1370,12 @@ const close = () => {
   font-size: 15px;
   color: var(--b3-theme-on-background);
   box-sizing: border-box;
-  
+
   &:focus {
     outline: none;
     border-color: var(--b3-theme-primary);
   }
-  
+
   &::placeholder {
     color: var(--b3-theme-on-surface);
     opacity: 0.5;
@@ -1236,7 +1392,7 @@ const close = () => {
   border-radius: 10px;
   color: var(--b3-theme-primary);
   font-size: 14px;
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -1246,7 +1402,7 @@ const close = () => {
 
 .option-icon.task-icon {
   background: rgba(16, 185, 129, 0.1);
-  
+
   svg {
     fill: #059669;
   }
@@ -1286,15 +1442,15 @@ const close = () => {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 4px;
-  
+
   &:hover {
     background: var(--b3-theme-surface);
   }
-  
+
   &:active {
     transform: scale(0.99);
   }
-  
+
   &.selected {
     background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.08);
   }
@@ -1309,7 +1465,7 @@ const close = () => {
   background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   border-radius: 10px;
   flex-shrink: 0;
-  
+
   svg {
     width: 18px;
     height: 18px;
@@ -1358,12 +1514,12 @@ const close = () => {
   background: var(--b3-theme-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: var(--b3-theme-primary);
     background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.05);
   }
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -1403,15 +1559,15 @@ const close = () => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: var(--b3-theme-surface-lighter);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -1458,25 +1614,25 @@ const close = () => {
   color: var(--b3-theme-on-background);
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover:not(.other-month) {
     background: var(--b3-theme-surface);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   &.other-month {
     color: var(--b3-theme-on-surface);
     opacity: 0.4;
   }
-  
+
   &.today {
     color: var(--b3-theme-primary);
     font-weight: 600;
   }
-  
+
   &.selected {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);

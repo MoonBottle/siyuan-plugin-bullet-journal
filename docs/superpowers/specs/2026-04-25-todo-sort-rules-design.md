@@ -141,20 +141,20 @@ Todo Dock 中事项卡片里的提醒 / 重复操作，视觉和交互需与 `It
 在类型层新增 Todo Dock 排序规则模型：
 
 ```ts
-export type TodoSortField =
-  | 'priority'
-  | 'time'
-  | 'date'
-  | 'reminderTime'
-  | 'project'
-  | 'task'
-  | 'content';
+export type TodoSortField
+  = | 'priority'
+    | 'time'
+    | 'date'
+    | 'reminderTime'
+    | 'project'
+    | 'task'
+    | 'content'
 
-export type TodoSortDirection = 'asc' | 'desc';
+export type TodoSortDirection = 'asc' | 'desc'
 
 export interface TodoSortRule {
-  field: TodoSortField;
-  direction: TodoSortDirection;
+  field: TodoSortField
+  direction: TodoSortDirection
 }
 ```
 

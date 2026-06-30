@@ -25,6 +25,7 @@ Fix production bug 🔥 @2026-05-04
 Write weekly report 🌱 @2026-05-05
 
 Organize documents 🍃 @2026-05-06
+
 ```
 
 ### Step 2: Open Quadrant View
@@ -40,11 +41,11 @@ Drag a task from one quadrant to another to automatically update its priority ma
 
 ## Access
 
-| Method | Action |
-|--------|--------|
+| Method              | Action                                          |
+| ------------------- | ----------------------------------------------- |
 | Right-click top bar | Right-click on empty area of top bar → Quadrant |
-| Dropdown menu | Click plugin icon in top bar → Quadrant |
-| Workbench | Create a "Quadrant View" in the Workbench |
+| Dropdown menu       | Click plugin icon in top bar → Quadrant         |
+| Workbench           | Create a "Quadrant View" in the Workbench       |
 
 > **Note**: Quadrant View is a desktop-only feature.
 
@@ -54,12 +55,12 @@ Drag a task from one quadrant to another to automatically update its priority ma
 
 The Quadrant View divides tasks into four panels by priority:
 
-| Quadrant | Name | Priority | Description |
-|----------|------|----------|-------------|
-| **Q1** | Important & Urgent | `🔥` High | Tasks that need immediate attention |
-| **Q2** | Important & Not Urgent | `🌱` Medium | Tasks that need scheduled time |
-| **Q3** | Urgent & Not Important | `🍃` Low | Tasks that could be delegated |
-| **Q4** | Not Important & Not Urgent | No priority | Tasks to consider removing |
+| Quadrant | Name                       | Priority    | Description                         |
+| -------- | -------------------------- | ----------- | ----------------------------------- |
+| **Q1**   | Important & Urgent         | `🔥` High   | Tasks that need immediate attention |
+| **Q2**   | Important & Not Urgent     | `🌱` Medium | Tasks that need scheduled time      |
+| **Q3**   | Urgent & Not Important     | `🍃` Low    | Tasks that could be delegated       |
+| **Q4**   | Not Important & Not Urgent | No priority | Tasks to consider removing          |
 
 ### Classification Logic
 
@@ -73,12 +74,12 @@ The Quadrant View divides tasks into four panels by priority:
 
 Use the following markers in notes to set item priority:
 
-| Marker | Priority | Quadrant |
-|--------|----------|----------|
-| `🔥` | High | Important & Urgent |
-| `🌱` | Medium | Important & Not Urgent |
-| `🍃` | Low | Urgent & Not Important |
-| None | None | Not Important & Not Urgent |
+| Marker | Priority | Quadrant                   |
+| ------ | -------- | -------------------------- |
+| `🔥`   | High     | Important & Urgent         |
+| `🌱`   | Medium   | Important & Not Urgent     |
+| `🍃`   | Low      | Urgent & Not Important     |
+| None   | None     | Not Important & Not Urgent |
 
 ### How to Set
 
@@ -155,9 +156,9 @@ The Workbench Dashboard supports adding a "Quadrant Summary" widget to display t
 
 ### Configuration Options
 
-| Option | Description |
-|--------|-------------|
-| **Group** | Filter by project group |
+| Option       | Description                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Group**    | Filter by project group                                                                                                              |
 | **Quadrant** | Select which quadrant to display (Important & Urgent / Important & Not Urgent / Urgent & Not Important / Not Important & Not Urgent) |
 
 ### Use Cases
@@ -190,9 +191,9 @@ The Quadrant View and priority markers are two representations of the same syste
 
 ### Difference from Todo View
 
-| Feature | Quadrant View | Todo View |
-|---------|---------------|-----------|
-| Sorting dimension | Importance × Urgency | Chronological order |
-| Core purpose | Task priority management | Task time management |
-| Interaction | Supports drag-to-adjust priority | View upcoming items by time |
-| Best for | Planning daily work focus | Viewing near-term todo list |
+| Feature           | Quadrant View                    | Todo View                   |
+| ----------------- | -------------------------------- | --------------------------- |
+| Sorting dimension | Importance × Urgency             | Chronological order         |
+| Core purpose      | Task priority management         | Task time management        |
+| Interaction       | Supports drag-to-adjust priority | View upcoming items by time |
+| Best for          | Planning daily work focus        | Viewing near-term todo list |

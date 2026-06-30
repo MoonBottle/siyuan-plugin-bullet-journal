@@ -12,12 +12,12 @@
 
 ## 文件清单
 
-| 文件 | 职责 |
-|------|------|
-| `src/components/project/ProjectView.vue` | 外层布局容器，控制三栏排列和间距 |
-| `src/components/project/ProjectListPane.vue` | 左栏 - 项目列表，卡片化样式 |
-| `src/components/project/ProjectTreePane.vue` | 中栏 - 任务树，卡片化样式 |
-| `src/components/project/ProjectDetailPane.vue` | 右栏 - 详情面板，卡片化样式 |
+| 文件                                           | 职责                             |
+| ---------------------------------------------- | -------------------------------- |
+| `src/components/project/ProjectView.vue`       | 外层布局容器，控制三栏排列和间距 |
+| `src/components/project/ProjectListPane.vue`   | 左栏 - 项目列表，卡片化样式      |
+| `src/components/project/ProjectTreePane.vue`   | 中栏 - 任务树，卡片化样式        |
+| `src/components/project/ProjectDetailPane.vue` | 右栏 - 详情面板，卡片化样式      |
 
 ---
 
@@ -26,6 +26,7 @@
 ### 任务 1：修改 ProjectView.vue 外层布局
 
 **文件：**
+
 - 修改：`src/components/project/ProjectView.vue`
 
 **变更内容：** 给 `.project-workbench` 添加 `gap: 16px`、`padding: 16px`，背景改为 `var(--b3-theme-surface)`。
@@ -43,6 +44,7 @@
   padding: 16px;
   background: var(--b3-theme-surface);
 }
+
 ```
 
 - [ ] **步骤 2：验证编译通过**
@@ -55,6 +57,7 @@
 ### 任务 2：修改 ProjectListPane.vue 卡片化
 
 **文件：**
+
 - 修改：`src/components/project/ProjectListPane.vue`
 
 **变更内容：** 移除 `border-right`，添加卡片边框和圆角，项目行改为卡片样式。
@@ -62,6 +65,7 @@
 - [ ] **步骤 1：修改 `.project-list-pane` 样式**
 
 将：
+
 ```scss
 .project-list-pane {
   display: flex;
@@ -74,9 +78,11 @@
   border-right: 1px solid var(--b3-border-color);
   overflow: auto;
 }
+
 ```
 
 改为：
+
 ```scss
 .project-list-pane {
   display: flex;
@@ -90,11 +96,13 @@
   border-radius: 12px;
   overflow: auto;
 }
+
 ```
 
 - [ ] **步骤 2：修改 `.project-list-row` 样式**
 
 将：
+
 ```scss
 .project-list-row {
   display: flex;
@@ -115,9 +123,11 @@
     border-color: var(--b3-theme-primary);
   }
 }
+
 ```
 
 改为：
+
 ```scss
 .project-list-row {
   display: flex;
@@ -138,6 +148,7 @@
     background: var(--b3-theme-primary-lightest);
   }
 }
+
 ```
 
 - [ ] **步骤 3：验证编译通过**
@@ -150,6 +161,7 @@
 ### 任务 3：修改 ProjectTreePane.vue 卡片化
 
 **文件：**
+
 - 修改：`src/components/project/ProjectTreePane.vue`
 
 **变更内容：** 添加卡片边框和圆角。
@@ -157,6 +169,7 @@
 - [ ] **步骤 1：修改 `.project-tree-pane` 样式**
 
 将：
+
 ```scss
 .project-tree-pane {
   display: flex;
@@ -167,9 +180,11 @@
   overflow: auto;
   background: var(--b3-theme-background);
 }
+
 ```
 
 改为：
+
 ```scss
 .project-tree-pane {
   display: flex;
@@ -182,6 +197,7 @@
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
 }
+
 ```
 
 - [ ] **步骤 2：验证编译通过**
@@ -194,6 +210,7 @@
 ### 任务 4：修改 ProjectDetailPane.vue 卡片化
 
 **文件：**
+
 - 修改：`src/components/project/ProjectDetailPane.vue`
 
 **变更内容：** 移除 `border-left`，添加卡片边框和圆角，统计卡片改为内嵌卡片样式。
@@ -201,6 +218,7 @@
 - [ ] **步骤 1：修改 `.project-detail-pane` 样式**
 
 将：
+
 ```scss
 .project-detail-pane {
   width: clamp(280px, 30vw, 420px);
@@ -210,9 +228,11 @@
   background: var(--b3-theme-surface);
   border-left: 1px solid var(--b3-border-color);
 }
+
 ```
 
 改为：
+
 ```scss
 .project-detail-pane {
   width: clamp(280px, 30vw, 420px);
@@ -223,11 +243,13 @@
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
 }
+
 ```
 
 - [ ] **步骤 2：修改 `.project-detail-pane__stats div` 样式**
 
 将：
+
 ```scss
 .project-detail-pane__stats {
   display: grid;
@@ -242,9 +264,11 @@
     background: var(--b3-theme-background);
   }
 }
+
 ```
 
 改为：
+
 ```scss
 .project-detail-pane__stats {
   display: grid;
@@ -259,6 +283,7 @@
     background: var(--b3-theme-surface);
   }
 }
+
 ```
 
 - [ ] **步骤 3：验证编译通过**
@@ -280,6 +305,7 @@
 ## 自检
 
 **1. 规格覆盖度：**
+
 - [x] 三栏各自显示为独立卡片，有圆角边框和背景色区分 → 任务 1-4
 - [x] 三栏之间有 16px 间距 → 任务 1
 - [x] 项目列表项有卡片化样式，hover/active 状态有明显高亮 → 任务 2

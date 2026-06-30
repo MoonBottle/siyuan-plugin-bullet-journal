@@ -44,11 +44,17 @@
           >+ {{ t('datePicker').addLinkage }}</button>
         </div>
 
-        <div v-if="linkages.length === 0" class="date-picker-config-dialog__empty">
+        <div
+          v-if="linkages.length === 0"
+          class="date-picker-config-dialog__empty"
+        >
           {{ t('datePicker').emptyLinkage }}
         </div>
 
-        <div v-else class="date-picker-config-dialog__rule-list">
+        <div
+          v-else
+          class="date-picker-config-dialog__rule-list"
+        >
           <div
             v-for="rule in linkages"
             :key="rule.id"
@@ -58,8 +64,22 @@
               {{ getTargetWidgetName(rule.targetWidgetId) }}
             </span>
             <div class="date-picker-config-dialog__rule-actions">
-              <button type="button" class="b3-tooltips b3-tooltips__nw" :aria-label="t('datePicker').editLinkage" @click="handleEdit(rule)"><svg><use xlink:href="#iconEdit"></use></svg></button>
-              <button type="button" class="b3-tooltips b3-tooltips__nw" :aria-label="t('datePicker').deleteLinkage" @click="handleDelete(rule.id)"><svg><use xlink:href="#iconTrashcan"></use></svg></button>
+              <button
+                type="button"
+                class="b3-tooltips b3-tooltips__nw"
+                :aria-label="t('datePicker').editLinkage"
+                @click="handleEdit(rule)"
+              >
+                <svg><use xlink:href="#iconEdit"></use></svg>
+              </button>
+              <button
+                type="button"
+                class="b3-tooltips b3-tooltips__nw"
+                :aria-label="t('datePicker').deleteLinkage"
+                @click="handleDelete(rule.id)"
+              >
+                <svg><use xlink:href="#iconTrashcan"></use></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -67,10 +87,18 @@
     </div>
 
     <template #footer>
-      <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
+      <button
+        class="b3-button b3-button--cancel"
+        type="button"
+        @click="onCancel"
+      >
         {{ t('common').cancel }}
       </button>
-      <button class="b3-button b3-button--text" type="button" @click="handleConfirm">
+      <button
+        class="b3-button b3-button--text"
+        type="button"
+        @click="handleConfirm"
+      >
         {{ t('common').confirm }}
       </button>
     </template>
@@ -78,96 +106,107 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { createApp } from 'vue';
-import { Dialog } from 'siyuan';
-import { getSharedPinia } from '@/utils/sharedPinia';
-import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue';
-import DatePickerLinkageEditorDialog from './DatePickerLinkageEditorDialog.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import { t } from '@/i18n';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-import { useSettingsStore } from '@/stores';
 import type {
-  WorkbenchDatePickerWidgetConfig,
   WidgetLinkageRule,
+  WorkbenchDatePickerWidgetConfig,
   WorkbenchWidgetInstance,
-} from '@/types/workbench';
+} from '@/types/workbench'
+import { Dialog } from 'siyuan'
+import {
+  computed,
+  createApp,
+  ref,
+
+} from 'vue'
+
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import { useSettingsStore } from '@/stores'
+import { getSharedPinia } from '@/utils/sharedPinia'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
+import DatePickerLinkageEditorDialog from './DatePickerLinkageEditorDialog.vue'
+import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue'
 
 const props = defineProps<{
-  initialConfig: WorkbenchDatePickerWidgetConfig;
-  dashboardWidgets: WorkbenchWidgetInstance[];
-  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchDatePickerWidgetConfig
+  dashboardWidgets: WorkbenchWidgetInstance[]
+  onConfirm: (config: WorkbenchDatePickerWidgetConfig) => void
+  onCancel: () => void
+}>()
 
-const defaultView = ref<'month' | 'week'>(props.initialConfig.view ?? 'month');
-const groupId = ref(props.initialConfig.groupId ?? '');
-const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])]);
-const settingsStore = useSettingsStore();
+const defaultView = ref<'month' | 'week'>(props.initialConfig.view ?? 'month')
+const groupId = ref(props.initialConfig.groupId ?? '')
+const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])])
+const settingsStore = useSettingsStore()
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
   settingsStore.groups.forEach((g: any) => {
-    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
+    options.push({
+      value: g.id,
+      label: g.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
 
 function getTargetWidgetName(widgetId: string): string {
-  const w = props.dashboardWidgets.find((w) => w.id === widgetId);
-  if (w?.title) return w.title;
-  if (w) return getWidgetDefinition(w.type).name;
-  return `(unknown: ${widgetId})`;
+  const w = props.dashboardWidgets.find((w) => w.id === widgetId)
+  if (w?.title) return w.title
+  if (w) return getWidgetDefinition(w.type).name
+  return `(unknown: ${widgetId})`
 }
 
 function handleAdd() {
-  openEditor(null);
+  openEditor(null)
 }
 
 function handleEdit(rule: WidgetLinkageRule) {
-  openEditor(rule);
+  openEditor(rule)
 }
 
 function handleDelete(ruleId: string) {
-  linkages.value = linkages.value.filter((r) => r.id !== ruleId);
+  linkages.value = linkages.value.filter((r) => r.id !== ruleId)
 }
 
 function openEditor(editingRule: WidgetLinkageRule | null) {
-  let dialog: Dialog | null = null;
-  const mountEl = document.createElement('div');
-  let app: ReturnType<typeof createApp> | null = null;
+  let dialog: Dialog | null = null
+  const mountEl = document.createElement('div')
+  let app: ReturnType<typeof createApp> | null = null
 
   dialog = new Dialog({
     title: editingRule ? t('datePicker').editLinkage : t('datePicker').addLinkage,
     content: '',
     width: '560px',
     destroyCallback: () => {
-      app?.unmount();
-      app = null;
+      app?.unmount()
+      app = null
     },
-  });
+  })
 
   app = createApp(DatePickerLinkageEditorDialog, {
     editingRule,
     availableWidgets: props.dashboardWidgets,
     onConfirm: (rule: WidgetLinkageRule) => {
       if (editingRule) {
-        const idx = linkages.value.findIndex((r) => r.id === editingRule.id);
-        if (idx >= 0) linkages.value[idx] = rule;
+        const idx = linkages.value.findIndex((r) => r.id === editingRule.id)
+        if (idx >= 0) linkages.value[idx] = rule
       }
       else {
-        linkages.value.push(rule);
+        linkages.value.push(rule)
       }
-      dialog?.destroy();
+      dialog?.destroy()
     },
     onCancel: () => dialog?.destroy(),
-  });
+  })
 
-  const pinia = getSharedPinia();
-  if (pinia) app.use(pinia);
-  app.mount(mountEl);
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
+  const pinia = getSharedPinia()
+  if (pinia) app.use(pinia)
+  app.mount(mountEl)
+  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl)
 }
 
 function handleConfirm() {
@@ -175,7 +214,7 @@ function handleConfirm() {
     view: defaultView.value,
     groupId: groupId.value || undefined,
     linkages: linkages.value,
-  });
+  })
 }
 </script>
 

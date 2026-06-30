@@ -1,5 +1,9 @@
 <template>
-  <div ref="tabRootRef" class="hk-work-tab calendar-tab">
+  <div
+    ref="tabRootRef"
+    class="hk-work-tab calendar-tab"
+    :class="{ 'calendar-tab--embedded': embedded }"
+  >
     <div class="block__icons">
       <CalendarDayHeader
         :title="currentTitle"
@@ -11,8 +15,6 @@
         @back="handleBack"
       />
       <span class="fn__flex-1 fn__space"></span>
-      <!-- 视图切换 -->
-      <SySelect v-model="currentView" :options="viewOptions" />
       <!-- 分组选择 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
@@ -20,8 +22,30 @@
         :options="groupOptions"
         :placeholder="t('settings').projectGroups.allGroups"
       />
+      <!-- 状态筛选 -->
+      <SySelect
+        v-model="selectedStatuses"
+        multiple
+        :options="statusOptions"
+        :placeholder="t('common').statusFilter"
+      />
+      <!-- 层级切换 -->
+      <SySelect
+        v-model="displayLevel"
+        :options="displayLevelOptions"
+      />
+      <!-- 视图切换 -->
+      <SySelect
+        v-model="currentView"
+        :options="viewOptions"
+      />
       <!-- 刷新按钮 -->
-      <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
+      <span
+        class="block__icon refresh-btn"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+        @mouseleave="hideTooltip"
+        @click="handleRefresh"
+      >
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
@@ -31,6 +55,9 @@
         ref="calendarRef"
         :events="calendarEvents"
         :initial-view="currentView"
+        :date-click-behavior="settingsStore.calendarDateClickBehavior"
+        :item-status-filter="effectiveStatusFilter"
+        :show-items="showItems"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -43,112 +70,217 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import type { PomodoroRecord } from '@/types/models';
-import { getCurrentPlugin, usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue';
-import CalendarView from '@/components/calendar/CalendarView.vue';
-import { DataConverter } from '@/utils/dataConverter';
-import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { persistCalendarEventChange } from '@/utils/calendarEventChange';
+import type {
+  ItemStatus,
+  PomodoroRecord,
+} from '@/types/models'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue'
+import CalendarView from '@/components/calendar/CalendarView.vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  usePlugin,
+} from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import {
+  calculateDayTotalDurationMinutes,
+  formatTotalDuration,
+} from '@/utils/calendarDuration'
+import { persistCalendarEventChange } from '@/utils/calendarEventChange'
+import { DataConverter } from '@/utils/dataConverter'
+import dayjs from '@/utils/dayjs'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { openDocumentAtLine } from '@/utils/fileUtils'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
-const plugin = usePlugin() as any;
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+  defaultView?: string
+  showItems?: boolean
+  groupId?: string
+  itemStatusFilter?: ItemStatus[]
+}>(), {
+  embedded: false,
+  showItems: true,
+})
 
-const tabRootRef = ref<HTMLElement | null>(null);
-const calendarRef = ref<any>(null);
-const currentView = ref('timeGridDay');
-const currentTitle = ref('');
-const selectedGroup = ref('');
+const emit = defineEmits<{
+  (event: 'update:itemStatusFilter', value: ItemStatus[]): void
+}>()
+
+const plugin = usePlugin() as any
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
+
+const tabRootRef = ref<HTMLElement | null>(null)
+const calendarRef = ref<any>(null)
+const currentView = ref(props.defaultView || settingsStore.calendarDefaultView || 'timeGridDay')
+const currentTitle = ref('')
+const selectedGroup = ref(props.groupId ?? '')
 /** drill-down 返回栈：栈顶为上一个点击进入的视图，用于逐级返回 */
-const previousViewStack = ref<string[]>([]);
+const previousViewStack = ref<string[]>([])
 /** 设置是否已加载，用于控制 CalendarView 的渲染 */
-const isSettingsLoaded = ref(false);
+const isSettingsLoaded = ref(false)
+
+// 状态筛选：SySelect 多选
+const ALL_STATUSES: ItemStatus[] = ['pending', 'completed', 'abandoned']
+const selectedStatuses = ref<(string | number)[]>(
+  props.itemStatusFilter ? [...props.itemStatusFilter] : [...ALL_STATUSES],
+)
+
+const statusOptions = [
+  {
+    value: 'pending' as string,
+    label: t('common').statusPending,
+  },
+  {
+    value: 'completed' as string,
+    label: t('common').statusCompleted,
+  },
+  {
+    value: 'abandoned' as string,
+    label: t('common').statusAbandoned,
+  },
+]
+
+// 计算传给 CalendarView 的 itemStatusFilter
+const effectiveStatusFilter = computed(() => {
+  if (selectedStatuses.value.length === ALL_STATUSES.length) return undefined
+  return selectedStatuses.value as ItemStatus[]
+})
+
+const displayLevelOptions = [
+  {
+    value: 'item',
+    label: t('calendar').itemsOnly,
+  },
+  {
+    value: 'task',
+    label: t('gantt').tasksOnly,
+  },
+]
+
+const displayLevel = ref<string | number>(props.showItems === false ? 'task' : 'item')
+const showItems = computed(() => displayLevel.value === 'item')
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
-  const events = projectStore.getFilteredCalendarEvents(selectedGroup.value);
-  console.log('[Task Assistant] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value);
-  return events;
-});
+  const events = projectStore.getCalendarEvents(showItems.value, effectiveStatusFilter.value)
+  if (!selectedGroup.value) return events
+  return events.filter((e) => {
+    const project = projectStore.projects.find((p) => p.id === e.extendedProps.docId)
+    return project?.groupId === selectedGroup.value
+  })
+})
 
 // 当前日历显示的日期（YYYY-MM-DD）
-const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
+const currentDateStr = ref(dayjs().format('YYYY-MM-DD'))
 
 // 是否显示番茄钟时间块（仅日视图 + 设置开启）
 const showPomodoroPanel = computed(() => {
-  return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks;
-});
+  return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks
+})
 
 const dayTotalDurationMinutes = computed(() => {
-  if (currentView.value !== 'timeGridDay') return 0;
+  if (currentView.value !== 'timeGridDay') return 0
   return calculateDayTotalDurationMinutes(
     filteredCalendarEvents.value,
     currentDateStr.value,
     settingsStore.lunchBreakStart,
-    settingsStore.lunchBreakEnd
-  );
-});
+    settingsStore.lunchBreakEnd,
+  )
+})
 
 const showDayTotalDuration = computed(() => {
-  return currentView.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0;
-});
+  return currentView.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0
+})
 
 const dayTotalDurationLabel = computed(() => {
-  const duration = formatTotalDuration(dayTotalDurationMinutes.value);
-  return t('calendar').dayTotalDuration.replace('{duration}', duration);
-});
+  const duration = formatTotalDuration(dayTotalDurationMinutes.value)
+  return t('calendar').dayTotalDuration.replace('{duration}', duration)
+})
 
 // 番茄钟背景时间块事件（右对齐，仅日视图）
 const pomodoroBlockEvents = computed(() => {
-  if (!showPomodoroPanel.value) return [];
-  const targetDate = currentDateStr.value;
-  const events = filteredCalendarEvents.value;
-  const pomodoros: PomodoroRecord[] = [];
-  const seenIds = new Set<string>();
+  if (!showPomodoroPanel.value) return []
+  const targetDate = currentDateStr.value
+  const events = filteredCalendarEvents.value
+  const pomodoros: PomodoroRecord[] = []
+  const seenIds = new Set<string>()
   for (const event of events) {
-    const pList = event.extendedProps?.pomodoros;
+    const pList = event.extendedProps?.pomodoros
     if (pList) {
       for (const p of pList) {
         if (!seenIds.has(p.id) && p.date === targetDate) {
-          seenIds.add(p.id);
-          pomodoros.push(p);
+          seenIds.add(p.id)
+          pomodoros.push(p)
         }
       }
     }
   }
-  return DataConverter.pomodoroBlocksToEvents(pomodoros);
-});
+  return DataConverter.pomodoroBlocksToEvents(pomodoros)
+})
 
 // 合并日历事件 + 番茄钟背景时间块
 const calendarEvents = computed(() => {
-  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value];
-});
+  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value]
+})
 
 // 视图选项
 const viewOptions = [
-  { value: 'dayGridMonth', label: t('calendar').month },
-  { value: 'timeGridWeek', label: t('calendar').week },
-  { value: 'timeGridDay', label: t('calendar').day },
-  { value: 'listWeek', label: t('calendar').list }
-];
+  {
+    value: 'dayGridMonth',
+    label: t('calendar').month,
+  },
+  {
+    value: 'timeGridWeek',
+    label: t('calendar').week,
+  },
+  {
+    value: 'timeGridDay',
+    label: t('calendar').day,
+  },
+  {
+    value: 'listWeek',
+    label: t('calendar').list,
+  },
+]
 
 // 分组选项
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
-  settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
-  });
-  return options;
-});
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }]
+  settingsStore.groups.forEach((g) => {
+    options.push({
+      value: g.id,
+      label: g.name || t('settings').projectGroups.unnamed,
+    })
+  })
+  return options
+})
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
@@ -159,209 +291,243 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     location: location.href,
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
-  });
-  if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  })
+  if (!plugin) return
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode', 'calendarDateClickBehavior']
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((k) => k in payload)
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
-    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
-    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
+    const patch: Record<string, unknown> = {}
+    storeKeys.forEach((k) => {
+      if (payload[k] !== undefined)
+        patch[k] = payload[k]
+    })
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch)
   } else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
-  await nextTick();
-};
+  await nextTick()
+}
+
+// 更新标题
+const updateTitle = () => {
+  if (calendarRef.value) {
+    currentTitle.value = calendarRef.value.getTitle() || ''
+    const d = calendarRef.value.getDate?.()
+    if (d) {
+      currentDateStr.value = dayjs(d).format('YYYY-MM-DD')
+    }
+  }
+}
 
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
-  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.log('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
-  if (!isVisible || !calendarRef.value || !date) return;
-  calendarRef.value.gotoDate(date);
-  updateTitle();
-};
+  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0
+  console.log('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value)
+  if (!isVisible || !calendarRef.value || !date) return
+  calendarRef.value.gotoDate(date)
+  updateTitle()
+}
 
 // 日历视图切换处理函数
 const handleCalendarChangeView = (view: string) => {
-  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.log('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
-  if (!isVisible || !calendarRef.value || !view) return;
+  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0
+  console.log('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value)
+  if (!isVisible || !calendarRef.value || !view) return
 
   // 将简写的视图名称映射为 FullCalendar 的视图名称
   const viewMap: Record<string, string> = {
-    'day': 'timeGridDay',
-    'week': 'timeGridWeek',
-    'month': 'dayGridMonth',
-    'list': 'listWeek'
-  };
-  const fullCalendarView = viewMap[view] || view;
+    day: 'timeGridDay',
+    week: 'timeGridWeek',
+    month: 'dayGridMonth',
+    list: 'listWeek',
+  }
+  const fullCalendarView = viewMap[view] || view
 
-  currentView.value = fullCalendarView;
-  calendarRef.value.changeView(fullCalendarView);
-  updateTitle();
-};
+  currentView.value = fullCalendarView
+  calendarRef.value.changeView(fullCalendarView)
+  updateTitle()
+}
 
 // 事件取消订阅函数
-let unsubscribeRefresh: (() => void) | null = null;
-let unsubscribeNavigate: (() => void) | null = null;
-let unsubscribeChangeView: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let unsubscribeNavigate: (() => void) | null = null
+let unsubscribeChangeView: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 // 初始化数据
+// defaultView：嵌入模式下 watch 以响应配置变更；独立模式下不 watch，避免覆盖用户手动切换
+watch(() => props.groupId, (val) => {
+  if (val !== undefined && val !== selectedGroup.value) {
+    selectedGroup.value = val
+  }
+})
+
+watch(() => props.itemStatusFilter, (val) => {
+  if (val !== undefined) {
+    selectedStatuses.value = [...val]
+  }
+})
+
+watch(() => props.defaultView, (val) => {
+  if (props.embedded && val && val !== currentView.value) {
+    currentView.value = val
+  }
+})
+
+watch(() => props.showItems, (val) => {
+  if (val !== undefined) {
+    displayLevel.value = val ? 'item' : 'task'
+  }
+})
+
+watch(selectedStatuses, (val) => {
+  emit('update:itemStatusFilter', val as ItemStatus[])
+}, { deep: true })
+
 onMounted(async () => {
-  console.log('[Task Assistant] CalendarTab onMounted');
+  console.log('[Task Assistant] CalendarTab onMounted')
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
-  unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
-  unsubscribeChangeView = eventBus.on(Events.CALENDAR_CHANGE_VIEW, handleCalendarChangeView);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
+  unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate)
+  unsubscribeChangeView = eventBus.on(Events.CALENDAR_CHANGE_VIEW, handleCalendarChangeView)
 
   // 从插件加载设置
-  settingsStore.loadFromPlugin();
+  settingsStore.loadFromPlugin()
 
-  // 应用日历默认视图配置
-  currentView.value = settingsStore.calendarDefaultView || 'timeGridDay';
+  // 应用日历默认视图配置（嵌入模式优先使用 props.defaultView）
+  if (!props.defaultView) {
+    currentView.value = settingsStore.calendarDefaultView || 'timeGridDay'
+  }
 
   // 标记设置已加载，允许 CalendarView 渲染
-  isSettingsLoaded.value = true;
+  isSettingsLoaded.value = true
 
-  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
-    selectedGroup.value = settingsStore.defaultGroup;
+  if (!selectedGroup.value && settingsStore.defaultGroup) {
+    selectedGroup.value = settingsStore.defaultGroup
   }
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
-      onRefresh: payload => handleDataRefresh(payload),
+      onRefresh: (payload) => handleDataRefresh(payload),
       viewName: 'CalendarTab',
-    });
+    })
   } catch {
     // 忽略
   }
 
   // 等待日历初始化后更新标题
-  await nextTick();
+  await nextTick()
   setTimeout(() => {
-    updateTitle();
-  }, 100);
-});
+    updateTitle()
+  }, 100)
+})
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (unsubscribeNavigate) {
-    unsubscribeNavigate();
+    unsubscribeNavigate()
   }
   if (unsubscribeChangeView) {
-    unsubscribeChangeView();
+    unsubscribeChangeView()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 
 const handleRefresh = async () => {
+  hideTooltip()
   if (plugin) {
     await plugin.requestRefresh?.({
       type: 'full',
       reason: 'calendar-tab:manual-refresh',
-    });
-    showMessage(t('common').dataRefreshed);
+    })
+    showMessage(t('common').dataRefreshed)
   }
-};
+}
 
 // 日历导航方法
 const handlePrev = () => {
-  calendarRef.value?.prev();
-  updateTitle();
-};
+  calendarRef.value?.prev()
+  updateTitle()
+}
 
 const handleNext = () => {
-  calendarRef.value?.next();
-  updateTitle();
-};
+  calendarRef.value?.next()
+  updateTitle()
+}
 
 const handleToday = () => {
-  calendarRef.value?.today();
-  updateTitle();
-};
+  calendarRef.value?.today()
+  updateTitle()
+}
 
 // 点击日期进入日视图时的回调（view 为当前离开的视图：周或月）
 const handleDayViewFromClick = (view: string) => {
-  previousViewStack.value = [...previousViewStack.value, view];
-};
+  previousViewStack.value = [...previousViewStack.value, view]
+}
 
 // 点击周数列进入周视图时的回调（view 为当前离开的视图：月或日）
 const handleWeekViewFromClick = (view: string) => {
-  previousViewStack.value = [...previousViewStack.value, view];
-};
+  previousViewStack.value = [...previousViewStack.value, view]
+}
 
 // 返回上一级视图（不改变右上角下拉框，仅切换实际视图）
 const handleBack = () => {
-  const stack = previousViewStack.value;
-  if (stack.length === 0) return;
-  const viewToRestore = stack[stack.length - 1];
-  previousViewStack.value = stack.slice(0, -1);
-  calendarRef.value?.changeView(viewToRestore);
-  updateTitle();
-};
-
-// 更新标题
-const updateTitle = () => {
-  if (calendarRef.value) {
-    currentTitle.value = calendarRef.value.getTitle() || '';
-    // 同步更新当前日期
-    const d = calendarRef.value.getDate?.();
-    if (d) {
-      currentDateStr.value = dayjs(d).format('YYYY-MM-DD');
-    }
-  }
-};
+  const stack = previousViewStack.value
+  if (stack.length === 0) return
+  const viewToRestore = stack.at(-1)
+  previousViewStack.value = stack.slice(0, -1)
+  calendarRef.value?.changeView(viewToRestore)
+  updateTitle()
+}
 
 const handleEventClick = async (eventInfo: any) => {
-  const event = eventInfo.event;
-  if (!event) return;
+  const event = eventInfo.event
+  if (!event) return
 
-  const docId = event.extendedProps?.docId;
-  const lineNumber = event.extendedProps?.lineNumber;
-  const blockId = event.extendedProps?.blockId;
+  const docId = event.extendedProps?.docId
+  const lineNumber = event.extendedProps?.lineNumber
+  const blockId = event.extendedProps?.blockId
   if (docId) {
-    await openDocumentAtLine(docId, lineNumber, blockId);
+    await openDocumentAtLine(docId, lineNumber, blockId)
   }
-};
-
-// 处理事件拖拽
-const handleEventDrop = async (eventInfo: any) => {
-  await handleEventChange(eventInfo, 'move');
-};
-
-// 处理事件调整大小
-const handleEventResize = async (eventInfo: any) => {
-  await handleEventChange(eventInfo, 'resize');
-};
+}
 
 // 统一处理事件变化
 const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
-  await persistCalendarEventChange(eventInfo, action);
-};
+  await persistCalendarEventChange(eventInfo, action)
+}
+
+// 处理事件拖拽
+const handleEventDrop = async (eventInfo: any) => {
+  await handleEventChange(eventInfo, 'move')
+}
+
+// 处理事件调整大小
+const handleEventResize = async (eventInfo: any) => {
+  await handleEventChange(eventInfo, 'resize')
+}
 
 // 监听视图切换（用户手动切换下拉框时清空 drill-down 栈）
 watch(currentView, (newView) => {
-  calendarRef.value?.changeView(newView);
-  previousViewStack.value = [];
-  updateTitle();
-});
+  calendarRef.value?.changeView(newView)
+  previousViewStack.value = []
+  updateTitle()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -372,25 +538,21 @@ watch(currentView, (newView) => {
   flex-direction: column;
 }
 
+.calendar-tab--embedded {
+  .block__icons {
+    padding: 6px 0 6px 3px;
+  }
+
+  .tab-content {
+    padding: 0;
+  }
+}
+
 .block__icons {
+  gap: 8px;
+  padding: 6px 12px;
   .block__icon {
     opacity: 1;
-  }
-
-  select.b3-select {
-    width: auto !important;
-    min-width: 60px;
-    margin-left: 8px;
-    padding: 4px 24px 4px 8px;
-  }
-
-  /* 两个下拉框之间的间距 */
-  .sy-select + .sy-select {
-    margin-left: 12px;
-  }
-
-  .refresh-btn {
-    margin-left: 6px;
   }
 }
 
@@ -399,6 +561,6 @@ watch(currentView, (newView) => {
   min-height: 0;
   overflow: hidden;
   display: flex;
-
+  padding: 0 12px;
 }
 </style>

@@ -1,22 +1,33 @@
-import { describe, expect, it } from 'vitest';
-import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
-import type { CalendarEvent } from '@/types/models';
+import type { CalendarEvent } from '@/types/models'
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
+import {
+  calculateDayTotalDurationMinutes,
+  formatTotalDuration,
+} from '@/utils/calendarDuration'
 
-function createEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
+function createEvent(overrides: Omit<Partial<CalendarEvent>, 'extendedProps'> & { extendedProps?: Partial<CalendarEvent['extendedProps']> }): CalendarEvent {
+  const {
+    extendedProps,
+    ...restOverrides
+  } = overrides
   return {
     id: 'event-1',
     title: '事项',
     start: '2026-04-25 09:00:00',
     end: '2026-04-25 10:00:00',
     allDay: false,
+    ...restOverrides,
     extendedProps: {
       hasItems: true,
       docId: 'doc-1',
       lineNumber: 1,
-      ...overrides.extendedProps,
-    },
-    ...overrides,
-  };
+      ...extendedProps,
+    } as CalendarEvent['extendedProps'],
+  }
 }
 
 describe('calendarDuration', () => {
@@ -63,17 +74,17 @@ describe('calendarDuration', () => {
           date: '2026-04-26',
         },
       }),
-    ];
+    ]
 
     const totalMinutes = calculateDayTotalDurationMinutes(
       events,
       '2026-04-25',
       '12:00',
-      '13:00'
-    );
+      '13:00',
+    )
 
-    expect(totalMinutes).toBe(120);
-  });
+    expect(totalMinutes).toBe(120)
+  })
 
   it('忽略没有完整起止时间的事件', () => {
     const events: CalendarEvent[] = [
@@ -92,13 +103,13 @@ describe('calendarDuration', () => {
           date: '2026-04-25',
         },
       }),
-    ];
+    ]
 
-    expect(calculateDayTotalDurationMinutes(events, '2026-04-25')).toBe(90);
-  });
+    expect(calculateDayTotalDurationMinutes(events, '2026-04-25')).toBe(90)
+  })
 
   it('格式化总耗时为 H:mm', () => {
-    expect(formatTotalDuration(45)).toBe('0:45');
-    expect(formatTotalDuration(135)).toBe('2:15');
-  });
-});
+    expect(formatTotalDuration(45)).toBe('0:45')
+    expect(formatTotalDuration(135)).toBe('2:15')
+  })
+})

@@ -38,13 +38,13 @@ For **Trae**: Settings → MCP → Add MCP server → Paste config → Replace `
 
 The AI uses these tools to access Task Assistant data (all parameters optional, can be combined).
 
-| Tool | Purpose | Main parameters |
-|------|---------|-----------------|
-| **list_groups** | List all project groups | None |
-| **list_projects** | List projects | `groupId`: filter by group |
-| **filter_items** | Filter task items by criteria | `projectId` / `projectIds`, `groupId`, `startDate` / `endDate` (YYYY-MM-DD), `status` (pending / completed / abandoned); response includes each item's `pomodoros` list |
-| **get_pomodoro_stats** | Get pomodoro statistics | `date: "today"` or `startDate` / `endDate`, optional `projectId`; returns pomodoro count and focus minutes |
-| **get_pomodoro_records** | Get pomodoro record list | Same as get_pomodoro_stats; returns time, item, duration per record |
+| Tool                     | Purpose                       | Main parameters                                                                                                                                                         |
+| ------------------------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **list_groups**          | List all project groups       | None                                                                                                                                                                    |
+| **list_projects**        | List projects                 | `groupId`: filter by group                                                                                                                                              |
+| **filter_items**         | Filter task items by criteria | `projectId` / `projectIds`, `groupId`, `startDate` / `endDate` (YYYY-MM-DD), `status` (pending / completed / abandoned); response includes each item's `pomodoros` list |
+| **get_pomodoro_stats**   | Get pomodoro statistics       | `date: "today"` or `startDate` / `endDate`, optional `projectId`; returns pomodoro count and focus minutes                                                              |
+| **get_pomodoro_records** | Get pomodoro record list      | Same as get_pomodoro_stats; returns time, item, duration per record                                                                                                     |
 
 - The `id` from **list_groups** can be used as `groupId` in **list_projects** and **filter_items**.
 - The `id` from **list_projects** can be used as `projectId` / `projectIds` in **filter_items** and as `projectId` in **get_pomodoro_stats** / **get_pomodoro_records**.

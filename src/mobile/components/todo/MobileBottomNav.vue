@@ -1,27 +1,39 @@
 <template>
   <div class="mobile-bottom-nav">
     <div class="nav-content">
-      <button class="nav-item" @click="handleOpenPomodoro">
+      <button
+        class="nav-item"
+        @click="handleOpenPomodoro"
+      >
         <div class="nav-icon-wrapper">
           <svg class="nav-icon"><use xlink:href="#iconClock"></use></svg>
         </div>
         <span class="nav-label">{{ t('pomodoro').title || '番茄钟' }}</span>
       </button>
-      
-      <button class="nav-item" @click="emit('open-habit')">
+
+      <button
+        class="nav-item"
+        @click="emit('openHabit')"
+      >
         <div class="nav-icon-wrapper">
           <svg class="nav-icon"><use xlink:href="#iconCheck"></use></svg>
         </div>
         <span class="nav-label">{{ t('habit').title }}</span>
       </button>
-      
+
       <div class="nav-spacer">
-        <button class="add-btn" @click="emit('create')">
+        <button
+          class="add-btn"
+          @click="emit('create')"
+        >
           <svg><use xlink:href="#iconAdd"></use></svg>
         </button>
       </div>
-      
-      <button class="nav-item" @click="showSettings">
+
+      <button
+        class="nav-item"
+        @click="showSettings"
+      >
         <div class="nav-icon-wrapper">
           <svg class="nav-icon"><use xlink:href="#iconSettings"></use></svg>
         </div>
@@ -29,32 +41,32 @@
       </button>
     </div>
   </div>
-  
+
   <!-- Settings Drawer -->
   <SettingsDrawer v-model="showSettingsDrawer" />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { t } from '@/i18n';
-import SettingsDrawer from '../../drawers/settings/SettingsDrawer.vue';
+import { ref } from 'vue'
+import { t } from '@/i18n'
+import SettingsDrawer from '../../drawers/settings/SettingsDrawer.vue'
 
 const emit = defineEmits<{
-  'open-pomodoro': [];
-  'open-habit': [];
-  create: [];
-}>();
+  openPomodoro: []
+  openHabit: []
+  create: []
+}>()
 
-const showSettingsDrawer = ref(false);
+const showSettingsDrawer = ref(false)
 
 const showSettings = () => {
-  showSettingsDrawer.value = true;
-};
+  showSettingsDrawer.value = true
+}
 
 const handleOpenPomodoro = () => {
-  console.log('[MobileBottomNav] 番茄钟按钮被点击');
-  emit('open-pomodoro');
-};
+  console.log('[MobileBottomNav] 番茄钟按钮被点击')
+  emit('openPomodoro')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -88,15 +100,15 @@ const handleOpenPomodoro = () => {
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
   transition: all 0.2s ease;
-  
+
   &:hover {
     opacity: 1;
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   &.active {
     opacity: 1;
     color: var(--b3-theme-primary);
@@ -137,29 +149,32 @@ const handleOpenPomodoro = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--b3-theme-primary) 0%, rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--b3-theme-primary) 0%,
+    rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.8) 100%
+  );
   color: var(--b3-theme-on-primary);
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.4),
     0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-  
+
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 6px 16px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.5),
       0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
+
   &:active {
     transform: translateY(0) scale(0.95);
-    box-shadow: 
-      0 2px 8px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.3);
+    box-shadow: 0 2px 8px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.3);
   }
-  
+
   svg {
     width: 24px;
     height: 24px;

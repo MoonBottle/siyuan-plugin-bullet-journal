@@ -8,14 +8,14 @@
 
 ### 2.1 分组展示
 
-| 分组 | 描述 | 显示条件 |
-|------|------|----------|
+| 分组   | 描述                         | 显示条件         |
+| ------ | ---------------------------- | ---------------- |
 | 已过期 | 日期已过但未完成未放弃的事项 | 有过期事项时显示 |
-| 今天 | 今天的事项 | 始终显示 |
-| 明天 | 明天的事项 | 有明天事项时显示 |
-| 未来 | 明天之后的事项 | 有未来事项时显示 |
-| 已完成 | 已完成的事项 | 可配置显示/隐藏 |
-| 已放弃 | 已放弃的事项 | 可配置显示/隐藏 |
+| 今天   | 今天的事项                   | 始终显示         |
+| 明天   | 明天的事项                   | 有明天事项时显示 |
+| 未来   | 明天之后的事项               | 有未来事项时显示 |
+| 已完成 | 已完成的事项                 | 可配置显示/隐藏  |
+| 已放弃 | 已放弃的事项                 | 可配置显示/隐藏  |
 
 ### 2.2 功能需求
 
@@ -56,18 +56,18 @@
 ```typescript
 // 待办状态
 interface TodoDockSettings {
-  hideCompleted: boolean;
-  hideAbandoned: boolean;
+  hideCompleted: boolean
+  hideAbandoned: boolean
 }
 
 // 分组事项
 interface GroupedItems {
-  expired: Item[];      // 已过期
-  today: Item[];        // 今天
-  tomorrow: Item[];     // 明天
-  future: Item[];       // 未来
-  completed: Item[];    // 已完成
-  abandoned: Item[];    // 已放弃
+  expired: Item[] // 已过期
+  today: Item[] // 今天
+  tomorrow: Item[] // 明天
+  future: Item[] // 未来
+  completed: Item[] // 已完成
+  abandoned: Item[] // 已放弃
 }
 ```
 
@@ -75,20 +75,20 @@ interface GroupedItems {
 
 ```typescript
 // ProjectStore Getters
-getExpiredItems: (state) => (groupId: string) => {
+getExpiredItems: state => (groupId: string) => {
   return items.filter(item =>
-    item.date < state.currentDate &&
-    item.status !== 'completed' &&
-    item.status !== 'abandoned'
-  );
+    item.date < state.currentDate
+    && item.status !== 'completed'
+    && item.status !== 'abandoned'
+  )
 }
 
-getFutureItems: (state) => (groupId: string) => {
+getFutureItems: state => (groupId: string) => {
   return items.filter(item =>
-    item.date >= state.currentDate &&
-    item.status !== 'completed' &&
-    item.status !== 'abandoned'
-  );
+    item.date >= state.currentDate
+    && item.status !== 'completed'
+    && item.status !== 'abandoned'
+  )
 }
 ```
 
@@ -146,11 +146,11 @@ src/
 
 ### 4.2 状态图标
 
-| 状态 | 图标 |
-|------|------|
-| 待办 | ☐ |
-| 已完成 | ☑ |
-| 已放弃 | 🚫 |
+| 状态   | 图标 |
+| ------ | ---- |
+| 待办   | ☐    |
+| 已完成 | ☑    |
+| 已放弃 | 🚫   |
 
 ### 4.3 交互设计
 
@@ -198,15 +198,15 @@ src/
 ```typescript
 // 设置存储
 interface TodoDockSettings {
-  hideCompleted: boolean;  // 隐藏已完成
-  hideAbandoned: boolean;  // 隐藏已放弃
+  hideCompleted: boolean // 隐藏已完成
+  hideAbandoned: boolean // 隐藏已放弃
 }
 
 // 默认设置
 const defaultSettings = {
   hideCompleted: false,
   hideAbandoned: false
-};
+}
 ```
 
 ### 6.2 设置持久化

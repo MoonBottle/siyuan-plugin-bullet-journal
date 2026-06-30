@@ -23,6 +23,7 @@
 ### Task 1: Add regression tests for the new example-document shape
 
 **Files:**
+
 - Create: `test/utils/exampleDocUtils.test.ts`
 - Modify: `src/utils/exampleDocUtils.ts`
 
@@ -31,76 +32,77 @@
 Create `test/utils/exampleDocUtils.test.ts` with a focused test that mocks locale, dates, and translation tags, then asserts the generated Chinese example contains the required sections in the required order.
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockFormat = vi.fn(() => '2026-05-12');
+const mockFormat = vi.fn(() => '2026-05-12')
 const mockAdd = vi.fn(() => ({
   format: vi.fn(() => '2026-05-13'),
-}));
+}))
 const mockSubtract = vi.fn(() => ({
   format: vi.fn(() => '2026-05-11'),
-}));
+}))
 
 const mockDayjs = vi.fn(() => ({
   format: mockFormat,
   add: mockAdd,
   subtract: mockSubtract,
-}));
+}))
 
-let currentLocale = 'zh_CN';
+let currentLocale = 'zh_CN'
 
 vi.mock('@/utils/dayjs', () => ({
   default: mockDayjs,
-}));
+}))
 
 vi.mock('@/i18n', () => ({
   getCurrentLocale: () => currentLocale,
   t: (key: string) => {
     if (key === 'taskTag')
-      return '#任务';
+      return '#任务'
     if (key === 'dateMarker')
-      return '📅';
-    if (key === 'statusTag')
+      return '📅'
+    if (key === 'statusTag') {
       return {
         completed: '#已完成',
         abandoned: '#已放弃',
-      };
-    return key;
+      }
+    }
+    return key
   },
-}));
+}))
 
 describe('generateExampleContent', () => {
   beforeEach(() => {
-    currentLocale = 'zh_CN';
-  });
+    currentLocale = 'zh_CN'
+  })
 
   it('builds a layered Chinese onboarding example', async () => {
-    const { generateExampleContent } = await import('@/utils/exampleDocUtils');
+    const { generateExampleContent } = await import('@/utils/exampleDocUtils')
 
-    const content = generateExampleContent();
+    const content = generateExampleContent()
 
-    expect(content).toContain('## 任务助手示例');
-    expect(content).toContain('整理日报 📅2026-05-12');
-    expect(content).toContain('复盘会议 📅2026-05-12 18:00');
-    expect(content).toContain('番茄专注示例');
-    expect(content).toContain(`🍅2026-05-12 10:00:00~10:25:00`);
-    expect(content).toContain('首页改版 📋 @L1');
-    expect(content).toContain('/jt /today');
-    expect(content).toContain('/xg /habit');
+    expect(content).toContain('## 任务助手示例')
+    expect(content).toContain('整理日报 📅2026-05-12')
+    expect(content).toContain('复盘会议 📅2026-05-12 18:00')
+    expect(content).toContain('番茄专注示例')
+    expect(content).toContain(`🍅2026-05-12 10:00:00~10:25:00`)
+    expect(content).toContain('首页改版 📋 @L1')
+    expect(content).toContain('/jt /today')
+    expect(content).toContain('/xg /habit')
 
-    const standaloneIndex = content.indexOf('## 快速开始');
-    const pomodoroIndex = content.indexOf('## 事项和番茄钟');
-    const projectIndex = content.indexOf('## 任务和事项');
-    const moreIndex = content.indexOf('## 更多玩法');
-    const slashIndex = content.indexOf('## 常用斜杠命令');
+    const standaloneIndex = content.indexOf('## 快速开始')
+    const pomodoroIndex = content.indexOf('## 事项和番茄钟')
+    const projectIndex = content.indexOf('## 任务和事项')
+    const moreIndex = content.indexOf('## 更多玩法')
+    const slashIndex = content.indexOf('## 常用斜杠命令')
 
-    expect(standaloneIndex).toBeGreaterThanOrEqual(0);
-    expect(pomodoroIndex).toBeGreaterThan(standaloneIndex);
-    expect(projectIndex).toBeGreaterThan(pomodoroIndex);
-    expect(moreIndex).toBeGreaterThan(projectIndex);
-    expect(slashIndex).toBeGreaterThan(moreIndex);
-  });
-});
+    expect(standaloneIndex).toBeGreaterThanOrEqual(0)
+    expect(pomodoroIndex).toBeGreaterThan(standaloneIndex)
+    expect(projectIndex).toBeGreaterThan(pomodoroIndex)
+    expect(moreIndex).toBeGreaterThan(projectIndex)
+    expect(slashIndex).toBeGreaterThan(moreIndex)
+  })
+})
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -126,7 +128,7 @@ export function generateExampleContent(): string {
 Keep `createExampleDocument()` calling the same function:
 
 ```ts
-const content = generateExampleContent();
+const content = generateExampleContent()
 ```
 
 - [ ] **Step 4: Run the test again to verify it still fails on content shape**
@@ -149,6 +151,7 @@ git commit -m "test(example-doc): cover generated sample structure"
 ### Task 2: Rewrite the Chinese example content into a layered walkthrough
 
 **Files:**
+
 - Modify: `src/utils/exampleDocUtils.ts`
 - Test: `test/utils/exampleDocUtils.test.ts`
 
@@ -157,10 +160,10 @@ git commit -m "test(example-doc): cover generated sample structure"
 Extend the Chinese test so it requires the standalone-item hint, the pomodoro explanation, and the habit slash-command recommendation rather than a hand-written habit-only workflow.
 
 ```ts
-expect(content).toContain('你也可以在 daily note 里直接写独立事项');
-expect(content).toContain('专注结束后会自动在事项下追加一条番茄记录');
-expect(content).toContain('创建或编辑习惯，推荐使用 /xg /habit');
-expect(content).not.toContain('这是一个已放弃的事项');
+expect(content).toContain('你也可以在 daily note 里直接写独立事项')
+expect(content).toContain('专注结束后会自动在事项下追加一条番茄记录')
+expect(content).toContain('创建或编辑习惯，推荐使用 /xg /habit')
+expect(content).not.toContain('这是一个已放弃的事项')
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -233,7 +236,7 @@ return `## 任务助手示例
 - /tx /reminder：设置提醒
 - /cf /recurring：设置重复
 - /zz /focus：开始番茄钟
-`;
+`
 ```
 
 Keep the wording tight. Do not add back the abandoned-state teaching sentence or the long command list.
@@ -258,6 +261,7 @@ git commit -m "feat(example-doc): restructure zh onboarding sample"
 ### Task 3: Add English coverage and rewrite the English example to match
 
 **Files:**
+
 - Modify: `src/utils/exampleDocUtils.ts`
 - Modify: `test/utils/exampleDocUtils.test.ts`
 
@@ -267,23 +271,23 @@ Add a second test that switches locale to `en_US` and expects the same teaching 
 
 ```ts
 it('builds a layered English onboarding example', async () => {
-  currentLocale = 'en_US';
-  const { generateExampleContent } = await import('@/utils/exampleDocUtils');
+  currentLocale = 'en_US'
+  const { generateExampleContent } = await import('@/utils/exampleDocUtils')
 
-  const content = generateExampleContent();
+  const content = generateExampleContent()
 
-  expect(content).toContain('## Task Assistant Example');
-  expect(content).toContain('## Quick Start');
-  expect(content).toContain('You can also add standalone items in a daily note');
-  expect(content).toContain('## Items and Pomodoro');
-  expect(content).toContain('## Tasks and Items');
-  expect(content).toContain('## More Examples');
-  expect(content).toContain('## Common Slash Commands');
-  expect(content).toContain('/jt /today');
-  expect(content).toContain('/xg /habit');
-  expect(content).toContain('Create or edit habits with /xg /habit');
-  expect(content).not.toContain('This is an abandoned item');
-});
+  expect(content).toContain('## Task Assistant Example')
+  expect(content).toContain('## Quick Start')
+  expect(content).toContain('You can also add standalone items in a daily note')
+  expect(content).toContain('## Items and Pomodoro')
+  expect(content).toContain('## Tasks and Items')
+  expect(content).toContain('## More Examples')
+  expect(content).toContain('## Common Slash Commands')
+  expect(content).toContain('/jt /today')
+  expect(content).toContain('/xg /habit')
+  expect(content).toContain('Create or edit habits with /xg /habit')
+  expect(content).not.toContain('This is an abandoned item')
+})
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -356,7 +360,7 @@ Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 - /tx /reminder: Set reminder
 - /cf /recurring: Set recurring
 - /zz /focus: Start pomodoro
-`;
+`
 ```
 
 Keep the command list aligned with the Chinese version, and keep bilingual command pairs even in English locale.
@@ -381,6 +385,7 @@ git commit -m "feat(example-doc): align en sample with onboarding flow"
 ### Task 4: Verify document creation flow still works with the new content
 
 **Files:**
+
 - Modify: `src/utils/exampleDocUtils.ts` (only if cleanup is still needed)
 - Test: `test/utils/exampleDocUtils.test.ts`
 
@@ -389,41 +394,41 @@ git commit -m "feat(example-doc): align en sample with onboarding flow"
 Extend `test/utils/exampleDocUtils.test.ts` by mocking `createDocWithMd` and checking that `createExampleDocument()` passes the newly generated structured markdown through unchanged.
 
 ```ts
-const createDocWithMd = vi.fn(async () => 'doc-id');
-const pushMsg = vi.fn(async () => {});
-const openDocument = vi.fn(async () => {});
-const expandDocTree = vi.fn();
+const createDocWithMd = vi.fn(async () => 'doc-id')
+const pushMsg = vi.fn(async () => {})
+const openDocument = vi.fn(async () => {})
+const expandDocTree = vi.fn()
 
 vi.mock('@/api', () => ({
   createDocWithMd,
   pushMsg,
-}));
+}))
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocument,
-}));
+}))
 
 vi.mock('@/utils/notebookUtils', () => ({
   getOrCreateTaskAssistantNotebook: vi.fn(async () => ({
     id: 'notebook-id',
     name: 'Task Assistant',
   })),
-}));
+}))
 
 vi.mock('siyuan', () => ({
   expandDocTree,
-}));
+}))
 
 it('passes the structured content into document creation', async () => {
-  currentLocale = 'zh_CN';
-  const { createExampleDocument } = await import('@/utils/exampleDocUtils');
+  currentLocale = 'zh_CN'
+  const { createExampleDocument } = await import('@/utils/exampleDocUtils')
 
-  await createExampleDocument();
+  await createExampleDocument()
 
-  expect(createDocWithMd).toHaveBeenCalledTimes(1);
-  expect(createDocWithMd.mock.calls[0][2]).toContain('## 快速开始');
-  expect(createDocWithMd.mock.calls[0][2]).toContain('/xg /habit');
-});
+  expect(createDocWithMd).toHaveBeenCalledTimes(1)
+  expect(createDocWithMd.mock.calls[0][2]).toContain('## 快速开始')
+  expect(createDocWithMd.mock.calls[0][2]).toContain('/xg /habit')
+})
 ```
 
 - [ ] **Step 2: Run the targeted test to verify it fails if the plumbing is wrong**
@@ -442,7 +447,7 @@ If needed, keep the implementation scoped to readability and testability only. A
 
 ```ts
 function buildSlashCommandHint(lines: string[]): string {
-  return lines.join('\n');
+  return lines.join('\n')
 }
 ```
 

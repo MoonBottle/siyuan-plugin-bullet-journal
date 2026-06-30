@@ -1,1 +1,1 @@
-export { default as MobileConfirmDrawer } from './MobileConfirmDrawer.vue';
+export { default as MobileConfirmDrawer } from './MobileConfirmDrawer.vue'

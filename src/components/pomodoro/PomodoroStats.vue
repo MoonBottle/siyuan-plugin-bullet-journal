@@ -2,67 +2,107 @@
   <div class="pomodoro-stats">
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">{{ t('pomodoroStats').todayPomodoros }}</div>
-        <div class="stat-value">{{ todayCount }}</div>
+        <div class="stat-label">
+          {{ t('pomodoroStats').todayPomodoros }}
+        </div>
+        <div class="stat-value">
+          {{ todayCount }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">{{ t('pomodoroStats').todayFocusDuration }}</div>
-        <div class="stat-value">{{ formatDuration(todayMinutes) }}</div>
+        <div class="stat-label">
+          {{ t('pomodoroStats').todayFocusDuration }}
+        </div>
+        <div class="stat-value">
+          {{ formatDuration(todayMinutes) }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">{{ t('pomodoroStats').totalPomodoros }}</div>
-        <div class="stat-value">{{ totalCount }}</div>
+        <div class="stat-label">
+          {{ t('pomodoroStats').totalPomodoros }}
+        </div>
+        <div class="stat-value">
+          {{ totalCount }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">{{ t('pomodoroStats').totalFocusDuration }}</div>
-        <div class="stat-value">{{ formatDuration(totalMinutes) }}</div>
+        <div class="stat-label">
+          {{ t('pomodoroStats').totalFocusDuration }}
+        </div>
+        <div class="stat-value">
+          {{ formatDuration(totalMinutes) }}
+        </div>
       </div>
-      <button class="stat-card stat-card--action" data-testid="focus-workbench-entry-estimated" type="button" @click="openFocusWorkbench">
+      <button
+        class="stat-card stat-card--action"
+        data-testid="focus-workbench-entry-estimated"
+        type="button"
+        @click="openFocusWorkbench"
+      >
         <div class="stat-card__action">
-          <div class="stat-label">{{ t('focusPlan').estimatedShort }}</div>
-          <span class="stat-card__action-icon" :aria-label="t('focusWorkbench').openReview">
+          <div class="stat-label">
+            {{ t('focusPlan').estimatedShort }}
+          </div>
+          <span
+            class="stat-card__action-icon"
+            :aria-label="t('focusWorkbench').openReview"
+          >
             <svg><use xlink:href="#iconRight"></use></svg>
           </span>
         </div>
-        <div class="stat-value">{{ formatDuration(todayFocusPlanSummary.estimatedMinutes) }}</div>
+        <div class="stat-value">
+          {{ formatDuration(todayFocusPlanSummary.estimatedMinutes) }}
+        </div>
       </button>
-      <button class="stat-card stat-card--action" data-testid="focus-workbench-entry-variance" type="button" @click="openFocusWorkbench">
+      <button
+        class="stat-card stat-card--action"
+        data-testid="focus-workbench-entry-variance"
+        type="button"
+        @click="openFocusWorkbench"
+      >
         <div class="stat-card__action">
-          <div class="stat-label">{{ t('focusPlan').variance }}</div>
-          <span class="stat-card__action-icon" :aria-label="t('focusWorkbench').openReview">
+          <div class="stat-label">
+            {{ t('focusPlan').variance }}
+          </div>
+          <span
+            class="stat-card__action-icon"
+            :aria-label="t('focusWorkbench').openReview"
+          >
             <svg><use xlink:href="#iconRight"></use></svg>
           </span>
         </div>
-        <div class="stat-value">{{ varianceDisplay }}</div>
+        <div class="stat-value">
+          {{ varianceDisplay }}
+        </div>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import { TAB_TYPES } from '@/constants';
+import { computed } from 'vue'
+import { TAB_TYPES } from '@/constants'
+import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { useProjectStore } from '@/stores'
 
-const projectStore = useProjectStore();
-const plugin = usePlugin() as any;
+const projectStore = useProjectStore()
+const plugin = usePlugin() as any
 
-const todayCount = computed(() => projectStore.getTodayPomodoros('').length);
-const todayMinutes = computed(() => projectStore.getTodayFocusMinutes(''));
-const totalCount = computed(() => projectStore.getTotalPomodoros(''));
-const totalMinutes = computed(() => projectStore.getTotalFocusMinutes(''));
-const todayFocusPlanSummary = computed(() => projectStore.getTodayFocusPlanSummary(''));
+const todayCount = computed(() => projectStore.getTodayPomodoros('').length)
+const todayMinutes = computed(() => projectStore.getTodayFocusMinutes(''))
+const totalCount = computed(() => projectStore.getTotalPomodoros(''))
+const totalMinutes = computed(() => projectStore.getTotalFocusMinutes(''))
+const todayFocusPlanSummary = computed(() => projectStore.getTodayFocusPlanSummary(''))
 const varianceDisplay = computed(() => {
-  const delta = todayFocusPlanSummary.value.actualMinutes - todayFocusPlanSummary.value.estimatedMinutes;
-  const absValue = Math.abs(delta);
-  const prefix = delta > 0 ? '+' : delta < 0 ? '-' : '';
-  return `${prefix}${formatDuration(absValue)}`;
-});
+  const delta = todayFocusPlanSummary.value.actualMinutes - todayFocusPlanSummary.value.estimatedMinutes
+  const absValue = Math.abs(delta)
+  const prefix = delta > 0 ? '+' : delta < 0 ? '-' : ''
+  return `${prefix}${formatDuration(absValue)}`
+})
 
 function openFocusWorkbench() {
-  plugin?.openCustomTab?.(TAB_TYPES.FOCUS_WORKBENCH);
+  plugin?.openCustomTab?.(TAB_TYPES.FOCUS_WORKBENCH)
 }
 
 /**
@@ -71,14 +111,14 @@ function openFocusWorkbench() {
  */
 function formatDuration(minutes: number): string {
   if (minutes < 60) {
-    return `${minutes}m`;
+    return `${minutes}m`
   }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
   if (mins === 0) {
-    return `${hours}h`;
+    return `${hours}h`
   }
-  return `${hours}h ${mins}m`;
+  return `${hours}h ${mins}m`
 }
 </script>
 

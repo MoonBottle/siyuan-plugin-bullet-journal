@@ -1,21 +1,44 @@
 <template>
   <Teleport to="body">
     <Transition name="drawer-fade">
-      <div v-if="modelValue" class="time-setting-dialog-root b3-dialog">
-        <div class="time-setting-overlay" @click="onCancel">
-          <div class="time-setting-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+      <div
+        v-if="modelValue"
+        class="time-setting-dialog-root b3-dialog"
+      >
+        <div
+          class="time-setting-overlay"
+          @click="onCancel"
+        >
+          <div
+            class="time-setting-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- 标题栏 -->
             <div class="drawer-header">
-              <div class="header-title">{{ t('mobile.time.timeSetting') }}</div>
-              <button class="close-btn" @click="onCancel">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
+              <div class="header-title">
+                {{ t('mobile.time.timeSetting') }}
+              </div>
+              <button
+                class="close-btn"
+                @click="onCancel"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             <!-- 内容区域 -->
-            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <div
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <TimeRangeSelector
                 v-model:is-all-day="tempIsAllDay"
                 v-model:start-time="tempStartTime"
@@ -25,11 +48,14 @@
 
             <!-- 底部按钮 -->
             <div class="drawer-footer">
-              <button class="footer-btn cancel" @click="onCancel">
+              <button
+                class="footer-btn cancel"
+                @click="onCancel"
+              >
                 {{ t('common.cancel') }}
               </button>
-              <button 
-                class="footer-btn save" 
+              <button
+                class="footer-btn save"
                 :disabled="!canSave"
                 @click="onSave"
               >
@@ -44,64 +70,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { t } from '@/i18n';
-import TimeRangeSelector from './TimeRangeSelector.vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '@/i18n'
+import TimeRangeSelector from './TimeRangeSelector.vue'
 
 interface Props {
-  modelValue: boolean;
-  isAllDay: boolean;
-  startTime?: string;
-  endTime?: string;
+  modelValue: boolean
+  isAllDay: boolean
+  startTime?: string
+  endTime?: string
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  save: [payload: { isAllDay: boolean; startTime?: string; endTime?: string }];
-  cancel: [];
-}>();
+  'update:modelValue': [value: boolean]
+  "save": [payload: { isAllDay: boolean, startTime?: string, endTime?: string }]
+  "cancel": []
+}>()
 
 // t 函数直接导入自 @/i18n
 
 // 临时状态
-const tempIsAllDay = ref(true);
-const tempStartTime = ref('');
-const tempEndTime = ref('');
+const tempIsAllDay = ref(true)
+const tempStartTime = ref('')
+const tempEndTime = ref('')
 
 // 是否可以保存
 const canSave = computed(() => {
   if (tempIsAllDay.value) {
-    return true;
+    return true
   }
   // 自定义时间需要填写完整
-  return !!tempStartTime.value && !!tempEndTime.value;
-});
+  return !!tempStartTime.value && !!tempEndTime.value
+})
 
 // 打开时复制 props 到临时状态
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
-    tempIsAllDay.value = props.isAllDay;
-    tempStartTime.value = props.startTime || '';
-    tempEndTime.value = props.endTime || '';
+    tempIsAllDay.value = props.isAllDay
+    tempStartTime.value = props.startTime || ''
+    tempEndTime.value = props.endTime || ''
   }
-});
+})
 
 // 保存
 function onSave() {
   emit('save', {
     isAllDay: tempIsAllDay.value,
     startTime: tempIsAllDay.value ? undefined : tempStartTime.value,
-    endTime: tempIsAllDay.value ? undefined : tempEndTime.value
-  });
-  emit('update:modelValue', false);
+    endTime: tempIsAllDay.value ? undefined : tempEndTime.value,
+  })
+  emit('update:modelValue', false)
 }
 
 // 取消
 function onCancel() {
-  emit('cancel');
-  emit('update:modelValue', false);
+  emit('cancel')
+  emit('update:modelValue', false)
 }
 </script>
 

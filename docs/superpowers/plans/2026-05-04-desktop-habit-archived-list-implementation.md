@@ -37,6 +37,7 @@
 ### Task 1: Add Archived List Mode To `useHabitWorkspace`
 
 **Files:**
+
 - Modify: `src/composables/useHabitWorkspace.ts`
 - Test: `test/composables/useHabitWorkspace.test.ts`
 
@@ -46,8 +47,8 @@ Add focused cases in `test/composables/useHabitWorkspace.test.ts`:
 
 ```ts
 it('defaults to active list mode and only exposes active habits', async () => {
-  const projectStore = useProjectStore();
-  projectStore.currentDate = '2026-05-04';
+  const projectStore = useProjectStore()
+  projectStore.currentDate = '2026-05-04'
   projectStore.projects = [{
     id: 'project-a',
     name: 'Project A',
@@ -59,18 +60,18 @@ it('defaults to active list mode and only exposes active habits', async () => {
     ],
     links: [],
     groupId: 'group-a',
-  } as any];
+  } as any]
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  expect(workspace.listMode.value).toBe('active');
-  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
-});
+  expect(workspace.listMode.value).toBe('active')
+  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1'])
+})
 
 it('switches to archived list mode and only exposes archived habits', async () => {
-  const projectStore = useProjectStore();
-  projectStore.currentDate = '2026-05-04';
+  const projectStore = useProjectStore()
+  projectStore.currentDate = '2026-05-04'
   projectStore.projects = [{
     id: 'project-a',
     name: 'Project A',
@@ -82,20 +83,20 @@ it('switches to archived list mode and only exposes archived habits', async () =
     ],
     links: [],
     groupId: 'group-a',
-  } as any];
+  } as any]
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  workspace.showArchivedHabits();
+  workspace.showArchivedHabits()
 
-  expect(workspace.listMode.value).toBe('archived');
-  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);
-});
+  expect(workspace.listMode.value).toBe('archived')
+  expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1'])
+})
 
 it('keeps selectedHabit resolvable from all habits while archived list mode is active', async () => {
-  const projectStore = useProjectStore();
-  projectStore.currentDate = '2026-05-04';
+  const projectStore = useProjectStore()
+  projectStore.currentDate = '2026-05-04'
   projectStore.projects = [{
     id: 'project-a',
     name: 'Project A',
@@ -107,18 +108,18 @@ it('keeps selectedHabit resolvable from all habits while archived list mode is a
     ],
     links: [],
     groupId: 'group-a',
-  } as any];
+  } as any]
 
-  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
-  const workspace = useHabitWorkspace();
+  const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace')
+  const workspace = useHabitWorkspace()
 
-  workspace.showArchivedHabits();
-  workspace.selectHabitById('archived-1');
+  workspace.showArchivedHabits()
+  workspace.selectHabitById('archived-1')
 
-  expect(workspace.selectedHabit.value?.blockId).toBe('archived-1');
-  workspace.clearSelectedHabit();
-  expect(workspace.listMode.value).toBe('archived');
-});
+  expect(workspace.selectedHabit.value?.blockId).toBe('archived-1')
+  workspace.clearSelectedHabit()
+  expect(workspace.listMode.value).toBe('archived')
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -130,6 +131,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - FAIL
 - `listMode` / `showArchivedHabits` are missing
 - `clearSelectedHabit()` behavior does not preserve archived list context
@@ -139,33 +141,33 @@ Expected:
 In `src/composables/useHabitWorkspace.ts`, introduce an explicit list mode:
 
 ```ts
-type HabitListMode = 'active' | 'archived';
+type HabitListMode = 'active' | 'archived'
 
-const listMode = ref<HabitListMode>('active');
-const allHabits = computed(() => projectStore.getHabits(groupId.value));
+const listMode = ref<HabitListMode>('active')
+const allHabits = computed(() => projectStore.getHabits(groupId.value))
 
 const habits = computed(() => {
   if (listMode.value === 'archived') {
-    return allHabits.value.filter(habit => Boolean(habit.archivedAt));
+    return allHabits.value.filter(habit => Boolean(habit.archivedAt))
   }
 
-  return allHabits.value.filter(habit => !habit.archivedAt);
-});
+  return allHabits.value.filter(habit => !habit.archivedAt)
+})
 ```
 
 Expose narrow actions:
 
 ```ts
 function showArchivedHabits() {
-  listMode.value = 'archived';
+  listMode.value = 'archived'
 }
 
 function showActiveHabits() {
-  listMode.value = 'active';
+  listMode.value = 'active'
 }
 
 function clearSelectedHabit() {
-  selectedHabitId.value = null;
+  selectedHabitId.value = null
 }
 ```
 
@@ -174,11 +176,11 @@ Keep `selectedHabit` sourced from `allHabits`:
 ```ts
 const selectedHabit = computed(() => {
   if (!selectedHabitId.value) {
-    return null;
+    return null
   }
 
-  return allHabits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null;
-});
+  return allHabits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null
+})
 ```
 
 Return the new surface:
@@ -190,7 +192,7 @@ return {
   showActiveHabits,
   showArchivedHabits,
   // existing exports...
-};
+}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -202,6 +204,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 
 - [ ] **Step 5: Commit**
@@ -216,6 +219,7 @@ git commit -m "feat(habit): add archived list mode"
 ### Task 2: Reuse Habit List UI For Archived Items
 
 **Files:**
+
 - Modify: `src/components/habit/HabitWorkspaceListPane.vue`
 - Modify: `src/components/habit/HabitListItem.vue`
 
@@ -225,18 +229,18 @@ In `src/components/habit/HabitWorkspaceListPane.vue`, add props that let callers
 
 ```ts
 withDefaults(defineProps<{
-  selectedDate: string;
-  currentDate: string;
-  habits: Habit[];
-  habitStatsMap: Map<string, HabitStats>;
-  habitDayStateMap: Map<string, HabitDayState>;
-  habitPeriodStateMap: Map<string, HabitPeriodState>;
-  activeHabitId?: string | null;
-  itemOpenBehavior?: 'document' | 'detail';
-  itemTestIdPrefix?: string;
-  archivedList?: boolean;
-  emptyTitle?: string;
-  emptyDesc?: string;
+  selectedDate: string
+  currentDate: string
+  habits: Habit[]
+  habitStatsMap: Map<string, HabitStats>
+  habitDayStateMap: Map<string, HabitDayState>
+  habitPeriodStateMap: Map<string, HabitPeriodState>
+  activeHabitId?: string | null
+  itemOpenBehavior?: 'document' | 'detail'
+  itemTestIdPrefix?: string
+  archivedList?: boolean
+  emptyTitle?: string
+  emptyDesc?: string
 }>(), {
   activeHabitId: null,
   itemOpenBehavior: 'document',
@@ -244,7 +248,7 @@ withDefaults(defineProps<{
   archivedList: false,
   emptyTitle: '',
   emptyDesc: '',
-});
+})
 ```
 
 Use the overrides in the empty state:
@@ -253,6 +257,7 @@ Use the overrides in the empty state:
 <div class="habit-workspace-list-pane__empty-title">
   {{ emptyTitle || t('habit').noHabits }}
 </div>
+
 <div class="habit-workspace-list-pane__empty-desc">
   {{ emptyDesc || t('habit').noHabitsDesc }}
 </div>
@@ -281,13 +286,13 @@ In `src/components/habit/HabitListItem.vue`, add a prop and gate the action butt
 
 ```ts
 const props = defineProps<{
-  habit: Habit;
-  dayState: HabitDayState;
-  periodState: HabitPeriodState;
-  stats?: HabitStats;
-  isMobile?: boolean;
-  readonlyActions?: boolean;
-}>();
+  habit: Habit
+  dayState: HabitDayState
+  periodState: HabitPeriodState
+  stats?: HabitStats
+  isMobile?: boolean
+  readonlyActions?: boolean
+}>()
 ```
 
 Render only the document button when `readonlyActions` is true:
@@ -321,6 +326,7 @@ npx vitest run test/composables/useHabitWorkspace.test.ts
 ```
 
 Expected:
+
 - PASS
 - No new Vue prop/type errors triggered by the edited imports during test transform
 
@@ -336,6 +342,7 @@ git commit -m "refactor(habit): support readonly archived list items"
 ### Task 3: Add Desktop Archived List Navigation And Empty State
 
 **Files:**
+
 - Modify: `src/tabs/DesktopHabitDock.vue`
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
@@ -347,58 +354,58 @@ Add cases in `test/tabs/DesktopHabitDock.test.ts`:
 
 ```ts
 it('shows an archived-list entry in active list mode and opens archived list mode on click', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
   mounted.projectStore.projects[0].habits = [
     createHabit({ blockId: 'active-1' }),
     createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')?.textContent).toContain('Archived');
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-active-1"]')).toBeNull();
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')?.textContent).toContain('Archived')
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-active-1"]')).toBeNull()
+  mounted.unmount()
+})
 
 it('returns from archived detail to archived list context', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
   mounted.projectStore.projects[0].habits = [
     createHabit({ blockId: 'active-1' }),
     createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-detail-back-button"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')).not.toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull();
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')).not.toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull()
+  mounted.unmount()
+})
 
 it('renders the archived empty state when there are no archived habits', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
 
   mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.textContent).toContain('No archived habits');
-  mounted.unmount();
-});
+  expect(mounted.container.textContent).toContain('No archived habits')
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -410,6 +417,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts
 ```
 
 Expected:
+
 - FAIL
 - Archived-list entry test ids do not exist
 - Back-from-detail context still assumes only the active list shell
@@ -464,7 +472,7 @@ const {
   openSelectedHabitDoc,
   archiveSelectedHabit,
   unarchiveSelectedHabit,
-} = useHabitWorkspace();
+} = useHabitWorkspace()
 ```
 
 Add the active-list archived entry button:
@@ -496,10 +504,12 @@ Add archived-list top bar:
     <svg
       @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
       @mouseleave="hideIconTooltip"
-    ><use xlink:href="#iconLeft"></use></svg>
+    ><use xlink:href="#iconLeft" /></svg>
   </button>
-  <div class="block__logo" data-testid="habit-archived-header">{{ t('habit').archivedList }}</div>
-  <span class="fn__flex-1 fn__space"></span>
+  <div class="block__logo" data-testid="habit-archived-header">
+    {{ t('habit').archivedList }}
+  </div>
+  <span class="fn__flex-1 fn__space" />
   <button
     class="block__icon"
     data-testid="habit-dock-refresh-button"
@@ -509,7 +519,7 @@ Add archived-list top bar:
     <svg
       @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
       @mouseleave="hideIconTooltip"
-    ><use xlink:href="#iconRefresh"></use></svg>
+    ><use xlink:href="#iconRefresh" /></svg>
   </button>
 </template>
 ```
@@ -539,13 +549,13 @@ Add handlers:
 
 ```ts
 function handleShowArchivedHabits() {
-  hideIconTooltip();
-  showArchivedHabits();
+  hideIconTooltip()
+  showArchivedHabits()
 }
 
 function handleBackToActiveList() {
-  hideIconTooltip();
-  showActiveHabits();
+  hideIconTooltip()
+  showActiveHabits()
 }
 ```
 
@@ -560,6 +570,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts test/composables/useHabitWorks
 ```
 
 Expected:
+
 - PASS
 - Archived list state, detail entry, and return context all work
 
@@ -575,6 +586,7 @@ git commit -m "feat(habit): add desktop archived habit list"
 ### Task 4: Verify Unarchive And Archived Readonly Behavior End To End
 
 **Files:**
+
 - Modify: `test/tabs/DesktopHabitDock.test.ts`
 
 - [ ] **Step 1: Add end-to-end regression tests for archived readonly behavior**
@@ -583,52 +595,52 @@ Extend `test/tabs/DesktopHabitDock.test.ts` with:
 
 ```ts
 it('does not render archived list check-in controls', async () => {
-  const mounted = mountDock();
+  const mounted = mountDock()
   mounted.projectStore.projects[0].habits = [
     createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-check-in"]')).toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-increment"]')).toBeNull();
-  expect(mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')).not.toBeNull();
-  mounted.unmount();
-});
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-check-in"]')).toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-increment"]')).toBeNull()
+  expect(mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')).not.toBeNull()
+  mounted.unmount()
+})
 
 it('removes a habit from the archived list after unarchive and returning to the archived list shell', async () => {
-  unarchiveHabit.mockResolvedValue(true);
-  const mounted = mountDock();
+  unarchiveHabit.mockResolvedValue(true)
+  const mounted = mountDock()
   mounted.projectStore.projects[0].habits = [
     createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
-  ];
-  await nextTick();
+  ]
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.projectStore.projects[0].habits = [
     createHabit({ blockId: 'archived-1' }),
-  ];
+  ]
   mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
   mounted.container.querySelector('[data-testid="habit-detail-back-button"]')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await nextTick();
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await nextTick()
 
-  expect(mounted.container.textContent).toContain('No archived habits');
-  mounted.unmount();
-});
+  expect(mounted.container.textContent).toContain('No archived habits')
+  mounted.unmount()
+})
 ```
 
 - [ ] **Step 2: Run the focused desktop regression suite**
@@ -640,6 +652,7 @@ npx vitest run test/tabs/DesktopHabitDock.test.ts test/composables/useHabitWorks
 ```
 
 Expected:
+
 - PASS
 - Archived list renders read-only controls correctly
 - Unarchive flow updates the archived list context correctly
@@ -653,6 +666,7 @@ npx vitest run test/services/habitService.test.ts test/tabs/DesktopHabitDock.tes
 ```
 
 Expected:
+
 - PASS
 - No regressions in archive service or existing detail actions
 - Mobile archive flows remain unchanged

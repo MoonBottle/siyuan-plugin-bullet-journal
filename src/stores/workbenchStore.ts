@@ -1,39 +1,45 @@
-import { computed, ref } from 'vue';
-import { defineStore } from 'pinia';
-import { t } from '@/i18n';
 import type {
   WorkbenchDashboard,
   WorkbenchEntry,
   WorkbenchSettings,
   WorkbenchViewType,
   WorkbenchWidgetType,
-} from '@/types/workbench';
+} from '@/types/workbench'
+import { defineStore } from 'pinia'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '@/i18n'
 import {
   loadWorkbenchSettings,
   saveWorkbenchSettings,
-} from '@/utils/workbenchStorage';
-import { areWidgetLayoutsEqual, findNextWidgetLayout } from '@/workbench/grid';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-import { getViewDefinition } from '@/workbench/viewRegistry';
+} from '@/utils/workbenchStorage'
+import {
+  areWidgetLayoutsEqual,
+  findNextWidgetLayout,
+} from '@/workbench/grid'
+import { getViewDefinition } from '@/workbench/viewRegistry'
+import { getWidgetDefinition } from '@/workbench/widgetRegistry'
 
-type WorkbenchPlugin = Parameters<typeof loadWorkbenchSettings>[0];
+type WorkbenchPlugin = Parameters<typeof loadWorkbenchSettings>[0]
 
-type ViewEntryDefinition = {
-  title: string;
-  icon: string;
-};
+interface ViewEntryDefinition {
+  title: string
+  icon: string
+}
 
-const DASHBOARD_ICON = 'iconBoard';
+const DASHBOARD_ICON = 'iconTaDashboard'
 
 function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinition {
   const definitions: Record<WorkbenchViewType, ViewEntryDefinition> = {
     calendar: {
       title: t('calendar').title,
-      icon: 'iconCalendar',
+      icon: 'iconTaCalendar',
     },
     gantt: {
       title: t('gantt').title,
-      icon: 'iconGraph',
+      icon: 'iconTaGantt',
     },
     quadrant: {
       title: t('quadrant').title,
@@ -41,56 +47,56 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
     },
     project: {
       title: t('project').title,
-      icon: 'iconFolder',
+      icon: 'iconTaProject',
     },
     todo: {
       title: t('todo').title,
-      icon: 'iconList',
+      icon: 'iconTaTodo',
     },
     habit: {
       title: t('habit').title,
-      icon: 'iconCheck',
+      icon: 'iconTaHabit',
     },
     pomodoroStats: {
       title: t('pomodoroStats').statsTitle,
-      icon: 'iconClock',
+      icon: 'iconTaPomodoroStats',
     },
     focusWorkbench: {
       title: t('focusWorkbench').title,
-      icon: 'iconClock',
+      icon: 'iconTaPomodoro',
     },
     aiChat: {
       title: t('aiChat').title,
-      icon: 'iconSparkles',
+      icon: 'iconTaAiAssistant',
     },
-  };
+  }
 
-  return definitions[viewType];
+  return definitions[viewType]
 }
 
 function createId(prefix: string): string {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function normalizeOrders(entries: WorkbenchEntry[]): WorkbenchEntry[] {
   return entries.map((entry, index) => ({
     ...entry,
     order: index,
-  }));
+  }))
 }
 
 export const useWorkbenchStore = defineStore('workbench', () => {
-  const entries = ref<WorkbenchEntry[]>([]);
-  const dashboards = ref<WorkbenchDashboard[]>([]);
-  const activeEntryId = ref<string | null>(null);
-  const sidebarCollapsed = ref(false);
-  const boundPlugin = ref<WorkbenchPlugin>(null);
-  const saveState = ref<'idle' | 'saved' | 'error'>('idle');
-  const saveError = ref<string | null>(null);
+  const entries = ref<WorkbenchEntry[]>([])
+  const dashboards = ref<WorkbenchDashboard[]>([])
+  const activeEntryId = ref<string | null>(null)
+  const sidebarCollapsed = ref(false)
+  const boundPlugin = ref<WorkbenchPlugin>(null)
+  const saveState = ref<'idle' | 'saved' | 'error'>('idle')
+  const saveError = ref<string | null>(null)
 
   const activeEntry = computed(() => {
-    return entries.value.find(entry => entry.id === activeEntryId.value) ?? null;
-  });
+    return entries.value.find((entry) => entry.id === activeEntryId.value) ?? null
+  })
 
   function getSettingsSnapshot(): WorkbenchSettings {
     return {
@@ -98,67 +104,75 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       dashboards: dashboards.value,
       activeEntryId: activeEntryId.value,
       sidebarCollapsed: sidebarCollapsed.value,
-    };
+    }
   }
 
   async function persist(): Promise<void> {
     if (!boundPlugin.value) {
-      return;
+      return
     }
 
     try {
-      const success = await saveWorkbenchSettings(boundPlugin.value, getSettingsSnapshot());
+      const success = await saveWorkbenchSettings(boundPlugin.value, getSettingsSnapshot())
       if (!success) {
-        saveState.value = 'error';
-        saveError.value = 'Failed to save workbench settings';
-        return;
+        saveState.value = 'error'
+        saveError.value = 'Failed to save workbench settings'
+        return
       }
 
-      saveState.value = 'saved';
-      saveError.value = null;
+      saveState.value = 'saved'
+      saveError.value = null
     }
     catch (error) {
-      saveState.value = 'error';
+      saveState.value = 'error'
       saveError.value = error instanceof Error
         ? error.message
-        : 'Failed to save workbench settings';
+        : 'Failed to save workbench settings'
     }
   }
 
   function bindPlugin(plugin: WorkbenchPlugin): void {
-    boundPlugin.value = plugin;
+    boundPlugin.value = plugin
   }
 
   async function load(plugin: WorkbenchPlugin): Promise<void> {
-    bindPlugin(plugin);
-    const settings = await loadWorkbenchSettings(plugin);
+    bindPlugin(plugin)
+    const settings = await loadWorkbenchSettings(plugin)
     entries.value = normalizeOrders(
-      (settings.entries ?? []).map(entry => {
+      (settings.entries ?? []).map((entry) => {
+        // 图标不持久化，始终从 viewType 动态计算
+        const icon = entry.type === 'view' && entry.viewType
+          ? getViewEntryDefinition(entry.viewType).icon
+          : DASHBOARD_ICON
         if (entry.type === 'view' && entry.viewType && !entry.config) {
           return {
             ...entry,
+            icon,
             config: getViewDefinition(entry.viewType).createDefaultConfig(),
-          };
+          }
         }
-        return entry;
+        return {
+          ...entry,
+          icon,
+        }
       }),
-    );
-    dashboards.value = settings.dashboards ?? [];
-    sidebarCollapsed.value = settings.sidebarCollapsed ?? false;
+    )
+    dashboards.value = settings.dashboards ?? []
+    sidebarCollapsed.value = settings.sidebarCollapsed ?? false
 
-    const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId);
+    const hasActiveEntry = entries.value.some((entry) => entry.id === settings.activeEntryId)
     activeEntryId.value = hasActiveEntry
       ? settings.activeEntryId
-      : (entries.value[0]?.id ?? null);
+      : (entries.value[0]?.id ?? null)
   }
 
   async function createDashboardEntry(title: string): Promise<WorkbenchEntry> {
-    const dashboardId = createId('dashboard');
+    const dashboardId = createId('dashboard')
     const dashboard: WorkbenchDashboard = {
       id: dashboardId,
       title,
       widgets: [],
-    };
+    }
     const entry: WorkbenchEntry = {
       id: createId('entry'),
       type: 'dashboard',
@@ -166,18 +180,18 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       icon: DASHBOARD_ICON,
       order: entries.value.length,
       dashboardId,
-    };
+    }
 
-    dashboards.value = [...dashboards.value, dashboard];
-    entries.value = [...entries.value, entry];
-    activeEntryId.value = entry.id;
-    await persist();
-    return entry;
+    dashboards.value = [...dashboards.value, dashboard]
+    entries.value = [...entries.value, entry]
+    activeEntryId.value = entry.id
+    await persist()
+    return entry
   }
 
   async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEntry> {
-    const definition = getViewEntryDefinition(viewType);
-    const viewDef = getViewDefinition(viewType);
+    const definition = getViewEntryDefinition(viewType)
+    const viewDef = getViewDefinition(viewType)
     const entry: WorkbenchEntry = {
       id: createId('entry'),
       type: 'view',
@@ -186,145 +200,151 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       order: entries.value.length,
       viewType,
       config: viewDef.createDefaultConfig(),
-    };
+    }
 
-    entries.value = [...entries.value, entry];
-    activeEntryId.value = entry.id;
-    await persist();
-    return entry;
+    entries.value = [...entries.value, entry]
+    activeEntryId.value = entry.id
+    await persist()
+    return entry
   }
 
   async function renameEntry(id: string, title: string): Promise<void> {
-    const targetEntry = entries.value.find(entry => entry.id === id);
+    const targetEntry = entries.value.find((entry) => entry.id === id)
     if (!targetEntry) {
-      return;
+      return
     }
 
-    entries.value = entries.value.map(entry => (
+    entries.value = entries.value.map((entry) => (
       entry.id === id
-        ? { ...entry, title }
+        ? {
+            ...entry,
+            title,
+          }
         : entry
-    ));
+    ))
 
     if (targetEntry.type === 'dashboard' && targetEntry.dashboardId) {
-      dashboards.value = dashboards.value.map(dashboard => (
+      dashboards.value = dashboards.value.map((dashboard) => (
         dashboard.id === targetEntry.dashboardId
-          ? { ...dashboard, title }
+          ? {
+              ...dashboard,
+              title,
+            }
           : dashboard
-      ));
+      ))
     }
 
-    await persist();
+    await persist()
   }
 
   async function deleteEntry(id: string): Promise<void> {
-    const targetEntry = entries.value.find(entry => entry.id === id);
+    const targetEntry = entries.value.find((entry) => entry.id === id)
     if (!targetEntry) {
-      return;
+      return
     }
 
-    entries.value = normalizeOrders(entries.value.filter(entry => entry.id !== id));
+    entries.value = normalizeOrders(entries.value.filter((entry) => entry.id !== id))
 
     if (targetEntry.type === 'dashboard' && targetEntry.dashboardId) {
-      dashboards.value = dashboards.value.filter(dashboard => dashboard.id !== targetEntry.dashboardId);
+      dashboards.value = dashboards.value.filter((dashboard) => dashboard.id !== targetEntry.dashboardId)
     }
 
     if (activeEntryId.value === id) {
-      activeEntryId.value = entries.value[0]?.id ?? null;
+      activeEntryId.value = entries.value[0]?.id ?? null
     }
-    else if (!entries.value.some(entry => entry.id === activeEntryId.value)) {
-      activeEntryId.value = entries.value[0]?.id ?? null;
+    else if (!entries.value.some((entry) => entry.id === activeEntryId.value)) {
+      activeEntryId.value = entries.value[0]?.id ?? null
     }
 
-    await persist();
+    await persist()
   }
 
   async function setActiveEntry(id: string | null): Promise<void> {
-    if (id !== null && !entries.value.some(entry => entry.id === id)) {
-      return;
+    if (id !== null && !entries.value.some((entry) => entry.id === id)) {
+      return
     }
 
     if (activeEntryId.value === id) {
-      return;
+      return
     }
 
-    activeEntryId.value = id;
-    await persist();
+    activeEntryId.value = id
+    await persist()
   }
 
   async function toggleSidebar(): Promise<void> {
-    sidebarCollapsed.value = !sidebarCollapsed.value;
-    await persist();
+    sidebarCollapsed.value = !sidebarCollapsed.value
+    await persist()
   }
 
   async function reorderEntries(orderedIds: string[]): Promise<void> {
-    const idSet = new Set(orderedIds);
+    const idSet = new Set(orderedIds)
     const reordered = orderedIds
-      .map(id => entries.value.find(entry => entry.id === id))
-      .filter((entry): entry is WorkbenchEntry => entry !== undefined);
+      .map((id) => entries.value.find((entry) => entry.id === id))
+      .filter((entry): entry is WorkbenchEntry => entry !== undefined)
 
-    const unmatched = entries.value.filter(entry => !idSet.has(entry.id));
-    entries.value = normalizeOrders([...reordered, ...unmatched]);
-    await persist();
+    const unmatched = entries.value.filter((entry) => !idSet.has(entry.id))
+    entries.value = normalizeOrders([...reordered, ...unmatched])
+    await persist()
   }
 
   async function addWidget(dashboardId: string, type: WorkbenchWidgetType): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    const definition = getWidgetDefinition(type);
-    const layout = findNextWidgetLayout(dashboard.widgets, definition.defaultSize);
+    const definition = getWidgetDefinition(type)
+    const layout = findNextWidgetLayout(dashboard.widgets, definition.defaultSize)
     const nextWidget = {
       id: createId('widget'),
       type,
       title: definition.name,
       layout,
       config: definition.createDefaultConfig(),
-    };
+    }
 
-    dashboards.value = dashboards.value.map(item => (
+    dashboards.value = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
             widgets: [...item.widgets, nextWidget],
           }
         : item
-    ));
+    ))
 
-    await persist();
+    await persist()
   }
 
   async function removeWidget(dashboardId: string, widgetId: string): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    dashboards.value = dashboards.value.map(item => (
+    dashboards.value = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
-            widgets: item.widgets.filter(widget => widget.id !== widgetId),
+            widgets: item.widgets.filter((widget) => widget.id !== widgetId),
           }
         : item
-    ));
+    ))
 
-    await persist();
+    await persist()
   }
 
   async function renameWidget(dashboardId: string, widgetId: string, title: string): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    dashboards.value = dashboards.value.map(item => (
+    dashboards.value = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
-            widgets: item.widgets.map(widget => (
+            widgets: item.widgets.map((widget) => (
               widget.id === widgetId
                 ? {
                     ...widget,
@@ -334,26 +354,26 @@ export const useWorkbenchStore = defineStore('workbench', () => {
             )),
           }
         : item
-    ));
+    ))
 
-    await persist();
+    await persist()
   }
 
   async function updateWidgetLayout(
     dashboardId: string,
     widgetId: string,
-    layout: { x: number; y: number; w: number; h: number },
+    layout: { x: number, y: number, w: number, h: number },
   ): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    dashboards.value = dashboards.value.map(item => (
+    dashboards.value = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
-            widgets: item.widgets.map(widget => (
+            widgets: item.widgets.map((widget) => (
               widget.id === widgetId
                 ? {
                     ...widget,
@@ -363,31 +383,31 @@ export const useWorkbenchStore = defineStore('workbench', () => {
             )),
           }
         : item
-    ));
+    ))
 
-    await persist();
+    await persist()
   }
 
   async function updateWidgetLayouts(
     dashboardId: string,
-    layouts: Array<{ id: string; x: number; y: number; w: number; h: number }>,
+    layouts: Array<{ id: string, x: number, y: number, w: number, h: number }>,
   ): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    const layoutMap = new Map(layouts.map(layout => [layout.id, layout]));
-    let hasChanged = false;
+    const layoutMap = new Map(layouts.map((layout) => [layout.id, layout]))
+    let hasChanged = false
 
-    const nextDashboards = dashboards.value.map(item => (
+    const nextDashboards = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
-            widgets: item.widgets.map(widget => {
-              const nextLayout = layoutMap.get(widget.id);
+            widgets: item.widgets.map((widget) => {
+              const nextLayout = layoutMap.get(widget.id)
               if (!nextLayout) {
-                return widget;
+                return widget
               }
 
               const normalizedNextLayout = {
@@ -395,28 +415,28 @@ export const useWorkbenchStore = defineStore('workbench', () => {
                 y: nextLayout.y,
                 w: nextLayout.w,
                 h: nextLayout.h,
-              };
+              }
               if (areWidgetLayoutsEqual(widget.layout, normalizedNextLayout)) {
-                return widget;
+                return widget
               }
 
-              hasChanged = true;
+              hasChanged = true
 
               return {
                 ...widget,
                 layout: normalizedNextLayout,
-              };
+              }
             }),
           }
         : item
-    ));
+    ))
 
     if (!hasChanged) {
-      return;
+      return
     }
 
-    dashboards.value = nextDashboards;
-    await persist();
+    dashboards.value = nextDashboards
+    await persist()
   }
 
   async function updateWidgetConfig(
@@ -424,16 +444,16 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     widgetId: string,
     config: Record<string, unknown>,
   ): Promise<void> {
-    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    const dashboard = dashboards.value.find((item) => item.id === dashboardId)
     if (!dashboard) {
-      return;
+      return
     }
 
-    dashboards.value = dashboards.value.map(item => (
+    dashboards.value = dashboards.value.map((item) => (
       item.id === dashboardId
         ? {
             ...item,
-            widgets: item.widgets.map(widget => (
+            widgets: item.widgets.map((widget) => (
               widget.id === widgetId
                 ? {
                     ...widget,
@@ -443,21 +463,24 @@ export const useWorkbenchStore = defineStore('workbench', () => {
             )),
           }
         : item
-    ));
+    ))
 
-    await persist();
+    await persist()
   }
 
   async function updateViewConfig(
     entryId: string,
     config: Record<string, unknown>,
   ): Promise<void> {
-    entries.value = entries.value.map(entry =>
+    entries.value = entries.value.map((entry) =>
       entry.id === entryId
-        ? { ...entry, config }
+        ? {
+            ...entry,
+            config,
+          }
         : entry,
-    );
-    await persist();
+    )
+    await persist()
   }
 
   return {
@@ -484,5 +507,5 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     updateWidgetLayouts,
     updateWidgetConfig,
     updateViewConfig,
-  };
-});
+  }
+})

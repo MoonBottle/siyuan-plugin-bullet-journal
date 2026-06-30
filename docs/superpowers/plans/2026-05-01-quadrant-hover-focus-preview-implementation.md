@@ -13,6 +13,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/components/preview/BlockFocusPreviewPopover.vue` — floating container component that mounts/destroys native `Protyle`, positions itself by anchor element, and owns hover persistence for the popover surface
 - `src/composables/useBlockFocusPreview.ts` — reusable hover preview state manager for `blockId`, timers, anchor element, drag suppression, and single-instance switching
 - `test/components/preview/BlockFocusPreviewPopover.test.ts` — component-level tests for native editor mount orchestration, action selection, cleanup, and positioning state
@@ -20,11 +21,13 @@
 - `docs/superpowers/plans/2026-05-01-quadrant-hover-focus-preview-implementation.md` — this plan
 
 **Modify:**
+
 - `src/components/todo/TodoSidebar.vue` — expose minimal hover trigger context for task cards without embedding preview implementation details
 - `src/tabs/QuadrantTab.vue` — instantiate the preview capability, pass hover hooks into `TodoSidebar`, render the popover, and integrate drag-state suppression
 - `src/index.scss` or a more local preview stylesheet location if already used by shared floating UI — add popover shell styles if existing scoped styles are insufficient
 
 **Test:**
+
 - `test/tabs/QuadrantTab.test.ts` — extend Quadrant tests to cover preview hook wiring and drag/hover interaction boundaries
 - `test/components/preview/BlockFocusPreviewPopover.test.ts`
 - `test/composables/useBlockFocusPreview.test.ts`
@@ -34,6 +37,7 @@
 ### Task 1: Map Existing Hover and Native Editor Integration Points
 
 **Files:**
+
 - Modify: `docs/superpowers/plans/2026-05-01-quadrant-hover-focus-preview-implementation.md`
 - Reference: `src/components/todo/TodoSidebar.vue`
 - Reference: `src/tabs/QuadrantTab.vue`
@@ -54,19 +58,19 @@ C:\dev\projects\open-source\siyuan-master\app\src\block\Panel.ts
 Capture these exact implementation constraints in notes before coding:
 
 ```ts
-type PreviewActionMode = 'all' | 'context';
+type PreviewActionMode = 'all' | 'context'
 
-type PreviewTriggerPayload = {
-  blockId: string;
-  itemId: string;
-  anchorEl: HTMLElement;
-};
+interface PreviewTriggerPayload {
+  blockId: string
+  itemId: string
+  anchorEl: HTMLElement
+}
 
-type NativePreviewSpec = {
-  blockId: string;
-  action: TProtyleAction[];
-  title: boolean;
-};
+interface NativePreviewSpec {
+  blockId: string
+  action: TProtyleAction[]
+  title: boolean
+}
 ```
 
 - [ ] **Step 2: Verify the action selection rule matches the spec**
@@ -77,7 +81,7 @@ Use this rule as the implementation source of truth:
 function getNativePreviewAction(isRootDocumentBlock: boolean): TProtyleAction[] {
   return isRootDocumentBlock
     ? ['cb-get-context']
-    : ['cb-get-all'];
+    : ['cb-get-all']
 }
 ```
 
@@ -97,6 +101,7 @@ Expected: a docs-only checkpoint exists before implementation starts.
 ### Task 2: Add Failing Tests for the Reusable Hover Preview State
 
 **Files:**
+
 - Create: `test/composables/useBlockFocusPreview.test.ts`
 - Reference: `test/tabs/QuadrantTab.test.ts`
 
@@ -105,69 +110,69 @@ Expected: a docs-only checkpoint exists before implementation starts.
 Create `test/composables/useBlockFocusPreview.test.ts` with these cases:
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
 
 describe('useBlockFocusPreview', () => {
   it('opens only after the configured hover delay', async () => {
-    vi.useFakeTimers();
-    const preview = useBlockFocusPreview({ showDelayMs: 120, hideDelayMs: 120 });
-    const anchorEl = document.createElement('div');
+    vi.useFakeTimers()
+    const preview = useBlockFocusPreview({ showDelayMs: 120, hideDelayMs: 120 })
+    const anchorEl = document.createElement('div')
 
     preview.scheduleShow({
       blockId: 'block-1',
       itemId: 'item-1',
       anchorEl,
-    });
+    })
 
-    expect(preview.activeBlockId.value).toBe('');
-    vi.advanceTimersByTime(119);
-    expect(preview.isOpen.value).toBe(false);
+    expect(preview.activeBlockId.value).toBe('')
+    vi.advanceTimersByTime(119)
+    expect(preview.isOpen.value).toBe(false)
 
-    vi.advanceTimersByTime(1);
-    await nextTick();
+    vi.advanceTimersByTime(1)
+    await nextTick()
 
-    expect(preview.isOpen.value).toBe(true);
-    expect(preview.activeBlockId.value).toBe('block-1');
-  });
+    expect(preview.isOpen.value).toBe(true)
+    expect(preview.activeBlockId.value).toBe('block-1')
+  })
 
   it('keeps the preview open when the pointer moves from trigger to popover', async () => {
-    vi.useFakeTimers();
-    const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 100 });
-    const anchorEl = document.createElement('div');
+    vi.useFakeTimers()
+    const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 100 })
+    const anchorEl = document.createElement('div')
 
     preview.showNow({
       blockId: 'block-1',
       itemId: 'item-1',
       anchorEl,
-    });
+    })
 
-    preview.scheduleHide();
-    preview.markPopoverHovered(true);
-    vi.advanceTimersByTime(100);
-    await nextTick();
+    preview.scheduleHide()
+    preview.markPopoverHovered(true)
+    vi.advanceTimersByTime(100)
+    await nextTick()
 
-    expect(preview.isOpen.value).toBe(true);
-  });
+    expect(preview.isOpen.value).toBe(true)
+  })
 
   it('suppresses opening while drag is active', async () => {
-    vi.useFakeTimers();
-    const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 0 });
-    const anchorEl = document.createElement('div');
+    vi.useFakeTimers()
+    const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 0 })
+    const anchorEl = document.createElement('div')
 
-    preview.setDragActive(true);
+    preview.setDragActive(true)
     preview.scheduleShow({
       blockId: 'block-1',
       itemId: 'item-1',
       anchorEl,
-    });
-    vi.runAllTimers();
-    await nextTick();
+    })
+    vi.runAllTimers()
+    await nextTick()
 
-    expect(preview.isOpen.value).toBe(false);
-  });
-});
+    expect(preview.isOpen.value).toBe(false)
+  })
+})
 ```
 
 - [ ] **Step 2: Run the new composable test file to verify it fails**
@@ -194,6 +199,7 @@ Expected: the new test file is committed in a red state checkpoint if your workf
 ### Task 3: Implement the Reusable Hover Preview Composable
 
 **Files:**
+
 - Create: `src/composables/useBlockFocusPreview.ts`
 - Test: `test/composables/useBlockFocusPreview.test.ts`
 
@@ -202,93 +208,94 @@ Expected: the new test file is committed in a red state checkpoint if your workf
 Create `src/composables/useBlockFocusPreview.ts`:
 
 ```ts
-import { computed, ref } from 'vue';
+import { computed, ref } from 'vue'
 
-export type BlockFocusPreviewTrigger = {
-  blockId: string;
-  itemId: string;
-  anchorEl: HTMLElement;
-};
+export interface BlockFocusPreviewTrigger {
+  blockId: string
+  itemId: string
+  anchorEl: HTMLElement
+}
 
-type Options = {
-  showDelayMs: number;
-  hideDelayMs: number;
-};
+interface Options {
+  showDelayMs: number
+  hideDelayMs: number
+}
 
 export function useBlockFocusPreview(options: Options) {
-  const activeBlockId = ref('');
-  const activeItemId = ref('');
-  const anchorEl = ref<HTMLElement | null>(null);
-  const triggerHovered = ref(false);
-  const popoverHovered = ref(false);
-  const dragActive = ref(false);
-  const isMounted = ref(false);
+  const activeBlockId = ref('')
+  const activeItemId = ref('')
+  const anchorEl = ref<HTMLElement | null>(null)
+  const triggerHovered = ref(false)
+  const popoverHovered = ref(false)
+  const dragActive = ref(false)
+  const isMounted = ref(false)
 
-  let showTimer: number | null = null;
-  let hideTimer: number | null = null;
+  let showTimer: number | null = null
+  let hideTimer: number | null = null
 
-  const isOpen = computed(() => !!activeBlockId.value && isMounted.value);
+  const isOpen = computed(() => !!activeBlockId.value && isMounted.value)
 
   function clearShowTimer() {
     if (showTimer !== null) {
-      window.clearTimeout(showTimer);
-      showTimer = null;
+      window.clearTimeout(showTimer)
+      showTimer = null
     }
   }
 
   function clearHideTimer() {
     if (hideTimer !== null) {
-      window.clearTimeout(hideTimer);
-      hideTimer = null;
+      window.clearTimeout(hideTimer)
+      hideTimer = null
     }
   }
 
   function showNow(payload: BlockFocusPreviewTrigger) {
     if (dragActive.value || !payload.blockId) {
-      return;
+      return
     }
-    clearShowTimer();
-    clearHideTimer();
-    activeBlockId.value = payload.blockId;
-    activeItemId.value = payload.itemId;
-    anchorEl.value = payload.anchorEl;
-    isMounted.value = true;
+    clearShowTimer()
+    clearHideTimer()
+    activeBlockId.value = payload.blockId
+    activeItemId.value = payload.itemId
+    anchorEl.value = payload.anchorEl
+    isMounted.value = true
   }
 
   function scheduleShow(payload: BlockFocusPreviewTrigger) {
-    triggerHovered.value = true;
-    clearShowTimer();
-    clearHideTimer();
-    showTimer = window.setTimeout(() => showNow(payload), options.showDelayMs);
+    triggerHovered.value = true
+    clearShowTimer()
+    clearHideTimer()
+    showTimer = window.setTimeout(showNow, options.showDelayMs, payload)
   }
 
   function scheduleHide() {
-    triggerHovered.value = false;
-    clearHideTimer();
+    triggerHovered.value = false
+    clearHideTimer()
     hideTimer = window.setTimeout(() => {
       if (triggerHovered.value || popoverHovered.value) {
-        return;
+        return
       }
-      isMounted.value = false;
-      activeBlockId.value = '';
-      activeItemId.value = '';
-      anchorEl.value = null;
-    }, options.hideDelayMs);
+      isMounted.value = false
+      activeBlockId.value = ''
+      activeItemId.value = ''
+      anchorEl.value = null
+    }, options.hideDelayMs)
   }
 
   function markPopoverHovered(hovered: boolean) {
-    popoverHovered.value = hovered;
+    popoverHovered.value = hovered
     if (hovered) {
-      clearHideTimer();
-    } else if (!triggerHovered.value) {
-      scheduleHide();
+      clearHideTimer()
+    }
+    else if (!triggerHovered.value) {
+      scheduleHide()
     }
   }
 
   function setDragActive(active: boolean) {
-    dragActive.value = active;
+    dragActive.value = active
     if (active) {
-      clearShowTimer();
+      clearShowTimer()
     }
   }
 
@@ -302,7 +309,7 @@ export function useBlockFocusPreview(options: Options) {
     scheduleHide,
     markPopoverHovered,
     setDragActive,
-  };
+  }
 }
 ```
 
@@ -330,6 +337,7 @@ Expected: reusable preview state exists with passing tests.
 ### Task 4: Add Failing Tests for the Native Protyle Popover Shell
 
 **Files:**
+
 - Create: `test/components/preview/BlockFocusPreviewPopover.test.ts`
 - Reference: `node_modules/siyuan/types/protyle.d.ts`
 
@@ -338,28 +346,28 @@ Expected: reusable preview state exists with passing tests.
 Create `test/components/preview/BlockFocusPreviewPopover.test.ts`:
 
 ```ts
-import { describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
-const protyleDestroy = vi.fn();
+const protyleDestroy = vi.fn()
 const protyleCtor = vi.fn(() => ({
   destroy: protyleDestroy,
   protyle: {
     element: document.createElement('div'),
   },
-}));
+}))
 
 vi.mock('siyuan', async () => {
-  const actual = await vi.importActual<object>('siyuan');
+  const actual = await vi.importActual<object>('siyuan')
   return {
     ...actual,
     Protyle: protyleCtor,
-  };
-});
+  }
+})
 
 describe('BlockFocusPreviewPopover', () => {
   it('mounts native Protyle with cb-get-all for non-root blocks', async () => {
-    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue');
+    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue')
 
     mount(BlockFocusPreviewPopover, {
       props: {
@@ -368,14 +376,14 @@ describe('BlockFocusPreviewPopover', () => {
         isRootDocumentBlock: false,
         visible: true,
       },
-    });
+    })
 
-    expect(protyleCtor).toHaveBeenCalled();
-    expect(protyleCtor.mock.calls[0][2].action).toEqual(['cb-get-all']);
-  });
+    expect(protyleCtor).toHaveBeenCalled()
+    expect(protyleCtor.mock.calls[0][2].action).toEqual(['cb-get-all'])
+  })
 
   it('mounts native Protyle with cb-get-context for root document blocks', async () => {
-    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue');
+    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue')
 
     mount(BlockFocusPreviewPopover, {
       props: {
@@ -384,13 +392,13 @@ describe('BlockFocusPreviewPopover', () => {
         isRootDocumentBlock: true,
         visible: true,
       },
-    });
+    })
 
-    expect(protyleCtor.mock.calls[0][2].action).toEqual(['cb-get-context']);
-  });
+    expect(protyleCtor.mock.calls[0][2].action).toEqual(['cb-get-context'])
+  })
 
   it('destroys the native Protyle instance when hidden', async () => {
-    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue');
+    const { default: BlockFocusPreviewPopover } = await import('@/components/preview/BlockFocusPreviewPopover.vue')
 
     const wrapper = mount(BlockFocusPreviewPopover, {
       props: {
@@ -399,12 +407,12 @@ describe('BlockFocusPreviewPopover', () => {
         isRootDocumentBlock: false,
         visible: true,
       },
-    });
+    })
 
-    await wrapper.setProps({ visible: false });
-    expect(protyleDestroy).toHaveBeenCalled();
-  });
-});
+    await wrapper.setProps({ visible: false })
+    expect(protyleDestroy).toHaveBeenCalled()
+  })
+})
 ```
 
 - [ ] **Step 2: Run the popover component test file**
@@ -431,6 +439,7 @@ Expected: the expected popover behavior is pinned down before implementation.
 ### Task 5: Implement the Native Protyle Popover Component
 
 **Files:**
+
 - Create: `src/components/preview/BlockFocusPreviewPopover.vue`
 - Modify: `src/index.scss` or local component styles if sufficient
 - Test: `test/components/preview/BlockFocusPreviewPopover.test.ts`
@@ -440,41 +449,29 @@ Expected: the expected popover behavior is pinned down before implementation.
 Create `src/components/preview/BlockFocusPreviewPopover.vue`:
 
 ```vue
-<template>
-  <div
-    v-if="visible"
-    class="block-focus-preview-popover"
-    :style="popoverStyle"
-    @mouseenter="emit('popover-hover', true)"
-    @mouseleave="emit('popover-hover', false)"
-  >
-    <div ref="mountEl" class="block-focus-preview-popover__editor"></div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { Protyle } from 'siyuan';
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { usePlugin } from '@/main';
+import { Protyle } from 'siyuan'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { usePlugin } from '@/main'
 
 const props = defineProps<{
-  blockId: string;
-  anchorEl: HTMLElement | null;
-  visible: boolean;
-  isRootDocumentBlock: boolean;
-}>();
+  blockId: string
+  anchorEl: HTMLElement | null
+  visible: boolean
+  isRootDocumentBlock: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'popover-hover', hovered: boolean): void;
-}>();
+  (event: 'popover-hover', hovered: boolean): void
+}>()
 
-const mountEl = ref<HTMLElement | null>(null);
-const protyleInstance = ref<any>(null);
+const mountEl = ref<HTMLElement | null>(null)
+const protyleInstance = ref<any>(null)
 
 const popoverStyle = computed(() => {
-  const rect = props.anchorEl?.getBoundingClientRect();
+  const rect = props.anchorEl?.getBoundingClientRect()
   if (!rect) {
-    return {};
+    return {}
   }
   return {
     position: 'fixed',
@@ -483,21 +480,21 @@ const popoverStyle = computed(() => {
     width: '560px',
     maxHeight: '70vh',
     zIndex: 'var(--b3-z-index, 300)',
-  };
-});
+  }
+})
 
 function destroyProtyle() {
-  protyleInstance.value?.destroy?.();
-  protyleInstance.value = null;
+  protyleInstance.value?.destroy?.()
+  protyleInstance.value = null
 }
 
 async function mountProtyle() {
   if (!props.visible || !props.blockId || !mountEl.value) {
-    return;
+    return
   }
-  destroyProtyle();
-  await nextTick();
-  const plugin = usePlugin();
+  destroyProtyle()
+  await nextTick()
+  const plugin = usePlugin()
   protyleInstance.value = new Protyle((plugin as any).app, mountEl.value, {
     blockId: props.blockId,
     action: [props.isRootDocumentBlock ? 'cb-get-context' : 'cb-get-all'],
@@ -508,21 +505,33 @@ async function mountProtyle() {
       title: props.isRootDocumentBlock,
     },
     typewriterMode: false,
-  });
+  })
 }
 
-watch(() => [props.visible, props.blockId, props.isRootDocumentBlock], mountProtyle, { immediate: true });
+watch(() => [props.visible, props.blockId, props.isRootDocumentBlock], mountProtyle, { immediate: true })
 
 watch(() => props.visible, (visible) => {
   if (!visible) {
-    destroyProtyle();
+    destroyProtyle()
   }
-});
+})
 
 onBeforeUnmount(() => {
-  destroyProtyle();
-});
+  destroyProtyle()
+})
 </script>
+
+<template>
+  <div
+    v-if="visible"
+    class="block-focus-preview-popover"
+    :style="popoverStyle"
+    @mouseenter="emit('popover-hover', true)"
+    @mouseleave="emit('popover-hover', false)"
+  >
+    <div ref="mountEl" class="block-focus-preview-popover__editor" />
+  </div>
+</template>
 ```
 
 - [ ] **Step 2: Add the minimal popover shell styles**
@@ -541,6 +550,7 @@ Add:
 .block-focus-preview-popover__editor {
   min-height: 240px;
 }
+
 ```
 
 - [ ] **Step 3: Run the component test file**
@@ -567,6 +577,7 @@ Expected: the reusable popover shell exists and uses native editor mounting only
 ### Task 6: Add Failing Tests for Quadrant Wiring
 
 **Files:**
+
 - Modify: `test/tabs/QuadrantTab.test.ts`
 - Reference: `src/tabs/QuadrantTab.vue`
 
@@ -576,24 +587,24 @@ Add tests like:
 
 ```ts
 it('passes hover preview callbacks into embedded todo sidebars', async () => {
-  const mounted = await mountQuadrantTab();
-  const sidebarProps = getLatestTodoSidebarProps();
+  const mounted = await mountQuadrantTab()
+  const sidebarProps = getLatestTodoSidebarProps()
 
-  expect(sidebarProps.onItemHoverStart).toBeTypeOf('function');
-  expect(sidebarProps.onItemHoverEnd).toBeTypeOf('function');
-});
+  expect(sidebarProps.onItemHoverStart).toBeTypeOf('function')
+  expect(sidebarProps.onItemHoverEnd).toBeTypeOf('function')
+})
 
 it('suppresses preview opening while drag is active', async () => {
-  const mounted = await mountQuadrantTab();
-  const sidebarProps = getLatestTodoSidebarProps();
-  const anchorEl = document.createElement('div');
+  const mounted = await mountQuadrantTab()
+  const sidebarProps = getLatestTodoSidebarProps()
+  const anchorEl = document.createElement('div')
 
-  sidebarProps.onItemDragStart?.({ blockId: 'block-1', itemId: 'item-1', priority: 'high' }, new DragEvent('dragstart'));
-  sidebarProps.onItemHoverStart?.({ blockId: 'block-1', itemId: 'item-1', anchorEl });
+  sidebarProps.onItemDragStart?.({ blockId: 'block-1', itemId: 'item-1', priority: 'high' }, new DragEvent('dragstart'))
+  sidebarProps.onItemHoverStart?.({ blockId: 'block-1', itemId: 'item-1', anchorEl })
 
-  await nextTick();
-  expect(mounted.root.querySelector('.block-focus-preview-popover')).toBeNull();
-});
+  await nextTick()
+  expect(mounted.root.querySelector('.block-focus-preview-popover')).toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run the Quadrant test file**
@@ -620,6 +631,7 @@ Expected: Quadrant integration expectations are locked before code changes.
 ### Task 7: Extend TodoSidebar with Minimal Hover Context Hooks
 
 **Files:**
+
 - Modify: `src/components/todo/TodoSidebar.vue`
 - Modify: `test/components/todo/TodoSidebar.test.ts` if the hook surface needs direct coverage
 
@@ -646,25 +658,29 @@ Add handlers like:
 
 ```ts
 function handleItemHoverStart(item: Item, event: MouseEvent) {
-  if (!item.blockId) return;
-  const anchorEl = event.currentTarget as HTMLElement | null;
-  if (!anchorEl) return;
+  if (!item.blockId)
+    return
+  const anchorEl = event.currentTarget as HTMLElement | null
+  if (!anchorEl)
+    return
   props.onItemHoverStart?.({
     blockId: item.blockId,
     itemId: item.id,
     anchorEl,
-  }, event);
+  }, event)
 }
 
 function handleItemHoverEnd(item: Item, event: MouseEvent) {
-  if (!item.blockId) return;
-  const anchorEl = event.currentTarget as HTMLElement | null;
-  if (!anchorEl) return;
+  if (!item.blockId)
+    return
+  const anchorEl = event.currentTarget as HTMLElement | null
+  if (!anchorEl)
+    return
   props.onItemHoverEnd?.({
     blockId: item.blockId,
     itemId: item.id,
     anchorEl,
-  }, event);
+  }, event)
 }
 ```
 
@@ -694,6 +710,7 @@ Expected: `TodoSidebar` remains preview-agnostic while exposing minimal trigger 
 ### Task 8: Integrate the Preview Capability into QuadrantTab
 
 **Files:**
+
 - Modify: `src/tabs/QuadrantTab.vue`
 - Create/Use: `src/composables/useBlockFocusPreview.ts`
 - Create/Use: `src/components/preview/BlockFocusPreviewPopover.vue`
@@ -704,20 +721,21 @@ Expected: `TodoSidebar` remains preview-agnostic while exposing minimal trigger 
 Add to `QuadrantTab.vue`:
 
 ```ts
-import BlockFocusPreviewPopover from '@/components/preview/BlockFocusPreviewPopover.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
+import BlockFocusPreviewPopover from '@/components/preview/BlockFocusPreviewPopover.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
 
 const preview = useBlockFocusPreview({
   showDelayMs: 180,
   hideDelayMs: 120,
-});
+})
 
 const previewIsRootDocumentBlock = computed(() => {
-  const blockId = preview.activeBlockId.value;
-  if (!blockId) return false;
-  const item = projectStore.getDisplayItems(selectedGroup.value).find(candidate => candidate.blockId === blockId);
-  return !!item?.docId && item.docId === blockId;
-});
+  const blockId = preview.activeBlockId.value
+  if (!blockId)
+    return false
+  const item = projectStore.getDisplayItems(selectedGroup.value).find(candidate => candidate.blockId === blockId)
+  return !!item?.docId && item.docId === blockId
+})
 ```
 
 Render:
@@ -745,14 +763,14 @@ Update drag handlers:
 
 ```ts
 function handleItemDragStart(payload: QuadrantDragPayload) {
-  draggedItem.value = payload;
-  preview.setDragActive(true);
+  draggedItem.value = payload
+  preview.setDragActive(true)
 }
 
 function handleItemDragEnd() {
-  draggedItem.value = null;
-  activeDropQuadrant.value = null;
-  preview.setDragActive(false);
+  draggedItem.value = null
+  activeDropQuadrant.value = null
+  preview.setDragActive(false)
 }
 ```
 
@@ -780,6 +798,7 @@ Expected: Quadrant owns the feature entry point without leaking it into other vi
 ### Task 9: Verify Refresh, Native Editing, and Style Fit
 
 **Files:**
+
 - Modify: `src/components/preview/BlockFocusPreviewPopover.vue` if cleanup or sizing issues appear
 - Modify: `src/index.scss` if shell spacing or overflow issues appear
 
@@ -831,19 +850,21 @@ Expected: any final sizing, cleanup, or interaction fixes are isolated in a fina
 
 ## Self-Review
 
-**Spec coverage:**  
-- Native `Protyle` only: covered in Tasks 4, 5, 8, 9  
-- `CB_GET_ALL` / `CB_GET_CONTEXT` strategy: covered in Tasks 1, 4, 5  
-- Reusable capability but Quadrant-only integration: covered in Tasks 3, 5, 8  
-- Drag suppression and single-instance behavior: covered in Tasks 2, 3, 6, 8  
+**Spec coverage:**
+
+- Native `Protyle` only: covered in Tasks 4, 5, 8, 9
+- `CB_GET_ALL` / `CB_GET_CONTEXT` strategy: covered in Tasks 1, 4, 5
+- Reusable capability but Quadrant-only integration: covered in Tasks 3, 5, 8
+- Drag suppression and single-instance behavior: covered in Tasks 2, 3, 6, 8
 - Existing refresh chain preserved: covered in Tasks 8, 9
 
-**Placeholder scan:**  
-- No `TODO` or vague “handle appropriately” steps remain.  
-- Each test and implementation task names exact files and concrete commands.  
+**Placeholder scan:**
+
+- No `TODO` or vague “handle appropriately” steps remain.
+- Each test and implementation task names exact files and concrete commands.
 - Manual verification is explicit and bounded to the spec scope.
 
-**Type consistency:**  
-- Reused names consistently: `useBlockFocusPreview`, `BlockFocusPreviewPopover`, `scheduleShow`, `scheduleHide`, `markPopoverHovered`, `setDragActive`.  
-- The trigger payload keeps the same `blockId`, `itemId`, `anchorEl` shape across the plan.
+**Type consistency:**
 
+- Reused names consistently: `useBlockFocusPreview`, `BlockFocusPreviewPopover`, `scheduleShow`, `scheduleHide`, `markPopoverHovered`, `setDragActive`.
+- The trigger payload keeps the same `blockId`, `itemId`, `anchorEl` shape across the plan.

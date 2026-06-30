@@ -16,15 +16,16 @@
 > 项目描述（可选）
 
 [项目链接](https://example.com)
+
 ```
 
 ### 2.2 项目属性
 
-| 属性 | 来源 | 说明 |
-|------|------|------|
+| 属性 | 来源                  | 说明                             |
+| ---- | --------------------- | -------------------------------- |
 | 名称 | 文档第一个 H1/H2 标题 | 如 `# 项目名称` 或 `## 项目名称` |
-| 描述 | `> ` 开头的引用行 | 项目描述信息 |
-| 链接 | Markdown 链接 | 项目相关链接 |
+| 描述 | `> ` 开头的引用行     | 项目描述信息                     |
+| 链接 | Markdown 链接         | 项目相关链接                     |
 
 ## 三、任务格式
 
@@ -36,11 +37,11 @@
 
 ### 3.2 任务标记
 
-| 标记 | 说明 | 示例 |
-|------|------|------|
-| `#任务`、`#task` 或 `📋` | 任务标识 | `设计首页 📋` |
-| `@L1` / `@L2` / `@L3` | 任务层级 | `@L1` 表示一级任务 |
-| `@YYYY-MM-DD` 或 `📅YYYY-MM-DD` | 事项日期 | `📅2024-01-15` |
+| 标记                            | 说明     | 示例               |
+| ------------------------------- | -------- | ------------------ |
+| `#任务`、`#task` 或 `📋`        | 任务标识 | `设计首页 📋`      |
+| `@L1` / `@L2` / `@L3`           | 任务层级 | `@L1` 表示一级任务 |
+| `@YYYY-MM-DD` 或 `📅YYYY-MM-DD` | 事项日期 | `📅2024-01-15`     |
 
 ### 3.3 完整示例
 
@@ -55,6 +56,7 @@
 [需求文档](https://doc.example.com)
 
 前端开发 #任务 @L2 @2024-01-20
+
 ```
 
 ## 四、事项格式
@@ -70,6 +72,7 @@
 ```markdown
 事项内容 @2024-01-15 10:00:00
 事项内容 @2024-01-15 10:00:00~12:00:00
+
 ```
 
 ### 4.3 多日期事项
@@ -82,14 +85,15 @@
 出差 @2024-03-01~2024-03-05
 
 培训 @2024-03-10, 2024-03-17 09:00:00~17:00:00
+
 ```
 
 ### 4.4 事项状态
 
-| 标记 | 状态 | 说明 |
-|------|------|------|
-| 无标记 | 待办 | 默认状态 |
-| `#done`、`#已完成` 或 `✅` | 已完成 | 事项已完成 |
+| 标记                            | 状态   | 说明       |
+| ------------------------------- | ------ | ---------- |
+| 无标记                          | 待办   | 默认状态   |
+| `#done`、`#已完成` 或 `✅`      | 已完成 | 事项已完成 |
 | `#abandoned`、`#已放弃` 或 `❌` | 已放弃 | 事项已放弃 |
 
 ### 4.5 事项链接
@@ -100,6 +104,7 @@
 事项内容 @2024-01-15
 [相关文档](https://doc.example.com)
 [思源内部链接](siyuan://blocks/20240115123456-abc123)
+
 ```
 
 ### 4.6 完整示例
@@ -111,6 +116,7 @@
 评审会议 📅2024-01-15 14:00:00~15:00:00
 
 代码审查 📅2024-01-16 ❌
+
 ```
 
 ## 五、番茄钟格式
@@ -123,19 +129,21 @@
 
 ### 5.2 格式说明
 
-| 元素 | 格式 | 说明 |
-|------|------|------|
-| 标记 | `🍅` | 番茄钟标识 |
-| 日期 | `YYYY-MM-DD` | 番茄钟日期 |
-| 开始时间 | `HH:mm:ss` | 专注开始时间 |
-| 结束时间 | `HH:mm:ss` | 专注结束时间（可选）|
-| 描述 | 任意文本 | 专注内容描述（可选）|
+| 元素     | 格式         | 说明                 |
+| -------- | ------------ | -------------------- |
+| 标记     | `🍅`         | 番茄钟标识           |
+| 日期     | `YYYY-MM-DD` | 番茄钟日期           |
+| 开始时间 | `HH:mm:ss`   | 专注开始时间         |
+| 结束时间 | `HH:mm:ss`   | 专注结束时间（可选） |
+| 描述     | 任意文本     | 专注内容描述（可选） |
 
 ### 5.3 列表形式
 
 ```markdown
 - 🍅2024-01-15 10:00:00~10:25:00 编写代码
+
 1. 🍅2024-01-15 14:00:00~14:25:00 代码审查
+
 ```
 
 ### 5.4 无结束时间
@@ -180,6 +188,7 @@
 [代码仓库](https://github.com/example/website)
 
 后端接口 @2024-01-20~2024-01-25
+
 ```
 
 ## 七、Kramdown 解析逻辑详解
@@ -246,41 +255,42 @@ parseKramdown() → 遍历块解析
 ```typescript
 // 解析 Kramdown 为块列表
 function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
-  const blocks: KramdownBlock[] = [];
-  const lines = kramdown.split('\n');
-  let currentContent = '';
-  let currentRawContent = '';
-  let currentBlockId = '';
+  const blocks: KramdownBlock[] = []
+  const lines = kramdown.split('\n')
+  let currentContent = ''
+  let currentRawContent = ''
+  let currentBlockId = ''
 
   for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const line = rawLine.trim();
+    const rawLine = lines[i]
+    const line = rawLine.trim()
 
     // 识别块属性行 {: ... }
     if (line.startsWith('{:') && line.endsWith('}')) {
-      const idMatch = line.match(/\bid="([^"]+)"/);
+      const idMatch = line.match(/\bid="([^"]+)"/)
       if (idMatch) {
-        currentBlockId = idMatch[1];
+        currentBlockId = idMatch[1]
 
         if (currentContent && !currentContent.includes('type="doc"')) {
           blocks.push({
             content: currentContent,
             blockId: currentBlockId,
-            raw: currentRawContent + '\n' + rawLine
-          });
+            raw: `${currentRawContent}\n${rawLine}`
+          })
         }
 
-        currentContent = '';
-        currentRawContent = '';
-        currentBlockId = '';
+        currentContent = ''
+        currentRawContent = ''
+        currentBlockId = ''
       }
-    } else if (line) {
-      currentContent = currentContent ? currentContent + '\n' + line : line;
-      currentRawContent = currentRawContent ? currentRawContent + '\n' + rawLine : rawLine;
+    }
+    else if (line) {
+      currentContent = currentContent ? `${currentContent}\n${line}` : line
+      currentRawContent = currentRawContent ? `${currentRawContent}\n${rawLine}` : rawLine
     }
   }
 
-  return blocks;
+  return blocks
 }
 ```
 
@@ -291,6 +301,7 @@ function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 思源笔记中的无序列表使用 `-` 标记，解析时需要去除列表标记。
 
 **输入示例**:
+
 ```kramdown
 - 需求分析 #任务 @L1 @2024-01-15
 {: id="20240115120004-mno345"}
@@ -303,18 +314,19 @@ function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 ```
 
 **处理逻辑**:
+
 ```typescript
 // 去除列表标记和块属性
 function stripListAndBlockAttr(line: string): string {
   return line
-    .replace(/^\s*([-])\s+/, '')        // 去除无序列表标记 "- "
-    .replace(/^\s*\{\:\s*[^}]*\}\s*/, '') // 去除块属性 {: ... }
-    .trim();
+    .replace(/^\s*(-)\s+/, '') // 去除无序列表标记 "- "
+    .replace(/^\s*\{:[^}]*\}\s*/, '') // 去除块属性 {: ... }
+    .trim()
 }
 
 // 处理示例
-const rawLine = "- 需求分析 #任务 @L1 @2024-01-15";
-const cleaned = stripListAndBlockAttr(rawLine);
+const rawLine = '- 需求分析 #任务 @L1 @2024-01-15'
+const cleaned = stripListAndBlockAttr(rawLine)
 // 结果: "需求分析 #任务 @L1 @2024-01-15"
 ```
 
@@ -323,6 +335,7 @@ const cleaned = stripListAndBlockAttr(rawLine);
 思源笔记中的有序列表使用 `数字.` 标记，解析时同样需要去除列表标记。
 
 **输入示例**:
+
 ```kramdown
 1. 第一阶段 #任务 @L1 @2024-01-10
 {: id="20240115120007-vwx234"}
@@ -338,18 +351,19 @@ const cleaned = stripListAndBlockAttr(rawLine);
 ```
 
 **处理逻辑**:
+
 ```typescript
 // 去除有序列表标记
 function stripListAndBlockAttr(line: string): string {
   return line
-    .replace(/^\s*(\d+\.)\s+/, '')      // 去除有序列表标记 "1. "、"2. " 等
-    .replace(/^\s*\{\:\s*[^}]*\}\s*/, '') // 去除块属性 {: ... }
-    .trim();
+    .replace(/^\s*(\d+\.)\s+/, '') // 去除有序列表标记 "1. "、"2. " 等
+    .replace(/^\s*\{:[^}]*\}\s*/, '') // 去除块属性 {: ... }
+    .trim()
 }
 
 // 处理示例
-const rawLine = "1. 第一阶段 #任务 @L1 @2024-01-10";
-const cleaned = stripListAndBlockAttr(rawLine);
+const rawLine = '1. 第一阶段 #任务 @L1 @2024-01-10'
+const cleaned = stripListAndBlockAttr(rawLine)
 // 结果: "第一阶段 #任务 @L1 @2024-01-10"
 ```
 
@@ -369,18 +383,19 @@ const cleaned = stripListAndBlockAttr(rawLine);
 ```
 
 **层级判断逻辑**:
+
 ```typescript
 // 通过原始行的缩进判断层级
 function getIndentLevel(rawLine: string): number {
-  const match = rawLine.match(/^(\s*)/);
-  const spaces = match ? match[1].length : 0;
-  return Math.floor(spaces / 2); // 每2空格为一级
+  const match = rawLine.match(/^(\s*)/)
+  const spaces = match ? match[1].length : 0
+  return Math.floor(spaces / 2) // 每2空格为一级
 }
 
 // 示例
-getIndentLevel("- 任务一级");        // 0
-getIndentLevel("  - 事项二级");      // 1
-getIndentLevel("    - 子事项三级");  // 2
+getIndentLevel('- 任务一级') // 0
+getIndentLevel('  - 事项二级') // 1
+getIndentLevel('    - 子事项三级') // 2
 ```
 
 #### 混合列表示例
@@ -418,6 +433,7 @@ getIndentLevel("    - 子事项三级");  // 2
 ```
 
 **解析结果**:
+
 ```typescript
 {
   name: "项目计划",
@@ -463,21 +479,21 @@ getIndentLevel("    - 子事项三级");  // 2
  * 支持无序列表 (-) 和有序列表 (数字.)
  */
 export function stripListAndBlockAttr(line: string): string {
-  let s = line
+  const s = line
     // 去除无序列表标记: "- " 或 "  - "
     // 去除有序列表标记: "1. " 或 "  1. "
-    .replace(/^\s*([-]|\d+\.)\s+/, '')
+    .replace(/^\s*(-|\d+\.)\s+/, '')
     // 去除块属性 {: id="..." updated="..." }
-    .replace(/^\s*\{\:\s*[^}]*\}\s*/, '');
-  return s.trim();
+    .replace(/^\s*\{:[^}]*\}\s*/, '')
+  return s.trim()
 }
 
 // 测试用例
-console.log(stripListAndBlockAttr("- 任务内容"));           // "任务内容"
-console.log(stripListAndBlockAttr("  - 任务内容"));         // "任务内容"
-console.log(stripListAndBlockAttr("1. 任务内容"));          // "任务内容"
-console.log(stripListAndBlockAttr("  2. 任务内容"));        // "任务内容"
-console.log(stripListAndBlockAttr("- 任务 {: id=\"xxx\"}")); // "任务"
+console.log(stripListAndBlockAttr('- 任务内容')) // "任务内容"
+console.log(stripListAndBlockAttr('  - 任务内容')) // "任务内容"
+console.log(stripListAndBlockAttr('1. 任务内容')) // "任务内容"
+console.log(stripListAndBlockAttr('  2. 任务内容')) // "任务内容"
+console.log(stripListAndBlockAttr('- 任务 {: id="xxx"}')) // "任务"
 ```
 
 ### 7.3 项目解析
@@ -505,6 +521,7 @@ console.log(stripListAndBlockAttr("- 任务 {: id=\"xxx\"}")); // "任务"
 ```
 
 **解析结果**:
+
 ```typescript
 {
   id: "20240115120000-abc123",
@@ -537,22 +554,23 @@ console.log(stripListAndBlockAttr("- 任务 {: id=\"xxx\"}")); // "任务"
 ```
 
 **解析过程**:
+
 ```typescript
 // 原始行
-const line = "- 需求分析 #任务 @L1 @2024-01-15";
+const line = '- 需求分析 #任务 @L1 @2024-01-15'
 
 // 1. 去除列表标记和块属性
-const cleaned = stripListAndBlockAttr(line);
+const cleaned = stripListAndBlockAttr(line)
 // 结果: "需求分析 #任务 @L1 @2024-01-15"
 
 // 2. 提取层级
-const levelMatch = cleaned.match(/@L([123])/);
-const level = levelMatch ? `L${levelMatch[1]}` : 'L1';
+const levelMatch = cleaned.match(/@L([123])/)
+const level = levelMatch ? `L${levelMatch[1]}` : 'L1'
 // 结果: "L1"
 
 // 3. 提取日期
-const dateMatch = cleaned.match(/@(\d{4}-\d{2}-\d{2})/);
-const date = dateMatch ? dateMatch[1] : undefined;
+const dateMatch = cleaned.match(/@(\d{4}-\d{2}-\d{2})/)
+const date = dateMatch ? dateMatch[1] : undefined
 // 结果: "2024-01-15"
 
 // 4. 移除标记得到任务名称
@@ -560,11 +578,12 @@ const name = cleaned
   .replace(/#任务#?/g, '')
   .replace(/@L[123]/g, '')
   .replace(/@\d{4}-\d{2}-\d{2}/g, '')
-  .trim();
+  .trim()
 // 结果: "需求分析"
 ```
 
 **解析结果**:
+
 ```typescript
 {
   id: "task-xxx",
@@ -594,9 +613,10 @@ const name = cleaned
 ```
 
 **解析过程**:
+
 ```typescript
 // 1. 提取日期时间表达式
-const expressions = extractDateTimeExpressions(line);
+const expressions = extractDateTimeExpressions(line)
 // 结果: [
 //   { fullMatch: "@2024-01-15", datePart: "2024-01-15", timePart: null },
 //   { fullMatch: ", 2024-01-22", datePart: "2024-01-22", timePart: null },
@@ -606,36 +626,37 @@ const expressions = extractDateTimeExpressions(line);
 // 2. 为每个日期创建 Item
 const items = expressions.map((expr, index) => ({
   id: `item-${Date.now()}-${index}`,
-  content: "周会",
+  content: '周会',
   date: expr.datePart,
-  status: "pending",
+  status: 'pending',
   siblingItems: expressions
     .filter((_, i) => i !== index)
     .map(e => ({ date: e.datePart }))
-}));
+}))
 ```
 
 **解析结果**:
+
 ```typescript
 [
   {
-    id: "item-xxx-0",
-    content: "周会",
-    date: "2024-01-15",
-    status: "pending",
+    id: 'item-xxx-0',
+    content: '周会',
+    date: '2024-01-15',
+    status: 'pending',
     siblingItems: [
-      { date: "2024-01-22" },
-      { date: "2024-01-29" }
+      { date: '2024-01-22' },
+      { date: '2024-01-29' }
     ]
   },
   {
-    id: "item-xxx-1",
-    content: "周会",
-    date: "2024-01-22",
-    status: "pending",
+    id: 'item-xxx-1',
+    content: '周会',
+    date: '2024-01-22',
+    status: 'pending',
     siblingItems: [
-      { date: "2024-01-15" },
-      { date: "2024-01-29" }
+      { date: '2024-01-15' },
+      { date: '2024-01-29' }
     ]
   },
   // ... 第三个日期
@@ -650,28 +671,29 @@ const items = expressions.map((expr, index) => ({
 ```
 
 **解析过程**:
+
 ```typescript
 // 1. 识别日期范围
-const datePart = "2024-03-01~2024-03-05";
-const [startStr, endStr] = datePart.split('~');
+const datePart = '2024-03-01~2024-03-05'
+const [startStr, endStr] = datePart.split('~')
 
 // 2. 展开日期范围
 const dates = expandDateRange(
-  new Date("2024-03-01"),
-  new Date("2024-03-05")
-);
+  new Date('2024-03-01'),
+  new Date('2024-03-05')
+)
 // 结果: ["2024-03-01", "2024-03-02", "2024-03-03", "2024-03-04", "2024-03-05"]
 
 // 3. 为每个日期创建 Item
 const items = dates.map((date, index) => ({
   id: `item-${Date.now()}-${index}`,
-  content: "出差",
-  date: date,
-  status: "pending",
+  content: '出差',
+  date,
+  status: 'pending',
   siblingItems: dates
     .filter((_, i) => i !== index)
     .map(d => ({ date: d }))
-}));
+}))
 ```
 
 ### 7.6 番茄钟解析
@@ -694,32 +716,34 @@ const items = dates.map((date, index) => ({
 ```
 
 **解析过程**:
+
 ```typescript
 // 原始行
-const line = "🍅2024-01-15 09:00:00~09:25:00 设计首页布局";
+const line = '🍅2024-01-15 09:00:00~09:25:00 设计首页布局'
 
 // 1. 去除列表标记和块属性
-const cleaned = stripListAndBlockAttr(line);
+const cleaned = stripListAndBlockAttr(line)
 // 结果: "🍅2024-01-15 09:00:00~09:25:00 设计首页布局"
 
 // 2. 匹配番茄钟格式
-const pomodoroRegex = /^🍅(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/;
-const match = cleaned.match(pomodoroRegex);
+const pomodoroRegex = /^🍅(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/
+const match = cleaned.match(pomodoroRegex)
 
 // 3. 提取信息
-const date = match[1];           // "2024-01-15"
-const startTime = match[2];      // "09:00:00"
-const endTime = match[3];        // "09:25:00"
-const description = match[4];    // "设计首页布局"
+const date = match[1] // "2024-01-15"
+const startTime = match[2] // "09:00:00"
+const endTime = match[3] // "09:25:00"
+const description = match[4] // "设计首页布局"
 
 // 4. 计算时长
 const durationMinutes = endTime
   ? timeToMinutes(endTime) - timeToMinutes(startTime)
-  : 25; // 默认25分钟
+  : 25 // 默认25分钟
 // 结果: 25
 ```
 
 **解析结果**:
+
 ```typescript
 {
   id: "pomodoro-xxx",
@@ -754,31 +778,34 @@ const durationMinutes = endTime
 ```
 
 **解析过程**:
+
 ```typescript
 // 1. 解析事项后，继续检查后续块
-let nextBlockIndex = currentBlockIndex + 1;
-const itemLinks: Link[] = [];
+let nextBlockIndex = currentBlockIndex + 1
+const itemLinks: Link[] = []
 
 while (nextBlockIndex < blocks.length) {
-  const nextBlock = blocks[nextBlockIndex];
-  const nextContent = nextBlock.content.split('\n')[0].trim();
+  const nextBlock = blocks[nextBlockIndex]
+  const nextContent = nextBlock.content.split('\n')[0].trim()
 
   // 检查是否为链接行
-  const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/);
+  const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/)
   if (linkMatch && !nextContent.includes('@')) {
-    itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
-    nextBlockIndex++;
-  } else {
+    itemLinks.push({ name: linkMatch[1], url: linkMatch[2] })
+    nextBlockIndex++
+  }
+  else {
     // 不是链接行，停止收集
-    break;
+    break
   }
 }
 
 // 2. 将链接添加到事项
-item.links = itemLinks;
+item.links = itemLinks
 ```
 
 **解析结果**:
+
 ```typescript
 {
   id: "item-xxx",

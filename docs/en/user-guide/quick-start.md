@@ -59,9 +59,11 @@ Define design style (Item content) @2026-03-09
 Complete homepage prototype (Completed item) @2026-03-09 10:00:00~12:00:00 #done
 
 Review meeting (Abandoned item) @2026-03-08 14:00:00~15:00:00 #abandoned
+
 ```
 
 **Key markers explained:**
+
 - `📋` - Marks a line as a task
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
 - `@YYYY-MM-DD` or `📅YYYY-MM-DD` - Date marker for work items (supports Emoji)
@@ -83,6 +85,7 @@ For more format details, see [Data Format](./data-format.md).
 4. Save settings - the plugin will automatically scan for project files
 
 > ⚠️ **Common Issue**: If no data appears, check that:
+>
 > - The directory path matches your actual folder structure
 > - Project documents contain the `📋` / `#task` / `#任务` marker
 > - Work items have valid date formats (`@YYYY-MM-DD`)
@@ -93,16 +96,16 @@ For more configuration details, see [Configuration](./configuration.md).
 
 Once configured, access your tasks through multiple views:
 
-| View | How to Access | Best For |
-|------|---------------|----------|
-| **Calendar** | Click 📅 calendar icon in top bar | Daily/weekly schedule overview |
-| **Gantt** | Click 📊 Gantt icon in top bar | Project timeline visualization |
-| **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
-| **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
-| **Habit Check-in** | Right-click top bar → Closed Panels → Habit Check-in | Daily habit tracking and check-ins |
-| **Quadrant** | Right-click top bar → Quadrant | Manage tasks by priority |
-| **Workbench** | Right-click top bar → Workbench | Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats) |
-| **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
+| View               | How to Access                                        | Best For                                                                  |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Calendar**       | Click 📅 calendar icon in top bar                    | Daily/weekly schedule overview                                            |
+| **Gantt**          | Click 📊 Gantt icon in top bar                       | Project timeline visualization                                            |
+| **Project List**   | Click 📁 folder icon in top bar                      | Review all tasks by project                                               |
+| **Todo Dock**      | Right-click top bar → Closed Panels → Todo Items     | Quick access to upcoming tasks                                            |
+| **Habit Check-in** | Right-click top bar → Closed Panels → Habit Check-in | Daily habit tracking and check-ins                                        |
+| **Quadrant**       | Right-click top bar → Quadrant                       | Manage tasks by priority                                                  |
+| **Workbench**      | Right-click top bar → Workbench                      | Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats) |
+| **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records                                          |
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.
 
@@ -110,13 +113,13 @@ Once configured, access your tasks through multiple views:
 
 Type `/` in the editor to open the slash command panel for quick access to common operations:
 
-| Command | Function |
-|---------|----------|
-| `/today` | Mark as today's item |
+| Command     | Function                |
+| ----------- | ----------------------- |
+| `/today`    | Mark as today's item    |
 | `/tomorrow` | Mark as tomorrow's item |
-| `/done` | Mark as completed |
-| `/calendar` | Open calendar view |
-| `/focus` | Start Pomodoro focus |
+| `/done`     | Mark as completed       |
+| `/calendar` | Open calendar view      |
+| `/focus`    | Start Pomodoro focus    |
 
 For more slash commands, see [Data Format - Slash Commands](./data-format.md#slash-commands).
 

@@ -46,17 +46,19 @@
 ## Task 1: Add Pure View-State Mapping
 
 **Files:**
+
 - Create: `src/utils/floatingPomodoroViewState.ts`
 - Test: `test/utils/floatingPomodoroViewState.test.ts`
 
 - [ ] **Step 1: Write the failing test for countdown, stopwatch, and break mapping**
 
 ```ts
-import { describe, expect, it } from 'vitest';
+import type { FloatingPomodoroSourceState } from '@/utils/floatingPomodoroViewState'
+import { describe, expect, it } from 'vitest'
 import {
-  buildFloatingPomodoroViewState,
-  type FloatingPomodoroSourceState,
-} from '@/utils/floatingPomodoroViewState';
+  buildFloatingPomodoroViewState
+
+} from '@/utils/floatingPomodoroViewState'
 
 const baseFocus: FloatingPomodoroSourceState = {
   phase: 'focus',
@@ -76,19 +78,19 @@ const baseFocus: FloatingPomodoroSourceState = {
     focusedProgress: '已专注 {minutes} 分钟 / 目标 {target} 分钟',
     breakRemaining: '休息剩余 {minutes} 分钟',
   },
-};
+}
 
 describe('buildFloatingPomodoroViewState', () => {
   it('maps countdown focus state', () => {
-    const state = buildFloatingPomodoroViewState(baseFocus);
-    expect(state.primaryText).toBe('18:05');
-    expect(state.secondaryText).toBe('已专注 6 分钟 / 目标 25 分钟');
-    expect(state.statusLabel).toBe('专注中');
-    expect(state.showPauseResume).toBe(true);
-    expect(state.showComplete).toBe(true);
-    expect(state.showSkipBreak).toBe(false);
-    expect(state.progress).toBeCloseTo((6 * 60 + 55) / (25 * 60), 3);
-  });
+    const state = buildFloatingPomodoroViewState(baseFocus)
+    expect(state.primaryText).toBe('18:05')
+    expect(state.secondaryText).toBe('已专注 6 分钟 / 目标 25 分钟')
+    expect(state.statusLabel).toBe('专注中')
+    expect(state.showPauseResume).toBe(true)
+    expect(state.showComplete).toBe(true)
+    expect(state.showSkipBreak).toBe(false)
+    expect(state.progress).toBeCloseTo((6 * 60 + 55) / (25 * 60), 3)
+  })
 
   it('maps stopwatch focus state', () => {
     const state = buildFloatingPomodoroViewState({
@@ -97,20 +99,20 @@ describe('buildFloatingPomodoroViewState', () => {
       remainingSeconds: 0,
       accumulatedSeconds: 11 * 60 + 9,
       targetDurationMinutes: 0,
-    });
-    expect(state.primaryText).toBe('11:09');
-    expect(state.secondaryText).toBe('已专注 11 分钟');
-    expect(state.showComplete).toBe(true);
-  });
+    })
+    expect(state.primaryText).toBe('11:09')
+    expect(state.secondaryText).toBe('已专注 11 分钟')
+    expect(state.showComplete).toBe(true)
+  })
 
   it('maps paused focus state', () => {
     const state = buildFloatingPomodoroViewState({
       ...baseFocus,
       isPaused: true,
-    });
-    expect(state.statusLabel).toBe('已暂停');
-    expect(state.pauseResumeLabel).toBe('继续');
-  });
+    })
+    expect(state.statusLabel).toBe('已暂停')
+    expect(state.pauseResumeLabel).toBe('继续')
+  })
 
   it('maps break state', () => {
     const state = buildFloatingPomodoroViewState({
@@ -120,15 +122,15 @@ describe('buildFloatingPomodoroViewState', () => {
       itemTitle: '',
       fallbackTitle: '',
       labels: baseFocus.labels,
-    });
-    expect(state.primaryText).toBe('04:12');
-    expect(state.secondaryText).toBe('休息剩余 4 分钟');
-    expect(state.statusLabel).toBe('休息中');
-    expect(state.showPauseResume).toBe(false);
-    expect(state.showSkipBreak).toBe(true);
-    expect(state.itemTitle).toBe('未关联事项');
-  });
-});
+    })
+    expect(state.primaryText).toBe('04:12')
+    expect(state.secondaryText).toBe('休息剩余 4 分钟')
+    expect(state.statusLabel).toBe('休息中')
+    expect(state.showPauseResume).toBe(false)
+    expect(state.showSkipBreak).toBe(true)
+    expect(state.itemTitle).toBe('未关联事项')
+  })
+})
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -144,7 +146,7 @@ Expected: FAIL with module not found for `@/utils/floatingPomodoroViewState` or 
 - [ ] **Step 3: Implement the minimal view-state helper**
 
 ```ts
-export type FloatingPomodoroLabels = {
+export interface FloatingPomodoroLabels {
   focusing: string
   paused: string
   breakLabel: string
@@ -156,10 +158,10 @@ export type FloatingPomodoroLabels = {
   resume: string
   complete: string
   skipBreak: string
-};
+}
 
-export type FloatingPomodoroSourceState =
-  | {
+export type FloatingPomodoroSourceState
+  = | {
     phase: 'focus'
     timerMode: 'countdown' | 'stopwatch'
     isPaused: boolean
@@ -177,9 +179,9 @@ export type FloatingPomodoroSourceState =
     itemTitle?: string
     fallbackTitle?: string
     labels: FloatingPomodoroLabels
-  };
+  }
 
-export type FloatingPomodoroViewState = {
+export interface FloatingPomodoroViewState {
   phase: 'focus' | 'break'
   primaryText: string
   secondaryText: string
@@ -192,23 +194,23 @@ export type FloatingPomodoroViewState = {
   pauseResumeLabel: string
   iconKind: 'focus' | 'break'
   isPaused: boolean
-};
+}
 
 function formatClock(totalSeconds: number) {
-  const normalized = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(normalized / 60).toString().padStart(2, '0');
-  const seconds = (normalized % 60).toString().padStart(2, '0');
-  return `${minutes}:${seconds}`;
+  const normalized = Math.max(0, Math.floor(totalSeconds))
+  const minutes = Math.floor(normalized / 60).toString().padStart(2, '0')
+  const seconds = (normalized % 60).toString().padStart(2, '0')
+  return `${minutes}:${seconds}`
 }
 
 function resolveItemTitle(itemTitle: string | undefined, fallbackTitle: string | undefined, unknownItem: string) {
-  return itemTitle?.trim() || fallbackTitle?.trim() || unknownItem;
+  return itemTitle?.trim() || fallbackTitle?.trim() || unknownItem
 }
 
 export function buildFloatingPomodoroViewState(source: FloatingPomodoroSourceState): FloatingPomodoroViewState {
   if (source.phase === 'break') {
-    const remainingMinutes = Math.floor(source.remainingSeconds / 60);
-    const elapsed = Math.max(0, source.totalSeconds - source.remainingSeconds);
+    const remainingMinutes = Math.floor(source.remainingSeconds / 60)
+    const elapsed = Math.max(0, source.totalSeconds - source.remainingSeconds)
     return {
       phase: 'break',
       primaryText: formatClock(source.remainingSeconds),
@@ -222,21 +224,21 @@ export function buildFloatingPomodoroViewState(source: FloatingPomodoroSourceSta
       pauseResumeLabel: '',
       iconKind: 'break',
       isPaused: false,
-    };
+    }
   }
 
   const displaySeconds = source.timerMode === 'stopwatch'
     ? source.accumulatedSeconds
-    : source.remainingSeconds;
-  const focusedMinutes = Math.floor(source.accumulatedSeconds / 60);
+    : source.remainingSeconds
+  const focusedMinutes = Math.floor(source.accumulatedSeconds / 60)
   const secondaryText = source.timerMode === 'stopwatch'
     ? source.labels.focusedMinutes.replace('{minutes}', String(focusedMinutes))
     : source.labels.focusedProgress
         .replace('{minutes}', String(focusedMinutes))
-        .replace('{target}', String(source.targetDurationMinutes));
+        .replace('{target}', String(source.targetDurationMinutes))
   const referenceSeconds = source.timerMode === 'stopwatch'
     ? Math.max(source.accumulatedSeconds, 25 * 60)
-    : source.targetDurationMinutes * 60;
+    : source.targetDurationMinutes * 60
 
   return {
     phase: 'focus',
@@ -251,7 +253,7 @@ export function buildFloatingPomodoroViewState(source: FloatingPomodoroSourceSta
     pauseResumeLabel: source.isPaused ? source.labels.resume : source.labels.pause,
     iconKind: 'focus',
     isPaused: source.isPaused,
-  };
+  }
 }
 ```
 
@@ -275,15 +277,16 @@ git commit -m "feat(pomodoro): add floating capsule view state helper"
 ## Task 2: Add DOM Renderer for Capsule Content
 
 **Files:**
+
 - Create: `src/utils/floatingPomodoroDom.ts`
 - Test: `test/utils/floatingPomodoroDom.test.ts`
 
 - [ ] **Step 1: Write the failing DOM renderer test**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { applyFloatingPomodoroViewState, createFloatingPomodoroMarkup } from '@/utils/floatingPomodoroDom';
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
+import { describe, expect, it } from 'vitest'
+import { applyFloatingPomodoroViewState, createFloatingPomodoroMarkup } from '@/utils/floatingPomodoroDom'
 
 function makeState(overrides: Partial<FloatingPomodoroViewState> = {}): FloatingPomodoroViewState {
   return {
@@ -300,25 +303,25 @@ function makeState(overrides: Partial<FloatingPomodoroViewState> = {}): Floating
     iconKind: 'focus',
     isPaused: false,
     ...overrides,
-  };
+  }
 }
 
 describe('applyFloatingPomodoroViewState', () => {
   it('renders focus content and button visibility', () => {
-    const host = document.createElement('div');
-    host.innerHTML = createFloatingPomodoroMarkup();
-    applyFloatingPomodoroViewState(host, makeState());
-    expect(host.querySelector('.floating-tomato-primary')?.textContent).toBe('18:05');
-    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Write capsule spec');
-    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('专注中');
-    expect((host.querySelector('.floating-tomato-progress-fill') as HTMLElement).style.transform).toBe('scaleX(0.3)');
-    expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(false);
-    expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(true);
-  });
+    const host = document.createElement('div')
+    host.innerHTML = createFloatingPomodoroMarkup()
+    applyFloatingPomodoroViewState(host, makeState())
+    expect(host.querySelector('.floating-tomato-primary')?.textContent).toBe('18:05')
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Write capsule spec')
+    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('专注中')
+    expect((host.querySelector('.floating-tomato-progress-fill') as HTMLElement).style.transform).toBe('scaleX(0.3)')
+    expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(false)
+    expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(true)
+  })
 
   it('renders break content and hides focus actions', () => {
-    const host = document.createElement('div');
-    host.innerHTML = createFloatingPomodoroMarkup();
+    const host = document.createElement('div')
+    host.innerHTML = createFloatingPomodoroMarkup()
     applyFloatingPomodoroViewState(host, makeState({
       phase: 'break',
       primaryText: '04:12',
@@ -328,13 +331,13 @@ describe('applyFloatingPomodoroViewState', () => {
       showComplete: false,
       showSkipBreak: true,
       iconKind: 'break',
-    }));
-    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('休息中');
-    expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(true);
-    expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(false);
-    expect(host.querySelector('.floating-tomato-btn')?.classList.contains('is-break')).toBe(true);
-  });
-});
+    }))
+    expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('休息中')
+    expect(host.querySelector('.floating-tomato-action--pause')?.hasAttribute('hidden')).toBe(true)
+    expect(host.querySelector('.floating-tomato-action--skip')?.hasAttribute('hidden')).toBe(false)
+    expect(host.querySelector('.floating-tomato-btn')?.classList.contains('is-break')).toBe(true)
+  })
+})
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -350,7 +353,7 @@ Expected: FAIL with missing module/export errors for `@/utils/floatingPomodoroDo
 - [ ] **Step 3: Implement the markup and DOM patch helper**
 
 ```ts
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 
 export function createFloatingPomodoroMarkup() {
   return `
@@ -375,29 +378,29 @@ export function createFloatingPomodoroMarkup() {
         <div class="floating-tomato-progress-fill"></div>
       </div>
     </div>
-  `;
+  `
 }
 
 export function applyFloatingPomodoroViewState(host: HTMLElement, state: FloatingPomodoroViewState) {
-  host.classList.toggle('is-break', state.phase === 'break');
+  host.classList.toggle('is-break', state.phase === 'break')
   host.classList.toggle('is-paused', state.isPaused);
   (host.querySelector('.floating-tomato-status') as HTMLElement).textContent = state.statusLabel;
   (host.querySelector('.floating-tomato-primary') as HTMLElement).textContent = state.primaryText;
   (host.querySelector('.floating-tomato-item') as HTMLElement).textContent = state.itemTitle;
-  (host.querySelector('.floating-tomato-secondary') as HTMLElement).textContent = state.secondaryText;
+  (host.querySelector('.floating-tomato-secondary') as HTMLElement).textContent = state.secondaryText
 
-  const pauseBtn = host.querySelector('.floating-tomato-action--pause') as HTMLButtonElement;
-  const completeBtn = host.querySelector('.floating-tomato-action--complete') as HTMLButtonElement;
-  const skipBtn = host.querySelector('.floating-tomato-action--skip') as HTMLButtonElement;
-  pauseBtn.hidden = !state.showPauseResume;
-  completeBtn.hidden = !state.showComplete;
-  skipBtn.hidden = !state.showSkipBreak;
-  pauseBtn.textContent = state.pauseResumeLabel;
-  completeBtn.textContent = 'end';
-  skipBtn.textContent = 'skip';
+  const pauseBtn = host.querySelector('.floating-tomato-action--pause') as HTMLButtonElement
+  const completeBtn = host.querySelector('.floating-tomato-action--complete') as HTMLButtonElement
+  const skipBtn = host.querySelector('.floating-tomato-action--skip') as HTMLButtonElement
+  pauseBtn.hidden = !state.showPauseResume
+  completeBtn.hidden = !state.showComplete
+  skipBtn.hidden = !state.showSkipBreak
+  pauseBtn.textContent = state.pauseResumeLabel
+  completeBtn.textContent = 'end'
+  skipBtn.textContent = 'skip'
 
-  const fill = host.querySelector('.floating-tomato-progress-fill') as HTMLElement;
-  fill.style.transform = `scaleX(${Math.max(0, Math.min(1, state.progress))})`;
+  const fill = host.querySelector('.floating-tomato-progress-fill') as HTMLElement
+  fill.style.transform = `scaleX(${Math.max(0, Math.min(1, state.progress))})`
 }
 ```
 
@@ -421,6 +424,7 @@ git commit -m "feat(pomodoro): add floating capsule dom renderer"
 ## Task 3: Integrate Capsule Rendering Into `TaskAssistantPlugin`
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
@@ -428,8 +432,8 @@ git commit -m "feat(pomodoro): add floating capsule dom renderer"
 - [ ] **Step 1: Add a focused integration test or snapshot-free behavior test for label wiring if new i18n keys are required**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { buildFloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import { describe, expect, it } from 'vitest'
+import { buildFloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
 
 describe('floating pomodoro labels', () => {
   it('uses explicit unknown-item fallback text', () => {
@@ -452,10 +456,10 @@ describe('floating pomodoro labels', () => {
         complete: 'End',
         skipBreak: 'Skip',
       },
-    });
-    expect(state.itemTitle).toBe('No linked item');
-  });
-});
+    })
+    expect(state.itemTitle).toBe('No linked item')
+  })
+})
 ```
 
 - [ ] **Step 2: Run the targeted tests to verify the integration baseline**
@@ -562,19 +566,20 @@ git commit -m "feat(pomodoro): integrate floating capsule renderer"
 ## Task 4: Replace Circular Styles With Capsule Styles
 
 **Files:**
+
 - Modify: `src/index.scss`
 
 - [ ] **Step 1: Write a narrow DOM renderer test that asserts state classes stay compatible with the planned SCSS selectors**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { applyFloatingPomodoroViewState, createFloatingPomodoroMarkup } from '@/utils/floatingPomodoroDom';
-import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
+import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState'
+import { describe, expect, it } from 'vitest'
+import { applyFloatingPomodoroViewState, createFloatingPomodoroMarkup } from '@/utils/floatingPomodoroDom'
 
 describe('floating capsule state classes', () => {
   it('adds paused class for paused focus state', () => {
-    const host = document.createElement('div');
-    host.innerHTML = createFloatingPomodoroMarkup();
+    const host = document.createElement('div')
+    host.innerHTML = createFloatingPomodoroMarkup()
     applyFloatingPomodoroViewState(host, {
       phase: 'focus',
       primaryText: '18:05',
@@ -588,10 +593,10 @@ describe('floating capsule state classes', () => {
       pauseResumeLabel: '继续',
       iconKind: 'focus',
       isPaused: true,
-    } satisfies FloatingPomodoroViewState);
-    expect(host.querySelector('.floating-tomato-btn')?.classList.contains('is-paused')).toBe(true);
-  });
-});
+    } satisfies FloatingPomodoroViewState)
+    expect(host.querySelector('.floating-tomato-btn')?.classList.contains('is-paused')).toBe(true)
+  })
+})
 ```
 
 - [ ] **Step 2: Run the DOM tests to confirm the selector contract**
@@ -623,7 +628,10 @@ Expected: PASS.
   cursor: pointer;
   user-select: none;
   touch-action: none;
-  transition: width 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    width 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 
   .floating-tomato-shell {
     position: relative;
@@ -670,6 +678,7 @@ Expected: PASS.
     transition: none;
   }
 }
+
 ```
 
 - [ ] **Step 4: Run the targeted DOM tests after the style refactor**
@@ -692,6 +701,7 @@ git commit -m "style(pomodoro): restyle floating timer as capsule"
 ## Task 5: Full Verification and Manual Desktop Checks
 
 **Files:**
+
 - Modify: none expected
 - Test: `test/utils/floatingPomodoroViewState.test.ts`
 - Test: `test/utils/floatingPomodoroDom.test.ts`

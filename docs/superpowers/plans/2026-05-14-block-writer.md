@@ -13,32 +13,33 @@
 ## Scope Rules
 
 1. 本计划第一轮不替换任何现有业务写入逻辑。
-3. Protyle 路径不默认走 `BlockDOM2StdMd -> Md2BlockDOM`，只做最小 DOM/Range 修改、`SpinBlockDOM`、transaction。
-4. API 路径基于真实 `getBlockKramdown` 形态：内容行 + trailing IAL 行。
-5. dev-only 验证通过后，后续迁移任务再逐个替换真实入口。
-6. **Phase 1 不包含**：Protyle `setStatus` DOM 路径（`data-task` 修改）、光标恢复（`focusByOffset`/`<wbr>`）、多日期合并（`addDate`）。这些在 Phase 2-3 以独立 Task 追加。
+2. Protyle 路径不默认走 `BlockDOM2StdMd -> Md2BlockDOM`，只做最小 DOM/Range 修改、`SpinBlockDOM`、transaction。
+3. API 路径基于真实 `getBlockKramdown` 形态：内容行 + trailing IAL 行。
+4. dev-only 验证通过后，后续迁移任务再逐个替换真实入口。
+5. **Phase 1 不包含**：Protyle `setStatus` DOM 路径（`data-task` 修改）、光标恢复（`focusByOffset`/`<wbr>`）、多日期合并（`addDate`）。这些在 Phase 2-3 以独立 Task 追加。
 
 ## File Structure
 
-| 文件 | 职责 |
-|------|------|
-| `src/utils/blockWriter/types.ts` | BlockWriter 类型 |
-| `src/utils/blockWriter/itemLineMarkers.ts` | 事项行 marker 纯函数 |
-| `src/utils/blockWriter/kramdownBlocks.ts` | 拆分/重建 content lines + trailing IAL |
-| `src/utils/blockWriter/kramdownModifier.ts` | 纯函数 patch |
-| `src/utils/blockWriter/blockTargetResolver.ts` | API 目标块解析 |
-| `src/utils/blockWriter/apiTransport.ts` | API-only 写入 |
-| `src/utils/blockWriter/slashRange.ts` | Range/offset 删除 |
-| `src/utils/blockWriter/protyleTransport.ts` | Protyle 写入与失败返回 |
-| `src/utils/blockWriter/index.ts` | `writeBlock()` |
-| `src/index.ts` | dev-only 顶栏按钮 |
-| `test/blockWriter/*.test.ts` | 单元测试 |
+| 文件                                           | 职责                                   |
+| ---------------------------------------------- | -------------------------------------- |
+| `src/utils/blockWriter/types.ts`               | BlockWriter 类型                       |
+| `src/utils/blockWriter/itemLineMarkers.ts`     | 事项行 marker 纯函数                   |
+| `src/utils/blockWriter/kramdownBlocks.ts`      | 拆分/重建 content lines + trailing IAL |
+| `src/utils/blockWriter/kramdownModifier.ts`    | 纯函数 patch                           |
+| `src/utils/blockWriter/blockTargetResolver.ts` | API 目标块解析                         |
+| `src/utils/blockWriter/apiTransport.ts`        | API-only 写入                          |
+| `src/utils/blockWriter/slashRange.ts`          | Range/offset 删除                      |
+| `src/utils/blockWriter/protyleTransport.ts`    | Protyle 写入与失败返回                 |
+| `src/utils/blockWriter/index.ts`               | `writeBlock()`                         |
+| `src/index.ts`                                 | dev-only 顶栏按钮                      |
+| `test/blockWriter/*.test.ts`                   | 单元测试                               |
 
 ---
 
 ### Task 1: Add Core Types
 
 **Files:**
+
 - Create: `src/utils/blockWriter/types.ts`
 
 - [ ] **Step 1: Create directory**
@@ -50,81 +51,81 @@ if (-not (Test-Path "src/utils/blockWriter")) { New-Item -ItemType Directory -Pa
 - [ ] **Step 2: Add `types.ts`**
 
 ```ts
-import type { ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
+import type { ItemStatus, PriorityLevel, TimePrecision } from '@/types/models'
 
 export interface ItemDateTimeInfo {
-  date: string;
-  allDay: boolean;
-  startTime?: string;
-  endTime?: string;
-  timePrecision: TimePrecision;
+  date: string
+  allDay: boolean
+  startTime?: string
+  endTime?: string
+  timePrecision: TimePrecision
 }
 
 export interface BlockWriteContext {
-  blockId: string;
-  protyle?: any;
-  nodeElement?: HTMLElement;
-  slashRange?: Range;
-  slashStartOffset?: number;
+  blockId: string
+  protyle?: any
+  nodeElement?: HTMLElement
+  slashRange?: Range
+  slashStartOffset?: number
 }
 
-export type DatePatch = {
-  type: 'addDate';
-  date: string;
-  originalDate?: string;
-  startTime?: string;
-  endTime?: string;
-  allDay?: boolean;
-  timePrecision?: TimePrecision;
-  siblingItems?: ItemDateTimeInfo[];
-};
+export interface DatePatch {
+  type: 'addDate'
+  date: string
+  originalDate?: string
+  startTime?: string
+  endTime?: string
+  allDay?: boolean
+  timePrecision?: TimePrecision
+  siblingItems?: ItemDateTimeInfo[]
+}
 
-export type StatusPatch = {
-  type: 'setStatus';
-  status: ItemStatus;
-};
+export interface StatusPatch {
+  type: 'setStatus'
+  status: ItemStatus
+}
 
-export type PriorityPatch = {
-  type: 'setPriority';
-  priority: PriorityLevel | undefined;
-};
+export interface PriorityPatch {
+  type: 'setPriority'
+  priority: PriorityLevel | undefined
+}
 
-export type ContentPatch = {
-  type: 'setContent';
-  suffix?: string;
-  newItemContent?: string;
-};
+export interface ContentPatch {
+  type: 'setContent'
+  suffix?: string
+  newItemContent?: string
+}
 
-export type SlashCommandPatch = {
-  type: 'removeSlashCommands';
-  filters: string[];
-  suffix?: string;
-};
+export interface SlashCommandPatch {
+  type: 'removeSlashCommands'
+  filters: string[]
+  suffix?: string
+}
 
-export type BlockPatch =
-  | DatePatch
-  | StatusPatch
-  | PriorityPatch
-  | ContentPatch
-  | SlashCommandPatch;
+export type BlockPatch
+  = | DatePatch
+    | StatusPatch
+    | PriorityPatch
+    | ContentPatch
+    | SlashCommandPatch
 
-export type BatchBlockPatch = BlockPatch[];
+export type BatchBlockPatch = BlockPatch[]
 
 export interface KramdownBlockParts {
-  contentLines: string[];
-  ialLines: string[];
-  raw: string;
+  contentLines: string[]
+  ialLines: string[]
+  raw: string
 }
 
 export interface ResolvedBlockTarget {
-  originalBlockId: string;
-  targetBlockId: string;
-  targetType?: string;
-  targetSubType?: string;
-  fullKramdown: string;
-  targetRaw: string;
-  parts: KramdownBlockParts;
-  replaceMode: 'whole-block' | 'raw-within-parent';
+  originalBlockId: string
+  targetBlockId: string
+  targetType?: string
+  targetSubType?: string
+  fullKramdown: string
+  targetRaw: string
+  parts: KramdownBlockParts
+  replaceMode: 'whole-block' | 'raw-within-parent'
 }
 ```
 
@@ -148,35 +149,36 @@ git commit -m "feat(blockWriter): add core write types"
 ### Task 2: Add Kramdown Block Utilities
 
 **Files:**
+
 - Create: `src/utils/blockWriter/kramdownBlocks.ts`
 - Create: `test/blockWriter/kramdownBlocks.test.ts`
 
 - [ ] **Step 1: Write tests**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { replaceContentLines, splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
+import { describe, expect, it } from 'vitest'
+import { replaceContentLines, splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks'
 
 describe('kramdownBlocks', () => {
   it('splits content and trailing IAL', () => {
-    const raw = '任务内容 📅2026-05-14\n{: id="abc" custom-reminder="yes"}';
+    const raw = '任务内容 📅2026-05-14\n{: id="abc" custom-reminder="yes"}'
     expect(splitKramdownBlock(raw)).toEqual({
       contentLines: ['任务内容 📅2026-05-14'],
       ialLines: ['{: id="abc" custom-reminder="yes"}'],
       raw,
-    });
-  });
+    })
+  })
 
   it('keeps pomodoro lines as content', () => {
-    const raw = '任务内容 📅2026-05-14\n🍅 3/3\n{: id="abc"}';
-    expect(splitKramdownBlock(raw).contentLines).toEqual(['任务内容 📅2026-05-14', '🍅 3/3']);
-  });
+    const raw = '任务内容 📅2026-05-14\n🍅 3/3\n{: id="abc"}'
+    expect(splitKramdownBlock(raw).contentLines).toEqual(['任务内容 📅2026-05-14', '🍅 3/3'])
+  })
 
   it('rebuilds with original IAL', () => {
-    const parts = splitKramdownBlock('- [ ] 任务\n{: id="abc" custom-x="1"}');
-    expect(replaceContentLines(parts, ['- [x] 任务'])).toBe('- [x] 任务\n{: id="abc" custom-x="1"}');
-  });
-});
+    const parts = splitKramdownBlock('- [ ] 任务\n{: id="abc" custom-x="1"}')
+    expect(replaceContentLines(parts, ['- [x] 任务'])).toBe('- [x] 任务\n{: id="abc" custom-x="1"}')
+  })
+})
 ```
 
 - [ ] **Step 2: Run failing test**
@@ -190,35 +192,35 @@ Expected: FAIL because module is missing.
 - [ ] **Step 3: Implement**
 
 ```ts
-import type { KramdownBlockParts } from './types';
+import type { KramdownBlockParts } from './types'
 
 function isIALLine(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith('{:') && trimmed.endsWith('}');
+  const trimmed = line.trim()
+  return trimmed.startsWith('{:') && trimmed.endsWith('}')
 }
 
 export function splitKramdownBlock(raw: string): KramdownBlockParts {
-  const lines = raw.split('\n');
-  const ialLines: string[] = [];
-  while (lines.length > 0 && isIALLine(lines[lines.length - 1])) {
-    ialLines.unshift(lines.pop()!);
+  const lines = raw.split('\n')
+  const ialLines: string[] = []
+  while (lines.length > 0 && isIALLine(lines.at(-1))) {
+    ialLines.unshift(lines.pop()!)
   }
   return {
     contentLines: lines,
     ialLines,
     raw,
-  };
+  }
 }
 
 export function rebuildKramdownBlock(parts: KramdownBlockParts): string {
-  return [...parts.contentLines, ...parts.ialLines].join('\n');
+  return [...parts.contentLines, ...parts.ialLines].join('\n')
 }
 
 export function replaceContentLines(parts: KramdownBlockParts, contentLines: string[]): string {
   return rebuildKramdownBlock({
     ...parts,
     contentLines,
-  });
+  })
 }
 ```
 
@@ -242,6 +244,7 @@ git commit -m "feat(blockWriter): preserve trailing IAL in kramdown blocks"
 ### Task 3: Add Marker and Modifier Utilities
 
 **Files:**
+
 - Create: `src/utils/blockWriter/itemLineMarkers.ts`
 - Create: `src/utils/blockWriter/kramdownModifier.ts`
 - Create: `test/blockWriter/kramdownModifier.test.ts`
@@ -249,51 +252,51 @@ git commit -m "feat(blockWriter): preserve trailing IAL in kramdown blocks"
 - [ ] **Step 1: Write tests**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
-import { applyBlockPatch, applyBlockPatches } from '@/utils/blockWriter/kramdownModifier';
+import { describe, expect, it } from 'vitest'
+import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks'
+import { applyBlockPatch, applyBlockPatches } from '@/utils/blockWriter/kramdownModifier'
 
 describe('kramdownModifier', () => {
   it('sets status and preserves IAL', () => {
-    const parts = splitKramdownBlock('任务 📅2026-05-14\n{: id="abc" custom-reminder="yes"}');
+    const parts = splitKramdownBlock('任务 📅2026-05-14\n{: id="abc" custom-reminder="yes"}')
     expect(applyBlockPatch(parts, { type: 'setStatus', status: 'completed' }))
-      .toBe('任务 📅2026-05-14 #已完成\n{: id="abc" custom-reminder="yes"}');
-  });
+      .toBe('任务 📅2026-05-14 #已完成\n{: id="abc" custom-reminder="yes"}')
+  })
 
   it('sets task list status', () => {
-    const parts = splitKramdownBlock('- [ ] 任务 📅2026-05-14\n{: id="abc"}');
+    const parts = splitKramdownBlock('- [ ] 任务 📅2026-05-14\n{: id="abc"}')
     expect(applyBlockPatch(parts, { type: 'setStatus', status: 'completed' }))
-      .toBe('- [x] 任务 📅2026-05-14\n{: id="abc"}');
-  });
+      .toBe('- [x] 任务 📅2026-05-14\n{: id="abc"}')
+  })
 
   it('sets priority before date', () => {
-    const parts = splitKramdownBlock('任务 📅2026-05-14\n{: id="abc"}');
+    const parts = splitKramdownBlock('任务 📅2026-05-14\n{: id="abc"}')
     expect(applyBlockPatch(parts, { type: 'setPriority', priority: 'high' }))
-      .toBe('任务 🔥 📅2026-05-14\n{: id="abc"}');
-  });
+      .toBe('任务 🔥 📅2026-05-14\n{: id="abc"}')
+  })
 
   it('applies batch patches with priority then date', () => {
-    const parts = splitKramdownBlock('- [ ] 任务\n{: id="abc"}');
+    const parts = splitKramdownBlock('- [ ] 任务\n{: id="abc"}')
     const result = applyBlockPatches(parts, [
       { type: 'setPriority', priority: 'high' },
       { type: 'addDate', date: '2026-05-16' },
-    ]);
-    expect(result).toContain('🔥');
-    expect(result).toContain('📅2026-05-16');
-    expect(result).toContain('{: id="abc"}');
-  });
+    ])
+    expect(result).toContain('🔥')
+    expect(result).toContain('📅2026-05-16')
+    expect(result).toContain('{: id="abc"}')
+  })
 
   it('applies batch patches with removeSlashCommands + setPriority', () => {
-    const parts = splitKramdownBlock('任务 /p=高的内容\n{: id="abc"}');
+    const parts = splitKramdownBlock('任务 /p=高的内容\n{: id="abc"}')
     const result = applyBlockPatches(parts, [
       { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' },
       { type: 'setPriority', priority: 'high' },
-    ]);
-    expect(result).toContain('🔥');
-    expect(result).not.toContain('/p=高');
-    expect(result).toContain('{: id="abc"}');
-  });
-});
+    ])
+    expect(result).toContain('🔥')
+    expect(result).not.toContain('/p=高')
+    expect(result).toContain('{: id="abc"}')
+  })
+})
 ```
 
 - [ ] **Step 2: Run failing test**
@@ -307,100 +310,104 @@ Expected: FAIL because modules are missing.
 - [ ] **Step 3: Implement `itemLineMarkers.ts`**
 
 ```ts
-import type { PriorityLevel } from '@/types/models';
+import type { PriorityLevel } from '@/types/models'
 import {
   generatePriorityMarker as generatePriorityMarkerFromParser,
   stripPriorityMarker as stripPriorityMarkerFromParser,
-} from '@/parser/priorityParser';
+} from '@/parser/priorityParser'
 
 export function isTaskListFormat(line: string): boolean {
-  return /\[\s*[xX]?\s*\]/.test(line);
+  return /\[\s*(?:x\s*)?\]/i.test(line)
 }
 
 export function stripPriorityMarker(line: string): string {
-  return stripPriorityMarkerFromParser(line).replace(/\s{2,}/g, ' ').trim();
+  return stripPriorityMarkerFromParser(line).replace(/\s{2,}/g, ' ').trim()
 }
 
 export function generatePriorityMarker(priority: PriorityLevel): string {
-  return generatePriorityMarkerFromParser(priority);
+  return generatePriorityMarkerFromParser(priority)
 }
 ```
 
 - [ ] **Step 4: Implement `kramdownModifier.ts`**
 
 ```ts
-import type { BlockPatch, KramdownBlockParts } from './types';
-import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
-import { generatePriorityMarker, isTaskListFormat, stripPriorityMarker } from './itemLineMarkers';
+import type { BlockPatch, KramdownBlockParts } from './types'
+import { generatePriorityMarker, isTaskListFormat, stripPriorityMarker } from './itemLineMarkers'
+import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks'
 
-const STATUS_TAGS = ['#已完成', '#已放弃', '#done', '#abandoned', '✅', '❌'];
+const STATUS_TAGS = ['#已完成', '#已放弃', '#done', '#abandoned', '✅', '❌']
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function primaryLineIndex(lines: string[]): number {
   const index = lines.findIndex((line) => {
-    const trimmed = line.trim();
-    return trimmed !== '' && !trimmed.startsWith('{:') && !trimmed.startsWith('🍅');
-  });
-  return index >= 0 ? index : 0;
+    const trimmed = line.trim()
+    return trimmed !== '' && !trimmed.startsWith('{:') && !trimmed.startsWith('🍅')
+  })
+  return index >= 0 ? index : 0
 }
 
 function removeStatusTags(line: string): string {
-  let result = line;
+  let result = line
   for (const tag of STATUS_TAGS) {
-    result = result.replace(new RegExp(`\\s*${escapeRegex(tag)}`, 'g'), '');
+    result = result.replace(new RegExp(`\\s*${escapeRegex(tag)}`, 'g'), '')
   }
-  return result.replace(/\s{2,}/g, ' ').trim();
+  return result.replace(/\s{2,}/g, ' ').trim()
 }
 
 function applyStatus(line: string, status: BlockPatch & { type: 'setStatus' }): string {
   if (isTaskListFormat(line)) {
-    let result = line.replace(/\[\s*[xX]?\s*\]/, status.status === 'completed' ? '[x]' : '[ ]');
-    result = removeStatusTags(result);
-    return status.status === 'abandoned' ? `${result} #已放弃` : result;
+    let result = line.replace(/\[\s*(?:x\s*)?\]/i, status.status === 'completed' ? '[x]' : '[ ]')
+    result = removeStatusTags(result)
+    return status.status === 'abandoned' ? `${result} #已放弃` : result
   }
-  const cleaned = removeStatusTags(line);
-  if (status.status === 'completed') return `${cleaned} #已完成`;
-  if (status.status === 'abandoned') return `${cleaned} #已放弃`;
-  return cleaned;
+  const cleaned = removeStatusTags(line)
+  if (status.status === 'completed')
+    return `${cleaned} #已完成`
+  if (status.status === 'abandoned')
+    return `${cleaned} #已放弃`
+  return cleaned
 }
 
 function applyPriority(line: string, priority: BlockPatch & { type: 'setPriority' }): string {
-  let result = stripPriorityMarker(line);
-  if (!priority.priority) return result;
-  const marker = generatePriorityMarker(priority.priority);
-  const dateMatch = result.match(/(?:@|📅)\d{4}-\d{2}-\d{2}/);
-  if (!dateMatch || dateMatch.index === undefined) return `${result} ${marker}`.trim();
-  return `${result.slice(0, dateMatch.index).trimEnd()} ${marker} ${result.slice(dateMatch.index).trimStart()}`.trim();
+  const result = stripPriorityMarker(line)
+  if (!priority.priority)
+    return result
+  const marker = generatePriorityMarker(priority.priority)
+  const dateMatch = result.match(/(?:@|📅)\d{4}-\d{2}-\d{2}/)
+  if (!dateMatch || dateMatch.index === undefined)
+    return `${result} ${marker}`.trim()
+  return `${result.slice(0, dateMatch.index).trimEnd()} ${marker} ${result.slice(dateMatch.index).trimStart()}`.trim()
 }
 
 export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): string {
-  const contentLines = [...parts.contentLines];
-  const index = primaryLineIndex(contentLines);
-  const line = contentLines[index] ?? '';
+  const contentLines = [...parts.contentLines]
+  const index = primaryLineIndex(contentLines)
+  const line = contentLines[index] ?? ''
 
   if (patch.type === 'setStatus') {
-    contentLines[index] = applyStatus(line, patch);
-    return replaceContentLines(parts, contentLines);
+    contentLines[index] = applyStatus(line, patch)
+    return replaceContentLines(parts, contentLines)
   }
 
   if (patch.type === 'setPriority') {
-    contentLines[index] = applyPriority(line, patch);
-    return replaceContentLines(parts, contentLines);
+    contentLines[index] = applyPriority(line, patch)
+    return replaceContentLines(parts, contentLines)
   }
 
-  throw new Error(`Patch ${patch.type} is not implemented yet`);
+  throw new Error(`Patch ${patch.type} is not implemented yet`)
 }
 
 export function applyBlockPatches(parts: KramdownBlockParts, patches: BlockPatch[]): string {
-  let currentParts = parts;
+  let currentParts = parts
   for (const patch of patches) {
-    const result = applyBlockPatch(currentParts, patch);
-    currentParts = splitKramdownBlock(result);
+    const result = applyBlockPatch(currentParts, patch)
+    currentParts = splitKramdownBlock(result)
   }
-  return rebuildKramdownBlock(currentParts);
+  return rebuildKramdownBlock(currentParts)
 }
 ```
 
@@ -424,6 +431,7 @@ git commit -m "feat(blockWriter): add basic kramdown patches"
 ### Task 4: Add API Resolver and Transport
 
 **Files:**
+
 - Create: `src/utils/blockWriter/blockTargetResolver.ts`
 - Create: `src/utils/blockWriter/apiTransport.ts`
 - Create: `src/utils/blockWriter/index.ts`
@@ -432,38 +440,38 @@ git commit -m "feat(blockWriter): add basic kramdown patches"
 - [ ] **Step 1: Write API transport test**
 
 ```ts
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { writeViaApi } from '@/utils/blockWriter/apiTransport';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { writeViaApi } from '@/utils/blockWriter/apiTransport'
 
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn(),
   getBlockKramdown: vi.fn(),
   updateBlock: vi.fn(),
-}));
+}))
 
-const api = await import('@/api');
+const api = await import('@/api')
 
 describe('apiTransport', () => {
-  beforeEach(() => vi.resetAllMocks());
+  beforeEach(() => vi.resetAllMocks())
 
   it('writes priority and preserves IAL', async () => {
-    vi.mocked(api.getBlockByID).mockResolvedValue({ id: 'abc', type: 'NodeParagraph' } as any);
+    vi.mocked(api.getBlockByID).mockResolvedValue({ id: 'abc', type: 'NodeParagraph' } as any)
     vi.mocked(api.getBlockKramdown).mockResolvedValue({
       id: 'abc',
       kramdown: '任务 📅2026-05-14\n{: id="abc" custom-reminder="yes"}',
-    } as any);
-    vi.mocked(api.updateBlock).mockResolvedValue([] as any);
+    } as any)
+    vi.mocked(api.updateBlock).mockResolvedValue([] as any)
 
-    const ok = await writeViaApi('abc', { type: 'setPriority', priority: 'high' });
+    const ok = await writeViaApi('abc', { type: 'setPriority', priority: 'high' })
 
-    expect(ok).toBe(true);
+    expect(ok).toBe(true)
     expect(api.updateBlock).toHaveBeenCalledWith(
       'markdown',
       '任务 🔥 📅2026-05-14\n{: id="abc" custom-reminder="yes"}',
       'abc',
-    );
-  });
-});
+    )
+  })
+})
 ```
 
 - [ ] **Step 2: Run failing test**
@@ -477,29 +485,30 @@ Expected: FAIL because modules are missing.
 - [ ] **Step 3: Implement resolver**
 
 ```ts
-import { getBlockByID, getBlockKramdown } from '@/api';
-import type { BlockPatch, ResolvedBlockTarget } from './types';
-import { splitKramdownBlock } from './kramdownBlocks';
+import type { BlockPatch, ResolvedBlockTarget } from './types'
+import { getBlockByID, getBlockKramdown } from '@/api'
+import { splitKramdownBlock } from './kramdownBlocks'
 
 function subtypeOf(block: any): string | undefined {
-  return block?.subtype ?? block?.subType;
+  return block?.subtype ?? block?.subType
 }
 
 export async function resolveApiBlockTarget(blockId: string, patch: BlockPatch): Promise<ResolvedBlockTarget> {
-  const block = await getBlockByID(blockId);
-  let targetBlock = block;
-  let targetBlockId = blockId;
+  const block = await getBlockByID(blockId)
+  let targetBlock = block
+  let targetBlockId = blockId
 
   if (patch.type === 'setStatus' && block?.parent_id) {
-    const parent = await getBlockByID(block.parent_id);
+    const parent = await getBlockByID(block.parent_id)
     if (parent?.type === 'NodeListItem' && subtypeOf(parent) === 't') {
-      targetBlock = parent;
-      targetBlockId = parent.id;
+      targetBlock = parent
+      targetBlockId = parent.id
     }
   }
 
-  const result = await getBlockKramdown(targetBlockId);
-  if (!result?.kramdown) throw new Error(`Failed to get kramdown for block ${targetBlockId}`);
+  const result = await getBlockKramdown(targetBlockId)
+  if (!result?.kramdown)
+    throw new Error(`Failed to get kramdown for block ${targetBlockId}`)
 
   return {
     originalBlockId: blockId,
@@ -510,7 +519,7 @@ export async function resolveApiBlockTarget(blockId: string, patch: BlockPatch):
     targetRaw: result.kramdown,
     parts: splitKramdownBlock(result.kramdown),
     replaceMode: 'whole-block',
-  };
+  }
 }
 ```
 
@@ -519,24 +528,25 @@ export async function resolveApiBlockTarget(blockId: string, patch: BlockPatch):
 `src/utils/blockWriter/apiTransport.ts`:
 
 ```ts
-import { updateBlock } from '@/api';
-import type { BatchBlockPatch, BlockPatch } from './types';
-import { resolveApiBlockTarget } from './blockTargetResolver';
-import { applyBlockPatch, applyBlockPatches } from './kramdownModifier';
+import type { BatchBlockPatch, BlockPatch } from './types'
+import { updateBlock } from '@/api'
+import { resolveApiBlockTarget } from './blockTargetResolver'
+import { applyBlockPatch, applyBlockPatches } from './kramdownModifier'
 
 export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   try {
-    const patchArray = Array.isArray(patches) ? patches : [patches];
-    const firstPatch = patchArray[0];
-    const target = await resolveApiBlockTarget(blockId, firstPatch);
+    const patchArray = Array.isArray(patches) ? patches : [patches]
+    const firstPatch = patchArray[0]
+    const target = await resolveApiBlockTarget(blockId, firstPatch)
     const markdown = patchArray.length === 1
       ? applyBlockPatch(target.parts, firstPatch)
-      : applyBlockPatches(target.parts, patchArray);
-    const result = await updateBlock('markdown', markdown, target.targetBlockId);
-    return Array.isArray(result);
-  } catch (error) {
-    console.error('[BlockWriter] writeViaApi failed:', error);
-    return false;
+      : applyBlockPatches(target.parts, patchArray)
+    const result = await updateBlock('markdown', markdown, target.targetBlockId)
+    return Array.isArray(result)
+  }
+  catch (error) {
+    console.error('[BlockWriter] writeViaApi failed:', error)
+    return false
   }
 }
 ```
@@ -544,8 +554,8 @@ export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBl
 `src/utils/blockWriter/index.ts`:
 
 ```ts
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
-import { writeViaApi } from './apiTransport';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types'
+import { writeViaApi } from './apiTransport'
 
 export type {
   BatchBlockPatch,
@@ -558,10 +568,10 @@ export type {
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,
-} from './types';
+} from './types'
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  return writeViaApi(context.blockId, patches);
+  return writeViaApi(context.blockId, patches)
 }
 ```
 
@@ -585,13 +595,14 @@ git commit -m "feat(blockWriter): add API write transport"
 ### Task 5: Add Dev-only Topbar API Test Button
 
 **Files:**
+
 - Modify: `src/index.ts`
 
 - [ ] **Step 1: Add imports**
 
 ```ts
-import { writeBlock } from '@/utils/blockWriter';
-import { getBlockIdFromRange } from '@/utils/itemBlockUtils';
+import { writeBlock } from '@/utils/blockWriter'
+import { getBlockIdFromRange } from '@/utils/itemBlockUtils'
 ```
 
 - [ ] **Step 2: Add selected block helper**
@@ -610,7 +621,7 @@ private getCurrentEditorBlockId(): string | null {
 
 In `registerTopBar()`, add a separate topbar button without changing the existing menu:
 
-```ts
+````ts
 if (import.meta.env.DEV) {
   this.addTopBar({
     icon: 'iconBug',
@@ -641,7 +652,7 @@ if (import.meta.env.DEV) {
 ```powershell
 npx vitest run test/blockWriter/
 npx tsc --noEmit --pretty
-```
+````
 
 Expected: PASS.
 
@@ -668,6 +679,7 @@ git commit -m "feat(blockWriter): add dev API write test button"
 ### Task 6: Add Slash Range and Protyle Transport
 
 **Files:**
+
 - Create: `src/utils/blockWriter/slashRange.ts`
 - Create: `src/utils/blockWriter/protyleTransport.ts`
 - Modify: `src/utils/blockWriter/index.ts`
@@ -676,21 +688,21 @@ git commit -m "feat(blockWriter): add dev API write test button"
 - [ ] **Step 1: Write Range test**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { deleteSlashRangeText } from '@/utils/blockWriter/slashRange';
+import { describe, expect, it } from 'vitest'
+import { deleteSlashRangeText } from '@/utils/blockWriter/slashRange'
 
 describe('slashRange', () => {
   it('deletes only the slash segment at the provided offset', () => {
-    const textNode = document.createTextNode('keep /bwtest then /bwtest');
-    const range = document.createRange();
-    range.setStart(textNode, textNode.textContent!.length);
-    range.collapse(true);
+    const textNode = document.createTextNode('keep /bwtest then /bwtest')
+    const range = document.createRange()
+    range.setStart(textNode, textNode.textContent!.length)
+    range.collapse(true)
 
-    deleteSlashRangeText(range, 18);
+    deleteSlashRangeText(range, 18)
 
-    expect(textNode.textContent).toBe('keep /bwtest then ');
-  });
-});
+    expect(textNode.textContent).toBe('keep /bwtest then ')
+  })
+})
 ```
 
 - [ ] **Step 2: Implement `slashRange.ts`**
@@ -698,80 +710,83 @@ describe('slashRange', () => {
 ```ts
 export function deleteSlashRangeText(range: Range, slashStartOffset: number): void {
   if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-    throw new Error('Slash range must start in a text node');
+    throw new Error('Slash range must start in a text node')
   }
   if (slashStartOffset < 0 || slashStartOffset > range.startOffset) {
-    throw new Error(`Invalid slashStartOffset ${slashStartOffset}`);
+    throw new Error(`Invalid slashStartOffset ${slashStartOffset}`)
   }
 
-  range.setStart(range.startContainer, slashStartOffset);
-  range.deleteContents();
+  range.setStart(range.startContainer, slashStartOffset)
+  range.deleteContents()
 }
 ```
 
 - [ ] **Step 3: Implement conservative Protyle transport**
 
 ```ts
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
-import { deleteSlashRangeText } from './slashRange';
-import { writeViaApi } from './apiTransport';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types'
+import { writeViaApi } from './apiTransport'
+import { deleteSlashRangeText } from './slashRange'
 
 function formatUpdatedAttr(date: Date): string {
-  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`
 }
 
 function commitProtyleUpdate(protyle: any, id: string, newHTML: string, oldHTML: string): boolean {
-  if (newHTML === oldHTML) return true;
-  if (!protyle?.transaction) return false;
+  if (newHTML === oldHTML)
+    return true
+  if (!protyle?.transaction)
+    return false
   protyle.transaction(
     [{ id, data: newHTML, action: 'update' }],
     [{ id, data: oldHTML, action: 'update' }],
-  );
-  return true;
+  )
+  return true
 }
 
 export async function writeViaProtyle(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const { protyle, nodeElement } = context;
-  if (!protyle || !nodeElement) return false;
+  const { protyle, nodeElement } = context
+  if (!protyle || !nodeElement)
+    return false
 
-  const patchArray = Array.isArray(patches) ? patches : [patches];
+  const patchArray = Array.isArray(patches) ? patches : [patches]
 
   // 不含 removeSlashCommands 的纯 API patch 组合 → 降级 API Transport
   if (!patchArray.some(p => p.type === 'removeSlashCommands')) {
-    return writeViaApi(context.blockId, patches);
+    return writeViaApi(context.blockId, patches)
   }
 
   // 最多支持 2 个 patch，且必须含 removeSlashCommands
   if (patchArray.length > 2 || patchArray.some(p => p.type === 'setContent')) {
-    return writeViaApi(context.blockId, patches);
+    return writeViaApi(context.blockId, patches)
   }
 
   // 处理 removeSlashCommands
-  const slashPatch = patchArray.find(p => p.type === 'removeSlashCommands');
+  const slashPatch = patchArray.find(p => p.type === 'removeSlashCommands')
   if (slashPatch && context.slashRange && context.slashStartOffset !== undefined) {
-    const oldHTML = nodeElement.outerHTML;
-    deleteSlashRangeText(context.slashRange, context.slashStartOffset);
+    const oldHTML = nodeElement.outerHTML
+    deleteSlashRangeText(context.slashRange, context.slashStartOffset)
     if (slashPatch.suffix) {
-      context.slashRange.insertNode(document.createTextNode(` ${slashPatch.suffix}`));
-      context.slashRange.collapse(false);
+      context.slashRange.insertNode(document.createTextNode(` ${slashPatch.suffix}`))
+      context.slashRange.collapse(false)
     }
-    nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
-    const spunHTML = protyle.lute?.SpinBlockDOM ? protyle.lute.SpinBlockDOM(nodeElement.outerHTML) : nodeElement.outerHTML;
-    nodeElement.outerHTML = spunHTML;
-    const newElement = protyle.wysiwyg?.element?.querySelector(`[data-node-id="${context.blockId}"]`) as HTMLElement | null;
-    return commitProtyleUpdate(protyle, context.blockId, newElement?.outerHTML ?? spunHTML, oldHTML);
+    nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()))
+    const spunHTML = protyle.lute?.SpinBlockDOM ? protyle.lute.SpinBlockDOM(nodeElement.outerHTML) : nodeElement.outerHTML
+    nodeElement.outerHTML = spunHTML
+    const newElement = protyle.wysiwyg?.element?.querySelector(`[data-node-id="${context.blockId}"]`) as HTMLElement | null
+    return commitProtyleUpdate(protyle, context.blockId, newElement?.outerHTML ?? spunHTML, oldHTML)
   }
 
-  return false;
+  return false
 }
 ```
 
 - [ ] **Step 4: Wire fallback in `index.ts`**
 
 ```ts
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
-import { writeViaApi } from './apiTransport';
-import { writeViaProtyle } from './protyleTransport';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types'
+import { writeViaApi } from './apiTransport'
+import { writeViaProtyle } from './protyleTransport'
 
 export type {
   BatchBlockPatch,
@@ -784,14 +799,15 @@ export type {
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,
-} from './types';
+} from './types'
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   if (context.protyle && context.nodeElement) {
-    const ok = await writeViaProtyle(context, patches);
-    if (ok) return true;
+    const ok = await writeViaProtyle(context, patches)
+    if (ok)
+      return true
   }
-  return writeViaApi(context.blockId, patches);
+  return writeViaApi(context.blockId, patches)
 }
 ```
 
@@ -816,12 +832,13 @@ git commit -m "feat(blockWriter): add Protyle slash transport"
 ### Task 7: Add Dev-only `/bwtest` Slash Command
 
 **Files:**
+
 - Modify: `src/utils/slashCommands.ts`
 
 - [ ] **Step 1: Add import**
 
 ```ts
-import { writeBlock } from '@/utils/blockWriter';
+import { writeBlock } from '@/utils/blockWriter'
 ```
 
 - [ ] **Step 2: Add active slash helper**
@@ -829,32 +846,36 @@ import { writeBlock } from '@/utils/blockWriter';
 Near `getEditorRange`:
 
 ```ts
-function getActiveSlashRange(): { range: Range; slashStartOffset: number; blockElement: HTMLElement; blockId: string } | null {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return null;
+function getActiveSlashRange(): { range: Range, slashStartOffset: number, blockElement: HTMLElement, blockId: string } | null {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0)
+    return null
 
-  const range = selection.getRangeAt(0);
-  if (range.startContainer.nodeType !== Node.TEXT_NODE) return null;
+  const range = selection.getRangeAt(0)
+  if (range.startContainer.nodeType !== Node.TEXT_NODE)
+    return null
 
-  const textNode = range.startContainer as Text;
-  const textContent = textNode.textContent || '';
-  const slashStartOffset = textContent.lastIndexOf('/', range.startOffset);
-  if (slashStartOffset < 0) return null;
+  const textNode = range.startContainer as Text
+  const textContent = textNode.textContent || ''
+  const slashStartOffset = textContent.lastIndexOf('/', range.startOffset)
+  if (slashStartOffset < 0)
+    return null
 
-  let blockElement = textNode.parentElement;
+  let blockElement = textNode.parentElement
   while (blockElement && !blockElement.getAttribute('data-node-id')) {
-    blockElement = blockElement.parentElement;
+    blockElement = blockElement.parentElement
   }
 
-  const blockId = blockElement?.getAttribute('data-node-id');
-  if (!blockElement || !blockId) return null;
+  const blockId = blockElement?.getAttribute('data-node-id')
+  if (!blockElement || !blockId)
+    return null
 
   return {
     range,
     slashStartOffset,
     blockElement,
     blockId,
-  };
+  }
 }
 ```
 
@@ -862,7 +883,7 @@ function getActiveSlashRange(): { range: Range; slashStartOffset: number; blockE
 
 In `createSlashCommands()`, after `builtinCommands` is initialized and before it is returned:
 
-```ts
+````ts
 if (import.meta.env.DEV) {
   builtinCommands.push({
     filter: ['bwtest'],
@@ -948,7 +969,7 @@ if (import.meta.env.DEV) {
     },
   });
 }
-```
+````
 
 - [ ] **Step 4: Verify**
 
@@ -1008,6 +1029,7 @@ git commit -m "feat(blockWriter): add dev slash write test"
 ### Task 8: Manual Smoke Test Matrix
 
 **Files:**
+
 - No code changes.
 
 - [ ] **Step 1: Verify API button on normal paragraph**
@@ -1044,14 +1066,15 @@ If all smoke tests pass, they are enough to start one real low-risk migration. T
 Use the existing dev topbar button but manually call `writeBlock` with array in console:
 
 ```ts
-const { writeBlock } = await import('/plugins/siyuan-plugin-bullet-journal/utils/blockWriter/index.js');
+const { writeBlock } = await import('/plugins/siyuan-plugin-bullet-journal/utils/blockWriter/index.js')
 await writeBlock({ blockId: 'YOUR_BLOCK_ID' }, [
   { type: 'setPriority', priority: 'high' },
   { type: 'setStatus', status: 'completed' },
-]);
+])
 ```
 
 Expected:
+
 - `🔥` and `#已完成` both appear;
 - custom IAL retained;
 - single `updateBlock` call made (verify via network tab).
@@ -1061,6 +1084,7 @@ Expected:
 ### Task 9: First Real Migration After User Approval
 
 **Files:**
+
 - Modify only one API-only caller selected after manual verification.
 
 - [ ] **Step 1: Wait for user approval**
@@ -1076,7 +1100,7 @@ Recommended first caller: `src/tabs/QuadrantTab.vue` drop priority update, becau
 Replace:
 
 ```ts
-const success = await updateBlockPriority(payload.blockId, targetPriority);
+const success = await updateBlockPriority(payload.blockId, targetPriority)
 ```
 
 with:
@@ -1085,7 +1109,7 @@ with:
 const success = await writeBlock(
   { blockId: payload.blockId },
   { type: 'setPriority', priority: targetPriority },
-);
+)
 ```
 
 - [ ] **Step 4: Verify and commit**
@@ -1101,6 +1125,7 @@ git commit -m "refactor(blockWriter): migrate quadrant priority write"
 ### Task 10: Final Cleanup After All Migrations
 
 **Files:**
+
 - Modify: `src/utils/fileUtils.ts`
 - Modify: `src/utils/slashCommands.ts`
 

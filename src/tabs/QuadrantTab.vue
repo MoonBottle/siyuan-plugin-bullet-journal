@@ -21,17 +21,19 @@
       <span class="fn__flex-1 fn__space"></span>
 
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="quadrant-refresh-button"
-        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, projectStore.loading ? t('common').loading : t('common').refresh)"
+        @mouseleave="hideTooltip"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon"
         data-testid="quadrant-more-button"
-        :aria-label="t('common').more"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+        @mouseleave="hideTooltip"
         @click="handleMoreClick"
       >
         <svg><use xlink:href="#iconMore"></use></svg>
@@ -51,13 +53,16 @@
       >
         <header class="quadrant-panel__header">
           <div class="quadrant-panel__header-main">
-            <h2 class="quadrant-panel__title">{{ panel.title }}</h2>
+            <h2 class="quadrant-panel__title">
+              {{ panel.title }}
+            </h2>
             <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
           </div>
           <span
-            class="block__icon b3-tooltips b3-tooltips__sw quadrant-panel__more"
+            class="block__icon quadrant-panel__more"
             :data-testid="`quadrant-edit-button-${panel.id}`"
-            :aria-label="t('common').more"
+            @mouseenter="showTooltip($event.currentTarget as HTMLElement, t('common').more)"
+            @mouseleave="hideTooltip"
             @click="openQuadrantEditor(panel)"
           >
             <svg><use xlink:href="#iconMore"></use></svg>
@@ -87,348 +92,379 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Menu } from 'siyuan';
-import { getCurrentPlugin, useApp, usePlugin } from '@/main';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { t } from '@/i18n';
-import { showMessage } from '@/utils/dialog';
-import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
-import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
-import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
-import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
-import type { WorkbenchQuadrantViewConfig } from '@/types/workbench';
-import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
-import { writeBlock } from '@/utils/blockWriter';
-import type { QuadrantPanelConfig } from '@/types/quadrant';
-import type { PriorityLevel } from '@/types/models';
-import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes';
+import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes'
+import type { PriorityLevel } from '@/types/models'
+import type { QuadrantPanelConfig } from '@/types/quadrant'
+import type { WorkbenchQuadrantViewConfig } from '@/types/workbench'
+import { Menu } from 'siyuan'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import TodoSidebarList from '@/components/todo/TodoSidebarList.vue'
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview'
+import { t } from '@/i18n'
+import {
+  getCurrentPlugin,
+  useApp,
+  usePlugin,
+} from '@/main'
+import {
+  useProjectStore,
+  useSettingsStore,
+} from '@/stores'
+import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore'
+import { writeBlock } from '@/utils/blockWriter'
+import { showMessage } from '@/utils/dialog'
+import {
+  DATA_REFRESH_CHANNEL,
+  eventBus,
+  Events,
+} from '@/utils/eventBus'
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview'
+import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant'
+import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator'
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard'
+import {
+  hideTooltip,
+  showTooltip,
+} from '@/utils/tooltip'
 
 const props = withDefaults(defineProps<{
-  embedded?: boolean;
-  viewConfig?: Record<string, unknown>;
+  embedded?: boolean
+  viewConfig?: Record<string, unknown>
 }>(), {
   embedded: false,
-});
+})
 
-const plugin = usePlugin() as any;
-const app = useApp();
-const settingsStore = useSettingsStore();
-const projectStore = useProjectStore();
-const quadrantConfigStore = useQuadrantConfigStore();
+const plugin = usePlugin() as any
+const app = useApp()
+const settingsStore = useSettingsStore()
+const projectStore = useProjectStore()
+const quadrantConfigStore = useQuadrantConfigStore()
 
-const selectedGroup = ref('');
-const isSelectedGroupDefaultDriven = ref(true);
+const selectedGroup = ref('')
+const isSelectedGroupDefaultDriven = ref(true)
 
 watch(() => props.viewConfig, (config) => {
-  const groupId = (config as WorkbenchQuadrantViewConfig | undefined)?.groupId;
+  const groupId = (config as WorkbenchQuadrantViewConfig | undefined)?.groupId
   if (groupId) {
-    selectedGroup.value = groupId;
-    isSelectedGroupDefaultDriven.value = false;
+    selectedGroup.value = groupId
+    isSelectedGroupDefaultDriven.value = false
   }
-}, { immediate: true });
-const searchQuery = ref('');
-const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
+}, { immediate: true })
+const searchQuery = ref('')
+const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([])
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
   popoverLeaveGraceMs: 220,
-});
-const nativePreview = createNativeBlockPreviewController();
+})
+const nativePreview = createNativeBlockPreviewController()
 
-const panels = computed(() => quadrantConfigStore.panels);
-const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
-const dragOverPanelId = ref<string | null>(null);
-const draggedItem = ref<TodoSidebarDragPayload | null>(null);
+const panels = computed(() => quadrantConfigStore.panels)
+const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value))
+const dragOverPanelId = ref<string | null>(null)
+const draggedItem = ref<TodoSidebarDragPayload | null>(null)
 
 const allFilteredItems = computed(() => {
   return projectStore.getFilteredAndSortedItems({
     groupId: selectedGroup.value,
     searchQuery: searchQuery.value,
-  });
-});
+  })
+})
 
 const quadrantAssignments = computed(() => {
-  return assignItemsToQuadrants(allFilteredItems.value, panels.value);
-});
+  return assignItemsToQuadrants(allFilteredItems.value, panels.value)
+})
 
 const panelCounts = computed(() => {
-  return panels.value.map(panel => quadrantAssignments.value[panel.id].length);
-});
+  return panels.value.map((panel) => quadrantAssignments.value[panel.id].length)
+})
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  const options = [{
+    value: '',
+    label: t('settings').projectGroups.allGroups,
+  }];
   (settingsStore.groups || []).forEach((group) => {
     options.push({
       value: group.id,
       label: group.name || t('settings').projectGroups.unnamed,
-    });
-  });
-  return options;
-});
+    })
+  })
+  return options
+})
 
 const selectedGroupModel = computed({
   get: () => selectedGroup.value,
   set: (value: string) => {
-    selectedGroup.value = value;
-    isSelectedGroupDefaultDriven.value = false;
+    selectedGroup.value = value
+    isSelectedGroupDefaultDriven.value = false
   },
-});
+})
 
 function openQuadrantEditor(panel: QuadrantPanelConfig) {
+  hideTooltip()
   openQuadrantRuleDialog({
     panel: JSON.parse(JSON.stringify(panel)),
     onSave: async (nextPanel) => {
-      await quadrantConfigStore.savePanel(nextPanel.id, nextPanel);
+      await quadrantConfigStore.savePanel(nextPanel.id, nextPanel)
     },
     onResetDefaults: async () => {
-      await quadrantConfigStore.resetAll();
+      await quadrantConfigStore.resetAll()
     },
-  });
+  })
 }
 
 function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebarList> | null) {
-  sidebarRefs.value[index] = instance;
+  sidebarRefs.value[index] = instance
 }
 
 function handleItemPreviewClick(payload: {
-  blockId: string;
-  itemId: string;
-  anchorEl: HTMLElement;
+  blockId: string
+  itemId: string
+  anchorEl: HTMLElement
 }) {
-  preview.showNow(payload);
+  preview.showNow(payload)
 }
 
 function handleItemDragStart(_payload: TodoSidebarDragPayload, _event: DragEvent) {
-  if (!dragEnabled.value) return;
-  draggedItem.value = _payload;
-  preview.setDragActive(true);
+  if (!dragEnabled.value) return
+  draggedItem.value = _payload
+  preview.setDragActive(true)
 }
 
 function handleItemDragEnd() {
-  draggedItem.value = null;
-  dragOverPanelId.value = null;
-  preview.setDragActive(false);
+  draggedItem.value = null
+  dragOverPanelId.value = null
+  preview.setDragActive(false)
 }
 
 function getPanelTargetPriority(panelId: string): PriorityLevel | undefined {
   switch (panelId) {
-    case 'q1': return 'high';
-    case 'q2': return 'medium';
-    case 'q3': return 'low';
-    case 'q4': return undefined;
-    default: return undefined;
+    case 'q1': return 'high'
+    case 'q2': return 'medium'
+    case 'q3': return 'low'
+    case 'q4': return undefined
+    default: return undefined
   }
 }
 
 function parseDragPayload(event: DragEvent): TodoSidebarDragPayload | null {
-  const rawPayload = event.dataTransfer?.getData('application/json');
-  if (!rawPayload) return null;
+  const rawPayload = event.dataTransfer?.getData('application/json')
+  if (!rawPayload) return null
 
   try {
-    const payload = JSON.parse(rawPayload) as TodoSidebarDragPayload;
-    if (!payload?.blockId) return null;
-    return payload;
+    const payload = JSON.parse(rawPayload) as TodoSidebarDragPayload
+    if (!payload?.blockId) return null
+    return payload
   }
   catch {
-    return null;
+    return null
   }
 }
 
 function handleQuadrantDragOver(panelId: string, event: DragEvent) {
-  if (!dragEnabled.value) return;
-  const payload = draggedItem.value ?? parseDragPayload(event);
-  if (!payload) return;
-  event.preventDefault();
+  if (!dragEnabled.value) return
+  const payload = draggedItem.value ?? parseDragPayload(event)
+  if (!payload) return
+  event.preventDefault()
   if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = 'move'
   }
-  dragOverPanelId.value = panelId;
+  dragOverPanelId.value = panelId
 }
 
 function handleQuadrantDragLeave(panelId: string, event: DragEvent) {
-  if (dragOverPanelId.value !== panelId) return;
+  if (dragOverPanelId.value !== panelId) return
 
-  const currentTarget = event.currentTarget as HTMLElement | null;
-  const relatedTarget = event.relatedTarget;
+  const currentTarget = event.currentTarget as HTMLElement | null
+  const relatedTarget = event.relatedTarget
   if (currentTarget && relatedTarget instanceof Node && currentTarget.contains(relatedTarget)) {
-    return;
+    return
   }
 
-  dragOverPanelId.value = null;
+  dragOverPanelId.value = null
 }
 
 async function handleQuadrantDrop(panelId: string, event: DragEvent) {
-  if (!dragEnabled.value) return;
+  if (!dragEnabled.value) return
 
-  event.preventDefault();
+  event.preventDefault()
 
-  const payload = draggedItem.value ?? parseDragPayload(event);
-  dragOverPanelId.value = null;
-  draggedItem.value = null;
-  preview.setDragActive(false);
-  if (!payload) return;
+  const payload = draggedItem.value ?? parseDragPayload(event)
+  dragOverPanelId.value = null
+  draggedItem.value = null
+  preview.setDragActive(false)
+  if (!payload) return
 
-  const targetPriority = getPanelTargetPriority(panelId);
-  if (payload.priority === targetPriority) return;
+  const targetPriority = getPanelTargetPriority(panelId)
+  if (payload.priority === targetPriority) return
 
   const success = await writeBlock(
     { blockId: payload.blockId },
-    { type: 'setPriority', priority: targetPriority },
-  );
+    {
+      type: 'setPriority',
+      priority: targetPriority,
+    },
+  )
   if (!success || !plugin) {
-    showMessage(t('common').actionFailed, 'error');
-    return;
+    showMessage(t('common').actionFailed, 'error')
+    return
   }
 
   await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-drop-update-priority',
-  });
+  })
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
   if (!preview.isOpen.value) {
-    return;
+    return
   }
 
   if (nativePreview.containsTarget(event.target)) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 }
 
 function syncSelectedGroupWithDefault() {
   if (!isSelectedGroupDefaultDriven.value) {
-    return;
+    return
   }
 
-  selectedGroup.value = settingsStore.defaultGroup || '';
+  selectedGroup.value = settingsStore.defaultGroup || ''
 }
 
 async function handleRefresh() {
-  if (!plugin) return;
-    await plugin.requestRefresh?.({
+  hideTooltip()
+  if (!plugin) return
+  await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-tab:manual-refresh',
-  });
-  showMessage(t('common').dataRefreshed);
+  })
+  showMessage(t('common').dataRefreshed)
 }
 
 function handleMoreClick(event: MouseEvent) {
-  event.stopPropagation();
-  event.preventDefault();
+  hideTooltip()
+  event.stopPropagation()
+  event.preventDefault()
 
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
+  const target = event.currentTarget as HTMLElement
+  if (!target) return
 
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('bullet-journal-more-menu');
+  const rect = target.getBoundingClientRect()
+  const menu = new Menu('bullet-journal-more-menu')
 
-  const hideCompleted = projectStore.hideCompleted;
+  const hideCompleted = projectStore.hideCompleted
   menu.addItem({
     icon: hideCompleted ? 'iconEyeoff' : 'iconEye',
     label: hideCompleted ? t('todo').showCompleted : t('todo').hideCompleted,
     click: () => {
-      projectStore.toggleHideCompleted();
+      projectStore.toggleHideCompleted()
     },
-  });
+  })
 
-  const hideAbandoned = projectStore.hideAbandoned;
+  const hideAbandoned = projectStore.hideAbandoned
   menu.addItem({
     icon: hideAbandoned ? 'iconEyeoff' : 'iconEye',
     label: hideAbandoned ? t('todo').showAbandoned : t('todo').hideAbandoned,
     click: () => {
-      projectStore.toggleHideAbandoned();
+      projectStore.toggleHideAbandoned()
     },
-  });
+  })
 
-  const showLinks = settingsStore.todoDock.showLinks;
+  const showLinks = settingsStore.todoDock.showLinks
   menu.addItem({
     icon: showLinks ? 'iconEyeoff' : 'iconEye',
     label: showLinks ? t('todo').hideLinks : t('todo').showLinks,
     click: () => {
-      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks;
-      settingsStore.saveToPlugin();
+      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks
+      settingsStore.saveToPlugin()
     },
-  });
+  })
 
-  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring;
+  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring
   menu.addItem({
     icon: showReminderAndRecurring ? 'iconEyeoff' : 'iconEye',
     label: showReminderAndRecurring
       ? t('todo').hideReminderRecurring
       : t('todo').showReminderRecurring,
     click: () => {
-      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring;
-      settingsStore.saveToPlugin();
+      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring
+      settingsStore.saveToPlugin()
     },
-  });
+  })
 
   menu.open({
     x: rect.left,
     y: rect.bottom + 4,
     isLeft: true,
-  });
+  })
 }
 
 async function handleDataRefresh(payload?: Record<string, unknown>) {
-  if (!plugin) return;
+  if (!plugin) return
 
-  const storeKeys = ['scanMode', 'directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
-  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(key => key in payload);
+  const storeKeys = ['scanMode', 'directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock']
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some((key) => key in payload)
 
   if (hasStorePayload) {
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, unknown> = {}
     storeKeys.forEach((key) => {
       if (payload[key] !== undefined) {
-        patch[key] = payload[key];
+        patch[key] = payload[key]
       }
-    });
+    })
     if (Object.keys(patch).length > 0) {
-      settingsStore.$patch(patch);
+      settingsStore.$patch(patch)
     }
   }
   else {
-    settingsStore.loadFromPlugin();
+    settingsStore.loadFromPlugin()
   }
 
-  syncSelectedGroupWithDefault();
-  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
-  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+  syncSelectedGroupWithDefault()
+  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
-  await nextTick();
+  await nextTick()
 }
 
-let unsubscribeRefresh: (() => void) | null = null;
-let unsubscribeDataRefresh: (() => void) | null = null;
-let refreshChannel: BroadcastChannel | null = null;
-let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let unsubscribeRefresh: (() => void) | null = null
+let unsubscribeDataRefresh: (() => void) | null = null
+let refreshChannel: BroadcastChannel | null = null
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null
 
 function handleNativePreviewDestroyed({
   initiatedByController,
   blockId,
   anchorEl,
 }: {
-  initiatedByController: boolean;
-  blockId: string;
-  anchorEl: HTMLElement;
+  initiatedByController: boolean
+  blockId: string
+  anchorEl: HTMLElement
 }) {
-  const activeBlockId = preview.activeBlockId.value;
-  const activeItemId = preview.activeItemId.value;
-  const activeAnchorEl = preview.anchorEl.value;
+  const activeBlockId = preview.activeBlockId.value
+  const activeItemId = preview.activeItemId.value
+  const activeAnchorEl = preview.anchorEl.value
 
   if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
-    return;
+    return
   }
 
-  preview.forceClose();
+  preview.forceClose()
 
   if (
     initiatedByController
@@ -437,22 +473,22 @@ function handleNativePreviewDestroyed({
     || !activeAnchorEl
     || !anchorEl.matches(':hover')
   ) {
-    return;
+    return
   }
 
   preview.showNow({
     blockId: activeBlockId,
     itemId: activeItemId,
     anchorEl: activeAnchorEl,
-  });
+  })
 }
 
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
     if (!isOpen || !blockId || !anchorEl || !app) {
-      nativePreview.close();
-      return;
+      nativePreview.close()
+      return
     }
 
     nativePreview.open({
@@ -462,61 +498,61 @@ watch(
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
       onPanelDestroyed: handleNativePreviewDestroyed,
-    });
+    })
   },
   {
     flush: 'post',
   },
-);
+)
 
 onMounted(async () => {
-  settingsStore.loadFromPlugin();
-  syncSelectedGroupWithDefault();
-  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
-  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+  settingsStore.loadFromPlugin()
+  syncSelectedGroupWithDefault()
+  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted
+  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned
 
-  await quadrantConfigStore.loadConfig();
+  await quadrantConfigStore.loadConfig()
 
-  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
-  unsubscribeDataRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh)
+  unsubscribeDataRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh)
 
   try {
-    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL)
     refreshChannelGuard = createRefreshChannelGuard({
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
-      onRefresh: payload => handleDataRefresh(payload),
+      onRefresh: (payload) => handleDataRefresh(payload),
       viewName: 'QuadrantTab',
-    });
+    })
   }
   catch {
     // Ignore unsupported contexts.
   }
 
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
-});
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 
 onUnmounted(() => {
-  preview.dispose();
-  nativePreview.close();
-  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  preview.dispose()
+  nativePreview.close()
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
 
   if (unsubscribeRefresh) {
-    unsubscribeRefresh();
+    unsubscribeRefresh()
   }
   if (unsubscribeDataRefresh) {
-    unsubscribeDataRefresh();
+    unsubscribeDataRefresh()
   }
   if (refreshChannelGuard) {
-    refreshChannelGuard.dispose();
-    refreshChannelGuard = null;
+    refreshChannelGuard.dispose()
+    refreshChannelGuard = null
   }
   if (refreshChannel) {
-    refreshChannel.close();
-    refreshChannel = null;
+    refreshChannel.close()
+    refreshChannel = null
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -583,7 +619,9 @@ onUnmounted(() => {
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
   overflow: hidden;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .quadrant-panel__header {

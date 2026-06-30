@@ -1,7 +1,9 @@
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { resolve } from 'node:path'
+import { defineConfig } from 'vite'
+import removeConsole from 'vite-plugin-remove-console'
 
 export default defineConfig({
+  plugins: [removeConsole()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -12,7 +14,7 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: false,
     lib: {
-      entry: resolve(__dirname, 'src/mcp/kernel.ts'),
+      entry: resolve(__dirname, 'src/kernel/index.ts'),
       fileName: () => 'kernel.js',
       formats: ['iife'],
       name: 'kernel',
@@ -25,4 +27,4 @@ export default defineConfig({
     target: 'es2018',
     minify: false,
   },
-});
+})

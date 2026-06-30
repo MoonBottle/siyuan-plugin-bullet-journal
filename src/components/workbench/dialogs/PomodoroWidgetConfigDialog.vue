@@ -36,26 +36,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
-import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
-import { t } from '@/i18n';
-import type { WorkbenchPomodoroStatsSectionKey, WorkbenchPomodoroStatsWidgetConfig } from '@/types/workbench';
-import { getPomodoroWidgetSectionOptions } from '@/workbench/pomodoroWidgetSections';
+import type {
+  WorkbenchPomodoroStatsSectionKey,
+  WorkbenchPomodoroStatsWidgetConfig,
+} from '@/types/workbench'
+import {
+  computed,
+  ref,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue'
+import { t } from '@/i18n'
+import { getPomodoroWidgetSectionOptions } from '@/workbench/pomodoroWidgetSections'
 
 const props = defineProps<{
-  initialConfig: WorkbenchPomodoroStatsWidgetConfig;
-  onConfirm: (config: WorkbenchPomodoroStatsWidgetConfig) => void;
-  onCancel: () => void;
-}>();
+  initialConfig: WorkbenchPomodoroStatsWidgetConfig
+  onConfirm: (config: WorkbenchPomodoroStatsWidgetConfig) => void
+  onCancel: () => void
+}>()
 
-const selectedSection = ref<WorkbenchPomodoroStatsSectionKey>(props.initialConfig.section ?? 'overview');
-const sectionOptions = computed(() => getPomodoroWidgetSectionOptions());
+const selectedSection = ref<WorkbenchPomodoroStatsSectionKey>(props.initialConfig.section ?? 'overview')
+const sectionOptions = computed(() => getPomodoroWidgetSectionOptions())
 
 function handleConfirm() {
   props.onConfirm({
     section: selectedSection.value,
-  });
+  })
 }
 </script>
 

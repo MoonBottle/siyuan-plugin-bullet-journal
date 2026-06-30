@@ -42,14 +42,16 @@
       <label class="form-label">{{ t('habit').typeLabel || '类型' }}</label>
       <div class="type-toggle">
         <button
-          :class="['type-btn', { active: form.type === 'binary' }]"
+          class="type-btn"
+          :class="[{ active: form.type === 'binary' }]"
           data-testid="habit-type-binary-button"
           @click="form.type = 'binary'"
         >
           {{ t('habit').typeBinary || '二元型' }}
         </button>
         <button
-          :class="['type-btn', { active: form.type === 'count' }]"
+          class="type-btn"
+          :class="[{ active: form.type === 'count' }]"
           data-testid="habit-type-count-button"
           @click="form.type = 'count'"
         >
@@ -59,7 +61,10 @@
     </div>
 
     <!-- 计数型：目标值+单位 -->
-    <div v-if="form.type === 'count'" class="form-group">
+    <div
+      v-if="form.type === 'count'"
+      class="form-group"
+    >
       <label class="form-label">{{ t('habit').targetLabel || '目标值+单位' }}</label>
       <div class="target-row">
         <input
@@ -68,7 +73,7 @@
           min="1"
           class="form-input target-input"
           data-testid="habit-target-input"
-          :placeholder="'8'"
+          placeholder="8"
         />
         <input
           v-model="form.unit"
@@ -98,15 +103,19 @@
         <button
           v-for="opt in frequencyOptions"
           :key="opt.value"
-          :class="['freq-btn', { active: form.frequencyType === opt.value }]"
+          class="freq-btn"
+          :class="[{ active: form.frequencyType === opt.value }]"
           :data-testid="`habit-frequency-${opt.value}-button`"
-          @click="selectFrequency(opt.value)"
+          @click="selectFrequency(opt.value as HabitFrequency['type'])"
         >
           {{ opt.label }}
         </button>
       </div>
       <!-- 每N天 -->
-      <div v-if="form.frequencyType === 'every_n_days'" class="freq-detail">
+      <div
+        v-if="form.frequencyType === 'every_n_days'"
+        class="freq-detail"
+      >
         <input
           v-model.number="form.interval"
           type="number"
@@ -117,7 +126,10 @@
         <span class="freq-detail-label">{{ t('habit').daysInterval || '天间隔' }}</span>
       </div>
       <!-- 每周N天 -->
-      <div v-if="form.frequencyType === 'n_per_week'" class="freq-detail">
+      <div
+        v-if="form.frequencyType === 'n_per_week'"
+        class="freq-detail"
+      >
         <input
           v-model.number="form.daysPerWeek"
           type="number"
@@ -129,17 +141,24 @@
         <span class="freq-detail-label">{{ t('habit').daysPerWeekLabel || '天/周' }}</span>
       </div>
       <!-- 指定周几 -->
-      <div v-if="form.frequencyType === 'weekly_days'" class="freq-detail">
+      <div
+        v-if="form.frequencyType === 'weekly_days'"
+        class="freq-detail"
+      >
         <button
           v-for="(label, idx) in weekDayLabels"
           :key="idx"
-          :class="['day-btn', { active: form.daysOfWeek.includes(idx) }]"
-          @click="toggleDayOfWeek(idx)"
+          class="day-btn"
+          :class="[{ active: form.daysOfWeek.includes(idx as number) }]"
+          @click="toggleDayOfWeek(idx as number)"
         >
           {{ label }}
         </button>
       </div>
-      <div v-if="form.frequencyType === 'ebbinghaus'" class="freq-detail">
+      <div
+        v-if="form.frequencyType === 'ebbinghaus'"
+        class="freq-detail"
+      >
         <input
           v-model="form.ebbinghausIntervals"
           type="text"
@@ -152,60 +171,76 @@
 
     <!-- 操作按钮 -->
     <div class="form-actions">
-      <button class="btn btn-cancel" @click="emit('cancel')">{{ t('common').cancel }}</button>
-      <button class="btn btn-save" @click="handleSave">{{ t('common').confirm }}</button>
+      <button
+        class="btn btn-cancel"
+        @click="emit('cancel')"
+      >
+        {{ t('common').cancel }}
+      </button>
+      <button
+        class="btn btn-save"
+        @click="handleSave"
+      >
+        {{ t('common').confirm }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import type { HabitFrequency, ReminderConfig } from '@/types/models';
+import type {
+  HabitFrequency,
+  ReminderConfig,
+} from '@/types/models'
+import {
+  computed,
+  reactive,
+} from 'vue'
+import { t } from '@/i18n'
+import dayjs from '@/utils/dayjs'
 
 const props = defineProps<{
   initialData?: Partial<{
-    name: string;
-    startDate: string;
-    durationDays?: number;
-    type: 'binary' | 'count';
-    target?: number;
-    unit?: string;
-    reminder?: Pick<ReminderConfig, 'type' | 'time'>;
-    frequency?: HabitFrequency;
-  }>;
-}>();
+    name: string
+    startDate: string
+    durationDays?: number
+    type: 'binary' | 'count'
+    target?: number
+    unit?: string
+    reminder?: Pick<ReminderConfig, 'type' | 'time'>
+    frequency?: HabitFrequency
+  }>
+}>()
 
 const emit = defineEmits<{
-  'save': [markdown: string];
-  'cancel': [];
-}>();
+  save: [markdown: string]
+  cancel: []
+}>()
 
-const initialEnterGuardUntil = Date.now() + 300;
+const initialEnterGuardUntil = Date.now() + 300
 
 function parseEbbinghausIntervals(raw: string): number[] | null {
   const normalized = raw
     .split(',')
-    .map(part => part.trim())
-    .filter(Boolean);
+    .map((part) => part.trim())
+    .filter(Boolean)
 
   if (normalized.length === 0) {
-    return [];
+    return []
   }
 
-  const values = normalized.map(part => Number.parseInt(part, 10));
-  if (values.some(value => !Number.isInteger(value) || value <= 0)) {
-    return null;
+  const values = normalized.map((part) => Number.parseInt(part, 10))
+  if (values.some((value) => !Number.isInteger(value) || value <= 0)) {
+    return null
   }
 
   for (let i = 1; i < values.length; i++) {
     if (values[i] <= values[i - 1]) {
-      return null;
+      return null
     }
   }
 
-  return values;
+  return values
 }
 
 const form = reactive({
@@ -223,102 +258,120 @@ const form = reactive({
   ebbinghausIntervals: props.initialData?.frequency?.type === 'ebbinghaus'
     ? (props.initialData.frequency.intervals?.join(',') ?? '')
     : '',
-});
+})
 
-const weekDayLabels = computed(() => t('calendar').weekDays);
+const weekDayLabels = computed(() => t('calendar').weekDays)
 
 const frequencyOptions = computed(() => [
-  { value: 'daily', label: t('habit').freqDaily || '每天' },
-  { value: 'every_n_days', label: t('habit').freqEveryNDays || '每N天' },
-  { value: 'weekly', label: t('habit').freqWeekly || '每周' },
-  { value: 'n_per_week', label: t('habit').freqNPerWeek || '每周N天' },
-  { value: 'weekly_days', label: t('habit').freqWeeklyDays || '指定周几' },
-  { value: 'ebbinghaus', label: t('habit').freqEbbinghaus || '艾宾浩斯' },
-]);
+  {
+    value: 'daily',
+    label: t('habit').freqDaily || '每天',
+  },
+  {
+    value: 'every_n_days',
+    label: t('habit').freqEveryNDays || '每N天',
+  },
+  {
+    value: 'weekly',
+    label: t('habit').freqWeekly || '每周',
+  },
+  {
+    value: 'n_per_week',
+    label: t('habit').freqNPerWeek || '每周N天',
+  },
+  {
+    value: 'weekly_days',
+    label: t('habit').freqWeeklyDays || '指定周几',
+  },
+  {
+    value: 'ebbinghaus',
+    label: t('habit').freqEbbinghaus || '艾宾浩斯',
+  },
+])
 
 function selectFrequency(type: HabitFrequency['type']) {
-  form.frequencyType = type;
-  form.daysOfWeek = [];
+  form.frequencyType = type
+  form.daysOfWeek = []
 }
 
 function toggleDayOfWeek(day: number) {
-  const idx = form.daysOfWeek.indexOf(day);
+  const idx = form.daysOfWeek.indexOf(day)
   if (idx >= 0) {
-    form.daysOfWeek.splice(idx, 1);
+    form.daysOfWeek.splice(idx, 1)
   } else {
-    form.daysOfWeek.push(day);
+    form.daysOfWeek.push(day)
   }
 }
 
 function buildMarkdown(): string {
-  let line = form.name;
-  line += ` 🎯${form.startDate}`;
+  let line = form.name
+  line += ` 🎯${form.startDate}`
 
   if (form.durationDays) {
-    line += ` 坚持${form.durationDays}天`;
+    line += ` 坚持${form.durationDays}天`
   }
 
   if (form.type === 'count' && form.target) {
-    line += ` ${form.target}${form.unit || ''}`;
+    line += ` ${form.target}${form.unit || ''}`
   }
 
   if (form.reminderTime) {
-    line += ` ⏰${form.reminderTime}`;
+    line += ` ⏰${form.reminderTime}`
   }
 
   // 频率
   switch (form.frequencyType) {
     case 'daily':
-      line += ' 🔄每天';
-      break;
+      line += ' 🔄每天'
+      break
     case 'every_n_days':
-      line += ` 🔄每${form.interval}天`;
-      break;
+      line += ` 🔄每${form.interval}天`
+      break
     case 'weekly':
-      line += ' 🔄每周';
-      break;
+      line += ' 🔄每周'
+      break
     case 'n_per_week':
-      line += ` 🔄每周${form.daysPerWeek}天`;
-      break;
+      line += ` 🔄每周${form.daysPerWeek}天`
+      break
     case 'weekly_days': {
       const dayNames = form.daysOfWeek
         .sort()
-        .map(d => weekDayLabels.value[d] || '')
-        .join('');
-      line += ` 🔄每周${dayNames}`;
-      break;
+        .map((d) => weekDayLabels.value[d] || '')
+        .join('')
+      line += ` 🔄每周${dayNames}`
+      break
     }
     case 'ebbinghaus': {
-      const intervals = parseEbbinghausIntervals(form.ebbinghausIntervals);
+      const intervals = parseEbbinghausIntervals(form.ebbinghausIntervals)
       line += intervals && intervals.length > 0
         ? ` 🔄艾宾浩斯[${intervals.join(',')}]`
-        : ' 🔄艾宾浩斯';
-      break;
+        : ' 🔄艾宾浩斯'
+      break
     }
   }
 
-  return line;
+  return line
 }
 
 function handleSave() {
   if (!form.name.trim())
-    return;
+    return
   if (form.type === 'count' && (!Number.isFinite(form.target) || form.target <= 0))
-    return;
+    return
   if (form.frequencyType === 'weekly_days' && form.daysOfWeek.length === 0)
-    return;
+    return
   if (form.frequencyType === 'ebbinghaus' && parseEbbinghausIntervals(form.ebbinghausIntervals) === null)
-    return;
+    return
 
-  const markdown = buildMarkdown();
-  emit('save', markdown);
+  const markdown = buildMarkdown()
+  emit('save', markdown)
 }
 
 function handleNameEnter() {
   if (Date.now() < initialEnterGuardUntil) {
-    return;
+    return
   }
-  handleSave();
+  handleSave()
 }
 </script>
 

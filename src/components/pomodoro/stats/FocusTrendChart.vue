@@ -9,9 +9,19 @@
           class="dimension-dropdown"
         />
         <div class="nav-btns">
-          <button class="nav-btn" @click="prev">‹</button>
+          <button
+            class="nav-btn"
+            @click="prev"
+          >
+            ‹
+          </button>
           <span class="nav-label">{{ navLabel }}</span>
-          <button class="nav-btn" @click="next">›</button>
+          <button
+            class="nav-btn"
+            @click="next"
+          >
+            ›
+          </button>
         </div>
       </div>
     </div>
@@ -25,198 +35,234 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useProjectStore } from '@/stores';
-import { t } from '@/i18n';
-import dayjs from '@/utils/dayjs';
-import { getThemePrimary, getChartTextColor, toRgba } from '@/utils/chartThemeUtils';
-import { Chart, registerables } from 'chart.js';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import {
+  Chart,
+  registerables,
+} from 'chart.js'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import SySelect from '@/components/SiyuanTheme/SySelect.vue'
+import { t } from '@/i18n'
+import { useProjectStore } from '@/stores'
+import {
+  getChartTextColor,
+  getThemePrimary,
+  toRgba,
+} from '@/utils/chartThemeUtils'
+import dayjs from '@/utils/dayjs'
 
-Chart.register(...registerables);
+Chart.register(...registerables)
 
-const projectStore = useProjectStore();
-const chartCanvas = ref<HTMLCanvasElement | null>(null);
-let chartInstance: Chart | null = null;
+const projectStore = useProjectStore()
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+let chartInstance: Chart | null = null
 
-const dimension = ref<'year' | 'month' | 'week' | 'day'>('week');
-const offset = ref(0);
+const dimension = ref<'year' | 'month' | 'week' | 'day'>('week')
+const offset = ref(0)
 
 const dimensionOptions = [
-  { label: t('pomodoroStats').day, value: 'day' },
-  { label: t('pomodoroStats').week, value: 'week' },
-  { label: t('pomodoroStats').month, value: 'month' },
-  { label: t('pomodoroStats').year, value: 'year' }
-];
+  {
+    label: t('pomodoroStats').day,
+    value: 'day',
+  },
+  {
+    label: t('pomodoroStats').week,
+    value: 'week',
+  },
+  {
+    label: t('pomodoroStats').month,
+    value: 'month',
+  },
+  {
+    label: t('pomodoroStats').year,
+    value: 'year',
+  },
+]
 
 const rangeDates = computed(() => {
-  const base = dayjs();
+  const base = dayjs()
   switch (dimension.value) {
     case 'year': {
-      const y = base.add(offset.value, 'year');
+      const y = base.add(offset.value, 'year')
       return {
         startDate: y.startOf('year').format('YYYY-MM-DD'),
-        endDate: y.endOf('year').format('YYYY-MM-DD')
-      };
+        endDate: y.endOf('year').format('YYYY-MM-DD'),
+      }
     }
     case 'month': {
-      const m = base.add(offset.value, 'month');
+      const m = base.add(offset.value, 'month')
       return {
         startDate: m.startOf('month').format('YYYY-MM-DD'),
-        endDate: m.endOf('month').format('YYYY-MM-DD')
-      };
+        endDate: m.endOf('month').format('YYYY-MM-DD'),
+      }
     }
     case 'week': {
-      const w = base.add(offset.value, 'week');
+      const w = base.add(offset.value, 'week')
       return {
         startDate: w.startOf('isoWeek').format('YYYY-MM-DD'),
-        endDate: w.endOf('isoWeek').format('YYYY-MM-DD')
-      };
+        endDate: w.endOf('isoWeek').format('YYYY-MM-DD'),
+      }
     }
     case 'day': {
-      const d = base.add(offset.value, 'day');
-      const s = d.format('YYYY-MM-DD');
-      return { startDate: s, endDate: s };
+      const d = base.add(offset.value, 'day')
+      const s = d.format('YYYY-MM-DD')
+      return {
+        startDate: s,
+        endDate: s,
+      }
     }
     default:
-      return { startDate: base.format('YYYY-MM-DD'), endDate: base.format('YYYY-MM-DD') };
+      return {
+        startDate: base.format('YYYY-MM-DD'),
+        endDate: base.format('YYYY-MM-DD'),
+      }
   }
-});
+})
 
 const navLabel = computed(() => {
   switch (dimension.value) {
     case 'year':
-      return dayjs().add(offset.value, 'year').format('YYYY');
+      return dayjs().add(offset.value, 'year').format('YYYY')
     case 'month': {
-      const fmtYM = (t('pomodoroStats') as any).formatYearMonth ?? 'YYYY-MMM';
-      return dayjs().add(offset.value, 'month').format(fmtYM);
+      const fmtYM = (t('pomodoroStats') as any).formatYearMonth ?? 'YYYY-MMM'
+      return dayjs().add(offset.value, 'month').format(fmtYM)
     }
     case 'week': {
-      if (offset.value === 0) return t('pomodoroStats').thisWeek;
-      if (offset.value === -1) return t('pomodoroStats').lastWeek;
-      const w = dayjs().add(offset.value, 'week');
-      const start = w.startOf('isoWeek');
-      const end = w.endOf('isoWeek');
-      const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
-      return `${start.format(fmt)} - ${end.format(fmt)}`;
+      if (offset.value === 0) return t('pomodoroStats').thisWeek
+      if (offset.value === -1) return t('pomodoroStats').lastWeek
+      const w = dayjs().add(offset.value, 'week')
+      const start = w.startOf('isoWeek')
+      const end = w.endOf('isoWeek')
+      const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D'
+      return `${start.format(fmt)} - ${end.format(fmt)}`
     }
     case 'day':
-      return dayjs().add(offset.value, 'day').format('YYYY-MM-DD');
+      return dayjs().add(offset.value, 'day').format('YYYY-MM-DD')
     default:
-      return '';
+      return ''
   }
-});
+})
 
 const chartData = computed(() => {
-  const { startDate, endDate } = rangeDates.value;
-  const byDay = projectStore.getFocusMinutesByDateRange(startDate, endDate, '');
-  const result: { label: string; minutes: number }[] = [];
+  const {
+    startDate,
+    endDate,
+  } = rangeDates.value
+  const byDay = projectStore.getFocusMinutesByDateRange(startDate, endDate, '')
+  const result: { label: string, minutes: number }[] = []
 
   if (dimension.value === 'year') {
     for (let m = 1; m <= 12; m++) {
-      const monthStart = dayjs(startDate).month(m - 1).startOf('month');
-      const monthEnd = monthStart.endOf('month');
-      let total = 0;
-      let current = monthStart;
+      const monthStart = dayjs(startDate).month(m - 1).startOf('month')
+      const monthEnd = monthStart.endOf('month')
+      let total = 0
+      let current = monthStart
       while (current.isBefore(monthEnd) || current.isSame(monthEnd, 'day')) {
-        const d = current.format('YYYY-MM-DD');
-        total += byDay.get(d) ?? 0;
-        current = current.add(1, 'day');
+        const d = current.format('YYYY-MM-DD')
+        total += byDay.get(d) ?? 0
+        current = current.add(1, 'day')
       }
-      const monthLabels = (t('pomodoroStats') as any).monthNamesShort ?? [];
-      result.push({ label: monthLabels[m - 1] ?? `${m}`, minutes: total });
+      const monthLabels = (t('pomodoroStats') as any).monthNamesShort ?? []
+      result.push({
+        label: monthLabels[m - 1] ?? `${m}`,
+        minutes: total,
+      })
     }
   } else if (dimension.value === 'month') {
-    let current = dayjs(startDate);
-    const end = dayjs(endDate);
+    let current = dayjs(startDate)
+    const end = dayjs(endDate)
     while (current.isBefore(end) || current.isSame(end, 'day')) {
-      const d = current.format('YYYY-MM-DD');
+      const d = current.format('YYYY-MM-DD')
       result.push({
         label: current.format('D'),
-        minutes: byDay.get(d) ?? 0
-      });
-      current = current.add(1, 'day');
+        minutes: byDay.get(d) ?? 0,
+      })
+      current = current.add(1, 'day')
     }
   } else if (dimension.value === 'week') {
-    const dows = (t('pomodoroStats') as any).weekDaysShort ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dows = (t('pomodoroStats') as any).weekDaysShort ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     for (let i = 0; i < 7; i++) {
-      const d = dayjs(startDate).add(i, 'day').format('YYYY-MM-DD');
+      const d = dayjs(startDate).add(i, 'day').format('YYYY-MM-DD')
       result.push({
         label: dows[i],
-        minutes: byDay.get(d) ?? 0
-      });
+        minutes: byDay.get(d) ?? 0,
+      })
     }
   } else {
-    const all = projectStore.getAllPomodoros('');
-    const dayPomodoros = all.filter(p => p.date === startDate);
-    const byHour = new Map<number, number>();
-    for (let h = 0; h < 24; h++) byHour.set(h, 0);
+    const all = projectStore.getAllPomodoros('')
+    const dayPomodoros = all.filter((p) => p.date === startDate)
+    const byHour = new Map<number, number>()
+    for (let h = 0; h < 24; h++) byHour.set(h, 0)
     for (const p of dayPomodoros) {
-      const hour = parseInt(p.startTime.split(':')[0], 10);
-      const mins = p.actualDurationMinutes ?? p.durationMinutes;
-      byHour.set(hour, (byHour.get(hour) ?? 0) + mins);
+      const hour = Number.parseInt(p.startTime.split(':')[0], 10)
+      const mins = p.actualDurationMinutes ?? p.durationMinutes
+      byHour.set(hour, (byHour.get(hour) ?? 0) + mins)
     }
     for (let h = 0; h < 24; h++) {
       result.push({
         label: `${h.toString().padStart(2, '0')}:00`,
-        minutes: byHour.get(h) ?? 0
-      });
+        minutes: byHour.get(h) ?? 0,
+      })
     }
   }
-  return result;
-});
+  return result
+})
 
 const dailyAvg = computed(() => {
-  const data = chartData.value;
-  if (data.length === 0) return 0;
-  const total = data.reduce((s, d) => s + d.minutes, 0);
-  if (dimension.value === 'year') return Math.round(total / 365) || 0;
-  if (dimension.value === 'month' || dimension.value === 'week') return data.length > 0 ? Math.round(total / data.length) : 0;
-  if (dimension.value === 'day') return total;
-  return 0;
-});
+  const data = chartData.value
+  if (data.length === 0) return 0
+  const total = data.reduce((s, d) => s + d.minutes, 0)
+  if (dimension.value === 'year') return Math.round(total / 365) || 0
+  if (dimension.value === 'month' || dimension.value === 'week') return data.length > 0 ? Math.round(total / data.length) : 0
+  if (dimension.value === 'day') return total
+  return 0
+})
 
 function prev() {
-  offset.value--;
+  offset.value--
 }
 
 function next() {
-  offset.value++;
+  offset.value++
 }
 
 function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m === 0 ? `${h}h` : `${h}h${m}m`;
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h}h` : `${h}h${m}m`
 }
 
 
 function updateChart() {
-  if (!chartCanvas.value) return;
-  const ctx = chartCanvas.value.getContext('2d');
-  if (!ctx) return;
+  if (!chartCanvas.value) return
+  const ctx = chartCanvas.value.getContext('2d')
+  if (!ctx) return
 
   if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
+    chartInstance.destroy()
+    chartInstance = null
   }
 
   // 强制清除画布，防止残留线条叠加
-  ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height);
+  ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height)
 
-  const containerEl = chartCanvas.value?.parentElement ?? null;
-  const primaryColor = getThemePrimary(containerEl);
-  const textColor = getChartTextColor(containerEl);
-  const gridColor = toRgba(textColor, 0.3); // 适中透明度
-  
+  const containerEl = chartCanvas.value?.parentElement ?? null
+  const primaryColor = getThemePrimary(containerEl)
+  const textColor = getChartTextColor(containerEl)
+
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: chartData.value.map(d => d.label),
+      labels: chartData.value.map((d) => d.label),
       datasets: [{
         label: t('pomodoroStats').focusDuration,
-        data: chartData.value.map(d => d.minutes),
+        data: chartData.value.map((d) => d.minutes),
         borderColor: primaryColor,
         borderWidth: 2,
         pointBackgroundColor: '#fff',
@@ -227,23 +273,26 @@ function updateChart() {
         pointHoverBorderColor: '#fff',
         pointHoverBorderWidth: 2,
         backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return null;
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, toRgba(primaryColor, 0.2));
-          gradient.addColorStop(1, 'transparent');
-          return gradient;
+          const chart = context.chart
+          const {
+            ctx,
+            chartArea,
+          } = chart
+          if (!chartArea) return null
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+          gradient.addColorStop(0, toRgba(primaryColor, 0.2))
+          gradient.addColorStop(1, 'transparent')
+          return gradient
         },
         fill: true,
-        tension: 0.4
-      }]
+        tension: 0.4,
+      }],
     },
     options: {
       layout: {
         padding: {
-          top: 20
-        }
+          top: 20,
+        },
       },
       responsive: true,
       maintainAspectRatio: false,
@@ -256,12 +305,15 @@ function updateChart() {
         tooltip: {
           enabled: false, // 禁用默认 tooltip
           external: (context) => {
-            const { chart, tooltip } = context;
-            let tooltipEl = document.getElementById('chartjs-tooltip');
+            const {
+              chart,
+              tooltip,
+            } = context
+            let tooltipEl = document.getElementById('chartjs-tooltip')
 
             if (!tooltipEl) {
-              tooltipEl = document.createElement('div');
-              tooltipEl.id = 'chartjs-tooltip';
+              tooltipEl = document.createElement('div')
+              tooltipEl.id = 'chartjs-tooltip'
               tooltipEl.style.cssText = `
                 position: fixed;
                 background: rgba(0, 0, 0, 0.8);
@@ -274,41 +326,41 @@ function updateChart() {
                 opacity: 0;
                 transition: opacity 0.2s;
                 line-height: 1.5;
-              `;
-              document.body.appendChild(tooltipEl);
+              `
+              document.body.appendChild(tooltipEl)
             }
 
             if (tooltip.opacity === 0) {
-              tooltipEl.style.opacity = '0';
-              return;
+              tooltipEl.style.opacity = '0'
+              return
             }
 
             if (tooltip.body) {
-              const dataIndex = tooltip.dataPoints[0].dataIndex;
-              const item = chartData.value[dataIndex];
-              let title = '';
+              const dataIndex = tooltip.dataPoints[0].dataIndex
+              const item = chartData.value[dataIndex]
+              let title = ''
               if (dimension.value === 'week' || dimension.value === 'month') {
-                const { startDate } = rangeDates.value;
-                const date = dayjs(startDate).add(dataIndex, 'day');
-                const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
-                title = date.format(fmt);
+                const { startDate } = rangeDates.value
+                const date = dayjs(startDate).add(dataIndex, 'day')
+                const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D'
+                title = date.format(fmt)
               } else {
-                title = item.label;
+                title = item.label
               }
-              const duration = formatDuration(item.minutes);
-              tooltipEl.innerHTML = `${title}<br/>${t('pomodoroStats').focusDuration}: ${duration}`;
+              const duration = formatDuration(item.minutes)
+              tooltipEl.innerHTML = `${title}<br/>${t('pomodoroStats').focusDuration}: ${duration}`
             }
 
-            const position = chart.canvas.getBoundingClientRect();
-            tooltipEl.style.opacity = '1';
-            tooltipEl.style.left = position.left + tooltip.caretX - tooltipEl.offsetWidth / 2 + 'px';
-            tooltipEl.style.top = position.top + tooltip.caretY - tooltipEl.offsetHeight - 10 + 'px';
-          }
-        }
+            const position = chart.canvas.getBoundingClientRect()
+            tooltipEl.style.opacity = '1'
+            tooltipEl.style.left = `${position.left + tooltip.caretX - tooltipEl.offsetWidth / 2}px`
+            tooltipEl.style.top = `${position.top + tooltip.caretY - tooltipEl.offsetHeight - 10}px`
+          },
+        },
       },
       scales: {
         x: {
-          grid: { 
+          grid: {
             display: false,
           },
           ticks: {
@@ -316,13 +368,13 @@ function updateChart() {
             padding: 10,
             font: {
               size: 11,
-              weight: 300
-            }
-          }
+              weight: 300,
+            },
+          },
         },
         y: {
           beginAtZero: true,
-          grid: { 
+          grid: {
             display: false, // 彻底去掉横线
           },
           border: {
@@ -330,35 +382,35 @@ function updateChart() {
           },
           ticks: {
             display: false,
-          }
-        }
-      }
-    }
-  });
+          },
+        },
+      },
+    },
+  })
 }
 
-let themeObserver: MutationObserver | null = null;
-watch([chartData, dimension], updateChart);
+let themeObserver: MutationObserver | null = null
+watch([chartData, dimension], updateChart)
 onMounted(() => {
-  updateChart();
-  themeObserver = new MutationObserver(updateChart);
+  updateChart()
+  themeObserver = new MutationObserver(updateChart)
   themeObserver.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class', 'data-color-scheme', 'data-asri-palette', 'data-theme-mode', 'style']
-  });
-});
+    attributeFilter: ['class', 'data-color-scheme', 'data-asri-palette', 'data-theme-mode', 'style'],
+  })
+})
 onUnmounted(() => {
-  themeObserver?.disconnect();
-  themeObserver = null;
+  themeObserver?.disconnect()
+  themeObserver = null
   if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
+    chartInstance.destroy()
+    chartInstance = null
   }
-  const tooltipEl = document.getElementById('chartjs-tooltip');
+  const tooltipEl = document.getElementById('chartjs-tooltip')
   if (tooltipEl) {
-    tooltipEl.remove();
+    tooltipEl.remove()
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>

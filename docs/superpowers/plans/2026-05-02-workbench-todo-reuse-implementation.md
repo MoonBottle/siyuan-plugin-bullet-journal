@@ -67,57 +67,58 @@
 ### Task 1: Define Shared Todo View Types and Preset Merge Rules
 
 **Files:**
+
 - Create: `src/types/todoView.ts`
 - Create: `test/composables/useTodoViewState.test.ts`
 
 - [ ] **Step 1: Write the failing preset-merge tests**
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
-import { useSettingsStore } from '@/stores';
+import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it } from 'vitest'
+import { useSettingsStore } from '@/stores'
 
 describe('useTodoViewState preset merge', () => {
   it('applies widget preset as initial todo filter state', async () => {
-    setActivePinia(createPinia());
-    const settingsStore = useSettingsStore();
-    settingsStore.todoDock.selectedGroup = '';
+    setActivePinia(createPinia())
+    const settingsStore = useSettingsStore()
+    settingsStore.todoDock.selectedGroup = ''
 
-    const { useTodoViewState } = await import('@/composables/useTodoViewState');
+    const { useTodoViewState } = await import('@/composables/useTodoViewState')
     const state = useTodoViewState({
       preset: {
         groupId: 'group-a',
         dateFilterType: 'today',
         priorities: ['high'],
       },
-    });
+    })
 
-    expect(state.selectedGroup.value).toBe('group-a');
-    expect(state.dateFilterType.value).toBe('today');
-    expect(state.selectedPriorities.value).toEqual(['high']);
-  });
+    expect(state.selectedGroup.value).toBe('group-a')
+    expect(state.dateFilterType.value).toBe('today')
+    expect(state.selectedPriorities.value).toEqual(['high'])
+  })
 
   it('does not overwrite widget preset when current state changes later', async () => {
-    setActivePinia(createPinia());
+    setActivePinia(createPinia())
 
-    const { useTodoViewState } = await import('@/composables/useTodoViewState');
+    const { useTodoViewState } = await import('@/composables/useTodoViewState')
     const preset = {
       groupId: 'group-a',
       dateFilterType: 'today',
       priorities: ['high'] as const,
-    };
-    const state = useTodoViewState({ preset });
+    }
+    const state = useTodoViewState({ preset })
 
-    state.selectedGroup.value = 'group-b';
-    state.selectedPriorities.value = ['low'];
+    state.selectedGroup.value = 'group-b'
+    state.selectedPriorities.value = ['low']
 
     expect(preset).toEqual({
       groupId: 'group-a',
       dateFilterType: 'today',
       priorities: ['high'],
-    });
-  });
-});
+    })
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -128,54 +129,55 @@ Expected: FAIL with module not found for `@/composables/useTodoViewState`
 - [ ] **Step 3: Define shared Todo view types**
 
 ```ts
+import type { TodoSortRule } from '@/settings'
 // src/types/todoView.ts
-import type { PriorityLevel } from '@/types/models';
-import type { TodoDateFilterType } from '@/utils/todoDateFilter';
-import type { TodoSortRule } from '@/settings';
+import type { PriorityLevel } from '@/types/models'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
 
 export interface TodoViewPreset {
-  groupId?: string;
-  dateFilterType?: TodoDateFilterType;
-  startDate?: string;
-  endDate?: string;
-  priorities?: PriorityLevel[];
-  searchQuery?: string;
-  sortRules?: TodoSortRule[];
+  groupId?: string
+  dateFilterType?: TodoDateFilterType
+  startDate?: string
+  endDate?: string
+  priorities?: PriorityLevel[]
+  searchQuery?: string
+  sortRules?: TodoSortRule[]
 }
 
 export interface TodoViewStateOptions {
-  preset?: TodoViewPreset;
-  persistToSettings?: boolean;
+  preset?: TodoViewPreset
+  persistToSettings?: boolean
 }
 ```
 
 - [ ] **Step 4: Add minimal preset-aware state composable**
 
 ```ts
+import type { PriorityLevel } from '@/types/models'
+import type { TodoViewStateOptions } from '@/types/todoView'
+import type { TodoDateFilterType } from '@/utils/todoDateFilter'
+import dayjs from 'dayjs'
 // src/composables/useTodoViewState.ts
-import { computed, ref, watch } from 'vue';
-import dayjs from 'dayjs';
-import { useProjectStore, useSettingsStore } from '@/stores';
-import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
-import type { PriorityLevel } from '@/types/models';
-import type { TodoViewStateOptions } from '@/types/todoView';
+import { computed, ref, watch } from 'vue'
+import { useProjectStore, useSettingsStore } from '@/stores'
+import { buildCompletedTodoDateRange, buildTodoDateRange } from '@/utils/todoDateFilter'
 
 export function useTodoViewState(options: TodoViewStateOptions = {}) {
-  const settingsStore = useSettingsStore();
-  const projectStore = useProjectStore();
+  const settingsStore = useSettingsStore()
+  const projectStore = useProjectStore()
 
-  const selectedGroup = ref(options.preset?.groupId ?? settingsStore.todoDock.selectedGroup);
-  const searchQuery = ref(options.preset?.searchQuery ?? '');
-  const selectedPriorities = ref<PriorityLevel[]>([...(options.preset?.priorities ?? [])]);
-  const dateFilterType = ref<TodoDateFilterType>(options.preset?.dateFilterType ?? 'today');
-  const startDate = ref(options.preset?.startDate ?? dayjs().format('YYYY-MM-DD'));
-  const endDate = ref(options.preset?.endDate ?? dayjs().add(7, 'day').format('YYYY-MM-DD'));
+  const selectedGroup = ref(options.preset?.groupId ?? settingsStore.todoDock.selectedGroup)
+  const searchQuery = ref(options.preset?.searchQuery ?? '')
+  const selectedPriorities = ref<PriorityLevel[]>([...(options.preset?.priorities ?? [])])
+  const dateFilterType = ref<TodoDateFilterType>(options.preset?.dateFilterType ?? 'today')
+  const startDate = ref(options.preset?.startDate ?? dayjs().format('YYYY-MM-DD'))
+  const endDate = ref(options.preset?.endDate ?? dayjs().add(7, 'day').format('YYYY-MM-DD'))
 
   if (options.persistToSettings !== false) {
     watch(selectedGroup, (value) => {
-      settingsStore.todoDock.selectedGroup = value;
-      settingsStore.saveToPlugin();
-    });
+      settingsStore.todoDock.selectedGroup = value
+      settingsStore.saveToPlugin()
+    })
   }
 
   const dateRange = computed(() => buildTodoDateRange(
@@ -183,13 +185,13 @@ export function useTodoViewState(options: TodoViewStateOptions = {}) {
     projectStore.currentDate,
     startDate.value,
     endDate.value,
-  ));
+  ))
 
   const completedDateRange = computed(() => buildCompletedTodoDateRange(
     dateFilterType.value,
     projectStore.currentDate,
     dateRange.value,
-  ));
+  ))
 
   return {
     selectedGroup,
@@ -200,7 +202,7 @@ export function useTodoViewState(options: TodoViewStateOptions = {}) {
     endDate,
     dateRange,
     completedDateRange,
-  };
+  }
 }
 ```
 
@@ -221,6 +223,7 @@ git commit -m "feat(todo): add preset-aware shared todo view state"
 ### Task 2: Extract Shared Todo Filter Bar and Content Pane
 
 **Files:**
+
 - Create: `src/components/todo/TodoFilterBar.vue`
 - Create: `src/components/todo/TodoContentPane.vue`
 - Create: `test/components/todo/TodoFilterBar.test.ts`
@@ -230,18 +233,18 @@ git commit -m "feat(todo): add preset-aware shared todo view state"
 - [ ] **Step 1: Write the failing shared filter bar tests**
 
 ```ts
-import { createApp, h, ref } from 'vue';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
+import { createApp, h, ref } from 'vue'
 
 async function mountFilterBar() {
-  const { default: TodoFilterBar } = await import('@/components/todo/TodoFilterBar.vue');
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+  const { default: TodoFilterBar } = await import('@/components/todo/TodoFilterBar.vue')
+  const container = document.createElement('div')
+  document.body.appendChild(container)
 
-  const selectedGroup = ref('group-a');
-  const dateFilterType = ref('today');
-  const selectedPriorities = ref(['high']);
-  const searchQuery = ref('abc');
+  const selectedGroup = ref('group-a')
+  const dateFilterType = ref('today')
+  const selectedPriorities = ref(['high'])
+  const searchQuery = ref('abc')
 
   createApp({
     render() {
@@ -254,23 +257,23 @@ async function mountFilterBar() {
         endDate: '2026-05-09',
         showSortPanel: false,
         sortRules: [],
-      });
+      })
     },
-  }).mount(container);
+  }).mount(container)
 
-  return container;
+  return container
 }
 
 describe('TodoFilterBar', () => {
   it('renders the same todo search and filter controls', async () => {
-    const container = await mountFilterBar();
+    const container = await mountFilterBar()
 
-    expect(container.querySelector('.search-input')).not.toBeNull();
-    expect(container.querySelector('.group-select')).not.toBeNull();
-    expect(container.querySelector('.date-filter-select')).not.toBeNull();
-    expect(container.querySelectorAll('.priority-btn').length).toBe(3);
-  });
-});
+    expect(container.querySelector('.search-input')).not.toBeNull()
+    expect(container.querySelector('.group-select')).not.toBeNull()
+    expect(container.querySelector('.date-filter-select')).not.toBeNull()
+    expect(container.querySelectorAll('.priority-btn').length).toBe(3)
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -286,14 +289,14 @@ Expected: FAIL with module not found for `@/components/todo/TodoFilterBar.vue`
   <div class="todo-filter-card">
     <div class="search-row">
       <div class="search-box">
-        <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
+        <svg class="search-icon"><use xlink:href="#iconSearch" /></svg>
         <input
           :value="searchQuery"
           type="text"
           :placeholder="t('todo').searchPlaceholder"
           class="search-input"
           @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-        />
+        >
       </div>
     </div>
 
@@ -312,13 +315,13 @@ Expected: FAIL with module not found for `@/components/todo/TodoFilterBar.vue`
         @change="value => $emit('update:dateFilterType', value)"
       />
       <button class="sort-trigger" @click="$emit('toggle-sort-panel')">
-        <svg><use xlink:href="#iconSort"></use></svg>
+        <svg><use xlink:href="#iconSort" /></svg>
       </button>
       <div class="priority-filter">
         <button
           v-for="p in priorityOptions"
           :key="p.value"
-          :class="['priority-btn', { active: selectedPriorities.includes(p.value) }]"
+          class="priority-btn" :class="[{ active: selectedPriorities.includes(p.value) }]"
           @click="$emit('toggle-priority', p.value)"
         >
           {{ p.emoji }}
@@ -333,6 +336,27 @@ Expected: FAIL with module not found for `@/components/todo/TodoFilterBar.vue`
 
 ```vue
 <!-- src/components/todo/TodoContentPane.vue -->
+<script setup lang="ts">
+import type { PriorityLevel } from '@/types/models'
+import { ref } from 'vue'
+import TodoSidebar from '@/components/todo/TodoSidebar.vue'
+
+defineProps<{
+  groupId: string
+  searchQuery: string
+  dateRange?: { start: string, end: string } | null
+  completedDateRange?: { start: string, end: string } | null
+  priorities: PriorityLevel[]
+  displayMode?: 'default' | 'embedded'
+}>()
+
+const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null)
+
+defineExpose({
+  todoSidebar,
+})
+</script>
+
 <template>
   <div class="todo-dock-content">
     <TodoSidebar
@@ -346,27 +370,6 @@ Expected: FAIL with module not found for `@/components/todo/TodoFilterBar.vue`
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
-import type { PriorityLevel } from '@/types/models';
-
-defineProps<{
-  groupId: string;
-  searchQuery: string;
-  dateRange?: { start: string; end: string } | null;
-  completedDateRange?: { start: string; end: string } | null;
-  priorities: PriorityLevel[];
-  displayMode?: 'default' | 'embedded';
-}>();
-
-const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
-
-defineExpose({
-  todoSidebar,
-});
-</script>
 ```
 
 - [ ] **Step 5: Refactor `DesktopTodoDock.vue` to use the shared units**
@@ -416,6 +419,7 @@ git commit -m "refactor(todo): share todo filter and content surfaces"
 ### Task 3: Type and Persist `todoList` Widget Preset Config
 
 **Files:**
+
 - Modify: `src/types/workbench.ts`
 - Modify: `src/workbench/widgetRegistry.ts`
 - Modify: `src/stores/workbenchStore.ts`
@@ -425,11 +429,11 @@ git commit -m "refactor(todo): share todo filter and content surfaces"
 
 ```ts
 it('persists todoList widget preset config and preview count together', async () => {
-  const store = useWorkbenchStore();
-  await store.load(plugin as any);
-  await store.addWidget('dashboard-1', 'todoList');
+  const store = useWorkbenchStore()
+  await store.load(plugin as any)
+  await store.addWidget('dashboard-1', 'todoList')
 
-  const widgetId = store.dashboards[0].widgets[0].id;
+  const widgetId = store.dashboards[0].widgets[0].id
   await store.updateWidgetConfig('dashboard-1', widgetId, {
     previewCount: 7,
     preset: {
@@ -437,7 +441,7 @@ it('persists todoList widget preset config and preview count together', async ()
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
+  })
 
   expect(store.dashboards[0].widgets[0].config).toEqual({
     previewCount: 7,
@@ -446,8 +450,8 @@ it('persists todoList widget preset config and preview count together', async ()
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
-});
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -459,20 +463,20 @@ Expected: FAIL because `todoList` config is still loosely modeled and not normal
 
 ```ts
 // src/types/workbench.ts
-import type { TodoViewPreset } from '@/types/todoView';
+import type { TodoViewPreset } from '@/types/todoView'
 
 export interface WorkbenchTodoListWidgetConfig {
-  previewCount?: number;
-  preset?: TodoViewPreset;
+  previewCount?: number
+  preset?: TodoViewPreset
 }
 
-export type WorkbenchWidgetConfigMap = {
-  todoList: WorkbenchTodoListWidgetConfig;
-  quadrantSummary: Record<string, never>;
-  habitWeek: Record<string, never>;
-  miniCalendar: Record<string, never>;
-  pomodoroStats: Record<string, never>;
-};
+export interface WorkbenchWidgetConfigMap {
+  todoList: WorkbenchTodoListWidgetConfig
+  quadrantSummary: Record<string, never>
+  habitWeek: Record<string, never>
+  miniCalendar: Record<string, never>
+  pomodoroStats: Record<string, never>
+}
 ```
 
 - [ ] **Step 4: Change widget defaults and store updates**
@@ -494,15 +498,16 @@ todoList: {
 ```ts
 // src/stores/workbenchStore.ts
 async function updateWidgetConfig(dashboardId: string, widgetId: string, config: Record<string, unknown>) {
-  const dashboard = dashboards.value.find(item => item.id === dashboardId);
-  const widget = dashboard?.widgets.find(item => item.id === widgetId);
-  if (!widget) return;
+  const dashboard = dashboards.value.find(item => item.id === dashboardId)
+  const widget = dashboard?.widgets.find(item => item.id === widgetId)
+  if (!widget)
+    return
 
   widget.config = {
     ...widget.config,
     ...config,
-  };
-  await persist();
+  }
+  await persist()
 }
 ```
 
@@ -523,6 +528,7 @@ git commit -m "feat(workbench): type todo widget preset config"
 ### Task 4: Rebuild `TodoListWidget` as a Preset-Driven Todo Surface
 
 **Files:**
+
 - Modify: `src/components/workbench/widgets/TodoListWidget.vue`
 - Modify: `src/components/workbench/dashboard/DashboardCanvas.vue`
 - Modify: `test/components/workbench/DashboardCanvas.test.ts`
@@ -538,12 +544,12 @@ it('renders todo widget using shared todo content instead of plain bullet previe
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
+  })
 
-  expect(mounted.container.querySelector('[data-testid="workbench-widget-todo-list"]')).not.toBeNull();
-  expect(mounted.container.querySelector('.todo-dock-content')).not.toBeNull();
-  expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="workbench-widget-todo-list"]')).not.toBeNull()
+  expect(mounted.container.querySelector('.todo-dock-content')).not.toBeNull()
+  expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -554,6 +560,29 @@ Expected: FAIL because `TodoListWidget.vue` still renders an ad hoc `<ul>`
 - [ ] **Step 3: Replace the ad hoc widget markup with shared Todo content**
 
 ```vue
+<script setup lang="ts">
+import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench'
+import { computed } from 'vue'
+import TodoContentPane from '@/components/todo/TodoContentPane.vue'
+import { useTodoViewState } from '@/composables/useTodoViewState'
+import { t } from '@/i18n'
+
+const props = defineProps<{
+  widget?: WorkbenchWidgetInstance
+}>()
+
+const config = computed(() => (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig)
+const todoState = useTodoViewState({
+  preset: config.value.preset,
+  persistToSettings: false,
+})
+
+const previewCount = computed(() => {
+  const raw = Number(config.value.previewCount ?? 5)
+  return Number.isFinite(raw) ? Math.min(Math.max(Math.round(raw), 1), 20) : 5
+})
+</script>
+
 <template>
   <div class="workbench-widget-todo-list" data-testid="workbench-widget-todo-list">
     <div class="workbench-widget-todo-list__meta">
@@ -571,29 +600,6 @@ Expected: FAIL because `TodoListWidget.vue` still renders an ad hoc `<ul>`
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '@/i18n';
-import TodoContentPane from '@/components/todo/TodoContentPane.vue';
-import { useTodoViewState } from '@/composables/useTodoViewState';
-import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
-
-const props = defineProps<{
-  widget?: WorkbenchWidgetInstance;
-}>();
-
-const config = computed(() => (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig);
-const todoState = useTodoViewState({
-  preset: config.value.preset,
-  persistToSettings: false,
-});
-
-const previewCount = computed(() => {
-  const raw = Number(config.value.previewCount ?? 5);
-  return Number.isFinite(raw) ? Math.min(Math.max(Math.round(raw), 1), 20) : 5;
-});
-</script>
 ```
 
 - [ ] **Step 4: Keep `DashboardCanvas` configure flow compatible**
@@ -603,7 +609,7 @@ const previewCount = computed(() => {
 await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, {
   previewCount,
   preset,
-});
+})
 ```
 
 - [ ] **Step 5: Run test to verify it passes**
@@ -623,6 +629,7 @@ git commit -m "feat(workbench): reuse todo content in todo widget"
 ### Task 5: Inject Widget Presets Into the Workbench Todo View
 
 **Files:**
+
 - Modify: `src/components/workbench/view/WorkbenchViewHost.vue`
 - Modify: `test/components/workbench/WorkbenchViewHost.test.ts`
 - Modify: `src/components/workbench/WorkbenchContentHost.vue`
@@ -644,11 +651,11 @@ it('initializes workbench todo view from the selected todo widget preset', async
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
+  })
 
-  expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
-  expect(mounted.container.querySelector('.group-select')).not.toBeNull();
-});
+  expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull()
+  expect(mounted.container.querySelector('.group-select')).not.toBeNull()
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -718,6 +725,7 @@ git commit -m "feat(workbench): inject widget presets into todo view"
 ### Task 6: Replace Todo Widget Configure Flow With Preset + Preview Controls
 
 **Files:**
+
 - Modify: `src/workbench/widgetRegistry.ts`
 - Modify: `src/components/workbench/dashboard/DashboardCanvas.vue`
 - Modify: `test/components/workbench/DashboardCanvas.test.ts`
@@ -726,7 +734,7 @@ git commit -m "feat(workbench): inject widget presets into todo view"
 
 ```ts
 it('updates todo widget config with previewCount and preset filters from configure action', async () => {
-  const mounted = await mountCanvasWithConfigurableTodoWidget();
+  const mounted = await mountCanvasWithConfigurableTodoWidget()
 
   mounted.openConfigureDialogResult({
     previewCount: 8,
@@ -735,7 +743,7 @@ it('updates todo widget config with previewCount and preset filters from configu
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
+  })
 
   expect(mockUpdateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
     previewCount: 8,
@@ -744,8 +752,8 @@ it('updates todo widget config with previewCount and preset filters from configu
       dateFilterType: 'today',
       priorities: ['high'],
     },
-  });
-});
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -758,20 +766,20 @@ Expected: FAIL because configure flow still only handles `previewCount`
 ```ts
 // src/workbench/widgetRegistry.ts
 openConfigDialog: async ({ widget, onConfirm }) => {
-  const current = widget.config as WorkbenchTodoListWidgetConfig;
+  const current = widget.config as WorkbenchTodoListWidgetConfig
   const result = await openTodoWidgetConfigDialog({
     previewCount: current.previewCount ?? 5,
     preset: current.preset ?? {},
-  });
+  })
 
   if (!result) {
-    return;
+    return
   }
 
   onConfirm({
     previewCount: result.previewCount,
     preset: result.preset,
-  });
+  })
 }
 ```
 
@@ -779,7 +787,7 @@ openConfigDialog: async ({ widget, onConfirm }) => {
 
 ```ts
 async function handleWidgetConfigure(widgetId: string, config: Record<string, unknown>) {
-  await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
+  await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config)
 }
 ```
 
@@ -800,6 +808,7 @@ git commit -m "feat(workbench): configure todo widget presets and preview count"
 ### Task 7: Verification Sweep for Todo Reuse Boundary
 
 **Files:**
+
 - Verify only
 
 - [ ] **Step 1: Run focused new tests**
