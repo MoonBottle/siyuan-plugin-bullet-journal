@@ -1,7 +1,7 @@
 {
   "name": "siyuan-plugin-bullet-journal",
   "type": "module",
-  "version": "0.13.9",
+  "version": "0.13.10",
   "description": "Task Assistant plugin for SiYuan (https://b3log.org/siyuan)",
   "author": "",
   "license": "AGPL-3.0",
