@@ -527,8 +527,8 @@ watch(searchQuery, () => {
   overflow: hidden;
   transition:
     width 200ms ease,
-    flex-basis 200ms ease,
     padding 200ms ease;
+  will-change: width, padding;
   position: relative;
 }
 
@@ -853,25 +853,26 @@ watch(searchQuery, () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 0;
-  min-width: 0;
+  width: 14px;
   height: 14px;
   flex-shrink: 0;
   overflow: hidden;
-  margin-right: -8px;
+  margin-right: -14px;
   opacity: 0;
   color: var(--b3-theme-on-surface);
   cursor: grab;
+  transform: scaleX(0);
+  transform-origin: left;
   transition:
-    width 150ms ease,
+    transform 150ms ease,
     opacity 150ms ease,
     margin-right 150ms ease;
 }
 
 .workbench-sidebar__entry:hover .workbench-sidebar__entry-drag {
-  width: 14px;
   margin-right: 0;
   opacity: 0.5;
+  transform: scaleX(1);
 }
 
 .workbench-sidebar__entry-drag svg {
