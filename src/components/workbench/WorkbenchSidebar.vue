@@ -513,11 +513,11 @@ watch(searchQuery, () => {
 
 <style lang="scss" scoped>
 .workbench-sidebar {
-  flex: 0 0 240px;
+  flex: 0 0 auto;
+  width: 240px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 240px;
   height: 100%;
   min-height: 0;
   padding: 16px;
@@ -529,11 +529,12 @@ watch(searchQuery, () => {
     width 200ms ease,
     padding 200ms ease;
   will-change: width, padding;
+  transform: translateZ(0);
+  contain: paint;
   position: relative;
 }
 
 .workbench-sidebar--collapsed {
-  flex: 0 0 48px;
   width: 48px;
   padding: 8px;
 }
@@ -545,6 +546,7 @@ watch(searchQuery, () => {
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
+  contain: layout style;
 }
 
 .workbench-sidebar__header {
