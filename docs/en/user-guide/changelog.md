@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.13.10] - 2026-06-17
+
+### Features
+
+- **Calendar View**: Support items-only/tasks-only switching, new item status filtering, configurable date click entry mode (single-click/double-click)
+- **Gantt Chart**: New date presets (Today/This Week/This Month/Last 7 Days/30 Days/90 Days/180 Days/All), support item date priority filtering, new display level selection (Tasks Only/With Items), click task bar to view item details
+- **Todo**: Item cards display project group name, unified action bar refactored to support pin/skip/estimate settings, item detail dialog supports left/right navigation
+- **Workbench**: New calendar and gantt chart view components, configuration takes effect immediately without saving
+- **Pomodoro**: New focus duration display, right-click menu icon optimization
+- **AI Assistant**: New skill marketplace (template marketplace), new skill editor (supports Markdown editing and preview), categorized error messages on AI call failure (auth failure/model unavailable/rate limit/network error), one-click retry support
+- **Webhook Notifications**: New Webhook notification configuration, supports DingTalk/Feishu/WeCom/custom channels, subscribable events for reminders, pomodoro, breaks, habits, etc.
+- **Settings Page**: Changed to instant save, new group switching, no need to click save button; new holiday data management (sync status/coverage/manual refresh)
+- **Icon Upgrade**: Brand new custom icon system, enhanced brand recognition
+- **MCP**: Removed "experimental" label from HTTP MCP configuration, full scan mode automatically excludes disabled directories
+
+### Fixes
+
+- **Calendar**: Fixed scrollbar caused by hover details, date picker number/week misalignment, event width anomaly in tasks-only mode, view config not taking effect immediately after switching
+- **Gantt Chart**: Fixed font flickering during loading, multi-date items display anomaly, date range calculation off by one day
+- **Todo**: Fixed action bar divider line residue, completed button not showing for abandoned items, sidebar drag icon not collapsing by default
+- **Recurring Items**: Fixed time precision loss, separator changed from ~ to -, skip button showing on today's items
+- **Pomodoro**: Fixed system notification not triggering at break end
+- **AI Assistant**: Fixed messages not displaying, skill list not displaying, settings button parameter passing errors
+- **Settings Page**: Fixed config not loading from plugin causing default value override, incorrect save timing
+- **Item Details**: Fixed navigation count incorrect when opening from todo, project info not updating in real-time, action buttons displaying incorrectly in readonly mode
+- **Mobile**: Fixed missing settings drawer styles, detail page layout anomalies
+
+### Internal
+
+- **Unified Item Operations**: Refactored item operation logic, unified operation entry
+- **Workbench View Splitting**: Split and encapsulated independent view components
+- **AI Skill System**: Simplified skill loading and invocation flow
+- **Block Writer Refactor**: Optimized block writing logic
+- **Slash Command Refactor**: Improved scope support
+- **Icon Unification**: Fully replaced with custom icons
+
 ## [0.13.9] - 2026-05-19
 
 ### Fixes
