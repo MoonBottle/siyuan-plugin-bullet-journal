@@ -92,7 +92,7 @@ function scopeBytemdCss() {
     transform(code: string, id: string) {
       if (!id.endsWith('.css'))
         return null
-      if (!TARGET_FILES.some(f => id.includes(f)))
+      if (!TARGET_FILES.some((f) => id.includes(f)))
         return null
 
       const result = postcss()
@@ -100,7 +100,10 @@ function scopeBytemdCss() {
         .process(code, { from: undefined })
         .css
 
-      return { code: result, map: null }
+      return {
+        code: result,
+        map: null,
+      }
     },
   }
 }
