@@ -22,6 +22,13 @@ import type {
   Project,
   ProjectGroup,
 } from '@/types/models'
+import type {
+  WecomBotConfig,
+  WecomBotConnectionStatus,
+  WecomBotStats,
+  WecomConversationState,
+  WecomMsgCallbackEvent,
+} from '@/types/wecombot'
 import { defineStore } from 'pinia'
 import { showMessage } from 'siyuan'
 import {
@@ -48,6 +55,7 @@ import {
   useConversationStorage,
 } from '@/services/conversationStorageService'
 import { SkillService } from '@/services/skillService'
+import { useWecomBotService } from '@/services/wecomBotService'
 import { classifyAIError } from '@/utils/aiErrorClassifier'
 import { useProjectStore } from './projectStore'
 import { useSettingsStore } from './settingsStore'
@@ -119,6 +127,22 @@ export const useAIStore = defineStore('ai', () => {
     connectedUsers: 0,
   })
   const clawBotForwardProxyAvailable = ref(true)
+
+  // ==================== WecomBot State ====================
+  const wecomBotConfig = ref<WecomBotConfig>({
+    enabled: false,
+    botId: '',
+    secret: '',
+    connectionStatus: 'disconnected',
+  })
+
+  const wecomConversationMap = ref<Record<string, WecomConversationState>>({})
+
+  const wecomBotStats = ref<WecomBotStats>({
+    isConnected: false,
+    unreadCount: 0,
+    connectedChats: 0,
+  })
 
   // 当前登录会话 Key
   let currentQRSessionKey: string | null = null
@@ -390,6 +414,16 @@ export const useAIStore = defineStore('ai', () => {
     const messages = unreadWeixinMessages.value || {}
     return Object.values(messages).some((count) => count > 0)
   })
+
+  // ==================== WecomBot Getters ====================
+  const isWecomBotEnabled = computed(() => wecomBotConfig.value.enabled)
+  const isWecomBotConnected = computed(
+    () => wecomBotConfig.value.connectionStatus === 'connected',
+  )
+  const wecomBotConnectionStatus = computed(
+    () => wecomBotConfig.value.connectionStatus,
+  )
+  const hasUnreadWecom = computed(() => wecomBotStats.value.unreadCount > 0)
 
   function isClawBotAllowedOnCurrentFrontend() {
     return true
@@ -1797,6 +1831,77 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
+  // ==================== WecomBot Actions ====================
+
+  /**
+   * 处理企微机器人消息（任务 5 实现具体逻辑）
+   */
+  async function handleWecomMessage(_msg: WecomMsgCallbackEvent): Promise<void> {
+    // 任务 5 实现
+  }
+
+  /**
+   * 同步 WecomBot 服务状态到 store
+   */
+  function syncWecomBotStateFromService(wecomBot: ReturnType<typeof useWecomBotService>): void {
+    const latestConfig = wecomBot.getConfig()
+    wecomBotConfig.value.connectionStatus = latestConfig.connectionStatus
+    wecomBotConfig.value.errorMessage = latestConfig.errorMessage
+    wecomBotStats.value.isConnected = wecomBot.isConnected()
+  }
+
+  /**
+   * 初始化 WecomBot 服务
+   */
+  async function initializeWecomBot(pluginInstance: {
+    loadData: (key: string) => Promise<unknown>
+    saveData: (key: string, data: unknown) => Promise<void>
+  }): Promise<void> {
+    const wecomBot = useWecomBotService()
+
+    // 注册消息处理器
+    wecomBot.onMessage((msg) => {
+      handleWecomMessage(msg).catch((err) => {
+        console.error('[aiStore] handleWecomMessage error:', err)
+      })
+    })
+
+    // 注册错误处理器
+    wecomBot.onError((err) => {
+      console.error('[aiStore] WecomBot error:', err.message)
+      if (err.kind === 'auth_failed') {
+        wecomBotConfig.value.connectionStatus = 'error'
+        wecomBotConfig.value.errorMessage = err.message
+      }
+    })
+
+    // 加载持久化状态
+    try {
+      const savedState = await pluginInstance.loadData('wecom-bot-state') as {
+        botId?: string
+        secret?: string
+        connectionStatus?: WecomBotConnectionStatus
+      } | null
+      if (savedState?.botId && savedState?.secret) {
+        wecomBotConfig.value.botId = savedState.botId
+        wecomBotConfig.value.secret = savedState.secret
+        wecomBotConfig.value.connectionStatus = savedState.connectionStatus ?? 'disconnected'
+        wecomBot.updateConfig(wecomBotConfig.value)
+
+        // 自动启动监听
+        if (wecomBotConfig.value.enabled) {
+          wecomBot.startMonitoring()
+        }
+      }
+    }
+    catch (err) {
+      console.error('[aiStore] 加载 wecom-bot-state 失败:', err)
+    }
+
+    // 同步服务状态
+    syncWecomBotStateFromService(wecomBot)
+  }
+
   // ==================== Return ====================
 
   return {
@@ -1860,5 +1965,15 @@ export const useAIStore = defineStore('ai', () => {
     runClawBotHealthCheck,
     sendReplyToWeixin,
     sendWechatNotification,
+
+    // WecomBot
+    wecomBotConfig,
+    wecomConversationMap,
+    wecomBotStats,
+    isWecomBotEnabled,
+    isWecomBotConnected,
+    wecomBotConnectionStatus,
+    hasUnreadWecom,
+    initializeWecomBot,
   }
 })
