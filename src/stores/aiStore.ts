@@ -1859,6 +1859,10 @@ export const useAIStore = defineStore('ai', () => {
   }): Promise<void> {
     const wecomBot = useWecomBotService()
 
+    // 先清空旧的，避免重复注册
+    wecomBot.clearMessageHandlers()
+    wecomBot.clearErrorHandlers()
+
     // 注册消息处理器
     wecomBot.onMessage((msg) => {
       handleWecomMessage(msg).catch((err) => {
