@@ -142,6 +142,9 @@ export const useAIStore = defineStore('ai', () => {
 
   const wecomConversationMap = ref<Record<string, WecomConversationState>>({})
 
+  // 企微会话消息历史（内存维护，不持久化到 SiYuan 存储）
+  const wecomMessageHistory = new Map<string, ChatMessage[]>()
+
   const wecomBotStats = ref<WecomBotStats>({
     isConnected: false,
     unreadCount: 0,
@@ -1886,6 +1889,130 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
+   * 生成企微 AI 回复
+   *
+   * 与 generateAIReply 的区别：
+   * - 使用内存中的 wecomMessageHistory 而非 storageService
+   * - 调用 sendReplyToWecom 而非 sendReplyToWeixin
+   * - 不使用 contextToken（企微通过 chatId 标识持久会话）
+   */
+  async function generateWecomReply(
+    conversationId: string,
+    userContent: string,
+    chatId: string,
+    chatType: WecomChatType,
+  ): Promise<void> {
+    if (!isAIEnabled.value) {
+      console.log('[AIStore] [WecomBot] AI 未启用，直接返回')
+      return
+    }
+
+    // 加载/初始化企微会话历史
+    let messages = wecomMessageHistory.get(conversationId)
+    if (!messages) {
+      messages = []
+      wecomMessageHistory.set(conversationId, messages)
+    }
+
+    // 追加用户消息
+    messages.push({
+      id: `wecom-msg-${Date.now()}-user`,
+      role: 'user',
+      content: userContent,
+      timestamp: Date.now(),
+    })
+
+    // 从 Store 获取数据并更新工具上下文
+    try {
+      const projectStore = useProjectStore()
+      const settingsStore = useSettingsStore()
+
+      const projects = projectStore.projects || []
+      const groups = settingsStore.groups || []
+      const allItems = projectStore.items || []
+      const directories = settingsStore.directories || []
+
+      if (projects.length > 0 || groups.length > 0) {
+        toolContext.value = {
+          groups,
+          projects,
+          allItems,
+          directories,
+        }
+      }
+    }
+    catch (err) {
+      console.error('[AIStore] [WecomBot] 获取 Store 数据失败:', err)
+    }
+
+    // 获取技能
+    const skillService = SkillService.getInstance()
+    const allSkills = skillService.getEnabledSkills()
+    const systemPrompt = buildSystemPrompt(allSkills)
+
+    try {
+      const provider = activeProvider.value
+      if (!provider) {
+        console.error('[AIStore] [WecomBot] 没有可用的 AI Provider')
+        return
+      }
+
+      const model = PiModelAdapter.toPiModel(provider)
+      const apiKey = PiModelAdapter.getApiKey(provider)
+
+      setToolContextAction(toolContext.value)
+
+      const piAgent = new PiAgentAdapter()
+      await piAgent.createAgent({
+        model,
+        systemPrompt,
+        tools: bulletJournalTools,
+        apiKey,
+      })
+
+      // 加载历史消息到 agent
+      if (messages.length > 0) {
+        const piMessages = PiMessageAdapter.toPiMessages(messages)
+        const agent = piAgent.getAgent()
+        if (agent) {
+          agent.state.messages = piMessages as unknown as typeof agent.state.messages
+        }
+      }
+
+      const historyMessages = [...messages]
+      const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
+
+      await piAgent.prompt(userContent)
+
+      // 获取最终消息
+      const agent = piAgent.getAgent()
+      if (agent) {
+        const finalMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
+          PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+        )
+        messages.splice(0, messages.length, ...historyMessages, ...finalMsgs)
+      }
+
+      piAgent.dispose()
+
+      // 限制历史消息数量，避免无限增长
+      if (messages.length > 50) {
+        messages.splice(0, messages.length - 50)
+      }
+
+      // 发送最后一条 assistant 消息到企微
+      const lastMessage = messages.at(-1)
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
+        await sendReplyToWecom(chatId, lastMessage.content, chatType)
+      }
+    }
+    catch (err) {
+      console.error('[AIStore] [WecomBot] AI 回复失败:', err)
+      await sendReplyToWecom(chatId, '抱歉，我暂时无法处理您的请求，请稍后再试。', chatType)
+    }
+  }
+
+  /**
    * 处理企微机器人消息
    */
   async function handleWecomMessage(msg: WecomMsgCallbackEvent): Promise<void> {
@@ -1911,12 +2038,10 @@ export const useAIStore = defineStore('ai', () => {
 
     if (!messageText.trim()) return
 
-    // 生成 AI 回复（复用现有 generateAIReply，其内部会处理回复发送）
-    // 注意：generateAIReply 返回 void，当前内部通过 sendReplyToWeixin 发送，
-    // 后续需重构以支持企微回复通道。这里捕获错误并通过企微通道回退提示。
+    // 生成 AI 回复（使用 generateWecomReply，通过企微通道发送）
     const conversationId = chattype === 'group' ? `wecom:group:${chatid}` : `wecom:${chatid}`
     try {
-      await generateAIReply(conversationId, messageText, from.userid)
+      await generateWecomReply(conversationId, messageText, chatid, chattype)
     }
     catch (err) {
       console.error('[aiStore] 企微 AI 回复失败:', err)
