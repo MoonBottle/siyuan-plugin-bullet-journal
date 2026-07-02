@@ -147,6 +147,10 @@ export interface SettingsData {
       baseUrl: string
       cdnBaseUrl: string
     }
+    wecombot?: {
+      enabled: boolean
+      notifyOnLocalEvent: boolean
+    }
   }
   pomodoro?: PomodoroSettings
   customSlashCommands?: CustomSlashCommand[]

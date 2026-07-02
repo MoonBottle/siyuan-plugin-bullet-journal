@@ -30,6 +30,9 @@ export interface ConversationIndexItem {
   source?: MessageSource
   weixinUserId?: string
   weixinUserName?: string
+  wecomChatId?: string
+  wecomChatType?: 'single' | 'group'
+  wecomUserName?: string
 }
 
 /**
@@ -49,6 +52,9 @@ export interface ConversationData extends ChatConversation {
   source?: MessageSource
   weixinUserId?: string
   weixinUserName?: string
+  wecomChatId?: string
+  wecomChatType?: 'single' | 'group'
+  wecomUserName?: string
 }
 
 /**
@@ -513,6 +519,9 @@ export class ConversationStorageService {
       source: conversation.source,
       weixinUserId: conversation.weixinUserId,
       weixinUserName: conversation.weixinUserName,
+      wecomChatId: conversation.wecomChatId,
+      wecomChatType: conversation.wecomChatType,
+      wecomUserName: conversation.wecomUserName,
     }
 
     if (existingIndex >= 0) {
