@@ -1,3 +1,4 @@
+import type { WecomMsgCallbackEvent } from '@/types/wecombot'
 import {
   createPinia,
   setActivePinia,
@@ -32,9 +33,24 @@ vi.mock('@/services/wecomBotService', () => {
     clearMessageHandlers: vi.fn(),
     clearErrorHandlers: vi.fn(),
   }
+
+  class MockWecomBotService {
+    static stripMentionPrefix(content: string, botName?: string): string {
+      if (!botName) {
+        return content.replace(/^@\S+\s*/, '')
+      }
+      const prefix = `@${botName} `
+      if (content.startsWith(prefix)) {
+        return content.slice(prefix.length)
+      }
+      return content
+    }
+  }
+
   return {
     useWecomBotService: () => mockService,
     resetWecomBotService: vi.fn(),
+    WecomBotService: MockWecomBotService,
   }
 })
 
@@ -88,5 +104,79 @@ describe('aiStore - wecomBot state 与初始化', () => {
 
     expect(mockService.onMessage).toHaveBeenCalled()
     expect(mockService.onError).toHaveBeenCalled()
+  })
+})
+
+describe('aiStore - wecomBot 消息处理', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('handleWecomMessage 应创建新会话（单聊）', async () => {
+    const store = useAIStore()
+    const msg: WecomMsgCallbackEvent = {
+      cmd: 'aibot_msg_callback',
+      headers: { req_id: 'test' },
+      body: {
+        msgid: 'msg-001',
+        aibotid: 'bot-001',
+        chatid: 'user-001',
+        chattype: 'single',
+        from: { userid: 'user-001' },
+        msgtype: 'text',
+        text: { content: '你好' },
+      },
+    }
+
+    await store.handleWecomMessage(msg)
+
+    expect(store.wecomConversationMap['wecom:user-001']).toBeDefined()
+    expect(store.wecomConversationMap['wecom:user-001'].chatType).toBe('single')
+    expect(store.wecomConversationMap['wecom:user-001'].userId).toBe('user-001')
+  })
+
+  it('handleWecomMessage 应创建新会话（群聊，剥离 @前缀）', async () => {
+    const store = useAIStore()
+    const msg: WecomMsgCallbackEvent = {
+      cmd: 'aibot_msg_callback',
+      headers: { req_id: 'test' },
+      body: {
+        msgid: 'msg-002',
+        aibotid: 'bot-001',
+        chatid: 'group-001',
+        chattype: 'group',
+        from: { userid: 'user-002' },
+        msgtype: 'text',
+        text: { content: '@RobotA 你好' },
+      },
+    }
+
+    await store.handleWecomMessage(msg)
+
+    expect(store.wecomConversationMap['wecom:group:group-001']).toBeDefined()
+    expect(store.wecomConversationMap['wecom:group:group-001'].chatType).toBe('group')
+  })
+
+  it('getOrCreateWecomConversation 应复用已有会话', async () => {
+    const store = useAIStore()
+    // 预置会话
+    store.wecomConversationMap['wecom:user-001'] = {
+      chatId: 'user-001',
+      chatType: 'single',
+      userId: 'user-001',
+      lastMessageAt: Date.now() - 1000,
+      unreadCount: 0,
+      active: true,
+      consecutiveFailures: 0,
+    }
+
+    const conv = store.getOrCreateWecomConversation('user-001', 'single')
+    expect(conv.chatId).toBe('user-001')
+    // 不应创建新会话
+    expect(Object.keys(store.wecomConversationMap).length).toBe(1)
   })
 })

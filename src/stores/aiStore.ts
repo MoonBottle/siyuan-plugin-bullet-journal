@@ -26,6 +26,7 @@ import type {
   WecomBotConfig,
   WecomBotConnectionStatus,
   WecomBotStats,
+  WecomChatType,
   WecomConversationState,
   WecomMsgCallbackEvent,
 } from '@/types/wecombot'
@@ -55,7 +56,10 @@ import {
   useConversationStorage,
 } from '@/services/conversationStorageService'
 import { SkillService } from '@/services/skillService'
-import { useWecomBotService } from '@/services/wecomBotService'
+import {
+  useWecomBotService,
+  WecomBotService,
+} from '@/services/wecomBotService'
 import { classifyAIError } from '@/utils/aiErrorClassifier'
 import { useProjectStore } from './projectStore'
 import { useSettingsStore } from './settingsStore'
@@ -1834,10 +1838,91 @@ export const useAIStore = defineStore('ai', () => {
   // ==================== WecomBot Actions ====================
 
   /**
-   * 处理企微机器人消息（任务 5 实现具体逻辑）
+   * 获取或创建企微会话
    */
-  async function handleWecomMessage(_msg: WecomMsgCallbackEvent): Promise<void> {
-    // 任务 5 实现
+  function getOrCreateWecomConversation(chatId: string, chatType: WecomChatType, userId?: string): WecomConversationState {
+    const key = chatType === 'group' ? `wecom:group:${chatId}` : `wecom:${chatId}`
+    if (!wecomConversationMap.value[key]) {
+      wecomConversationMap.value[key] = {
+        chatId,
+        chatType,
+        userId,
+        lastMessageAt: Date.now(),
+        unreadCount: 0,
+        active: true,
+        consecutiveFailures: 0,
+      }
+    }
+    return wecomConversationMap.value[key]
+  }
+
+  /**
+   * 发送回复到企微
+   */
+  async function sendReplyToWecom(chatId: string, reply: string, chatType: WecomChatType = 'single'): Promise<void> {
+    const wecomBot = useWecomBotService()
+    if (!wecomBot.isConnected()) return
+
+    const conversationKey = chatType === 'group' ? `wecom:group:${chatId}` : `wecom:${chatId}`
+    const conversation = wecomConversationMap.value[conversationKey]
+    if (conversation && !conversation.active) return
+
+    try {
+      await wecomBot.sendTextMessage(chatId, reply, chatType)
+      if (conversation) {
+        conversation.unreadCount = 0
+      }
+    }
+    catch (err) {
+      console.error('[aiStore] 企微发送回复失败:', err)
+      if (conversation) {
+        conversation.consecutiveFailures++
+        conversation.lastContextErrorAt = Date.now()
+        if (conversation.consecutiveFailures >= 3) {
+          conversation.active = false
+        }
+      }
+    }
+  }
+
+  /**
+   * 处理企微机器人消息
+   */
+  async function handleWecomMessage(msg: WecomMsgCallbackEvent): Promise<void> {
+    const {
+      chatid,
+      chattype,
+      from,
+      text,
+    } = msg.body
+    if (!text?.content) return
+
+    // 获取或创建会话
+    const conversation = getOrCreateWecomConversation(chatid, chattype, from.userid)
+
+    // 更新会话状态
+    conversation.lastMessageAt = Date.now()
+    conversation.unreadCount++
+
+    // 群聊消息剥离 @机器人 前缀
+    const messageText = chattype === 'group'
+      ? WecomBotService.stripMentionPrefix(text.content)
+      : text.content
+
+    if (!messageText.trim()) return
+
+    // 生成 AI 回复（复用现有 generateAIReply，其内部会处理回复发送）
+    // 注意：generateAIReply 返回 void，当前内部通过 sendReplyToWeixin 发送，
+    // 后续需重构以支持企微回复通道。这里捕获错误并通过企微通道回退提示。
+    const conversationId = chattype === 'group' ? `wecom:group:${chatid}` : `wecom:${chatid}`
+    try {
+      await generateAIReply(conversationId, messageText, from.userid)
+    }
+    catch (err) {
+      console.error('[aiStore] 企微 AI 回复失败:', err)
+      // 发送错误提示
+      await sendReplyToWecom(chatid, '抱歉，处理消息时出错了，请稍后重试。', chattype).catch(() => {})
+    }
   }
 
   /**
@@ -1979,5 +2064,8 @@ export const useAIStore = defineStore('ai', () => {
     wecomBotConnectionStatus,
     hasUnreadWecom,
     initializeWecomBot,
+    handleWecomMessage,
+    getOrCreateWecomConversation,
+    sendReplyToWecom,
   }
 })
