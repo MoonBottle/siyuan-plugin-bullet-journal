@@ -9,6 +9,7 @@ import {
 import {
   resetWecomBotService,
   useWecomBotService,
+  WecomBotService,
 } from '@/services/wecomBotService'
 import { WecomBotError } from '@/types/wecombot'
 
@@ -145,5 +146,187 @@ describe('wecomBotService - 连接与订阅', () => {
     // 不应触发重连（只有一个 WebSocket 实例）
     await new Promise((resolve) => setTimeout(resolve, 1100))
     expect(MockWebSocket.instances.length).toBe(1)
+  })
+})
+
+describe('wecomBotService - 消息收发', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+    vi.stubGlobal('WebSocket', MockWebSocket)
+    resetWecomBotService()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    resetWecomBotService()
+  })
+
+  it('收到 aibot_msg_callback 应触发 messageHandlers', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    const messageHandler = vi.fn()
+    service.onMessage(messageHandler)
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+
+    // 模拟订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    // 模拟收到消息
+    const msgEvent = {
+      cmd: 'aibot_msg_callback',
+      headers: { req_id: 'test-req-id' },
+      body: {
+        msgid: 'msg-001',
+        aibotid: 'test-bot-id',
+        chatid: 'chat-001',
+        chattype: 'single',
+        from: { userid: 'user-001' },
+        msgtype: 'text',
+        text: { content: '你好' },
+      },
+    }
+    MockWebSocket.instances[0].simulateMessage(msgEvent)
+
+    expect(messageHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cmd: 'aibot_msg_callback',
+        body: expect.objectContaining({
+          msgid: 'msg-001',
+          chatid: 'chat-001',
+        }),
+      }),
+    )
+  })
+
+  it('sendTextMessage 应发送 aibot_send_msg 命令', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+    // 等待 onopen 触发，readyState 变为 1
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances[0].readyState).toBe(1)
+    })
+
+    // 订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    await service.sendTextMessage('chat-001', '回复内容', 'single')
+
+    const ws = MockWebSocket.instances[0]
+    const sendCmd = JSON.parse(ws.sentMessages.at(-1))
+    expect(sendCmd.cmd).toBe('aibot_send_msg')
+    expect(sendCmd.body.chatid).toBe('chat-001')
+    expect(sendCmd.body.chat_type).toBe(1)
+    expect(sendCmd.body.msgtype).toBe('markdown')
+    expect(sendCmd.body.markdown.content).toBe('回复内容')
+  })
+
+  it('群聊消息应剥离 @机器人 前缀', () => {
+    expect(WecomBotService.stripMentionPrefix('@RobotA 你好', 'RobotA')).toBe('你好')
+    expect(WecomBotService.stripMentionPrefix('你好', 'RobotA')).toBe('你好')
+    expect(WecomBotService.stripMentionPrefix('@OtherBot 你好', 'RobotA')).toBe('@OtherBot 你好')
+  })
+})
+
+describe('wecomBotService - 重连策略', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', MockWebSocket)
+    resetWecomBotService()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    resetWecomBotService()
+  })
+
+  it('连接断开应指数退避重连', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+
+    // 订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    // 模拟连接断开
+    MockWebSocket.instances[0].close()
+
+    // 第一次重连应在 1s 后
+    expect(MockWebSocket.instances.length).toBe(1)
+    vi.advanceTimersByTime(1000)
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(2)
+    })
+  })
+
+  it('达到最大重连次数后应标记 error 状态', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+
+    // 订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    // 模拟 10 次断开+重连
+    for (let i = 0; i < 11; i++) {
+      const currentWs = MockWebSocket.instances.at(-1)
+      if (currentWs.readyState === 1) {
+        currentWs.close()
+      }
+      vi.advanceTimersByTime(31000)
+    }
+
+    expect(service.getConfig().connectionStatus).toBe('error')
   })
 })
