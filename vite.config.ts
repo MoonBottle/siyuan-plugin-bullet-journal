@@ -3,6 +3,8 @@ import { resolve } from "node:path"
 import vue from "@vitejs/plugin-vue"
 import fg from "fast-glob"
 import minimist from "minimist"
+import postcss from 'postcss'
+import prefixSelector from 'postcss-prefix-selector'
 import livereload from "rollup-plugin-livereload"
 import {
   defineConfig,
@@ -76,6 +78,33 @@ export function getEnvApiKey() { return undefined; }
   }
 }
 
+function scopeBytemdCss() {
+  const TARGET_FILES = [
+    'bytemd/dist/index.css',
+    'github-markdown-css/github-markdown-light.css',
+    'highlight.js/styles/github.css',
+  ]
+  const PREFIX = '.ta-skill-edit-dialog'
+
+  return {
+    name: 'scope-bytemd-css',
+    enforce: 'pre',
+    transform(code: string, id: string) {
+      if (!id.endsWith('.css'))
+        return null
+      if (!TARGET_FILES.some(f => id.includes(f)))
+        return null
+
+      const result = postcss()
+        .use(prefixSelector({ prefix: PREFIX }))
+        .process(code, { from: undefined })
+        .css
+
+      return { code: result, map: null }
+    },
+  }
+}
+
 export default defineConfig(({
   mode,
 }) => {
@@ -134,6 +163,7 @@ export default defineConfig(({
     plugins: [
       removeGanttFontFace(),
       piProviderOptimizer(),
+      scopeBytemdCss(),
       vue(),
       viteStaticCopy({
         targets: [
