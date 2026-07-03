@@ -8,8 +8,8 @@ import type {
 } from '@/types/wecombot'
 import { WecomBotError } from '@/types/wecombot'
 
-/** 企微智能机器人 WebSocket 端点（实现时从官方文档确认） */
-const WECOM_WS_URL = 'wss://qyapi.weixin.qq.com/cgi-bin/aibot/connect'
+/** 企微智能机器人 WebSocket 端点（官方文档：wss://openws.work.weixin.qq.com） */
+const WECOM_WS_URL = 'wss://openws.work.weixin.qq.com'
 
 /** 心跳间隔（毫秒） */
 const HEARTBEAT_INTERVAL = 30000
