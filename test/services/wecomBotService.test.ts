@@ -102,9 +102,9 @@ describe('wecomBotService - 连接与订阅', () => {
 
     // 模拟订阅成功响应
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     expect(service.getConfig().connectionStatus).toBe('connected')
@@ -128,12 +128,9 @@ describe('wecomBotService - 连接与订阅', () => {
 
     // 模拟订阅失败响应
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: {
-        ret: -1,
-        errmsg: 'auth failed',
-      },
+      errcode: -1,
+      errmsg: 'auth failed',
     })
 
     expect(service.getConfig().connectionStatus).toBe('error')
@@ -179,9 +176,9 @@ describe('wecomBotService - 消息收发', () => {
 
     // 模拟订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     // 模拟收到消息
@@ -230,9 +227,9 @@ describe('wecomBotService - 消息收发', () => {
 
     // 订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     await service.sendTextMessage('chat-001', '回复内容', 'single')
@@ -282,9 +279,9 @@ describe('wecomBotService - 重连策略', () => {
 
     // 订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     // 模拟连接断开
@@ -313,9 +310,9 @@ describe('wecomBotService - 重连策略', () => {
 
     // 订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     // 模拟 10 次断开+重连
@@ -361,9 +358,9 @@ describe('wecomBotService - 事件回调', () => {
 
     // 订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     // 模拟收到 enter_chat 事件
@@ -406,9 +403,9 @@ describe('wecomBotService - 事件回调', () => {
 
     // 订阅成功
     MockWebSocket.instances[0].simulateMessage({
-      cmd: 'aibot_subscribe',
       headers: { req_id: 'test-req-id' },
-      body: { ret: 0 },
+      errcode: 0,
+      errmsg: 'ok',
     })
 
     // 模拟收到 disconnected_event

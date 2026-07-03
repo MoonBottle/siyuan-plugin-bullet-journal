@@ -204,8 +204,8 @@ export class WecomBotService {
       return
     }
 
-    // 处理订阅响应
-    if (data.cmd === 'aibot_subscribe') {
+    // 处理订阅/发送等命令的响应（无 cmd，errcode 在顶层）
+    if (!data.cmd && typeof data.errcode === 'number') {
       this.handleSubscribeResponse(data)
       return
     }
@@ -232,7 +232,7 @@ export class WecomBotService {
   }
 
   private handleSubscribeResponse(data: WecomApiResponse): void {
-    if (data.body.ret === 0) {
+    if (data.errcode === 0) {
       this.config.connectionStatus = 'connected'
       this.config.errorMessage = undefined
       this.reconnectAttempts = 0
@@ -240,10 +240,10 @@ export class WecomBotService {
     }
     else {
       this.config.connectionStatus = 'error'
-      this.config.errorMessage = data.body.errmsg ?? '订阅失败'
+      this.config.errorMessage = data.errmsg ?? '订阅失败'
       this.emitError(
         new WecomBotError(
-          `订阅鉴权失败: ${data.body.errmsg ?? '未知错误'}`,
+          `订阅鉴权失败: ${data.errmsg ?? '未知错误'}`,
           'auth_failed',
         ),
       )

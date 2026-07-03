@@ -39,10 +39,13 @@ export interface WecomConversationState {
 export interface WecomMsgCallbackBody {
   msgid: string
   aibotid: string
-  chatid: string
+  /** 会话 ID，仅群聊时返回；单聊时为空，回复时用 from.userid */
+  chatid?: string
   chattype: WecomChatType
   from: { userid: string }
   msgtype: string
+  /** 支持主动回复消息的临时 url */
+  response_url?: string
   text?: { content: string }
 }
 
@@ -105,15 +108,17 @@ export interface WecomPingCommand {
   headers: { req_id: string }
 }
 
-/** 企微通用响应 */
+/** 企微通用响应（订阅/发送等命令的响应无 cmd 与 body，errcode/errmsg 在顶层） */
 export interface WecomApiResponse {
-  cmd: string
+  cmd?: string
   headers: { req_id: string }
-  body: {
+  body?: {
     ret?: number
     errmsg?: string
     [key: string]: unknown
   }
+  errcode?: number
+  errmsg?: string
 }
 
 /** 企微机器人错误类型 */
