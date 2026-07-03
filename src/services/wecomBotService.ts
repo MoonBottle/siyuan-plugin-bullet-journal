@@ -4,6 +4,7 @@ import type {
   WecomEventCallbackEvent,
   WecomMsgCallbackEvent,
   WecomPingCommand,
+  WecomRespondMsgCommand,
   WecomSendMsgCommand,
   WecomSubscribeCommand,
 } from '@/types/wecombot'
@@ -421,6 +422,54 @@ export class WecomBotService {
         )
       }
     })
+  }
+
+  /**
+   * 发送流式回复消息（aibot_respond_msg）
+   *
+   * 首次使用某个 stream.id 会创建新的流式消息，
+   * 继续使用相同 stream.id 会更新该流式消息内容，
+   * finish=true 时结束流式消息。
+   *
+   * req_id 必须透传消息回调中的 req_id。
+   */
+  async sendStreamMessage(reqId: string, streamId: string, content: string, finish: boolean): Promise<void> {
+    if (!this.ws || this.ws.readyState !== 1) {
+      throw new WecomBotError('WebSocket 未连接', 'send_failed')
+    }
+
+    const cmd: WecomRespondMsgCommand = {
+      cmd: 'aibot_respond_msg',
+      headers: { req_id: reqId },
+      body: {
+        msgtype: 'stream',
+        stream: {
+          id: streamId,
+          finish,
+          content,
+        },
+      },
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws!.send(JSON.stringify(cmd))
+        resolve()
+      }
+      catch (err) {
+        reject(
+          new WecomBotError(
+            `发送流式消息失败: ${(err as Error).message}`,
+            'send_failed',
+          ),
+        )
+      }
+    })
+  }
+
+  /** 生成流式消息唯一 ID */
+  static generateStreamId(): string {
+    return `stream-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   }
 
   /** 剥离群消息 @机器人 前缀 */

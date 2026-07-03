@@ -1944,6 +1944,7 @@ export const useAIStore = defineStore('ai', () => {
     userContent: string,
     chatId: string,
     chatType: WecomChatType,
+    reqId: string,
   ): Promise<void> {
     if (!isAIEnabled.value) {
       console.log('[AIStore] [WecomBot] AI 未启用，直接返回')
@@ -1992,6 +1993,28 @@ export const useAIStore = defineStore('ai', () => {
     isLoading.value = true
     error.value = null
 
+    // 流式回复相关状态
+    const streamId = WecomBotService.generateStreamId()
+    const wecomBot = useWecomBotService()
+    let lastStreamSendAt = 0
+    let lastStreamContent = ''
+    const STREAM_THROTTLE_MS = 500
+
+    // 节流发送流式更新到企微
+    function sendStreamUpdate(content: string, finish: boolean): void {
+      if (!content) return
+      if (!finish) {
+        const now = Date.now()
+        if (now - lastStreamSendAt < STREAM_THROTTLE_MS) return
+        if (content === lastStreamContent) return
+      }
+      lastStreamContent = content
+      lastStreamSendAt = Date.now()
+      wecomBot.sendStreamMessage(reqId, streamId, content, finish).catch((err) => {
+        console.error('[AIStore] [WecomBot] 流式发送失败:', err)
+      })
+    }
+
     try {
       const provider = activeProvider.value
       if (!provider) {
@@ -2024,7 +2047,17 @@ export const useAIStore = defineStore('ai', () => {
       const historyMessages = [...conversation.messages]
       const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
 
-      // 订阅事件，实时更新 UI
+      // 提取当前流式消息文本内容
+      function getStreamingContent(): string {
+        const agent = piAgent.getAgent()
+        if (!agent?.state.streamingMessage) return ''
+        const msg = PiMessageAdapter.toChatMessage(
+          agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
+        )
+        return msg.content || ''
+      }
+
+      // 订阅事件，实时更新 UI + 流式推送企微
       function getConvStreamingMessages() {
         const agent = piAgent.getAgent()
         if (!agent) return
@@ -2049,13 +2082,30 @@ export const useAIStore = defineStore('ai', () => {
 
       piAgent.subscribe((event) => {
         switch (event.type) {
-          case 'message_start':
+          case 'message_start': {
+            getConvStreamingMessages()
+            // 发送首次流式消息
+            const content = getStreamingContent() || '正在思考...'
+            sendStreamUpdate(content, false)
+            break
+          }
           case 'message_update': {
             getConvStreamingMessages()
+            // 节流发送流式更新
+            const content = getStreamingContent()
+            if (content) {
+              sendStreamUpdate(content, false)
+            }
             break
           }
           case 'message_end': {
             getConvStreamingMessages()
+            // message_end 时发送最新内容（绕过节流）
+            const content = getStreamingContent()
+            if (content && content !== lastStreamContent) {
+              lastStreamSendAt = 0 // 重置节流，确保发送
+              sendStreamUpdate(content, false)
+            }
             break
           }
           case 'tool_execution_start':
@@ -2074,6 +2124,11 @@ export const useAIStore = defineStore('ai', () => {
               conversation.messages = [...historyMessages, ...finalMsgs]
               if (currentConversationId.value === conversationId) {
                 currentConversation.value = { ...conversation }
+              }
+              // 发送最终流式消息（finish=true）
+              const lastMsg = finalMsgs.at(-1)
+              if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
+                sendStreamUpdate(lastMsg.content, true)
               }
             }
             break
@@ -2099,16 +2154,17 @@ export const useAIStore = defineStore('ai', () => {
       }
 
       await refreshConversationsList()
-
-      // 发送最后一条 assistant 消息到企微
-      const lastMessage = conversation.messages.at(-1)
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
-        await sendReplyToWecom(chatId, lastMessage.content, chatType)
-      }
     }
     catch (err) {
       console.error('[AIStore] [WecomBot] AI 回复失败:', err)
-      await sendReplyToWecom(chatId, '抱歉，我暂时无法处理您的请求，请稍后再试。', chatType)
+      // 发送错误提示并结束流式消息
+      try {
+        await wecomBot.sendStreamMessage(reqId, streamId, '抱歉，我暂时无法处理您的请求，请稍后再试。', true)
+      }
+      catch {
+        // 流式发送也失败时，尝试普通消息
+        await sendReplyToWecom(chatId, '抱歉，我暂时无法处理您的请求，请稍后再试。', chatType).catch(() => {})
+      }
     }
     finally {
       isLoading.value = false
@@ -2166,7 +2222,7 @@ export const useAIStore = defineStore('ai', () => {
 
     // 生成 AI 回复（通过 storageService 管理消息，UI 可见）
     try {
-      await generateWecomReply(conversationId, messageText, replyTarget, chattype)
+      await generateWecomReply(conversationId, messageText, replyTarget, chattype, msg.headers.req_id)
     }
     catch (err) {
       console.error('[aiStore] 企微 AI 回复失败:', err)

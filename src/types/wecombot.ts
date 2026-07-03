@@ -104,6 +104,20 @@ export interface WecomSendMsgCommand {
   }
 }
 
+/** 企微流式回复消息命令（aibot_respond_msg） */
+export interface WecomRespondMsgCommand {
+  cmd: 'aibot_respond_msg'
+  headers: { req_id: string }
+  body: {
+    msgtype: 'stream'
+    stream: {
+      id: string
+      finish: boolean
+      content: string
+    }
+  }
+}
+
 /** 企微 ping 命令 */
 export interface WecomPingCommand {
   cmd: 'ping'

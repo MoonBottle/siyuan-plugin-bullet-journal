@@ -31,6 +31,7 @@ vi.mock('@/services/wecomBotService', () => {
     onError: vi.fn(() => () => {}),
     onStatusChange: vi.fn(() => () => {}),
     sendTextMessage: vi.fn().mockResolvedValue(undefined),
+    sendStreamMessage: vi.fn().mockResolvedValue(undefined),
     clearMessageHandlers: vi.fn(),
     clearErrorHandlers: vi.fn(),
     clearStatusChangeHandlers: vi.fn(),
@@ -46,6 +47,10 @@ vi.mock('@/services/wecomBotService', () => {
         return content.slice(prefix.length)
       }
       return content
+    }
+
+    static generateStreamId(): string {
+      return `stream-test-${Date.now()}`
     }
   }
 
@@ -336,7 +341,7 @@ describe('aiStore - wecomBot AI 回复路径', () => {
     expect(mockService.sendTextMessage).not.toHaveBeenCalled()
   })
 
-  it('回复成功时通过 sendReplyToWecom 发送回复', async () => {
+  it('回复成功时通过流式消息发送回复', async () => {
     const store = useAIStore()
     await store.initializeStorage({} as any)
 
@@ -345,12 +350,13 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
     const mockService = useWecomBotService()
     vi.mocked(mockService.isConnected).mockReturnValue(true)
-    vi.mocked(mockService.sendTextMessage).mockResolvedValue(undefined)
+    vi.mocked(mockService.sendStreamMessage).mockResolvedValue(undefined)
 
     // 模拟 AI 返回 assistant 消息：prompt 执行后向 agent.state.messages 追加 assistant 消息
     const mockAgent = {
       state: {
         messages: [] as Array<{ role: string, content: unknown, timestamp: number }>,
+        streamingMessage: null as unknown,
       },
     }
     mockPiAgent.getAgent.mockReturnValue(mockAgent)
@@ -381,14 +387,16 @@ describe('aiStore - wecomBot AI 回复路径', () => {
     await store.handleWecomMessage(createTestMsg())
 
     expect(mockPiAgent.prompt).toHaveBeenCalledWith('你好')
-    expect(mockService.sendTextMessage).toHaveBeenCalledWith(
-      'user-001',
+    // 最终流式消息（finish=true）应通过 sendStreamMessage 发送
+    expect(mockService.sendStreamMessage).toHaveBeenCalledWith(
+      'test',
+      expect.any(String),
       '你好，我是 AI 助手',
-      'single',
+      true,
     )
   })
 
-  it('回复失败时通过 sendReplyToWecom 发送错误提示', async () => {
+  it('回复失败时通过流式消息发送错误提示', async () => {
     const store = useAIStore()
     await store.initializeStorage({} as any)
 
@@ -397,7 +405,7 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
     const mockService = useWecomBotService()
     vi.mocked(mockService.isConnected).mockReturnValue(true)
-    vi.mocked(mockService.sendTextMessage).mockResolvedValue(undefined)
+    vi.mocked(mockService.sendStreamMessage).mockResolvedValue(undefined)
 
     // 模拟 AI 调用失败
     mockPiAgent.prompt.mockRejectedValue(new Error('AI service error'))
@@ -405,10 +413,12 @@ describe('aiStore - wecomBot AI 回复路径', () => {
     await store.handleWecomMessage(createTestMsg())
 
     expect(mockPiAgent.prompt).toHaveBeenCalled()
-    expect(mockService.sendTextMessage).toHaveBeenCalledWith(
-      'user-001',
+    // 错误提示应通过流式消息发送（finish=true）
+    expect(mockService.sendStreamMessage).toHaveBeenCalledWith(
+      'test',
+      expect.any(String),
       '抱歉，我暂时无法处理您的请求，请稍后再试。',
-      'single',
+      true,
     )
   })
 })
