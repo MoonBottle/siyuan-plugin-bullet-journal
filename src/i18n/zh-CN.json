@@ -447,6 +447,31 @@
       "typeWecom": "企微",
       "typeCustom": "自定义"
     },
+    "wecombot": {
+      "title": "企业微信机器人",
+      "sectionDescription": "配置企业微信智能机器人，支持单聊与群聊 AI 对话及通知推送",
+      "enabled": "启用企业微信机器人",
+      "enabledDesc": "启用后可通过企业微信与 AI 对话",
+      "botId": "Bot ID",
+      "botIdDesc": "企业微信智能机器人的 Bot ID",
+      "botIdPlaceholder": "在企业微信管理后台创建机器人后获取",
+      "secret": "Secret",
+      "secretDesc": "企业微信智能机器人的 Secret 密钥",
+      "secretPlaceholder": "在企业微信管理后台创建机器人后获取",
+      "notifyOnLocalEvent": "同步本地通知到企业微信",
+      "notifyOnLocalEventDesc": "提醒、番茄钟完成等通知自动推送到企业微信会话",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "connectionStatus": {
+        "disconnected": "未连接",
+        "connecting": "连接中",
+        "connected": "已连接",
+        "error": "连接错误"
+      },
+      "authFailedHint": "Bot ID 或 Secret 无效，请检查后重试",
+      "howToGetCredentials": "如何获取凭证？",
+      "howToGetCredentialsUrl": "https://developer.work.weixin.qq.com/document/path/101463"
+    },
     "ai": {
       "title": "AI 服务配置",
       "description": "配置大语言模型服务，与任务助手进行智能对话",

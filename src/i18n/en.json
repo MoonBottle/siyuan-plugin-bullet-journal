@@ -447,6 +447,31 @@
       "typeWecom": "WeCom",
       "typeCustom": "Custom"
     },
+    "wecombot": {
+      "title": "WeCom Bot",
+      "sectionDescription": "Configure WeCom intelligent bot for chat and notifications",
+      "enabled": "Enable WeCom Bot",
+      "enabledDesc": "Enable to chat with AI via WeCom",
+      "botId": "Bot ID",
+      "botIdDesc": "WeCom intelligent bot Bot ID",
+      "botIdPlaceholder": "Obtain after creating bot in WeCom admin",
+      "secret": "Secret",
+      "secretDesc": "WeCom intelligent bot Secret key",
+      "secretPlaceholder": "Obtain after creating bot in WeCom admin",
+      "notifyOnLocalEvent": "Sync local notifications to WeCom",
+      "notifyOnLocalEventDesc": "Auto-push reminders and pomodoro events to WeCom chats",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connectionStatus": {
+        "disconnected": "Disconnected",
+        "connecting": "Connecting",
+        "connected": "Connected",
+        "error": "Connection Error"
+      },
+      "authFailedHint": "Invalid Bot ID or Secret, please verify and retry",
+      "howToGetCredentials": "How to get credentials?",
+      "howToGetCredentialsUrl": "https://developer.work.weixin.qq.com/document/path/101463"
+    },
     "ai": {
       "title": "AI Service Config",
       "description": "Configure LLM service for intelligent conversations with the task assistant",
