@@ -130,10 +130,11 @@
             </div>
             <div class="cell-accessory">
               <input
-                v-model="localConfig.botId"
+                :value="localConfig.botId"
                 type="text"
                 class="ios-text-input"
                 :placeholder="t('settings').wecombot.botIdPlaceholder"
+                @input="updateField('botId', ($event.target as HTMLInputElement).value)"
               >
             </div>
           </div>
@@ -148,10 +149,11 @@
             </div>
             <div class="cell-accessory">
               <input
-                v-model="localConfig.secret"
+                :value="localConfig.secret"
                 type="password"
                 class="ios-text-input"
                 :placeholder="t('settings').wecombot.secretPlaceholder"
+                @input="updateField('secret', ($event.target as HTMLInputElement).value)"
               >
             </div>
           </div>
@@ -212,12 +214,17 @@ import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
 import { t } from '@/i18n'
+import { usePlugin } from '@/main'
 import { useAIStore } from '@/stores/aiStore'
 import SySettingsSection from './SySettingsSection.vue'
 
-defineProps<{
+const props = withDefaults(defineProps<{
   isMobile?: boolean
-}>()
+  notifyOnLocalEvent?: boolean
+}>(), {
+  isMobile: false,
+  notifyOnLocalEvent: false,
+})
 
 const emit = defineEmits<{
   update: [value: {
@@ -235,7 +242,7 @@ const localConfig = ref({
   enabled: aiStore.wecomBotConfig.enabled,
   botId: aiStore.wecomBotConfig.botId,
   secret: aiStore.wecomBotConfig.secret,
-  notifyOnLocalEvent: true,
+  notifyOnLocalEvent: props.notifyOnLocalEvent,
   connectionStatus: aiStore.wecomBotConfig.connectionStatus,
 })
 
@@ -251,6 +258,8 @@ function updateField(field: string, value: unknown): void {
 
 async function handleTestConnection(): Promise<void> {
   if (!localConfig.value.botId || !localConfig.value.secret) return
+  const plugin = usePlugin()
+  if (!plugin) return
   isTesting.value = true
   try {
     await aiStore.updateWecomBotConfig(
@@ -259,8 +268,7 @@ async function handleTestConnection(): Promise<void> {
         botId: localConfig.value.botId,
         secret: localConfig.value.secret,
       },
-      // plugin 引用由外层注入，这里用 window 上的引用
-      (window as any).__siyuan_plugin__,
+      plugin,
     )
     // 等待连接状态更新
     await new Promise((resolve) => setTimeout(resolve, 2000))

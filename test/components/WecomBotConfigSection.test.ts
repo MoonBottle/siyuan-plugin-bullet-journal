@@ -18,6 +18,14 @@ import { useAIStore } from '@/stores/aiStore'
 
 const mockUpdateWecomBotConfig = vi.fn().mockResolvedValue(undefined)
 
+const mockPlugin = vi.hoisted(() => ({
+  saveData: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/main', () => ({
+  usePlugin: () => mockPlugin,
+}))
+
 vi.mock('@/stores/aiStore', () => ({
   useAIStore: () => ({
     wecomBotConfig: {
@@ -108,9 +116,7 @@ function clickButton(container: HTMLElement, testid: string) {
 describe('wecomBotConfigSection', () => {
   beforeEach(() => {
     mockUpdateWecomBotConfig.mockClear()
-    ;(window as any).__siyuan_plugin__ = {
-      saveData: vi.fn().mockResolvedValue(undefined),
-    }
+    mockPlugin.saveData.mockClear()
   })
 
   it('应渲染启用开关', () => {
