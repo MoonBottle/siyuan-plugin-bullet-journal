@@ -79,8 +79,8 @@ function sendWecomNotification(title: string, body: string): void {
       return
     }
     const aiStore = useAIStore(pinia)
-    // 检查是否启用企微通知
-    if (!aiStore.wecomBotConfig.enabled || !aiStore.wecomBotConfig.notifyOnLocalEvent) {
+    // 检查是否启用企微机器人
+    if (!aiStore.wecomBotConfig.enabled) {
       return
     }
     aiStore.sendWecomNotification(`${title}\n${body}`).then(() => {

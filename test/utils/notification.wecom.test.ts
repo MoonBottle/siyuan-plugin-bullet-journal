@@ -14,49 +14,47 @@ import { showSystemNotification } from '@/utils/notification'
 
 const mockSendWechatNotification = vi.fn().mockResolvedValue(undefined)
 const mockSendWecomNotification = vi.fn().mockResolvedValue(undefined)
-
-// 共享 store 实例：保证在测试中修改的 wecomBotConfig 与 sendWecomNotification 内部读取的是同一对象
-const sharedStore = {
-  sendWechatNotification: mockSendWechatNotification,
-  sendWecomNotification: mockSendWecomNotification,
-  wecomBotConfig: {
-    enabled: true,
-    notifyOnLocalEvent: true,
-    botId: '',
-    secret: '',
-    connectionStatus: 'disconnected' as const,
-  },
-  clawBotConfig: { enabled: true },
+const mockWecomBotConfig = {
+  enabled: true,
+  botId: '',
+  secret: '',
+  connectionStatus: 'disconnected' as const,
 }
 
 vi.mock('@/stores/aiStore', () => ({
-  useAIStore: () => sharedStore,
+  useAIStore: () => ({
+    sendWechatNotification: mockSendWechatNotification,
+    sendWecomNotification: mockSendWecomNotification,
+    wecomBotConfig: mockWecomBotConfig,
+    clawBotConfig: { enabled: true },
+  }),
 }))
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: () => createPinia(),
 }))
 
+// Mock siyuan 模块（notification.ts 依赖）
 vi.mock('siyuan', () => ({
   showMessage: vi.fn(),
-  platformUtils: undefined,
+  platformUtils: { sendNotification: vi.fn().mockResolvedValue(1) },
 }))
 
+// Mock i18n
+vi.mock('@/i18n', () => ({
+  t: (path: string) => path,
+}))
+
+// Mock dialog
 vi.mock('@/utils/dialog', () => ({
   showMessage: vi.fn(),
-}))
-
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key,
 }))
 
 describe('通知多通道分发', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    // 默认开启 notifyOnLocalEvent 与 enabled
-    sharedStore.wecomBotConfig.enabled = true
-    sharedStore.wecomBotConfig.notifyOnLocalEvent = true
+    mockWecomBotConfig.enabled = true
   })
 
   afterEach(() => {
@@ -73,18 +71,8 @@ describe('通知多通道分发', () => {
     expect(mockSendWecomNotification).toHaveBeenCalledWith('测试标题\n测试内容')
   })
 
-  it('wecomBot notifyOnLocalEvent 关闭时不应推送企微', async () => {
-    sharedStore.wecomBotConfig.notifyOnLocalEvent = false
-
-    await showSystemNotification('标题', '内容')
-    await new Promise((resolve) => setTimeout(resolve, 100))
-
-    expect(mockSendWechatNotification).toHaveBeenCalledWith('标题\n内容')
-    expect(mockSendWecomNotification).not.toHaveBeenCalled()
-  })
-
   it('wecomBot 未启用时不应推送企微', async () => {
-    sharedStore.wecomBotConfig.enabled = false
+    mockWecomBotConfig.enabled = false
 
     await showSystemNotification('标题', '内容')
     await new Promise((resolve) => setTimeout(resolve, 100))
