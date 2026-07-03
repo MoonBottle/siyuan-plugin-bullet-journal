@@ -16,6 +16,7 @@ const mockSendWechatNotification = vi.fn().mockResolvedValue(undefined)
 const mockSendWecomNotification = vi.fn().mockResolvedValue(undefined)
 const mockWecomBotConfig = {
   enabled: true,
+  notifyOnLocalEvent: true,
   botId: '',
   secret: '',
   connectionStatus: 'disconnected' as const,
@@ -55,6 +56,7 @@ describe('通知多通道分发', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockWecomBotConfig.enabled = true
+    mockWecomBotConfig.notifyOnLocalEvent = true
   })
 
   afterEach(() => {
@@ -73,6 +75,15 @@ describe('通知多通道分发', () => {
 
   it('wecomBot 未启用时不应推送企微', async () => {
     mockWecomBotConfig.enabled = false
+
+    await showSystemNotification('标题', '内容')
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(mockSendWecomNotification).not.toHaveBeenCalled()
+  })
+
+  it('notifyOnLocalEvent 关闭时不应推送企微', async () => {
+    mockWecomBotConfig.notifyOnLocalEvent = false
 
     await showSystemNotification('标题', '内容')
     await new Promise((resolve) => setTimeout(resolve, 100))

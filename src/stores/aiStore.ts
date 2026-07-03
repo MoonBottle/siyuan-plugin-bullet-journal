@@ -2170,8 +2170,14 @@ export const useAIStore = defineStore('ai', () => {
       connectionStatus: wecomBotConfig.value.connectionStatus,
     })
 
+    // 禁用时停止监控
+    if (!wecomBotConfig.value.enabled) {
+      wecomBot.stopMonitoring()
+      return
+    }
+
     // 若凭证非空且启用，启动监听
-    if (wecomBotConfig.value.enabled && wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
+    if (wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
       wecomBot.startMonitoring()
     }
   }

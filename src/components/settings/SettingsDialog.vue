@@ -274,6 +274,10 @@ const currentSectionProps = computed(() => {
       return {}
     case 'webhook':
       return { webhook: settingsStore.webhook }
+    case 'wecombot':
+      return {
+        notifyOnLocalEvent: (settingsStore.ai as any)?.wecombot?.notifyOnLocalEvent ?? false,
+      }
     default:
       return {}
   }
@@ -324,6 +328,26 @@ const currentSectionEvents = computed(() => {
     case 'webhook':
       return {
         'update:webhook': (val: WebhookConfig) => settingsStore.applySettings({ webhook: val }),
+      }
+    case 'wecombot':
+      return {
+        update: (val: {
+          enabled: boolean
+          botId: string
+          secret: string
+          notifyOnLocalEvent: boolean
+          connectionStatus: string
+        }) => {
+          settingsStore.applySettings({
+            ai: {
+              ...settingsStore.ai,
+              wecombot: {
+                enabled: val.enabled,
+                notifyOnLocalEvent: val.notifyOnLocalEvent,
+              },
+            },
+          })
+        },
       }
     default:
       return {}
