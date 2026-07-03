@@ -53,6 +53,32 @@ export interface WecomMsgCallbackEvent {
   body: WecomMsgCallbackBody
 }
 
+/** 企微事件类型 */
+export type WecomEventType =
+  | 'enter_chat'
+  | 'template_card_event'
+  | 'feedback_event'
+  | 'disconnected_event'
+
+/** 企微事件回调 body */
+export interface WecomEventCallbackBody {
+  msgid: string
+  create_time: number
+  aibotid: string
+  chatid?: string
+  chattype?: WecomChatType
+  from?: { userid: string }
+  msgtype: 'event'
+  event: { eventtype: WecomEventType }
+}
+
+/** 企微事件回调完整事件 */
+export interface WecomEventCallbackEvent {
+  cmd: 'aibot_event_callback'
+  headers: { req_id: string }
+  body: WecomEventCallbackBody
+}
+
 /** 企微订阅命令 */
 export interface WecomSubscribeCommand {
   cmd: 'aibot_subscribe'

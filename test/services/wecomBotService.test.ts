@@ -330,3 +330,105 @@ describe('wecomBotService - 重连策略', () => {
     expect(service.getConfig().connectionStatus).toBe('error')
   })
 })
+
+describe('wecomBotService - 事件回调', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+    vi.stubGlobal('WebSocket', MockWebSocket)
+    resetWecomBotService()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    resetWecomBotService()
+  })
+
+  it('收到 aibot_event_callback (enter_chat) 应触发 eventHandlers', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    const eventHandler = vi.fn()
+    service.onEvent(eventHandler)
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+
+    // 订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    // 模拟收到 enter_chat 事件
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_event_callback',
+      headers: { req_id: 'test-req-id' },
+      body: {
+        msgid: 'event-001',
+        create_time: 1700000000,
+        aibotid: 'test-bot-id',
+        from: { userid: 'user-001' },
+        msgtype: 'event',
+        event: { eventtype: 'enter_chat' },
+      },
+    })
+
+    expect(eventHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cmd: 'aibot_event_callback',
+        body: expect.objectContaining({
+          msgtype: 'event',
+          event: { eventtype: 'enter_chat' },
+        }),
+      }),
+    )
+  })
+
+  it('收到 disconnected_event 应停止监控且不重连', async () => {
+    const service = useWecomBotService({
+      enabled: true,
+      botId: 'test-bot-id',
+      secret: 'test-secret',
+      connectionStatus: 'disconnected',
+    })
+
+    service.startMonitoring()
+    await vi.waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1)
+    })
+
+    // 订阅成功
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_subscribe',
+      headers: { req_id: 'test-req-id' },
+      body: { ret: 0 },
+    })
+
+    // 模拟收到 disconnected_event
+    MockWebSocket.instances[0].simulateMessage({
+      cmd: 'aibot_event_callback',
+      headers: { req_id: 'test-req-id' },
+      body: {
+        msgid: 'event-002',
+        create_time: 1700000000,
+        aibotid: 'test-bot-id',
+        msgtype: 'event',
+        event: { eventtype: 'disconnected_event' },
+      },
+    })
+
+    expect(service.getConfig().connectionStatus).toBe('disconnected')
+    expect(service.getConfig().errorMessage).toBe('连接被新连接取代')
+
+    // 等待一段时间，不应触发重连（无新 WebSocket 实例）
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+    expect(MockWebSocket.instances.length).toBe(1)
+  })
+})

@@ -1,6 +1,7 @@
 import type {
   WecomApiResponse,
   WecomBotConfig,
+  WecomEventCallbackEvent,
   WecomMsgCallbackEvent,
   WecomPingCommand,
   WecomSendMsgCommand,
@@ -45,12 +46,14 @@ export function resetWecomBotService(): void {
   if (serviceInstance) {
     serviceInstance.stopMonitoring()
     serviceInstance.clearMessageHandlers()
+    serviceInstance.clearEventHandlers()
     serviceInstance.clearErrorHandlers()
   }
   serviceInstance = null
 }
 
 type MessageHandler = (msg: WecomMsgCallbackEvent) => void
+type EventHandler = (event: WecomEventCallbackEvent) => void
 type ErrorHandler = (err: WecomBotError) => void
 
 export class WecomBotService {
@@ -63,6 +66,7 @@ export class WecomBotService {
 
   private ws: WebSocket | null = null
   private messageHandlers: MessageHandler[] = []
+  private eventHandlers: EventHandler[] = []
   private errorHandlers: ErrorHandler[] = []
   private isMonitoring = false
   private reconnectAttempts = 0
@@ -105,6 +109,13 @@ export class WecomBotService {
     }
   }
 
+  onEvent(handler: EventHandler): () => void {
+    this.eventHandlers.push(handler)
+    return () => {
+      this.eventHandlers = this.eventHandlers.filter((h) => h !== handler)
+    }
+  }
+
   onError(handler: ErrorHandler): () => void {
     this.errorHandlers.push(handler)
     return () => {
@@ -114,6 +125,10 @@ export class WecomBotService {
 
   clearMessageHandlers(): void {
     this.messageHandlers = []
+  }
+
+  clearEventHandlers(): void {
+    this.eventHandlers = []
   }
 
   clearErrorHandlers(): void {
@@ -206,6 +221,12 @@ export class WecomBotService {
       return
     }
 
+    // 处理事件回调
+    if (data.cmd === 'aibot_event_callback') {
+      this.handleEventCallback(data as unknown as WecomEventCallbackEvent)
+      return
+    }
+
     // 未知命令，记录但不报错
     console.warn('[WecomBot] 未知命令:', data.cmd)
   }
@@ -235,6 +256,23 @@ export class WecomBotService {
         this.ws = null
       }
     }
+  }
+
+  private handleEventCallback(event: WecomEventCallbackEvent): void {
+    const eventType = event.body?.event?.eventtype
+
+    // 连接断开事件：服务端因新连接建立而主动断开旧连接，不应重连
+    if (eventType === 'disconnected_event') {
+      console.warn('[WecomBot] 收到 disconnected_event，旧连接被新连接取代，停止监控')
+      this.isMonitoring = false
+      this.clearTimers()
+      this.config.connectionStatus = 'disconnected'
+      this.config.errorMessage = '连接被新连接取代'
+      return
+    }
+
+    // 其他事件（enter_chat / template_card_event / feedback_event）分发给 handlers
+    this.eventHandlers.forEach((handler) => handler(event))
   }
 
   private handleClose(): void {
