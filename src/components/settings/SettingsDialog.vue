@@ -84,6 +84,7 @@ import McpConfigSection from './McpConfigSection.vue'
 import PomodoroConfigSection from './PomodoroConfigSection.vue'
 import SlashCommandConfigSection from './SlashCommandConfigSection.vue'
 import WebhookConfigSection from './WebhookConfigSection.vue'
+import WecomBotConfigSection from './WecomBotConfigSection.vue'
 
 const props = defineProps<{
   plugin: any
@@ -159,6 +160,11 @@ const menuItems = computed<MenuItem[]>(() => {
       title: settings.webhook?.title ?? 'Webhook 通知',
       icon: 'iconLink',
     },
+    {
+      key: 'wecombot',
+      title: settings.wecombot?.title ?? '企业微信机器人',
+      icon: 'iconWeCom',
+    },
   ]
 })
 
@@ -179,6 +185,7 @@ const sectionKeywords = computed<Record<string, string>>(() => {
     ai: collectStrings(s.ai).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
     webhook: collectStrings(s.webhook).join(' '),
+    wecombot: collectStrings(s.wecombot).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),
     slash: collectStrings(s.slashCommands).join(' '),
     skill: collectStrings(s.aiSkills).join(' '),
@@ -221,6 +228,7 @@ const sectionComponentMap: Record<string, Component> = {
   skill: AiSkillConfigSection,
   mcp: McpConfigSection,
   webhook: WebhookConfigSection,
+  wecombot: WecomBotConfigSection,
 }
 
 const currentSectionComponent = computed(() => sectionComponentMap[activeSection.value] ?? DirectoryConfigSection)
