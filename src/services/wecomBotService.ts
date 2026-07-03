@@ -48,6 +48,7 @@ export function resetWecomBotService(): void {
     serviceInstance.clearMessageHandlers()
     serviceInstance.clearEventHandlers()
     serviceInstance.clearErrorHandlers()
+    serviceInstance.clearStatusChangeHandlers()
   }
   serviceInstance = null
 }
@@ -55,6 +56,7 @@ export function resetWecomBotService(): void {
 type MessageHandler = (msg: WecomMsgCallbackEvent) => void
 type EventHandler = (event: WecomEventCallbackEvent) => void
 type ErrorHandler = (err: WecomBotError) => void
+type StatusChangeHandler = () => void
 
 export class WecomBotService {
   private config: WecomBotConfig = {
@@ -68,6 +70,7 @@ export class WecomBotService {
   private messageHandlers: MessageHandler[] = []
   private eventHandlers: EventHandler[] = []
   private errorHandlers: ErrorHandler[] = []
+  private statusChangeHandlers: StatusChangeHandler[] = []
   private isMonitoring = false
   private reconnectAttempts = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -135,6 +138,22 @@ export class WecomBotService {
     this.errorHandlers = []
   }
 
+  /** 注册状态变化回调（连接状态、错误信息变化时触发） */
+  onStatusChange(handler: StatusChangeHandler): () => void {
+    this.statusChangeHandlers.push(handler)
+    return () => {
+      this.statusChangeHandlers = this.statusChangeHandlers.filter((h) => h !== handler)
+    }
+  }
+
+  clearStatusChangeHandlers(): void {
+    this.statusChangeHandlers = []
+  }
+
+  private emitStatusChange(): void {
+    this.statusChangeHandlers.forEach((handler) => handler())
+  }
+
   startMonitoring(): void {
     if (this.isMonitoring)
       return
@@ -153,12 +172,14 @@ export class WecomBotService {
       this.ws = null
     }
     this.config.connectionStatus = 'disconnected'
+    this.emitStatusChange()
   }
 
   private connect(): void {
     if (!this.isMonitoring)
       return
     this.config.connectionStatus = 'connecting'
+    this.emitStatusChange()
 
     try {
       this.ws = new WebSocket(WECOM_WS_URL)
@@ -237,6 +258,7 @@ export class WecomBotService {
       this.config.errorMessage = undefined
       this.reconnectAttempts = 0
       this.startHeartbeat()
+      this.emitStatusChange()
     }
     else {
       this.config.connectionStatus = 'error'
@@ -255,6 +277,7 @@ export class WecomBotService {
         this.ws.close()
         this.ws = null
       }
+      this.emitStatusChange()
     }
   }
 
@@ -268,6 +291,7 @@ export class WecomBotService {
       this.clearTimers()
       this.config.connectionStatus = 'disconnected'
       this.config.errorMessage = '连接被新连接取代'
+      this.emitStatusChange()
       return
     }
 
@@ -281,6 +305,7 @@ export class WecomBotService {
     if (this.config.connectionStatus !== 'error') {
       this.config.connectionStatus = 'disconnected'
     }
+    this.emitStatusChange()
     if (this.isMonitoring) {
       this.scheduleReconnect()
     }

@@ -2025,8 +2025,15 @@ export const useAIStore = defineStore('ai', () => {
     } = msg.body
     if (!text?.content) return
 
+    // 单聊时 chatid 为空，用 from.userid 作为回复目标（官方文档要求）
+    const replyTarget = chatid || from.userid
+    if (!replyTarget) {
+      console.warn('[aiStore] WecomBot 消息缺少 chatid 和 from.userid，无法回复')
+      return
+    }
+
     // 获取或创建会话
-    const conversation = getOrCreateWecomConversation(chatid, chattype, from.userid)
+    const conversation = getOrCreateWecomConversation(replyTarget, chattype, from.userid)
 
     // 更新会话状态
     conversation.lastMessageAt = Date.now()
@@ -2040,14 +2047,14 @@ export const useAIStore = defineStore('ai', () => {
     if (!messageText.trim()) return
 
     // 生成 AI 回复（使用 generateWecomReply，通过企微通道发送）
-    const conversationId = chattype === 'group' ? `wecom:group:${chatid}` : `wecom:${chatid}`
+    const conversationId = chattype === 'group' ? `wecom:group:${replyTarget}` : `wecom:${replyTarget}`
     try {
-      await generateWecomReply(conversationId, messageText, chatid, chattype)
+      await generateWecomReply(conversationId, messageText, replyTarget, chattype)
     }
     catch (err) {
       console.error('[aiStore] 企微 AI 回复失败:', err)
       // 发送错误提示
-      await sendReplyToWecom(chatid, '抱歉，处理消息时出错了，请稍后重试。', chattype).catch(() => {})
+      await sendReplyToWecom(replyTarget, '抱歉，处理消息时出错了，请稍后重试。', chattype).catch(() => {})
     }
   }
 
@@ -2073,6 +2080,7 @@ export const useAIStore = defineStore('ai', () => {
     // 先清空旧的，避免重复注册
     wecomBot.clearMessageHandlers()
     wecomBot.clearErrorHandlers()
+    wecomBot.clearStatusChangeHandlers()
 
     // 注册消息处理器
     wecomBot.onMessage((msg) => {
@@ -2088,6 +2096,11 @@ export const useAIStore = defineStore('ai', () => {
         wecomBotConfig.value.connectionStatus = 'error'
         wecomBotConfig.value.errorMessage = err.message
       }
+    })
+
+    // 注册状态变化处理器：同步 service 内部状态到 store
+    wecomBot.onStatusChange(() => {
+      syncWecomBotStateFromService(wecomBot)
     })
 
     // 加载持久化状态

@@ -29,9 +29,11 @@ vi.mock('@/services/wecomBotService', () => {
     stopMonitoring: vi.fn(),
     onMessage: vi.fn(() => () => {}),
     onError: vi.fn(() => () => {}),
+    onStatusChange: vi.fn(() => () => {}),
     sendTextMessage: vi.fn().mockResolvedValue(undefined),
     clearMessageHandlers: vi.fn(),
     clearErrorHandlers: vi.fn(),
+    clearStatusChangeHandlers: vi.fn(),
   }
 
   class MockWecomBotService {
