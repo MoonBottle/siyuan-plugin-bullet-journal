@@ -38,6 +38,10 @@
                 v-if="conv.source === 'weixin'"
                 class="ai-chat-view__sidebar-item-tag"
               >微信</span>
+              <span
+                v-else-if="conv.source === 'wecom'"
+                class="ai-chat-view__sidebar-item-tag"
+              >企微</span>
               <span class="ai-chat-view__sidebar-item-time">{{ formatTime(conv.updatedAt) }}</span>
             </div>
           </div>

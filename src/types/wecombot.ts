@@ -28,6 +28,8 @@ export interface WecomConversationState {
   chatType: WecomChatType
   userId?: string
   userName?: string
+  /** 关联的 storageService 会话 ID */
+  conversationId?: string
   lastMessageAt: number
   lastContextErrorAt?: number
   unreadCount: number

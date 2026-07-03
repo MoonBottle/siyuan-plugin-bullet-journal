@@ -206,6 +206,10 @@ const currentHeaderTitle = computed(() => {
     return currentWeixinConversationName.value || '微信会话'
   }
 
+  if (currentConversation.value?.source === 'wecom') {
+    return '企微会话'
+  }
+
   return t('aiChat').title
 })
 

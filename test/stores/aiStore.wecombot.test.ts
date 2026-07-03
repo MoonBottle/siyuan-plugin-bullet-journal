@@ -56,13 +56,43 @@ vi.mock('@/services/wecomBotService', () => {
   }
 })
 
-// Mock conversationStorageService
+// Mock conversationStorageService（使用 hoisted 变量在测试间共享会话数据）
+const {
+  mockConversations,
+  mockStorageService,
+} = vi.hoisted(() => {
+  const mockConversations = new Map<string, any>()
+  return {
+    mockConversations,
+    mockStorageService: {
+      initialize: vi.fn().mockResolvedValue({
+        migrated: false,
+        conversationCount: 0,
+      }),
+      getIndex: vi.fn().mockResolvedValue({ currentConversationId: null }),
+      saveIndex: vi.fn().mockResolvedValue(undefined),
+      saveConversation: vi.fn((conv: any) => {
+        mockConversations.set(conv.id, JSON.parse(JSON.stringify(conv)))
+      }),
+      loadConversation: vi.fn((id: string) => mockConversations.get(id) || null),
+      loadAllConversations: vi.fn(() => Array.from(mockConversations.values())),
+      loadConversationsList: vi.fn(() => Array.from(mockConversations.values())),
+      createConversation: vi.fn((title: string) => {
+        const conv = {
+          id: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title,
+          messages: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+        return conv
+      }),
+    },
+  }
+})
+
 vi.mock('@/services/conversationStorageService', () => ({
-  useConversationStorage: () => ({
-    saveConversation: vi.fn(),
-    loadConversation: vi.fn(() => null),
-    loadAllConversations: vi.fn(() => []),
-  }),
+  useConversationStorage: () => mockStorageService,
 }))
 
 // Mock PiAgentAdapter for AI reply path tests
@@ -70,7 +100,7 @@ const { mockPiAgent } = vi.hoisted(() => {
   const fns = {
     createAgent: vi.fn(),
     prompt: vi.fn(),
-    subscribe: vi.fn(() => () => {}),
+    subscribe: vi.fn((_cb: any) => () => {}),
     getAgent: vi.fn(() => null),
     dispose: vi.fn(),
   }
@@ -127,6 +157,7 @@ vi.mock('@/stores/settingsStore', () => ({
 describe('aiStore - wecomBot state 与初始化', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockConversations.clear()
   })
 
   afterEach(() => {
@@ -171,6 +202,7 @@ describe('aiStore - wecomBot state 与初始化', () => {
 describe('aiStore - wecomBot 消息处理', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockConversations.clear()
   })
 
   afterEach(() => {
@@ -179,6 +211,8 @@ describe('aiStore - wecomBot 消息处理', () => {
 
   it('handleWecomMessage 应创建新会话（单聊）', async () => {
     const store = useAIStore()
+    await store.initializeStorage({} as any)
+
     const msg: WecomMsgCallbackEvent = {
       cmd: 'aibot_msg_callback',
       headers: { req_id: 'test' },
@@ -202,6 +236,8 @@ describe('aiStore - wecomBot 消息处理', () => {
 
   it('handleWecomMessage 应创建新会话（群聊，剥离 @前缀）', async () => {
     const store = useAIStore()
+    await store.initializeStorage({} as any)
+
     const msg: WecomMsgCallbackEvent = {
       cmd: 'aibot_msg_callback',
       headers: { req_id: 'test' },
@@ -224,21 +260,16 @@ describe('aiStore - wecomBot 消息处理', () => {
 
   it('getOrCreateWecomConversation 应复用已有会话', async () => {
     const store = useAIStore()
-    // 预置会话
-    store.wecomConversationMap['wecom:user-001'] = {
-      chatId: 'user-001',
-      chatType: 'single',
-      userId: 'user-001',
-      lastMessageAt: Date.now() - 1000,
-      unreadCount: 0,
-      active: true,
-      consecutiveFailures: 0,
-    }
+    await store.initializeStorage({} as any)
 
-    const conv = store.getOrCreateWecomConversation('user-001', 'single')
-    expect(conv.chatId).toBe('user-001')
-    // 不应创建新会话
-    expect(Object.keys(store.wecomConversationMap).length).toBe(1)
+    // 第一次创建
+    const id1 = await store.getOrCreateWecomConversation('user-001', 'single', 'user-001')
+    expect(id1).toBeDefined()
+    expect(typeof id1).toBe('string')
+
+    // 第二次应返回相同 ID（复用）
+    const id2 = await store.getOrCreateWecomConversation('user-001', 'single', 'user-001')
+    expect(id2).toBe(id1)
   })
 })
 
@@ -278,6 +309,7 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockConversations.clear()
 
     mockPiAgent.createAgent.mockResolvedValue(undefined)
     mockPiAgent.prompt.mockResolvedValue(undefined)
@@ -292,6 +324,8 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
   it('未启用 AI 时不调用 sendReplyToWecom', async () => {
     const store = useAIStore()
+    await store.initializeStorage({} as any)
+
     const mockService = useWecomBotService()
     vi.mocked(mockService.isConnected).mockReturnValue(true)
 
@@ -304,6 +338,8 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
   it('回复成功时通过 sendReplyToWecom 发送回复', async () => {
     const store = useAIStore()
+    await store.initializeStorage({} as any)
+
     store.setProviders([createTestProvider()])
     store.setActiveProvider('test-provider')
 
@@ -318,6 +354,13 @@ describe('aiStore - wecomBot AI 回复路径', () => {
       },
     }
     mockPiAgent.getAgent.mockReturnValue(mockAgent)
+
+    // subscribe 注册回调，prompt 完成后触发 agent_end 事件
+    let subscribeCallback: ((event: { type: string }) => void) | null = null
+    mockPiAgent.subscribe.mockImplementation((cb: (event: { type: string }) => void) => {
+      subscribeCallback = cb
+      return () => {}
+    })
     mockPiAgent.prompt.mockImplementation(async () => {
       mockAgent.state.messages.push({
         role: 'assistant',
@@ -329,6 +372,10 @@ describe('aiStore - wecomBot AI 回复路径', () => {
         ],
         timestamp: Date.now(),
       })
+      // 触发 agent_end 事件，让 generateWecomReply 更新 conversation.messages
+      if (subscribeCallback) {
+        subscribeCallback({ type: 'agent_end' })
+      }
     })
 
     await store.handleWecomMessage(createTestMsg())
@@ -343,6 +390,8 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 
   it('回复失败时通过 sendReplyToWecom 发送错误提示', async () => {
     const store = useAIStore()
+    await store.initializeStorage({} as any)
+
     store.setProviders([createTestProvider()])
     store.setActiveProvider('test-provider')
 
@@ -367,6 +416,7 @@ describe('aiStore - wecomBot AI 回复路径', () => {
 describe('aiStore - wecomBot 通知推送', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockConversations.clear()
   })
 
   afterEach(() => {

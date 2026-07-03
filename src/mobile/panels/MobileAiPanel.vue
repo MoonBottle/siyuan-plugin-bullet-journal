@@ -164,6 +164,12 @@ const currentTitle = computed(() => {
       || '微信会话'
   }
 
+  if (conv?.source === 'wecom') {
+    return conv.wecomUserName?.trim()
+      || conv.title.replace(WECOM_PREFIX_RE, '').trim()
+      || '企微会话'
+  }
+
   return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle
 })
 

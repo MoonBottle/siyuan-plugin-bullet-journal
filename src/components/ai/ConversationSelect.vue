@@ -33,6 +33,7 @@
             :class="{
               'is-active': conversation.id === currentConversationId,
               'is-weixin': conversation.source === 'weixin',
+              'is-wecom': conversation.source === 'wecom',
             }"
             @click="selectConversation(conversation.id)"
           >
@@ -41,6 +42,12 @@
               class="conversation-select__source-icon"
             >
               📱
+            </span>
+            <span
+              v-else-if="conversation.source === 'wecom'"
+              class="conversation-select__source-icon"
+            >
+              🏢
             </span>
             <span class="conversation-select__item-title">{{ conversation.title }}</span>
             <span
@@ -306,6 +313,12 @@ const vClickOutside = {
   &__item.is-weixin {
     .conversation-select__item-title {
       color: #07c160;
+    }
+  }
+
+  &__item.is-wecom {
+    .conversation-select__item-title {
+      color: #2f90f4;
     }
   }
 
