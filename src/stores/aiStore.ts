@@ -2190,6 +2190,7 @@ export const useAIStore = defineStore('ai', () => {
   async function initializeWecomBot(pluginInstance: {
     loadData: (key: string) => Promise<unknown>
     saveData: (key: string, data: unknown) => Promise<void>
+    getSettings?: () => { ai?: { wecombot?: { enabled?: boolean, notifyOnLocalEvent?: boolean } } }
   }): Promise<void> {
     const wecomBot = useWecomBotService()
 
@@ -2219,7 +2220,19 @@ export const useAIStore = defineStore('ai', () => {
       syncWecomBotStateFromService(wecomBot)
     })
 
-    // 加载持久化状态
+    // 从插件设置读取 enabled 和 notifyOnLocalEvent（持久化在 settings.ai.wecombot）
+    const pluginSettings = pluginInstance.getSettings?.()
+    const wecombotSettings = pluginSettings?.ai?.wecombot
+    if (wecombotSettings) {
+      if (typeof wecombotSettings.enabled === 'boolean') {
+        wecomBotConfig.value.enabled = wecombotSettings.enabled
+      }
+      if (typeof wecombotSettings.notifyOnLocalEvent === 'boolean') {
+        wecomBotConfig.value.notifyOnLocalEvent = wecombotSettings.notifyOnLocalEvent
+      }
+    }
+
+    // 加载持久化凭证
     try {
       const savedState = await pluginInstance.loadData('wecom-bot-state') as {
         botId?: string
@@ -2230,16 +2243,18 @@ export const useAIStore = defineStore('ai', () => {
         wecomBotConfig.value.botId = savedState.botId
         wecomBotConfig.value.secret = savedState.secret
         wecomBotConfig.value.connectionStatus = savedState.connectionStatus ?? 'disconnected'
-        wecomBot.updateConfig(wecomBotConfig.value)
-
-        // 自动启动监听
-        if (wecomBotConfig.value.enabled) {
-          wecomBot.startMonitoring()
-        }
       }
     }
     catch (err) {
       console.error('[aiStore] 加载 wecom-bot-state 失败:', err)
+    }
+
+    // 同步配置到 service
+    wecomBot.updateConfig(wecomBotConfig.value)
+
+    // 启用且有凭证时自动启动监听
+    if (wecomBotConfig.value.enabled && wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
+      wecomBot.startMonitoring()
     }
 
     // 同步服务状态

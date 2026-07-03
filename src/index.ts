@@ -837,6 +837,7 @@ export default class TaskAssistantPlugin extends Plugin {
               data.ai?.showToolCalls !== undefined
                 ? data.ai.showToolCalls
                 : true,
+            wecombot: data.ai?.wecombot,
           },
           pomodoro: data.pomodoro
             ? {

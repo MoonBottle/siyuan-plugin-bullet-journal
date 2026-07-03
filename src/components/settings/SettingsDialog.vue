@@ -72,6 +72,8 @@ import {
   watch,
 } from 'vue'
 import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { useAIStore } from '@/stores/aiStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import AiConfigSection from './AiConfigSection.vue'
 import AiSkillConfigSection from './AiSkillConfigSection.vue'
@@ -347,6 +349,20 @@ const currentSectionEvents = computed(() => {
               },
             },
           })
+          // 同步到 aiStore 并触发连接/断开
+          const aiStore = useAIStore()
+          const plugin = usePlugin()
+          if (plugin) {
+            aiStore.updateWecomBotConfig(
+              {
+                enabled: val.enabled,
+                notifyOnLocalEvent: val.notifyOnLocalEvent,
+              },
+              plugin,
+            ).catch((err) => {
+              console.error('[SettingsDialog] 更新企微机器人配置失败:', err)
+            })
+          }
         },
       }
     default:
