@@ -2116,6 +2116,75 @@ export const useAIStore = defineStore('ai', () => {
     syncWecomBotStateFromService(wecomBot)
   }
 
+  /**
+   * 向所有活跃企微会话推送通知
+   */
+  async function sendWecomNotification(text: string): Promise<void> {
+    const wecomBot = useWecomBotService()
+    if (!wecomBot.isConnected()) return
+
+    const tasks: Promise<void>[] = []
+    for (const [key, conv] of Object.entries(wecomConversationMap.value)) {
+      if (!conv.active) continue
+
+      tasks.push(
+        wecomBot
+          .sendTextMessage(conv.chatId, text, conv.chatType)
+          .then(() => {
+            conv.lastMessageAt = Date.now()
+          })
+          .catch((err: unknown) => {
+            console.error(`[aiStore] 企微通知失败 (${key}):`, err)
+            conv.consecutiveFailures++
+            conv.lastContextErrorAt = Date.now()
+            if (conv.consecutiveFailures >= 3) {
+              conv.active = false
+            }
+          }),
+      )
+    }
+
+    await Promise.allSettled(tasks)
+  }
+
+  /**
+   * 更新企微机器人凭证并触发重连
+   */
+  async function updateWecomBotConfig(
+    updates: Partial<WecomBotConfig>,
+    plugin: { saveData: (key: string, data: unknown) => Promise<void> },
+  ): Promise<void> {
+    wecomBotConfig.value = {
+      ...wecomBotConfig.value,
+      ...updates,
+    }
+
+    const wecomBot = useWecomBotService()
+    wecomBot.updateConfig(wecomBotConfig.value)
+
+    // 持久化凭证
+    await plugin.saveData('wecom-bot-state', {
+      botId: wecomBotConfig.value.botId,
+      secret: wecomBotConfig.value.secret,
+      connectionStatus: wecomBotConfig.value.connectionStatus,
+    })
+
+    // 若凭证非空且启用，启动监听
+    if (wecomBotConfig.value.enabled && wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
+      wecomBot.startMonitoring()
+    }
+  }
+
+  /**
+   * 清除指定会话的未读计数
+   */
+  function clearWecomUnread(conversationKey: string): void {
+    const conv = wecomConversationMap.value[conversationKey]
+    if (conv) {
+      conv.unreadCount = 0
+    }
+  }
+
   // ==================== Return ====================
 
   return {
@@ -2192,5 +2261,8 @@ export const useAIStore = defineStore('ai', () => {
     handleWecomMessage,
     getOrCreateWecomConversation,
     sendReplyToWecom,
+    sendWecomNotification,
+    updateWecomBotConfig,
+    clearWecomUnread,
   }
 })

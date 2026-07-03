@@ -361,3 +361,103 @@ describe('aiStore - wecomBot AI 回复路径', () => {
     )
   })
 })
+
+describe('aiStore - wecomBot 通知推送', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('sendWecomNotification 应向所有活跃会话推送', async () => {
+    const mockService = useWecomBotService()
+    vi.mocked(mockService.isConnected).mockReturnValue(true)
+
+    const store = useAIStore()
+    // 预置两个活跃会话
+    store.wecomConversationMap['wecom:user-001'] = {
+      chatId: 'user-001',
+      chatType: 'single',
+      userId: 'user-001',
+      lastMessageAt: Date.now(),
+      unreadCount: 0,
+      active: true,
+      consecutiveFailures: 0,
+    }
+    store.wecomConversationMap['wecom:group:group-001'] = {
+      chatId: 'group-001',
+      chatType: 'group',
+      lastMessageAt: Date.now(),
+      unreadCount: 0,
+      active: true,
+      consecutiveFailures: 0,
+    }
+
+    await store.sendWecomNotification('提醒：待办事项')
+
+    expect(mockService.sendTextMessage).toHaveBeenCalledTimes(2)
+    expect(mockService.sendTextMessage).toHaveBeenCalledWith(
+      'user-001',
+      '提醒：待办事项',
+      'single',
+    )
+    expect(mockService.sendTextMessage).toHaveBeenCalledWith(
+      'group-001',
+      '提醒：待办事项',
+      'group',
+    )
+  })
+
+  it('sendWecomNotification 应跳过 inactive 会话', async () => {
+    const mockService = useWecomBotService()
+    vi.mocked(mockService.isConnected).mockReturnValue(true)
+
+    const store = useAIStore()
+    store.wecomConversationMap['wecom:user-001'] = {
+      chatId: 'user-001',
+      chatType: 'single',
+      userId: 'user-001',
+      lastMessageAt: Date.now(),
+      unreadCount: 0,
+      active: false, // inactive
+      consecutiveFailures: 3,
+    }
+
+    await store.sendWecomNotification('提醒')
+
+    expect(mockService.sendTextMessage).not.toHaveBeenCalled()
+  })
+
+  it('updateWecomBotConfig 应更新凭证并触发重连', async () => {
+    const mockService = useWecomBotService()
+
+    const store = useAIStore()
+    const mockPlugin = {
+      saveData: vi.fn().mockResolvedValue(undefined),
+    }
+
+    await store.updateWecomBotConfig(
+      {
+        botId: 'new-bot-id',
+        secret: 'new-secret',
+      },
+      mockPlugin as any,
+    )
+
+    expect(mockService.updateConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        botId: 'new-bot-id',
+        secret: 'new-secret',
+      }),
+    )
+    expect(mockPlugin.saveData).toHaveBeenCalledWith(
+      'wecom-bot-state',
+      expect.objectContaining({
+        botId: 'new-bot-id',
+        secret: 'new-secret',
+      }),
+    )
+  })
+})
