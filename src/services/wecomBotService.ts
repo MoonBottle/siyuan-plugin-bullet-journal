@@ -226,14 +226,13 @@ export class WecomBotService {
       return
     }
 
-    // 处理订阅/发送等命令的响应（无 cmd，errcode 在顶层）
+    // 处理订阅响应：仅在 connecting 阶段把无 cmd 的响应当作订阅响应
+    // （ping/pong 及命令响应也格式相同：{headers, errcode, errmsg}，无 cmd 字段）
     if (!data.cmd && typeof data.errcode === 'number') {
-      this.handleSubscribeResponse(data)
-      return
-    }
-
-    // 处理 pong
-    if (data.cmd === 'pong') {
+      if (this.config.connectionStatus === 'connecting') {
+        this.handleSubscribeResponse(data)
+      }
+      // connected 状态下的响应视为 pong/命令响应，仅更新 lastMessageAt（已在开头更新）
       return
     }
 
@@ -340,6 +339,16 @@ export class WecomBotService {
   }
 
   private startHeartbeat(): void {
+    // 清除旧的心跳定时器，避免重复 interval 导致 ping 频率失控
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+    if (this.heartbeatCheckTimer) {
+      clearInterval(this.heartbeatCheckTimer)
+      this.heartbeatCheckTimer = null
+    }
+
     this.heartbeatTimer = setInterval(() => {
       this.sendPing()
     }, HEARTBEAT_INTERVAL)
