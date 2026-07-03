@@ -470,6 +470,16 @@ export const useAIStore = defineStore('ai', () => {
         currentConversation.value = conversation
       }
     }
+
+    // 从插件设置加载 AI 配置（确保未打开 AI Dock 时，企微/微信消息也能正常触发 AI 回复）
+    const pluginSettings = pluginInstance?.getSettings?.()
+    if (pluginSettings?.ai) {
+      loadSettings({
+        providers: pluginSettings.ai.providers || [],
+        activeProviderId: pluginSettings.ai.activeProviderId || null,
+        showToolCalls: pluginSettings.ai.showToolCalls,
+      })
+    }
   }
 
   /**
