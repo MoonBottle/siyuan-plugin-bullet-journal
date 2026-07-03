@@ -138,6 +138,7 @@ export const useAIStore = defineStore('ai', () => {
     botId: '',
     secret: '',
     connectionStatus: 'disconnected',
+    notifyOnLocalEvent: false,
   })
 
   const wecomConversationMap = ref<Record<string, WecomConversationState>>({})

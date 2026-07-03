@@ -19,6 +19,7 @@ export interface WecomBotConfig {
   secret: string
   connectionStatus: WecomBotConnectionStatus
   errorMessage?: string
+  notifyOnLocalEvent?: boolean
 }
 
 /** 企微会话状态映射 */
