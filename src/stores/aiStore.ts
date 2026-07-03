@@ -2334,6 +2334,36 @@ export const useAIStore = defineStore('ai', () => {
     const wecomBot = useWecomBotService()
     if (!wecomBot.isConnected()) return
 
+    // 内存 map 为空时，从持久化的会话列表恢复企微会话映射（与 sendWechatNotification 行为一致）
+    if (Object.keys(wecomConversationMap.value).length === 0 && storageService) {
+      try {
+        const conversations = await storageService.loadConversationsList()
+        const wecomConvos = conversations.filter(
+          (c: any) => c.source === 'wecom' && c.wecomChatId,
+        )
+        for (const conv of wecomConvos) {
+          const key = conv.wecomChatType === 'group'
+            ? `wecom:group:${conv.wecomChatId}`
+            : `wecom:${conv.wecomChatId}`
+          if (!wecomConversationMap.value[key]) {
+            wecomConversationMap.value[key] = {
+              chatId: conv.wecomChatId,
+              chatType: conv.wecomChatType || 'single',
+              userId: conv.wecomUserName,
+              conversationId: conv.id,
+              lastMessageAt: conv.updatedAt || Date.now(),
+              unreadCount: 0,
+              active: true,
+              consecutiveFailures: 0,
+            }
+          }
+        }
+      }
+      catch (err) {
+        console.error('[aiStore] 恢复企微会话映射失败:', err)
+      }
+    }
+
     const tasks: Promise<void>[] = []
     for (const [key, conv] of Object.entries(wecomConversationMap.value)) {
       if (!conv.active) continue
