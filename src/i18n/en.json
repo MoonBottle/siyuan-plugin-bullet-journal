@@ -470,7 +470,7 @@
       },
       "authFailedHint": "Invalid Bot ID or Secret, please verify and retry",
       "howToGetCredentials": "How to get credentials?",
-      "howToGetCredentialsUrl": "https://developer.work.weixin.qq.com/document/path/101463"
+      "howToGetCredentialsUrl": "https://www.codebuddy.ai/docs/zh/cli/wecom-bot-setup"
     },
     "ai": {
       "title": "AI Service Config",

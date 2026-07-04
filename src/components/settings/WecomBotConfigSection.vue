@@ -72,6 +72,16 @@
           </SySettingItem>
         </template>
       </SySettingItemList>
+      <div
+        v-if="localConfig.enabled"
+        class="sy-wecombot__help-link"
+      >
+        <a
+          :href="t('settings').wecombot.howToGetCredentialsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >{{ t('settings').wecombot.howToGetCredentials }}</a>
+      </div>
     </SySettingsSection>
   </template>
 
@@ -198,6 +208,14 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="ios-help-link">
+          <a
+            :href="t('settings').wecombot.howToGetCredentialsUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ t('settings').wecombot.howToGetCredentials }}</a>
         </div>
       </template>
     </div>
@@ -417,6 +435,32 @@ async function handleTestConnection(): Promise<void> {
     top: 2px;
     left: 2px;
     transition: transform 0.2s;
+  }
+}
+
+.sy-wecombot__help-link {
+  margin-top: 12px;
+  font-size: 12px;
+  text-align: right;
+
+  a {
+    color: var(--b3-theme-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.ios-help-link {
+  padding: 0 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+
+  a {
+    color: #007aff;
+    text-decoration: none;
   }
 }
 </style>

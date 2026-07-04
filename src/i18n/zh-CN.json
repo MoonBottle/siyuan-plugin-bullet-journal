@@ -470,7 +470,7 @@
       },
       "authFailedHint": "Bot ID 或 Secret 无效，请检查后重试",
       "howToGetCredentials": "如何获取凭证？",
-      "howToGetCredentialsUrl": "https://developer.work.weixin.qq.com/document/path/101463"
+      "howToGetCredentialsUrl": "https://www.codebuddy.ai/docs/zh/cli/wecom-bot-setup"
     },
     "ai": {
       "title": "AI 服务配置",
