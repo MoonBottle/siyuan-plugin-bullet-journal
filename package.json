@@ -66,6 +66,7 @@
     "glob": "^13.0.6",
     "happy-dom": "^20.9.0",
     "minimist": "^1.2.8",
+    "postcss-prefix-selector": "^2.1.1",
     "rollup-plugin-livereload": "^2.0.5",
     "sass": "^1.98.0",
     "siyuan": "1.2.1",

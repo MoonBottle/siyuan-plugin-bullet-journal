@@ -6,7 +6,7 @@
 
 
 /** 消息来源类型 */
-export type MessageSource = 'local' | 'weixin'
+export type MessageSource = 'local' | 'weixin' | 'wecom'
 
 /** ClawBot 连接状态 */
 export type ClawBotLoginStatus = 'none' | 'pending' | 'scaned' | 'connected' | 'expired' | 'error'

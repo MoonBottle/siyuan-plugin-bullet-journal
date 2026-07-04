@@ -69,6 +69,24 @@
         ></span>
       </span>
 
+      <!-- 企微机器人连接按钮 -->
+      <span
+        v-if="!isMobile"
+        class="block__icon wecom-btn"
+        :class="{
+          'is-active': isWecomBotConnected, 'has-unread': hasUnreadWecom,
+        }"
+        @mouseenter="showTooltip($event.currentTarget as HTMLElement, wecomBotTooltip)"
+        @mouseleave="hideTooltip"
+        @click="handleWecomBotClick"
+      >
+        <WecomIcon :is-connected="isWecomBotConnected" />
+        <span
+          v-if="hasUnreadWecom"
+          class="unread-badge"
+        ></span>
+      </span>
+
       <!-- 更多操作按钮 -->
       <span
         class="block__icon"
@@ -124,6 +142,7 @@ import {
 import ChatPanel from '@/components/ai/ChatPanel.vue'
 import ConversationSelect from '@/components/ai/ConversationSelect.vue'
 import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue'
+import WecomIcon from '@/components/icons/WecomIcon.vue'
 import WeixinIcon from '@/components/icons/WeixinIcon.vue'
 import { t } from '@/i18n'
 import {
@@ -175,6 +194,10 @@ const showWeixinDialog = ref(false)
 const isClawBotConnected = computed(() => aiStore.isClawBotConnected)
 const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin)
 
+// WecomBot 状态
+const isWecomBotConnected = computed(() => aiStore.isWecomBotConnected)
+const hasUnreadWecom = computed(() => aiStore.hasUnreadWecom)
+
 const currentConversation = computed(() => {
   const convId = aiStore.currentConversationId
   if (!convId) return null
@@ -206,6 +229,10 @@ const currentHeaderTitle = computed(() => {
     return currentWeixinConversationName.value || '微信会话'
   }
 
+  if (currentConversation.value?.source === 'wecom') {
+    return '企微会话'
+  }
+
   return t('aiChat').title
 })
 
@@ -227,6 +254,13 @@ const clawBotTooltip = computed(() => {
     return '微信已连接'
   }
   return '连接微信'
+})
+
+const wecomBotTooltip = computed(() => {
+  if (isWecomBotConnected.value) {
+    return '企微已连接'
+  }
+  return '企微未连接，点击配置'
 })
 
 // 微信按钮点击
@@ -340,6 +374,44 @@ const handleOpenSettings = (section?: string) => {
   if (plugin?.openSetting) {
     plugin.openSetting(section)
   }
+}
+
+// 企微机器人按钮点击：未连接时打开设置；已连接时切换到企微会话
+async function handleWecomBotClick(event: MouseEvent) {
+  hideTooltip()
+  if (isMobile.value) {
+    return
+  }
+
+  event.stopPropagation()
+  event.preventDefault()
+
+  // 未连接：打开设置并定位到企微配置
+  if (!isWecomBotConnected.value) {
+    handleOpenSettings('wecombot')
+    return
+  }
+
+  // 已连接：切换到最近的企微会话
+  const wecomConversations = conversationsList.value
+    .filter((c) => c.source === 'wecom')
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+
+  if (wecomConversations.length === 0) {
+    showMessage('暂无企微会话，请通过企业微信发送消息后重试', 3000, 'info')
+    return
+  }
+
+  // 已在企微会话中则不重复切换
+  const currentConv = currentConversation.value
+  if (currentConv?.source === 'wecom' && wecomConversations.some((c) => c.id === currentConv.id)) {
+    return
+  }
+
+  await aiStore.switchConversation(wecomConversations[0].id)
+  await refreshConversationsList()
+  await nextTick()
+  chatPanelRef.value?.scrollToBottom?.()
 }
 
 // 更多按钮点击事件
@@ -597,6 +669,35 @@ onUnmounted(() => {
     :deep(svg) {
       fill: #07c160; // 微信绿色
     }
+  }
+
+  &.has-unread {
+    .unread-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--b3-theme-error);
+    }
+  }
+}
+
+// 企微机器人图标样式
+.wecom-btn {
+  position: relative;
+
+  :deep(svg) {
+    width: 16px;
+    height: 16px;
+    transition:
+      filter 0.2s,
+      opacity 0.2s;
+  }
+
+  &.is-active {
+    background: var(--b3-theme-success-lightest);
   }
 
   &.has-unread {

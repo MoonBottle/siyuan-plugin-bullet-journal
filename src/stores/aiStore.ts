@@ -22,6 +22,14 @@ import type {
   Project,
   ProjectGroup,
 } from '@/types/models'
+import type {
+  WecomBotConfig,
+  WecomBotConnectionStatus,
+  WecomBotStats,
+  WecomChatType,
+  WecomConversationState,
+  WecomMsgCallbackEvent,
+} from '@/types/wecombot'
 import { defineStore } from 'pinia'
 import { showMessage } from 'siyuan'
 import {
@@ -48,6 +56,10 @@ import {
   useConversationStorage,
 } from '@/services/conversationStorageService'
 import { SkillService } from '@/services/skillService'
+import {
+  useWecomBotService,
+  WecomBotService,
+} from '@/services/wecomBotService'
 import { classifyAIError } from '@/utils/aiErrorClassifier'
 import { useProjectStore } from './projectStore'
 import { useSettingsStore } from './settingsStore'
@@ -119,6 +131,23 @@ export const useAIStore = defineStore('ai', () => {
     connectedUsers: 0,
   })
   const clawBotForwardProxyAvailable = ref(true)
+
+  // ==================== WecomBot State ====================
+  const wecomBotConfig = ref<WecomBotConfig>({
+    enabled: false,
+    botId: '',
+    secret: '',
+    connectionStatus: 'disconnected',
+    notifyOnLocalEvent: false,
+  })
+
+  const wecomConversationMap = ref<Record<string, WecomConversationState>>({})
+
+  const wecomBotStats = ref<WecomBotStats>({
+    isConnected: false,
+    unreadCount: 0,
+    connectedChats: 0,
+  })
 
   // 当前登录会话 Key
   let currentQRSessionKey: string | null = null
@@ -391,6 +420,16 @@ export const useAIStore = defineStore('ai', () => {
     return Object.values(messages).some((count) => count > 0)
   })
 
+  // ==================== WecomBot Getters ====================
+  const isWecomBotEnabled = computed(() => wecomBotConfig.value.enabled)
+  const isWecomBotConnected = computed(
+    () => wecomBotConfig.value.connectionStatus === 'connected',
+  )
+  const wecomBotConnectionStatus = computed(
+    () => wecomBotConfig.value.connectionStatus,
+  )
+  const hasUnreadWecom = computed(() => wecomBotStats.value.unreadCount > 0)
+
   function isClawBotAllowedOnCurrentFrontend() {
     return true
   }
@@ -430,6 +469,16 @@ export const useAIStore = defineStore('ai', () => {
       } else {
         currentConversation.value = conversation
       }
+    }
+
+    // 从插件设置加载 AI 配置（确保未打开 AI Dock 时，企微/微信消息也能正常触发 AI 回复）
+    const pluginSettings = pluginInstance?.getSettings?.()
+    if (pluginSettings?.ai) {
+      loadSettings({
+        providers: pluginSettings.ai.providers || [],
+        activeProviderId: pluginSettings.ai.activeProviderId || null,
+        showToolCalls: pluginSettings.ai.showToolCalls,
+      })
     }
   }
 
@@ -1797,6 +1846,592 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
+  // ==================== WecomBot Actions ====================
+
+  /**
+   * 获取或创建企微会话（在 storageService 中创建 source='wecom' 的会话）
+   */
+  async function getOrCreateWecomConversation(chatId: string, chatType: WecomChatType, userId?: string): Promise<string> {
+    if (!storageService) {
+      throw new Error('storageService 未初始化')
+    }
+
+    const key = chatType === 'group' ? `wecom:group:${chatId}` : `wecom:${chatId}`
+
+    // 已有映射，直接返回 conversationId
+    if (wecomConversationMap.value[key]?.conversationId) {
+      wecomConversationMap.value[key].lastMessageAt = Date.now()
+      return wecomConversationMap.value[key].conversationId!
+    }
+
+    // 查找现有的企微会话
+    const conversations = await storageService.loadConversationsList()
+    const existingConv = conversations.find((c) =>
+      c.source === 'wecom' && c.wecomChatId === chatId,
+    )
+
+    if (existingConv) {
+      wecomConversationMap.value[key] = {
+        chatId,
+        chatType,
+        userId,
+        conversationId: existingConv.id,
+        lastMessageAt: Date.now(),
+        unreadCount: 0,
+        active: true,
+        consecutiveFailures: 0,
+      }
+      return existingConv.id
+    }
+
+    // 创建新会话
+    const title = chatType === 'group'
+      ? `企微群: ${chatId.slice(0, 8)}`
+      : userId ? `企微: ${userId}` : `企微用户 ${chatId.slice(0, 8)}`
+    const conversation = await storageService.createConversation(title)
+
+    // 标记为企微会话
+    conversation.source = 'wecom'
+    conversation.wecomChatId = chatId
+    conversation.wecomChatType = chatType
+    conversation.wecomUserName = userId
+    await storageService.saveConversation(conversation)
+
+    // 保存映射
+    wecomConversationMap.value[key] = {
+      chatId,
+      chatType,
+      userId,
+      conversationId: conversation.id,
+      lastMessageAt: Date.now(),
+      unreadCount: 0,
+      active: true,
+      consecutiveFailures: 0,
+    }
+
+    await refreshConversationsList()
+
+    return conversation.id
+  }
+
+  /**
+   * 发送回复到企微
+   */
+  async function sendReplyToWecom(chatId: string, reply: string, chatType: WecomChatType = 'single'): Promise<void> {
+    const wecomBot = useWecomBotService()
+    if (!wecomBot.isConnected()) return
+
+    const conversationKey = chatType === 'group' ? `wecom:group:${chatId}` : `wecom:${chatId}`
+    const conversation = wecomConversationMap.value[conversationKey]
+    if (conversation && !conversation.active) return
+
+    try {
+      await wecomBot.sendTextMessage(chatId, reply, chatType)
+      if (conversation) {
+        conversation.unreadCount = 0
+      }
+    }
+    catch (err) {
+      console.error('[aiStore] 企微发送回复失败:', err)
+      if (conversation) {
+        conversation.consecutiveFailures++
+        conversation.lastContextErrorAt = Date.now()
+        if (conversation.consecutiveFailures >= 3) {
+          conversation.active = false
+        }
+      }
+    }
+  }
+
+  /**
+   * 生成企微 AI 回复
+   *
+   * 仿照 generateAIReply，通过 storageService 管理消息（UI 可见），
+   * 通过 sendReplyToWecom 发回企微。
+   */
+  async function generateWecomReply(
+    conversationId: string,
+    userContent: string,
+    chatId: string,
+    chatType: WecomChatType,
+    reqId: string,
+  ): Promise<void> {
+    if (!isAIEnabled.value) {
+      console.log('[AIStore] [WecomBot] AI 未启用，直接返回')
+      return
+    }
+    if (!storageService) {
+      console.error('[AIStore] [WecomBot] storageService 未初始化')
+      return
+    }
+
+    // 加载企微会话
+    const conversation = await storageService.loadConversation(conversationId)
+    if (!conversation) {
+      console.error('[AIStore] [WecomBot] 会话不存在:', conversationId)
+      return
+    }
+
+    // 从 Store 获取数据并更新工具上下文
+    try {
+      const projectStore = useProjectStore()
+      const settingsStore = useSettingsStore()
+
+      const projects = projectStore.projects || []
+      const groups = settingsStore.groups || []
+      const allItems = projectStore.items || []
+      const directories = settingsStore.directories || []
+
+      if (projects.length > 0 || groups.length > 0) {
+        toolContext.value = {
+          groups,
+          projects,
+          allItems,
+          directories,
+        }
+      }
+    }
+    catch (err) {
+      console.error('[AIStore] [WecomBot] 获取 Store 数据失败:', err)
+    }
+
+    // 获取技能
+    const skillService = SkillService.getInstance()
+    const allSkills = skillService.getEnabledSkills()
+    const systemPrompt = buildSystemPrompt(allSkills)
+
+    isLoading.value = true
+    error.value = null
+
+    // 流式回复相关状态
+    const streamId = WecomBotService.generateStreamId()
+    const wecomBot = useWecomBotService()
+    let lastStreamSendAt = 0
+    let lastStreamContent = ''
+    const STREAM_THROTTLE_MS = 500
+
+    // 节流发送流式更新到企微
+    function sendStreamUpdate(content: string, finish: boolean): void {
+      if (!content) return
+      if (!finish) {
+        const now = Date.now()
+        if (now - lastStreamSendAt < STREAM_THROTTLE_MS) return
+        if (content === lastStreamContent) return
+      }
+      lastStreamContent = content
+      lastStreamSendAt = Date.now()
+      wecomBot.sendStreamMessage(reqId, streamId, content, finish).catch((err) => {
+        console.error('[AIStore] [WecomBot] 流式发送失败:', err)
+      })
+    }
+
+    try {
+      const provider = activeProvider.value
+      if (!provider) {
+        console.error('[AIStore] [WecomBot] 没有可用的 AI Provider')
+        return
+      }
+
+      const model = PiModelAdapter.toPiModel(provider)
+      const apiKey = PiModelAdapter.getApiKey(provider)
+
+      setToolContextAction(toolContext.value)
+
+      const piAgent = new PiAgentAdapter()
+      await piAgent.createAgent({
+        model,
+        systemPrompt,
+        tools: bulletJournalTools,
+        apiKey,
+      })
+
+      // 加载历史消息到 agent
+      if (conversation.messages.length > 0) {
+        const piMessages = PiMessageAdapter.toPiMessages(conversation.messages)
+        const agent = piAgent.getAgent()
+        if (agent) {
+          agent.state.messages = piMessages as unknown as typeof agent.state.messages
+        }
+      }
+
+      const historyMessages = [...conversation.messages]
+      const piMsgOffset = piAgent.getAgent()?.state.messages.length ?? 0
+
+      // 提取当前流式消息文本内容
+      function getStreamingContent(): string {
+        const agent = piAgent.getAgent()
+        if (!agent?.state.streamingMessage) return ''
+        const msg = PiMessageAdapter.toChatMessage(
+          agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
+        )
+        return msg.content || ''
+      }
+
+      // 订阅事件，实时更新 UI + 流式推送企微
+      function getConvStreamingMessages() {
+        const agent = piAgent.getAgent()
+        if (!agent) return
+
+        const committedMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
+          PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+        )
+
+        let streamingMsg: ChatMessage | undefined
+        if (agent.state.streamingMessage) {
+          streamingMsg = PiMessageAdapter.toChatMessage(
+            agent.state.streamingMessage as Parameters<typeof PiMessageAdapter.toChatMessage>[0],
+          )
+          streamingMsg.loading = true
+        }
+
+        conversation.messages = [...historyMessages, ...committedMsgs, ...(streamingMsg ? [streamingMsg] : [])]
+        if (currentConversationId.value === conversationId) {
+          currentConversation.value = { ...conversation }
+        }
+      }
+
+      piAgent.subscribe((event) => {
+        switch (event.type) {
+          case 'message_start': {
+            getConvStreamingMessages()
+            // 发送首次流式消息
+            const content = getStreamingContent() || '正在思考...'
+            sendStreamUpdate(content, false)
+            break
+          }
+          case 'message_update': {
+            getConvStreamingMessages()
+            // 节流发送流式更新
+            const content = getStreamingContent()
+            if (content) {
+              sendStreamUpdate(content, false)
+            }
+            break
+          }
+          case 'message_end': {
+            getConvStreamingMessages()
+            // message_end 时发送最新内容（绕过节流）
+            const content = getStreamingContent()
+            if (content && content !== lastStreamContent) {
+              lastStreamSendAt = 0 // 重置节流，确保发送
+              sendStreamUpdate(content, false)
+            }
+            break
+          }
+          case 'tool_execution_start':
+          case 'tool_execution_end': {
+            if (currentConversationId.value === conversationId) {
+              currentConversation.value = { ...conversation }
+            }
+            break
+          }
+          case 'agent_end': {
+            const agent = piAgent.getAgent()
+            if (agent) {
+              const finalMsgs = agent.state.messages.slice(piMsgOffset).map((m) =>
+                PiMessageAdapter.toChatMessage(m as Parameters<typeof PiMessageAdapter.toChatMessage>[0]),
+              )
+              conversation.messages = [...historyMessages, ...finalMsgs]
+              if (currentConversationId.value === conversationId) {
+                currentConversation.value = { ...conversation }
+              }
+              // 发送最终流式消息（finish=true）
+              const lastMsg = finalMsgs.at(-1)
+              if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
+                sendStreamUpdate(lastMsg.content, true)
+              }
+            }
+            break
+          }
+        }
+      })
+
+      await piAgent.prompt(userContent)
+
+      piAgent.dispose()
+
+      // 持久化会话
+      await storageService.saveConversation(conversation)
+
+      // 若用户正在查看此会话，强制刷新 UI
+      if (currentConversationId.value === conversationId) {
+        const refreshedConv = await storageService!.loadConversation(conversationId)
+        if (refreshedConv) {
+          currentConversation.value = null
+          await new Promise((r) => setTimeout(r, 10))
+          currentConversation.value = refreshedConv
+        }
+      }
+
+      await refreshConversationsList()
+    }
+    catch (err) {
+      console.error('[AIStore] [WecomBot] AI 回复失败:', err)
+      // 发送错误提示并结束流式消息
+      try {
+        await wecomBot.sendStreamMessage(reqId, streamId, '抱歉，我暂时无法处理您的请求，请稍后再试。', true)
+      }
+      catch {
+        // 流式发送也失败时，尝试普通消息
+        await sendReplyToWecom(chatId, '抱歉，我暂时无法处理您的请求，请稍后再试。', chatType).catch(() => {})
+      }
+    }
+    finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * 处理企微机器人消息
+   */
+  async function handleWecomMessage(msg: WecomMsgCallbackEvent): Promise<void> {
+    const {
+      chatid,
+      chattype,
+      from,
+      text,
+    } = msg.body
+    if (!text?.content) return
+
+    // 单聊时 chatid 为空，用 from.userid 作为回复目标（官方文档要求）
+    const replyTarget = chatid || from.userid
+    if (!replyTarget) {
+      console.warn('[aiStore] WecomBot 消息缺少 chatid 和 from.userid，无法回复')
+      return
+    }
+
+    if (!storageService) {
+      console.error('[aiStore] storageService 未初始化')
+      return
+    }
+
+    // 获取或创建会话（在 storageService 中创建 source='wecom' 的会话）
+    const conversationId = await getOrCreateWecomConversation(replyTarget, chattype, from.userid)
+
+    // 更新会话映射状态
+    const convKey = chattype === 'group' ? `wecom:group:${replyTarget}` : `wecom:${replyTarget}`
+    const convState = wecomConversationMap.value[convKey]
+    if (convState) {
+      convState.lastMessageAt = Date.now()
+      convState.unreadCount++
+    }
+
+    // 群聊消息剥离 @机器人 前缀
+    const messageText = chattype === 'group'
+      ? WecomBotService.stripMentionPrefix(text.content)
+      : text.content
+
+    if (!messageText.trim()) return
+
+    // 更新未读统计
+    wecomBotStats.value.unreadCount = Object.values(wecomConversationMap.value)
+      .reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+
+    // 刷新会话列表
+    await refreshConversationsList()
+
+    // 生成 AI 回复（通过 storageService 管理消息，UI 可见）
+    try {
+      await generateWecomReply(conversationId, messageText, replyTarget, chattype, msg.headers.req_id)
+    }
+    catch (err) {
+      console.error('[aiStore] 企微 AI 回复失败:', err)
+      await sendReplyToWecom(replyTarget, '抱歉，处理消息时出错了，请稍后重试。', chattype).catch(() => {})
+    }
+  }
+
+  /**
+   * 同步 WecomBot 服务状态到 store
+   */
+  function syncWecomBotStateFromService(wecomBot: ReturnType<typeof useWecomBotService>): void {
+    const latestConfig = wecomBot.getConfig()
+    wecomBotConfig.value.connectionStatus = latestConfig.connectionStatus
+    wecomBotConfig.value.errorMessage = latestConfig.errorMessage
+    wecomBotStats.value.isConnected = wecomBot.isConnected()
+  }
+
+  /**
+   * 初始化 WecomBot 服务
+   */
+  async function initializeWecomBot(pluginInstance: {
+    loadData: (key: string) => Promise<unknown>
+    saveData: (key: string, data: unknown) => Promise<void>
+    getSettings?: () => { ai?: { wecombot?: { enabled?: boolean, notifyOnLocalEvent?: boolean } } }
+  }): Promise<void> {
+    const wecomBot = useWecomBotService()
+
+    // 先清空旧的，避免重复注册
+    wecomBot.clearMessageHandlers()
+    wecomBot.clearErrorHandlers()
+    wecomBot.clearStatusChangeHandlers()
+
+    // 注册消息处理器
+    wecomBot.onMessage((msg) => {
+      handleWecomMessage(msg).catch((err) => {
+        console.error('[aiStore] handleWecomMessage error:', err)
+      })
+    })
+
+    // 注册错误处理器
+    wecomBot.onError((err) => {
+      console.error('[aiStore] WecomBot error:', err.message)
+      if (err.kind === 'auth_failed') {
+        wecomBotConfig.value.connectionStatus = 'error'
+        wecomBotConfig.value.errorMessage = err.message
+      }
+    })
+
+    // 注册状态变化处理器：同步 service 内部状态到 store
+    wecomBot.onStatusChange(() => {
+      syncWecomBotStateFromService(wecomBot)
+    })
+
+    // 从插件设置读取 enabled 和 notifyOnLocalEvent（持久化在 settings.ai.wecombot）
+    const pluginSettings = pluginInstance.getSettings?.()
+    const wecombotSettings = pluginSettings?.ai?.wecombot
+    if (wecombotSettings) {
+      if (typeof wecombotSettings.enabled === 'boolean') {
+        wecomBotConfig.value.enabled = wecombotSettings.enabled
+      }
+      if (typeof wecombotSettings.notifyOnLocalEvent === 'boolean') {
+        wecomBotConfig.value.notifyOnLocalEvent = wecombotSettings.notifyOnLocalEvent
+      }
+    }
+
+    // 加载持久化凭证
+    try {
+      const savedState = await pluginInstance.loadData('wecom-bot-state') as {
+        botId?: string
+        secret?: string
+        connectionStatus?: WecomBotConnectionStatus
+      } | null
+      if (savedState?.botId && savedState?.secret) {
+        wecomBotConfig.value.botId = savedState.botId
+        wecomBotConfig.value.secret = savedState.secret
+        wecomBotConfig.value.connectionStatus = savedState.connectionStatus ?? 'disconnected'
+      }
+    }
+    catch (err) {
+      console.error('[aiStore] 加载 wecom-bot-state 失败:', err)
+    }
+
+    // 同步配置到 service
+    wecomBot.updateConfig(wecomBotConfig.value)
+
+    // 启用且有凭证时自动启动监听
+    if (wecomBotConfig.value.enabled && wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
+      wecomBot.startMonitoring()
+    }
+
+    // 同步服务状态
+    syncWecomBotStateFromService(wecomBot)
+  }
+
+  /**
+   * 向所有活跃企微会话推送通知
+   */
+  async function sendWecomNotification(text: string): Promise<void> {
+    const wecomBot = useWecomBotService()
+    if (!wecomBot.isConnected()) return
+
+    // 内存 map 为空时，从持久化的会话列表恢复企微会话映射（与 sendWechatNotification 行为一致）
+    if (Object.keys(wecomConversationMap.value).length === 0 && storageService) {
+      try {
+        const conversations = await storageService.loadConversationsList()
+        const wecomConvos = conversations.filter(
+          (c: any) => c.source === 'wecom' && c.wecomChatId,
+        )
+        for (const conv of wecomConvos) {
+          const key = conv.wecomChatType === 'group'
+            ? `wecom:group:${conv.wecomChatId}`
+            : `wecom:${conv.wecomChatId}`
+          if (!wecomConversationMap.value[key]) {
+            wecomConversationMap.value[key] = {
+              chatId: conv.wecomChatId,
+              chatType: conv.wecomChatType || 'single',
+              userId: conv.wecomUserName,
+              conversationId: conv.id,
+              lastMessageAt: conv.updatedAt || Date.now(),
+              unreadCount: 0,
+              active: true,
+              consecutiveFailures: 0,
+            }
+          }
+        }
+      }
+      catch (err) {
+        console.error('[aiStore] 恢复企微会话映射失败:', err)
+      }
+    }
+
+    const tasks: Promise<void>[] = []
+    for (const [key, conv] of Object.entries(wecomConversationMap.value)) {
+      if (!conv.active) continue
+
+      tasks.push(
+        wecomBot
+          .sendTextMessage(conv.chatId, text, conv.chatType)
+          .then(() => {
+            conv.lastMessageAt = Date.now()
+          })
+          .catch((err: unknown) => {
+            console.error(`[aiStore] 企微通知失败 (${key}):`, err)
+            conv.consecutiveFailures++
+            conv.lastContextErrorAt = Date.now()
+            if (conv.consecutiveFailures >= 3) {
+              conv.active = false
+            }
+          }),
+      )
+    }
+
+    await Promise.allSettled(tasks)
+  }
+
+  /**
+   * 更新企微机器人凭证并触发重连
+   */
+  async function updateWecomBotConfig(
+    updates: Partial<WecomBotConfig>,
+    plugin: { saveData: (key: string, data: unknown) => Promise<void> },
+  ): Promise<void> {
+    wecomBotConfig.value = {
+      ...wecomBotConfig.value,
+      ...updates,
+    }
+
+    const wecomBot = useWecomBotService()
+    wecomBot.updateConfig(wecomBotConfig.value)
+
+    // 持久化凭证
+    await plugin.saveData('wecom-bot-state', {
+      botId: wecomBotConfig.value.botId,
+      secret: wecomBotConfig.value.secret,
+      connectionStatus: wecomBotConfig.value.connectionStatus,
+    })
+
+    // 禁用时停止监控
+    if (!wecomBotConfig.value.enabled) {
+      wecomBot.stopMonitoring()
+      return
+    }
+
+    // 若凭证非空且启用，启动监听
+    if (wecomBotConfig.value.botId && wecomBotConfig.value.secret) {
+      wecomBot.startMonitoring()
+    }
+  }
+
+  /**
+   * 清除指定会话的未读计数
+   */
+  function clearWecomUnread(conversationKey: string): void {
+    const conv = wecomConversationMap.value[conversationKey]
+    if (conv) {
+      conv.unreadCount = 0
+    }
+  }
+
   // ==================== Return ====================
 
   return {
@@ -1860,5 +2495,21 @@ export const useAIStore = defineStore('ai', () => {
     runClawBotHealthCheck,
     sendReplyToWeixin,
     sendWechatNotification,
+
+    // WecomBot
+    wecomBotConfig,
+    wecomConversationMap,
+    wecomBotStats,
+    isWecomBotEnabled,
+    isWecomBotConnected,
+    wecomBotConnectionStatus,
+    hasUnreadWecom,
+    initializeWecomBot,
+    handleWecomMessage,
+    getOrCreateWecomConversation,
+    sendReplyToWecom,
+    sendWecomNotification,
+    updateWecomBotConfig,
+    clearWecomUnread,
   }
 })

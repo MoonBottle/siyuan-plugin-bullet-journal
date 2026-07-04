@@ -68,6 +68,33 @@ function sendWechatNotification(title: string, body: string): void {
 }
 
 /**
+ * 发送企业微信通知（fire-and-forget，不阻塞主流程）
+ */
+function sendWecomNotification(title: string, body: string): void {
+  console.log('[Notification] sendWecomNotification called, title:', title)
+  try {
+    const pinia = getSharedPinia()
+    if (!pinia) {
+      console.warn('[Notification] getSharedPinia() returned null')
+      return
+    }
+    const aiStore = useAIStore(pinia)
+    // 检查是否启用企微机器人且开启本地通知同步
+    if (!aiStore.wecomBotConfig.enabled || !aiStore.wecomBotConfig.notifyOnLocalEvent) {
+      return
+    }
+    aiStore.sendWecomNotification(`${title}\n${body}`).then(() => {
+      console.log('[Notification] sendWecomNotification completed')
+    }).catch((err: unknown) => {
+      console.error('[Notification] sendWecomNotification promise rejected:', err)
+    })
+  }
+  catch (err) {
+    console.error('[Notification] WeCom notification error:', err)
+  }
+}
+
+/**
  * 显示系统级通知（内部实现）
  */
 interface NotificationOptions {
@@ -208,6 +235,7 @@ export async function showSystemNotification(
   }
 
   sendWechatNotification(title, body)
+  sendWecomNotification(title, body)
 
   return result
 }

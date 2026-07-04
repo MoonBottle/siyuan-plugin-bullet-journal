@@ -83,6 +83,7 @@ import {
   ICON_TIMER,
   ICON_TODO,
   ICON_TOMATO,
+  ICON_WECOM,
 } from "@/constants/icons"
 import { t } from "@/i18n"
 import {
@@ -418,6 +419,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_TOMATO)
     this.addIcons(ICON_GLOBE)
     this.addIcons(ICON_FOLDER_SEARCH)
+    this.addIcons(ICON_WECOM)
 
     // 注册 Dock
     this.registerDocks()
@@ -509,6 +511,9 @@ export default class TaskAssistantPlugin extends Plugin {
     // 初始化微信 ClawBot（不依赖 AI Dock 是否打开，确保通知能正常发送）
     this.initClawBot(pinia)
 
+    // 初始化企业微信机器人
+    this.initWecomBot(pinia)
+
     this.hasCompletedOnload = true
     console.log("[Task Assistant][Lifecycle] onload completed:", {
       instanceId: this.debugInstanceId,
@@ -574,6 +579,19 @@ export default class TaskAssistantPlugin extends Plugin {
       console.log("[Task Assistant] ClawBot initialized from plugin onload")
     } catch (error) {
       console.error("[Task Assistant] Failed to initialize ClawBot:", error)
+    }
+  }
+
+  /**
+   * 初始化企业微信机器人（插件启动时自动初始化）
+   */
+  private async initWecomBot(pinia: any) {
+    try {
+      const aiStore = useAIStore(pinia)
+      await aiStore.initializeWecomBot(this as any)
+      console.log("[Task Assistant] WecomBot initialized from plugin onload")
+    } catch (error) {
+      console.error("[Task Assistant] Failed to initialize WecomBot:", error)
     }
   }
 
@@ -821,6 +839,7 @@ export default class TaskAssistantPlugin extends Plugin {
               data.ai?.showToolCalls !== undefined
                 ? data.ai.showToolCalls
                 : true,
+            wecombot: data.ai?.wecombot,
           },
           pomodoro: data.pomodoro
             ? {
@@ -1058,6 +1077,72 @@ export default class TaskAssistantPlugin extends Plugin {
     } catch (error) {
       console.error(
         "[Task Assistant] Failed to clear WeChat login state:",
+        error,
+      )
+    }
+  }
+
+  // ========== WecomBot State Persistence ==========
+
+  private static readonly WECOM_BOT_KEY = "wecom-bot-state"
+
+  /**
+   * 保存企业微信机器人状态
+   */
+  public async saveWecomBotState(state: {
+    botId?: string
+    secret?: string
+    connectionStatus?: string
+  }) {
+    try {
+      await this.saveData(TaskAssistantPlugin.WECOM_BOT_KEY, state)
+      console.log("[Task Assistant] WecomBot state saved:", {
+        hasBotId: !!state.botId,
+        connectionStatus: state.connectionStatus,
+      })
+    } catch (error) {
+      console.error("[Task Assistant] Failed to save WecomBot state:", error)
+    }
+  }
+
+  /**
+   * 加载企业微信机器人状态
+   */
+  public async loadWecomBotState(): Promise<{
+    botId?: string
+    secret?: string
+    connectionStatus?: string
+  } | null> {
+    try {
+      const data = await this.loadData(TaskAssistantPlugin.WECOM_BOT_KEY)
+      if (data) {
+        console.log("[Task Assistant] WecomBot state loaded:", {
+          hasBotId: !!data.botId,
+          connectionStatus: (data as any).connectionStatus,
+        })
+        return data as {
+          botId?: string
+          secret?: string
+          connectionStatus?: string
+        }
+      }
+      return null
+    } catch (error) {
+      console.error("[Task Assistant] Failed to load WecomBot state:", error)
+      return null
+    }
+  }
+
+  /**
+   * 清除企业微信机器人状态
+   */
+  public async clearWecomBotState() {
+    try {
+      await this.saveData(TaskAssistantPlugin.WECOM_BOT_KEY, null)
+      console.log("[Task Assistant] WecomBot state cleared")
+    } catch (error) {
+      console.error(
+        "[Task Assistant] Failed to clear WecomBot state:",
         error,
       )
     }

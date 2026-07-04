@@ -119,7 +119,7 @@ export interface ChatMessage {
   usage?: UsageInfo
 }
 
-export type MessageSource = 'local' | 'weixin'
+export type MessageSource = 'local' | 'weixin' | 'wecom'
 
 export interface ChatConversation {
   id: string

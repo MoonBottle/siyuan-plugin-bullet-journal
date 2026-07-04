@@ -213,6 +213,7 @@ import {
   computed,
 } from 'vue'
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue'
+import PlayIcon from '@/components/icons/PlayIcon.vue'
 import PomodoroIcon from '@/components/icons/PomodoroIcon.vue'
 import StopIcon from '@/components/icons/StopIcon.vue'
 import ItemActionBar from '@/components/todo/ItemActionBar.vue'

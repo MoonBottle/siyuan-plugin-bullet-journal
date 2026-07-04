@@ -72,6 +72,8 @@ import {
   watch,
 } from 'vue'
 import { t } from '@/i18n'
+import { usePlugin } from '@/main'
+import { useAIStore } from '@/stores/aiStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import AiConfigSection from './AiConfigSection.vue'
 import AiSkillConfigSection from './AiSkillConfigSection.vue'
@@ -84,6 +86,7 @@ import McpConfigSection from './McpConfigSection.vue'
 import PomodoroConfigSection from './PomodoroConfigSection.vue'
 import SlashCommandConfigSection from './SlashCommandConfigSection.vue'
 import WebhookConfigSection from './WebhookConfigSection.vue'
+import WecomBotConfigSection from './WecomBotConfigSection.vue'
 
 const props = defineProps<{
   plugin: any
@@ -159,6 +162,11 @@ const menuItems = computed<MenuItem[]>(() => {
       title: settings.webhook?.title ?? 'Webhook 通知',
       icon: 'iconLink',
     },
+    {
+      key: 'wecombot',
+      title: settings.wecombot?.title ?? '企业微信机器人',
+      icon: 'iconWeCom',
+    },
   ]
 })
 
@@ -179,6 +187,7 @@ const sectionKeywords = computed<Record<string, string>>(() => {
     ai: collectStrings(s.ai).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
     webhook: collectStrings(s.webhook).join(' '),
+    wecombot: collectStrings(s.wecombot).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),
     slash: collectStrings(s.slashCommands).join(' '),
     skill: collectStrings(s.aiSkills).join(' '),
@@ -221,6 +230,7 @@ const sectionComponentMap: Record<string, Component> = {
   skill: AiSkillConfigSection,
   mcp: McpConfigSection,
   webhook: WebhookConfigSection,
+  wecombot: WecomBotConfigSection,
 }
 
 const currentSectionComponent = computed(() => sectionComponentMap[activeSection.value] ?? DirectoryConfigSection)
@@ -266,6 +276,10 @@ const currentSectionProps = computed(() => {
       return {}
     case 'webhook':
       return { webhook: settingsStore.webhook }
+    case 'wecombot':
+      return {
+        notifyOnLocalEvent: (settingsStore.ai as any)?.wecombot?.notifyOnLocalEvent ?? false,
+      }
     default:
       return {}
   }
@@ -316,6 +330,40 @@ const currentSectionEvents = computed(() => {
     case 'webhook':
       return {
         'update:webhook': (val: WebhookConfig) => settingsStore.applySettings({ webhook: val }),
+      }
+    case 'wecombot':
+      return {
+        update: (val: {
+          enabled: boolean
+          botId: string
+          secret: string
+          notifyOnLocalEvent: boolean
+          connectionStatus: string
+        }) => {
+          settingsStore.applySettings({
+            ai: {
+              ...settingsStore.ai,
+              wecombot: {
+                enabled: val.enabled,
+                notifyOnLocalEvent: val.notifyOnLocalEvent,
+              },
+            },
+          })
+          // 同步到 aiStore 并触发连接/断开
+          const aiStore = useAIStore()
+          const plugin = usePlugin()
+          if (plugin) {
+            aiStore.updateWecomBotConfig(
+              {
+                enabled: val.enabled,
+                notifyOnLocalEvent: val.notifyOnLocalEvent,
+              },
+              plugin,
+            ).catch((err) => {
+              console.error('[SettingsDialog] 更新企微机器人配置失败:', err)
+            })
+          }
+        },
       }
     default:
       return {}
