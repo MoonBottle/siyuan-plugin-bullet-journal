@@ -47,12 +47,18 @@ jobs:
       - name: Extract changelog for version
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          VERSION_ESC=$(echo "$VERSION" | sed 's/\./\\./g')
-          awk -v ver="$VERSION_ESC" '
-            found && $0 ~ "^## \\[" && $0 !~ "^## \\[" ver "\\]" { exit }
-            $0 ~ "^## \\[" ver "\\]" { found=1 }
-            found { print }
-          ' docs/user-guide/changelog.md > release_notes.md
+          CHANGELOG_FILE="changelogs/v${VERSION}/v${VERSION}.md"
+          if [ -f "$CHANGELOG_FILE" ]; then
+            cat "$CHANGELOG_FILE" > release_notes.md
+          else
+            # Fallback: extract from old changelog format
+            VERSION_ESC=$(echo "$VERSION" | sed 's/\./\\./g')
+            awk -v ver="$VERSION_ESC" '
+              found && $0 ~ "^## \\[" && $0 !~ "^## \\[" ver "\\]" { exit }
+              $0 ~ "^## \\[" ver "\\]" { found=1 }
+              found { print }
+            ' docs/user-guide/changelog.md > release_notes.md
+          fi
 
       - name: Create Release and upload assets
         uses: softprops/action-gh-release@v2

@@ -503,7 +503,7 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 - **GitHub 仓库**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal
 - **问题反馈**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues
 - **使用文档**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md
-- **更新日志**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md
+- **更新日志**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md
 
 ---
 
