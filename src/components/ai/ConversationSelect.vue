@@ -86,9 +86,12 @@ import {
 interface ConversationListItem {
   id: string
   title: string
-  source?: 'local' | 'weixin'
+  source?: 'local' | 'weixin' | 'wecom'
   weixinUserId?: string
   weixinUserName?: string
+  wecomChatId?: string
+  wecomChatType?: 'single' | 'group'
+  wecomUserName?: string
 }
 
 interface Props {
