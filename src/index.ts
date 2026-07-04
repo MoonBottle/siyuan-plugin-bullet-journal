@@ -83,6 +83,7 @@ import {
   ICON_TIMER,
   ICON_TODO,
   ICON_TOMATO,
+  ICON_WECOM,
 } from "@/constants/icons"
 import { t } from "@/i18n"
 import {
@@ -418,6 +419,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.addIcons(ICON_TOMATO)
     this.addIcons(ICON_GLOBE)
     this.addIcons(ICON_FOLDER_SEARCH)
+    this.addIcons(ICON_WECOM)
 
     // 注册 Dock
     this.registerDocks()
