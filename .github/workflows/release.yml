@@ -47,9 +47,20 @@ jobs:
       - name: Extract changelog for version
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          CHANGELOG_FILE="changelogs/v${VERSION}/v${VERSION}.md"
-          if [ -f "$CHANGELOG_FILE" ]; then
-            cat "$CHANGELOG_FILE" > release_notes.md
+          ZH_FILE="changelogs/v${VERSION}/v${VERSION}.zh-CN.md"
+          EN_FILE="changelogs/v${VERSION}/v${VERSION}.md"
+
+          if [ -f "$ZH_FILE" ]; then
+            # Chinese first, then English
+            cat "$ZH_FILE" > release_notes.md
+            if [ -f "$EN_FILE" ]; then
+              echo "" >> release_notes.md
+              echo "---" >> release_notes.md
+              echo "" >> release_notes.md
+              cat "$EN_FILE" >> release_notes.md
+            fi
+          elif [ -f "$EN_FILE" ]; then
+            cat "$EN_FILE" > release_notes.md
           else
             # Fallback: extract from old changelog format
             VERSION_ESC=$(echo "$VERSION" | sed 's/\./\\./g')
