@@ -22,7 +22,7 @@
   },
   "funding": {
     "custom": [
-      "https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@main/asset/donate.png"
+      "https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@main/assets/donate.png"
     ]
   },
   "keywords": ["bullet journal", "calendar", "gantt", "project", "task", "management"]
