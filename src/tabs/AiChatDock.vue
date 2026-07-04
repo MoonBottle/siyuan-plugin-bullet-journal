@@ -376,8 +376,8 @@ const handleOpenSettings = (section?: string) => {
   }
 }
 
-// 企微机器人按钮点击：未连接时打开设置并定位到企微配置
-function handleWecomBotClick(event: MouseEvent) {
+// 企微机器人按钮点击：未连接时打开设置；已连接时切换到企微会话
+async function handleWecomBotClick(event: MouseEvent) {
   hideTooltip()
   if (isMobile.value) {
     return
@@ -386,9 +386,32 @@ function handleWecomBotClick(event: MouseEvent) {
   event.stopPropagation()
   event.preventDefault()
 
+  // 未连接：打开设置并定位到企微配置
   if (!isWecomBotConnected.value) {
     handleOpenSettings('wecombot')
+    return
   }
+
+  // 已连接：切换到最近的企微会话
+  const wecomConversations = conversationsList.value
+    .filter((c) => c.source === 'wecom')
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+
+  if (wecomConversations.length === 0) {
+    showMessage('暂无企微会话，请通过企业微信发送消息后重试', 3000, 'info')
+    return
+  }
+
+  // 已在企微会话中则不重复切换
+  const currentConv = currentConversation.value
+  if (currentConv?.source === 'wecom' && wecomConversations.some((c) => c.id === currentConv.id)) {
+    return
+  }
+
+  await aiStore.switchConversation(wecomConversations[0].id)
+  await refreshConversationsList()
+  await nextTick()
+  chatPanelRef.value?.scrollToBottom?.()
 }
 
 // 更多按钮点击事件
