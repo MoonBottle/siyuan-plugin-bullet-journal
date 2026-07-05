@@ -15,13 +15,13 @@
 
 | Scenario | Description | Best For |
 |---|---|---|
-| 🗓️ [**Plan Schedule**](#plan-schedule) | Calendar, Gantt chart, Quadrant view, switch between week/month/day views | Seeing your task timeline |
-| 🎯 [**Focus & Execute**](#focus-and-execute) | Pomodoro timer + Todo list, from planning to execution in one flow | Deep work sessions |
-| ✅ [**Habit Tracking**](#habit-tracking) | Habit check-in, track daily progress and streaks | Building new habits |
-| 📁 [**Project Management**](#project-management) | Three-column layout, multiple projects at a glance | Juggling multiple projects |
-| 🤖 [**AI Powered**](#ai-powered) | AI chat for task queries, skill marketplace, WeCom bot | Let AI handle the busy work |
-| 🖥️ [**Custom Workbench**](#custom-workbench) | Drag-and-drop your own dashboard | One-stop panel |
-| 📱 [**Mobile Office**](#mobile-office) | Dedicated mobile interface | Managing tasks on your phone |
+| 🗓️ **Plan Schedule** | Calendar, Gantt chart, Quadrant view, switch between week/month/day views | Seeing your task timeline |
+| 🎯 **Focus & Execute** | Pomodoro timer + Todo list, from planning to execution in one flow | Deep work sessions |
+| ✅ **Habit Tracking** | Habit check-in, track daily progress and streaks | Building new habits |
+| 📁 **Project Management** | Three-column layout, multiple projects at a glance | Juggling multiple projects |
+| 🤖 **AI Powered** | AI chat for task queries, skill marketplace, WeCom bot | Let AI handle the busy work |
+| 🖥️ **Custom Workbench** | Drag-and-drop your own dashboard | One-stop panel |
+| 📱 **Mobile Office** | Dedicated mobile interface | Managing tasks on your phone |
 
 ## 🚀 Quick Start
 
@@ -57,8 +57,6 @@ Open the calendar view after marking — tasks and items appear automatically.
 | `📅YYYY-MM-DD` | Item date (required), optional time range |
 | `✅` / `❌` | Completed / Abandoned |
 | `⏰HH:mm` | Set reminder |
-| `🍅` | Record Pomodoro |
-| `🔁` | Recurring item |
 
 ## 🗓️ Plan Schedule
 
@@ -66,7 +64,9 @@ Write tasks in notes, and the calendar and Gantt chart are automatically rendere
 
 ![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104951745.png)
 
-**Calendar** — Month/Week/Day/List views, with toggle for items-only/tasks-only and status filtering. Click any event to jump to its note, drill down from month → week → day.
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705213234511.png)
+
+**Calendar** — Month/Week/Day/List views, with toggle for items-only/tasks-only and status filtering. Click any event to view detail popup, drill down from month → week → day.
 
 ![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105039550.png)
 
@@ -82,7 +82,7 @@ Todo list + Pomodoro timer, from planning to execution in one flow.
 
 ![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104607834.png)
 
-**Todo** — Sidebar shows today's and future items. Item cards show project/group names, support pin, skip, and estimated time. Click an item to open detail modal with left/right navigation.
+**Todo** — Sidebar shows today's and future items. Item cards show project/group names, support pin, skip, and estimated time. Click an item to jump to the original note.
 
 ![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104847343.png)
 
