@@ -6,6 +6,7 @@ All version changelogs have been organized into the `changelogs/` directory.
 
 | Version | Changelog |
 |---------|-----------|
+| v0.14.1 | [View](../../../changelogs/v0.14.1/v0.14.1.md) |
 | v0.14.0 | [View](../../../changelogs/v0.14.0/v0.14.0.md) |
 | v0.13.10 | [View](../../../changelogs/v0.13.10/v0.13.10.md) |
 | v0.13.9 | [View](../../../changelogs/v0.13.9/v0.13.9.md) |
