@@ -1,16 +1,54 @@
+# README 优化实施计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 将 README.zh-CN.md 从功能列表型结构重写为场景驱动型结构，同步更新 plugin.json 描述，覆盖 v0.13.0~v0.14.0 全部新功能
+
+**架构：** 单文件内容重写 + 单行配置更新，无需新增/删除任何代码文件
+
+**Tech Stack:** Markdown
+
+## Global Constraints
+
+- 文档一律使用中文编写
+- README 中不出现版本号，功能描述面向新用户而非升级用户
+- plugin.json 中英文描述需同步更新
+- 修改后需验证 `npm run lint` 和 `npm run test` 是否成功
+- 截图 URL 保持现有 b3logfile.com 资源不变
+
+---
+
+### Task 1: 重写 README.zh-CN.md
+
+**Files:**
+- Modify: `README.zh-CN.md`（完全重写）
+
+**Interfaces:**
+- Consumes: 无
+- Produces: 新的 README.zh-CN.md 内容
+
+- [ ] **Step 1: 编写 Hero 区**
+
+在文件顶部写入：
+
+```markdown
 # 任务助手
 
-![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
+![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
 
 [English](README.md)
 
-**在思源笔记里随手标记📋📅，日历、甘特图、番茄钟自动呈现——文档就是你的任务管理器。**
+**在思源笔记里写任务，日历、甘特图、番茄钟自动呈现——文档就是你的任务管理器。**
 
 🔗  **双向链接** — 点击任意任务跳转到笔记原文
-🎯  **文档即项目** — 一个文档就是一个项目，📋标记任务，📅标记事项
+🎯  **文档即任务** — 在笔记里加标记即可，无需切换应用
 ⚡  **实时同步** — 改了笔记，所有视图自动更新
 ⏰  **智能提醒** — 事项和习惯到点通知，支持钉钉/飞书/企微渠道
+```
 
+- [ ] **Step 2: 编写场景导航**
+
+```markdown
 ## 你想用任务助手做什么？
 
 | 场景 | 一句话说明 | 适合你如果... |
@@ -22,7 +60,11 @@
 | 🤖 [**AI 加持**](#ai-加持) | AI 对话查任务、技能市场、企业微信机器人 | 想让 AI 分担琐事 |
 | 🖥️ [**定制工作台**](#定制工作台) | 拖拽组合你的驾驶舱 | 想要一站式面板 |
 | 📱 [**移动办公**](#移动办公) | 专门为手机设计的独立界面 | 经常用手机记任务 |
+```
 
+- [ ] **Step 3: 编写快速开始**
+
+```markdown
 ## 🚀 快速开始
 
 打开任意笔记，输入斜杠命令即可开始：
@@ -43,8 +85,6 @@
 胸+三头+有氧 📅2026-03-09 ✅
 ```
 
-📋 标记的是**任务**（如"瘦十斤"），📅 标记的是该任务下的**事项**（如哪天练什么、完成了没）——一个任务可以包含多个事项。
-
 完成后打开日历视图——任务和事项已经自动出现在日历上。
 
 ---
@@ -59,34 +99,37 @@
 | `⏰HH:mm` | 设置提醒 |
 | `🍅` | 记录番茄钟 |
 | `🔁` | 重复事项 |
+```
+- [ ] **Step 4: 编写场景 1（规划日程）**
 
+```markdown
 ## 🗓️ 规划日程
 
 在笔记里写下任务，日历和甘特图自动呈现。
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104951745.png)
+```
+![calendar-view.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
 
 **日历** — 月/周/日/列表四种视图，支持仅事项/仅任务切换和事项状态筛选。点击任意事件跳转到笔记原文，下钻导航从月→周→日逐层深入。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105039550.png)
+![gantt-view.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
 
 **甘特图** — 项目进度可视化，支持日期预设（今天/本周/本月/近7天/90天/180天/全部），可选择显示层级（仅任务/含事项），点击任务条查看事项详情。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105112424.png)
-
 **四象限** — 按重要和紧急自动归类到艾森豪威尔矩阵，拖拽即可调整优先级。
+```
 
+- [ ] **Step 5: 编写场景 2（专注执行）**
+
+```markdown
 ## 🎯 专注执行
 
 待办清单 + 番茄钟，从规划到执行一气呵成。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104607834.png)
+![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-xloCpia.png)
 
 **待办** — 侧边栏展示今日及未来待办，事项卡片显示项目分组名，支持置顶、跳过、设置预计时间。点击事项打开详情弹框，左右切换导航浏览。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104847343.png)
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104746924.png)
+![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
 
 **番茄钟** — 专注时右下角悬浮胶囊显示倒计时，支持暂停/继续。关闭页面后回来自动恢复。完成后弹出当日专注时长统计。
 
@@ -95,14 +138,14 @@
 - **桌面悬浮窗** — 独立窗口，页内/桌面/同时三种模式
 - **专注统计** — 年热力图、趋势图、最佳时段分析，按事项/任务分组
 - **⏰ 智能提醒** — 事项到点弹系统通知，支持 Webhook 推送钉钉/飞书/企微
+```
 
+- [ ] **Step 6: 编写场景 3（习惯养成）**
+
+```markdown
 ## ✅ 习惯养成
 
 每天打卡，追踪你的坚持。
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105221285.png)
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105332163.png)
 
 **习惯打卡** — 创建每天、每周或隔几天执行的习惯。支持二元型（完成/未完成）和计数型（如"喝 8 杯水"），设定目标值，一键记录。
 
@@ -111,24 +154,26 @@
 - **统计数据** — 连续打卡天数、完成率一目了然
 - **习惯归档** — 暂时不想追踪的习惯可以收起来
 - **⏰ 习惯提醒** — 到点通知你该打卡了
+```
 
+- [ ] **Step 7: 编写场景 4（项目管理）**
+
+```markdown
 ## 📁 项目管理
 
 手上多个项目同时跑？项目工作台帮你理清头绪。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105509723.png)
-
 **项目工作台** — 三栏布局：左侧项目列表 → 中间任务树 → 右侧详情面板。支持搜索、标签筛选、键盘导航，拖拽调整列宽。
+```
 
+- [ ] **Step 8: 编写场景 5（AI 加持）**
+
+```markdown
 ## 🤖 AI 加持
 
 让 AI 帮你查任务、管项目，甚至与企业微信打通。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105650327.png)
-
 **AI 对话** — 在侧边栏与 AI 助手对话，查询项目进展、任务状态、事项详情。AI 自动调用工具获取最新数据，给出准确回答。
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105905700.png)
 
 **技能市场** — 预设多种 AI 技能模板，一键启用。还支持自定义技能编辑器，用 Markdown 编写专属提示词。
 
@@ -136,12 +181,14 @@
 - **企业微信机器人** — 在企业微信里直接跟 AI 对话
 - **Webhook 通知** — 提醒/番茄钟/习惯等事件推到钉钉、飞书或企微
 - **MCP 服务** — 提供标准 MCP 接口，其他 AI 客户端（如 Claude、Cursor）也能调用任务数据
+```
 
+- [ ] **Step 9: 编写场景 6（定制工作台）**
+
+```markdown
 ## 🖥️ 定制工作台
 
 把前面所有功能自由组合，搭建你自己的驾驶舱。
-
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110238283.png)
 
 **工作台** — 拖拽添加待办列表、日历、番茄钟统计、习惯周视图、四象限等组件，自由调整位置和大小。每个组件可单独配置显示内容和筛选条件。
 
@@ -150,15 +197,21 @@
 - 为每个视图配置分组、日期范围、排序规则、筛选条件
 - 配置即时生效，无需手动保存
 - AI 对话视图 — 工作台内直接跟 AI 对话
+```
 
+- [ ] **Step 10: 编写场景 7（移动办公）**
+
+```markdown
 ## 📱 移动办公
 
 手机端也能完整管理任务。
 
-![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110829791.png)
-
 **移动端独立界面** — 底部 Tab 导航：待办、番茄钟、习惯打卡、设置四大入口。打开手机浏览器访问思源即可使用，无需额外安装 App。
+```
 
+- [ ] **Step 11: 编写安装和文档部分**
+
+```markdown
 ## 📦 安装
 
 ### 📥 从集市安装（推荐）
@@ -194,3 +247,61 @@
 
 - [⭐ 在 GitHub 上 Star 本项目](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
 - [🐛 问题反馈与建议](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues)
+```
+
+### Task 2: 更新 plugin.json 描述
+
+**Files:**
+- Modify: `plugin.json`（第 15-18 行）
+
+**Interfaces:**
+- Consumes: Task 1 中确定的核心主张句式
+- Produces: 更新后的 plugin.json
+
+- [ ] **Step 1: 修改 plugin.json 第 15-18 行**
+
+将：
+```json
+"description": {
+    "default": "Task assistant for managing your todos and projects — calendar, gantt chart and project views, all in one",
+    "zh-CN": "任务管理助手，日历、甘特图、项目视图一应俱全"
+}
+```
+
+改为：
+```json
+"description": {
+    "default": "Write tasks in your notes, view them in Calendar, Gantt, Pomodoro & more — the task manager that lives inside SiYuan",
+    "zh-CN": "在笔记里写任务，日历/甘特图/番茄钟/习惯打卡/工作台自动呈现——文档即任务，不切换应用"
+}
+```
+
+### Task 3: 验证
+
+- [ ] **Step 1: Run lint check**
+
+Run: `npm run lint`
+Expected: All lint checks pass, no errors
+
+- [ ] **Step 2: Run test**
+
+Run: `npm run test`
+Expected: All tests pass
+
+- [ ] **Step 3: Run typecheck**
+
+Run: `npm run typecheck`
+Expected: No type errors
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add README.zh-CN.md plugin.json
+git commit -m "docs(readme): 重写中文 README 为场景驱动结构，更新 plugin.json 描述
+
+- 从功能列表型改为 7 个场景驱动结构，突出「文档即任务」核心主张
+- 新增 v0.13.0~v0.14.0 全部新功能（工作台、习惯打卡、四象限、番茄钟增强、
+  AI 技能市场、Webhook、企微机器人等）
+- 精简快速开始部分，新增标记速查表和斜杠命令速查
+- plugin.json 中英文描述同步更新，传递核心差异价值
+```

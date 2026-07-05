@@ -1,95 +1,163 @@
 # Task Assistant
 
-![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![Changelog](https://img.shields.io/badge/Changelog-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/changelog.md) | [![User Guide](https://img.shields.io/badge/docs-User%20Guide-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
+![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![Changelog](https://img.shields.io/badge/Changelog-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) | [![User Guide](https://img.shields.io/badge/docs-User%20Guide-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
 
-[简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.zh-CN.md)
+[简体中文](README.zh-CN.md)
 
-Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro for execution, with AI chat support; documents as tasks, bidirectional links, real-time sync.
+**Mark tasks 📋📅 in your notes, and Calendar, Gantt chart, Pomodoro timer are automatically rendered — your documents become your task manager.**
 
-## 📋 Features
+🔗 **Bidirectional Links** — Click any task to jump to the original note
+🎯 **Document as Project** — One document is one project, 📋 marks tasks, 📅 marks items
+⚡ **Real-time Sync** — Edit notes, all views update automatically
+⏰ **Smart Reminders** — Items and habits notify on time, with DingTalk/Feishu/WeCom webhook support
 
-| Feature            | Description                                                      | Best For                                                       |
-| ------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Calendar View**  | Display tasks in calendar format with month/week/day/list views  | Daily/weekly planning and time blocking                        |
-| **Gantt Chart**    | Visualize project progress with hierarchical task display        | Understanding project timelines and dependencies               |
-| **Todo Dock**      | Show upcoming todo items in sidebar for quick access             | Quick glance at today's and future tasks                       |
-| **Habit Check-in** | Track daily habits, support binary and count types               | Build habits, view streaks and completion rates                |
-| **Quadrant View**  | Auto-categorize tasks by priority into importance/urgency matrix | Focus on key items, manage time effectively                    |
-| **Workbench**      | Integrated workspace with dashboard and multiple views           | One-stop task management                                       |
-| **Pomodoro**       | Display Pomodoro focus status in sidebar                         | Track Pomodoro focus time                                      |
-| **AI Chat**        | Display AI conversation history in sidebar                       | Interact with AI assistant to query projects, tasks, and items |
+## What Can You Do with Task Assistant?
 
-**Key Differentiators:**
-
-- 🔗 **Bidirectional links** - Click any task to jump directly to its location in your notes
-- 🎯 **Non-invasive** - Documents are tasks; just add markers in notes to view and manage tasks in visual interfaces
-- ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
+| Scenario | Description | Best For |
+|---|---|---|
+| 🗓️ [**Plan Schedule**](#plan-schedule) | Calendar, Gantt chart, Quadrant view, switch between week/month/day views | Seeing your task timeline |
+| 🎯 [**Focus & Execute**](#focus-and-execute) | Pomodoro timer + Todo list, from planning to execution in one flow | Deep work sessions |
+| ✅ [**Habit Tracking**](#habit-tracking) | Habit check-in, track daily progress and streaks | Building new habits |
+| 📁 [**Project Management**](#project-management) | Three-column layout, multiple projects at a glance | Juggling multiple projects |
+| 🤖 [**AI Powered**](#ai-powered) | AI chat for task queries, skill marketplace, WeCom bot | Let AI handle the busy work |
+| 🖥️ [**Custom Workbench**](#custom-workbench) | Drag-and-drop your own dashboard | One-stop panel |
+| 📱 [**Mobile Office**](#mobile-office) | Dedicated mobile interface | Managing tasks on your phone |
 
 ## 🚀 Quick Start
 
-**Write notes with markers, then view them in visual interfaces.**
+Open any note and use slash commands to get started:
 
-1. **Create Project Document** - Create a document in SiYuan to record project tasks
-2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
-3. **View Tasks** - Access tasks through Calendar, Gantt, Project List, Todo Dock, Quadrant, Workbench, or Pomodoro panels
+| Command | Function |
+|---|---|
+| `/task` | Mark current line as task |
+| `/today` | Add today's item |
+| `/done` | Mark as completed |
+| `/focus` | Start Pomodoro focus session |
+| `/calendar` | Open calendar view |
 
-For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
-
-### 📝 1. Write Markers in Notes
-
-Create a new document and enter the following content:
+Your notes will look like this:
 
 ```markdown
-## 2026 Weight Loss Challenge (Project Name)
+Lose 10 Pounds 📋
 
-Lose 10 Pounds (Task Name) 📋
-
-Chest + Triceps + Cardio (Item Content) 📅2026-03-09 ✅
-
-Back + Biceps + Cardio 📅2026-03-11 ❌
-
-Got dragged to drink, gave up, will try another day (Notes related to the item)
-
-Back + Biceps + Cardio 📅2026-03-12 08:00~10:00
-
+Chest + Triceps + Cardio 📅2026-03-09 ✅
 ```
 
-**Marker Reference:**
+📋 marks a **task** (e.g. "Lose 10 Pounds"), 📅 marks **items** under that task (e.g. what to practice on which day, completed or not) — one task can contain multiple items.
 
-- `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
-- `📋` - Marks a line as a task
-- `📅YYYY-MM-DD` / `📅YYYY-MM-DD HH:mm~HH:mm` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period (supports both minute and second precision)
-- `✅` / `❌` - Item status (optional), marks item as completed or abandoned
+Open the calendar view after marking — tasks and items appear automatically.
 
-📌 Use slash commands to quickly add markers:
+---
 
-| Command     | Function            |
-| ----------- | ------------------- |
-| `/task`     | Mark as task        |
-| `/today`    | Add today's item    |
-| `/tomorrow` | Add tomorrow's item |
-| `/done`     | Mark as completed   |
-| `/calendar` | Open calendar view  |
-| `/todo`     | Open todo dock      |
-| `/focus`    | Start focus session |
+**Want to know more?** You can also write markers manually in notes:
 
-### 👀 2. View in Visual Interfaces
+| Marker | Meaning |
+|---|---|
+| `📋` | Mark a task |
+| `📅YYYY-MM-DD` | Item date (required), optional time range |
+| `✅` / `❌` | Completed / Abandoned |
+| `⏰HH:mm` | Set reminder |
+| `🍅` | Record Pomodoro |
+| `🔁` | Recurring item |
 
-The plugin automatically parses markers in notes and displays them in Calendar, Gantt, Todo, Pomodoro, and other views:
+## 🗓️ Plan Schedule
 
-![calendarview.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
+Write tasks in notes, and the calendar and Gantt chart are automatically rendered.
 
-![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-xloCpia.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104951745.png)
 
-![ganttview.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
+**Calendar** — Month/Week/Day/List views, with toggle for items-only/tasks-only and status filtering. Click any event to jump to its note, drill down from month → week → day.
 
-![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105039550.png)
 
-![itemmodal.png](https://b3logfile.com/file/2026/03/item-modal-EC8678D.png)
+**Gantt Chart** — Project progress visualization with date presets (Today/This Week/This Month/Last 7 Days/90 Days/180 Days/All). Select display level (tasks only/include items), click task bars for item details.
 
-Click any task in the view to jump directly to its location in your notes.
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105112424.png)
 
-![Feature Demo](https://b3logfile.com/file/2026/02/op-xYGmIM8.gif)
+**Quadrant** — Auto-categorize into Eisenhower Matrix by importance and urgency, drag to adjust priority.
+
+## 🎯 Focus and Execute
+
+Todo list + Pomodoro timer, from planning to execution in one flow.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104607834.png)
+
+**Todo** — Sidebar shows today's and future items. Item cards show project/group names, support pin, skip, and estimated time. Click an item to open detail modal with left/right navigation.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104847343.png)
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104746924.png)
+
+**Pomodoro** — Floating capsule in bottom-right corner shows countdown during focus, supports pause/resume. Auto-recovers on page return. Shows daily focus time statistics after completion.
+
+**More features:**
+- **Bottom bar countdown panel** — Display remaining time without taking up interface space
+- **Desktop floating window** — Independent window, available in page/desktop/both modes
+- **Focus statistics** — Year heatmap, trend chart, best time analysis, grouped by items/tasks
+- **⏰ Smart Reminders** — System notifications for items on time, supports webhook push to DingTalk/Feishu/WeCom
+
+## ✅ Habit Tracking
+
+Check in daily and track your persistence.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105221285.png)
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105332163.png)
+
+**Habit Check-in** — Create habits that repeat daily, weekly, or every few days. Supports binary (done/not done) and count types (e.g. "Drink 8 glasses of water"), set target values, one-click recording.
+
+**Advanced features:**
+- **Ebbinghaus Review** — Spaced repetition frequency suitable for memorizing vocabulary and reviewing knowledge
+- **Statistics** — Consecutive check-in days, completion rate at a glance
+- **Habit Archive** — Archive habits you don't want to track temporarily
+- **⏰ Habit Reminders** — Notify you when it's time to check in
+
+## 📁 Project Management
+
+Multiple projects running at once? The project workbench helps you keep organized.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105509723.png)
+
+**Project Workbench** — Three-column layout: left project list → middle task tree → right detail panel. Supports search, tag filtering, keyboard navigation, and drag to resize columns.
+
+## 🤖 AI Powered
+
+Let AI help you query tasks, manage projects, and even integrate with WeCom.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105650327.png)
+
+**AI Chat** — Chat with AI assistant in the sidebar to query project progress, task status, and item details. AI automatically calls tools to get the latest data for accurate answers.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105905700.png)
+
+**Skill Marketplace** — Preset AI skill templates, enable with one click. Also supports a custom skill editor for writing your own prompts with Markdown.
+
+**More integrations:**
+- **WeCom Bot** — Chat with AI directly in WeCom (Enterprise WeChat)
+- **Webhook Notifications** — Push reminders/Pomodoro/habit events to DingTalk, Feishu, or WeCom
+- **MCP Service** — Provides standard MCP interface, allowing other AI clients (like Claude, Cursor) to access task data
+
+## 🖥️ Custom Workbench
+
+Combine all the above features freely to build your own dashboard.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110238283.png)
+
+**Workbench** — Drag and add todo list, calendar, Pomodoro stats, habit weekly view, quadrant view, and more components. Freely adjust positions and sizes. Each component can be individually configured for display content and filters.
+
+**Further enhancements:**
+- Calendar and Gantt chart view components added to workbench
+- Configure grouping, date range, sorting rules, and filters for each view
+- Configuration takes effect instantly, no manual saving needed
+- AI Chat view — chat with AI directly within the workbench
+
+## 📱 Mobile Office
+
+Full task management on your phone.
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110829791.png)
+
+**Mobile Interface** — Bottom Tab navigation: Todo, Pomodoro, Habit Check-in, Settings. Access SiYuan via your phone browser, no additional app installation needed.
 
 ## 📦 Installation
 
@@ -126,24 +194,3 @@ If Task Assistant helps you, please consider:
 
 - [⭐ Star this project on GitHub](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
 - [🐛 Report issues and suggestions](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues)
-
-## 📌 Recent Updates
-
-### v0.12.2 Important Update
-
-**🆕 Scan Scope Settings (Directory Configuration)**
-
-Starting from v0.12.2, the plugin supports two scanning modes:
-
-| Mode                                 | Description                                                                                                        |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Scan Entire Workspace** (default)  | Scan all documents containing task markers. Directory config is only used for **grouping**. All tasks are visible. |
-| **Scan Configured Directories Only** | Only scan configured directories, same behavior as older versions. Suitable for large workspaces.                  |
-
-**Upgrade Note**: After upgrading from older versions, "Full Scan Mode" is enabled by default, and tasks that disappeared due to directory configuration will **reappear**. To restore original behavior, manually switch to "Scan Configured Directories Only" mode in settings.
-
-For details, see [Configuration - Scan Scope](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/configuration.md#scan-scope-new-in-v0122).
-
----
-
-More historical updates (Pomodoro, AI Chat, Gantt and Calendar enhancements, etc.) see [Changelog](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/changelog.md).
