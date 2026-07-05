@@ -64,13 +64,15 @@
 
 在笔记里写下任务，日历和甘特图自动呈现。
 
-![calendar-view.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104951745.png)
 
 **日历** — 月/周/日/列表四种视图，支持仅事项/仅任务切换和事项状态筛选。点击任意事件跳转到笔记原文，下钻导航从月→周→日逐层深入。
 
-![gantt-view.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105039550.png)
 
 **甘特图** — 项目进度可视化，支持日期预设（今天/本周/本月/近7天/90天/180天/全部），可选择显示层级（仅任务/含事项），点击任务条查看事项详情。
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105112424.png)
 
 **四象限** — 按重要和紧急自动归类到艾森豪威尔矩阵，拖拽即可调整优先级。
 
@@ -78,11 +80,13 @@
 
 待办清单 + 番茄钟，从规划到执行一气呵成。
 
-![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-xloCpia.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104607834.png)
 
 **待办** — 侧边栏展示今日及未来待办，事项卡片显示项目分组名，支持置顶、跳过、设置预计时间。点击事项打开详情弹框，左右切换导航浏览。
 
-![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104847343.png)
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705104746924.png)
 
 **番茄钟** — 专注时右下角悬浮胶囊显示倒计时，支持暂停/继续。关闭页面后回来自动恢复。完成后弹出当日专注时长统计。
 
@@ -96,6 +100,10 @@
 
 每天打卡，追踪你的坚持。
 
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105221285.png)
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105332163.png)
+
 **习惯打卡** — 创建每天、每周或隔几天执行的习惯。支持二元型（完成/未完成）和计数型（如"喝 8 杯水"），设定目标值，一键记录。
 
 **更进一步的特性：**
@@ -108,13 +116,19 @@
 
 手上多个项目同时跑？项目工作台帮你理清头绪。
 
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105509723.png)
+
 **项目工作台** — 三栏布局：左侧项目列表 → 中间任务树 → 右侧详情面板。支持搜索、标签筛选、键盘导航，拖拽调整列宽。
 
 ## 🤖 AI 加持
 
 让 AI 帮你查任务、管项目，甚至与企业微信打通。
 
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105650327.png)
+
 **AI 对话** — 在侧边栏与 AI 助手对话，查询项目进展、任务状态、事项详情。AI 自动调用工具获取最新数据，给出准确回答。
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705105905700.png)
 
 **技能市场** — 预设多种 AI 技能模板，一键启用。还支持自定义技能编辑器，用 Markdown 编写专属提示词。
 
@@ -127,6 +141,8 @@
 
 把前面所有功能自由组合，搭建你自己的驾驶舱。
 
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110238283.png)
+
 **工作台** — 拖拽添加待办列表、日历、番茄钟统计、习惯周视图、四象限等组件，自由调整位置和大小。每个组件可单独配置显示内容和筛选条件。
 
 **进一步增强：**
@@ -138,6 +154,8 @@
 ## 📱 移动办公
 
 手机端也能完整管理任务。
+
+![](https://cdn.jsdelivr.net/gh/MoonBottle/siyuan-plugin-bullet-journal@image-host/assets/20260705110829791.png)
 
 **移动端独立界面** — 底部 Tab 导航：待办、番茄钟、习惯打卡、设置四大入口。打开手机浏览器访问思源即可使用，无需额外安装 App。
 
