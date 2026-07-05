@@ -13,8 +13,8 @@
     "zh-CN": "任务助手"
   },
   "description": {
-    "default": "Task assistant for managing your todos and projects — calendar, gantt chart and project views, all in one",
-    "zh-CN": "任务管理助手，日历、甘特图、项目视图一应俱全"
+    "default": "Write tasks in your notes, view them in Calendar, Gantt, Pomodoro & more — the task manager that lives inside SiYuan",
+    "zh-CN": "在笔记里写任务，日历/甘特图/番茄钟/习惯打卡/工作台自动呈现——文档即任务，所见即所得"
   },
   "readme": {
     "default": "README.md",
