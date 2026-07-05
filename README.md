@@ -6,10 +6,10 @@
 
 **Mark tasks 📋📅 in your notes, and Calendar, Gantt chart, Pomodoro timer are automatically rendered — your documents become your task manager.**
 
-🔗 **Bidirectional Links** — Click any task to jump to the original note
-🎯 **Document as Project** — One document is one project, 📋 marks tasks, 📅 marks items
-⚡ **Real-time Sync** — Edit notes, all views update automatically
-⏰ **Smart Reminders** — Items and habits notify on time, with DingTalk/Feishu/WeCom webhook support
+- 🔗 **Bidirectional Links** — Click any task to jump to the original note
+- 🎯 **Document as Project** — One document is one project, 📋 marks tasks, 📅 marks items
+- ⚡ **Real-time Sync** — Edit notes, all views update automatically
+- ⏰ **Smart Reminders** — Items and habits notify on time, with DingTalk/Feishu/WeCom webhook support
 
 ## What Can You Do with Task Assistant?
 
