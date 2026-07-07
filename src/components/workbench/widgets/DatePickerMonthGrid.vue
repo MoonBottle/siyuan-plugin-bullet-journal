@@ -266,7 +266,7 @@ function isInRange(date: string): boolean {
 
 .date-picker-month-grid__cell {
   min-width: 0;
-  padding: 0;
+  padding: 8px 0;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -275,7 +275,7 @@ function isInRange(date: string): boolean {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
 }
 
